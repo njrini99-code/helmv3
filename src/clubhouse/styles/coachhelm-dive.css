@@ -464,9 +464,9 @@
   background: var(--ch-score-under-bg);
   color: var(--ch-score-under);
 }
+/* Even is ink on the plain plate: neither a gain nor a loss (P013 D13). */
 .ch-hd-r__p.is-even {
-  background: var(--ch-green-50);
-  color: var(--ch-green-700);
+  color: var(--ch-text-primary);
 }
 .ch-hd-r__p.is-over {
   background: var(--ch-score-over-bg);

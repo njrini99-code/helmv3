@@ -92,8 +92,14 @@ interface SendMessageWithAttachmentsOptions {
  * Handles the full flow:
  * 1. Upload files to Supabase Storage (client-side)
  * 2. Call server action to save message and attachment metadata
+ *
+ * `recoverable` keeps an unconfirmed send in sessionStorage so a later mount
+ * can retry that same send (getPendingAttachmentSend / retryPendingAttachmentSend).
+ * Only a caller that offers that retry may turn it on: a stored marker blocks
+ * new attachment sends in the thread until it is retried, so a surface without
+ * the retry UI (Fairway) would be locked out of attachments there until sign-out.
  */
-export function useMessageAttachments() {
+export function useMessageAttachments({ recoverable = false }: { recoverable?: boolean } = {}) {
   const fileIds = useRef(new WeakMap<File, string>());
   const attempts = useRef(new Map<string, AttachmentAttempt>());
   const epochAtMount = useRef(getCacheEpoch());
@@ -120,14 +126,14 @@ export function useMessageAttachments() {
         attempt.busy = false;
         return unknownResult(pending.clientMessageId);
       }
-      const current = readPending(pending.userId, pending.conversationId);
+      const current = recoverable ? readPending(pending.userId, pending.conversationId) : null;
       if (current && current.clientMessageId !== pending.clientMessageId) {
         attempt.busy = false;
         return unknownResult(pending.clientMessageId);
       }
       // Required before every request. A denied/quota-limited store must never
       // let a server write proceed with an identity lost on the next reload.
-      window.sessionStorage.setItem(pendingStorageKey(pending.userId, pending.conversationId), JSON.stringify(pending));
+      if (recoverable) window.sessionStorage.setItem(pendingStorageKey(pending.userId, pending.conversationId), JSON.stringify(pending));
     } catch (error) {
       attempt.busy = false;
       if (!attempt.hasStarted) attempts.current.delete(key);
@@ -140,7 +146,7 @@ export function useMessageAttachments() {
       const send = async () => {
         const userId = await authenticatedViewer();
         if (getCacheEpoch() !== epochAtMount.current || userId !== pending.userId) return unknownResult(pending.clientMessageId);
-        const current = readPending(pending.userId, pending.conversationId);
+        const current = recoverable ? readPending(pending.userId, pending.conversationId) : null;
         if (current && current.clientMessageId !== pending.clientMessageId) return unknownResult(pending.clientMessageId);
         requests += 1;
         attempt.hasStarted = true;
@@ -156,7 +162,7 @@ export function useMessageAttachments() {
       // An old response cannot confirm the new session's composer or erase a
       // newer request marker after logout/login or another hook instance.
       if (getCacheEpoch() !== epochAtMount.current) return unknownResult(pending.clientMessageId);
-      const stored = readPending(pending.userId, pending.conversationId);
+      const stored = recoverable ? readPending(pending.userId, pending.conversationId) : null;
       if (stored && stored.clientMessageId !== pending.clientMessageId) return unknownResult(pending.clientMessageId);
       if (result.sendOutcome !== 'unknown') {
         if (attempts.current.get(key)?.id === pending.clientMessageId) attempts.current.delete(key);
@@ -171,7 +177,7 @@ export function useMessageAttachments() {
     } finally {
       attempt.busy = false;
     }
-  }, []);
+  }, [recoverable]);
 
   const retryPendingAttachmentSend = useCallback(async (conversationId: string): Promise<AttachmentSendResult> => {
     try {
@@ -234,7 +240,7 @@ export function useMessageAttachments() {
         const userId = await authenticatedViewer();
         if (getCacheEpoch() !== epochAtMount.current) return unknownResult();
         attemptKey = pendingAttemptKey(userId, conversationId);
-        const recovered = readPending(userId, conversationId);
+        const recovered = recoverable ? readPending(userId, conversationId) : null;
         // If no attachments, just call the regular send action
         if (!attachments || attachments.length === 0) {
           if (attempts.current.has(attemptKey) || recovered) {
@@ -361,7 +367,7 @@ export function useMessageAttachments() {
         };
       }
     },
-    [performPendingSend]
+    [performPendingSend, recoverable]
   );
 
   return {

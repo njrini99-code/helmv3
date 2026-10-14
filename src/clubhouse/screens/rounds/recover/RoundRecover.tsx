@@ -196,7 +196,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
 
   return (
     <main className={'ch-rcv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rcv-title">
-      {phone && <PhoneTop title="Recover" back={{ label: 'Rounds', onBack: () => router.push(ROUNDS_LIBRARY) }} />}
+      {phone && <PhoneTop heading={false} title="Recover" back={{ label: 'Rounds', onBack: () => router.push(ROUNDS_LIBRARY) }} />}
       <header className="ch-rcv-h">
         <div>
           <span className="ch-rcv-k">Saved on this device</span>

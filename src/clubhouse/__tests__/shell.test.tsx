@@ -39,13 +39,15 @@ import { ToastProvider, useToast } from '../ui/Toast';
 import { InlineNotice, RouteErrorView, type RouteErrorKind } from '../ui/Notices';
 import { Bell, BellSourceProvider, type ChBellApi } from '../shell/Bell';
 import { NotRebuilt } from '../shell/NotRebuilt';
-import { OfflineBanner } from '../shell/OfflineBanner';
+import { ClubhouseNotFound } from '../shell/NotFound';
+import { OfflineBanner, pendingLine } from '../shell/OfflineBanner';
+import { useOfflineSyncStore } from '@/stores/offline-sync-store';
 import { CH_SLOW_SAVE_AFTER, useAction } from '../lib/use-action';
 import { loadClubhouseShell, type ChShellData } from '../data/shell';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { badgeCount, Sidebar } from '../shell/Sidebar';
 import { CH_NAV_PLAYER, phoneFullScreen, phonePushedTop } from '../shell/nav';
-import { TabBar } from '../shell/TabBar';
+import { PhoneNav } from './phone-nav-harness';
 import { TopBar } from '../shell/TopBar';
 import { ClubhouseMarker } from '../shell/context';
 import { PhoneScreen } from '../shell/PhoneScreen';
@@ -187,7 +189,7 @@ describe('Shell · bell', () => {
     expect(code('CH-1302')!.querySelector('.ch-empty__title')!.textContent).toBe('You’re all caught up');
   });
 
-  it('CH-1811 on the phone the bell is a modal sheet: focus moves in, Tab stays inside, Close gives focus back', async () => {
+  it('CH-1811 on the phone the bell drops the stacks as a modal sheet: focus moves in, Tab stays inside, Esc gives focus back', async () => {
     const real = window.matchMedia;
     window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
     try {
@@ -200,13 +202,14 @@ describe('Shell · bell', () => {
       expect(sheet.getAttribute('role')).toBe('dialog');
       expect(sheet.getAttribute('aria-modal')).toBe('true');
       expect(sheet.classList.contains('ch-popover')).toBe(false);
+      expect(sheet.classList.contains('ch-bst')).toBe(true);
       await within(sheet).findByText('Ava in Varsity team');
       await waitFor(() => expect(sheet.contains(document.activeElement)).toBe(true));
       const focusables = sheet.querySelectorAll<HTMLElement>('button:not(:disabled)');
       focusables[focusables.length - 1]!.focus();
       await user.tab();
       expect(document.activeElement).toBe(focusables[0]);
-      await user.click(within(sheet).getByRole('button', { name: 'Close' }));
+      await user.keyboard('{Escape}');
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
       expect(document.activeElement).toBe(trigger);
     } finally {
@@ -251,6 +254,33 @@ describe('Shell · page states', () => {
   ] as const)('%s → %s', async (kind, c, text) => {
     wrap(<RouteErrorView kind={kind as RouteErrorKind} isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath="/golf/dashboard" />);
     await expectCode(c, text);
+  });
+
+  it.each([
+    ['load', 'CH-1205', '/golf/dashboard/rounds', 'Rounds didn’t load', /connection dropped/],
+    ['unknown', 'CH-1206', '/golf/dashboard/rounds/[id]/review', 'Rounds didn’t load', /reported automatically/],
+    ['unknown', 'CH-1206', '/golf/dashboard/team-hub', 'Team Hub didn’t load', /reported automatically/],
+    ['load', 'CH-1205', '/golf/dashboard/my-development', 'My development didn’t load', /connection dropped/],
+    ['unknown', 'CH-1206', '/golf/dashboard', 'Something went wrong on this page', /reported automatically/],
+    ['unknown', 'CH-1206', '/clubhouse-preview', 'Something went wrong on this page', /reported automatically/],
+    ['chunk', 'CH-1202', '/golf/dashboard/rounds', 'A newer version of GolfHelm is ready', /older version/],
+    ['transient', 'CH-1204', '/golf/dashboard/rounds', 'GolfHelm is slow to respond', /busy/],
+  ] as const)('%s → %s names the page from its route %s', async (kind, c, route, title, body) => {
+    wrap(<RouteErrorView kind={kind as RouteErrorKind} isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath="/golf/dashboard" route={route} />);
+    await expectCode(c);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(title);
+    expect(code(c)!.textContent).toMatch(body);
+  });
+
+  it('CH-1306 the dashboard 404 inside the shell is the page empty with the way back to Home', async () => {
+    wrap(<ClubhouseNotFound />);
+    await expectCode('CH-1306', /We couldn’t find that/);
+    const page = code('CH-1306')!;
+    expect(page.className).toContain('ch-empty-page');
+    expect(page.querySelector('.ch-empty-page__ic svg')).not.toBeNull();
+    const home = screen.getByRole('link', { name: 'Back to Home' });
+    expect(home.getAttribute('href')).toBe('/golf/dashboard');
+    expect(home.className).toContain('ch-btn--primary');
   });
 
   it('CH-1301 a page that is not rebuilt', async () => {
@@ -301,6 +331,27 @@ describe('Shell · network', () => {
     setOnline(true);
     act(() => void window.dispatchEvent(new Event('online')));
     await waitFor(() => expect(code('CH-1901')).toBeNull());
+  });
+
+  it('CH-1901 the banner promises only what works offline (reading and round scoring), and counts what is held on the device', async () => {
+    useOfflineSyncStore.setState({ pendingCount: { rounds: 0, holes: 0, shots: 0, total: 0 } });
+    wrap(<OfflineBanner />);
+    setOnline(false);
+    act(() => void window.dispatchEvent(new Event('offline')));
+    await expectCode('CH-1901', /You can keep reading and keep scoring a round; other changes need a connection\./);
+    expect(code('CH-1901')!.textContent).not.toMatch(/changes will wait/);
+    expect(document.querySelector('[data-ch-offline-pending]')).toBeNull();
+    act(() => useOfflineSyncStore.setState({ pendingCount: { rounds: 1, holes: 0, shots: 2, total: 3 } }));
+    await waitFor(() => expect(code('CH-1901')!.textContent).toMatch(/3 changes saved on this device will sync when you reconnect\./));
+    act(() => useOfflineSyncStore.setState({ pendingCount: { rounds: 1, holes: 0, shots: 0, total: 1 } }));
+    await waitFor(() => expect(code('CH-1901')!.textContent).toMatch(/1 change saved on this device/));
+    act(() => useOfflineSyncStore.setState({ pendingCount: { rounds: 0, holes: 0, shots: 0, total: 0 } }));
+  });
+
+  it('CH-1901 pendingLine says nothing for an empty queue', () => {
+    expect(pendingLine(0)).toBeNull();
+    expect(pendingLine(Number.NaN)).toBeNull();
+    expect(pendingLine(2)).toBe('2 changes saved on this device will sync when you reconnect.');
   });
 
   function Saver({ fn }: { fn: () => Promise<{ success: boolean }> }) {
@@ -378,16 +429,33 @@ describe('Shell · sidebar data', () => {
     expect(screen.getByRole('link', { name: 'Roster' }).querySelector('.ch-navitem__count')).toBeNull();
   });
 
-  it('CH-1304 nothing upcoming: no card; with one, the card shows who has confirmed', async () => {
+  it('CH-1304 nothing upcoming: no card; with one that requires an RSVP, the card shows who has confirmed', async () => {
     const none = await loadClubhouseShell('t1');
     expect(none.nextEvent).toBeNull();
     supabaseTables.current = {
-      golf_events: { data: [upcoming] },
+      golf_events: { data: [{ ...upcoming, requires_rsvp: true }] },
       golf_event_attendance: { data: [{ status: 'accepted' }, { status: 'accepted' }, { status: 'pending' }] },
     };
     const shell = await loadClubhouseShell('t1');
     wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
     expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 confirmed/);
+  });
+
+  it('CH-1304 an event that doesn’t require an RSVP shows when and where, with no confirmed count, and its replies are never read (owner, 2026-10-08)', async () => {
+    for (const requires_rsvp of [false, null]) {
+      supabaseTables.current = {
+        golf_events: { data: [{ ...upcoming, requires_rsvp }] },
+        golf_event_attendance: { data: [{ status: 'accepted' }, { status: 'pending' }] },
+      };
+      const shell = await loadClubhouseShell('t1');
+      expect(shell.nextEvent?.ready).toBeNull();
+      const { unmount } = wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
+      const card = document.querySelector('.ch-next')!;
+      expect(card.textContent).not.toMatch(/confirmed/);
+      expect(card.querySelector('.ch-next__bar')).toBeNull();
+      expect(card.textContent).toContain(shell.nextEvent!.metaLabel);
+      unmount();
+    }
   });
 
   it('F-40 a player\'s synced class is never the team\'s next event', async () => {
@@ -445,22 +513,20 @@ describe('Shell · navigation and accessibility', () => {
     expect(badgeCount(hub, { ...zero, announcements: 2, tasks: 1, travel: 1 }, shell)).toBe(4);
     expect(badgeCount(hub, zero, shell)).toBeNull();
     Object.assign(badgeState, { announcements: 2, tasks: 1, travel: 0 });
-    // TabBar's `role` is the user's role, not an ARIA role; spread so jsx-a11y doesn't read it as one.
+    // PhoneNav's `role` is the user's role, not an ARIA role; spread so jsx-a11y doesn't read it as one.
     const asPlayer = { role: 'player' as const };
-    wrap(<TabBar pathname="/golf/dashboard" shell={shell} {...asPlayer} />);
-    const tab = screen.getByRole('link', { name: /Team Hub/ });
-    expect(tab.querySelector('.ch-tab__badge')!.textContent).toBe('3');
+    wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} {...asPlayer} />);
+    const pill = screen.getByRole('link', { name: /Team Hub/ });
+    expect(pill.querySelector('.ch-strip__count')!.textContent).toMatch(/^3/);
     Object.assign(badgeState, { announcements: 0, tasks: 0, travel: 0 });
   });
 
-  it('CH-1802 a More sheet row with a count is named with a space between its parts ("Messages 3 new")', async () => {
-    const user = userEvent.setup();
+  it('CH-1808 CH-1816 a strip pill with a count is named with a space between its parts ("Messages 3 new"), and the title carries a dot', () => {
     badgeState.messages = 3;
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
-    await user.click(screen.getByRole('button', { name: /^More/ }));
-    await expectCode('CH-1802');
-    expect(within(code('CH-1802') as HTMLElement).getByRole('link', { name: 'Messages 3 new' })).toBeTruthy();
+    wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
+    expect(within(code('CH-1808') as HTMLElement).getByRole('link', { name: 'Messages 3 new' })).toBeTruthy();
+    expect(code('CH-1816')!.querySelector('.ch-sw__dot')).not.toBeNull();
     badgeState.messages = 0;
   });
 
@@ -488,15 +554,14 @@ describe('Shell · navigation and accessibility', () => {
     expect(gear().getAttribute('href')).toBe('/golf/dashboard/settings');
   });
 
-  it('CH-1802 the v2 More sheet: who you are (to Settings), the next event under Calendar, then Settings, Help and Sign out', async () => {
+  it('CH-1802 the account sheet (the strip\'s last pill): who you are (to Settings), Help and Sign out; the sections are on the strip', async () => {
     const user = userEvent.setup();
-    const withEvent = { ...shell, nextEvent: { id: 'e1', title: 'Pinehurst qualifier', whenLabel: 'Thursday', metaLabel: 'Thu, Oct 16', ready: null } };
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    wrap(<TabBar pathname="/golf/dashboard" shell={withEvent} role="player" user={{ name: 'Maya Reyes', teamName: 'Varsity' }} />);
-    await user.click(screen.getByRole('button', { name: /^More/ }));
-    const sheet = (await screen.findByRole('dialog', { name: 'More' })) as HTMLElement;
+    wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="player" user={{ name: 'Maya Reyes', teamName: 'Varsity' }} />);
+    await user.click(screen.getByRole('button', { name: 'Account' }));
+    const sheet = (await screen.findByRole('dialog', { name: 'Account' })) as HTMLElement;
     expect(within(sheet).getByRole('link', { name: /^Maya Reyes Player · Varsity/ }).getAttribute('href')).toBe('/golf/dashboard/settings');
-    expect(within(sheet).getByRole('link', { name: 'Calendar Thursday · Pinehurst qualifier' })).toBeTruthy();
+    expect(within(sheet).queryByRole('link', { name: /^Calendar/ })).toBeNull();
     expect(within(sheet).getByRole('link', { name: 'Help' }).getAttribute('href')).toBe('/golf/dashboard/settings#set-help');
     signOutSpy.mockResolvedValueOnce(undefined);
     await user.click(within(sheet).getByRole('button', { name: 'Sign out' }));
@@ -508,20 +573,20 @@ describe('Shell · navigation and accessibility', () => {
     signOutSpy.mockReset();
     signOutSpy.mockRejectedValueOnce(new Error('network'));
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="player" user={{ name: 'Theo Marchetti' }} />);
-    await user.click(screen.getByRole('button', { name: /^More/ }));
+    wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="player" user={{ name: 'Theo Marchetti' }} />);
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     await user.click(await screen.findByRole('button', { name: 'Sign out' }));
     await expectCode('CH-1002', /Couldn't sign out/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
   });
 
-  it('CH-1802 the More sheet takes focus, keeps Tab inside, and gives it back on Esc', async () => {
+  it('CH-1802 the account sheet takes focus, keeps Tab inside, and gives it back to the section title on Esc', async () => {
     const user = userEvent.setup();
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
-    const more = screen.getByRole('button', { name: 'More' });
-    await user.click(more);
+    wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
+    const more = code('CH-1816') as HTMLElement;
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     await expectCode('CH-1802');
     const sheet = code('CH-1802')!;
     await waitFor(() => expect(sheet.contains(document.activeElement)).toBe(true));
@@ -548,11 +613,11 @@ describe('Shell · navigation and accessibility', () => {
       });
     };
 
-    it('the More sheet springs back short of 80px, and closes past it with the medium settle (commit, D-70)', async () => {
+    it('the account sheet springs back short of 80px, and closes past it with the medium settle (commit, D-70)', async () => {
       const user = userEvent.setup();
       // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-      wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
-      const more = screen.getByRole('button', { name: 'More' });
+      wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
+      const more = screen.getByRole('button', { name: 'Account' });
       await user.click(more);
       await expectCode('CH-1802');
       const sheet = code('CH-1802') as HTMLElement;
@@ -611,7 +676,7 @@ describe('Shell · navigation and accessibility', () => {
       }
     });
 
-    it('the bell sheet drags shut from its header', async () => {
+    it('the bell drop goes back up under the bar when its header is dragged up past a third of it', async () => {
       const real = window.matchMedia;
       window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
       try {
@@ -621,8 +686,14 @@ describe('Shell · navigation and accessibility', () => {
         await user.click(trigger);
         await expectCode('CH-1811');
         const sheet = code('CH-1811') as HTMLElement;
+        const head = sheet.querySelector('.ch-bst__head') as HTMLElement;
         hapticSpy.mockClear();
-        await drag(sheet.querySelector('.ch-bellp__shead') as HTMLElement, sheet, 120);
+        // jsdom lays nothing out, so the drop measures 0 tall and any upward drag is past a third of it.
+        act(() => {
+          head.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 300, button: 0 }));
+          head.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientY: 180 }));
+          head.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, clientY: 180 }));
+        });
         expect(hapticSpy).toHaveBeenCalledWith('commit');
         expect(trigger.getAttribute('aria-expanded')).toBe('false');
       } finally {
@@ -662,19 +733,21 @@ describe('Shell · navigation and accessibility', () => {
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeTruthy();
   });
 
-  it('CH-1704 opening More ticks', async () => {
+  it('CH-1704 opening the account sheet ticks; opening the strip is silent', async () => {
     const user = userEvent.setup();
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
-    await user.click(screen.getByRole('button', { name: /^More/ }));
+    wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
+    await user.click(code('CH-1816') as HTMLElement);
+    expect(hapticSpy).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
   });
 
-  it('CH-1701 changing tabs ticks; the current tab does not', async () => {
+  it('CH-1701 changing sections ticks; the current section does not', async () => {
     const user = userEvent.setup();
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
-    const tabs = screen.getAllByRole('link');
+    wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
+    const tabs = within(code('CH-1808') as HTMLElement).getAllByRole('link');
     const current = tabs.find((t) => t.getAttribute('aria-current') === 'page')!;
     const other = tabs.find((t) => t !== current)!;
     other.addEventListener('click', (e) => e.preventDefault());
@@ -711,23 +784,19 @@ describe('Shell · phone chrome', () => {
     badgeState.messages = 0;
   });
 
-  it('CH-1808 11901 each role gets its own phone tabs, and More carries the Messages unread count', () => {
-    badgeState.messages = 3;
+  it('CH-1808 11901 each role gets its own sections on the strip, the old tabs first, then Settings and the account pill', () => {
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    const { unmount } = wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
-    const bar = code('CH-1808')!;
-    const names = [...bar.querySelectorAll('a, button')].map((el) => el.getAttribute('aria-label') ?? el.querySelector('.ch-tab__label')!.textContent);
-    // D-66 (v2 GH.tabs): coach Home, CoachHelm, Calendar, Stats, More.
-    expect(names).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'More, 3 unread messages']);
+    const { unmount } = wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
+    const labels = () => [...code('CH-1808')!.querySelectorAll('.ch-strip__label')].map((el) => el.textContent);
+    // D-66 (v2 GH.tabs) first: coach Home, CoachHelm, Calendar, Stats; then the sidebar's order.
+    expect(labels()).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'Team Hub', 'Messages', 'Roster', 'Recruiting', 'Qualifiers', 'Settings', 'Account']);
     unmount();
-    badgeState.messages = 0;
-    // Player: Home, CoachHelm, Rounds, Team Hub, More.
+    // Player: Home, CoachHelm, Rounds, Team Hub first.
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    wrap(<TabBar pathname="/golf/dashboard/team-hub" shell={shell} role="player" />);
-    const labels = [...code('CH-1808')!.querySelectorAll('.ch-tab__label')].map((el) => el.textContent);
-    expect(labels).toEqual(['Home', 'CoachHelm', 'Rounds', 'Team Hub', 'More']);
+    wrap(<PhoneNav pathname="/golf/dashboard/team-hub" shell={shell} role="player" />);
+    expect(labels()).toEqual(['Home', 'CoachHelm', 'Rounds', 'Team Hub', 'Calendar', 'Messages', 'Roster', 'My stats', 'Qualifiers', 'Classes', 'Settings', 'Account']);
     expect(screen.getByRole('link', { name: /Team Hub/ }).getAttribute('aria-current')).toBe('page');
-    expect(screen.getByRole('button', { name: 'More' })).toBeTruthy();
+    expect(code('CH-1816')!.getAttribute('aria-controls')).toBe('ch-strip');
   });
 
   it('CH-1809 a pushed screen takes focus on its title and makes the shell chrome inert until it closes', async () => {
@@ -745,7 +814,7 @@ describe('Shell · phone chrome', () => {
         <Page open={false} />
       </ClubhouseFrame>,
     );
-    expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(false);
+    expect(document.querySelector('.ch-topbar')!.hasAttribute('inert')).toBe(false);
     rerender(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
         <Page open />
@@ -754,7 +823,7 @@ describe('Shell · phone chrome', () => {
     const screenEl = screen.getByRole('region', { name: 'Varsity team' });
     await waitFor(() => expect(document.activeElement).toBe(document.getElementById('t-title')));
     expect(screenEl.contains(document.activeElement)).toBe(true);
-    expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(true);
+    expect(document.querySelector('.ch-strip')!.hasAttribute('inert')).toBe(true);
     expect(document.querySelector('.ch-topbar')!.hasAttribute('inert')).toBe(true);
     expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-immersive')).toBe(true);
     rerender(
@@ -762,7 +831,7 @@ describe('Shell · phone chrome', () => {
         <Page open={false} />
       </ClubhouseFrame>,
     );
-    await waitFor(() => expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(false));
+    await waitFor(() => expect(document.querySelector('.ch-topbar')!.hasAttribute('inert')).toBe(false));
   });
 
   it('CH-1810 the phone top bar names a tab root, and a page top swaps the bell for a named back link', async () => {
@@ -775,7 +844,8 @@ describe('Shell · phone chrome', () => {
     );
     const bar = document.querySelector('.ch-topbar')!;
     expect(bar.getAttribute('data-phone')).toBe('root');
-    expect(bar.querySelector('.ch-topbar__ptitle')!.textContent).toBe('Stats');
+    // The title is the section switcher (CH-1816); its label is the section's name.
+    expect(bar.querySelector('.ch-topbar__ptitle .ch-sw__label')!.textContent).toBe('Stats');
     expect(code('CH-1402')).toBeNull();
     // A player's stats open on the same address with their own top: back to the team.
     rerender(
@@ -815,46 +885,47 @@ describe('Shell · phone chrome', () => {
 
   it('CH-1402 a pushed address draws its bar before its page does, and the page\'s own top replaces it in place', async () => {
     const back = vi.fn();
-    // The route's loading skeleton: no PhoneTop yet. The bar is already the pushed one, never the tab root's title and bell.
+    const id = '0b6f2c1e-8d1a-4c47-9a53-2f1e7b0c9d10';
+    const path = `/golf/dashboard/qualifiers/${id}`;
+    // The route's loading skeleton: no PhoneTop yet. The bar is already the pushed one, never the section title and bell.
     const { rerender } = render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <p aria-busy="true">Loading the roster</p>
+      <ClubhouseFrame userData={coach} shell={shell} pathname={path} forceRebuilt>
+        <p aria-busy="true">Loading the qualifier</p>
       </ClubhouseFrame>,
     );
     const bar = document.querySelector('.ch-topbar')!;
     expect(bar.getAttribute('data-phone')).toBe('page');
     const standIn = code('CH-1402')!;
     expect(bar.contains(standIn)).toBe(true);
-    expect(within(standIn as HTMLElement).getByRole('button', { name: 'Back to More' })).toBeTruthy();
-    expect(standIn.querySelector('.ch-pbar__title')!.textContent).toBe('Roster');
+    expect(within(standIn as HTMLElement).getByRole('button', { name: 'Back to Qualifiers' })).toBeTruthy();
+    expect(standIn.querySelector('.ch-pbar__title')!.textContent).toBe('Qualifier');
     // The heading is the page's to bring: the stand-in's title is plain text.
     expect(within(bar as HTMLElement).queryByRole('heading')).toBeNull();
     rerender(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <PhoneTop title="Roster" back={{ label: 'More', onBack: back }} action={<button type="button">Invite players</button>} />
+      <ClubhouseFrame userData={coach} shell={shell} pathname={path} forceRebuilt>
+        <PhoneTop title="Qualifier" back={{ label: 'Qualifiers', onBack: back }} action={<button type="button">Edit</button>} />
       </ClubhouseFrame>,
     );
     // The page's top replaces it where it stood: one back link, the page's, and the page's h1.
     expect(code('CH-1402')).toBeNull();
     expect(bar.getAttribute('data-phone')).toBe('page');
-    expect(within(bar as HTMLElement).getAllByRole('button', { name: 'Back to More' })).toHaveLength(1);
-    expect(within(bar as HTMLElement).getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
-    await userEvent.setup().click(within(bar as HTMLElement).getByRole('button', { name: 'Back to More' }));
+    expect(within(bar as HTMLElement).getAllByRole('button', { name: 'Back to Qualifiers' })).toHaveLength(1);
+    expect(within(bar as HTMLElement).getByRole('heading', { level: 1, name: 'Qualifier' })).toBeTruthy();
+    await userEvent.setup().click(within(bar as HTMLElement).getByRole('button', { name: 'Back to Qualifiers' }));
     expect(back).toHaveBeenCalled();
   });
 
-  it('CH-1402 the stand-in\'s Back goes where the page\'s would: back from More, up from a page below another', async () => {
+  it('CH-1402 a section the More sheet used to hold is a root now: no stand-in; a page below another goes up to it', async () => {
     const user = userEvent.setup();
     routerSpy.back.mockClear();
     routerSpy.push.mockClear();
-    window.history.pushState({}, '');
     const { unmount } = render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/recruiting" forceRebuilt>
         <p aria-busy="true">Loading</p>
       </ClubhouseFrame>,
     );
-    await user.click(within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Back to More' }));
-    expect(routerSpy.back).toHaveBeenCalledTimes(1);
+    expect(code('CH-1402')).toBeNull();
+    expect(document.querySelector('.ch-topbar')!.getAttribute('data-phone')).toBe('root');
     unmount();
     const id = '0b6f2c1e-8d1a-4c47-9a53-2f1e7b0c9d10';
     render(
@@ -867,16 +938,24 @@ describe('Shell · phone chrome', () => {
     expect(routerSpy.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${id}`);
   });
 
-  it('CH-1402 Settings keeps its bar title for VoiceOver only; a route not rebuilt for the role keeps the plain bar', () => {
-    const { unmount } = render(
+  it('CH-1402 Settings is a section root (its title the switcher); a Settings section keeps its bar title for VoiceOver only; a route not rebuilt for the role keeps the plain bar', () => {
+    let view = render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/settings" forceRebuilt>
         <p aria-busy="true">Loading</p>
       </ClubhouseFrame>,
     );
+    expect(code('CH-1402')).toBeNull();
+    expect(document.querySelector('.ch-topbar .ch-sw__label')!.textContent).toBe('Settings');
+    view.unmount();
+    view = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/settings/notifications" forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
     const title = code('CH-1402')!.querySelector('.ch-pbar__title')!;
-    expect(title.textContent).toBe('Settings');
+    expect(title.textContent).toBe('Notifications');
     expect(title.firstElementChild!.className).toBe('ch-sr-only');
-    unmount();
+    view.unmount();
     // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar.
     render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
@@ -894,20 +973,23 @@ describe('Shell · phone chrome', () => {
       const t = phonePushedTop(path, role, query == null ? null : new URLSearchParams(query));
       return t && `${t.back} | ${t.title}${t.quiet ? ' (quiet)' : ''}${t.parent ? ` -> ${t.parent}` : ''}${t.form ? ' (form)' : ''}`;
     };
-    // Pages opened from the More sheet go back to More (D-41, D-66).
-    expect(bar('/golf/dashboard/roster', 'coach')).toBe('More | Roster');
-    expect(bar('/golf/dashboard/recruiting', 'coach')).toBe('More | Recruiting');
-    expect(bar('/golf/dashboard/qualifiers', 'coach')).toBe('More | Qualifiers');
-    expect(bar('/golf/dashboard/team-hub', 'coach')).toBe('More | Team Hub');
-    expect(bar('/golf/dashboard/messages', 'coach')).toBe('More | Messages');
-    expect(bar('/golf/dashboard/settings', 'coach')).toBe('More | Settings (quiet)');
-    expect(bar('/golf/dashboard/calendar', 'player')).toBe('More | Calendar');
-    expect(bar('/golf/dashboard/roster', 'player')).toBe('More | Roster');
-    expect(bar('/golf/dashboard/stats', 'player')).toBe('More | My stats');
-    expect(bar('/golf/dashboard/qualifiers', 'player')).toBe('More | Qualifiers');
-    expect(bar('/golf/dashboard/my-qualifiers', 'player')).toBe('More | My qualifiers');
-    expect(bar('/golf/dashboard/classes', 'player')).toBe('More | Classes');
-    expect(bar('/golf/dashboard/settings/', 'player')).toBe('More | Settings (quiet)');
+    // Every section is a root on the strip (section-strip.md): the pages the More sheet once held draw no back link.
+    for (const [path, role] of [
+      ['/golf/dashboard/roster', 'coach'],
+      ['/golf/dashboard/recruiting', 'coach'],
+      ['/golf/dashboard/qualifiers', 'coach'],
+      ['/golf/dashboard/team-hub', 'coach'],
+      ['/golf/dashboard/messages', 'coach'],
+      ['/golf/dashboard/settings', 'coach'],
+      ['/golf/dashboard/calendar', 'player'],
+      ['/golf/dashboard/roster', 'player'],
+      ['/golf/dashboard/stats', 'player'],
+      ['/golf/dashboard/qualifiers', 'player'],
+      ['/golf/dashboard/my-qualifiers', 'player'],
+      ['/golf/dashboard/classes', 'player'],
+      ['/golf/dashboard/settings/', 'player'],
+    ] as const)
+      expect(bar(path, role)).toBeNull();
     // Pages below another go up to it.
     expect(bar(`/golf/dashboard/qualifiers/${uuid}`, 'coach')).toBe('Qualifiers | Qualifier -> /golf/dashboard/qualifiers');
     expect(bar(`/golf/dashboard/qualifiers/${uuid}/selection`, 'coach')).toBe(`Qualifier | Selections -> /golf/dashboard/qualifiers/${uuid}`);
@@ -921,13 +1003,13 @@ describe('Shell · phone chrome', () => {
     // as an old Settings address does; an unknown section is the list. A coach's player on Stats goes back to the team.
     expect(bar('/golf/dashboard/settings', 'coach', 'section=team')).toBe('Settings | Team (quiet) -> /golf/dashboard/settings');
     expect(bar('/golf/dashboard/settings', 'player', 'section=golf')).toBe('Settings | Golf profile (quiet) -> /golf/dashboard/settings');
-    expect(bar('/golf/dashboard/settings', 'coach', 'section=golf')).toBe('More | Settings (quiet)');
+    expect(bar('/golf/dashboard/settings', 'coach', 'section=golf')).toBeNull();
     expect(bar('/golf/dashboard/settings/notifications', 'coach')).toBe('Settings | Notifications (quiet) -> /golf/dashboard/settings');
     expect(bar('/golf/dashboard/settings/coaching-intelligence', 'coach')).toBe('Settings | CoachHelm (quiet) -> /golf/dashboard/settings');
     expect(bar('/golf/dashboard/settings/coaching-intelligence', 'player')).toBe('Settings | Account (quiet) -> /golf/dashboard/settings');
     expect(bar('/golf/dashboard/settings/notifications', 'player', 'section=account')).toBe('Settings | Account (quiet) -> /golf/dashboard/settings');
     expect(bar('/golf/dashboard/stats', 'coach', 'player=0b6f2c1e&window=season')).toBe('Team | Player stats -> /golf/dashboard/stats');
-    expect(bar('/golf/dashboard/stats', 'player', 'player=0b6f2c1e')).toBe('More | My stats');
+    expect(bar('/golf/dashboard/stats', 'player', 'player=0b6f2c1e')).toBeNull();
     // Tab roots, the player's Messages (a tab root's title under More), a new round, the round itself, and the coach's
     // pages a player only meets as the coach-only notice draw their own.
     for (const [path, role, query] of [
@@ -1060,7 +1142,7 @@ describe('Shell · behaviour contracts (P001)', () => {
   const shell: ChShellData = { nextEvent: null, pendingJoinRequests: 2 };
   const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;
 
-  it('10102 the frame is the sidebar, the top bar, the page and the phone tab bar; 10802 a route not rebuilt for the role shows the notice, never the page', () => {
+  it('10102 the frame is the sidebar, the top bar, the page and the phone section strip; 10802 a route not rebuilt for the role shows the notice, never the page', () => {
     const { unmount } = render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster">
         <p>Roster body</p>

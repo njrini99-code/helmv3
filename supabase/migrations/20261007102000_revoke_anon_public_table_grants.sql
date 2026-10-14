@@ -78,13 +78,13 @@
 -- NOT TOUCHED: authenticated and service_role grants, grants on sequences that
 -- already exist (anon holds none, checked live), function EXECUTE.
 --
--- ROLLBACK (restores the previous, over-broad state):
---   GRANT ALL ON ALL TABLES IN SCHEMA public TO anon;
---   ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
---     GRANT ALL ON TABLES TO anon;
---   ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
---     GRANT ALL ON SEQUENCES TO anon;
--- The three views and demo_requests keep working either way.
+-- ROLLBACK: supabase/rollbacks/
+--   20261007102000_revoke_anon_public_table_grants.rollback.sql re-grants
+--   exactly the anon privileges production held (aclexplode snapshot
+--   of 119 public relations plus the postgres default ACLs, read-only capture
+--   2026-10-12). Not `GRANT ALL ON ALL TABLES ... TO anon`, which would also
+--   grant privileges anon never had. Re-capture right before applying this
+--   file. The three views and demo_requests keep working either way.
 --
 -- VERIFY: select 1 where not exists (select 1 from pg_class c cross join
 -- VERIFY: lateral aclexplode(c.relacl) a where c.relnamespace =

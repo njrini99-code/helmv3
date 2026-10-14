@@ -23,6 +23,7 @@ import {
   type CoachTaskOverdueRow,
   type PlayerAssignmentOverdueRow,
 } from '@/lib/golf/overdue-task-count';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 // Code-split the Fairway calendar surface — it's the ONLY tree the route
 // renders, so this next/dynamic keeps its chunk loaded only when actually
@@ -60,7 +61,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
 
   // Clubhouse Calendar (golf_clubhouse_ui): coaches and players, each with the
   // permissions they already have.
-  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) {
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) {
     return <ClubhouseCalendarRoute view={view} date={date} event={initialEventId} isNew={isNew === '1'} withPlayer={withPlayer} newType={newType} />;
   }
 

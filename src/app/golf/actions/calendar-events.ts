@@ -478,7 +478,9 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
     const fanOutLocation = validatedData.location || '';
     // Q-108 (owner, 2026-10-01): only the invited players are told, as the editor promises ("Attendees will be notified");
     // an event with no invitees notifies nobody. It used to email and push every active player on the team.
-    const fanOutInvitees = new Set(validatedData.attendeeIds ?? []);
+    // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+    // that doesn't ask for replies.
+    const fanOutInvitees = new Set(validatedData.requiresRsvp ? (validatedData.attendeeIds ?? []) : []);
     after(async () => {
       if (fanOutInvitees.size === 0) return;
       try {
@@ -989,7 +991,7 @@ async function deleteGolfEventImpl(
     // Verify event belongs to coach's team
     const { data: existingEvent, error: existingEventError } = await supabase
       .from('golf_events')
-      .select('team_id, title, status, start_time, location')
+      .select('team_id, title, status, start_time, location, requires_rsvp')
       .eq('id', eventId)
       .single();
 
@@ -1091,7 +1093,11 @@ async function deleteGolfEventImpl(
       const cancelStart = existingEvent.start_time;
       const cancelLocation = existingEvent.location;
       const cancelReason = options?.reason ?? '';
+      const cancelNotifies = existingEvent.requires_rsvp === true;
       after(async () => {
+        // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+        // that doesn't ask for replies, including its cancellation.
+        if (!cancelNotifies) return;
         try {
           const adminClient = createAdminClient();
           const { data: attendances } = await adminClient

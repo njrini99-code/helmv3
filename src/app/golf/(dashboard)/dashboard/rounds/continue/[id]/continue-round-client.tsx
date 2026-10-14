@@ -8,6 +8,7 @@ import { useOfflineSyncStore } from '@/stores/offline-sync-store';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
+import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
@@ -217,6 +218,7 @@ export default function ContinueRoundClient({
           }
           holes={holes}
           currentHoleIndex={currentHoleIndex}
+          startHole={normalizeStartHole(setupData.startHole, holes.length)}
           onHoleComplete={handleHoleComplete}
           onHoleStatsUpdate={handleHoleStatsUpdate}
           onSaveShot={handleSaveShot}

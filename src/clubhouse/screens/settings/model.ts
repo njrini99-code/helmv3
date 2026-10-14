@@ -93,6 +93,11 @@ export interface ChSettingsData {
   playerRouting: Section<{ prefs: PrefsByCategory; quiet: boolean }> | null;
   /** Coaches only: the weekly team email. */
   digest: Section<boolean> | null;
+  /**
+   * Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED`, src/lib/email/outbound-gate.ts):
+   * the email switches still show what was chosen but can't be changed, and say why (CH-8901).
+   */
+  emailPaused: boolean;
   scoring: Section<ChScoring> | null;
   reminders: Section<ChReminders> | null;
   team: Section<ChTeamInfo> | null;
@@ -383,5 +388,7 @@ export interface ChDevice {
     pending: boolean;
     subscribe: () => Promise<{ ok: boolean; error?: string }>;
     unsubscribe: () => Promise<{ ok: boolean; error?: string }>;
+    /** P008-C3: one test push to the viewer's own devices (D1-6); absent where it can't be sent. */
+    test?: () => Promise<{ ok: boolean; sent?: number; error?: string }>;
   };
 }

@@ -4,6 +4,7 @@ import { Users } from 'lucide-react';
 import { Metadata } from 'next';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseRecruitingRoute } from '@/clubhouse/routes/recruiting';
 import { getRecruits } from '@/app/golf/actions/recruiting';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -31,7 +32,9 @@ export default async function RecruitingPage() {
 
   // Clubhouse Recruiting (golf_clubhouse_ui): coaches only, with its own route, loader and screen. A player never gets here:
   // the redirect above sends them Home, and RLS on golf_recruits and golf_recruit_documents is the lock behind it.
-  if ((await isClubhouseFor('coach'))) return <ClubhouseRecruitingRoute />;
+  // The Clubhouse decision follows the dashboard layout's role (getGolfDashboardRole), so a coach row beside an
+  // onboarded player profile (the player shell) never draws coach Recruiting; the coach check above is unchanged.
+  if ((await isClubhouseFor('coach')) && (await getGolfDashboardRole()) === 'coach') return <ClubhouseRecruitingRoute />;
 
   const result = await getRecruits();
 

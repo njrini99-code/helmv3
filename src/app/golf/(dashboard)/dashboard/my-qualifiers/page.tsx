@@ -6,6 +6,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { PlayerQualifierInfo } from '@/app/golf/actions/qualifier-actions';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayMyQualifiers } from '@/components/fairway/pages/my-qualifiers';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 /**
  * Derive a qualifier's holes-per-round from the player's actual posted rounds
@@ -38,7 +39,7 @@ export default async function MyQualifiersPage() {
   if (!session) return redirect('/golf/login');
 
   // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
-  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) return <ClubhouseQualifiersRoute view="mine" />;
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) return <ClubhouseQualifiersRoute view="mine" />;
 
   const { player } = session;
   if (!player) {

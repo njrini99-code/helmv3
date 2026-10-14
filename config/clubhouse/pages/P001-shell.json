@@ -164,9 +164,9 @@
     },
     {
       "id": "ACT-P001-OPEN-MORE",
-      "label": "Open More on the phone",
-      "component": "src/clubhouse/shell/TabBar.tsx",
-      "handler": "setMoreOpen",
+      "label": "Open the account sheet on the phone (the strip's Account pill; once More)",
+      "component": "src/clubhouse/shell/SectionStrip.tsx",
+      "handler": "setAccountOpen",
       "service": null,
       "data": [],
       "bridge": {

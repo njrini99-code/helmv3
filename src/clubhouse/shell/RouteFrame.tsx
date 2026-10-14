@@ -8,6 +8,8 @@ import { markAppRunning, RouteScope } from '../lib/session-state';
 import { canvasScrollNow } from '../lib/smooth-scroll';
 // Registers the Back that iOS animated itself, which turns off the crossfade for that one Back (CH-1908, shell.css).
 import '../lib/ua-pop';
+// Sets which way a phone navigation moves (push, pop or the crossfade) as the tap or the Back happens.
+import { chNavKind, chNavShown } from '../lib/nav-motion';
 
 /**
  * The page frame. Each page mounts fresh on navigation (keyed by route) and is shown as soon as it is ready: the
@@ -20,6 +22,8 @@ import '../lib/ua-pop';
  * so this runs on every in-app route change and on nothing else. Reduced motion and Settings › Animations off render without it: the page swaps at once. CH-1601.
  * A Back that iOS already played with its own edge swipe swaps at once too, rather than fade a second time (CH-1908).
  * A page that arrives after its route skeleton fades in over it (useSkeletonReveal, CH-1619).
+ * On a phone a drill-in pushes and Back pops instead of crossfading (lib/nav-motion.ts, shell.css); the top bar and tab
+ * bar are their own view-transition groups and never fade or move.
  */
 /** Where each page was scrolled, by route and team, for Back and Forward (this tab only). */
 const scrolled = new Map<string, { canvas: number; win: number }>();
@@ -33,20 +37,43 @@ const ROUTE_SKELETON = "main[aria-busy='true'][aria-label^='Loading']";
 /** Set once the first frame of this document has hydrated: a frame mounted after it came by navigation. */
 let frameHydrated = false;
 
+/** How long a navigation onto a route skeleton keeps the old page up (--ch-dur-vt-hold, tokens.css). */
+export const CH_VT_HOLD_MS = 300;
+/** When a held navigation's crossfade is over: the hold, then the old page's fade (--ch-dur-vt-out). It also outlasts a push (462ms). */
+const VT_DONE_MS = CH_VT_HOLD_MS + 180;
+const HOLD = 'data-ch-vt-hold';
+
 /**
- * The page that takes its route skeleton's place fades in over the press beat (CH-1619, owner-approved 2026-10-08):
- * opacity only, nothing moves, so the swap settles instead of cutting. It is armed when a navigation mounts the frame
- * on a skeleton and spent on the first page that replaces it. It never runs on the first paint of a server-rendered
- * page, on a refresh or an update inside the page, or with reduced motion or Animations off.
+ * A navigation onto a route skeleton (native-feel audit 2026-10-08, P0-2 and P0-3). While the page crossfade runs,
+ * `data-ch-vt-hold` on <html> keeps the old page up and the skeleton hidden for CH_VT_HOLD_MS (shell.css, base.css), so
+ * a load that finishes sooner goes straight from the old page to the new one, with no skeleton and no blank frame. The
+ * page arriving takes the attribute off, which ends the old page's fade where it stands. A push or a pop shows its
+ * skeleton at once, as it slides.
+ *
+ * The page that takes a skeleton's place fades in over the press beat (CH-1619, owner-approved 2026-10-08) only once the
+ * skeleton has been on screen and the crossfade is over: never two fades at once. Opacity only. It never runs on the
+ * first paint of a server-rendered page, on a refresh or an update inside the page, or with reduced motion or
+ * Animations off.
  */
 function useSkeletonReveal(frame: RefObject<HTMLDivElement | null>, routeKey: string, armed: boolean): void {
   useLayoutEffect(() => {
     const el = frame.current;
     if (!armed || !el?.querySelector(ROUTE_SKELETON)) return;
+    const root = document.documentElement;
+    const since = performance.now();
+    // Set in the commit the view transition is capturing, so its keyframes see it.
+    // Not on a Back: React commits a Back synchronously, without a view transition to hold the old page in.
+    const hold = chNavKind() === 'fade' && typeof document.startViewTransition === 'function' && Date.now() - poppedAt >= RETURN_WINDOW_MS;
+    if (hold) root.setAttribute(HOLD, '');
+    const release = () => root.removeAttribute(HOLD);
+    const lapse = hold ? window.setTimeout(release, VT_DONE_MS + 500) : 0;
     const watch = new MutationObserver((records) => {
       // Still loading, or a deeper route's skeleton took the first one's place.
       if (el.querySelector(ROUTE_SKELETON)) return;
       watch.disconnect();
+      release();
+      // Arrived before the skeleton showed, or while the crossfade still runs: the page is simply there.
+      if (performance.now() - since < VT_DONE_MS) return;
       const arrived = records
         .flatMap((r) => Array.from(r.addedNodes))
         .filter((n): n is HTMLElement => n instanceof HTMLElement && n.isConnected);
@@ -60,7 +87,11 @@ function useSkeletonReveal(frame: RefObject<HTMLDivElement | null>, routeKey: st
       }
     });
     watch.observe(el, { childList: true, subtree: true });
-    return () => watch.disconnect();
+    return () => {
+      watch.disconnect();
+      window.clearTimeout(lapse);
+      release();
+    };
   }, [frame, routeKey, armed]);
 }
 
@@ -90,6 +121,7 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
   const [cameByNavigation] = useState(() => frameHydrated);
   const [navigated, setNavigated] = useState(false);
   if (!navigated && routeKey !== loadedKey) setNavigated(true);
+  useLayoutEffect(() => chNavShown(routeKey.split('\u0000')[0] ?? routeKey), [routeKey]);
   useSkeletonReveal(frame, routeKey, (cameByNavigation || navigated) && !reduced);
   useEffect(() => {
     markAppRunning();

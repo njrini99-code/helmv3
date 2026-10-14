@@ -100,3 +100,19 @@ describe('CH-1617 choices and the feature card answer a press without scaling', 
     expect(withProp(ui, '.ch-feat.is-link::after', 'pointer-events')).toMatch(/pointer-events:\s*none/);
   });
 });
+
+describe('P011-D9 the shared button reaches 44 under a finger', () => {
+  it('grows an invisible hit box to 44 on coarse pointers', () => {
+    const css = readFileSync(join(__dirname, '../styles/ui.css'), 'utf8');
+    expect(css).toMatch(/@media \(pointer: coarse\) \{\s*\.ch-btn::after \{\s*position: absolute;\s*inset: min\(0px, calc\(50% - 22px\)\);/);
+  });
+});
+
+describe('the phone canvas runs to the bottom edge (section-strip.md: no tab bar)', () => {
+  it('pads only for the home indicator, in the app and in Safari alike', () => {
+    const css = readFileSync(join(__dirname, '../styles/shell.css'), 'utf8');
+    expect(css).toMatch(/padding-bottom: calc\(env\(safe-area-inset-bottom\) \+ 20px\);/);
+    expect(css).not.toMatch(/\.ch-tabbar\b/);
+    expect(css).not.toMatch(/body:not\(\.capacitor\) \[data-ui='clubhouse'\]:not\(\[data-phone-notabs\]\)/);
+  });
+});

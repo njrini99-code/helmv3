@@ -41,15 +41,6 @@
   align-items: center;
   gap: 12px;
 }
-.ch-rs-team__stack {
-  display: flex;
-}
-.ch-rs-team__stack > * + * {
-  margin-left: -8px;
-}
-.ch-rs-team__stack .ch-avatar {
-  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 3px rgb(176 149 96 / 0.3);
-}
 .ch-rs-team__name {
   font: 500 13.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
@@ -196,7 +187,7 @@
   display: flex;
   gap: 2px;
   padding: 2px;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
 }
 .ch-rs-vt__b {
@@ -220,6 +211,28 @@
 .ch-rs-vt__b[aria-pressed='true'] {
   background: var(--ch-bg-selected);
   color: var(--ch-green-700);
+}
+
+/* Roster controls (owner, 2026-10-08: "ivory buttons ... need to be green"): the chosen sort, filter and layout is a green
+   chip with ivory ink, on every width. Avg score, Handicap, Rounds, Name; Active, Inactive, All; the grid and list toggle. */
+.ch-rs .ch-seg__pill {
+  background: var(--ch-green-fill-700);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
+}
+.ch-rs .ch-seg__b.is-on {
+  color: var(--ch-ivory-50);
+}
+.ch-rs .ch-pill[aria-pressed='true'],
+.ch-rs .ch-rs-vt__b[aria-pressed='true'] {
+  background: var(--ch-green-fill-700);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
+  color: var(--ch-ivory-50);
+}
+@media (hover: hover) {
+  .ch-rs .ch-pill[aria-pressed='true']:hover,
+  .ch-rs .ch-rs-vt__b[aria-pressed='true']:hover {
+    background: var(--ch-green-800);
+  }
 }
 
 /* Face cards */
@@ -866,17 +879,17 @@
     flex-direction: column;
     gap: 22px;
   }
+  /* P003-A3: no rule above the kicker; the top bar already closes the page's top. */
   .ch-rsm-head {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding-top: 14px;
-    border-top: var(--ch-ledger-rule-double);
+    padding-top: 4px;
   }
   /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-rsm-kicker {
     font: 500 12px/1.2 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rsm-title {
@@ -1010,6 +1023,13 @@
     color: var(--ch-text-tertiary);
     white-space: nowrap;
   }
+  /* Sorted by SG, the row leads with strokes gained a round (P1-3): gains green, losses amber (D-42). */
+  .ch-rsm-row__v b.is-gain {
+    color: var(--ch-chart-gain);
+  }
+  .ch-rsm-row__v b.is-loss {
+    color: var(--ch-chart-loss);
+  }
 
   /* Profile: a pushed screen (PhoneScreen) with its own scroll, on the same ledger: the player at the top, the figures
      between two hairlines, then each part flush under the double rule. */
@@ -1063,11 +1083,6 @@
     flex: 1;
     justify-content: center;
     min-height: 44px;
-  }
-  .ch-rsm-hero__act .ch-btn:first-child {
-    background: var(--ch-green-50);
-    color: var(--ch-green-800);
-    box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.24);
   }
   .ch-rsm-hero__act .ch-btn svg {
     color: var(--ch-green-700);
@@ -1269,72 +1284,95 @@
     color: var(--ch-ledger-ink);
   }
 
-  /* Join requests: the screen's one feature card (the kit's FeatureCard), the frame's green lit from its top right, a
-     gilt coin, the count and the names in ivory. A press deepens a shade over it for the press beat; it never scales
-     (CH-3602). */
+  /* Join requests: one flat row at the top of the list (owner, 2026-10-08: the card is no longer the default unit of
+     layout), between hairlines held on the gutter. The count is a green badge in the avatars' column, so the title
+     lines up with the players' names; the names sit under it, a chevron at the end. It tints under the finger like a
+     player row (CH-3602), never scales. */
   .ch-rsm-banner {
     position: relative;
     display: flex;
     align-items: center;
     gap: 14px;
     box-sizing: border-box;
-    width: 100%;
-    min-height: 76px;
-    padding: 16px 16px 16px 18px;
+    width: calc(100% + 24px);
+    min-height: 68px;
+    margin: -6px -12px;
+    padding: 12px;
     border: 0;
-    border-radius: 14px;
-    background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
-    color: var(--ch-on-green-ink-muted);
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    color: var(--ch-text-tertiary);
     font: inherit;
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
+  .ch-rsm-banner::before,
   .ch-rsm-banner::after {
     position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: rgb(2 18 10 / 0.2);
-    opacity: 0;
-    transition: opacity var(--ch-dur-press) var(--ch-ease);
+    top: auto;
+    right: 12px;
+    bottom: auto;
+    left: 12px;
+    height: 1px;
+    border-radius: 0;
+    background: var(--ch-ledger-rule);
+    opacity: 1;
+    transition: none;
     content: '';
     pointer-events: none;
+  }
+  .ch-rsm-banner::before {
+    top: 0;
+  }
+  .ch-rsm-banner::after {
+    bottom: 0;
+    background: var(--ch-ledger-rule-soft);
+  }
+  .ch-rsm-banner:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-rsm-banner:active::after {
     opacity: 1;
   }
   .ch-rsm-banner:focus-visible {
     outline: 2px solid var(--ch-border-focus);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
-  .ch-rsm-banner__ic {
+  .ch-rsm-banner__n {
     display: grid;
     flex: none;
     place-items: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: rgb(255 255 255 / 0.06);
-    box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.35);
-    color: var(--ch-champagne-300);
+    box-sizing: border-box;
+    min-width: 28px;
+    height: 28px;
+    margin-inline: 6px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--ch-green-fill-700);
+    color: var(--ch-on-green-ink);
+    font: 600 14px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-rsm-banner__b {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
   }
   .ch-rsm-banner__b b {
-    font: 600 17px/1.2 var(--ch-font-sans);
-    letter-spacing: -0.02em;
-    color: var(--ch-on-green-ink);
+    font: 600 16px/1.25 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+    color: var(--ch-text-primary);
   }
   .ch-rsm-banner__b span {
     overflow: hidden;
-    font: 400 13.5px/1.3 var(--ch-font-sans);
-    color: var(--ch-on-green-ink-soft);
+    font: var(--ch-type-caption);
+    color: var(--ch-text-secondary);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
@@ -1378,15 +1416,14 @@
     font: 400 13px/1.2 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
+  /* The handicap is a figure at the row's end, not a well. */
   .ch-rsm-rq__h {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    gap: 3px;
-    min-width: 52px;
-    height: 48px;
-    border-radius: 12px;
+    gap: 4px;
+    min-width: 44px;
   }
   .ch-rsm-rq__h b {
     font: 500 18px/1 var(--ch-font-sans);
@@ -1414,14 +1451,17 @@
     justify-content: center;
     min-height: 44px;
   }
+  /* The team code: a plain row under the requests, between hairlines, Copy at its end. */
   .ch-rsm-code {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     margin-top: 8px;
-    padding: 12px 14px;
-    border-radius: 12px;
+    padding: 14px 0;
+    box-shadow:
+      inset 0 1px 0 var(--ch-ledger-rule),
+      inset 0 -1px 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-code > span {
     display: flex;
@@ -1492,7 +1532,7 @@
     place-items: center;
     width: 32px;
     height: 32px;
-    border-radius: 9px;
+    border-radius: var(--ch-radius-md);
     background: var(--ch-bg-subtle);
     color: var(--ch-text-secondary);
   }
@@ -1553,11 +1593,11 @@
 }
 
 /* Loading in the framed page head (desktop): the roster head holds the loaded head's measured height (WebKit 1440 and 1100,
-   2026-10-07: 186px once the Ledger dropped the head's second rule), so nothing under it moves on load. */
+   2026-10-08: 148px in the tight head, P003-A3), so nothing under it moves on load. */
 @media (min-width: 821px) {
   .ch-rs[aria-busy='true'][data-canopy] .ch-rs-head {
     box-sizing: border-box;
-    min-height: 186px;
+    min-height: 148px;
   }
 }
 
@@ -1570,9 +1610,6 @@
      avatar row is empty and gives up its gap, so the team line starts at the title's edge. */
   .ch-rs[data-canopy] .ch-rs-head {
     border-bottom: 0;
-  }
-  .ch-rs[data-canopy] .ch-rs-team__stack:empty {
-    display: none;
   }
 
   .ch-rs[data-canopy] .ch-rs-req {
@@ -1637,11 +1674,19 @@
     gap: 0;
     overflow: hidden;
   }
+  /* P003-A1: one ruled ledger lit by the hour. Each hairline carries a 1px rim of the shell's light on its sun-facing
+     side (the top, and the side the sun is on: --ch-light-rim-x is 0 at noon), so the grid reads as one sheet under
+     one sun. The rims are on the rules, never on a figure, and they are gone in dark, Increase Contrast and noon's
+     side light. */
   .ch-rs[data-canopy] .ch-rs-face {
     padding: 22px 20px 26px;
     border-radius: 0;
     background: none;
-    box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow:
+      -1px 0 0 var(--ch-ledger-rule-soft),
+      0 -1px 0 var(--ch-ledger-rule-soft),
+      inset 0 1px 0 var(--ch-light-rim-soft),
+      inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft);
     transform: none;
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
@@ -1650,7 +1695,11 @@
       padding: 22px 20px 26px;
       border-radius: 0;
       background: none;
-      box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+      box-shadow:
+        -1px 0 0 var(--ch-ledger-rule-soft),
+        0 -1px 0 var(--ch-ledger-rule-soft),
+        inset 0 1px 0 var(--ch-light-rim-soft),
+        inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft);
       transform: none;
       transition: background var(--ch-dur-quick) var(--ch-ease);
     }
@@ -1676,6 +1725,59 @@
   .ch-rs[data-canopy] .ch-rs-face:focus-visible {
     outline-offset: -3px;
   }
+  /* Owner, 2026-10-08: "more contrast and depth separating players". Each player is a raised white tile with room
+     around it, so the roster reads as people, not a ruled sheet: a hairline ring, a close and a far shadow that lean
+     away from the light, a lift on hover, and the open player a green-ringed tile. */
+  .ch-rs[data-canopy] .ch-rs-faces {
+    gap: 16px;
+    overflow: visible;
+    padding: 4px 2px 12px;
+  }
+  .ch-rs[data-canopy] .ch-rs-face,
+  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
+    padding: 24px 20px 24px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, #fff 0%, var(--ch-bg-surface) 42%, var(--ch-ivory-50) 100%);
+    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.55), inset 0 1px 0 #fff, inset 0 -3px 0 rgb(28 25 18 / 0.05), var(--ch-elevation-face);
+    transition:
+      box-shadow var(--ch-dur-base) var(--ch-ease),
+      transform var(--ch-dur-base) var(--ch-ease),
+      background var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
+      transform: translateY(-8px);
+      box-shadow: 0 0 0 1px var(--ch-champagne-500), inset 0 1px 0 var(--ch-light-rim), var(--ch-elevation-face-hover);
+    }
+  }
+  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
+    background: var(--ch-green-50);
+    transform: translateY(-2px);
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel,
+  .ch-rs[data-canopy] .ch-rs-face.is-sel:hover {
+    background: var(--ch-green-50);
+    box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-choice-hover);
+  }
+  /* The indented border: a second hairline frame set 7px inside the tile's edge, so the portrait sits in a recess. */
+  .ch-rs[data-canopy] .ch-rs-face::before {
+    position: absolute;
+    inset: 7px;
+    border: 1px solid rgb(176 149 96 / 0.6);
+    border-radius: 16px;
+    box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.06);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel::before {
+    border-color: var(--ch-champagne-500);
+  }
+  .ch-rs[data-canopy] .ch-rs-face__name {
+    color: var(--ch-ink-950);
+  }
+  .ch-rs[data-canopy] .ch-rs-face__meta {
+    color: var(--ch-text-secondary);
+  }
   /* An inactive player dims its contents, not its cell, so its hairlines match every other. */
   .ch-rs[data-canopy] .ch-rs-face.is-off {
     opacity: 1;
@@ -1691,6 +1793,18 @@
   .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__av {
     box-shadow: var(--ch-elevation-floating);
     outline: 2px solid var(--ch-green-600);
+  }
+  /* P003-A1: the open player's ring catches a gilt crescent on the side the light comes from. */
+  .ch-rs[data-canopy] .ch-rs-face__av {
+    position: relative;
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__av::after {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    box-shadow: inset var(--ch-light-rim-x) 1.5px 0 0 color-mix(in oklab, var(--ch-champagne-300) 85%, var(--ch-light-key));
+    content: '';
+    pointer-events: none;
   }
   .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__name {
     color: var(--ch-green-800);
@@ -1757,13 +1871,17 @@
       display: none;
     }
   }
+  /* P003 #4: the panel stays with the coach. It sticks under the top bar and scrolls inside itself, so the name,
+     Close and the actions never leave the screen. P003-A1: its leading hairline takes the sun's rim beside it. */
   .ch-rs[data-canopy] .ch-rs-peek {
     gap: 20px;
+    max-height: calc(100dvh - 96px);
     padding: 22px 0 24px 32px;
-    overflow: visible;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
     border-radius: 0;
     background: none;
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft), inset 2px 0 0 var(--ch-light-rim-soft);
   }
   .ch-rs[data-canopy] .ch-rs-peek > * {
     margin-inline: 0;
@@ -1824,9 +1942,6 @@
   border-top-color: var(--ch-champagne-rule);
   border-bottom-color: var(--ch-champagne-rule);
 }
-:where(html[data-fw-theme='dark']) .ch-rs-team__stack .ch-avatar {
-  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 3px rgb(205 187 142 / 0.3);
-}
 :where(html[data-fw-theme='dark']) .ch-rs-req__ic {
   color: var(--ch-text-on-accent);
 }
@@ -1863,10 +1978,6 @@
   color: var(--ch-green-700);
 }
 @media (max-width: 820px) {
-  :where(html[data-fw-theme='dark']) .ch-rsm-hero__act .ch-btn:first-child {
-    color: var(--ch-green-700);
-    box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.28);
-  }
   :where(html[data-fw-theme='dark']) .ch-rsm-code b {
     color: var(--ch-green-700);
   }
@@ -1874,5 +1985,152 @@
 @media (min-width: 821px) {
   :where(html[data-fw-theme='dark']) .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__name {
     color: var(--ch-green-700);
+  }
+}
+:where(html[data-fw-theme='dark']) .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__av::after {
+  opacity: 0.45;
+}
+
+/* CH-3701: a chosen sort slides each moved phone row to its new place on the smooth spring (D-64), its figure rolling
+   inside it. No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>, so they
+   take the spring from its tokens there (tokens.css, --ch-*-vt-push). The shell's reduced-motion rule stops it, and the
+   list never asks for it then, nor with Animations off (RosterPhoneList). */
+html:has([data-ui='clubhouse'])::view-transition-group(.ch-rsm-reorder) {
+  animation-duration: var(--ch-dur-vt-push);
+  animation-timing-function: var(--ch-ease-vt-push);
+}
+html:has([data-ui='clubhouse'])::view-transition-old(.ch-rsm-reorder) {
+  display: none;
+}
+html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
+  animation: none;
+}
+
+/* P003: where the team sits (RosterSpread). Coins on one scoring axis under a gold team line; flat ground, the picture is the point. */
+.ch-rs-sp {
+  display: grid;
+  gap: 14px;
+  margin: 8px 0 22px;
+  padding: 22px 24px 8px;
+  border-radius: 18px;
+  background: var(--ch-bg-surface);
+  box-shadow: inset 0 3px 0 var(--ch-champagne-500), 0 0 0 1px rgb(176 149 96 / 0.3), var(--ch-elevation-plate);
+}
+.ch-rs-sp__h h2 {
+  margin: 0 0 4px;
+  font: 600 19px/1.2 var(--ch-font-sans);
+  color: var(--ch-green-800);
+}
+.ch-rs-sp__h p {
+  margin: 0;
+  font: 400 13.5px/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rs-sp__plot {
+  position: relative;
+  margin: 0 22px;
+}
+/* The team line and the coins sit on still, full-width rows that are their size containers; each moves along its row by
+   `translate` in container units (--ch-sp-x, 0 to 100), so a change glides on the compositor and nothing overflows the plot. */
+.ch-rs-sp__team {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 0;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-rs-sp__team i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-left: 2px solid var(--ch-champagne-500);
+  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
+  transition: translate var(--ch-dur-base) var(--ch-ease);
+}
+.ch-rs-sp__team span {
+  position: absolute;
+  bottom: -26px;
+  left: 0;
+  transform: translateX(-50%);
+  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
+  transition: translate var(--ch-dur-base) var(--ch-ease);
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--ch-champagne-500);
+  color: var(--ch-ink-950);
+  font: 700 12px/1.2 var(--ch-font-sans);
+  white-space: nowrap;
+}
+.ch-rs-sp__coins {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-rs-sp__coins li {
+  position: absolute;
+  right: 0;
+  left: 0;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-rs-sp__coins button {
+  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
+  transition: translate var(--ch-dur-reveal) var(--ch-ease);
+  pointer-events: auto;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 76px;
+  margin-left: -38px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-rs-sp__coins .ch-avatar {
+  box-shadow: 0 0 0 3px var(--ch-ivory-25), var(--ch-elevation-mark-ink);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-spring);
+}
+@media (hover: hover) {
+  .ch-rs-sp__coins button:hover .ch-avatar {
+    transform: translateY(-3px) scale(1.08);
+  }
+}
+.ch-rs-sp__coins button:active .ch-avatar {
+  transform: scale(0.96);
+  transition-duration: var(--ch-dur-press);
+}
+.ch-rs-sp__coins b {
+  font: 700 14px/1.1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+}
+.ch-rs-sp__coins em {
+  font: 500 12px/1.1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rs-sp__axis {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 22px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-rs-sp__axis span {
+  position: absolute;
+  top: 5px;
+  transform: translateX(-50%);
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-rs-sp__coins button {
+    transition-delay: 0s;
   }
 }

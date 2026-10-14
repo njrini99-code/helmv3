@@ -424,7 +424,9 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   it('a coach: Player stats, back to Team, Message; the window switch changes the window', async () => {
     const user = userEvent.setup();
     phone(player());
-    expect(within(top()).getByRole('heading', { name: 'Player stats' })).toBeTruthy();
+    // One h1 per screen (P005-D7): the bar names the screen, the page's h1 is the player.
+    expect(top().textContent).toContain('Player stats');
+    expect(within(top()).queryByRole('heading')).toBeNull();
     await user.click(within(top()).getByRole('button', { name: 'Back to Team' }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats', { scroll: false });
     expect(screen.getByRole('link', { name: 'Message Jonah' })).toBeTruthy();
@@ -445,10 +447,11 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
   });
 
-  it('a player: My stats, back to More, no Share, no Message, no Add', () => {
+  it('a player: My stats as a section root (no back link), no Share, no Message, no Add', () => {
     phone(player({ viewer: 'player' }), undefined, null);
-    expect(within(top()).getByRole('heading', { name: 'My stats' })).toBeTruthy();
-    expect(within(top()).getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(top().textContent).toContain('My stats');
+    expect(within(top()).queryByRole('heading')).toBeNull();
+    expect(within(top()).queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(within(top()).queryByRole('button', { name: /Share/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Message/ })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add focus area' })).toBeNull();
@@ -642,8 +645,8 @@ describe('Stats player · who may open what', () => {
     expect(screen.queryByRole('link', { name: /player$/ })).toBeNull();
     // The crumb trail is the navigation's, not "Stats › name".
     expect(screen.getByTestId('trail').textContent).toBe('nav');
-    expect(screen.getByRole('heading', { level: 3, name: 'You vs. the Tour' })).toBeTruthy();
-    expect(screen.queryByRole('columnheader', { name: 'Team' })).toBeNull();
+    expect(document.querySelector('.ch-zns')!.textContent).toContain('Tour');
+    expect(document.querySelector('.ch-lb__team')).toBeNull();
   });
 });
 
@@ -912,13 +915,24 @@ describe('Stats player · the page', () => {
     expect([...document.querySelectorAll('.ch-pf-hero__figs dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'Handicap', 'SG / round', 'Rounds']);
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Game detail', 'Rounds10', 'Development']);
     expect(screen.getByRole('tab', { selected: true }).textContent).toBe('Overview');
-    expect(screen.getByRole('heading', { level: 3, name: 'Jonah vs. team' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Strokes gained' })).toBeTruthy();
+    expect(document.querySelectorAll('.ch-zns .ch-zn')).toHaveLength(7);
+    // The overview opens on the scoring ribbon: one column a round, each a bar from the player's own average.
+    expect(document.querySelector('.ch-fm__head h2')!.textContent).toBe('Scoring form');
+    expect(document.querySelectorAll('.ch-fm__c')).toHaveLength(10);
+    const ups = document.querySelectorAll('.ch-fm__c.is-up').length;
+    const downs = document.querySelectorAll('.ch-fm__c.is-down').length;
+    expect(ups + downs).toBeGreaterThan(0);
+    expect(document.querySelector('.ch-fm__c.is-last')).not.toBeNull();
     expect(screen.getByRole('link', { name: 'Team stats' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add focus area' })).toBeTruthy();
     expect(screen.getByTestId('trail').textContent).toBe('Stats › Jonah Okafor');
-    // Each overview figure drawn against the reference its words name: the team's mark for a coach, 36 putts, par for the best round.
-    const marks = [...document.querySelectorAll('.ch-fg__c')].map((c) => c.querySelector('.ch-fg__gauge em')?.textContent ?? null);
-    expect(marks).toEqual(['Team', 'Team', '36', 'Team', 'Par']);
+    // Each zone reads its stat beside its picture, against the team for a coach: the fairway strip, the green with its misses, the funnel and the make-rate curve.
+    expect(document.querySelector('.ch-zfw')).not.toBeNull();
+    expect(document.querySelector('.ch-zgreen')).not.toBeNull();
+    expect(document.querySelector('.ch-zfn')).not.toBeNull();
+    expect(document.querySelector('svg[aria-label*="percent"]')).not.toBeNull();
+    expect(document.querySelector('.ch-zn__read')!.textContent).toContain('Team');
   });
 
   it("50104 a coach's Message opens the direct thread with this player, on desktop and on the phone; a player's profile has none", () => {

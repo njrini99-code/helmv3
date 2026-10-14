@@ -57,6 +57,11 @@ export function Card({
   );
 }
 
+/** CH-8901: the one line beside email switches while customer email is off for everyone. */
+export function EmailPaused() {
+  return <span data-ch-code="CH-8901">Email is paused for everyone right now.</span>;
+}
+
 /** One setting: label and help on the left, the control on the right (stacks when narrow). */
 export function Row({ label, help, htmlFor, children, dim }: { label: ReactNode; help?: ReactNode; htmlFor?: string; children: ReactNode; dim?: boolean }) {
   return (
@@ -152,7 +157,7 @@ export function SaveBar({
               Unsaved changes
             </m.span>
           ) : flash ? (
-            <m.span key="saved" className="is-saved" initial={reduced ? false : { opacity: 0, y: 2 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={chTween('quick', reduced)}>
+            <m.span key="saved" className="is-saved" initial={reduced ? false : { opacity: 0, transform: 'translateY(2px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} exit={{ opacity: 0 }} transition={chTween('quick', reduced)}>
               <Icon icon={Check} size={14} />
               Saved
             </m.span>

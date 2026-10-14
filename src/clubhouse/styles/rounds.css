@@ -29,7 +29,8 @@
   justify-content: space-between;
   gap: 16px;
 }
-.ch-rd-h h1 {
+.ch-rd-h h1,
+.ch-rd-h h2 {
   margin: 8px 0 0;
   font: 400 50px/1.02 var(--ch-font-serif);
   letter-spacing: -0.01em;
@@ -118,6 +119,16 @@
   /* An unplayed hole's number still reads (4.5:1 on the green); the recess, not a faded ink, says it is to come. */
   color: var(--ch-on-green-ink-muted);
 }
+.ch-rd-strip span.is-played {
+  grid-auto-rows: min-content;
+  align-content: center;
+  gap: 1px;
+}
+.ch-rd-strip span.is-played em {
+  font: 500 9.5px/1 var(--ch-font-sans);
+  font-style: normal;
+  opacity: 0.72;
+}
 .ch-rd-strip span.is-par {
   background: rgb(255 255 255 / 0.1);
   color: var(--ch-ivory-100);
@@ -168,7 +179,7 @@
   gap: 7px;
   height: 38px;
   padding: 0 14px;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   font: 600 13.5px/1 var(--ch-font-sans);
   color: var(--ch-green-800);
   text-decoration: none;
@@ -193,7 +204,7 @@
   width: 38px;
   height: 38px;
   border: 0;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   background: rgb(255 255 255 / 0.08);
   color: rgb(244 241 232 / 0.7);
   cursor: pointer;
@@ -285,7 +296,10 @@
 }
 /* The figure's caption: a dd, so the list stays dt/dd pairs (axe definition-list). */
 .ch-rd-fig__m {
+  overflow: hidden;
   font: 400 12px/1.3 var(--ch-font-sans);
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--ch-text-tertiary);
 }
 /* Best: the season's rounds on their range. */
@@ -336,11 +350,14 @@
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
+/* The fill is scaled from its left edge (--ch-rd-fill, 0 to 1), not sized, so a change glides without relayout. */
 .ch-rd-putts i {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
   border-radius: 4px;
   background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-600));
+  transform: scaleX(var(--ch-rd-fill, 0));
+  transform-origin: left center;
 }
 .ch-rd-putts b {
   position: absolute;
@@ -402,20 +419,24 @@
   stroke: rgb(21 90 57 / 0.25);
 }
 .ch-rd-rib rect.is-under {
-  fill: var(--ch-green-500);
+  fill: var(--ch-score-under);
 }
 .ch-rd-rib rect.is-even {
   fill: var(--ch-ink-900);
 }
+/* Over par a warm grey at 3:1 on the paper (D5; #bfb59c was 1.8:1). */
 .ch-rd-rib rect.is-over {
-  fill: #bfb59c;
+  fill: var(--ch-ink-400);
 }
+/* A qualifier is a second channel: a gilt outline on whatever its score is (data gilt, 3.97:1). */
 .ch-rd-rib rect.is-q {
-  fill: #8e7b4e;
+  stroke: #927840;
+  stroke-width: 2.5;
+  paint-order: stroke;
 }
 .ch-rd-rib__t {
   font: 500 10.5px var(--ch-font-sans);
-  fill: var(--ch-ink-400);
+  fill: var(--ch-ink-500);
 }
 .ch-rd-rib__t.is-avg {
   fill: var(--ch-green-500);
@@ -451,13 +472,19 @@
   border-radius: 3px;
 }
 .ch-rd-season__lg i.is-under {
-  background: var(--ch-green-fill-500);
+  background: var(--ch-score-under);
 }
 .ch-rd-season__lg i.is-over {
-  background: #bfb59c;
+  background: var(--ch-ink-400);
+}
+.ch-rd-season__lg i.is-even {
+  height: 3px;
+  border-radius: 1.5px;
+  background: var(--ch-ink-900);
 }
 .ch-rd-season__lg i.is-q {
-  background: #8e7b4e;
+  background: none;
+  box-shadow: inset 0 0 0 2px #927840;
 }
 
 /* More unfinished rounds */
@@ -744,6 +771,16 @@ a.ch-rd-sc:focus-visible {
 .ch-rd-sc__grid .is-tot {
   background: var(--ch-ivory-100);
 }
+/* D18: the score box keeps one width, so a nine-hole row (Holes, Tot) doesn't pull the meters 24px left. */
+@media (min-width: 821px) {
+  .ch-rd-sc__grid {
+    justify-content: flex-end;
+    width: 146px;
+  }
+  .ch-rd-sc__grid > span {
+    flex: 1 1 0;
+  }
+}
 .ch-rd-sc__m {
   display: flex;
   flex-direction: column;
@@ -775,9 +812,12 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-meter__t i {
   display: block;
+  width: 100%;
   height: 100%;
   border-radius: 3px;
   background: linear-gradient(90deg, #3e8a61, var(--ch-green-500));
+  transform: scaleX(var(--ch-rd-fill, 0));
+  transform-origin: left center;
 }
 .ch-rd-meter__t.is-p i {
   background: linear-gradient(90deg, var(--ch-ink-400), var(--ch-ink-600));
@@ -826,7 +866,8 @@ a.ch-rd-sc:focus-visible {
 }
 /* Phone (Player - Rounds - Mobile.html) */
 @container chrd (max-width: 640px) {
-  .ch-rd-h h1 {
+  .ch-rd-h h1,
+.ch-rd-h h2 {
     font-size: 38px;
   }
   .ch-rd-tools {
@@ -980,7 +1021,8 @@ a.ch-rd-sc:focus-visible {
   font: 500 13px/1.2 var(--ch-font-sans);
   color: var(--ch-hero-mint);
 }
-.ch-rv-hero h1 {
+.ch-rv-hero h1,
+.ch-rv-hero h2 {
   margin: 0;
   color: var(--ch-on-green-ink);
   font: 400 48px/1 var(--ch-font-serif);
@@ -1484,7 +1526,8 @@ a.ch-rd-sc:focus-visible {
     min-height: 0;
     padding: 18px;
   }
-  .ch-rv-hero h1 {
+  .ch-rv-hero h1,
+.ch-rv-hero h2 {
     font-size: 28px;
   }
   .ch-rv-hero__s {
@@ -1514,8 +1557,8 @@ a.ch-rd-sc:focus-visible {
     padding: 0 12px 14px;
   }
   .ch-rv-shots,
-  .ch-rv-dist,
-  .ch-rv-sg__legs {
+.ch-rv-dist,
+.ch-rv-sg__legs {
     padding: 0 16px 14px;
   }
 }
@@ -1523,11 +1566,11 @@ a.ch-rd-sc:focus-visible {
 /* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
 @media (max-width: 820px) {
   .ch-rv-step button,
-  .ch-rd-unf__discard {
+.ch-rd-unf__discard {
     position: relative;
   }
   .ch-rv-step button::after,
-  .ch-rd-unf__discard::after {
+.ch-rd-unf__discard::after {
     content: '';
     position: absolute;
     inset: min(0px, calc(50% - 22px));
@@ -1571,12 +1614,13 @@ a.ch-rd-sc:focus-visible {
     bottom: 0;
   }
   .ch-rd.is-phone .ch-rd-h .ch-rd-k,
-  .ch-rd.is-phone .ch-rd-h .ch-rd-upd {
+.ch-rd.is-phone .ch-rd-h .ch-rd-upd {
     font: 500 12px/1.2 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
-  .ch-rd.is-phone .ch-rd-h h1 {
+  .ch-rd.is-phone .ch-rd-h h1,
+.ch-rd.is-phone .ch-rd-h h2 {
     margin-top: 10px;
     font: 600 31px/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
@@ -1598,6 +1642,7 @@ a.ch-rd-sc:focus-visible {
      as on the shared feature card (shell.css); the card's own padding insets it. */
   .ch-rd.is-phone .ch-rd-unf .ch-notice--danger {
     --ch-notice-ink: var(--ch-notice-on-green-ink);
+    --ch-notice-icon: var(--ch-notice-on-green-ink);
     --ch-notice-body: var(--ch-notice-on-green-body);
   }
 
@@ -1742,7 +1787,8 @@ a.ch-rd-sc:focus-visible {
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
   }
-  .ch-rv.is-phone .ch-rv-hero h1 {
+  .ch-rv.is-phone .ch-rv-hero h1,
+.ch-rv.is-phone .ch-rv-hero h2 {
     font: 600 28px/1.1 var(--ch-font-sans);
     letter-spacing: -0.03em;
     font-variation-settings: 'wdth' 92;
@@ -1784,17 +1830,17 @@ a.ch-rd-sc:focus-visible {
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-rv.is-phone .ch-rv-card__h h2,
-  .ch-rv.is-phone .ch-rv-card__h h3 {
+.ch-rv.is-phone .ch-rv-card__h h3 {
     font: 600 19px/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
   .ch-rv.is-phone .ch-rv-sg__legs,
-  .ch-rv.is-phone .ch-rv-cardw,
-  .ch-rv.is-phone .ch-rv-shots,
-  .ch-rv.is-phone .ch-rv-dist,
-  .ch-rv.is-phone .ch-rv-notes p {
+.ch-rv.is-phone .ch-rv-cardw,
+.ch-rv.is-phone .ch-rv-shots,
+.ch-rv.is-phone .ch-rv-dist,
+.ch-rv.is-phone .ch-rv-notes p {
     padding-inline: 0;
   }
   .ch-rv.is-phone .ch-rv-cardw {
@@ -1802,7 +1848,7 @@ a.ch-rd-sc:focus-visible {
     padding-inline: 20px;
   }
   .ch-rv.is-phone .ch-rv-hole .ch-notice,
-  .ch-rv.is-phone .ch-rv-none {
+.ch-rv.is-phone .ch-rv-none {
     margin-inline: 0;
   }
   .ch-rv.is-phone .ch-rv-shots__n {
@@ -1811,7 +1857,7 @@ a.ch-rd-sc:focus-visible {
   /* A hole on the scorecard answers the press with the row press tint (it selects, so it does not scale; the steps beside
      the hole are keys and compress, data-ch-press). */
   .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):active,
-  .ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):active {
+.ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):active {
     background: var(--ch-ledger-row-press);
   }
   .ch-rv.is-phone .ch-rv-cols {
@@ -1839,15 +1885,15 @@ a.ch-rd-sc:focus-visible {
   /* Loading (CH-11401, CH-11406) in the phone's shapes: the intro, the feature card, the sections under the double rule
      with their figures between hairlines and their rows between soft seams. */
   .ch-rd-sk-desk,
-  .ch-rv-sk-desk {
+.ch-rv-sk-desk {
     display: none;
   }
   .ch-rd-sk-phone,
-  .ch-rv-sk-phone {
+.ch-rv-sk-phone {
     display: contents;
   }
   .ch-rd[data-ch-code='CH-11401'],
-  .ch-rv[data-ch-code='CH-11406'] {
+.ch-rv[data-ch-code='CH-11406'] {
     gap: 28px;
     padding: 14px 20px 110px;
   }
@@ -1909,7 +1955,7 @@ a.ch-rd-sc:focus-visible {
     margin-top: 18px;
   }
   .ch-rd-sk-sec,
-  .ch-rv-sk-sec {
+.ch-rv-sk-sec {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1917,7 +1963,7 @@ a.ch-rd-sc:focus-visible {
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-rd-sk-figs,
-  .ch-rv-sk-figs {
+.ch-rv-sk-figs {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     row-gap: 14px;
@@ -1926,18 +1972,18 @@ a.ch-rd-sc:focus-visible {
     border-bottom: 1px solid var(--ch-ledger-rule);
   }
   .ch-rd-sk-figs > span,
-  .ch-rv-sk-figs > span {
+.ch-rv-sk-figs > span {
     display: flex;
     flex-direction: column;
     gap: 7px;
     padding: 0 12px;
   }
   .ch-rd-sk-figs > span:first-child,
-  .ch-rv-sk-figs > span:nth-child(3n + 1) {
+.ch-rv-sk-figs > span:nth-child(3n + 1) {
     padding-left: 0;
   }
   .ch-rd-sk-figs > span + span,
-  .ch-rv-sk-figs > span + span {
+.ch-rv-sk-figs > span + span {
     box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rv-sk-figs > span:nth-child(3n + 1) {
@@ -2029,13 +2075,11 @@ html[data-fw-theme='dark'] .ch-rd-season__lg i.is-over,
   fill: #8a8373;
   background: #8a8373;
 }
-html[data-fw-theme='dark'] .ch-rd-rib rect.is-q,
-html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
-  fill: var(--ch-champagne-500);
-  background: var(--ch-champagne-500);
+html[data-fw-theme='dark'] .ch-rd-rib rect.is-q {
+  stroke: var(--ch-champagne-500);
 }
-html[data-fw-theme='dark'] .ch-rd-season__lg i.is-under {
-  background: var(--ch-green-500);
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
+  box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
 }
 html[data-fw-theme='dark'] .ch-rd-more__go,
 html[data-fw-theme='dark'] .ch-rd-pill.is-qualifier {
@@ -2093,28 +2137,10 @@ html[data-fw-theme='dark'] .ch-rv-figs > div + div {
 html[data-fw-theme='dark'] .ch-rv-card {
   box-shadow: var(--ch-elevation-reading);
 }
-html[data-fw-theme='dark'] .ch-rv-nine {
-  background: var(--ch-ivory-50);
-  box-shadow: 0 0 0 1px var(--ch-border-subtle);
-}
-html[data-fw-theme='dark'] .ch-rv-nine tr + tr > * {
-  border-top-color: var(--ch-border-hairline);
-}
-html[data-fw-theme='dark'] .ch-rv-nine thead button.is-sel {
-  background: var(--ch-green-fill-600);
-  color: var(--ch-text-on-accent);
-}
-html[data-fw-theme='dark'] .ch-rv-nine td.is-sel,
 html[data-fw-theme='dark'] .ch-rv-lie.is-fairway,
 html[data-fw-theme='dark'] .ch-rv-lie.is-green,
 html[data-fw-theme='dark'] .ch-rv-lie.is-hole {
   background: var(--ch-bg-selected);
-}
-html[data-fw-theme='dark'] .ch-rv-yn.is-n {
-  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.35);
-}
-html[data-fw-theme='dark'] .ch-rv-yn.is-na {
-  background: rgb(237 231 216 / 0.35);
 }
 html[data-fw-theme='dark'] .ch-rv-shots li:not(:last-child)::before {
   background: rgb(107 187 140 / 0.22);
@@ -2144,20 +2170,20 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
 @media (max-width: 820px) {
   .ch-rd-season__f dt,
-  .ch-rd-season__f dd + dd,
-  .ch-rd-rib__t,
-  .ch-rd-rib__v,
-  .ch-rd-rib__d,
-  .ch-rd-season__lg,
-  .ch-rd-sc__date em,
-  .ch-rd-pill,
-  .ch-rd-sc__grid em,
-  .ch-rd-meter,
-  .ch-rd-sc__s em,
-  .ch-rv-nine th[scope='row'],
-  .ch-rv-nine thead th:first-child,
-  .ch-rv-nine thead,
-  .ch-rv-lie {
+.ch-rd-season__f dd + dd,
+.ch-rd-rib__t,
+.ch-rd-rib__v,
+.ch-rd-rib__d,
+.ch-rd-season__lg,
+.ch-rd-sc__date em,
+.ch-rd-pill,
+.ch-rd-sc__grid em,
+.ch-rd-meter,
+.ch-rd-sc__s em,
+.ch-rv-nine th[scope='row'],
+.ch-rv-nine thead th:first-child,
+.ch-rv-nine thead,
+.ch-rv-lie {
     font-size: 12px;
   }
 }
@@ -2195,7 +2221,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   }
   .ch-rv[data-canopy] .ch-rv-hero__k {
     font: 500 11px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rv[data-canopy] .ch-rv-hero__m {
@@ -2239,14 +2265,19 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-rv[data-canopy] .ch-rv-card__h h2,
-  .ch-rv[data-canopy] .ch-rv-card__h h3 {
+.ch-rv[data-canopy] .ch-rv-card__h h3 {
     font: 600 19px/1.2 var(--ch-font-sans);
     color: var(--ch-ledger-ink);
   }
-  .ch-rv[data-canopy] :is(.ch-rv-sg__legs, .ch-rv-cardw, .ch-rv-shots, .ch-rv-dist, .ch-rv-notes p) {
+  .ch-rv[data-canopy] .ch-rv-sg__legs,
+.ch-rv[data-canopy] .ch-rv-cardw,
+.ch-rv[data-canopy] .ch-rv-shots,
+.ch-rv[data-canopy] .ch-rv-dist,
+.ch-rv[data-canopy] .ch-rv-notes p {
     padding-inline: 0;
   }
-  .ch-rv[data-canopy] :is(.ch-rv-hole .ch-notice, .ch-rv-none) {
+  .ch-rv[data-canopy] .ch-rv-hole .ch-notice,
+.ch-rv[data-canopy] .ch-rv-none {
     margin-inline: 0;
   }
   .ch-rv[data-canopy] .ch-rv-cols {
@@ -2254,6 +2285,172 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   }
   .ch-rv[data-canopy] .ch-rv-side {
     gap: 32px;
+  }
+}
+
+/* P011-A2: the scorecard as a hung board (Augusta's hand-hung boards). Each nine is a field-green board; the hole
+   numbers are debossed into it; every figure under Par hangs on an ivory plate, the Score row's plates the largest
+   numerals in the table (D8); Tot sits past a 2px gutter. Under par keeps its red circle, over par its square. The
+   table semantics (CH-11804) are unchanged: the plates are paint on the cells. On the phone the row labels stay put
+   and the right edge fades while there is more card to scroll (D10). */
+.ch-rv .ch-rv-cardw {
+  gap: 8px;
+}
+.ch-rv .ch-rv-nine {
+  border-collapse: separate;
+  border-spacing: 3px;
+  padding: 4px 6px 6px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--ch-green-800), var(--ch-green-900));
+  box-shadow: var(--ch-elevation-feature);
+  color: var(--ch-on-green-ink);
+}
+.ch-rv .ch-rv-nine tr + tr > * {
+  border-top: 0;
+}
+.ch-rv .ch-rv-nine th,
+.ch-rv .ch-rv-nine td {
+  height: 30px;
+}
+.ch-rv .ch-rv-nine th[scope='row'] {
+  color: var(--ch-on-green-ink-soft);
+}
+.ch-rv .ch-rv-nine thead th:first-child {
+  color: var(--ch-champagne-300);
+}
+.ch-rv .ch-rv-nine thead {
+  color: var(--ch-on-green-ink-muted);
+}
+.ch-rv .ch-rv-nine thead button {
+  width: 100%;
+  min-width: 30px;
+  height: 34px;
+  font-weight: 600;
+  color: var(--ch-on-green-ink);
+  text-shadow:
+    0 -1px 0 rgb(2 18 10 / 0.45),
+    0 1px 0 rgb(255 255 255 / 0.1);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rv-nine thead button:hover {
+    background: rgb(244 238 221 / 0.1);
+  }
+}
+.ch-rv .ch-rv-nine thead button.is-sel {
+  background: var(--ch-on-green-ink);
+  color: var(--ch-green-900);
+  text-shadow: none;
+}
+.ch-rv .ch-rv-nine thead button:focus-visible {
+  outline-color: var(--ch-champagne-300);
+}
+.ch-rv .ch-rv-nine .is-par td {
+  color: var(--ch-on-green-ink-soft);
+}
+.ch-rv .ch-rv-nine tbody tr:not(.is-par) td:not(:empty) {
+  border-radius: 6px;
+  background: var(--ch-ivory-50);
+  color: var(--ch-ink-900);
+  box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.08);
+}
+.ch-rv .ch-rv-nine th:last-child,
+.ch-rv .ch-rv-nine td:last-child {
+  border-left: 2px solid transparent;
+  background-clip: padding-box;
+}
+.ch-rv .ch-rv-nine tbody tr:not(.is-par) td:last-child:not(:empty) {
+  background-color: var(--ch-ivory-200);
+}
+.ch-rv .ch-rv-nine .is-score td {
+  height: 42px;
+}
+.ch-rv .ch-rv-nine .is-marks th,
+.ch-rv .ch-rv-nine .is-marks td {
+  height: 26px;
+}
+.ch-rv .ch-rv-nine .is-score .ch-score {
+  width: 30px;
+  height: 30px;
+  font: 600 17px/1 var(--ch-font-sans);
+  font-variation-settings: 'wdth' 88;
+}
+.ch-rv .ch-rv-nine .is-score b {
+  font: 700 18px/1 var(--ch-font-sans);
+}
+.ch-rv .ch-rv-nine tbody tr:not(.is-par) td.is-sel:not(:empty) {
+  background: var(--ch-ivory-0);
+  box-shadow: inset 0 0 0 2px var(--ch-green-600);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rv-nine tbody tr:not(.is-par) td[data-hole]:not(.is-sel):hover {
+    background: var(--ch-ivory-0);
+  }
+}
+/* D12: Missed is an ink ring at 3:1 or more; not applicable is the dash. */
+.ch-rv .ch-rv-yn.is-n {
+  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
+}
+.ch-rv .ch-rv-yn.is-na {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  font: 500 12px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-ink-500);
+}
+@media (max-width: 820px) {
+  .ch-rv.is-phone .ch-rv-cardw {
+    padding-right: 40px;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+  }
+  .ch-rv.is-phone .ch-rv-nine th[scope='row'],
+.ch-rv.is-phone .ch-rv-nine thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--ch-green-800);
+    box-shadow: -6px 0 0 var(--ch-green-800);
+  }
+  .ch-rv.is-phone .ch-rv-nine thead button {
+    height: 44px;
+  }
+  .ch-rv.is-phone .ch-rv-nine .is-score td {
+    height: 46px;
+  }
+}
+
+/* The round recap (C2, D14): on every width a passage under a rule, not a second green card, its author named in words
+   under it. Only the figures it agrees with are shown (recap-check.ts). */
+.ch-rv .ch-rv-recap {
+  gap: 8px;
+  padding: 14px 0 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rv-recap__k {
+  margin: 0;
+  font: 600 19px/1.2 var(--ch-font-sans);
+  letter-spacing: -0.025em;
+  color: var(--ch-ledger-ink);
+}
+.ch-rv .ch-rv-recap p {
+  font: 400 15px/1.55 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rv-recap__by {
+  font: 400 12.5px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+
+/* The review's head on the desktop: the eyebrow set plain, not tracked (doctrine; P001-D5). */
+@media (min-width: 821px) {
+  .ch-rv[data-canopy] .ch-rv-hero__k {
+    font: 500 13px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
   }
 }
 
@@ -2268,8 +2465,8 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   }
   /* The head: the eyebrow is set like the framed head's date line, the title is the shell's 44px sans. */
   .ch-rd[data-canopy] .ch-rd-h > div:first-child {
-    font: 500 11px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    font: 500 13px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
   }
   .ch-rd[data-canopy] .ch-rd-h .ch-rd-k {
     font: inherit;
@@ -2376,7 +2573,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
     }
   }
   .ch-rd[data-canopy] .ch-rd-unf__cta:focus-visible,
-  .ch-rd[data-canopy] .ch-rd-unf__discard:focus-visible {
+.ch-rd[data-canopy] .ch-rd-unf__discard:focus-visible {
     outline-color: var(--ch-border-focus);
   }
 
@@ -2513,7 +2710,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   }
   @media (hover: hover) {
     .ch-rd[data-canopy] a.ch-rd-sc:hover::before,
-    .ch-rd[data-canopy] a.ch-rd-sc:hover + .ch-rd-sc::before {
+.ch-rd[data-canopy] a.ch-rd-sc:hover + .ch-rd-sc::before {
       opacity: 0;
     }
   }
@@ -2569,5 +2766,1296 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-book {
     gap: 8px;
     margin: 0;
+  }
+}
+
+/* P011-A1: one sun for the round. The green feature cards (the round in progress, the review's hero on the phone) take
+   the shell's light (tokens.css --ch-light-*, from the team's place and the hour): the sky falls across the card from the
+   sun's side, a hairline rim catches the sun-facing top edge, and the contact shadow (the cast token) leans away from
+   the light. Paint only, on the material: the scores and figures on the card keep their ink. */
+.ch-rd-unf,
+.ch-rd.is-phone .ch-rd-unf,
+.ch-rv.is-phone .ch-rv-hero {
+  background: var(--ch-light-sky), var(--ch-feature-bg);
+  box-shadow:
+    inset var(--ch-light-rim-x) 1px 0 color-mix(in oklab, var(--ch-light-rim) 30%, transparent),
+    0 0 0 1px var(--ch-green-900),
+    var(--ch-elevation-cast);
+}
+.ch-rd-unf.is-idle {
+  background: var(--ch-light-sky), var(--ch-feature-bg);
+}
+
+/* P011: the review as zones (RoundZones). Each area of the round is a band under a gold rule: what it is and one reading on the
+   left, the picture that fits it on the right. Prefix .ch-rz. */
+.ch-rv-hero__h {
+  margin: 4px 0 0;
+  max-width: 52ch;
+  font: 500 15px/1.4 var(--ch-font-sans);
+  color: rgb(244 241 232 / 0.86);
+}
+.ch-rv .ch-znbig.is-good {
+  color: var(--ch-green-600);
+}
+.ch-rv .ch-znbig.is-bad {
+  color: var(--ch-warning-600);
+}
+.ch-rv .ch-rzsvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: inherit;
+}
+.ch-rv .ch-rzmeta {
+  margin: 14px 0 0;
+  font: 400 13.5px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rv .ch-rzmeta b {
+  font-weight: 700;
+  color: var(--ch-text-primary);
+}
+
+/* the cards the review already had, flush inside a zone */
+.ch-rv .ch-zn .ch-rv-card {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ch-rv .ch-zn .ch-rv-card__h {
+  padding: 0 0 12px;
+}
+.ch-rv .ch-zn .ch-rv-sg__tot {
+  display: none;
+}
+.ch-rv .ch-zn .ch-rv-sg__legs,
+.ch-rv .ch-zn .ch-rv-dist,
+.ch-rv .ch-zn .ch-rv-shots {
+  padding-left: 0;
+  padding-right: 0;
+}
+.ch-rv .ch-zn .ch-rv-sg__r {
+  grid-template-columns: 132px minmax(0, 1fr);
+}
+.ch-rv .ch-zn .ch-rv-sg__bar {
+  height: 14px;
+}
+.ch-rv .ch-zn .ch-rv-sg__r dt {
+  font: 600 14px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-zn .ch-rv-sg__r b {
+  font-size: 16px;
+}
+.ch-rv .ch-zn .ch-rv-cardw {
+  padding-left: 0;
+  padding-right: 0;
+}
+.ch-rv .ch-zn .ch-rv-hole .ch-notice,
+.ch-rv .ch-zn .ch-rv-none {
+  margin-left: 0;
+  margin-right: 0;
+}
+.ch-rv .ch-zn .ch-rv-hole {
+  padding-top: 8px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-rv .ch-zn .ch-rv-notes p {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* where the strokes were lost */
+.ch-rv .ch-rzcost {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-rv .ch-rzcost__r + .ch-rzcost__r {
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-rv .ch-rzcost button {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 40px 44px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 6px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-rv .ch-rzcost button:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+@media (hover: hover) {
+  .ch-rv .ch-rzcost button:hover {
+    background: var(--ch-bg-hover);
+  }
+}
+.ch-rv .ch-rzcost__n {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ch-bg-inset);
+  font: 700 13px/1 var(--ch-font-sans);
+}
+.ch-rv .ch-rzcost__t {
+  font: 600 15px/1.2 var(--ch-font-sans);
+}
+.ch-rv .ch-rzcost__t small {
+  display: block;
+  margin-top: 3px;
+  font: 400 12.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rv .ch-rzcost b {
+  text-align: right;
+  font: 600 20px/1 var(--ch-font-sans);
+}
+.ch-rv .ch-rzcost em {
+  text-align: right;
+  font: 700 16px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-warning-600);
+}
+
+/* fairways and greens: one mark a hole */
+.ch-rv .ch-rzth {
+  display: grid;
+  gap: 20px;
+}
+.ch-rv .ch-rzhit {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+.ch-rv .ch-rzhit > b {
+  font: 600 14px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rzhit > div {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+.ch-rv .ch-rzhit__c {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+.ch-rv .ch-rzhit__c i {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.ch-rv .ch-rzhit__c.is-hit i {
+  background: var(--ch-green-600);
+}
+.ch-rv .ch-rzhit__c.is-miss i {
+  border: 2px solid var(--ch-warning-600);
+}
+.ch-rv .ch-rzhit__c.is-na i {
+  width: 12px;
+  height: 2px;
+  margin: 9px 0;
+  border-radius: 2px;
+  background: var(--ch-ivory-400);
+}
+.ch-rv .ch-rzhit__c em {
+  font: 500 11px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv .ch-rzpair {
+  display: flex;
+  gap: 40px;
+}
+.ch-rv .ch-rzpair > div {
+  display: grid;
+  gap: 4px;
+}
+.ch-rv .ch-rzpair b {
+  font: 600 36px/1 var(--ch-font-sans);
+  letter-spacing: -0.04em;
+  color: var(--ch-green-800);
+}
+.ch-rv .ch-rzpair small {
+  font: 400 13px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+
+/* putts a hole */
+.ch-rv .ch-rzpt {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: 6px;
+  height: 150px;
+}
+.ch-rv .ch-rzpt__c {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  height: 100%;
+  gap: 6px;
+}
+.ch-rv .ch-rzpt__c b {
+  font: 700 13px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rzpt__c i {
+  /* The column fills its cell and is scaled up from the foot by its share (--ch-rz-p, 0 to 1), so a change glides on
+     transform. */
+  align-self: stretch;
+  width: min(22px, 80%);
+  transform: scaleY(var(--ch-rz-p, 0));
+  transform-origin: center bottom;
+  border-radius: 6px 6px 3px 3px;
+  background: var(--ch-ivory-400);
+}
+.ch-rv .ch-rzpt__c i.is-one {
+  background: var(--ch-green-500);
+}
+.ch-rv .ch-rzpt__c i.is-three {
+  background: var(--ch-warning-600);
+}
+.ch-rv .ch-rzpt__c em {
+  font: 500 11px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv .ch-rzsplit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin-top: 16px;
+  font: 400 13.5px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rv .ch-rzsplit b {
+  margin-right: 7px;
+  font: 700 20px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rzsplit .is-warn b {
+  color: var(--ch-warning-600);
+}
+.ch-rv .ch-rzrows {
+  display: grid;
+  gap: 12px;
+}
+.ch-rv .ch-rzrow {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 70px;
+  align-items: center;
+  gap: 14px;
+  font: 600 14px/1.2 var(--ch-font-sans);
+}
+.ch-rv .ch-rzrow__t {
+  position: relative;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-rv .ch-rzrow__t i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--ch-green-500);
+  /* Full width, slid in from the left by its share (--ch-rz-p, 0 to 1), as the scoring distribution's bars are: a change
+     moves on transform and the rounded end stays round; the track's clip draws the start. */
+  transform: translateX(calc((var(--ch-rz-p, 0) - 1) * 100%));
+}
+.ch-rv .ch-rzrow b {
+  text-align: right;
+  font: 700 14px/1 var(--ch-font-sans);
+}
+
+.ch-rv .ch-rztrail {
+  margin: 4px 0 12px;
+}
+
+@container chrv (max-width: 900px) {
+  .ch-rv .ch-rzhit {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+@container chrv (max-width: 640px) {
+  .ch-rv .ch-rzrow {
+    grid-template-columns: 96px minmax(0, 1fr) 60px;
+  }
+  .ch-rv .ch-zn .ch-rv-sg__r {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+}
+
+.ch-rv .ch-zn .ch-rv-sg .ch-rv-card__h,
+.ch-rv .ch-zn .ch-rv-sg .ch-ri {
+  display: none;
+}
+.ch-rv .ch-zn .ch-rv-card__h h2,
+.ch-rv .ch-zn .ch-rv-card__h h3 {
+  font: 600 15px/1.2 var(--ch-font-sans);
+  letter-spacing: 0;
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-zn .ch-rv-recap__k,
+.ch-rv .ch-zn .ch-rv-recap__by {
+  font-family: var(--ch-font-sans);
+}
+.ch-rv .ch-zn .ch-rv-cardw {
+  min-width: 0;
+  max-width: 100%;
+}
+@container chrv (max-width: 640px) {
+  /* The pictures are drawn on a 720 unit canvas: on a phone their words are set larger so they still read. */
+  .ch-rv .ch-rzsvg text {
+    font-size: 21px;
+  }
+  .ch-rv .ch-rzsvg text[font-weight='700'] {
+    font-size: 22px;
+  }
+}
+@container chrv (max-width: 640px) {
+  .ch-rv .ch-rzsvg__hint {
+    display: none;
+  }
+}
+
+/* Premium pass: depth on the bands, a deep-green stage for the round's line and for the hole's shots, gradients on every fill, gold
+   hairlines on the numbers. Same tokens; nothing new is drawn from outside the palette. */
+.ch-rv .ch-rzstage,
+.ch-rv .ch-rzplate {
+  position: relative;
+  border-radius: 20px;
+  background:
+    radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
+    radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
+    var(--ch-stage-bg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    var(--ch-elevation-feature);
+}
+.ch-rv .ch-rzstage {
+  padding: 22px 22px 14px;
+}
+.ch-rv .ch-rzplate {
+  margin: 4px 0 14px;
+  padding: 16px 18px 8px;
+}
+.ch-rv .ch-rzstage .ch-rzsvg,
+.ch-rv .ch-rzplate .ch-rzsvg {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+.ch-rv .ch-rzplate .ch-rzsvg {
+  cursor: default;
+}
+/* The card that reads a hole out sits on a still, full-width track that is its size container; the card moves along it by
+   `translate` in container units (--ch-rz-x, 0 to 100), so it glides on the compositor and the track never leaves the stage.
+   The card centres itself on that point. */
+.ch-rv .ch-rzstage__tipx {
+  position: absolute;
+  top: 16px;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-rv .ch-rzstage__tip {
+  display: grid;
+  gap: 4px;
+  width: max-content;
+  min-width: 150px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgb(244 238 221 / 0.96);
+  box-shadow:
+    0 0 0 1px rgb(8 43 28 / 0.12),
+    var(--ch-elevation-overlay);
+  color: var(--ch-ink-900);
+  transform: translateX(-50%);
+}
+.ch-rv .ch-rzstage__tip b {
+  font: 700 13px/1.2 var(--ch-font-sans);
+}
+.ch-rv .ch-rzstage__tip span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 600 13px/1.2 var(--ch-font-sans);
+}
+.ch-rv .ch-rzstage__tip span i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.ch-rv .ch-rzstage__tip em {
+  font: 500 12px/1.2 var(--ch-font-sans);
+  font-style: normal;
+  color: #55503f;
+}
+
+/* the bands */
+.ch-rv .ch-znbig.is-good {
+  background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
+}
+.ch-rv .ch-znbig.is-bad {
+  background-image: linear-gradient(180deg, #c58a2c, #7a4a08);
+}
+
+/* strokes gained: thicker, filled with a gradient and a soft glow */
+.ch-rv .ch-zn .ch-rv-sg__bar {
+  height: 16px;
+  background: linear-gradient(180deg, var(--ch-bg-inset), var(--ch-ivory-100));
+  box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14);
+}
+.ch-rv .ch-zn .ch-rv-sg__z {
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--ch-champagne-500);
+}
+.ch-rv .ch-zn .ch-rv-sg__v.is-gain {
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+  box-shadow: var(--ch-elevation-mark);
+}
+.ch-rv .ch-zn .ch-rv-sg__v.is-loss {
+  background: linear-gradient(270deg, #d9a54a, #94600e);
+  box-shadow: var(--ch-elevation-mark-warn);
+}
+.ch-rv .ch-zn .ch-rv-dist__t i {
+  box-shadow: var(--ch-elevation-mark-ink);
+}
+
+/* fairway and green marks */
+.ch-rv .ch-rzhit__c i {
+  width: 22px;
+  height: 22px;
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rv .ch-rzhit__c.is-hit i {
+  background: radial-gradient(circle at 35% 30%, var(--ch-green-400), var(--ch-green-800));
+  box-shadow: var(--ch-elevation-mark);
+}
+.ch-rv .ch-rzhit__c.is-miss i {
+  border: 2px solid var(--ch-champagne-500);
+  background: rgb(176 149 96 / 0.1);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rzhit__c:hover i {
+    transform: scale(1.18);
+  }
+}
+
+/* putts a hole and first putts */
+.ch-rv .ch-rzpt__c i {
+  background: linear-gradient(180deg, var(--ch-ivory-300), var(--ch-ivory-400));
+  box-shadow: var(--ch-elevation-mark-ink);
+}
+.ch-rv .ch-rzpt__c i.is-one {
+  background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
+}
+.ch-rv .ch-rzpt__c i.is-three {
+  background: linear-gradient(180deg, #d9a54a, #94600e);
+}
+.ch-rv .ch-rzrow__t i {
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+}
+.ch-rv .ch-rzpair b {
+  background: linear-gradient(180deg, var(--ch-green-600), var(--ch-green-900));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* costliest holes */
+.ch-rv .ch-rzcost__n {
+  background: linear-gradient(160deg, var(--ch-ivory-0), var(--ch-ivory-200));
+  box-shadow:
+    inset 0 0 0 1px rgb(176 149 96 / 0.4),
+    var(--ch-elevation-mark-ink);
+}
+.ch-rv .ch-rzcost button {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+
+/* the hero and its figures */
+.ch-rv-hero {
+  position: relative;
+  background:
+    radial-gradient(90% 140% at 100% 0%, rgb(159 224 182 / 0.2), transparent 58%),
+    radial-gradient(60% 100% at 0% 100%, rgb(231 184 102 / 0.1), transparent 62%),
+    linear-gradient(160deg, #0f4430, #082b1c);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    inset 0 -3px 0 var(--ch-champagne-500),
+    var(--ch-elevation-feature);
+}
+.ch-rv-hero__s b {
+  background: linear-gradient(180deg, #ffffff, #cfc6a8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ch-rv-figs {
+  background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-50));
+  box-shadow:
+    inset 0 0 0 1px rgb(176 149 96 / 0.35),
+    var(--ch-elevation-plate);
+}
+.ch-rv-figs > div + div {
+  border-left-color: rgb(176 149 96 / 0.35);
+}
+.ch-rv-figs dd {
+  font-weight: 600;
+  color: var(--ch-green-800);
+}
+.ch-rv-figs dd + dd {
+  font-weight: 400;
+  color: var(--ch-text-tertiary);
+}
+
+/* Micro motion on the round review. Every duration is a token, so Animations off and reduced motion make each of these instant; a
+   delay is zeroed for reduced motion below. The line draws once, the first time its stage is seen. */
+.ch-rv .ch-rzline {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--ch-dur-reveal) var(--ch-ease-io);
+}
+.ch-rv .ch-rzstage:not(.is-in) .ch-rzline {
+  stroke-dashoffset: 1;
+}
+.ch-rv .ch-rzfill,
+.ch-rv .ch-rzdots {
+  transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-reveal) * 0.6);
+}
+.ch-rv .ch-rzstage:not(.is-in) .ch-rzfill,
+.ch-rv .ch-rzstage:not(.is-in) .ch-rzdots {
+  opacity: 0;
+}
+.ch-rv .ch-rzdot {
+  transform-box: view-box;
+  transition: transform var(--ch-dur-quick) var(--ch-ease-spring);
+}
+.ch-rv .ch-rzdot.is-hot {
+  transform: scale(1.35);
+}
+.ch-rv .ch-rzdot__halo {
+  opacity: 0.16;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rv .ch-rzdot.is-hot .ch-rzdot__halo {
+  opacity: 0.34;
+}
+.ch-rv .ch-rzstage__tip {
+  opacity: 0;
+  translate: calc(var(--ch-rz-x, 0) * 1cqw) 4px;
+  transition:
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    translate var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rv .ch-rzstage__tip.is-on {
+  opacity: 1;
+  translate: calc(var(--ch-rz-x, 0) * 1cqw) 0;
+}
+
+/* a hole's shots draw in the order they were hit */
+@keyframes ch-rz-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes ch-rz-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+.ch-rv .ch-rzshot__arc {
+  stroke-dasharray: 1;
+  animation: ch-rz-draw var(--ch-dur-reveal) var(--ch-ease-io) backwards;
+  animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-quick));
+}
+.ch-rv .ch-rzshot__dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ch-rz-pop var(--ch-dur-base) var(--ch-ease-spring) backwards;
+  animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-quick) + var(--ch-dur-reveal) * 0.7);
+}
+
+/* values that change under the pointer or the filter glide to their new length, on transform (the scoring distribution's
+   bars keep their own slide). The strokes-gained bars are sized inline and do not glide. */
+.ch-rv .ch-rzrow__t i {
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-rv .ch-rzpt__c i {
+  transition:
+    transform var(--ch-dur-base) var(--ch-ease),
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    filter var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rzpt:hover .ch-rzpt__c:not(:hover) i {
+    opacity: 0.55;
+  }
+  .ch-rv .ch-rzpt__c:hover i {
+    filter: brightness(1.1) saturate(1.1);
+  }
+}
+.ch-rv .ch-rzcost button:active {
+  transform: scale(0.985);
+  transition-duration: var(--ch-dur-press);
+}
+.ch-rv .ch-rzcost button {
+  transition:
+    background var(--ch-dur-quick) var(--ch-ease),
+    transform var(--ch-dur-release) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rzcost button:hover .ch-rzcost__n {
+    background: var(--ch-green-800);
+    color: var(--ch-ivory-50);
+    box-shadow: none;
+  }
+}
+.ch-rv .ch-rzcost__n {
+  transition:
+    background var(--ch-dur-quick) var(--ch-ease),
+    color var(--ch-dur-quick) var(--ch-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-rv .ch-rzfill,
+  .ch-rv .ch-rzdots,
+  .ch-rv .ch-rzshot__arc,
+  .ch-rv .ch-rzshot__dot {
+    transition-delay: 0s;
+    animation-delay: 0s;
+  }
+}
+
+/* ==========================================================================================================================
+   P011 Rounds library, premium pass (2026-10-09). Presentation only: the season figures and their chart on a stage, gold heads,
+   the book's rows as a ledger with a small hung board for Out, In and Tot, a month's trend, and the micro motion that goes with them.
+   Prefix .ch-rd. Tokens only; every duration is a --ch-dur-* token, so Animations off and reduced motion make each of these instant.
+   ========================================================================================================================== */
+
+
+/* The gold segment that opens a head: the same short gilt rule the stats zones set under their titles. */
+.ch-rd-unf__top,
+.ch-rd-season .ch-rd-k,
+.ch-rd-more h2,
+.ch-rd-grp__h {
+  position: relative;
+}
+.ch-rd[data-canopy] .ch-rd-unf__top::after,
+.ch-rd[data-canopy] .ch-rd-season:not(.is-empty) .ch-rd-k::after,
+.ch-rd[data-canopy] .ch-rd-season.is-empty .ch-rd-k::after,
+.ch-rd[data-canopy] .ch-rd-more h2::after,
+.ch-rd[data-canopy] .ch-rd-grp__h::after {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 44px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ch-champagne-500), var(--ch-champagne-300));
+  content: '';
+  pointer-events: none;
+}
+
+/* ---- The season: the average, then three figures that are each drawn ---- */
+.ch-rd .ch-rd-fig__v {
+  font: 600 27px/1 var(--ch-font-sans);
+  letter-spacing: -0.035em;
+  font-variation-settings: 'wdth' 92;
+}
+.ch-rd .ch-rd-fig dt {
+  font: 600 13px/1 var(--ch-font-sans);
+}
+/* A caption wraps to a second line before it is cut: "5.1 unde…" said nothing. */
+.ch-rd .ch-rd-fig__m {
+  display: -webkit-box;
+  overflow: hidden;
+  font: 400 12.5px/1.35 var(--ch-font-sans);
+  white-space: normal;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.ch-rd.is-phone .ch-rd-fig__m {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+.ch-rd .ch-rd-fig__viz {
+  gap: 5px;
+  padding: 3px 0;
+}
+.ch-rd .ch-rd-range {
+  height: 12px;
+  border-radius: 6px;
+}
+.ch-rd .ch-rd-range i {
+  width: 6px;
+  height: 6px;
+  background: var(--ch-ink-400);
+}
+.ch-rd .ch-rd-range i.is-best {
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at 35% 30%, var(--ch-green-400), var(--ch-green-800));
+  box-shadow:
+    0 0 0 2px var(--ch-workspace),
+    0 0 0 3.5px var(--ch-champagne-500),
+    var(--ch-elevation-mark);
+}
+.ch-rd .ch-rd-range b {
+  top: -4px;
+  bottom: -4px;
+}
+.ch-rd .ch-rd-putts {
+  height: 10px;
+  margin: 2px 0;
+  border-radius: 5px;
+}
+.ch-rd .ch-rd-putts i {
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+  box-shadow: var(--ch-elevation-mark);
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-rd .ch-rd-putts b {
+  top: -5px;
+  bottom: -5px;
+  background: var(--ch-champagne-500);
+}
+.ch-rd .ch-rd-greens {
+  gap: 3px;
+}
+.ch-rd .ch-rd-greens i {
+  height: 9px;
+  border-radius: 3px;
+  background: var(--ch-ivory-300);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.12);
+}
+.ch-rd .ch-rd-greens i.is-hit {
+  background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
+  box-shadow: var(--ch-elevation-mark);
+}
+@media (min-width: 821px) {
+  .ch-rd[data-canopy] .ch-rd-season__big {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__big b {
+    order: 1;
+    font: 600 58px/0.92 var(--ch-font-sans);
+    letter-spacing: -0.058em;
+    font-variation-settings: 'wdth' 90;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__big::after {
+    width: 36px;
+    height: 3px;
+    margin: 12px 0 10px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--ch-champagne-500), var(--ch-champagne-300));
+    content: '';
+    order: 2;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__big em {
+    order: 3;
+    font: 500 13px/1.3 var(--ch-font-sans);
+  }
+  .ch-rd[data-canopy] .ch-rd-fig + .ch-rd-fig {
+    box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.38);
+  }
+}
+
+/* ---- The chart: every round against par ---- */
+.ch-rd .ch-rd-stage {
+  --ch-rd-under-a: #ff9d8e;
+  --ch-rd-under-b: #d0574a;
+  --ch-rd-over-a: rgb(244 238 221 / 0.36);
+  --ch-rd-over-b: rgb(244 238 221 / 0.9);
+  --ch-rd-ink: var(--ch-stage-ink);
+  --ch-rd-soft: var(--ch-stage-ink-soft);
+  --ch-rd-rule: var(--ch-stage-rule);
+  --ch-rd-par: rgb(244 238 221 / 0.58);
+  --ch-rd-gold: var(--ch-stage-gold);
+  --ch-rd-avg-ink: var(--ch-stage-gold);
+  --ch-rd-chip: rgb(231 184 102 / 0.16);
+  --ch-rd-chip-ring: rgb(231 184 102 / 0.5);
+  --ch-rd-under-ink: var(--ch-stage-red);
+  position: relative;
+  margin-top: 30px;
+  padding: 18px 22px 8px;
+  border-radius: 18px;
+  background:
+    radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
+    radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
+    var(--ch-stage-bg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    var(--ch-elevation-feature);
+  color: var(--ch-rd-ink);
+}
+.ch-rd .ch-rd-stage__h {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 18px;
+}
+.ch-rd .ch-rd-stage .ch-rd-season__ch {
+  display: contents;
+}
+.ch-rd .ch-rd-stage .ch-rd-season__ch b {
+  grid-column: 1;
+  grid-row: 1;
+  font: 600 15px/1.3 var(--ch-font-sans);
+  color: var(--ch-rd-ink);
+}
+.ch-rd .ch-rd-stage .ch-rd-season__ch span {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font: 400 12.5px/1.4 var(--ch-font-sans);
+  color: var(--ch-rd-soft);
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg {
+  grid-column: 2;
+  grid-row: 1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 14px;
+  padding: 0;
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-rd-soft);
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i.is-under {
+  background: linear-gradient(180deg, var(--ch-rd-under-a), var(--ch-rd-under-b));
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i.is-over {
+  background: linear-gradient(0deg, var(--ch-rd-over-a), var(--ch-rd-over-b));
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i.is-even {
+  height: 3px;
+  background: var(--ch-rd-ink);
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i.is-q {
+  background: none;
+  box-shadow: inset 0 0 0 2px var(--ch-rd-gold);
+}
+.ch-rd-rib-w {
+  position: relative;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib {
+  margin-top: 8px;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib line {
+  stroke: var(--ch-rd-rule);
+}
+.ch-rd .ch-rd-stage .ch-rd-rib line.is-par {
+  stroke: var(--ch-rd-par);
+  stroke-width: 1.5;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib line.ch-rd-rib__avg {
+  stroke: var(--ch-rd-gold);
+  stroke-dasharray: 2 6;
+  stroke-opacity: 0.9;
+  stroke-width: 2;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__chip {
+  fill: var(--ch-rd-chip);
+  stroke: var(--ch-rd-chip-ring);
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__t {
+  fill: var(--ch-rd-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__t.is-par {
+  fill: var(--ch-rd-ink);
+  font-weight: 700;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__t.is-avg {
+  fill: var(--ch-rd-avg-ink);
+  font-weight: 600;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__v {
+  fill: var(--ch-rd-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__v.is-under {
+  fill: var(--ch-rd-under-ink);
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__d {
+  fill: var(--ch-rd-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib rect.is-even {
+  fill: var(--ch-rd-ink);
+}
+/* A qualifier is a second channel: a gilt outline on whatever its score is. */
+.ch-rd .ch-rd-stage .ch-rd-rib rect.is-q {
+  stroke: var(--ch-rd-gold);
+  stroke-width: 2.5;
+  paint-order: stroke;
+}
+.ch-rd .ch-rd-rib__hit {
+  fill: transparent;
+  pointer-events: all;
+}
+.ch-rd .ch-rd-rib__bar {
+  --ch-rd-delay: min(calc(var(--ch-i, 0) * var(--ch-dur-press) / 3), var(--ch-dur-reveal));
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition:
+    transform var(--ch-dur-reveal) var(--ch-ease) var(--ch-rd-delay),
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    filter var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rd .ch-rd-rib__bar.is-down {
+  transform-origin: 50% 0%;
+}
+/* The bars rise from the par line the first time the stage is seen; their scores come in as the last of them lands. */
+.ch-rd .ch-rd-stage:not(.is-in) .ch-rd-rib__bar {
+  transform: scaleY(0);
+}
+.ch-rd .ch-rd-stage:not(.is-in) .ch-rd-rib__v {
+  opacity: 0;
+}
+@keyframes ch-rd-fade {
+  from {
+    opacity: 0;
+  }
+}
+.ch-rd .ch-rd-stage.is-in .ch-rd-rib__v {
+  animation: ch-rd-fade var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-reveal) * 0.6) backwards;
+}
+.ch-rd .ch-rd-rib__v {
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rd .ch-rd-rib__g.is-dim .ch-rd-rib__bar,
+.ch-rd .ch-rd-rib__g.is-dim .ch-rd-rib__v {
+  opacity: 0.4;
+}
+.ch-rd .ch-rd-rib__g.is-hot .ch-rd-rib__bar {
+  filter: brightness(1.14) saturate(1.1);
+}
+/* The card that reads a round out: the date and kind, then the score against par. It sits on a still, full-width track that
+   is its size container and moves along it by `translate` in container units (--ch-rd-x, 0 to 100), so it glides on the
+   compositor and the track never overflows the chart; the card centres itself on that point. */
+.ch-rd .ch-rd-rib__tipx {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-rd .ch-rd-rib__tip {
+  display: grid;
+  gap: 3px;
+  width: max-content;
+  min-width: 118px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  background: rgb(244 238 221 / 0.97);
+  box-shadow:
+    0 0 0 1px rgb(8 43 28 / 0.14),
+    var(--ch-elevation-overlay);
+  color: #1c1b18;
+  opacity: 0;
+  transform: translateX(-50%);
+  translate: calc(var(--ch-rd-x, 0) * 1cqw) 4px;
+  transition:
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    translate var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rd .ch-rd-rib__tip.is-on {
+  opacity: 1;
+  translate: calc(var(--ch-rd-x, 0) * 1cqw) 0;
+}
+.ch-rd .ch-rd-rib__tip b {
+  font: 700 12.5px/1.2 var(--ch-font-sans);
+}
+.ch-rd .ch-rd-rib__tip span {
+  font: 600 13px/1.2 var(--ch-font-sans);
+}
+
+/* On the phone the chart stays on the page, as the Mobile pass has it (one green card there): the same picture in the page's own inks. */
+.ch-rd.is-phone .ch-rd-stage {
+  --ch-rd-under-a: #d9665a;
+  --ch-rd-under-b: #a8372b;
+  --ch-rd-over-a: var(--ch-ink-400);
+  --ch-rd-over-b: var(--ch-ink-500);
+  --ch-rd-ink: var(--ch-text-primary);
+  --ch-rd-soft: var(--ch-text-secondary);
+  --ch-rd-rule: rgb(110 98 62 / 0.14);
+  --ch-rd-par: rgb(28 27 24 / 0.5);
+  --ch-rd-gold: var(--ch-champagne-500);
+  --ch-rd-avg-ink: var(--ch-green-500);
+  --ch-rd-chip: var(--ch-green-50);
+  --ch-rd-chip-ring: rgb(21 90 57 / 0.25);
+  margin-top: 4px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-rd.is-phone .ch-rd-stage .ch-rd-rib__v.is-under {
+  fill: var(--ch-score-under);
+}
+.ch-rd.is-phone .ch-rd-stage__h {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.ch-rd.is-phone .ch-rd-stage .ch-rd-season__lg {
+  grid-column: 1;
+  grid-row: 3;
+  justify-content: flex-start;
+}
+.ch-rd.is-phone .ch-rd-stage .ch-rd-rib__t,
+.ch-rd.is-phone .ch-rd-stage .ch-rd-rib__v,
+.ch-rd.is-phone .ch-rd-stage .ch-rd-rib__d {
+  font-size: 13px;
+}
+.ch-rd.is-phone .ch-rd-rib__tip {
+  background: var(--ch-sheet-bg);
+  box-shadow:
+    0 0 0 1px rgb(28 25 18 / 0.12),
+    var(--ch-elevation-overlay);
+}
+
+/* ---- The round in progress ---- */
+.ch-rd[data-canopy] .ch-rd-strip {
+  box-shadow:
+    var(--ch-board-shadow),
+    0 0 0 1px rgb(176 149 96 / 0.5),
+    var(--ch-elevation-board);
+}
+.ch-rd[data-canopy] .ch-rd-unf__f > span:first-child {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.ch-rd[data-canopy] .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
+  font: 600 26px/1 var(--ch-font-sans);
+  letter-spacing: -0.035em;
+  font-variation-settings: 'wdth' 92;
+}
+.ch-rd.is-phone .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
+  font: 600 22px/1 var(--ch-font-sans);
+  letter-spacing: -0.03em;
+  font-variation-settings: 'wdth' 92;
+}
+.ch-rd .ch-rd-unf__cta svg {
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-rd .ch-rd-unf__cta:hover svg {
+    transform: translateX(3px);
+  }
+}
+@media (hover: hover) {
+  .ch-rd .ch-rd-more__go:hover {
+    background: var(--ch-green-50);
+    box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.45);
+  }
+}
+.ch-rd .ch-rd-more__go {
+  transition:
+    background var(--ch-dur-quick) var(--ch-ease),
+    box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+
+/* ---- The book ---- */
+.ch-rd .ch-rd-grp__h h3 {
+  font: 600 19px/1.2 var(--ch-font-sans);
+  letter-spacing: -0.025em;
+  font-variation-settings: 'wdth' 88;
+}
+.ch-rd .ch-rd-grp__h {
+  align-items: center;
+  font: 500 13px/1 var(--ch-font-sans);
+}
+.ch-rd .ch-rd-grp__h > .ch-num {
+  font-variant-numeric: tabular-nums;
+}
+.ch-rd .ch-rd-grp__h b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+/* A month's trend: one small bar a round, oldest to newest. */
+.ch-rd-grp__spark {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+.ch-rd-grp__spark i {
+  display: block;
+  width: 5px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--ch-ink-400), var(--ch-ink-600));
+}
+.ch-rd-grp__spark i.is-under {
+  background: linear-gradient(180deg, #d9665a, #a8372b);
+}
+@media (min-width: 821px) {
+  .ch-rd[data-canopy] .ch-rd-sc {
+    grid-template-columns: 56px minmax(160px, 1.1fr) auto minmax(180px, 1fr) 68px;
+    gap: 22px;
+  }
+  /* The date is a flush figure with a gilt hairline on its right, not a raised key. */
+  .ch-rd[data-canopy] .ch-rd-sc__date {
+    gap: 3px;
+    width: 56px;
+    height: 52px;
+    padding-right: 4px;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset -1px 0 0 rgb(176 149 96 / 0.4);
+    color: var(--ch-green-700);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__date b {
+    font: 600 27px/1 var(--ch-font-sans);
+    letter-spacing: -0.04em;
+    font-variation-settings: 'wdth' 90;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__date em {
+    font: 500 12px/1 var(--ch-font-sans);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__c > b {
+    font-size: 16.5px;
+    transition: color var(--ch-dur-quick) var(--ch-ease);
+  }
+  /* Out, In and Tot: a small hung board, the review's scorecard in miniature. The totals hang on ivory plates; the total is gilt. */
+  .ch-rd[data-canopy] .ch-rd-sc__grid {
+    gap: 3px;
+    padding: 3px;
+    overflow: visible;
+    border-radius: 11px;
+    background: linear-gradient(180deg, #0f4a2f, #082b1c);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 0 0 1px var(--ch-green-900),
+      var(--ch-elevation-board);
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid > span {
+    height: 42px;
+    border-radius: 7px;
+    background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
+    box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.1);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid > span + span {
+    border-left: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid .is-tot {
+    background: linear-gradient(180deg, #efe6d2, #dccda6);
+    color: #1c1b18;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid .is-tot em {
+    color: #55503f;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid b {
+    font-size: 17px;
+    font-variation-settings: 'wdth' 92;
+  }
+  .ch-rd[data-canopy] .ch-rd-meter__t {
+    height: 6px;
+    background: var(--ch-well-soft-bg);
+    box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.14);
+  }
+  .ch-rd[data-canopy] .ch-rd-meter__t i {
+    background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+    transition: transform var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-rd[data-canopy] .ch-rd-meter__t.is-p i {
+    background: linear-gradient(90deg, var(--ch-champagne-300), var(--ch-champagne-500));
+  }
+  /* To par stands on the page; only a round under par keeps its ring. */
+  .ch-rd[data-canopy] .ch-rd-sc__s {
+    height: 52px;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__s b {
+    font: 600 25px/1 var(--ch-font-sans);
+    letter-spacing: -0.035em;
+    font-variation-settings: 'wdth' 92;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__s.is-under {
+    border-radius: 14px;
+    background: var(--ch-score-under-bg);
+    box-shadow: inset 0 0 0 2px var(--ch-score-under);
+  }
+  @media (hover: hover) {
+    .ch-rd[data-canopy] a.ch-rd-sc:hover .ch-rd-sc__c > b {
+      color: var(--ch-green-700);
+    }
+    .ch-rd[data-canopy] a.ch-rd-sc:hover .ch-rd-sc__grid {
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.12),
+        0 0 0 1px var(--ch-green-900),
+        var(--ch-elevation-board-hover);
+    }
+  }
+}
+@container chrd (max-width: 1000px) {
+  .ch-rd[data-canopy] .ch-rd-sc {
+    grid-template-columns: 56px minmax(0, 1fr) auto 64px;
+  }
+}
+
+/* ---- The phone: flush rows keep their shape; the date and the score take the same figures ---- */
+.ch-rd.is-phone .ch-rd-sc__date {
+  color: var(--ch-green-700);
+}
+.ch-rd.is-phone .ch-rd-sc__date b {
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.ch-rd.is-phone .ch-rd-grp__h {
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-rd .ch-rd-rib__bar {
+    --ch-rd-delay: 0s;
+  }
+  .ch-rd .ch-rd-stage.is-in .ch-rd-rib__v {
+    animation-delay: 0s;
   }
 }

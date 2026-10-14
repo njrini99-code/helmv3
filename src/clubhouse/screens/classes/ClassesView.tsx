@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GraduationCap, Plus, Trash2, TriangleAlert, Upload } from 'lucide-react';
-import { classNameOf, conflictsOf, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
+import { classNameOf, conflictsOf, dayToken, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
-import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
@@ -17,7 +17,7 @@ import { EmptyState } from '../../ui/States';
 import { ClassDetail } from './ClassDetail';
 import { ClassForm } from './ClassForm';
 import { ImportSchedule } from './ImportSchedule';
-import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar, TodayClasses } from './parts';
+import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar, TimetableHead, timetableDays, TodayClasses } from './parts';
 import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
@@ -45,7 +45,6 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   const reduced = useChReducedMotion();
   const phone = useChPhone();
   const router = useRouter();
-  const backFromMore = useBackFromMore();
   const [classes, setClasses] = useState(data.classes.list);
   // The classes whose last calendar sync failed, this visit only: no column holds it, so a reload starts clean.
   const [failedSync, setFailedSync] = useState<Set<string>>(() => new Set());
@@ -290,13 +289,18 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     setOpenId(null);
     setAsking(c);
   };
+  const days = timetableDays(classes);
+  const teamDays = new Set(week.error ? [] : conflicts.filter((x) => week.dates.includes(x.date)).map((x) => dayToken(x.date)));
   const deck = (
     <>
       {/* CH-12801: the page is labelled by "Classes"; each card is one button. */}
       <div className="ch-cl-deck">
+        <TimetableHead days={days} todayIso={todayIso} weekDates={week.dates} conflicts={week.error ? [] : conflicts} />
         {classes.map((c) => (
           <ClassCard
             key={c.id}
+            days={days}
+            teamDays={teamDays}
             c={c}
             todayIso={todayIso}
             term={term}
@@ -332,7 +336,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   return (
     <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone ? undefined : ''}>
       {/* Phone: Classes opens from More (D-66), so the top bar goes back there. */}
-      {phone && <PhoneTop title="Classes" back={{ label: 'More', onBack: backFromMore }} />}
+      {phone && <PhoneTop title="Classes" start />}
       <header className="ch-cl-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-cl-k">
@@ -365,7 +369,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
           code="CH-12301"
           icon={GraduationCap}
           title="Add your class schedule"
-          body="Import a screenshot of your schedule and we’ll add every class. Your coach can see when you’re busy, so practice and travel get planned around class."
+          body="Import a screenshot of your schedule and we’ll read it so you can check each class. Your coach can see when you’re busy, so practice and travel get planned around class."
           action={
             <Button variant="primary" leftIcon={Upload} onClick={startImport}>
               Import schedule

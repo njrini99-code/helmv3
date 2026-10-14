@@ -1,5 +1,94 @@
 # P007 — Messages: changelog
 
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Messages's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-12 — conversation files follow the dashboard role
+
+`getGolfConversationFiles` (HELD) asks the gate with the dashboard layout's
+role, not
+`session.role`, so a user with a coach row on the player dashboard gets the
+files Clubhouse
+Messages shows them under a team allowlist. Membership still decides who reads what.
+
+## 2026-10-12 — attachment retry stays Clubhouse-only
+
+No visible change. Messages now asks the shared attachment hook for the
+recoverable mode (`useMessageAttachments({ recoverable: true })`), which keeps
+an unconfirmed send in sessionStorage so this screen can offer "retry this same
+send". The hook's default no longer stores that marker, because Fairway has no
+retry and a stored marker blocked every later attachment send in the thread.
+
+## 2026-10-08 — a flatter conversation list, a green filter, and Delete conversation
+
+Owner review:
+
+- The conversation list stays a flat list (owner: "too card heavy"): thin
+  dividers inset to the text, the open conversation the one filled green row in
+  ivory ink (the old left stripe is gone), groups a solid green disc, avatars
+  44px, and a long name wraps to a second line rather than being cut mid-word.
+  `messages.css`.
+- All, Unread and Groups: the chosen chip is green with ivory ink, not ivory on
+  ivory.
+- **Delete conversation** (CH-7503): a danger button in the conversation's
+  details (desktop panel and phone sheet) opens a confirm, then hides the
+  conversation from your own inbox (`hideGolfConversation`,
+  `app/golf/actions/conversation-hide.ts`). The other people keep their copy,
+  the
+  messages are untouched, a team channel can't be deleted, and a message that
+  arrives after the hide brings the conversation back. It needs the held
+  migration `20261008160000_golf_conversation_hidden_at.sql` (a nullable
+  `golf_conversation_participants.hidden_at` and the inbox function skipping a
+  hidden conversation); until that is applied the button is not offered
+  (`canHideGolfConversations` probes the column) and the action answers "not
+  available yet". Fairway's inbox ignores `hidden_at` for now.
+- A photo in a thread shows inline (a fixed 4:3 frame, cropped, so a late image
+  never moves the messages around it; a click opens the full file, and one that
+  won't load falls back to the file chip). Videos and documents stay chips.
+- A reaction chip is the opposite colour of its message (ivory under a green
+  bubble, green under an ivory one; yours is ringed in champagne), and a click
+  opens who reacted: a green head naming the reaction and the count, a row per
+  person, and one action to add or take back your own (`ReactionChip`;
+  `ChReaction.userIds`). The glyphs are outline only, heavier (2.3), in pure
+  ivory
+  on green and deep green on ivory; the picker's chosen reaction is a green
+  disc.
+- The composer is a taller, rounder bar (56px, 28px radius) that takes a green
+  focus glow; Attach is a green-wash disc, and Send a green disc that is a pale
+  tint when empty and full green when there is something to send
+  (`.ch-ms-comp__field`, `.ch-ms-send.is-ready`). Not yet signed off by the
+  owner.
+- The thread and the conversation list ease like the page does
+  (`usePanelSmoothScroll`; the thread glides 1.2s). Desktop wheel only: a
+  trackpad and the phone scroll natively.
+
+## 2026-10-08 — the player peek (P003-C1)
+
+The shared PlayerPeek: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages already holds. The bubble keeps its own hold for message actions; coaches and people off the roster don't peek. No new reads.
+
+## 2026-10-08 — premium pass: a stale chunk reloads once, in Clubhouse's voice (D3)
+
+`ClubhouseRouteError` (`shell/ClubhouseRouteError.tsx`) is a route `error.tsx` body for Clubhouse screens, inside the shell or above it. On a ChunkLoadError ("Loading chunk …", stale assets after a deploy), the shared RouteErrorBoundary asks the one recovery coordinator (`lib/recovery/client`) for a reload. The coordinator reloads once, under the session's attempt budget and latch, and never over unsaved work; there is no second sessionStorage flag, because the coordinator's own doc forbids any other `location.reload()`. Any other error shows Clubhouse's route error (CH-1206). Above the shell it brings its own `.ch-root`, fonts and tokens. `/clubhouse-preview` now uses it, where the audit's crash fell through to the app's generic Helm page. The live Messages route already reached the same view through the shell.
+
+## 2026-10-08 — premium pass: findings D1, D2, D4
+
+- D1: a thread is held at its newest message while it settles (`useThreadAnchor`, 700 ms). A push during hydration that resets the scroll under it no longer leaves it at the oldest message. The hold stops the moment the reader scrolls, touches or types.
+- D2: a message that didn't send keeps full-ink text, on a muted fill inside a dashed edge, beside "Not sent · Retry". It is no longer faded to about 2.8:1, so it can be read before you retry it.
+- D4: the preview opens the team thread only on desktop, after hydration, as the live screen does. The phone preview stays on the inbox. The live loader already auto-opens only at 821px and wider.
+
+## 2026-10-08 — premium pass: announcements as letterhead (P007-A1)
+
+An announcement reads as a signed team letter. The letterhead is one engraved line, the team and the full date ("Varsity · Wednesday 14 October"), with the asks in words at its end ("Urgent · please acknowledge") instead of two chips; then the 28px title, the body in full ink at a reading measure, and the posting coach's name and title over a 1px gilt rule. Tasks, files and receipts follow as before. On desktop the sheet takes the room's light as paper (`--ch-light-paper`, never on the words); on the phone it stays flush. No monogram or crest (owner: crests are declined, D3-2). The loader adds `signers` (the program's coaches by golf_coaches.id) and the announcement carries `authorId` (`created_by`); an unknown author shows no signature.
+
+## 2026-10-08 — premium pass: prefilled messages (D2-7)
+
+Actions that reach players open Messages prefilled and never send: `messagesPrefillHref({ players, draft, title })` (`screens/messages/prefill.ts`) links to `?prefill=<key>`: the key is an opaque hash, and the people, the draft and the group name stay in this tab's sessionStorage under it, never in the URL (query strings land in logs and history, and a draft can name a minor's health or schoolwork). Messages takes the entry once and deletes it (`takePrefill`); a cold link, a new tab or a used key opens Messages with nothing prefilled. Players not on the team are left out and reported (CH-7001); the rest stay chosen. One player with a thread opens it with the draft in its composer (an unsent draft of the coach's own wins); otherwise New message opens with the people chosen (a coach's two or more as a group named `title`) and the draft quoted. Nothing is created until the coach presses on, and the draft lands in the new thread's composer, where the coach presses Send. A player's prefill keeps one person (D-15). When nobody in it is on the team, CH-7001 says so.
+
 ## 2026-10-08 — dark: Clubhouse at night
 
 Messages follows GolfHelm's dark theme ("Clubhouse at night"). Sent bubbles keep the green gradient with ivory type (not white); row hover and press, tool hovers and the reaction hover become ivory washes; the selected thread's rail, the To chips and the announcement acknowledgement take the light text green; announcement marks, the phone's group marks and Jump to latest keep their filled green with ivory type; the phone's idle Send glyph reads on its grey plate. Light mode is unchanged.

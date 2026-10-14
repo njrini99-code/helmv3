@@ -8,8 +8,9 @@ paths:
 ## Clubhouse (the from-scratch GolfHelm UI)
 
 `src/clubhouse/` is a new UI tree built from the handoff in `design/handoff/`
-(the Fairway Clubhouse Edition spec). It is off in production today
-(its feature flag is off); Fairway is the live UI. **The Fairway rules in
+(the Fairway Clubhouse Edition spec). It is off in production (its release
+flag in `config/feature-flags.yml`; preview and development render it), so Fairway serves
+coaches and players live. **The Fairway rules in
 `design-system.md` do not apply here, and Fairway code must never be reused
 here.** An earlier redesign layered new styles on top of Fairway and the owner
 rejected the result; this tree exists so that cannot happen again.

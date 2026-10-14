@@ -14,6 +14,8 @@ let flagOn = true;
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/navigation', () => ({ redirect: (h: string) => redirect(h) }));
+let search = '';
+vi.mock('next/headers', () => ({ headers: async () => new Headers(search ? { 'x-helm-search': search } : {}) }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => session }));
 vi.mock('../gate', () => ({ isClubhouseFor: (role: string | null) => !!role && flagOn }));
 
@@ -24,6 +26,7 @@ beforeEach(() => {
   redirect.mockClear();
   session = { coach: {} };
   flagOn = true;
+  search = '';
 });
 
 describe('redirectToClubhouse', () => {
@@ -111,5 +114,40 @@ describe('swap audit §14 aliases (D6, D8)', () => {
     redirect.mockClear();
     await QualifyingWorkspaceLayout({ children: null, params: Promise.resolve({ id: 'not-an-id' }) });
     expect(redirect).not.toHaveBeenCalled();
+  });
+});
+
+describe('an old address keeps its query when it moves (the proxy hands layouts x-helm-search; 100103 for tasks)', () => {
+  const TID = '6f1e2d3c-4b5a-4968-8776-5a4b3c2d1e0f';
+
+  it('a task notification opens that task: on the coach’s Tasks tab, on the player’s Team Hub', async () => {
+    const { default: TasksLayout } = await import('@/app/golf/(dashboard)/dashboard/tasks/layout');
+    search = `?task=${TID}`;
+    await expect(TasksLayout({ children: null })).rejects.toThrow(`REDIRECT ${HUB}?tab=tasks&task=${TID}`);
+    session = { player: {} };
+    await expect(TasksLayout({ children: null })).rejects.toThrow(`REDIRECT ${HUB}?task=${TID}`);
+  });
+
+  it('with no task, or a value that is not an id, Tasks opens as before', async () => {
+    const { default: TasksLayout } = await import('@/app/golf/(dashboard)/dashboard/tasks/layout');
+    await expect(TasksLayout({ children: null })).rejects.toThrow(`REDIRECT ${HUB}?tab=tasks`);
+    search = '?task=' + encodeURIComponent('x"><script>');
+    await expect(TasksLayout({ children: null })).rejects.toThrow(new RegExp(`REDIRECT ${HUB}\\?tab=tasks$`));
+    session = { player: {} };
+    await expect(TasksLayout({ children: null })).rejects.toThrow(new RegExp(`REDIRECT ${HUB}$`));
+  });
+
+  it('/intelligence keeps ?player and turns view=chat into Ask; other views are dropped', async () => {
+    const { default: IntelligenceLayout } = await import('@/app/golf/(dashboard)/dashboard/intelligence/layout');
+    search = `?player=${TID}&view=chat`;
+    await expect(IntelligenceLayout({ children: null })).rejects.toThrow(`REDIRECT /golf/dashboard/coachhelm?player=${TID}&view=ask`);
+    search = '?view=genome&other=1';
+    await expect(IntelligenceLayout({ children: null })).rejects.toThrow(new RegExp('REDIRECT /golf/dashboard/coachhelm$'));
+  });
+
+  it('a string target ignores the query (genome compare keeps nothing)', async () => {
+    const { default: CompareLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/layout');
+    search = `?a=${TID}&b=${TID}`;
+    await expect(CompareLayout({ children: null })).rejects.toThrow(new RegExp('REDIRECT /golf/dashboard/stats/team$'));
   });
 });

@@ -39,6 +39,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3005 | The browser blocks the CSV download | "Couldn’t export the roster" + "Your browser blocked the download. Try again, or use a desktop browser." Done: "Roster exported · 7 players" | `exportCsv` | roster.test › CH-3005 |
 | CH-3006 | Copying the join code or link fails | "Couldn’t copy the join code" + "Select it and copy it by hand." Done: "Join code copied" | `useCopyText` (Invite sheet, phone requests sheet) | roster.test › CH-3006 |
 | CH-3007 | Approve all (phone requests sheet, D-55) leaves some requests unapproved | "Couldn’t approve Owen Park and Sam Reyes" + "1 of 3 added to Varsity. Those requests may have been withdrawn. Try again, or refresh to see the latest." Those requests stay listed, and Retry re-tries only them. Done: "3 players added to Varsity" | `useJoinRequests` → `useAction('roster.approveAll')`, one request at a time | roster.test › CH-3007 |
+| CH-3008 | Changing a player's status (Active or Inactive) fails | "Couldn’t mark Theo Marchetti inactive" + "Nothing changed on the roster. Try again, or refresh if it keeps failing." Retry; the confirm stays open and the row keeps its status. Done: "Theo Marchetti marked inactive" (or "marked active"), and the player moves to that filter. Offline, nothing is sent (CH-1903). `updatePlayerStatus` resolves the coach's active team with the same resolver and cookie as the roster route | `useAction('roster.changeStatus')` → `updatePlayerStatus` | roster.test › CH-3008 |
 
 ## 31xx Validation
 
@@ -82,20 +83,23 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3401 | Roster is loading | Header, toolbar and six face cards as skeletons in their final slots | `RosterSkeleton`, `aria-busy`; below 820px the phone list rows, switched in CSS | roster.test › CH-3401 |
 | CH-3402 | A remove is in flight | The button reads "Removing" and can't be pressed again | `Modal` footer | roster.test › CH-3402 |
 | CH-3403 | Approve all is in flight (phone join requests sheet, D-55) | The footer reads "Approving" and can't be pressed again; each Approve and Decline waits too | `RequestsSheet` footer | roster.test › CH-3403 |
+| CH-3404 | A status change is in flight | The confirm button reads "Saving" and can't be pressed again; Cancel waits and the dialog can't be dismissed | `StatusConfirm` footer | roster.test › CH-3404 |
 
 ## 35xx Confirm
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-3501 | Remove from team (row menu; on the phone, the profile's ⋯ sheet) | "Remove player?" + "Remove Theo Marchetti from Varsity? They can rejoin later with the team code." + "Their account and stats are not deleted…" Cancel / Remove player | `Modal` | roster.test › CH-3501 |
+| CH-3502 | Mark inactive / Mark active (coach only: row menu; on the phone, the profile's ⋯ sheet) | "Mark player inactive?" + "Move Theo Marchetti to Inactive on Varsity?" + "They stay on the team with their account and stats, but leave team rankings and averages. Until you mark them active again, the app shows them no team." Cancel / Mark inactive. For an inactive player: "Mark player active?" + "Move Theo Marchetti back to the active roster of Varsity?" Not destructive: the confirm is the primary, no red and no warning haptic (D-42, D-70) | `StatusConfirm` (`Modal`) | roster.test › CH-3502 |
 
 ## 36xx Motion
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-3601 | Opening or switching a player | The panel slides in 16px and fades (260ms); switching players cross-fades | `RosterPeek`, `chTween('base')`; on the phone the profile is pushed instead (the shell's CH-1610) | preview |
-| CH-3602 | Hovering or pressing a face card or row | On desktop the cell takes the Ledger tint on hover and a deeper one on press (110ms), with no lift and no scale; a list row presses the same way from its name; the selected face keeps a green tint, ring and name. On the phone a player row, an action in the ⋯ sheet and the profile's All link take the row press tint over the press beat, and the join requests card (the screen's one feature card) darkens under a shade over the press beat; nothing scales | `roster.css`, `--ch-ledger-row-press` | preview |
+| CH-3601 | Opening or switching a player (desktop: from a Needs a look chip) | The panel slides in 16px and fades (260ms); switching players cross-fades | `RosterPeek`, `chTween('base')`; on the phone the profile is pushed instead (the shell's CH-1610) | preview |
+| CH-3602 | Hovering or pressing a face card or row | On desktop a face is a raised tile that lifts 8px on hover with a stronger gold ring and takes the green tint on press (110ms), with no scale; a list row presses the same way from its name; the selected face keeps a green tint, a 2px green ring and a stronger gold frame. On the phone a player row, an action in the ⋯ sheet and the profile's All link take the row press tint over the press beat, and the join requests card (the screen's one feature card) darkens under a shade over the press beat; nothing scales | `roster.css`, `--ch-ledger-row-press` | preview |
 | CH-3603 | Switching between Team view and List view | The other layout settles in with a 6px rise (260ms) while the old one fades out (180ms), hidden from assistive tech. The kept layout coming back as the page opens never animates. Instant with reduced motion | `Swap` in `Roster` (`viewTurn`) | roster.test › CH-3603; preview (the timing) |
+| CH-3604 | Phone: choosing Avg, SG or Name | Each moved row slides to its new place on the smooth spring, and each row's trailing figure rolls its digits to the new sort's figure (base, ease-out) with a true minus; first paint never counts up. A refresh never moves the rows or rolls a figure. Instant with reduced motion or Animations off | `useRosterSort` (TanStack Table sorting), `<ViewTransition>` class `ch-rsm-reorder`, `RollFigure` (Number Flow) | roster-sort.test › CH-3604; preview (the timing) |
 
 ## 37xx Haptics
 

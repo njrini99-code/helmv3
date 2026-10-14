@@ -79,6 +79,18 @@ The list is `config/clubhouse/pages/P009-qualifiers.json` `actions`, and the gra
 
 All 25 (CONTRACT.md).
 
+## Premium pass rules (2026-10-08)
+
+- **Movement:** a row's "▲n / ▼n" compares its position with the board as it stood with every round of the latest
+  round number left out. A player not ranked then has none. It is never a refresh-to-refresh delta.
+- **Bubble:** below the places on score and inside the squad, and only with at least ⌈rounds ÷ 2⌉ rounds in (1 of 1,
+  1 of 2, 2 of 3, 2 of 4, 3 of 5). One round of three is too thin a sample to frame a minor as contending.
+- **Sample size:** a ranked row with fewer rounds in than the most anyone has shows "n of N rounds".
+- **Live:** Live only while the realtime feed is subscribed; Paused (with the read time and Refresh) otherwise or after
+  a long-hidden tab; Ended past the end date (held at UTC−12).
+- **Rank slide:** only when the ranked order changed, never under reduced motion, Animations off, a scroll, a tray,
+  sheet or dialog; plates change value at once.
+
 ## Motion intent
 
 A card, the hero and a status pill press in about 6px and spring back (CH-09601). A leaderboard row's

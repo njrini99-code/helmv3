@@ -74,6 +74,7 @@ anything is sent (30701, the shell's 10703, CH-1903).
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
 | ACT-P003-REMOVE-PLAYER | Row menu › Remove from team; phone ⋯ › Remove from team; then Remove player | `remove.run` (Roster) | `removePlayerFromTeam` | golf_team_members | confirm 31101 · warning 31704 · in flight 30301 · lands 30901 · fails 30601 · refused 30803 · Retry 31403 |
+| ACT-P003-CHANGE-STATUS | Row menu › Mark inactive / Mark active; phone ⋯ › the same; then the confirm | `changeStatus.run` (Roster), confirm in `StatusConfirm` (`RosterStatus.tsx`) | `updatePlayerStatus` (resolves the coach's active team through `resolveCoachActiveTeam` with the active-team cookie, as the route's `resolveClubhouseTeam` does) | golf_team_members (status) | confirm 31102 · in flight 30202 · lands 30901 · fails 30619 · refused 30803 · Retry 31403 |
 | ACT-P003-APPROVE-REQUEST | Approve (desktop card; phone sheet) | `jr.decide(request, true)` | `acceptJoinRequest` | golf_team_join_requests, golf_team_members, notifications | optimistic 31301 · lands 30901 · fails 30602 · refused 30803 · Retry 31403 |
 | ACT-P003-DECLINE-REQUEST | Decline (desktop card; phone sheet) | `jr.decide(request, false)` | `rejectJoinRequest` | golf_team_join_requests, notifications | optimistic 31301 · lands 30901 · fails 30603 · refused 30803 · Retry 31403 |
 | ACT-P003-APPROVE-ALL | Phone sheet › Approve all | `jr.approveAll` | `acceptJoinRequest`, one at a time (D-55) | golf_team_join_requests, golf_team_members, notifications | in flight 30302 · lands 30901 · some fail 30607 · Retry re-runs the failures 31401 |
@@ -111,6 +112,7 @@ Links out are plain links through `rebuiltHref`, so a destination that is not re
 | --- | --- | --- |
 | `routes/roster.tsx` | The route adapter: the session, the active team, then the coach's or the player's loader and screen | 30801, 30804, CH-3306, CH-3308 |
 | `screens/roster/Roster.tsx` | The container: `players`, Remove, Export, filters, layout, Invite, the phone switch, the section boundaries; also `RosterList` (cards or table) and `InviteModal` | 30101, 30303, 30401 to 30404, 30502, 30601, 30605, 30606, 30608, 30609, 30611 to 30614, 31101, 31202, 31704 |
+| `screens/roster/RosterStatus.tsx` | The Mark inactive / Mark active confirm (`StatusConfirm`) and its toast copy (`statusCopy`) | 30202, 30619, 31102 |
 | `screens/roster/RosterPeek.tsx` | The desktop panel and `CoachNote` (shared with the phone profile) | 30405, 30501, 30604, 30615, 30616, 31201, 31203, 32001 |
 | `screens/roster/RosterRequests.tsx` | The desktop join requests card | 30610, 31301 |
 | `screens/roster/useJoinRequests.ts` | The requests, optimistic; Approve and Decline; Approve all | 30302, 30602, 30603, 30607, 31301, 31401, 31403 |
@@ -139,6 +141,7 @@ Links out are plain links through `rebuiltHref`, so a destination that is not re
 | Name | Path | Existing/New/Held | Purpose |
 | --- | --- | --- | --- |
 | removePlayerFromTeam | actions/roster.ts | Existing | end a membership (the account and stats stay) |
+| updatePlayerStatus | actions/team-management.ts | Existing | set a membership Active or Inactive (coach only; the coach's active team) |
 | getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest | actions/teams.ts | Existing | the pending requests and the two decisions |
 | setIntent | actions/v3/intent.ts | Existing | the coach's note (`notes` on golf_coach_player_intent) |
 | loadRoster | src/clubhouse/data/roster.ts | New (Clubhouse only) | one server read for the whole page |

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   savePartialRound: vi.fn(),
   submitGolfRoundComprehensive: vi.fn(),
   deleteInProgressRound: vi.fn(),
+  updatePendingCount: vi.fn(async () => {}),
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => mocks.router }));
@@ -28,7 +29,8 @@ vi.mock('@/app/golf/actions/round-type', () => ({ updateRoundType: vi.fn() }));
 vi.mock('@/hooks/golf/use-round-status-sync', () => ({ useRoundStatusSync: vi.fn() }));
 vi.mock('@/stores/offline-sync-store', () => {
   const status = { isOnline: true, isSyncing: false, pendingCount: { total: 0 }, syncError: null };
-  return { useOfflineSyncStatus: () => status };
+  const state = { updatePendingCount: mocks.updatePendingCount };
+  return { useOfflineSyncStatus: () => status, useOfflineSyncStore: { getState: () => state } };
 });
 vi.mock('@/lib/offline/indexed-db', () => ({
   saveOfflineRound: vi.fn(async () => {}),
@@ -160,6 +162,15 @@ describe('routes', () => {
 
     expect(ports.showToast).toHaveBeenCalledWith('Round saved on this device. Opening recovery flow.', 'warning');
     expect(mocks.router.push).toHaveBeenCalledWith('/clubhouse/rounds/recover');
+  });
+
+  it('refreshes the offline queue count after a submit is queued on the device, so the offline banner counts it', async () => {
+    mocks.submitGolfRoundComprehensive.mockRejectedValue(new Error('Failed to fetch'));
+    const hook = render();
+    await act(async () => {
+      await hook.result.current.handleRoundSubmit([holeStats]);
+    });
+    expect(mocks.updatePendingCount).toHaveBeenCalled();
   });
 });
 

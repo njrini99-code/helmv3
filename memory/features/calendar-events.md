@@ -189,6 +189,30 @@ legacy `is_recurring` flag in sync for older consumers.
 - Recurring event edits must respect scope: this, thisAndFuture, or all.
 - Feed tokens must be treated as secrets and rate limited.
 - Calendar conflict detection should consider classes, blocked time, and exclusions.
+- **No player notifications unless the event asks for replies** (owner,
+  2026-10-08). RSVPs are off unless the coach turns `golf_events.requires_rsvp`
+  on. With it off, players get no new-event, invitation, update, cancellation or
+  reminder notification (in-app, email or push): the gates are in
+  `createGolfEvent` / `deleteGolfEvent` (`calendar-events.ts`),
+  `sendEventInvitations` / `notifyEventUpdate` (`src/lib/calendar/rsvp.ts`), the
+  recurring series create and delete fan-outs (`recurring-events.ts`) and the
+  reminder cron's query (`api/cron/event-reminders`). Invitations still write
+  attendance rows, so who is on the event is unchanged. Tests: `rsvp.test.ts`,
+  `golf-events.test.ts`, `event-reminders.test.ts`.
+- **RSVP is opt-in; every reply surface follows the flag** (owner, 2026-10-10).
+  Every create path sends `requires_rsvp=false` unless the coach turns on
+  Require RSVP (Clubhouse and Fairway editors; CoachHelm's practice planner now
+  defaults to false; the column default is already `false` in production and the
+  baseline). Reads treat null as off (`=== true`). Off hides: Clubhouse detail
+  responses, reply badges, player reply, Needs attention, peek count and Nudge,
+  home going/awaiting/confirmed, hub RSVP rows (coach query
+  `.eq('requires_rsvp',
+  true)`, player `replyIsClosed`), sidebar confirmed count; Fairway drawer coach
+  summary and people pills, the player's Respond pick, the coach dashboard's
+  "N/M confirmed" (`dashboard-data.ts` reads the flag beside the
+  `get_coach_today_schedule` RPC); CoachHelm `get_upcoming_events` reply counts.
+  Attendance taking stays independent of RSVP. `editRecurringEvent` accepts
+  `updates.requiresRsvp`.
 - **Only players are invitable.** The golf calendar page passes the editor a
   roster merged with every organisation coach (`role: 'coach'`);
   `FairwayEventEditor` drops coach rows from the invite picker. Attendance

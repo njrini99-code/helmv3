@@ -23,7 +23,7 @@ import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
 import { AuthKeyLabel } from './AuthKey';
-import { AuthNotice } from './AuthNotice';
+import { AuthNotice, type AuthTone } from './AuthNotice';
 import { OPENING_MS } from './auth-motion';
 import { isPlainClick } from './ForgotPassword';
 import { failureFor, failureForServer, type SignInFailure } from './sign-in-state';
@@ -31,6 +31,8 @@ import { useGlide, type Glider } from './use-glide';
 import { useQueryParam } from './use-query-param';
 
 const ERROR_ID = 'golf-signin-error';
+/** A done thing (an account made, a password reset) is positive; being signed out, or out of time, is only information. */
+const NOTICE_TONE: Readonly<Record<string, AuthTone>> = { password_reset: 'positive', account_created: 'positive' };
 
 /**
  * The sign-in form. What it does is exactly what the current form does
@@ -237,7 +239,6 @@ export function SignInForm({
     // On success the loading state stays: we are navigating away.
   }
 
-  const canSubmit = hydrated && email.trim().length > 0 && password.length > 0;
   const field: InvalidField = failure?.field ?? null;
   const emailInvalid = field === 'email' || field === 'both';
   const passwordInvalid = field === 'password' || field === 'both';
@@ -277,17 +278,19 @@ export function SignInForm({
       </p>
       {notice && (
         <div className="ch-au-notice-top">
-          <AuthNotice tone="positive" code="CH-15904">
+          <AuthNotice tone={NOTICE_TONE[messageKey ?? ''] ?? 'info'} code="CH-15904">
             {notice}
           </AuthNotice>
         </div>
       )}
-      <div className="ch-au-fields" data-invalid={field === 'both' ? '' : undefined} data-shake={shake} data-ch-code={shake ? 'CH-15609' : undefined}>
+      {/* P015-A3: one refusal anatomy. A ring marks only the field the error names (an empty field); wrong credentials
+          name neither, so the flush notice under the fields says it and both stay marked invalid for assistive tech. */}
+      <div className="ch-au-fields" data-shake={shake} data-ch-code={shake ? 'CH-15609' : undefined}>
         <div className="ch-au-field">
           <label className="ch-au-label" htmlFor="golf-signin-email">
             Email
           </label>
-          <div className="ch-au-input" data-invalid={emailInvalid ? 'true' : undefined}>
+          <div className="ch-au-input" data-invalid={field === 'email' ? 'true' : undefined}>
             <input
               ref={emailRef}
               id="golf-signin-email"
@@ -303,7 +306,7 @@ export function SignInForm({
               aria-required="true"
               aria-invalid={emailInvalid || undefined}
               aria-describedby={describedBy}
-              placeholder="Email"
+              placeholder="you@school.edu"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onFocus={revealSubmit}
@@ -322,7 +325,7 @@ export function SignInForm({
             Password
           </label>
           {forgot('ch-au-forgot--field')}
-          <div className="ch-au-input" data-invalid={passwordInvalid ? 'true' : undefined}>
+          <div className="ch-au-input" data-invalid={field === 'password' ? 'true' : undefined}>
             <input
               ref={passwordRef}
               id="golf-signin-password"
@@ -336,7 +339,6 @@ export function SignInForm({
               aria-required="true"
               aria-invalid={passwordInvalid || undefined}
               aria-describedby={describedBy}
-              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onFocus={revealSubmit}
@@ -364,7 +366,7 @@ export function SignInForm({
         </div>
       )}
       <div className="ch-au-submit" ref={submitRowRef}>
-        <button ref={submitRef} type="submit" className="ch-btn ch-btn--primary ch-btn--lg" disabled={!canSubmit || busy} aria-busy={busy || undefined} data-ch-code={busy ? 'CH-15402' : undefined}>
+        <button ref={submitRef} type="submit" className="ch-btn ch-btn--primary ch-btn--lg" disabled={!hydrated || busy} aria-busy={busy || undefined} data-ch-code={busy ? 'CH-15402' : undefined}>
           <AuthKeyLabel busy={busy} idle="Sign in" working="Signing in…" />
         </button>
       </div>

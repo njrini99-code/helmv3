@@ -431,8 +431,8 @@ describe('the cards, on screen', () => {
     expect(document.querySelector('.ch-hl-focus .ch-hl-g')).toBeNull();
     expect(document.querySelector('.ch-hl-focus .ch-hl-ev')).toBeNull();
     expect(focus().getByText(/Par 3: 3\.27.*Par 5: 4\.91/)).toBeTruthy();
-    // The player's row says nothing is open, never a count of one.
-    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).textContent).toMatch(/0$/);
+    // The player's row says nothing is open, never a count of one: it draws no count at all (P013 D12).
+    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).textContent).not.toMatch(/\d$/);
   });
 
   it('CH-13903 CH-13906 CH13-3 an out-of-date read says so beside the claim, keeps Dismiss, and offers no Assign', () => {

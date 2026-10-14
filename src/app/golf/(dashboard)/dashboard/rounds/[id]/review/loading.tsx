@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { RoundReviewSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
@@ -27,7 +29,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * mismatch meant every ordinary load narrowed from 6xl to 2xl and back,
  * shifting the whole page horizontally twice per visit.
  */
-export default function Loading() {
+function LegacyReviewLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8 md:py-10">
@@ -85,4 +87,12 @@ export default function Loading() {
       </div>
     </div>
   );
+}
+
+/**
+ * Inside Clubhouse this address redirects to /rounds/[id] (the review lives there; see layout.tsx), so the fallback a
+ * client navigation paints before that redirect lands is the Clubhouse review's own shape (CH-11406), never Fairway's.
+ */
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<RoundReviewSkeleton />} fallback={<LegacyReviewLoading />} />;
 }

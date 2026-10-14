@@ -13,7 +13,8 @@ import '../../../styles/coachhelm-thread.css';
 export function AskEvidencePanel({ focus, messages, phone, onClose }: { focus: EvidenceFocus; messages: UIMessage[]; phone: boolean; onClose: () => void }) {
   const model = useMemo(() => buildEvidencePanel(messages, focus), [messages, focus]);
   const body = (
-    <div className="ch-th-evp__body">
+    // `is-phone`: the sheet's figures are rows on the sheet, not tiles (coachhelm-thread.css, the cardless pass).
+    <div className={'ch-th-evp__body' + (phone ? ' is-phone' : '')}>
       {model.empty ? (
         <p className="ch-th-read" data-ch-code="CH-13255">
           <b>Nothing in this conversation speaks to this player yet.</b> Ask about their putting or their recent rounds and the figures show here.

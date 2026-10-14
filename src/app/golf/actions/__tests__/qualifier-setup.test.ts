@@ -20,9 +20,18 @@ vi.mock('@/lib/admin/observed-action', () => ({
 }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(() => clubhouse.on) }));
 vi.mock('@/lib/auth/verify-player-access', () => ({ verifyTeamAccess: vi.fn(async () => access.result) }));
+// The HELD gate opens for the dashboard layout's role (golf-dashboard-role.ts, computed for real from these profiles).
+const profiles = vi.hoisted(() => ({
+  coach: { onboarding_completed: true } as { onboarding_completed: boolean } | null,
+  player: null as { onboarding_completed: boolean } | null,
+}));
+vi.mock('@/lib/auth/session', () => ({
+  getGolfSessionProfile: vi.fn(async () => ({ userId: 'coach-user', role: profiles.coach ? 'coach' : 'player', coach: profiles.coach, player: profiles.player })),
+}));
 
 import { setQualifierEntrants, setQualifierSquadSize } from '../qualifier-setup';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 
 const Q = '11111111-1111-4111-8111-111111111111';
 const TEAM = '22222222-2222-4222-8222-222222222222';
@@ -43,6 +52,9 @@ function world(over: { selection_state?: string; entries?: string[]; members?: s
 
 beforeEach(() => {
   clubhouse.on = true;
+  profiles.coach = { onboarding_completed: true };
+  profiles.player = null;
+  vi.mocked(getGolfSessionProfile).mockClear();
   access.result = { allowed: true, reason: 'coach' };
   vi.mocked(verifyTeamAccess).mockClear();
   world();
@@ -59,6 +71,32 @@ describe('HELD gate (D-61)', () => {
     expect(verifyTeamAccess).not.toHaveBeenCalled();
     const row = (await fake.from('golf_qualifiers').select('*').eq('id', Q).single()).data as { selection_slots_total: number };
     expect(row.selection_slots_total).toBe(5);
+    // Off means no read at all, the session's included.
+    expect(getGolfSessionProfile).not.toHaveBeenCalled();
+  });
+
+  it('refuses a dual-profile user the layout draws the player shell for, before any read', async () => {
+    // A coach row never onboarded beside an onboarded player profile: session.role says coach, the dashboard is the player's.
+    profiles.coach = { onboarding_completed: false };
+    profiles.player = { onboarding_completed: true };
+    const from = vi.spyOn(fake, 'from');
+    const refusal = { success: false, error: 'Editing a qualifier’s setup isn’t available yet.' };
+    expect(await setQualifierSquadSize(Q, { total: 6, coachPicks: 2 })).toEqual(refusal);
+    expect(await setQualifierEntrants(Q, [p(1), p(3)])).toEqual(refusal);
+    expect(from).not.toHaveBeenCalled();
+    expect(verifyTeamAccess).not.toHaveBeenCalled();
+  });
+
+  it('opens for a dual-profile user the layout draws the coach shell for; the coach check still decides', async () => {
+    profiles.coach = { onboarding_completed: true };
+    profiles.player = { onboarding_completed: true };
+    expect(await setQualifierSquadSize(Q, { total: 6, coachPicks: 2 })).toEqual({ success: true, data: undefined });
+    expect(verifyTeamAccess).toHaveBeenCalledWith(TEAM, 'coach-user', expect.anything());
+  });
+
+  it('refuses when the role read fails, rather than throwing', async () => {
+    vi.mocked(getGolfSessionProfile).mockRejectedValueOnce(new Error('session read failed'));
+    expect(await setQualifierSquadSize(Q, { total: 6, coachPicks: 2 })).toEqual({ success: false, error: 'Editing a qualifier’s setup isn’t available yet.' });
   });
 });
 

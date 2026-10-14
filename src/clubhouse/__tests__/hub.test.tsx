@@ -306,7 +306,7 @@ describe('Team Hub · player', () => {
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements', 'Travel', 'Documents']);
     expect(screen.getByText('2 need a reply')).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'Going', checked: true })).toBeTruthy();
-    expect(screen.getByText('Needs your reply')).toBeTruthy();
+    expect(screen.getByText('Needs your acknowledgement')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3, name: 'Pairings and tee times for Thursday' })).toBeTruthy();
     expect(screen.getByText('Traveling')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Your tasks' })).toBeTruthy();
@@ -493,7 +493,7 @@ describe('Team Hub · coach', () => {
     const user = userEvent.setup();
     const assign = vi.fn(ok);
     show({ ...PREVIEW_HUB_COACH, players: [], playersError: true }, writes({ assignTask: assign }), 'tasks');
-    await user.click(screen.getByRole('button', { name: 'Assign' }));
+    await user.click(screen.getByRole('button', { name: 'Assign a task' }));
     let dialog = await screen.findByRole('dialog', { name: 'Assign a task' });
     await expectCode('CH-10208');
     expect(dialog.textContent).not.toMatch(/For \d+ of \d+/);
@@ -504,7 +504,7 @@ describe('Team Hub · coach', () => {
     expect(code('CH-10108')).toBeNull();
     cleanup();
     show({ ...PREVIEW_HUB_COACH, players: [], playersError: false }, writes({ assignTask: assign }), 'tasks');
-    await user.click(screen.getByRole('button', { name: 'Assign' }));
+    await user.click(screen.getByRole('button', { name: 'Assign a task' }));
     dialog = await screen.findByRole('dialog', { name: 'Assign a task' });
     await expectCode('CH-10310', /No players on the roster yet/);
     expect(dialog.textContent).not.toMatch(/For \d+ of \d+/);
@@ -524,7 +524,7 @@ describe('Team Hub · coach', () => {
       </LazyMotion>
     );
     const { rerender } = render(tree({ ...PREVIEW_HUB_COACH, players: [], playersError: true }));
-    await user.click(screen.getByRole('button', { name: 'Assign' }));
+    await user.click(screen.getByRole('button', { name: 'Assign a task' }));
     rerender(tree(PREVIEW_HUB_COACH));
     const dialog = await screen.findByRole('dialog', { name: 'Assign a task' });
     for (const p of PREVIEW_HUB_COACH.players) expect(within(dialog).getByRole('button', { name: p.name }).getAttribute('aria-pressed')).toBe('true');
@@ -670,7 +670,7 @@ describe('Team Hub · coach', () => {
     let release: (v: { success: boolean }) => void = () => {};
     const assign = vi.fn(() => new Promise<{ success: boolean }>((r) => (release = r)));
     show(PREVIEW_HUB_COACH, writes({ assignTask: assign }), 'tasks');
-    await user.click(screen.getByRole('button', { name: 'Assign' }));
+    await user.click(screen.getByRole('button', { name: 'Assign a task' }));
     const dialog = await screen.findByRole('dialog', { name: 'Assign a task' });
     await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
     await expectCode('CH-10107');
@@ -854,6 +854,28 @@ describe('Team Hub · the loader', () => {
     const rows = PREVIEW_HUB_COACH.tasks.rows;
     show({ ...PREVIEW_HUB_COACH, tasks: { rows, error: false, total: rows.length + 40 } }, writes(), 'tasks');
     expect(screen.getByText(`Showing the ${rows.length} latest due of ${rows.length + 40} tasks.`)).toBeTruthy();
+  });
+
+  it('a coach’s RSVPs section lists only this week’s events that require an RSVP; the trip builder still sees every event (owner, 2026-10-08)', async () => {
+    base();
+    actions.coachAnns.mockResolvedValue({ success: true, data: [] });
+    const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+    const events = [
+      { id: 'e1', title: 'Team dinner', event_type: 'meeting', start_time: soon, all_day: false, location: 'Carolina Inn', requires_rsvp: true },
+      { id: 'e3', title: 'Range work', event_type: 'tournament', start_time: soon, all_day: false, location: 'Range', requires_rsvp: false },
+    ];
+    tables.current = {
+      golf_teams: team,
+      golf_team_members: { data: [] },
+      // The fake answers every chain; this one honours the RSVP filter the way PostgREST would.
+      golf_events: (filters) => ({
+        data: filters.some(([k, args]) => k === 'eq' && args[0] === 'requires_rsvp' && args[1] === true) ? events.filter((e) => e.requires_rsvp === true) : events,
+      }),
+      golf_event_attendance: { data: [] },
+    };
+    const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(data.rsvps.rows.map((r) => r.eventId)).toEqual(['e1']);
+    expect(data.tripEvents.rows.map((r) => r.id)).toEqual(['e1', 'e3']);
   });
 
   it('102101 a coach: reply counts, travelers from the trip’s event, task completion, each read once for every event and task together', async () => {
@@ -1150,7 +1172,7 @@ const scenarios: Scenario[] = [
     failed: /Couldn’t assign Book physicals/,
     done: 'Book physicals assigned to the team',
     drive: async (user) => {
-      await user.click(screen.getByRole('button', { name: 'Assign' }));
+      await user.click(screen.getByRole('button', { name: 'Assign a task' }));
       const d = within(await screen.findByRole('dialog', { name: 'Assign a task' }));
       await user.type(d.getByRole('textbox', { name: 'Task' }), 'Book physicals');
       await user.click(d.getByRole('button', { name: 'Assign' }));
@@ -1163,7 +1185,7 @@ const scenarios: Scenario[] = [
     landed: async (user) => {
       await waitFor(() => expect(dialogOpen()).toBe(false));
       await refreshed();
-      expect(await reopen(user, 'Assign', 'Assign a task', 'Task')).toBe('');
+      expect(await reopen(user, 'Assign a task', 'Assign a task', 'Task')).toBe('');
     },
   },
   {
@@ -1410,7 +1432,7 @@ describe('Team Hub · what is sent to a player', () => {
       golf_teams: team,
       golf_team_members: { data: [{ player: { id: 'p2', first_name: 'Ava', last_name: 'Lindqvist' } }] },
       golf_coaches: { data: [{ user_id: 'c1', full_name: 'Maya Reyes', title: 'Head coach' }] },
-      golf_events: { data: [{ id: 'e1', status: null, cancelled_at: null, all_day: false, start_time: soon, rsvp_deadline: null }] },
+      golf_events: { data: [{ id: 'e1', status: null, cancelled_at: null, all_day: false, start_time: soon, rsvp_deadline: null, requires_rsvp: true }] },
       golf_event_attendance: { data: [{ event_id: 'e2', player_id: 'p1', status: 'accepted' }] },
     };
     actions.summary.mockResolvedValue({
@@ -1425,7 +1447,7 @@ describe('Team Hub · what is sent to a player', () => {
     expect(player.rsvps.rows[0]).toMatchObject({ eventId: 'e1', mine: 'pending', counts: null });
     // F-53: the summary has no all_day; the event read supplies it, so an all-day event never reads "12:00 AM".
     expect(player.rsvps.rows[0]?.meta).not.toMatch(/All day/);
-    tables.current = { ...tables.current, golf_events: { data: [{ id: 'e1', status: null, cancelled_at: null, all_day: true, start_time: soon, rsvp_deadline: null }] } };
+    tables.current = { ...tables.current, golf_events: { data: [{ id: 'e1', status: null, cancelled_at: null, all_day: true, start_time: soon, rsvp_deadline: null, requires_rsvp: true }] } };
     const allDay = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
     expect(allDay.rsvps.rows[0]?.meta).toBe('All day · Carolina Inn');
     expect(player.trips.rows[0]).toMatchObject({ mine: true, travelers: null, travelerCount: null });
@@ -1441,14 +1463,17 @@ describe('Team Hub · what is sent to a player', () => {
   it('100803 a player is offered a reply only on an event they are invited to that still takes one: not one that started, was cancelled, is past its deadline, or began an all-day more than a day ago', async () => {
     base();
     const rows = [
-      { id: 'open', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: null },
-      { id: 'not-invited', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: null },
-      { id: 'started', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(-H), rsvp_deadline: null },
-      { id: 'cancelled-status', status: 'cancelled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: null },
-      { id: 'cancelled-at', status: null, cancelled_at: at(-H), all_day: false, start_time: at(2 * H), rsvp_deadline: null },
-      { id: 'late', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: at(-1000) },
-      { id: 'all-day-today', status: 'scheduled', cancelled_at: null, all_day: true, start_time: at(-3 * H), rsvp_deadline: null },
-      { id: 'all-day-old', status: 'scheduled', cancelled_at: null, all_day: true, start_time: at(-30 * H), rsvp_deadline: null },
+      { id: 'open', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: null, requires_rsvp: true },
+      { id: 'not-invited', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: null, requires_rsvp: true },
+      { id: 'started', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(-H), rsvp_deadline: null, requires_rsvp: true },
+      { id: 'cancelled-status', status: 'cancelled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: null, requires_rsvp: true },
+      { id: 'cancelled-at', status: null, cancelled_at: at(-H), all_day: false, start_time: at(2 * H), rsvp_deadline: null, requires_rsvp: true },
+      { id: 'late', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: at(-1000), requires_rsvp: true },
+      { id: 'all-day-today', status: 'scheduled', cancelled_at: null, all_day: true, start_time: at(-3 * H), rsvp_deadline: null, requires_rsvp: true },
+      { id: 'all-day-old', status: 'scheduled', cancelled_at: null, all_day: true, start_time: at(-30 * H), rsvp_deadline: null, requires_rsvp: true },
+      // Owner, 2026-10-08: an event the coach didn't ask replies for takes none, off or (older rows) null.
+      { id: 'no-rsvp', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: null, requires_rsvp: false },
+      { id: 'null-rsvp', status: 'scheduled', cancelled_at: null, all_day: false, start_time: at(2 * H), rsvp_deadline: null, requires_rsvp: null },
     ];
     let ruleReads = 0;
     tables.current = {
@@ -1473,17 +1498,23 @@ describe('Team Hub · what is sent to a player', () => {
     // The rules of every event they are invited to are read together, once.
     expect(ruleReads).toBe(1);
 
-    // A rules read that fails closes nothing: the row stays, and the server still decides when they answer.
+    // A rules read that fails no longer keeps the rows (owner, 2026-10-08): whether an event asks for replies at all is
+    // unknown then, so no reply is offered and the section says it didn't load, never "all caught up".
     tables.current = { ...tables.current, golf_events: { error: { message: 'boom' } } };
-    const kept = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
-    expect(kept.rsvps.rows).toHaveLength(rows.length - 1);
+    const failed = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
+    expect(failed.rsvps.rows).toEqual([]);
+    expect(failed.rsvps.error).toBe(true);
     expect(logServer).toHaveBeenCalledWith('hub', 'eventReplyRules', expect.anything());
   });
 
   it('100803 the reply rules are the server’s: an event exactly at its start, or a deadline that has just passed, is closed', () => {
     const now = Date.parse('2026-10-14T18:00:00Z');
-    const open = { status: null, cancelled_at: null, all_day: false, start_time: '2026-10-14T18:00:01Z', rsvp_deadline: null };
+    const open = { status: null, cancelled_at: null, all_day: false, start_time: '2026-10-14T18:00:01Z', rsvp_deadline: null, requires_rsvp: true };
     expect(replyIsClosed(open, now)).toBe(false);
+    // An event that doesn't ask for replies takes none: off, null, or not read at all (owner, 2026-10-08).
+    expect(replyIsClosed({ ...open, requires_rsvp: false }, now)).toBe(true);
+    expect(replyIsClosed({ ...open, requires_rsvp: null }, now)).toBe(true);
+    expect(replyIsClosed({ ...open, requires_rsvp: undefined }, now)).toBe(true);
     expect(replyIsClosed({ ...open, start_time: '2026-10-14T18:00:00Z' }, now)).toBe(true);
     expect(replyIsClosed({ ...open, rsvp_deadline: '2026-10-14T17:59:59Z' }, now)).toBe(true);
     expect(replyIsClosed({ ...open, rsvp_deadline: '2026-10-14T18:00:00Z' }, now)).toBe(false);
@@ -1628,6 +1659,58 @@ describe('Team Hub · roles, states and layout', () => {
     await expectCode('CH-10001');
     expect(track.chTrail).toHaveBeenCalledWith('action hub.reply');
     expect(track.chReport).toHaveBeenCalledWith(expect.objectContaining({ message: 'refused' }), { surface: 'hub', action: 'hub.reply', severity: 'low' });
+  });
+});
+
+describe('Team Hub · premium pass (P010)', () => {
+  it('D2 the tab is kept in the URL; Home drops it', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/golf/dashboard/team-hub');
+    show(PREVIEW_HUB_COACH);
+    await user.click(screen.getByRole('tab', { name: 'Travel' }));
+    await waitFor(() => expect(window.location.search).toBe('?tab=travel'));
+    await user.click(screen.getByRole('tab', { name: 'Home' }));
+    await waitFor(() => expect(window.location.search).toBe(''));
+  });
+
+  it('D6 the head’s one primary follows the tab, and a tab whose read failed offers none', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH);
+    expect(screen.getByRole('button', { name: 'New announcement' })).toBeTruthy();
+    await user.click(screen.getByRole('tab', { name: 'Travel' }));
+    expect(screen.getAllByRole('button', { name: 'Plan a trip' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'New announcement' })).toBeNull();
+    await user.click(screen.getByRole('tab', { name: 'Tasks' }));
+    expect(screen.getByRole('button', { name: 'Assign a task' })).toBeTruthy();
+    cleanup();
+    show({ ...PREVIEW_HUB_COACH, trips: { rows: [], error: true } }, writes(), 'travel');
+    expect(screen.queryByRole('button', { name: 'Plan a trip' })).toBeNull();
+  });
+
+  it('D7 a radio group is one Tab stop, and the arrows walk it (an RSVP moves without sending)', () => {
+    show(PREVIEW_HUB_PLAYER);
+    const group = screen.getByRole('radiogroup', { name: /Your reply for Team dinner/ });
+    const radios = within(group).getAllByRole('radio');
+    expect(radios.map((r) => r.tabIndex)).toEqual([0, -1, -1]);
+    radios[0]!.focus();
+    fireEvent.keyDown(group, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(radios[1]);
+    expect(radios[1]!.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('A1 A3 the next trip is the paper pass; announcements read as an edited page with the coach’s read margin', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH, writes(), 'travel');
+    const passes = document.querySelectorAll('.ch-hb-pass');
+    expect(passes[0]!.classList.contains('is-next')).toBe(true);
+    expect([...passes].slice(1).some((p) => p.classList.contains('is-next'))).toBe(false);
+    // D4: the big pass doesn't repeat Departs and Stay beside its plan.
+    expect(within(passes[0] as HTMLElement).queryByText('Departs')).toBeNull();
+    await user.click(screen.getByRole('tab', { name: 'Announcements' }));
+    const anns = document.querySelectorAll('.ch-hb-ann');
+    expect(anns[0]!.classList.contains('is-lead')).toBe(true);
+    expect(anns[1]!.classList.contains('is-older')).toBe(true);
+    expect(screen.getByRole('complementary', { name: 'Who has read it' }).textContent).toMatch(/of/);
   });
 });
 

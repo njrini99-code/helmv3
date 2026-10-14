@@ -117,7 +117,7 @@ describe('CH-13852 View as table', () => {
     await userEvent.click(slope);
     expect(slope.getAttribute('aria-pressed')).toBe('true');
     const table = screen.getByRole('table', { name: 'Make rate from 4 to 6 feet, by slope for Finley University' });
-    expect(within(table).getAllByRole('row').map((r) => r.textContent)).toEqual(['RangeMake rate from 4 to 6 feet, by slopeSample', 'Uphill81%44', 'Flat76%51', 'Downhill58%31']);
+    expect(within(table).getAllByRole('row').map((r) => r.textContent)).toEqual(['RangeMake rate from 4 to 6 feet, by slopeSample', 'Uphill76%51', 'Level81%44', 'Downhill58%31']);
     expect(screen.queryByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' })).toBeNull();
     await userEvent.click(slope);
     expect(screen.queryByRole('table', { name: /by slope/ })).toBeNull();
@@ -125,7 +125,7 @@ describe('CH-13852 View as table', () => {
   it('the bars carry the sample beside each and the source line under them', () => {
     show();
     const figure = screen.getByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' });
-    expect(within(figure).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Uphill81% of 44', 'Flat76% of 51', 'Downhill58% of 31']);
+    expect(within(figure).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Uphill76% of 51', 'Level81% of 44', 'Downhill58% of 31']);
     expect(screen.getByText('126 attempts · Sep 1 to Sep 29 · computed Sep 29')).toBeTruthy();
   });
   it('a ranking names each player with the value and the sample', () => {
@@ -446,7 +446,7 @@ describe('the evidence panel', () => {
     const aside = screen.getByRole('complementary', { name: 'Evidence' });
     expect(within(aside).getByText('Jonah Okafor, downhill putts, 4 to 6 feet')).toBeTruthy();
     const tiles = Array.from(aside.querySelectorAll('.ch-th-tile')).map((t) => t.textContent);
-    expect(tiles).toEqual(['Downhill, 4 to 6 feet33%3 of 9', 'Team, Downhill, 4 to 6 feet58%18 of 31', 'Uphill, 4 to 6 feet78%7 of 9']);
+    expect(tiles).toEqual(['Downhill, 4 to 6 feet33%3 of 9', 'Team, Downhill, 4 to 6 feet58%18 of 31', 'Level, 4 to 6 feet78%7 of 9']);
     expect(within(aside).getByRole('img', { name: /Make rate by round for Jonah Okafor: 50% to 0% across 5 rounds/ })).toBeTruthy();
     expect(within(aside).getByText('Team 58%')).toBeTruthy();
     expect(within(aside).getByText('Small sample: 9 attempts. Treat it as a direction, not a verdict.')).toBeTruthy();

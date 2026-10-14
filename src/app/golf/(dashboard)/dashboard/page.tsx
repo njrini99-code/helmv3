@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import {
     getCachedCoachDashboardData,
     getCachedPlayerDashboardData,
@@ -177,8 +178,13 @@ export default async function GolfDashboardPage({
 
     const { userId, coach, player } = session;
 
+    // Clubhouse Home follows the dashboard layout's role (getGolfDashboardRole): an unfinished coach profile beside an
+    // onboarded player one is a player there. Fairway keeps its own rule below (a coach row draws the coach dashboard).
+    const chRole = await getGolfDashboardRole();
+    const clubhouse = await isClubhouseFor(chRole);
+
     // ── Coach dashboard ──
-    if (coach) {
+    if (coach && !(clubhouse && chRole === 'player')) {
         // Get team via organization (deterministic: handles orgs with >1 team).
         // P002/P426: a real DB/network outage must SURFACE to the route
         // error.tsx (RouteErrorBoundary), not be swallowed into a fake "coach
@@ -194,7 +200,7 @@ export default async function GolfDashboardPage({
         }
 
         // Clubhouse Home: its own loader and screen, no Fairway payload.
-        if ((await isClubhouseFor('coach'))) {
+        if (clubhouse) {
             if (!teamId) return <CoachHomeNoTeam />;
             const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach' });
             return <CoachHome data={home} />;
@@ -271,7 +277,7 @@ export default async function GolfDashboardPage({
 
     // ── Player dashboard ──
     // Clubhouse player Home: its own loader and screen, no Fairway payload.
-    if (player && (await isClubhouseFor('player'))) {
+    if (player && clubhouse) {
         const team = await resolveClubhouseTeam(session);
         if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
         const home = await loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there' });

@@ -908,8 +908,8 @@ button.ch-feat {
 }
 /* 12px, the phone text floor (F09): PageIntro opens a page on the phone (lead, 2026-10-08). */
 .ch-intro__eyebrow {
-  font: 500 12px/1.2 var(--ch-font-sans);
-  letter-spacing: 0.14em;
+  font: 500 13px/1.2 var(--ch-font-sans);
+  letter-spacing: 0.01em;
   color: var(--ch-ledger-eyebrow);
 }
 .ch-intro__row {
@@ -1094,4 +1094,488 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   html[data-fw-theme='dark'] .ch-backlink:hover {
     color: var(--ch-ledger-ink);
   }
+}
+
+/* Press-and-hold peek (ui/Peek.tsx; owner, 2026-10-08). The target wraps without a box of its own. On a touch screen
+   iOS's link callout and text selection stay out of a hold, which the peek takes. */
+.ch-peek-target {
+  display: contents;
+}
+@media (pointer: coarse) {
+  .ch-peek-target > * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+/* Phone: the card rises over the dimmed, softened page where the row was, with the actions under it (CH-1830). */
+.ch-peek {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--ch-text-primary);
+}
+.ch-peek::backdrop {
+  background: rgb(20 20 18 / 0.28);
+  -webkit-backdrop-filter: blur(10px) saturate(110%);
+  backdrop-filter: blur(10px) saturate(110%);
+  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+}
+.ch-peek__panel {
+  position: absolute;
+  right: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+/* The panel takes focus as it opens, so VoiceOver starts on the card: no ring on what is not a control. */
+.ch-root .ch-peek__panel:focus {
+  outline: none;
+}
+.ch-peek__card {
+  padding: 16px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight);
+}
+.ch-peek__menu {
+  overflow: hidden;
+  width: min(250px, 100%);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight);
+}
+.ch-peek__act {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  text-align: left;
+  text-decoration: none;
+}
+.ch-peek__act + .ch-peek__act {
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-peek__act:active {
+  background: var(--ch-bg-hover);
+}
+.ch-peek__act svg {
+  color: var(--ch-text-secondary);
+}
+/* Desktop: the hover card beside the name (CH-1831), the same card with its actions as small keys. */
+.ch-hovercard {
+  position: fixed;
+  z-index: var(--ch-z-overlay);
+  box-sizing: border-box;
+  padding: 14px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-sheet-bg);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight), 0 0 0 1px var(--ch-border-hairline);
+}
+.ch-hovercard__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-hovercard__act {
+  display: inline-flex;
+  flex: 1;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-raised-bg);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-label-s);
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: var(--ch-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
+}
+@media (hover: hover) {
+  .ch-hovercard__act:hover {
+    background: var(--ch-bg-hover);
+  }
+}
+.ch-hovercard__act svg {
+  color: var(--ch-text-secondary);
+}
+:where(html[data-fw-theme='dark']) .ch-peek::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+/* On the phone the backdrop is a solid tint: a full-screen blur fading in re-blurs the page on every frame of the open
+   and the close, the stutter the bell's drop had (motion audit 2026-10-12). The deeper tint keeps the card lifted. */
+@media (max-width: 820px) {
+  .ch-peek::backdrop {
+    background: rgb(20 20 18 / 0.4);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  :where(html[data-fw-theme='dark']) .ch-peek::backdrop {
+    background: rgb(0 0 0 / 0.58);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ch-peek::backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+:root[data-reduce-transparency] .ch-peek::backdrop {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The player peek's card (ui/PlayerPeek.tsx, CH-1832). The reason is ink; its icon carries the amber (D5-1). */
+.ch-ppeek {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ch-ppeek__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ch-ppeek__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-ppeek__who b {
+  overflow: hidden;
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ppeek__who span,
+.ch-ppeek__m {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-ppeek__why {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-primary);
+}
+.ch-ppeek__why svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ch-warning-600);
+}
+.ch-ppeek__figs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0;
+}
+.ch-ppeek__figs > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-ppeek__figs dt {
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-tertiary);
+}
+.ch-ppeek__figs dd {
+  margin: 0;
+  font: 600 22px/1.1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-ppeek__figs dd small {
+  font: var(--ch-type-label);
+  color: var(--ch-text-secondary);
+}
+.ch-ppeek__line {
+  overflow: visible;
+}
+.ch-ppeek__line polyline {
+  stroke: var(--ch-text-tertiary);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-ppeek__line circle {
+  fill: var(--ch-green-700);
+}
+
+/* Every button reaches 44 by 44 under a finger (P011-D9, P012-D2; HIG), however small it is drawn: an invisible hit box
+   centred on it, grown only on the side that is short (inset percentages read the button's own height and width). */
+@media (pointer: coarse) {
+  .ch-btn::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+    content: '';
+  }
+}
+
+/* The course location (screens/settings/course-location.tsx, CH-8320): where the global light's sun is. Here with the light it serves, not in settings.css. */
+.ch-set-course {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ch-set-course__where {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  font: var(--ch-type-body);
+  color: var(--ch-text-primary);
+}
+.ch-set-course__where > svg {
+  color: var(--ch-text-tertiary);
+}
+.ch-set-course__where .ch-btn {
+  margin-left: auto;
+}
+.ch-root .ch-set-course__problem {
+  margin: 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-set-course__state {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-course__acts {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.ch-set-course__pin {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  text-align: right;
+}
+.ch-set-course__save {
+  color: var(--ch-green-700);
+  font-weight: 600;
+}
+
+/* Zones (ui/Zone.tsx): one area of a page set off by a gold rule, shared by player stats and the round review. What the area is
+   and one reading on the left, the picture that fits it on the right. Flat grounds: large soft gradients band (owner, 2026-10-06). */
+.ch-zns {
+  container-type: inline-size;
+  container-name: chzn;
+  display: grid;
+  margin-top: 4px;
+}
+.ch-zns__note {
+  margin: 0;
+  padding: 0 0 14px;
+  font: 400 13px/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-zn {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 48px;
+  padding: 36px 36px 40px;
+  background: var(--ch-ivory-25);
+  box-shadow: inset 0 3px 0 var(--ch-champagne-500);
+}
+.ch-zn--alt {
+  background: var(--ch-bg-subtle);
+}
+.ch-zn--note {
+  display: block;
+}
+.ch-zn__id {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+.ch-zn__n {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--ch-green-700), var(--ch-green-900));
+  color: var(--ch-ivory-50);
+  font: 700 14px/1 var(--ch-font-sans);
+  box-shadow: 0 0 0 2px var(--ch-ivory-25), 0 0 0 3.5px var(--ch-champagne-500), var(--ch-elevation-mark);
+}
+.ch-zn__id h2 {
+  margin: 0;
+  font: 600 30px/1.1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ch-green-800);
+}
+.ch-zn__id h2::after {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 3px;
+  margin-top: 12px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ch-champagne-500), rgb(176 149 96 / 0));
+}
+.ch-zn__def {
+  margin: 0;
+  font: 400 14.5px/1.5 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-zn__def b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-zn__read {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 18px 18px 16px;
+  border-radius: 16px;
+  background: var(--ch-bg-surface);
+  box-shadow: inset 0 0 0 1px rgb(176 149 96 / 0.3), var(--ch-elevation-plate);
+}
+.ch-znbig {
+  font-size: 64px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  background: linear-gradient(180deg, var(--ch-green-600), var(--ch-green-900));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ch-znbig small {
+  margin-left: 3px;
+  font-size: 26px;
+  letter-spacing: 0;
+  -webkit-text-fill-color: var(--ch-text-secondary);
+}
+.ch-znbig.is-good {
+  background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
+}
+.ch-znbig.is-bad {
+  background-image: linear-gradient(180deg, #c58a2c, #7a4a08);
+}
+.ch-znlines {
+  display: grid;
+  gap: 6px;
+  font: 500 14px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-znlines b {
+  font-weight: 700;
+  color: var(--ch-text-primary);
+}
+.ch-zn__vis {
+  display: grid;
+  align-content: start;
+  gap: 28px;
+  min-width: 0;
+}
+.ch-zn__vis > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.ch-znb h3 {
+  margin: 0 0 4px;
+  font: 600 15px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-znb > p {
+  margin: 0 0 14px;
+  max-width: 62ch;
+  font: 400 13.5px/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-znmiss {
+  margin: 0;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--ch-bg-inset);
+  font: 400 14px/1.5 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+/* the wide zone: what the area is on one row above, the picture full width */
+.ch-zn--wide {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.ch-zn--wide .ch-zn__id {
+  position: static;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 16px;
+}
+.ch-zn--wide .ch-zn__id h2::after {
+  display: none;
+}
+.ch-zn--wide .ch-zn__def {
+  grid-column: 2;
+}
+.ch-zn--wide .ch-zn__n {
+  grid-row: span 2;
+}
+@container chzn (max-width: 900px) {
+  .ch-zn {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    padding: 26px 18px 30px;
+  }
+  .ch-zn__id {
+    position: static;
+  }
+}
+@container chzn (max-width: 640px) {
+  .ch-znbig {
+    font-size: 48px;
+  }
+}
+
+/* A reading that is replaced by another (a picked hole): the new one settles in. Not a count-up, and not on first paint. */
+@keyframes ch-zn-settle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.ch-znbig.is-settle {
+  display: inline-block;
+  animation: ch-zn-settle var(--ch-dur-base) var(--ch-ease) backwards;
 }

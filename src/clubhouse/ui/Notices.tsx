@@ -149,6 +149,31 @@ function placeName(path: string): string | null {
 }
 
 /**
+ * What a route is called in a route error's title: its nav item (the longest href it sits under, never Home), else its
+ * first segment read as words (`routeLabel`), else null for Home and anything outside the dashboard, which keep the
+ * fixed title. `/golf/dashboard/rounds/[id]` is "Rounds".
+ */
+export function routeErrorLabel(route: string | undefined): string | null {
+  if (!route) return null;
+  const path = route.replace(/[?#].*$/, '').replace(/\/+$/, '');
+  let best: { href: string; label: string } | undefined;
+  for (const item of [...CH_NAV_COACH, ...CH_NAV_PLAYER]) {
+    if (item.href === '/golf/dashboard') continue;
+    if ((path === item.href || path.startsWith(item.href + '/')) && (!best || item.href.length > best.href.length)) best = item;
+  }
+  return best?.label ?? routeLabel(path);
+}
+
+/** A load or unknown failure names the page that didn't load ("Rounds didn’t load"); the other kinds keep their copy. */
+function routeErrorTitle(kind: RouteErrorKind, route: string | undefined): string {
+  if (kind === 'load' || kind === 'unknown') {
+    const label = routeErrorLabel(route);
+    if (label) return `${label} didn’t load`;
+  }
+  return COPY[kind].title;
+}
+
+/**
  * Full-page route error inside the Clubhouse canvas. Logic lives in RouteErrorBoundary. It is the page empty state in
  * the danger tone (states audit, 2026-10-08): a brick medallion on faint rings, the title, one or two sentences, Try
  * again (Reload after an update) first and the way back beside it, and the error's reference as a quiet caption under
@@ -160,6 +185,7 @@ export function RouteErrorView({
   retryCount,
   onRetry,
   homePath,
+  route,
   digest,
   devDetail,
 }: {
@@ -168,6 +194,8 @@ export function RouteErrorView({
   retryCount: number;
   onRetry: () => void;
   homePath?: string;
+  /** The route that failed (the boundary's `route`), so a load or unknown failure can name the page. */
+  route?: string;
   digest?: string;
   devDetail?: string;
 }) {
@@ -183,7 +211,7 @@ export function RouteErrorView({
               <Icon icon={CircleAlert} size={26} />
             </span>
           </span>
-          <h1 className="ch-empty-page__title">{copy.title}</h1>
+          <h1 className="ch-empty-page__title">{routeErrorTitle(kind, route)}</h1>
           <p className="ch-empty-page__body">{copy.body}</p>
           {retryCount > 0 && !isRetrying && (
             <p className="ch-empty-page__note">{retryCount === 1 ? 'Tried again once.' : `Tried again ${retryCount} times.`}</p>

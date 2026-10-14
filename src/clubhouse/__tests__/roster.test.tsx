@@ -13,6 +13,13 @@ vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
+/** A face or name goes to the player's profile where that page is rebuilt (owner, 2026-10-08); most of this file drives the
+ *  peek, which a face opens where it isn't, so the profile route reads as not rebuilt unless a test turns it on. */
+const profile = vi.hoisted(() => ({ rebuilt: false }));
+vi.mock('../shell/nav', async (orig) => {
+  const nav = await orig<typeof import('../shell/nav')>();
+  return { ...nav, rebuiltHref: (href: string, role?: Parameters<typeof nav.rebuiltHref>[1]) => (href.startsWith('/golf/dashboard/stats?player=') && !profile.rebuilt ? null : nav.rebuiltHref(href, role)) };
+});
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
@@ -23,8 +30,10 @@ const actions = vi.hoisted(() => ({
   reject: vi.fn(),
   requests: vi.fn(),
   intent: vi.fn(),
+  status: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/roster', () => ({ removePlayerFromTeam: actions.remove }));
+vi.mock('@/app/golf/actions/team-management', () => ({ updatePlayerStatus: actions.status }));
 vi.mock('@/app/golf/actions/teams', () => ({ acceptJoinRequest: actions.accept, rejectJoinRequest: actions.reject, getTeamJoinRequests: actions.requests }));
 vi.mock('@/app/golf/actions/v3/intent', () => ({ setIntent: actions.intent }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
@@ -88,6 +97,8 @@ beforeEach(() => {
   vi.mocked(chReport).mockClear();
   vi.mocked(chTrail).mockClear();
   tables.current = {};
+  profile.rebuilt = false;
+  router.push.mockClear();
   localStorage.clear();
 });
 
@@ -193,6 +204,66 @@ describe('Roster · saves that fail', () => {
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
     await user.click((await screen.findAllByRole('button', { name: 'Copy' }))[0]!);
     await expectCode('CH-3006', /Couldn’t copy the join code/);
+  });
+});
+
+describe('Roster · player status (Active / Inactive)', () => {
+  async function openStatus(user: ReturnType<typeof userEvent.setup>, name = theo.name, item = 'Mark inactive') {
+    await toList(user);
+    await user.click(screen.getByRole('button', { name: `Actions for ${name}` }));
+    await user.click(await screen.findByRole('menuitem', { name: item }));
+  }
+  afterEach(() => {
+    delete (window.navigator as unknown as Record<string, unknown>).onLine;
+  });
+
+  it('CH-3502 CH-3404 CH-3008 marking a player inactive asks first, waits while it saves, and a failure keeps the player active and the dialog open', async () => {
+    const user = userEvent.setup();
+    let settle!: (v: { success: boolean; error?: string }) => void;
+    actions.status.mockImplementation(() => new Promise((r) => (settle = r)));
+    wrap(roster());
+    await openStatus(user);
+    await expectCode('CH-3502', /Move Theo Marchetti to Inactive on Varsity\?/);
+    expect(code('CH-3502')!.textContent).toMatch(/stay on the team with their account and stats/);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    expect(actions.status).toHaveBeenCalledWith(theo.id, 'inactive');
+    await expectCode('CH-3404', /Saving/);
+    expect((code('CH-3404')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => settle({ success: false, error: 'Failed to update player status' }));
+    await expectCode('CH-3008', /Couldn’t mark Theo Marchetti inactive/);
+    expect((code('CH-3502') as HTMLDialogElement).hasAttribute('open')).toBe(true);
+    // Not destructive: no warning haptic before the write (D-70), and the row still reads Active.
+    expect(hapticSpy).not.toHaveBeenCalledWith('warning');
+    const row = screen.getByRole('button', { name: `${theo.name}. Open profile` }).closest('[role="row"]') as HTMLElement;
+    expect(within(row).getByText('Active')).toBeTruthy();
+  });
+
+  it('CH-3502 a status change that lands says so, moves the player to Inactive, and the menu then offers Mark active', async () => {
+    const user = userEvent.setup();
+    actions.status.mockResolvedValue({ success: true });
+    wrap(roster());
+    await openStatus(user);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    await waitFor(() => expect(screen.getByText('Theo Marchetti marked inactive')).toBeTruthy());
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    // Under Active he is gone; under Inactive he is listed, and his menu turns him back.
+    expect(screen.queryByRole('button', { name: `${theo.name}. Open profile` })).toBeNull();
+    await user.click(screen.getByRole('button', { name: /^Inactive/ }));
+    await openStatus(user, theo.name, 'Mark active');
+    await expectCode('CH-3502', /Move Theo Marchetti back to the active roster of Varsity\?/);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark active' }));
+    expect(actions.status).toHaveBeenLastCalledWith(theo.id, 'active');
+    await waitFor(() => expect(screen.getByText('Theo Marchetti marked active')).toBeTruthy());
+  });
+
+  it('CH-3502 CH-1903 offline, nothing is sent and the coach is told', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false });
+    wrap(roster());
+    await openStatus(user);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    await expectCode('CH-1903', /Couldn’t mark Theo Marchetti inactive: you’re offline/);
+    expect(actions.status).not.toHaveBeenCalled();
   });
 });
 
@@ -356,6 +427,23 @@ describe('Roster · empty', () => {
 });
 
 describe('Roster · loading, haptics, accessibility', () => {
+  it('a face (grid) or a name (list) goes to the player’s profile; only a Needs a look chip opens the peek', async () => {
+    const user = userEvent.setup();
+    profile.rebuilt = true;
+    wrap(roster());
+    await user.click(screen.getByRole('button', { name: new RegExp(`^${theo.name}.*Open profile`) }));
+    expect(router.push).toHaveBeenLastCalledWith(`/golf/dashboard/stats?player=${theo.id}`);
+    expect(screen.queryByRole('complementary', { name: theo.name })).toBeNull();
+    await toList(user);
+    await user.click(screen.getByRole('button', { name: `${theo.name}. Open profile` }));
+    expect(router.push).toHaveBeenCalledTimes(2);
+    expect(router.push).toHaveBeenLastCalledWith(`/golf/dashboard/stats?player=${theo.id}`);
+    expect(screen.queryByRole('complementary')).toBeNull();
+    await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
+    expect(await screen.findByRole('complementary', { name: 'Jonah Okafor' })).toBeTruthy();
+    expect(router.push).toHaveBeenCalledTimes(2);
+  });
+
   it('CH-3401 the route skeleton is busy', () => {
     render(<RosterSkeleton />);
     expect(code('CH-3401')!.getAttribute('aria-busy')).toBe('true');
@@ -394,11 +482,16 @@ describe('Roster · loading, haptics, accessibility', () => {
       for (const child of row.children) expect(['cell', 'columnheader']).toContain(child.getAttribute('role'));
   });
 
-  it('CH-3802 a player card reads its status as a word', () => {
+  it('CH-3802 a player card reads its status as a word; the dot is decoration, drawn only under All (P003-A3)', async () => {
+    const user = userEvent.setup();
     wrap(roster());
     const card = screen.getAllByRole('button', { name: new RegExp(theo.name) })[0]!;
     expect(card.textContent).toMatch(/Active/);
-    expect(card.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
+    // Under Active every dot is the same, so none is drawn.
+    expect(card.querySelector('.ch-rs-face__dot')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'All' }));
+    const all = screen.getAllByRole('button', { name: new RegExp(theo.name) })[0]!;
+    expect(all.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
   });
 
   it("View insights, the row menu's first item, opens CoachHelm on that player", async () => {
@@ -473,6 +566,8 @@ describe('Roster · loading, haptics, accessibility', () => {
 describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
   const realMatchMedia = window.matchMedia;
   beforeEach(() => {
+    // The phone's profile links are the production ones (the stats page is rebuilt).
+    profile.rebuilt = true;
     window.matchMedia = ((q: string) => ({
       matches: q === '(max-width: 820px)',
       media: q,
@@ -514,13 +609,12 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
       .map((b) => b.getAttribute('aria-label')!.split(',')[0]);
   const profileHeading = (name: string) => screen.queryByRole('heading', { level: 2, name });
 
-  it('the top bar reads "‹ More", Roster, and Invite players, which opens the invite sheet', async () => {
+  it('the top bar is the section title Roster (no "‹ More") and Invite players, which opens the invite sheet', async () => {
     const user = userEvent.setup();
     phone(roster());
     const top = screen.getByTestId('phone-top');
     expect(within(top).getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
-    await user.click(within(top).getByRole('button', { name: 'Back to More' }));
-    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBeGreaterThan(0);
+    expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     await user.click(within(top).getByRole('button', { name: 'Invite players' }));
     expect(await screen.findByText('FINLEY-26')).toBeTruthy();
     // An icon action that isn't a primary button is silent (D-70).
@@ -601,6 +695,22 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
     await waitFor(() => expect(profileHeading('Theo Marchetti')).toBeNull());
     expect(screen.queryByRole('button', { name: /^Theo Marchetti/ })).toBeNull();
+  });
+
+  it("CH-3502 the profile's ⋯ sheet marks a player inactive, asking first", async () => {
+    const user = userEvent.setup();
+    actions.status.mockResolvedValue({ success: true });
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+    phone(roster());
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
+    await user.click(within(sheet).getByRole('button', { name: 'Mark inactive' }));
+    await expectCode('CH-3502', /Move Theo Marchetti to Inactive on Varsity\?/);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    expect(actions.status).toHaveBeenCalledWith('theo', 'inactive');
+    // The open profile reads the new status in its identity line (D-58).
+    await waitFor(() => expect(screen.getByText(/· Inactive$/)).toBeTruthy());
+    expect(screen.getByRole('heading', { level: 2, name: 'Theo Marchetti' })).toBeTruthy();
   });
 
   it('the join requests banner opens the sheet; approving one leaves the banner counting the rest', async () => {

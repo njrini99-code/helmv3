@@ -673,6 +673,34 @@ green? Tap to confirm."), and the server accepts it.
 Submit failure codes: `hole_invalid` (the issue names a hole) or
 `round_implausible` (round total), with the human message in `error`.
 
+## Tap in (added 2026-10-10)
+
+A tap in is a real stroke and putt. In stroke play every ball is holed out
+(Rules of Golf 3.3c); a concession exists only in match play (3.2b). So it is
+written as a holed putt and nothing else marks it: `result: 'hole'` on a
+`putting` shot, which `derivePuttMade` writes as `putt_made = true` and
+`putt_distance_feet` holds its length. Score, putts, GIR, made-putt buckets
+and strokes gained (the 0 to 3 ft green baseline, 1.02) read it as they read
+any make. No schema change.
+
+- Plan: `planTapIn` in `src/lib/golf/shot-entry-rules.ts`, shared by both
+  renderers. Offered only on a putt (lie green) before a result or a leave is
+  picked, on a hole not yet holed, and only when no shared rule blocks the
+  rows (the hole's stroke cap). Within `TAP_IN_RANGE_FEET` (2 ft) it is one
+  holed putt from where the ball lies; farther, the putt on screen is written
+  as leaving `TAP_IN_LEAVE_FEET` (1 ft) and then a holed 1 ft putt, so the
+  chain stays continuous and strokes gained buckets each putt by its real
+  length. `tapInWords` names every stroke and the resulting score beside the
+  action, so a putt that was actually holed is never tapped in silently.
+- Write: `useShotTracking.handleTapIn` goes through `recordRows`, the same
+  tail as `handleNextShot` (reducer, `onSaveShot` per row for the device copy
+  and draft, hole checkpoint, stale-hole guard). Not offered while an undo or
+  the hole checkpoint runs. Undo lifts one row at a time: undoing a two-row
+  tap in leaves the 1 ft putt to play.
+- UI: a quiet ghost "Tap in" under the putt result in `FairwayShotEntry`
+  (hole-out `checkpoint` haptic) and Clubhouse `ShotEntry` (CH-11913: medium on
+  the tap, success once the hole saves).
+
 ## Held saves, idempotent discard, missing parent (swap audit, 2026-09-30)
 
 - **Held, not saved.** When an autosave or completed-hole checkpoint does not
@@ -702,8 +730,19 @@ Submit failure codes: `hole_invalid` (the issue names a hole) or
   when no row with that id exists anywhere (an id-only service-role check),
   so `writeRoundRecreatingIfMissing` re-creates and completes it; a row that
   exists under another player keeps the permission refusal.
-- **Version check on submit** is a HELD draft
-  (`20261001000000_submit_round_expected_updated_at.sql`, R-6).
+- **Version check on submit** (Q-120, R-6). The SQL side is a HELD draft
+  (`20261001000000_submit_round_expected_updated_at.sql`); the app side is
+  wired and safe on either side of it. Both engines pass
+  `expectedUpdatedAt` (`lastServerUpdatedAtRef`) to
+  `submitGolfRoundComprehensive` once the round exists server-side, and the
+  action forwards it as `p_round_data.expected_updated_at` on the
+  existing-round RPC call only (never the new-round path, which
+  `writeRoundRecreatingIfMissing` re-sends with no id; an unparseable token
+  is dropped rather than cast). A submit `conflict` goes through
+  `handleRoundSyncConflict` like a save conflict: self-caused, re-sent once
+  under the adopted token; genuine, the round is blocked with
+  `ROUND_CONFLICT_MESSAGE` and the pre-submit device snapshot is kept. Until
+  the migration is applied the RPC ignores the key.
 
 ## Save and submit result contract (updated 2026-09-02)
 

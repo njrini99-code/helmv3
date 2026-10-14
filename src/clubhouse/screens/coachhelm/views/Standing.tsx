@@ -31,7 +31,7 @@ function Row({ r }: { r: ChStandRow }) {
   return (
     <li className={'ch-hs-r is-' + sense}>
       <div className="ch-hs-r__h">
-        <h4>{r.label}</h4>
+        <h3>{r.label}</h3>
         <p>
           {r.vsTour && <span className={'ch-hs-vs is-' + r.vsTour.sense}>{r.vsTour.text}</span>}
           {r.percentile && <span className="ch-hs-pct">{r.percentile}</span>}
@@ -84,6 +84,8 @@ function Row({ r }: { r: ChStandRow }) {
 function Hero({ s }: { s: ChStanding }) {
   const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed}` : null].filter(Boolean);
   const { tour, team } = s.counts;
+  const top = s.gaps[0];
+  const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
   return (
     <section className={'ch-hs-hero' + (s.gaps.length > 0 ? '' : ' is-solo')} aria-labelledby="ch-hs-hero-t">
       <div className="ch-hs-hero__main">
@@ -91,17 +93,16 @@ function Hero({ s }: { s: ChStanding }) {
           <span>Where you stand</span>
           {meta.length > 0 && <span className="ch-num">{meta.join(' · ')}</span>}
         </div>
-        {/* A headline, so no closing full stop (states audit, 2026-10-08). */}
+        {/* A headline, so no closing full stop (states audit, 2026-10-08). It leads with the most to gain; the counts say one
+            denominator, the Tour's, under it (P013 D4). */}
         <h2 id="ch-hs-hero-t">
-          {tour.of > 0 ? (
+          {top ? (
             <>
-              Ahead of {s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour'} on <Count ahead={tour.ahead} of={tour.of} /> stats
-              {team.of > 0 && (
-                <>
-                  {' '}
-                  and ahead of your team on <Count ahead={team.ahead} of={team.of} />
-                </>
-              )}
+              {top.label} is worth about <span className="ch-hs-count ch-num">{top.strokes} strokes</span> a round
+            </>
+          ) : tour.of > 0 ? (
+            <>
+              Ahead of {tourName} on <Count ahead={tour.ahead} of={tour.of} /> stats
             </>
           ) : team.of > 0 ? (
             <>
@@ -112,7 +113,8 @@ function Hero({ s }: { s: ChStanding }) {
           )}
         </h2>
         <p className="ch-hs-hero__sub">
-          {s.counts.measures} {s.counts.measures === 1 ? 'stat' : 'stats'} tracked. Strokes gained is against the field average, not a Tour player’s score; every other stat is against {s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour'}.
+          {top && tour.of > 0 ? `Ahead of ${tourName} on ${tour.ahead} of ${tour.of} stats. ` : top && team.of > 0 ? `Ahead of your team on ${team.ahead} of ${team.of} stats. ` : ''}
+          Every stat, strokes gained included, is against {tourName}.
         </p>
       </div>
       {s.gaps.length > 0 && (

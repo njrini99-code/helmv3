@@ -9,8 +9,8 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { channelsFor, DEFAULT_CHANNELS, ROUTING_GROUPS, ROUTING_LABEL, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from './model';
-import { useDelivery, usePushToggle, useRouting } from './hooks';
-import { Card, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch } from './parts';
+import { useDelivery, usePushToggle, useRouting, useTestPush } from './hooks';
+import { Card, EmailPaused, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch } from './parts';
 
 /** Recruiting and profile-view emails don't apply to GolfHelm coaches or players (as in the current app). */
 export const DELIVERY_GROUPS = DELIVERY_NOTIFICATION_GROUPS.filter((g) => g.id !== 'pipeline' && g.id !== 'profile_views');
@@ -31,26 +31,51 @@ export function NotificationsSection({ data, writes, device }: { data: ChSetting
       {data.delivery.error ? (
         <ReadFailed what="Your email and push settings" code="CH-8202" onRetry={writes.refresh} title="Email and push" description="Which updates reach you, and how. Changes save as you make them." covered={covered} />
       ) : (
-        <DeliveryCard prefs={data.delivery.value} writes={writes} device={device} digest={data.digest} />
+        <DeliveryCard prefs={data.delivery.value} writes={writes} device={device} digest={data.digest} emailPaused={data.emailPaused} />
       )}
       {data.playerRouting &&
         (data.playerRouting.error ? (
           <ReadFailed what="Your CoachHelm update settings" code="CH-8203" onRetry={writes.refresh} title="CoachHelm updates" description="Round reviews, goals and insights from CoachHelm. These are separate from email and push above." covered={covered} />
         ) : (
-          <RoutingCard initial={data.playerRouting.value} writes={writes} />
+          <RoutingCard initial={data.playerRouting.value} writes={writes} emailPaused={data.emailPaused} />
         ))}
     </>
   );
 }
 
-function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string, boolean>; writes: ChSettingsWrites; device: ChDevice; digest: ChSettingsData['digest'] }) {
+function DeliveryCard({
+  prefs,
+  writes,
+  device,
+  digest,
+  emailPaused,
+}: {
+  prefs: Record<string, boolean>;
+  writes: ChSettingsWrites;
+  device: ChDevice;
+  digest: ChSettingsData['digest'];
+  emailPaused: boolean;
+}) {
   const { p, dg, quiet, pending, flip, flipDigest } = useDelivery(prefs, digest, writes);
   const push = device.push;
   const onDevice = push.status === 'subscribed';
   const togglePush = usePushToggle(push);
+  const test = useTestPush(push);
 
   return (
-    <Card id="set-delivery" title="Email and push" description="Which updates reach you, and how. Changes save as you make them.">
+    <Card
+      id="set-delivery"
+      title="Email and push"
+      description={
+        emailPaused ? (
+          <>
+            Which updates reach you, and how. Changes save as you make them. <EmailPaused />
+          </>
+        ) : (
+          'Which updates reach you, and how. Changes save as you make them.'
+        )
+      }
+    >
       <Row label={<><Icon icon={Moon} size={15} /> Quiet mode</>} help="Pauses everything except messages from your team.">
         <SettingSwitch label="Quiet mode" hideLabel checked={quiet} busy={pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
       </Row>
@@ -59,7 +84,15 @@ function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string,
           label={<><Icon icon={Smartphone} size={15} /> Push on this device</>}
           help={push.status === 'denied' ? 'Notifications are blocked for GolfHelm in this browser. Allow them in its site settings, then come back.' : 'Lets this browser show push notifications.'}
         >
-          <SettingSwitch label="Push on this device" hideLabel checked={onDevice} disabled={push.status === 'denied' || push.status === 'checking'} busy={push.pending} onChange={(v) => void togglePush(v)} />
+          <span className="ch-set-pair">
+            {/* P008-C3: a test push to this person's own devices (D1-6), once push is on here. */}
+            {onDevice && push.test && (
+              <Button size="sm" disabled={test.busy} onClick={() => void test.run()}>
+                {test.busy ? 'Sending…' : 'Send a test'}
+              </Button>
+            )}
+            <SettingSwitch label="Push on this device" hideLabel checked={onDevice} disabled={push.status === 'denied' || push.status === 'checking'} busy={push.pending} onChange={(v) => void togglePush(v)} />
+          </span>
         </Row>
       )}
 
@@ -67,7 +100,11 @@ function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string,
         <div className="ch-set-matrix__row is-head" role="row">
           <span role="columnheader">Update</span>
           <span role="columnheader">Email</span>
-          <span role="columnheader">Push</span>
+          {/* P008 #4: with push off here, the column still saves for other devices, and says so. */}
+          <span role="columnheader">
+            Push
+            {push.status !== 'unsupported' && !onDevice && <> <em className="ch-set-matrix__note">Off on this device</em></>}
+          </span>
         </div>
         {DELIVERY_GROUPS.map((g) => {
           const silenced = quiet && !g.quietExempt;
@@ -78,7 +115,7 @@ function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string,
                 <span>{silenced ? 'Paused by quiet mode' : g.description}</span>
               </span>
               <span role="cell">
-                <SettingSwitch label={`${g.label} by email`} hideLabel checked={!!p[g.emailKey]} disabled={silenced} busy={pending.has(g.emailKey)} onChange={flip(g.emailKey, `${g.label.toLowerCase()} email`)} />
+                <SettingSwitch label={`${g.label} by email`} hideLabel checked={!!p[g.emailKey]} disabled={silenced || emailPaused} busy={pending.has(g.emailKey)} onChange={flip(g.emailKey, `${g.label.toLowerCase()} email`)} />
               </span>
               <span role="cell">
                 {g.pushKey ? (
@@ -98,11 +135,12 @@ function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string,
             <SettingSwitch label="Weekly team email" hideLabel checked={false} disabled onChange={() => {}} />
           </Row>
         ) : (
-          <Row label="Weekly team email" help="The weekly summary of your team, by email.">
+          <Row label="Weekly team email" help="The weekly summary of your team, by email." dim={emailPaused}>
             <SettingSwitch
               label="Weekly team email"
               hideLabel
               checked={dg}
+              disabled={emailPaused}
               busy={pending.has('digest')}
               onChange={flipDigest}
             />
@@ -118,7 +156,7 @@ const CHANNELS: Array<{ key: keyof ChannelPref; label: string }> = [
   { key: 'email', label: 'Email' },
 ];
 
-function RoutingCard({ initial, writes }: { initial: { prefs: PrefsByCategory; quiet: boolean }; writes: ChSettingsWrites }) {
+function RoutingCard({ initial, writes, emailPaused }: { initial: { prefs: PrefsByCategory; quiet: boolean }; writes: ChSettingsWrites; emailPaused: boolean }) {
   const { prefs, quiet, pending, bulkBusy, cellBusy, all, setCell, bulk, flipQuiet } = useRouting(initial, writes);
   const [confirmReset, setConfirmReset] = useState(false);
   const muted = (ch: 'push' | 'email') => Object.fromEntries(all.map((c) => [c, { ...channelsFor(prefs, c), [ch]: false }])) as PrefsByCategory;
@@ -127,13 +165,21 @@ function RoutingCard({ initial, writes }: { initial: { prefs: PrefsByCategory; q
     <Card
       id="set-routing"
       title="CoachHelm updates"
-      description="Round reviews, goals and insights from CoachHelm. These are separate from email and push above."
+      description={
+        emailPaused ? (
+          <>
+            Round reviews, goals and insights from CoachHelm. These are separate from email and push above. <EmailPaused />
+          </>
+        ) : (
+          'Round reviews, goals and insights from CoachHelm. These are separate from email and push above.'
+        )
+      }
       aside={
         <div className="ch-set-bulk">
           <Button size="sm" variant="ghost" leftIcon={BellOff} disabled={bulkBusy || cellBusy} onClick={() => void bulk(muted('push'), "Couldn’t mute push")}>
             Mute push
           </Button>
-          <Button size="sm" variant="ghost" disabled={bulkBusy || cellBusy} onClick={() => void bulk(muted('email'), "Couldn’t mute email")}>
+          <Button size="sm" variant="ghost" disabled={bulkBusy || cellBusy || emailPaused} onClick={() => void bulk(muted('email'), "Couldn’t mute email")}>
             Mute email
           </Button>
           <Button size="sm" variant="ghost" leftIcon={RotateCcw} disabled={bulkBusy || cellBusy} onClick={() => setConfirmReset(true)}>
@@ -181,7 +227,7 @@ function RoutingCard({ initial, writes }: { initial: { prefs: PrefsByCategory; q
                         label={`${ROUTING_LABEL[c]}, ${x.label.toLowerCase()}`}
                         hideLabel
                         checked={ch[x.key]}
-                        disabled={silenced || bulkBusy}
+                        disabled={silenced || bulkBusy || (emailPaused && x.key === 'email')}
                         busy={pending.has(`cell:${c}:${x.key}`)}
                         onChange={(v) => setCell(c, x.key, v)}
                       />

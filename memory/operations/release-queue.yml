@@ -429,7 +429,7 @@ items:
       was RLS-checked before the player's rounds matched (2.0 s vs 0.14 s,
       measured 2026-10-05) and dashboard reads hit the 8 s statement_timeout.
     incident_id: memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md
-    status: verified
+    status: verified_in_production
     risk: R1
     sha: 9b9e54770deb2148ff06e9554be126350bc048d3
     pr: 2124
@@ -453,3 +453,97 @@ items:
       - src/hooks/golf/__tests__/use-message-reactions.test.tsx
     queued_for_release: false
     first_seen: '2026-10-04T22:16:21Z'
+  - id: conversation-rail-deadline-abort-2026-10-07
+    feature_id: team_communications
+    root_cause: >-
+      loadGolfConversationRail reported the browser Supabase client's own
+      request-deadline abort of the participants read (WebKit 'AbortError:
+      Fetch is aborted') to logError, so af4c2c9d reopened on slow loads.
+    incident_id: memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md
+    status: verified
+    risk: R1
+    sha: 90ae5607f86f1e40d4844ec5f8a01b78d52c1daa
+    pr: 2163
+    regression_tests:
+      - src/hooks/golf/__tests__/use-golf-messages.rail-deadline-abort.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-25T00:00:00Z'
+  - id: designed-path-regression-noise-2026-10-07
+    feature_id: admin_selfheal
+    root_cause: >-
+      Regression detection counted every non-info row, and classifyIncident did
+      not recognise the shot_not_found reconciliation code, so the designed
+      stale-shot path (20ae8f27) was stamped REGRESSED on every recurrence.
+    incident_id: memory/incidents/admin_selfheal/INC-2026-10-07-designed-paths-stamped-regressed.md
+    status: verified
+    risk: R1
+    sha: 90ae5607f86f1e40d4844ec5f8a01b78d52c1daa
+    pr: 2163
+    regression_tests:
+      - src/lib/admin/__tests__/auto-resolve.test.ts
+      - src/lib/admin/__tests__/incident-classification-benign-recurrences.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-19T00:00:00Z'
+  - id: retired-triage-runner-claude-cloud-2026-10-08
+    feature_id: admin_selfheal
+    root_cause: >-
+      The retired cloud Diagnose task wrote its failed heartbeat as
+      method='claude-cloud-session', outside the retired claude-code-* family,
+      so the Bridge read Diagnose (and the loop) as FAILED 09:22Z-15:17Z.
+    incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
+    status: verified
+    risk: R1
+    sha: 1d7a8cd0d0e12cb8ad30f83e731e0ff5e456ea7c
+    pr: 2163
+    regression_tests:
+      - src/lib/admin/__tests__/selfheal-registry.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-08T09:18:00Z'
+  - id: lock-incidents-active-window-2026-10-13
+    feature_id: observability_supabase
+    root_cause: >-
+      Nothing writes helm_debug.db_lock_incidents.resolved_at, so the Bridge
+      counted every lock incident ever recorded as open (129 rows, panel read
+      'at least 100' with 0 in 24h).
+    incident_id: memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md
+    status: verified
+    risk: R1
+    sha: b7dbb350b343f9304241206b98c0da2047393b42
+    pr: 2191
+    regression_tests:
+      - src/lib/admin/database/__tests__/locks.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-13T17:40:00Z'
+  - id: use-server-object-export-2026-10-13
+    feature_id: baseball_core
+    root_cause: >-
+      src/app/lifting/actions/invites.ts ('use server') exported an object
+      (__testables); Next throws at module load, so every server action on
+      /baseball/coach-onboarding (which imports lifting/actions/onboarding ->
+      invites) returned 500.
+    incident_id: memory/incidents/baseball_core/INC-2026-10-13-use-server-object-export-breaks-coach-onboarding.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: 2192
+    regression_tests:
+      - src/lib/__tests__/use-server-exports.guard.test.ts
+      - src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts
+      - src/lib/__tests__/error-trace-classification.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-13T20:58:46Z'
+  - id: last-read-deadline-abort-2026-10-13
+    feature_id: team_communications
+    root_cause: >-
+      The per-viewer last_read_at lookup in loadGolfConversationRail logged the
+      browser Supabase client's own request-deadline abort; the af4c2c9d guard
+      covered only the participants read.
+    incident_id: memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: 2192
+    regression_tests:
+      - src/hooks/golf/__tests__/use-golf-messages.last-read-deadline-abort.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-13T21:48:24Z'

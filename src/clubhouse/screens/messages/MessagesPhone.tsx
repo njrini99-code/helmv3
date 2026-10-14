@@ -46,7 +46,7 @@ import { haptic } from "../../lib/haptics";
 import { chTrail } from "../../lib/track";
 import { rebuiltHref } from "../../shell/nav";
 import { PhoneScreen } from "../../shell/PhoneScreen";
-import { PhoneTop, useBackFromMore, usePhoneStackHistory } from "../../shell/phone-chrome";
+import { PhoneTop, usePhoneStackHistory } from "../../shell/phone-chrome";
 import {
   clock,
   dayLabel,
@@ -71,6 +71,7 @@ import {
   DeleteMessageModal,
   EditMessageModal,
   LeaveGroupModal,
+  DeleteConversationModal,
   MessageHits,
   REACTIONS,
   addAttachments,
@@ -90,9 +91,10 @@ type FirstMessage = { text: string; files: File[] };
  * history entry, so the iOS edge swipe pops it (CH-1906).
  */
 export function MessagesPhone({ api }: { api: ChMessagesApi }) {
-  const coach = api.viewer.role === "coach";
-  const backFromMore = useBackFromMore();
   const [composing, setComposing] = useState(false);
+  useEffect(() => {
+    if (api.prefill) setComposing(true);
+  }, [api.prefill]);
   const [announcing, setAnnouncing] = useState(false);
   const [details, setDetails] = useState(false);
   /** The first message written in New message, sent by the thread's composer once the thread opens. */
@@ -126,8 +128,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
     <main className="ch-msp" aria-label="Messages">
       <PhoneTop
         title="Messages"
-        start={!coach}
-        back={coach ? { label: "More", onBack: backFromMore } : null}
+        start
         action={
           <PhoneIconAction
             icon={SquarePen}
@@ -176,7 +177,10 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
           <PhoneNewMessage
             key="new"
             api={api}
-            onCancel={() => setComposing(false)}
+            onCancel={() => {
+              setComposing(false);
+              api.clearPrefill?.();
+            }}
             onAnnounce={() => {
               setComposing(false);
               setAnnouncing(true);
@@ -558,6 +562,7 @@ function Panel({ title, action, children, code }: { title?: string; action?: Rea
 function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv; onBack: () => void }) {
   const coach = api.viewer.role === "coach";
   const [leaving, setLeaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [muteBusy, setMuteBusy] = useState(false);
   const titleId = `ch-msp-details-${conv.id}`;
@@ -687,11 +692,17 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                   Leave group
                 </button>
               )}
+              {api.deleteConversation && (
+                <button type="button" className="ch-msp-danger" onClick={() => setDeleting(true)}>
+                  Delete conversation
+                </button>
+              )}
             </Panel>
           </div>
         </SectionBoundary>
       </div>
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={() => {}} />
+      <DeleteConversationModal api={api} conv={conv} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => {}} />
       {mine && conv.group && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
     </PhoneScreen>
   );
@@ -771,9 +782,12 @@ function PhoneNewMessage({
   onFirstMessage: (first: FirstMessage | null) => void;
 }) {
   const coach = api.viewer.role === "coach";
-  const [to, setTo] = useState<string[]>([]);
+  // A prefilled message (prefill.ts) arrives with its people and its group name. Its draft is quoted here and lands in
+  // the new thread's composer (not this screen's first message, which Next sends): the coach presses Send there.
+  const [seed] = useState(() => api.prefill ?? null);
+  const [to, setTo] = useState<string[]>(() => (seed ? (coach ? seed.to : seed.to.slice(0, 1)) : []));
   const [q, setQ] = useState("");
-  const [name, setName] = useState("");
+  const [name, setName] = useState(seed?.title ?? "");
   const [draft, setDraft] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -864,6 +878,12 @@ function PhoneNewMessage({
       )}
       <div className="ch-msp-scroll">
         <div className="ch-msp-page">
+          {seed?.draft && (
+            <p className="ch-ms-new__draft">
+              <span>Your draft, ready in the conversation to edit and send</span>
+              <q>{seed.draft}</q>
+            </p>
+          )}
           {touched && needsName && (
             <p className="ch-field__help is-error" data-ch-code="CH-7104" role="alert">
               Name the group so players know what it’s for.

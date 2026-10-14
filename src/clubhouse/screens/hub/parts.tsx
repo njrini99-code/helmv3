@@ -2,7 +2,7 @@
 
 import { Bus, CalendarCheck, Check, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, useState, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -13,6 +13,9 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
 import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { SerifText } from '../../ui/SerifText';
+import { useChPhone } from '../../lib/use-phone';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { radioKeys, rovingRadios } from './radio';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -101,8 +104,12 @@ export function Rsvps({
                   {r.title}
                   {r.mandatory && <span className="ch-hb-req">Required</span>}
                 </b>
+                {/* P010 D9: the date tile says the day; the line keeps time and place, the date only for a screen reader. */}
                 <span className="ch-num">
-                  {r.weekday} {r.day} · {r.meta}
+                  <span className="ch-sr-only">
+                    {r.weekday} {r.day} ·{' '}
+                  </span>
+                  {r.meta}
                 </span>
               </Link>
               {coach ? (
@@ -142,7 +149,7 @@ function ReplyChoices({ r, mine, pending, onReply }: {
   }), quietBusy);
   return (
     <div className="ch-hb-rsvp__choice">
-      <span className="ch-hb-rsvp__a" role="radiogroup" aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
+      <span className="ch-hb-rsvp__a" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys(false)} aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
         {REPLIES.map(([answer, label]) => (
           <button key={answer} type="button" role="radio" aria-checked={mine === answer} disabled={pending} onClick={() => {
             if (mine === answer) return;
@@ -172,6 +179,7 @@ export function Announcement({
   a,
   role,
   featured = false,
+  rank,
   acked,
   pending,
   onAck,
@@ -181,6 +189,11 @@ export function Announcement({
   a: ChHubAnnouncement;
   role: ChTeamHub['role'];
   featured?: boolean;
+  /**
+   * P010-A3, the Announcements tab as an edited page: the newest is the lead (the 36px headline); the older ones step
+   * down to 22px with their date in the margin, and on the phone fold to the title and a first line until opened.
+   */
+  rank?: 'lead' | 'older';
   acked: boolean;
   pending: boolean;
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
@@ -189,13 +202,28 @@ export function Announcement({
 }) {
   const coach = role === 'coach';
   const pct = a.recipients ? Math.round((a.ackCount / a.recipients) * 100) : 0;
+  const phone = useChPhone();
+  const [open, setOpen] = useState(false);
+  const fold = rank === 'older' && phone && !open && !!a.body;
   return (
-    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '')} aria-labelledby={`ch-hb-ann-${a.id}`}>
-      {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your reply' : 'Latest from your coaches'}</span>}
+    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
+      {rank === 'older' && (
+        <span className="ch-hb-ann__margin ch-num" aria-hidden="true">
+          {a.when}
+        </span>
+      )}
+      {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your acknowledgement' : 'Latest from your coaches'}</span>}
       <h3 id={`ch-hb-ann-${a.id}`}>
         <SerifText text={a.title} />
       </h3>
-      {a.body && <p>{a.body}</p>}
+      {fold ? (
+        <button type="button" className="ch-hb-ann__fold" aria-expanded={false} onClick={() => (haptic('select'), setOpen(true))}>
+          <span>{a.body}</span>
+          <span className="ch-sr-only">, show all</span>
+        </button>
+      ) : (
+        a.body && <p>{a.body}</p>
+      )}
       <div className="ch-hb-ann__h">
         <Avatar name={a.by} size={32} />
         <div>
@@ -222,7 +250,7 @@ export function Announcement({
         {coach ? (
           <span className="ch-hb-reads ch-num">
             <span className="ch-hb-reads__t" aria-hidden="true">
-              <i style={{ width: `${pct}%` }} />
+              <i style={{ '--ch-hb-p': pct / 100 } as CSSProperties} />
             </span>
             {a.ackCount} of {a.recipients} {a.needAck ? 'acknowledged' : 'read'}
           </span>
@@ -262,7 +290,8 @@ export function TripPass({
     t.back && ([t.back, 'Home'] as const),
   ].filter((x): x is readonly [string, string] => !!x);
   return (
-    <article className={'ch-hb-pass' + (big ? ' is-big' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
+    // P010-A1: the next trip is the page's one paper object (hub.css `.is-next`); the trips after it stay flat rows.
+    <article className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
         <div className="ch-hb-pass__top">
           <span className="ch-hb-eyebrow ch-num">
@@ -289,15 +318,20 @@ export function TripPass({
           <SerifText text={t.name} />
         </b>
         {t.destination && <span className="ch-hb-muted">{t.destination}</span>}
+        {/* P010 D4: on the big pass the plan beside it already says when it leaves and where it stays. */}
         <dl className="ch-hb-pass__f">
-          <div>
-            <dt>Departs</dt>
-            <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
-          </div>
-          <div>
-            <dt>Stay</dt>
-            <dd>{t.hotel ?? 'Same day'}</dd>
-          </div>
+          {!(big && t.depart) && (
+            <div>
+              <dt>Departs</dt>
+              <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
+            </div>
+          )}
+          {!(big && t.hotel) && (
+            <div>
+              <dt>Stay</dt>
+              <dd>{t.hotel ?? 'Same day'}</dd>
+            </div>
+          )}
           <div>
             <dt>{role === 'coach' ? 'Travelers' : 'You'}</dt>
             <dd className="ch-num">{role === 'coach' ? (t.travelerCount ?? '—') : t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling'}</dd>
@@ -398,6 +432,8 @@ export function Tasks({
   onToggle,
   onAssign,
   onDelete,
+  focusTask = null,
+  onFocused,
   covered = false,
 }: {
   role: ChTeamHub['role'];
@@ -407,6 +443,10 @@ export function Tasks({
   onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
   onAssign?: () => void;
   onDelete?: (t: ChHubTask) => void;
+  /** The task a notification opened (`?task=`); a task outside the shown rows is left alone. */
+  focusTask?: string | null;
+  /** Called once the focused row has been scrolled to, so the hub can forget it. */
+  onFocused?: () => void;
   /** The page's notice carries the one Try again (CH-1209): this section keeps only its title under the heading. */
   covered?: boolean;
 }) {
@@ -430,7 +470,7 @@ export function Tasks({
         <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned' : 'No tasks right now'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
         <div className="ch-hb-tasks">
-          {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} />)}
+          {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} focus={focusTask === t.id} onFocused={onFocused} />)}
           {data.total != null && data.total > data.rows.length && (
             // C-20: the list is capped; it says so rather than passing for every task.
             <p className="ch-hb-muted ch-num">
@@ -444,14 +484,36 @@ export function Tasks({
 }
 
 /** One gate per task, shared by completing and reopening it; other tasks remain usable. */
-function TaskRow({ t, coach, d, pending, onToggle, onDelete }: {
+function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFocused }: {
   t: ChHubTask;
   coach: boolean;
   d: boolean;
   pending: boolean;
   onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
   onDelete?: (t: ChHubTask) => void;
+  focus?: boolean;
+  onFocused?: () => void;
 }) {
+  const row = useRef<HTMLDivElement>(null);
+  const reduced = useChReducedMotion();
+  // Lit from the first paint when a notification named this task; the wash fades once (or, with reduced motion, stays
+  // still until the row is used).
+  const [lit, setLit] = useState(focus);
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!focus || scrolled.current) return;
+    scrolled.current = true;
+    row.current?.scrollIntoView?.({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+    onFocused?.();
+  }, [focus, reduced, onFocused]);
+  // The wash ends with its own fade (a native listener: the row's animationend, not a child's).
+  useEffect(() => {
+    const el = row.current;
+    if (!lit || reduced || !el) return;
+    const done = (e: AnimationEvent) => e.target === el && setLit(false);
+    el.addEventListener('animationend', done);
+    return () => el.removeEventListener('animationend', done);
+  }, [lit, reduced]);
   const save = useAction(
     d ? 'hub.uncompleteTask' : 'hub.completeTask',
     onToggle,
@@ -463,7 +525,11 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete }: {
     quietBusy,
   );
   return (
-    <div className={'ch-hb-task' + (d ? ' is-done' : '')}>
+    <div
+      ref={row}
+      className={'ch-hb-task' + (d ? ' is-done' : '') + (lit ? (reduced ? ' is-focus-still' : ' is-focus') : '')}
+      onPointerDown={lit && reduced ? () => setLit(false) : undefined}
+    >
       {coach ? (
         <span className="ch-hb-ring" style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? (t.done[0] / t.done[1]) * 100 : 0 }} aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
           <b className="ch-num">{t.done ? `${t.done[0]}/${t.done[1]}` : '—'}</b>

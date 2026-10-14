@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowRight, Bookmark, Check, CirclePlay, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
 import { formatToPar, NO_DATA } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
@@ -99,6 +99,8 @@ export function ScorecardSheet({ open, onClose, course, tee, holes, current }: {
  * CH-11506: Exit. Save for later goes back to Rounds, where the round waits
  * to be continued; Keep playing closes; Discard asks again before it deletes
  * every shot (CH-11507). A failed discard keeps the sheet with the reason.
+ * A continued round also offers Change round type (`roundType`), which opens
+ * the round-type sheet (CH-11521); a new round's sheet has no such row.
  */
 export function ExitSheet({
   open,
@@ -111,12 +113,15 @@ export function ExitSheet({
   onSave,
   onKeep,
   onDiscard,
+  roundType,
 }: {
   open: boolean;
   course: string;
   holes: ChCardHole[];
   currentNumber: number;
   discarding: boolean;
+  /** What the round counts as now ("Practice"), and what opens the round-type sheet. Absent: no row. */
+  roundType?: { label: string; onChange: () => void };
   /** Save for later is writing the round (R-12: it shows, and the sheet can't be dismissed under it). */
   saving?: boolean;
   discardError: string | null;
@@ -193,6 +198,15 @@ export function ExitSheet({
               <em>Back to hole {currentNumber}</em>
             </span>
           </button>
+          {roundType && (
+            <button type="button" className="ch-rt-xopt" disabled={busy} onClick={roundType.onChange}>
+              <Icon icon={Flag} size={18} />
+              <span>
+                <b>Change round type</b>
+                <em>{roundType.label} now. Changes what it counts toward.</em>
+              </span>
+            </button>
+          )}
           <button type="button" className="ch-rt-xopt is-danger" onClick={() => setConfirm(true)}>
             <Icon icon={Trash2} size={18} />
             <span>
@@ -220,6 +234,7 @@ export function RoundCompleteSheet({
   open,
   heading,
   holes,
+  backHole,
   onBack,
   onSubmit,
 }: {
@@ -227,6 +242,8 @@ export function RoundCompleteSheet({
   /** "Finley GC · Blue · Oct 14". */
   heading: string;
   holes: ChSummaryHole[];
+  /** The hole Back returns to (the one the player is on: with a shotgun start, not the card's last). Omitted, the card's last. */
+  backHole?: number;
   onBack: () => void;
   onSubmit: () => void;
 }) {
@@ -251,7 +268,7 @@ export function RoundCompleteSheet({
       footer={
         <>
           <button type="button" className="ch-btn ch-btn--ghost" onClick={onBack}>
-            <span>Back to hole {holes[holes.length - 1]?.number ?? ''}</span>
+            <span>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</span>
           </button>
           <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onSubmit}>
             <span>Submit round</span>
@@ -314,13 +331,29 @@ export function SubmitOverlay({
   slowHref?: string | null;
 }) {
   const reduced = useChReducedMotion();
+  // D6/D7: a real modal dialog on the top layer, so the round behind it is inert and can't be reached or read through;
+  // it can't be dismissed (Esc does nothing): each state names its own way on. Focus moves to the state's title.
+  const ref = useRef<HTMLDialogElement>(null);
+  const title = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+    return () => {
+      if (d?.open) d.close();
+    };
+  }, []);
+  useEffect(() => {
+    title.current?.focus({ preventScroll: true });
+  }, [state]);
   return (
-    <div className="ch-rt-scrim" data-ui="clubhouse">
+    <dialog ref={ref} className="ch-rt-scrim" data-ui="clubhouse" aria-labelledby="ch-rt-subm-t" onCancel={(e) => e.preventDefault()}>
       <div className="ch-rt-subm" role={state === 'failed' ? 'alert' : 'status'} aria-live="polite">
         {state === 'saving' && (
           <>
             <span className={'ch-rt-spin ch-rt-spin--lg' + (reduced ? ' is-still' : '')} aria-hidden="true" />
-            <b>Submitting round</b>
+            <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1}>
+              Submitting round
+            </h2>
             <span className="ch-rt-subm__m">Saving {shots} shots, updating your stats and writing the round recap. Keep this screen open.</span>
             {slowHref && (
               <span className="ch-rt-subm__m" data-ch-code="CH-11909">
@@ -335,7 +368,9 @@ export function SubmitOverlay({
             <span className="ch-rt-subm__ok" aria-hidden="true">
               <Icon icon={Check} size={26} />
             </span>
-            <b>Round posted</b>
+            <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1}>
+              Round posted
+            </h2>
             <span className="ch-rt-subm__m">
               Your round at {course} is posted.{coach ? ` ${coach} can see it now.` : ''}
             </span>
@@ -352,7 +387,9 @@ export function SubmitOverlay({
             <span className="ch-rt-subm__bad" aria-hidden="true">
               <Icon icon={TriangleAlert} size={24} />
             </span>
-            <b data-ch-code="CH-11005">The round didn&rsquo;t submit</b>
+            <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1} data-ch-code="CH-11005">
+              The round didn&rsquo;t submit
+            </h2>
             <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Check your connection, then try again.'}</span>
             <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onRetry}>
               <span>Try again</span>
@@ -365,6 +402,6 @@ export function SubmitOverlay({
           </>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }

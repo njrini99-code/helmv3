@@ -1,5 +1,108 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-13 — Sheets rise and leave on the shared spring, over the shared backdrop
+
+The phone's form, picker and action sheets rise on the smooth spring (462ms)
+instead of the 260ms ease-out, leave
+on it too, and sit on the shared `--ch-scrim` (0.36) instead of their own 0.42
+and dark 0.6. Shared change:
+docs/clubhouse/CHANGELOG.md (popups).
+
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Recruiting's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-12 — Recruiting follows the dashboard role
+
+Clubhouse Recruiting is drawn only when the gate is on for the coach and the
+dashboard layout's
+role (`getGolfDashboardRole`) is the coach's: a coach row beside an onboarded
+player profile (the
+player dashboard) no longer reaches the coach route. Fairway, the page's own
+access checks and the gate-off path are unchanged.
+
+## 2026-10-10 — Tokens for the pipeline, gentler coins
+
+Presentation only. The pipeline's coins, connectors and stage chips use palette
+tokens instead of nine hex literals; the offered and
+recruiting coins carry a soft shadow and lift under the pointer, and press in.
+
+## 2026-10-08 — Next step writes, the held migration, calendar fact-check
+
+- **Next step writes (C1).** `createRecruit` and `updateRecruit` accept
+  `next_step_label` (trimmed, at most 120 characters) and `next_step_date` (a real
+  YYYY-MM-DD day) and write them only when passed, with the coach and team checks
+  unchanged. The live writes now store a next step; the page still sends one only
+  after its column probe finds the columns, so before the owner applies
+  `20261008120000_golf_recruits_next_step.sql` (held in `supabase/migrations/HELD.md`,
+  `lock_timeout` 3s) no write names them.
+- **Calendar (C2), after a fact-check of all 15 dates against the 2026-27 books.**
+  Division I's contact line carries its age rule ("in-person contact allowed from
+  Aug 1 before junior year", 13.1.1.1); Division II's line says in-person contact
+  starts June 15 before junior year (13.1.1.1); the Division I men's quiet period
+  notes evaluations at the GCAA showcase and combine (13.17.7-(c)-(1)); the NJCAA
+  line reads "The NJCAA sets no recruiting periods; staff may visit prospects
+  anywhere" (Art. VI §4 C.1).
+
+## 2026-10-08 — Premium pass: Committed moment, next step, recruiting calendar, findings
+
+```text
+Design package: docs/clubhouse/PREMIUM_PASS_AUDIT.md (P014 B1, C1, C2; findings #1–#4, #6–#9)
+PR/commit: agent/clubhouse-premium-backlog (uncommitted at writing)
+Contract IDs: CH-14111, CH-14307, CH-14806, CH-14807, CH-14808 (new); CH-14904, CH-14501, CH-14302 (changed copy or place)
+Actions: ACT-P014-MOVE-STAGE (a commit's success haptic moves to the rule's end); save and add send the next step only while its columns exist
+Data impact: supabase/migrations/20261008120000_golf_recruits_next_step.sql, written, NOT applied (two nullable columns, no RLS change)
+Held items: the next-step write needs createRecruit/updateRecruit to pass next_step_label/next_step_date (src/app/golf/actions/recruiting.ts, outside this page); calendar event and Undo for a next step not built
+```
+
+### Changed in the premium pass
+
+- **B1, Committed is a moment, once (CH-14806).** A landed move to Committed
+  draws a 1px gilt rule under the stage (desktop panel; the phone's Stage row),
+  left to right over the reveal duration, and the success haptic lands as it
+  ends instead of when the save lands. The coin takes a gilt rim. On the phone
+  it waits for the stage sheet to close. Reduced motion and Animations off: the
+  rule is there and the haptic fires at once. No repeat on reopening.
+- **C1, Next step (CH-14307, CH-14111).** A label and a day per prospect: a
+  table column, a panel and detail part, a dated plate on a due phone row, a
+  "Next step due" sort and "n visits this month · n decisions due" in the
+  pipeline head. Feature-off until the migration is applied: the loader probes
+  the column with a zero-row head request and the list keeps `select('*')`.
+  Editing it also needs the writes to store it (`nextStepWrites`): the live
+  server actions whitelist columns today, so until they pass the two fields
+  through, a next step is shown read-only and never sent.
+- **C2, Recruiting calendar (CH-14808, CH-14807).** A quiet line from the
+  2026-27 NCAA D-I, D-II, D-III, NAIA and NJCAA rule books, each entry sourced.
+  Division from the team's organization, else the coach's pick on this device.
+  Email and Call carry Division I's June 15 start note from the class year; no
+  period restricts phone or email, so no period hint is shown.
+- **Findings.** #1 State has no placeholder and Class of reads "e.g. 2028"; #2
+  the Add form's stage options fill their track; #3 desktop Delete moved into
+  an overflow menu beside Edit; #4 "% of list" removed; #6 "Only coaches see
+  this page" moved to the first-run empty state; #7 the search placeholder is
+  "Search" and the no-match line names states; #8 phone Stage is a full-width
+  row with Email and Call as two smaller keys; #9 phone connectors run coin
+  edge to coin edge. #5 (the shared canopy band) is the shell's; the page-local
+  part is the shorter subtitle.
+
+### Why the premium pass changed it
+
+- Owner-approved premium backlog items for P014 (B1, C1, C2) and the page's
+  P2 and P3 findings.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/recruiting.test.tsx
+  src/clubhouse/__tests__/recruiting-calendar.test.ts
+  src/clubhouse/__tests__/recruiting-loader.test.ts
+  src/clubhouse/__tests__/recruiting-upload.test.tsx`; WebKit captures at
+  1440 and 390, light and dark, of the default, next-step, edit, division and
+  Committed states (scratch, not in git).
+
 ## 2026-10-08 — Copy: typographic apostrophes and quotes
 
 Recruiting writes its apostrophes as ’, as Home, Stats and Calendar do: the

@@ -240,7 +240,8 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                         <b>{p.name}</b>
                         <em>{dismissed[p.top.id] ? 'Dismissed' : p.top.title}</em>
                       </span>
-                      <span className="ch-hl-pl__c ch-num">{open[i]}</span>
+                      {/* No open signal draws no count: a "0" beside a signal line read as a contradiction (P013 D12). */}
+                      {open[i] ? <span className="ch-hl-pl__c ch-num">{open[i]}</span> : null}
                     </button>
                   );
                 })}
@@ -339,7 +340,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Coach" aside={!phone ? tabs : undefined}>
+      <Head who="Coach" phone={phone} aside={!phone ? tabs : undefined}>
         {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
       </Head>
       {body}

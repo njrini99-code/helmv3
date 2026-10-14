@@ -24,6 +24,7 @@ import { teamReadsFailed } from '../Team';
 import { TEES } from '../Team';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
 import { StaffPhone } from './StaffPhone';
+import { CourseLocationPhone } from '../course-location';
 import { FieldRow, Group, NavRow, PickerRow, Problem, SliderRow, SwitchRow } from './ui';
 
 /**
@@ -76,6 +77,7 @@ function TeamBody({ data, writes }: { data: ChSettingsData; writes: ChSettingsWr
       ) : (
         data.reminders && <RemindersPhone reminders={data.reminders.value} writes={writes} />
       )}
+      {data.teamId && <CourseLocationPhone teamId={data.teamId} />}
     </>
   );
 }

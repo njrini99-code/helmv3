@@ -8,7 +8,7 @@
  */
 import { randomBytes, randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import pg from 'pg';
+import { PgClient } from './pg-client';
 import { tryGetSecretKey } from '../../src/lib/supabase/keys.mjs';
 import { PAR_LAYOUTS, genRound, makeRng, yardsFor, type GenRound, type RoundShape } from './clubhouse-team-data';
 
@@ -82,7 +82,7 @@ export async function scoredHoles(roundId: string): Promise<number> {
  * as its player. `SUPABASE_DB_URL` overrides the local default.
  */
 export async function removeSeed(ids: SeedIds): Promise<void> {
-  const db = new pg.Client({ connectionString: localDbUrl() });
+  const db = new PgClient({ connectionString: localDbUrl() });
   await db.connect();
   try {
     await db.query('begin');
@@ -219,10 +219,10 @@ function addDays(date: string, n: number): string {
   return ymd(new Date(Date.UTC(y!, m! - 1, d! + n)));
 }
 
-async function bulk(db: pg.Client, table: string, cols: string[], rows: object[]): Promise<void> {
+async function bulk(db: PgClient, table: string, cols: string[], rows: object[]): Promise<void> {
   if (!rows.length) return;
   const list = cols.join(', ');
-  await db.query(`insert into ${table} (${list}) select ${list} from json_populate_recordset(null::${table}, $1::json)`, [JSON.stringify(rows)]);
+  await db.query(`insert into ${table} (${list}) select ${list} from json_populate_recordset(null::${table}, $1::json)`, [rows]);
 }
 
 /** The columns (and the ids to look for in them) the cleanup sweeps for; a seed's ids are random UUIDs, so a hit is always the seed's own row. */
@@ -257,7 +257,7 @@ function entityTables(ids: SeededTeam): Array<[string, string[]]> {
   ];
 }
 
-async function tablesWith(db: pg.Client, col: string): Promise<string[]> {
+async function tablesWith(db: PgClient, col: string): Promise<string[]> {
   const res = await db.query(
     `select c.table_name from information_schema.columns c join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
      where c.table_schema = 'public' and c.column_name = $1 and t.table_type = 'BASE TABLE'`,
@@ -273,7 +273,7 @@ async function tablesWith(db: pg.Client, col: string): Promise<string[]> {
  * (their cascade clears public.users and the identities) and checks that nothing refers to the seed any more.
  */
 export async function removeTeamSeed(ids: SeededTeam): Promise<void> {
-  const db = new pg.Client({ connectionString: localDbUrl() });
+  const db = new PgClient({ connectionString: localDbUrl() });
   await db.connect();
   try {
     await db.query('begin');
@@ -362,7 +362,7 @@ export async function seedClubhouseTeam(options: SeedTeamOptions = {}): Promise<
   const dropUsers = async (): Promise<void> => {
     for (const id of userIds) await admin.auth.admin.deleteUser(id).catch(() => undefined);
     if (userIds.length) {
-      const db = new pg.Client({ connectionString: url });
+      const db = new PgClient({ connectionString: url });
       await db.connect();
       await db.query('delete from public.users where id = any($1::uuid[])', [userIds]).catch(() => undefined);
       await db.end();
@@ -466,7 +466,7 @@ export async function seedClubhouseTeam(options: SeedTeamOptions = {}): Promise<
     team.roundIds.push(plan.id);
   }
 
-  const db = new pg.Client({ connectionString: url });
+  const db = new PgClient({ connectionString: url });
   await db.connect();
   try {
     await db.query('begin');

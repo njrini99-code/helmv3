@@ -74,6 +74,13 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
   );
 }
 
+/** The letterhead's date: "Wednesday 14 October", in the team's zone, the year only when it isn't this one. */
+function letterDate(iso: string, timeZone: string): string {
+  const d = new Date(iso);
+  const sameYear = new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric' }).format(d) === new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric' }).format(new Date());
+  return new Intl.DateTimeFormat('en-GB', { timeZone, weekday: 'long', day: 'numeric', month: 'long', ...(sameYear ? {} : { year: 'numeric' }) }).format(d).replace(',', '');
+}
+
 export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: ChAnnouncement; onBack: () => void }) {
   const [detail, setDetail] = useState<ChAnnouncementDetail | null>(null);
   const [failed, setFailed] = useState(false);
@@ -92,6 +99,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
   }, [load, a.id, attempt, a.ackCount, a.completedTaskCount]);
   const coach = api.viewer.role === 'coach';
   const mine = needsMyAck(a, api.viewer.role);
+  const signer = a.authorId ? api.signers?.[a.authorId] : undefined;
   const published = a.publishedAt ? `${dayLabel(a.publishedAt, api.now, api.timeZone)} · ${clock(a.publishedAt, api.timeZone)}` : 'Scheduled';
 
   return (
@@ -113,18 +121,29 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
         </div>
       </header>
       <div className="ch-ms-scroll">
-        <article className="ch-ms-ann">
-          <div className="ch-ms-ann__kick">
-            {a.urgent && (
-              <Badge tone="warning">
-                <Icon icon={TriangleAlert} size={11} />
-                Urgent
-              </Badge>
+        {/* P007-A1: a signed team letter. The letterhead is an engraved line (the team and the date, then "Urgent ·
+            please acknowledge" in words, not chips); the title, the body at a reading measure, and the coach's signature
+            over a gilt rule. No crest or monogram (owner, D3-2). */}
+        <article className="ch-ms-ann is-letter">
+          <p className="ch-ms-ann__head">
+            <span className="ch-num">
+              {api.teamName ?? 'Team'} · {a.publishedAt ? letterDate(a.publishedAt, api.timeZone) : 'Scheduled'}
+            </span>
+            {(a.urgent || a.requiresAck) && (
+              <span className={a.urgent ? 'is-urgent' : undefined}>
+                {a.urgent && <Icon icon={TriangleAlert} size={12} />}
+                {[a.urgent && 'Urgent', a.requiresAck && (a.urgent ? 'please acknowledge' : 'Please acknowledge')].filter(Boolean).join(' · ')}
+              </span>
             )}
-            {a.requiresAck && <Badge tone="neutral">Acknowledgement requested</Badge>}
-          </div>
+          </p>
           <h2 className="ch-ms-ann__title">{a.title}</h2>
           {a.body && <p className="ch-ms-ann__body">{a.body}</p>}
+          {signer && (
+            <p className="ch-ms-ann__sig">
+              <b>{signer.name}</b>
+              <span>{signer.title}</span>
+            </p>
+          )}
 
           {mine && (
             <div className="ch-ms-ann__ack">

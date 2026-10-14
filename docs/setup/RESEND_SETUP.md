@@ -22,12 +22,13 @@ Two migrations make up the Resend activity schema. Apply them in order:
 1. `20260420000000_resend_activity_mirror.sql` — renames `crm_email_events` → `email_events`, adds the `emails` snapshot table, installs the auto-sync trigger, and publishes both tables to Supabase Realtime. A back-compat `crm_email_events` VIEW is created so any existing code that still references the old table name keeps working.
 2. `20260421000000_email_clicks_and_coach_denorm.sql` — adds the `email_clicks` table (id, email_event_id FK, resend_message_id, recipient_email, clicked_url, user_agent, ip_address, occurred_at, inserted_at), an AFTER INSERT trigger on `email_events` that extracts `raw_payload.data.click.{link,userAgent,ipAddress}` into a normalized row for `email.clicked` events, and two new denorm columns on `crm_coaches` (`last_email_event_type` and `last_email_event_at`). A second trigger keeps those coach columns fresh for any event with a linked `contact_log_id`, guarded by a monotonic check so a late backfill cannot clobber newer state. Both data sets are backfilled from existing rows during migration, and `email_clicks` is added to the `supabase_realtime` publication.
 
-```bash
-# Using Supabase CLI (linked project)
-supabase db push
+These two files are now part of the squashed
+`supabase/migrations/20260527000000_prod_public_baseline.sql`. Apply any new
+migration through the reviewed apply path, one file at a time
+(see [APPLY_PATH.md](../operations/APPLY_PATH.md)):
 
-# Or apply just these migrations
-supabase migration up
+```bash
+npm run db:apply -- <file>   # dry run by default; see APPLY_PATH.md
 ```
 
 `last_email_event_type` is stored without the `email.` prefix — one of `sent`, `delivered`, `delivery_delayed`, `opened`, `clicked`, `bounced`, `complained`.

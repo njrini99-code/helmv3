@@ -18,6 +18,8 @@ function Chrome({ label, code, chained, brief = 2, children }: { label: string; 
   );
   return (
     <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label={label} data-skel={chained ? 'chained' : undefined} data-ch-code={code} data-canopy={phone ? undefined : ''}>
+      {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
+      <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && tabs}
       {phone ? (
         // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the eyebrow, the 31px title and the brief under

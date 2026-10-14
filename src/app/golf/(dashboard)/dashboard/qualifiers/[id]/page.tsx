@@ -11,6 +11,7 @@ import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifierDetail } from '@/components/fairway/pages/qualifiers/FairwayQualifierDetail';
 import { getQualifierRoundCourses } from '@/app/golf/actions/qualifier-actions';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
   player: {
@@ -52,7 +53,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   if (!session) redirect('/golf/login');
 
   // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
-  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) return <ClubhouseQualifiersRoute view="detail" id={id} />;
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) return <ClubhouseQualifiersRoute view="detail" id={id} />;
 
   const { coach, player } = session;
   const isCoach = !!coach;

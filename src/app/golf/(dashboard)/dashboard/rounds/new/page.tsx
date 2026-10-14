@@ -4,6 +4,7 @@ import NewRoundClient from './new-round-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { FeatureUnavailable } from '@/components/fairway';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseNewRoundRoute } from '@/clubhouse/routes/round-new';
 
 export default async function NewRoundPage() {
@@ -33,7 +34,8 @@ export default async function NewRoundPage() {
   }
 
   // Clubhouse round entry (golf_clubhouse_ui): setup, then the round, over the same new-round engine.
-  if ((await isClubhouseFor('player'))) return <ClubhouseNewRoundRoute playerId={player.id} />;
+  // The role is the dashboard layout's (getGolfDashboardRole); Fairway below keeps the session's.
+  if ((await isClubhouseFor('player')) && (await getGolfDashboardRole()) === 'player') return <ClubhouseNewRoundRoute playerId={player.id} />;
 
   // Note: unfinished / in-progress rounds are surfaced on the /rounds page
   // (UnfinishedRoundsSection), not gated here — the New Round page deliberately

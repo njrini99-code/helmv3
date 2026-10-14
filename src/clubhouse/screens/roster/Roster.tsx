@@ -1,10 +1,11 @@
 'use client';
 
-import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserMinus, UserPlus, Users } from 'lucide-react';
+import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
+import { updatePlayerStatus } from '@/app/golf/actions/team-management';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -31,7 +32,10 @@ import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
-import { formatHcp, rosterFailedParts } from './format';
+import { PlayerPeek } from '../../ui/PlayerPeek';
+import { RosterSpread } from './RosterSpread';
+import { earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
+import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
 
 type Sort = 'avg' | 'hcp' | 'rounds' | 'name';
@@ -67,7 +71,11 @@ export function Roster({ data }: { data: ChRoster }) {
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
-  const jr = useJoinRequests(data.teamName, data.requests);
+  // The player whose Active/Inactive status the coach is changing (CH-3502).
+  const [restatus, setRestatus] = useState<ChRosterPlayer | null>(null);
+  // Mid-sentence the team is its name, or "your team" when the team row didn't load (P003 #8).
+  const teamRef = teamInSentence(data);
+  const jr = useJoinRequests(teamRef, data.requests);
   const phone = useChPhone();
   // Phone: the open player is a pushed screen (RosterPhone keeps it in the history, CH-1906).
   // A link with ?player= opens that profile once; the param is dropped so a reload shows the list.
@@ -107,26 +115,32 @@ export function Roster({ data }: { data: ChRoster }) {
     }
   };
 
-  const active = players.filter((p) => p.status === 'active');
+  const active = useMemo(() => players.filter((p) => p.status === 'active'), [players]);
   const inactiveCount = players.length - active.length;
   const teamAvg = useMemo(() => {
     const avgs = active.map((p) => p.avg).filter((v): v is number => v != null);
     return avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null;
   }, [active]);
 
+  // Places and the team strip rank the active roster, never the rows a search or filter left (P003 #2).
+  const standings = useMemo(() => rosterStandings(players), [players]);
+  const spreadPlayers = useMemo(() => active.filter((p) => standings.byId.has(p.id)), [active, standings]);
+  // Avg sorts nothing while season stats are missing: the order falls back to Name (P003 #7).
+  const sortBy: Sort = data.statsError && sort === 'avg' ? 'name' : sort;
+
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = players.filter((p) => (show === 'all' || p.status === show) && p.name.toLowerCase().includes(needle));
     return [...list].sort((a, b) =>
-      sort === 'name'
+      sortBy === 'name'
         ? lastName(a.name).localeCompare(lastName(b.name))
-        : sort === 'avg'
+        : sortBy === 'avg'
           ? nullsLast(a.avg, b.avg)
-          : sort === 'hcp'
+          : sortBy === 'hcp'
             ? nullsLast(a.handicap, b.handicap)
             : b.rounds - a.rounds,
     );
-  }, [players, q, show, sort]);
+  }, [players, q, show, sortBy]);
 
   const attn = players.filter((p) => p.attention && p.status === 'active');
   const cur = players.find((p) => p.id === sel);
@@ -134,6 +148,23 @@ export function Roster({ data }: { data: ChRoster }) {
     if (id) chTrail('roster open player');
     haptic('select');
     setSel((s) => (s === id ? null : id));
+  }, []);
+  /** A player's face or name goes to their profile (owner, 2026-10-08); where that page isn't rebuilt it opens the peek. */
+  const openProfile = useCallback(
+    (id: string) => {
+      const href = rebuiltHref(`/golf/dashboard/stats?player=${id}`);
+      if (!href) return select(id);
+      chTrail('roster open profile');
+      haptic('select');
+      router.push(href);
+    },
+    [router, select],
+  );
+  /** A Needs-a-look chip only opens its player; closing stays on X or Esc (P003 #11). */
+  const openSel = useCallback((id: string) => {
+    chTrail('roster open player');
+    haptic('select');
+    setSel(id);
   }, []);
 
   // What a removal changes on this screen happens inside the action, so the toast's Retry finishes the job as well (31403).
@@ -151,11 +182,26 @@ export function Roster({ data }: { data: ChRoster }) {
       return res;
     },
     (p) => ({
-      done: `${p.name} removed from ${data.teamName}`,
+      done: `${p.name} removed from ${teamRef}`,
       failed: `Couldn’t remove ${p.name}`,
       hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
       code: 'CH-3001',
     }),
+  );
+  // Active ⇄ Inactive (the dropped Fairway "Change status", rebuilt). Like a removal, the list changes inside the
+  // action, so the toast's Retry finishes the job as well (31403). `updatePlayerStatus` resolves the coach's active team
+  // with the same cookie-aware resolver this route used (resolveCoachActiveTeam), so it writes to the team on screen.
+  const changeStatus = useAction(
+    'roster.changeStatus',
+    async (p: ChRosterPlayer, to: ChRosterPlayer['status']) => {
+      const res = await updatePlayerStatus(p.id, to);
+      if (res.success) {
+        setPlayers((ps) => ps.map((x) => (x.id === p.id ? { ...x, status: to } : x)));
+        setRestatus(null);
+      }
+      return res;
+    },
+    (p, to) => statusCopy(p.name, to),
   );
   /** A note that saved is the note the list holds, so the player reads back with it (31203). */
   const noteSaved = useCallback(
@@ -197,6 +243,11 @@ export function Roster({ data }: { data: ChRoster }) {
     const messagesHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
     if (messagesHref) items.push({ label: 'Message', icon: MessageSquare, href: messagesHref });
     if (items.length) items.push({ kind: 'separator' });
+    items.push(
+      p.status === 'active'
+        ? { label: 'Mark inactive', icon: UserX, onSelect: () => setRestatus(p) }
+        : { label: 'Mark active', icon: UserCheck, onSelect: () => setRestatus(p) },
+    );
     items.push({ label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => setRemoving(p) });
     return items;
   };
@@ -206,7 +257,7 @@ export function Roster({ data }: { data: ChRoster }) {
       <InviteModal
         open={invite}
         onClose={() => setInvite(false)}
-        teamName={data.teamName}
+        teamName={teamRef}
         code={data.joinCode}
         codeFailed={data.teamError}
         onRetry={() => router.refresh()}
@@ -218,7 +269,7 @@ export function Roster({ data }: { data: ChRoster }) {
         width={460}
         icon={UserMinus}
         title="Remove player?"
-        description={removing ? `Remove ${removing.name} from ${data.teamName}? They can rejoin later with the team code.` : undefined}
+        description={removing ? `Remove ${removing.name} from ${teamRef}? They can rejoin later with the team code.` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setRemoving(null)}>
@@ -239,6 +290,13 @@ export function Roster({ data }: { data: ChRoster }) {
       >
         <p className="ch-rs-remove">Their account and stats are not deleted. This only removes them from your active roster.</p>
       </Modal>
+      <StatusConfirm
+        player={restatus}
+        teamName={teamRef}
+        pending={changeStatus.pending}
+        onCancel={() => setRestatus(null)}
+        onConfirm={(p, to) => void changeStatus.run(p, to)}
+      />
     </>
   );
 
@@ -253,6 +311,7 @@ export function Roster({ data }: { data: ChRoster }) {
         onClose={() => setOpenId(null)}
         onInvite={() => setInvite(true)}
         onRemove={setRemoving}
+        onStatus={setRestatus}
         onNoteSaved={noteSaved}
         onRetry={() => router.refresh()}
       >
@@ -266,14 +325,9 @@ export function Roster({ data }: { data: ChRoster }) {
   const covered = failed.length > 1;
   return (
     <main className="ch-rs" data-canopy="">
-      <header className="ch-rs-head" data-canopy-head="">
+      <header className="ch-rs-head" data-canopy-head="tight">
         <div>
           <span className="ch-rs-team">
-            <span className="ch-rs-team__stack" aria-hidden="true">
-              {active.slice(0, 7).map((p) => (
-                <Avatar key={p.id} name={p.name} size={30} />
-              ))}
-            </span>
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
           <h1 className="ch-display">Your players</h1>
@@ -308,7 +362,7 @@ export function Roster({ data }: { data: ChRoster }) {
       <PageRefreshNotice parts={failed} />
 
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        <RosterRequests teamName={data.teamName} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
+        <RosterRequests teamName={teamRef} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
       </SectionBoundary>
 
       {data.statsError && (
@@ -325,11 +379,13 @@ export function Roster({ data }: { data: ChRoster }) {
         <section className="ch-rs-attn" aria-label="Needs a look">
           <span className="ch-rs-attn__l">Needs a look</span>
           {attn.map((p) => (
-            <button key={p.id} type="button" className="ch-rs-attn__c" onClick={() => select(p.id)}>
-              <Avatar name={p.name} size={24} />
-              <b>{p.firstName}</b>
-              <span className={`ch-rs-attn__n is-${p.attention!.tone}`}>{p.attention!.text}</span>
-            </button>
+            <PlayerPeek key={p.id} player={rosterPeek(p)}>
+              <button type="button" className="ch-rs-attn__c" onClick={() => openSel(p.id)}>
+                <Avatar name={p.name} size={24} />
+                <b>{p.firstName}</b>
+                <span className={`ch-rs-attn__n is-${p.attention!.tone}`}>{p.attention!.text}</span>
+              </button>
+            </PlayerPeek>
           ))}
         </section>
       )}
@@ -364,6 +420,7 @@ export function Roster({ data }: { data: ChRoster }) {
         />
       ) : (
         <>
+          {!phone && !data.statsError && <RosterSpread players={spreadPlayers} teamAvg={teamAvg} onOpen={openSel} />}
           <div className="ch-rs-bar">
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">
@@ -403,10 +460,10 @@ export function Roster({ data }: { data: ChRoster }) {
               <Segmented<Sort>
                 size="sm"
                 label="Sort players"
-                value={sort}
+                value={sortBy}
                 onChange={setSort}
                 options={[
-                  { value: 'avg', label: 'Avg score' },
+                  ...(data.statsError ? [] : [{ value: 'avg' as const, label: 'Avg score' }]),
                   { value: 'hcp', label: 'Handicap' },
                   { value: 'rounds', label: 'Rounds' },
                   { value: 'name', label: 'Name' },
@@ -422,11 +479,12 @@ export function Roster({ data }: { data: ChRoster }) {
               <Swap swapKey={viewTurn}>
                 <RosterList
                   rows={rows}
+                  standings={standings}
                   view={view}
                   sel={sel}
                   q={q}
                   show={show}
-                  select={select}
+                  openProfile={openProfile}
                   menuFor={menuFor}
                   onShowEveryone={() => {
                     setQ('');
@@ -453,25 +511,25 @@ export function Roster({ data }: { data: ChRoster }) {
  */
 function RosterList({
   rows,
+  standings,
   view,
   sel,
   q,
   show,
-  select,
+  openProfile,
   menuFor,
   onShowEveryone,
 }: {
   rows: ChRosterPlayer[];
+  standings: ReturnType<typeof rosterStandings>;
   view: View;
   sel: string | null;
   q: string;
   show: Show;
-  select: (id: string | null) => void;
+  openProfile: (id: string) => void;
   menuFor: (p: ChRosterPlayer) => MenuItem[];
   onShowEveryone: () => void;
 }) {
-  // Every scored player's average, for the faces' team strip (where each player sits on the team).
-  const teamAvgs = rows.map((r) => r.avg).filter((v): v is number => v != null);
   return (
     <>
       {rows.length === 0 ? (
@@ -497,14 +555,15 @@ function RosterList({
               key={p.id}
               type="button"
               className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-              aria-pressed={sel === p.id}
-              onClick={() => select(p.id)}
+              aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
+              onClick={() => openProfile(p.id)}
             >
               <span className="ch-rs-face__top">
                 <span />
-                {/* CH-3802: the status is a word; the dot is decoration. CH-3602: on desktop the cell takes the Ledger tint on
-                    hover and a deeper one on press; the phone's card lifts. */}
-                <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
+                {/* CH-3802: the status is a word; the dot is decoration, drawn only under All where it tells players
+                    apart (P003-A3: under Active or Inactive every dot is the same). CH-3602: on desktop the cell takes
+                    the Ledger tint on hover and a deeper one on press; the phone's card lifts. */}
+                {show === 'all' && <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />}
                 <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
               </span>
               <span className="ch-rs-face__av">
@@ -515,7 +574,7 @@ function RosterList({
               <span className="ch-rs-face__form">
                 <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
               </span>
-              <FaceFigures p={p} avgs={teamAvgs} />
+              <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} />
               {p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>}
             </button>
           ))}
@@ -541,7 +600,12 @@ function RosterList({
               className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
             >
               <span role="cell" className="ch-rs-who__cell">
-                <button type="button" className="ch-rs-who" onClick={() => select(p.id)} aria-pressed={sel === p.id}>
+                <button
+                  type="button"
+                  className="ch-rs-who"
+                  onClick={() => openProfile(p.id)}
+                  aria-label={`${p.name}. Open profile`}
+                >
                   <Avatar name={p.name} size={40} />
                   <span>
                     <b>{p.name}</b>
@@ -675,11 +739,21 @@ function InviteModal({
  * team's on one strip, with their place. Strokes gained: a bar from zero, green for gained, amber for lost. Handicap
  * reads as a labelled line.
  */
-function FaceFigures({ p, avgs }: { p: { avg: number | null; sgPerRound: number | null; handicap: number | null }; avgs: number[] }) {
+function FaceFigures({
+  p,
+  avgs,
+  standing,
+}: {
+  p: { avg: number | null; sgPerRound: number | null; handicap: number | null; rounds: number };
+  /** The ranked team's averages (active, past the early floor), for the strip. */
+  avgs: number[];
+  /** This player's place among them; undefined when they aren't ranked (inactive, early, no average). */
+  standing: RosterStanding | undefined;
+}) {
   const lo = avgs.length ? Math.min(...avgs) : 0;
   const hi = avgs.length ? Math.max(...avgs) : 0;
   const at = (v: number) => (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
-  const place = p.avg == null ? null : avgs.filter((v) => v < p.avg!).length + 1;
+  const need = p.avg != null ? earlyNeed(p.rounds) : null;
   const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
   const sg = p.sgPerRound;
   const sgW = sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3) * 50);
@@ -688,8 +762,8 @@ function FaceFigures({ p, avgs }: { p: { avg: number | null; sgPerRound: number 
       <span className="ch-rs-fig">
         <span className="ch-rs-fig__k">Scoring</span>
         <b className="ch-num">{formatFixed(p.avg)}</b>
-        <span className="ch-rs-fig__m">{place != null && avgs.length > 1 ? `${ord(place)} of ${avgs.length}` : 'Avg'}</span>
-        {p.avg != null && avgs.length > 1 && (
+        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${ord(standing.place)} of ${standing.of}` : need ?? 'Avg'}</span>
+        {p.avg != null && standing && standing.of > 1 && (
           <span className="ch-rs-strip" aria-hidden="true">
             {avgs.map((v, k) => (
               <i key={k} style={{ left: `${at(v)}%` }} />
@@ -701,7 +775,7 @@ function FaceFigures({ p, avgs }: { p: { avg: number | null; sgPerRound: number 
       <span className="ch-rs-fig">
         <span className="ch-rs-fig__k">Strokes gained</span>
         <b className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</b>
-        <span className="ch-rs-fig__m">a round</span>
+        {sg != null && <span className="ch-rs-fig__m">a round</span>}
         {sg != null && (
           <span className="ch-rs-sgbar" aria-hidden="true">
             <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
@@ -713,4 +787,11 @@ function FaceFigures({ p, avgs }: { p: { avg: number | null; sgPerRound: number 
       </span>
     </span>
   );
+}
+
+/** A card's name for VoiceOver: the player and one figure, not every number on it (P003 #13). */
+function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): string {
+  if (p.avg == null) return p.name;
+  const place = standing && standing.of > 1 ? `, ${standing.place} of ${standing.of}` : '';
+  return `${p.name}, scoring average ${p.avg.toFixed(1)}${place}`;
 }

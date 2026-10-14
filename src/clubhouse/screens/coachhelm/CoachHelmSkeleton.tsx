@@ -96,6 +96,8 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
     // Desktop: on the canopy, with the view strip level with the title as the page draws it (Head's aside), so neither the
     // green nor the content below moves when the page lands.
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code={coach ? 'CH-13402' : 'CH-13401'} data-canopy={phone ? undefined : ''}>
+      {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
+      <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && <StripSkeleton coach={coach} phone />}
       {phone ? (
         // The phone's intro at its loaded line heights: the eyebrow, the 31px title and the live line under the double rule.

@@ -6,6 +6,7 @@ import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfM
 import { isTransientNetworkErrorMessage, withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
+import { isClientDeadlineAbort } from '@/lib/client-deadline-abort';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -1335,7 +1336,11 @@ export async function loadGolfConversationRail(
     `)
     .eq('user_id', userId);
 
-  if (groupConvsError) {
+  // The browser client's request deadline on a slow connection (Bridge
+  // af4c2c9d, reopened 4x): the rail continues with the RPC rows and reloads
+  // on the next realtime change, so the deadline abort is not reported. Any
+  // other failure of this read is still logged.
+  if (groupConvsError && !isClientDeadlineAbort(groupConvsError)) {
     logError(
       toPostgrestError(groupConvsError),
       {
@@ -1582,6 +1587,10 @@ export async function loadGolfConversationRail(
 
       if (myRowsError) {
         lastReadFailed = true;
+        // The browser client's own request deadline (Bridge 44137d5f, same
+        // class as af4c2c9d above): the badge already falls back to the RPC
+        // count, so a deadline abort is not reported. Anything else is.
+        if (isClientDeadlineAbort(myRowsError)) continue;
         logError(
           toPostgrestError(myRowsError),
           {

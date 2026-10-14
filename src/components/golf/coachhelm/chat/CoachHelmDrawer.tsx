@@ -193,7 +193,7 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
                 // it) so the composer stays above the keys — same contract as
                 // the messages screen, see ios-native-shell.md.
                 'inset-x-0 bottom-[var(--keyboard-height,0px)] top-[max(3rem,env(safe-area-inset-top))] rounded-t-fw-lg border-t',
-                'transition-[bottom] duration-[250ms] motion-reduce:transition-none',
+                'transition-[bottom] [transition-duration:250ms] motion-reduce:transition-none',
                 // Desktop: full-height panel, 456px.
                 'md:inset-y-0 md:left-auto md:right-0 md:top-0 md:w-[456px] md:rounded-none md:border-l md:border-t-0',
               )}

@@ -26,7 +26,7 @@ import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
 import { haptic } from '../lib/haptics';
 import { PullToRefresh } from '../shell/PullToRefresh';
 import { createLiveWrites } from '../screens/settings/writes';
-import { TabBar } from '../shell/TabBar';
+import { PhoneNav } from './phone-nav-harness';
 import { PREVIEW_SHELL } from '../preview/fixtures';
 
 type HelmWindow = { webkit?: { messageHandlers?: { helmNav?: { postMessage: (b: { overlayOpen: boolean }) => void } } } };
@@ -43,7 +43,7 @@ describe('Clubhouse in the iOS app', () => {
     expect(order).toEqual(['teardown', 'clearActiveTeam', 'signOut']);
   });
 
-  it('the More sheet tells the shell a sheet is open, so an edge swipe cannot leave the page under it', async () => {
+  it('the account sheet tells the shell a sheet is open, so an edge swipe cannot leave the page under it', async () => {
     const postMessage = vi.fn();
     (window as unknown as HelmWindow).webkit = { messageHandlers: { helmNav: { postMessage } } };
     const user = userEvent.setup();
@@ -52,12 +52,12 @@ describe('Clubhouse in the iOS app', () => {
         <div className="ch-root" data-ui="clubhouse">
           <NativeSwipeBackBridge />
           {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role */}
-          <TabBar pathname="/golf/dashboard" shell={PREVIEW_SHELL} role="coach" />
+          <PhoneNav pathname="/golf/dashboard" shell={PREVIEW_SHELL} role="coach" />
         </div>
       </LazyMotion>,
     );
     await waitFor(() => expect(postMessage).toHaveBeenLastCalledWith({ overlayOpen: false }));
-    await user.click(screen.getByRole('button', { name: 'More' }));
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     await waitFor(() => expect(postMessage).toHaveBeenLastCalledWith({ overlayOpen: true }));
   });
 

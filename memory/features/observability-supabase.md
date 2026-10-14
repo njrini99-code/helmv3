@@ -102,6 +102,12 @@ migration reads `unconfigured`, never a fabricated green result.
   - `freshness.ts` — `classifySourceFreshness` (HEALTHY/DEGRADED/STALE/
     BLIND/UNKNOWN, 1.5x/3x) and `summarizeTelemetryHealth` (never GREEN
     with a required source blind or stale).
+- Lock incidents end without a write: nothing sets `resolved_at`, so
+  `locks.ts` counts an incident as active only while unresolved and
+  re-stamped within `LOCK_INCIDENT_ACTIVE_WINDOW_MS` (15 min, the
+  `record_db_lock_incident` dedupe window; the sampler runs every 5 min).
+  Older unresolved rows render as "ended" (2026-10-13; the tile had read
+  "100 (at least)" for incidents that ended 2026-10-05).
 - Bridge readers: `src/lib/admin/database/locks.ts`, `tables.ts`,
   `jobs.ts`, `telemetry.ts` (composes the other four readers plus a sizes/
   self-monitoring RPC rather than re-querying).

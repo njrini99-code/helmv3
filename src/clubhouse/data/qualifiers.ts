@@ -9,6 +9,7 @@ import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
 import {
   buildBoard,
+  endDayFor,
   parseSelectionState,
   parseStatus,
   roundPars,
@@ -81,7 +82,7 @@ export interface ChQListItem {
   entrants: number;
   submitted: number;
   /** The hero's leaders: the places on score plus the first one out. */
-  leaders: Array<{ playerId: string; name: string; position: string; played: number; toPar: number | null }>;
+  leaders: Array<{ playerId: string; name: string; position: string; played: number; toPar: number | null; move: number | null }>;
   topScore: number;
   /** A player's own standing; null for a coach. */
   mine: { entered: boolean; position: string | null; toPar: number | null; played: number } | null;
@@ -100,6 +101,11 @@ export interface ChQList {
    * never "you aren't entered in any qualifiers". Left out of a fixture, it is false.
    */
   entriesError?: boolean;
+  /**
+   * The day an end date is held against (`endDayFor`, P009-D3): a qualifier still live after its last day reads "Ended".
+   * Stamped by the loader; left out (a fixture, a test), nothing is reconciled.
+   */
+  today?: string;
 }
 
 export interface ChQRoundCourse {
@@ -139,6 +145,8 @@ export interface ChQDetailCore {
   selectionsError: boolean;
   /** Coach only: the pick notes didn't load. The squad still shows; the notes are missing, never "no notes". Left out of a fixture, it is false. */
   reasonsError?: boolean;
+  /** As `ChQList.today`: the day the end date is held against; left out, nothing is reconciled. */
+  today?: string;
 }
 
 /**
@@ -325,6 +333,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
       status,
       selectionState: parseSelectionState(q.selection_state),
       selections: null,
+      numRounds: q.num_rounds,
     });
     const me = input.playerId ? [...board.rows, ...board.unscored].find((r) => r.playerId === input.playerId) : undefined;
     return {
@@ -349,6 +358,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
             position: (r.tied ? 'T' : '') + r.position,
             played: r.played,
             toPar: r.toPar,
+            move: r.move,
           })),
       mine:
         input.role === 'player'
@@ -360,7 +370,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
   const visible = input.mode === 'mine' ? items.filter((i) => i.mine?.entered) : items;
   // A player's own qualifiers come first within the list order (D-30).
   const ordered = input.role === 'player' ? [...visible.filter((i) => i.mine?.entered), ...visible.filter((i) => !i.mine?.entered)] : visible;
-  return { role: input.role, mode: input.mode, items: ordered, listError: false, standingsError, entriesError: entries.error };
+  return { role: input.role, mode: input.mode, items: ordered, listError: false, standingsError, entriesError: entries.error, today: endDayFor(now) };
 }
 
 /**
@@ -430,7 +440,7 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
   const board =
     entries.error || rounds.error
       ? null
-      : buildBoard({ entrants, rounds: qRounds, squad: q.selection_slots_total, picks: q.selection_slots_coach_pick, status, selectionState, selections });
+      : buildBoard({ entrants, rounds: qRounds, squad: q.selection_slots_total, picks: q.selection_slots_coach_pick, status, selectionState, selections, numRounds: q.num_rounds });
 
   return {
     role: input.role,
@@ -455,6 +465,7 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
     selections,
     selectionsError: !!selRes.error,
     reasonsError: !!reasonsRes.error,
+    today: endDayFor(now),
     secondary,
   };
 }

@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 31 features, 69 routes, 74 components, 27 apis, 106 actions, 121 services, 87 tests, 134 tables, 166 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 1089 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 31 features, 69 routes, 75 components, 27 apis, 106 actions, 121 services, 87 tests, 134 tables, 166 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1092 (merged; an edge with more than one evidence kind is a stronger claim).
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
 ---
@@ -148,7 +148,7 @@ CRM Outreach (NCAA cold email) · active · criticality medium · owner founder
 
 Outbound Customer Email (kill switch) · active · criticality high · owner founder
 
-- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
 - **Test surfaces:** 3
@@ -188,7 +188,7 @@ iOS Native Shell · active · criticality high · owner product
 
 Lift Lab (helm_lifting_*) · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
 - **Tables:** `helm_lifting_athletes`, `helm_lifting_availability_statuses`, `helm_lifting_bodyweight_entries`, `helm_lifting_coach_assignments`, `helm_lifting_coach_invites`, `helm_lifting_coaches`, `helm_lifting_days`, `helm_lifting_exercise_substitutions`, `helm_lifting_exercises`, `helm_lifting_group_audit`, `helm_lifting_group_members`, `helm_lifting_groups`, `helm_lifting_import_rows`, `helm_lifting_import_runs`, `helm_lifting_maxes`, `helm_lifting_nutrition_plan_assignments`, `helm_lifting_nutrition_plans`, `helm_lifting_org_viewers`, `helm_lifting_prescriptions`, `helm_lifting_program_assignments`, `helm_lifting_programs`, `helm_lifting_prs`, `helm_lifting_readiness_checkins`, `helm_lifting_sections`, `helm_lifting_session_exercises`, `helm_lifting_sessions`, `helm_lifting_set_results`, `helm_lifting_soreness_check_requests`, `helm_lifting_soreness_check_schedules`, `helm_lifting_soreness_maps`, `helm_lifting_weeks`, `helm_lifting_weight_checkin_requests`, `helm_lifting_weight_checkin_schedules`
 - **RPCs:** none
 - **Test surfaces:** 1
@@ -428,6 +428,7 @@ Team Operations · active · criticality high · owner product
 | `crm_outreach` | `auth_onboarding_join` | import_graph (weak) |
 | `email_outbound` | `admin_platform` | import_graph (weak) |
 | `email_outbound` | `auth_onboarding_join` | import_graph (weak) |
+| `email_outbound` | `lift_lab` | import_graph (weak) |
 | `feature_awareness_system` | `admin_incidents` | feature_doc_contract |
 | `feature_awareness_system` | `admin_platform` | feature_doc_contract |
 | `feature_awareness_system` | `admin_reliability_collector` | feature_doc_contract |
@@ -446,6 +447,7 @@ Team Operations · active · criticality high · owner product
 | `lift_lab` | `admin_platform` | import_graph (weak) |
 | `lift_lab` | `auth_onboarding_join` | import_graph (weak) |
 | `lift_lab` | `baseball_core` | import_graph (weak) |
+| `lift_lab` | `email_outbound` | import_graph (weak) |
 | `lift_lab` | `ios_native_shell` | import_graph (weak) |
 | `lift_lab` | `observability_sentry` | import_graph (weak) |
 | `observability_sentry` | `admin_platform` | import_graph (weak) |

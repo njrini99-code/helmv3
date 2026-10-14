@@ -32,6 +32,8 @@ export interface ChDeviceDraft {
     roundDate: string;
     qualifierId?: string;
     qualifierRoundNumber?: number;
+    /** Shotgun start: the hole position the round started on (play-order.ts). Omitted, hole 1. */
+    startHole?: number;
   };
   holes: Array<{ number: number; par: number; yardage: number; score: number | null }>;
   completedHoleStats: HoleStats[];
@@ -228,6 +230,7 @@ function fromStored(round: QueuedRound, source: 'modern-indexeddb' | 'legacy-ind
         roundDate: draft.setupData.roundDate || '',
         qualifierId: draft.setupData.qualifierId,
         qualifierRoundNumber: draft.setupData.qualifierRoundNumber,
+        startHole: draft.setupData.startHole,
       },
       holes: Array.isArray(draft.holes) ? draft.holes : [],
       completedHoleStats: draft.completedHoleStats,

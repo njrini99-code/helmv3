@@ -158,8 +158,24 @@ export function DataTable({
   );
 }
 
-/** One figure per round, oldest first, on a line with its average dashed; the values are in the label for a screen reader. */
-export function RoundLine({ points, unit = '', digits = 0, label }: { points: Array<{ label: string; value: number }>; unit?: string; digits?: number; label: string }) {
+/**
+ * One figure per round, oldest first, on a line with its average dashed; the values are in the label for a screen reader.
+ * `lowerIsBetter` (scores): the axis turns over so a lower score sits higher, and the chart says so ("Lower is better"),
+ * the one scoring-axis convention across Stats and Home (P004-D1, P005-D1).
+ */
+export function RoundLine({
+  points,
+  unit = '',
+  digits = 0,
+  label,
+  lowerIsBetter = false,
+}: {
+  points: Array<{ label: string; value: number }>;
+  unit?: string;
+  digits?: number;
+  label: string;
+  lowerIsBetter?: boolean;
+}) {
   const w = 690;
   const h = 150;
   const pad = 26;
@@ -168,14 +184,16 @@ export function RoundLine({ points, unit = '', digits = 0, label }: { points: Ar
   const hi = Math.max(...vals);
   const span = hi - lo || 1;
   const x = (i: number) => pad + (i * (w - pad * 2)) / Math.max(1, points.length - 1);
-  const y = (v: number) => 30 + ((hi - v) / span) * (h - 62);
+  const y = (v: number) => 30 + ((lowerIsBetter ? v - lo : hi - v) / span) * (h - 62);
   const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
   const f = (v: number) => `${v.toFixed(digits)}${unit}`;
   const all = points.length <= 12;
+  const labelled = points.map((p, i) => ({ x: x(i), y: y(p.value), text: f(p.value), shown: all || i === 0 || i === points.length - 1 }));
+  const mean = meanLabelSpot(labelled, y(avg), `avg ${f(avg)}`, w, pad);
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="ch-gx-line" role="img" aria-label={`${label}: ${points.map((p) => `${p.label} ${f(p.value)}`).join(', ')}`}>
+    <svg viewBox={`0 0 ${w} ${h}`} className="ch-gx-line" role="img" aria-label={`${label}${lowerIsBetter ? ', lower is better' : ''}: ${points.map((p) => `${p.label} ${f(p.value)}`).join(', ')}`}>
       <line x1={pad} x2={w - pad} y1={y(avg)} y2={y(avg)} stroke="var(--ch-st-mean-rule)" strokeDasharray="2 3" />
-      <text x={w - pad} y={y(avg) - 5} textAnchor="end" className="ch-ax">
+      <text x={mean.x} y={mean.y} textAnchor={mean.anchor} className="ch-ax">
         avg {f(avg)}
       </text>
       <path d={points.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.value)}`).join(' ')} fill="none" stroke="var(--ch-green-700)" strokeWidth={2} strokeLinejoin="round" />
@@ -184,7 +202,7 @@ export function RoundLine({ points, unit = '', digits = 0, label }: { points: Ar
         return (
           <g key={i}>
             <circle cx={x(i)} cy={y(p.value)} r={last ? 4.5 : 3.5} fill={last ? 'var(--ch-green-700)' : 'var(--ch-ivory-25)'} stroke="var(--ch-green-700)" strokeWidth={1.75} />
-            {(all || i === 0 || last) && (
+            {labelled[i]!.shown && (
               <text x={x(i)} y={y(p.value) - 9} textAnchor="middle" className="ch-ax">
                 {f(p.value)}
               </text>
@@ -195,11 +213,52 @@ export function RoundLine({ points, unit = '', digits = 0, label }: { points: Ar
       <text x={pad} y={h - 6} className="ch-ax">
         {points[0]!.label}
       </text>
+      {lowerIsBetter && (
+        <text x={w / 2} y={h - 6} textAnchor="middle" className="ch-ax">
+          Lower is better
+        </text>
+      )}
       <text x={w - pad} y={h - 6} textAnchor="end" className="ch-ax">
         {points[points.length - 1]!.label}
       </text>
     </svg>
   );
+}
+
+/**
+ * Where a chart's mean label goes (P005-D1: "avg 74" sat on the end point's "74"): the first of the right end above the
+ * dashed line, below it, the left end above, below, whose box clears every drawn value label and every point. Sizes are
+ * the phone's (the .ch-ax step there is 24 units), so a spot that clears on the phone clears on desktop.
+ */
+export function meanLabelSpot(
+  pts: Array<{ x: number; y: number; text: string; shown: boolean }>,
+  meanY: number,
+  text: string,
+  w: number,
+  pad: number,
+): { x: number; y: number; anchor: 'start' | 'end' } {
+  const fh = 24;
+  const cw = 13;
+  const boxW = text.length * cw;
+  const boxes = pts.flatMap((p) => {
+    const dot = { x0: p.x - 6, x1: p.x + 6, y0: p.y - 6, y1: p.y + 6 };
+    if (!p.shown) return [dot];
+    const tw = p.text.length * cw;
+    return [dot, { x0: p.x - tw / 2, x1: p.x + tw / 2, y0: p.y - 9 - fh, y1: p.y - 9 }];
+  });
+  const spots = [
+    { end: true, above: true },
+    { end: true, above: false },
+    { end: false, above: true },
+    { end: false, above: false },
+  ].map(({ end, above }) => {
+    const ty = above ? meanY - 5 : meanY + fh;
+    const x0 = end ? w - pad - boxW : pad;
+    const box = { x0, x1: x0 + boxW, y0: ty - fh, y1: ty };
+    const hits = boxes.filter((b) => b.x0 < box.x1 && b.x1 > box.x0 && b.y0 < box.y1 && b.y1 > box.y0).length;
+    return { x: end ? w - pad : pad, y: ty, anchor: (end ? 'end' : 'start') as 'start' | 'end', hits };
+  });
+  return spots.find((s) => s.hits === 0) ?? [...spots].sort((a, b) => a.hits - b.hits)[0]!;
 }
 
 const SECTORS: Array<[string, string]> = [

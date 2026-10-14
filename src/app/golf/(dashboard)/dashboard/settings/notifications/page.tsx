@@ -49,6 +49,7 @@ import { FeatureUnavailable } from '@/components/fairway';
 import { FairwaySettingsNotifications } from '@/components/fairway/pages/settings';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseSettingsRoute } from '@/clubhouse/routes/settings';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 export const metadata: Metadata = {
   title: 'Notification preferences',
@@ -58,7 +59,7 @@ export default async function NotificationPrefsPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
   // Clubhouse: one Settings page; this link opens its Notifications section (both roles have one).
-  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) {
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) {
     return <ClubhouseSettingsRoute section="notifications" />;
   }
   if (!session.player) {

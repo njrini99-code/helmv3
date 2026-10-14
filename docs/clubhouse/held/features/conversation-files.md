@@ -35,7 +35,10 @@ read shape), so under D-61 it is HELD, not EXISTING. No schema, policy or storag
 
 - Signed-out: "Unauthorized".
 - **HELD gate:** unless `isClubhouseFor(role)` is true for the caller (the `golf_clubhouse_ui` flag, a
-  coach or a player), it returns "Not available" before any read.
+  coach or a player), it returns "Not available" before any read. The role is
+  the dashboard layout's
+  (`pickGolfDashboardRole` on the session), not `session.role`, so it matches
+  the shell the caller sees.
 - A caller who isn't a row in `golf_conversation_participants` for that conversation gets "Not a
   participant in this conversation". A made-up id gets the same answer.
 - Otherwise, files on messages that aren't deleted (filtered in the query), newest first, at most 100:

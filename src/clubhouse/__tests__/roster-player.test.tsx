@@ -316,13 +316,13 @@ describe('Player roster · phone', () => {
       </LazyMotion>,
     );
 
-  it('the top bar reads "‹ More" and Roster with no action, and the page names the team and the count', () => {
+  it('the top bar is the section title Roster with no back link and no action, and the page names the team and the count', () => {
     phone(TEAM);
     const top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('button', { name: /More/ })).toBeTruthy();
+    expect(within(top).queryByRole('button', { name: /More/ })).toBeNull();
     expect(within(top).getByText('Roster')).toBeTruthy();
-    // One control in the bar: the back link. No invite, no action.
-    expect(top.querySelectorAll('button, a')).toHaveLength(1);
+    // A section root (section-strip.md): its title is the switcher in the shell, and nothing else is in the bar.
+    expect(top.querySelectorAll('button, a')).toHaveLength(0);
     expect(screen.getByRole('main', { name: 'Roster' }).querySelector('.ch-rsm-kicker')!.textContent).toBe('Varsity · 4 players');
   });
 

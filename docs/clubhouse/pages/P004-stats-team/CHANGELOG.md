@@ -1,5 +1,134 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-12 — `/stats/team` follows the dashboard role
+
+The old Team stats address opens Clubhouse Stats only when the gate is on for
+the coach and the
+dashboard layout's role (`getGolfDashboardRole`) is the coach's. Fairway, the
+page's own access checks and the gate-off path are unchanged.
+
+## 2026-10-08 — Desktop: trend first, on a deep-green stage
+
+```text
+Design package: owner direction "premium sleek, visual first and trend first", then "more premium, contrast and cool widgets"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: CH-4204 to CH-4206, CH-4311, CH-4312, CH-4401 (no new codes)
+Actions: ACT-P004-CHANGE-WINDOW, ACT-P004-OPEN-PLAYER (unchanged)
+Data impact: none to the schema (no migration). Each team figure now carries a `key` and its weekly `series`, read from rounds the loader already has.
+Held items: none
+```
+
+### Changed (desktop)
+
+- The trend is the page. The window's strokes gained (or scoring average) is set
+  large over a wide weekly line on a
+  deep-green stage: ivory line, a wash that glows green above the baseline and
+  gold below it, the baseline dashed in gold
+  and labelled, and the players faint behind. A pointer on the plot reads the
+  week under it (the nearest week with a
+  value, so the newest always reads).
+- Under the figure: the best week, the latest week and how many weeks beat the
+  baseline (par in the scoring lens), each
+  worked out from the weekly line and the loader's reference, never typed in.
+  Par is the average score less the average
+  to par.
+- The five other figures are one tape on a faint green band between gold rules:
+  value, change, context and a weekly line
+  at one height and scale rule (a line always reads up as better), with a dial
+  at the corner for the figure's own
+  reference: a ring with the Tour's mark for greens and scrambling, birdies as
+  holes of 18, putts against two on every
+  green, and the scoring average as its distance from par.
+- The figure cards (`FigureCards`) are no longer used on Team stats; the player
+  page keeps them. Figures are found by
+  `key`, not by place in the list.
+- Polish pass: the wash is a gradient that is strongest at the line and fades
+  into the baseline (mint ahead, gold
+  behind); the latest value is called out on the line and the best week is
+  marked; each player in the list carries a
+  bar from the reference on one scale; the tape's weekly lines fade out under
+  the line; a faint contour texture and a
+  gold hairline finish the stage. Text on the stage is at least 7:1 and on the
+  tape band at least 8.9:1 (measured).
+- The skeleton draws the same: the stage, then five tape cells.
+- The strokes gained headline keeps CH-4311 (no rounds with shots) and CH-4312
+  (no earlier rounds: the headline says so
+  instead of a change).
+
+## 2026-10-08 — Phone: direction A, native analysis, with the kit interactions
+
+```text
+Design package: owner-chosen direction A (hand mockup "Team stats, native analysis") + the stats kits prototype's interactions
+PR/commit: agent/stats-a-kits
+Contract IDs: CH-4204 to CH-4207, CH-4303, CH-4305, CH-4306, CH-4401, CH-4703, CH-4805 (no new codes)
+Actions: ACT-P004-CHANGE-WINDOW, ACT-P004-OPEN-PLAYER (unchanged)
+Data impact: none (same loader and fields)
+Held items: none
+```
+
+### Changed (phone direction A)
+
+- Phone only; desktop Team stats is unchanged. The page is recomposed, not
+  re-sourced: same loader, window
+  change, filter sheet, notices, empty and failure states, and catalog codes.
+- The head is the team's context line in plain sentence case (it was
+  letter-spaced) over a 34px large title.
+- One hero figure: the scoring average at 64px with its change and what the
+  loader says it is against, and
+  where it sits against par (the stat line's par gauge, as words); its trend
+  sits directly under it. Readings
+  under the trend and the groups hold two lines, so a wrap never moves what
+  follows. The trend is Recharts on its own chunk (never loaded on desktop): the
+  mean dashed, lower
+  scores higher, a finger on it reads a round day; the page keeps the written
+  reading and the 340:120 box.
+- Greens, putts and scrambling are an iOS inset group (no chevrons: nothing to
+  open), each with its reference
+  where the data has one; the hole-coverage line sits under the group.
+- Strokes gained by leg: the chosen leg's team figure rolls (Number Flow) over
+  the legs and team total as rows
+  with bars on the data's own scale. The rows are the leg picker (Base UI Tabs,
+  vertical, a sliding wash); one
+  selection tick per pick. Team total is the window's mean, never the legs
+  summed.
+- Players keep Avg and SG; on SG they rank by the chosen leg and each value
+  rolls to it. Picking a leg moves the
+  sort to SG.
+- Team putting is an inset group with the Tour mark explained in its note.
+- The phone skeleton draws the new geometry (head, controls, hero, trend box,
+  the round, strokes gained) from
+  the same fixed CSS heights.
+
+### Why (phone direction A)
+
+- The owner chose direction A plus the kit's interactions for the phone Team
+  stats (2026-10-08).
+
+### Verification (phone direction A)
+
+- stats-team, stats-geometry, strokes-gained, stats-player, stats-parity,
+  large-title and the reduced-motion
+  coverage tests; clubhouse:css; typecheck. No browser or device screenshots in
+  this change (none recorded in
+  VERIFY); skeleton geometry is set from fixed CSS heights, not measured in
+  WebKit.
+
+## 2026-10-08 — Premium pass: the ledger grid, one scoring axis
+
+Approved by the owner on 2026-10-08 (P004-A1; findings D1, D4, D6, D7).
+
+- **The ledger grid (A1).** "Where each player gains and loses" is a ruled
+  ledger, not 28 tinted boxes: hairline rows, right-aligned tabular figures
+  coloured by sign, a hairline track under each with a tick at the team's median
+  for that leg and a dot at the player's value. The chosen leg is a 2px column
+  rule and a 4% wash; the worst losing leg in a row keeps an 8% amber wash.
+- **Rows are divs (D4).** `role="row"` moved off the link; the name is the link
+  and its hit area covers the row, so the whole row still opens the player.
+- **One scoring axis (D1).** Every scoring chart puts lower scores higher and
+  says "Lower is better" (the phone's ScoreLine, the desktop trend's caption).
+- **Loading (D6, D7).** The preview's loading state draws the phone's own
+  skeleton on a phone, and every skeleton keeps a hidden h1.
+
 ## 2026-10-08 — Copy: typographic apostrophes
 
 Team stats writes its apostrophes as ’: the export's failure (CH-4001), the

@@ -1028,10 +1028,10 @@ describe('Stats · holes', () => {
     showPlayer(player({ filter: filt({ holes: 'all' }), rounds }));
     expect(document.body.textContent).toMatch(/9-hole scores doubled/);
     // The newest round, a 38 at +2 over nine holes, is drawn as a 76 at +4; the average is over the drawn scores.
-    const tiles = [...document.querySelectorAll('.ch-board__n')].map((el) => el.textContent);
+    const tiles = [...document.querySelectorAll('.ch-fm__tp')].map((el) => el.textContent);
     expect(tiles[tiles.length - 1]).toBe('+4');
     const drawn = PREVIEW_PLAYER.rounds.map((r, i) => (i === 0 ? 76 : r.score));
-    expect(document.querySelector('.ch-board')!.parentElement!.textContent).toContain(`avg ${(drawn.reduce((a, b) => a + b, 0) / drawn.length).toFixed(1)}`);
+    expect(document.querySelector('.ch-fm__facts dd')!.textContent).toBe((drawn.reduce((a, b) => a + b, 0) / drawn.length).toFixed(1));
     await user.click(screen.getByRole('tab', { name: /Rounds/ }));
     expect(document.querySelectorAll('.ch-gx-type').length).toBeGreaterThan(0);
     expect([...document.querySelectorAll('.ch-gx-type')].some((el) => el.textContent === '9 holes')).toBe(true);

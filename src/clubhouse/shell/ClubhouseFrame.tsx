@@ -2,7 +2,9 @@
 
 import { LazyMotion } from 'motion/react';
 import { loadMaxFeatures } from '@/lib/motion/load-features';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useChPhone } from '../lib/use-phone';
+import { useChDynamicType } from '../lib/dynamic-type';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { clubhouseFontVariables } from '../lib/fonts';
 import { chTagSession } from '../lib/track';
@@ -14,12 +16,17 @@ import { activeNavItem, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel }
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
-import { TabBar } from './TabBar';
+import { AccountSheet } from './AccountSheet';
+import { SectionStrip } from './SectionStrip';
+import { SectionSwitchProvider, useSectionSwitch } from './section-switch';
 import { RouteFrame } from './RouteFrame';
 import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
 import { NotRebuilt } from './NotRebuilt';
 import { ClubhouseMarker } from './context';
+import { LightProvider } from './light';
+import { DockProvider, PhoneDock } from './Dock';
+import { AskSheetProvider } from './AskSheet';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
 import '../styles/tokens.css';
@@ -31,9 +38,10 @@ import { useCanvasSmoothScroll } from '../lib/smooth-scroll';
 
 /**
  * The Clubhouse frame, UI only: a green frame with an inset ivory canvas
- * and the sidebar on wide screens, and a full-bleed canvas with a bottom tab
- * bar on phones. ClubhouseShell wraps it with the app's data providers; the
- * dev preview renders it with fixtures.
+ * and the sidebar on wide screens, and a full-bleed canvas on phones, where the
+ * section's name in the top bar opens the section strip (section-strip.md).
+ * ClubhouseShell wraps it with the app's data providers; the dev preview
+ * renders it with fixtures.
  */
 export function ClubhouseFrame({
   userData,
@@ -41,6 +49,7 @@ export function ClubhouseFrame({
   pathname,
   search = '',
   forceRebuilt = false,
+  lightAt = null,
   children,
 }: {
   userData: GolfUserData;
@@ -50,6 +59,8 @@ export function ClubhouseFrame({
   search?: string;
   /** Preview only: render children even on a route that isn't in CH_REBUILT_ROUTES. */
   forceRebuilt?: boolean;
+  /** Preview only: hold the global light at this instant (?at=). */
+  lightAt?: number | null;
   children: ReactNode;
 }) {
   const role = userData.role;
@@ -71,42 +82,62 @@ export function ClubhouseFrame({
     <ClubhouseMarker role={role}>
       {/* The animation features (domMax, for layoutId slides) load in their own chunk, after first paint (D-25). */}
       <LazyMotion features={loadMaxFeatures} strict>
-        <PhoneChromeProvider>
-          {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-          <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen}>
-            <ToastProvider scope={userData.teamId ?? ''}>
-              <CrumbProvider>
-                {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
-                <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
-                  Skip to content
-                </a>
-                <div className="ch-app">
-                  <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
-                  <div className="ch-canvas" id="ch-canvas">
-                    <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
-                    <OfflineBanner />
-                    {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
-                    <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
-                      {rebuilt ? children : <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />}
-                    </RouteFrame>
-                  </div>
-                </div>
-                <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
-                {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
-                <PullToRefresh pathname={pathname} />
-              </CrumbProvider>
-            </ToastProvider>
-          </FrameRoot>
-        </PhoneChromeProvider>
+        <LightProvider course={shell.course ?? null} timeZone={shell.timezone ?? null} at={lightAt}>
+          <PhoneChromeProvider>
+            <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>
+              {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
+              <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
+                <ToastProvider scope={userData.teamId ?? ''}>
+                  <CrumbProvider>
+                    <AskSheetProvider pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
+                      <DockProvider>
+                        {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
+                        <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
+                          Skip to content
+                        </a>
+                        <div className="ch-app">
+                          <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
+                          <div className="ch-canvas" id="ch-canvas">
+                            <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
+                            <OfflineBanner />
+                            {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
+                            <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
+                              {rebuilt ? children : <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />}
+                            </RouteFrame>
+                            {/* The phone dock's height, so a page's last row clears it (P001-C1). */}
+                            <div className="ch-dock-spacer" aria-hidden="true" />
+                          </div>
+                        </div>
+                        <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
+                        <SectionStrip pathname={pathname} role={role} user={{ name: userData.name }} />
+                        <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
+                        {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
+                        <PullToRefresh pathname={pathname} />
+                      </DockProvider>
+                    </AskSheetProvider>
+                  </CrumbProvider>
+                </ToastProvider>
+              </FrameRoot>
+            </SectionSwitchProvider>
+          </PhoneChromeProvider>
+        </LightProvider>
       </LazyMotion>
     </ClubhouseMarker>
   );
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
-function FrameRoot({ motionOff, fullScreen, children }: { motionOff: boolean; fullScreen: boolean; children: ReactNode }) {
-  const { immersive, noTabs, hero } = usePhoneChromeState();
+function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
+  const { immersive, noTabs, hero: pageHero } = usePhoneChromeState();
+  const sections = useSectionSwitch();
+  // P001-D4: Home's phone bar is the green hero's from the server's first paint (the device's last layout, F-36), not
+  // "Home" until the page's usePhoneHero lands after hydration. From then on the page's own flag decides.
+  const phone = useChPhone();
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const hero = pageHero || (!hydrated && phone && homeRoot);
   usePhoneEdges(hero);
+  useChDynamicType();
   return (
     <div
       className={`ch-root ${clubhouseFontVariables}`}
@@ -115,6 +146,8 @@ function FrameRoot({ motionOff, fullScreen, children }: { motionOff: boolean; fu
       data-phone-immersive={immersive ? '' : undefined}
       data-phone-notabs={noTabs || fullScreen ? '' : undefined}
       data-phone-hero={hero ? '' : undefined}
+      data-phone-section={sections?.root ? '' : undefined}
+      data-strip={sections?.open ? 'open' : undefined}
     >
       {children}
       {/* The dim over the page while a phone screen is pushed, and what draws the page back with it (CH-1618). */}

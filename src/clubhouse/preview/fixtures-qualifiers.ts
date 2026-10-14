@@ -225,11 +225,18 @@ function roundsOf(s: Sample): { rounds: ChQRound[]; holes: Record<string, ChQHol
 const entrantsOf = (s: Sample): ChQEntrant[] => s.entries.map(([k]) => ({ playerId: PLAYER_ID[k]!, name: P[k]!.name, classYear: P[k]!.year }));
 const nameOf = (id: string) => Object.entries(PLAYER_ID).find(([, v]) => v === id)?.[0] ?? '';
 
-export function previewDetail(index: number, role: 'coach' | 'player' = 'coach', viewer: keyof typeof P = 'jonah'): ChQDetail {
-  const s = SAMPLES[index]!;
+/**
+ * The live sample after a few more signed rounds (P009-B1's preview): Ava's 69 and Eli's 70 in round 3 move them up,
+ * Jonah's 76 moves him down, so a refresh to it changes the ranked order.
+ */
+const AFTER_ROUND: Record<string, number> = { ava: -3, eli: -2, jonah: 4 };
+
+export function previewDetail(index: number, role: 'coach' | 'player' = 'coach', viewer: keyof typeof P = 'jonah', afterRound = false): ChQDetail {
+  const base = SAMPLES[index]!;
+  const s: Sample = afterRound ? { ...base, entries: base.entries.map(([k, list]) => [k, k in AFTER_ROUND ? [...list, AFTER_ROUND[k]!] : list]) } : base;
   const { rounds, holes } = roundsOf(s);
   const selections = s.selectionState === 'selected' && s.selections ? s.selections.map((x) => ({ ...x, reasoning: role === 'coach' ? x.reasoning : null, name: P[nameOf(x.playerId)]!.name })) : null;
-  const board = buildBoard({ entrants: entrantsOf(s), rounds, squad: s.squad, picks: s.picks, status: s.status, selectionState: s.selectionState, selections });
+  const board = buildBoard({ entrants: entrantsOf(s), rounds, squad: s.squad, picks: s.picks, status: s.status, selectionState: s.selectionState, selections, numRounds: s.numRounds });
   const pars = roundPars({ numRounds: s.numRounds, teePars: new Map(s.roundCourses.map(([c], i) => [i + 1, c === 'Hope Valley CC' ? 71 : 72])), rounds });
   const viewerId = role === 'player' ? PLAYER_ID[viewer]! : null;
   return {
@@ -283,7 +290,7 @@ export function previewList(role: 'coach' | 'player' = 'coach', mode: 'all' | 'm
       entrants: s.entries.length,
       submitted: d.board!.submitted,
       topScore: d.board!.topScore,
-      leaders: d.board!.rows.slice(0, d.board!.topScore + 1).map((r) => ({ playerId: r.playerId, name: r.name, position: (r.tied ? 'T' : '') + r.position, played: r.played, toPar: r.toPar })),
+      leaders: d.board!.rows.slice(0, d.board!.topScore + 1).map((r) => ({ playerId: r.playerId, name: r.name, position: (r.tied ? 'T' : '') + r.position, played: r.played, toPar: r.toPar, move: r.move })),
       mine: role === 'player' ? { entered: !!me, position: me?.position != null ? (me.tied ? 'T' : '') + me.position : null, toPar: me?.toPar ?? null, played: me?.played ?? 0 } : null,
     };
   });

@@ -15,6 +15,7 @@ import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { deriveLieAfter } from '@/lib/utils/shot-helpers';
 import { resolveQualifierRoundNumber } from '@/lib/golf/qualifier-round-number';
 import { firstBlockingPartialHoleIssue } from '@/lib/golf/round-entry-validation';
@@ -74,6 +75,8 @@ const partialRoundSchema = z.object({
     z.number().int().min(1).max(18).optional().nullable(),
   ),
   holesToPlay: z.union([z.literal(9), z.literal(18)]).optional().nullable(),
+  // Shotgun start: the hole position the round started on (play-order.ts). Kept in draft_data, no column.
+  startHole: z.number().int().min(1).max(18).optional().nullable(),
   qualifierId: z.string().uuid().optional().nullable(),
   qualifierRoundNumber: z.number().int().min(1).optional().nullable(),
   holes: z.array(partialHoleSchema.nullable()).max(18),
@@ -209,6 +212,11 @@ export interface PartialRoundData {
   qualifierRoundNumber?: number;
   // Progress tracking
   currentHole: number;
+  /**
+   * Shotgun start: the hole the round started on, a position 1..holesToPlay (play-order.ts). Omitted, hole 1.
+   * `currentHole` is still the hole NUMBER the player is on, so a resume lands on the right hole either way.
+   */
+  startHole?: number | null;
   holesToPlay: number; // 9 or 18
   // Completed holes data
   // Sparse browser arrays cross the Server Action boundary as `undefined`
@@ -376,7 +384,9 @@ async function savePartialRoundImpl(
     existingRoundId: existingRoundId ?? null,
     qualifierId: data?.qualifierId ?? null,
     // Which UI wrote the round, so a failure rate can be compared between Clubhouse and Fairway (swap audit §18).
-    metadata: { ui: (await isClubhouseFor('player')) ? 'clubhouse' : 'fairway' },
+    // Clubhouse when the dashboard layout draws the player's Clubhouse shell (getGolfDashboardRole, the layout's rule).
+    // The flag is read first, so with it off this costs no read; a role read that fails says Fairway, never throws here.
+    metadata: { ui: (await isClubhouseFor('player')) && (await getGolfDashboardRole().catch(() => null)) === 'player' ? 'clubhouse' : 'fairway' },
   });
   // Idempotent trace terminator. Every explicit finalize call in this
   // function should go through this instead of `flightRecorder.finalize`
@@ -557,6 +567,10 @@ async function savePartialRoundImpl(
     // Bug #3: Clamp currentHole to holesToPlay for 9-hole rounds
     if (data.currentHole && data.holesToPlay) {
       data.currentHole = Math.min(data.currentHole, data.holesToPlay);
+    }
+    // A start hole past the round's last hole is no start hole: the round plays from hole 1.
+    if (data.startHole && data.holesToPlay && data.startHole > data.holesToPlay) {
+      data.startHole = null;
     }
 
     const supabase = await createClient();
@@ -798,6 +812,8 @@ async function savePartialRoundImpl(
           yardage: h.yardage || 0,
         })),
         currentHoleIndex: (data.currentHole || 1) - 1,
+        // Every save replaces draft_data, so the start hole rides along on each one (continue reads it back).
+        ...(data.startHole && data.startHole > 1 ? { startHole: data.startHole } : {}),
       },
     };
 

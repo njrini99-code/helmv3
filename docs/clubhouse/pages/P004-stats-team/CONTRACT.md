@@ -50,7 +50,12 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS
 
 Status: DEFINED
 
-The route's loading state is the Stats skeleton (40201, CH-4401), in Team stats' shape: title, window switch, five figure cards and the trend card, sized to the loaded page so nothing below moves when the data lands. It shows inside the Clubhouse shell only. v2 timing: nothing for 150ms, then a fade (the shell's 11609). Nothing else on this page loads on its own: every section is rendered with the page, so there is no per-section skeleton.
+The route's loading state is the Stats skeleton (40201, CH-4401), in Team stats'
+shape: title, window switch, the trend stage and the five-cell tape, sized to
+the loaded page so nothing below moves when the data lands. It shows inside the
+Clubhouse shell only. v2 timing: nothing for 150ms, then a fade (the shell's
+11609). Nothing else on this page loads on its own: every section is rendered
+with the page, so there is no per-section skeleton.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -240,7 +245,7 @@ Team stats' own haptics (41701 to 41703) on the v2 grammar (D-70): a selection t
 | --- | --- | --- | --- |
 | 41701 | CH-4701 | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | Choosing a leg, focusing a player, changing the window or lens |
 | 41702 | CH-4702 | `AN_EXPORT_LANDS_FAILS` | An export lands / fails |
-| 41703 | CH-4703 | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | Sorting the phone's players by Avg or SG |
+| 41703 | CH-4703 | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | Sorting the phone's players by Avg or SG, or picking a strokes gained leg (a row of the leg list: Off the tee, Approach, Around green, Putting or Team total) |
 | 41704 | CH-4704 | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
@@ -251,16 +256,22 @@ Status: DEFINED
 
 Team stats' own (41801 to 41805): the trend chart has a written summary and its players are buttons, the grid is a table with a header for every value, loss amber on a tinted cell holds 4.5:1, and the phone's scoring line and player rows read as sentences. The shell's skip link, landmarks and focus rules (11801 to 11811). This page has no dialogs, so Esc has nothing to close. Axe runs at 1280 and 390 (`clubhouse:a11y`).
 
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 41801 | CH-4801 | `THE_TREND_CHART_IS_AN_IMAGE_WITH` | The trend chart is an image with a written summary ("Strokes gained by week. The team has gained about 1.0 a round…"); the player list beside it is the chart's values as buttons |
 | 41802 | CH-4802 | `THE_STROKES_GAINED_GRID_IS_A_TABLE` | The strokes gained grid is a table with a header for every value |
 | 41803 | CH-4803 | `LOSS_AMBER_ON_A_TINTED_GRID_CELL` | Loss amber on a tinted grid cell is darkened to hold 4.5:1 |
 | 41804 | CH-4804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
-| 41805 | CH-4805 | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
+| 41805 | CH-4805 | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | The phone's scoring line is an image with a written reading ("Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
 | 41806 | CH-4806 | `THE_ROUND_FILTER_THE_FILTER_BUTTON_SAYS` | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
 
 ## 19 — Responsive layout
 

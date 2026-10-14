@@ -104,3 +104,55 @@ export const hourOfMinutes = (minutes: number): number => minutes / 60;
 /** The scene redraws on this grid (every two minutes), not on every clock tick. */
 export const SCENE_HOUR_STEP = 1 / 30;
 export const quantizeHour = (hour: number): number => Math.round(hour / SCENE_HOUR_STEP) * SCENE_HOUR_STEP;
+
+/**
+ * P015-A1: the sky follows the sun, not the clock. The keyframes above were drawn for a mid-latitude equinox (sunrise
+ * 6.4, sunset 18.6); this turns the sun's real altitude at a place into the keyframe hour that shows it, so golden hour
+ * lands on the real golden hour in June and December alike, and the moon is up when it is really dark. Anchors, by
+ * altitude: astronomical night (-18) to dawn's glow (-12, 5.2), sunrise (0, 6.4), the morning sky (8.5) to noon's
+ * (12.5); then the afternoon (16), sunset (0, 18.6), dusk (-8, 19.8) and night (-18, 21). `altitude(ms)` is the sun's
+ * altitude in degrees at a moment (lib/sun.ts sunAt at the place); `noon` is the day's highest.
+ */
+export function solarSkyHour(at: number, altitude: (ms: number) => number, noon: number): number {
+  const alt = altitude(at);
+  const rising = altitude(at + 10 * 60_000) > alt;
+  const high = Math.max(1, noon);
+  const lerp = (pts: Array<[number, number]>) => {
+    // pts: [altitude, hour], altitude ascending.
+    if (alt <= pts[0]![0]) return pts[0]![1];
+    for (let i = 1; i < pts.length; i++) {
+      const [a0, h0] = pts[i - 1]!;
+      const [a1, h1] = pts[i]!;
+      if (alt <= a1) return h0 + ((alt - a0) / (a1 - a0 || 1)) * (h1 - h0);
+    }
+    return pts[pts.length - 1]![1];
+  };
+  // A winter noon can be low: the mid-morning and mid-afternoon looks sit at a share of it, never above it.
+  const mid = Math.min(22, high * 0.7);
+  return rising
+    ? lerp([[-18, 3], [-12, 5.2], [0, 6.4], [mid, 8.5], [high, 12.5]])
+    : 24 - lerp([[-18, 24 - 21], [-8, 24 - 19.8], [0, 24 - 18.6], [mid, 24 - 16], [high, 24 - 12.5]]);
+}
+
+/** The day's highest sun at a place: sampled every 10 minutes around `at` (a day's worth, enough for a sky). */
+export function noonAltitude(at: number, altitude: (ms: number) => number): number {
+  let best = -90;
+  for (let k = -72; k <= 72; k++) best = Math.max(best, altitude(at + k * 10 * 60_000));
+  return best;
+}
+
+/**
+ * P015-A2: paper that sits in the room. The sign-in sheet takes a few percent of the light outside: cooler at dawn and
+ * dusk, warm at golden hour, and a lamp-lit warm cast at night (a room at night is lamp-lit, not blue). Day is the
+ * approved parchment, untouched. A colour for a wash over the paper, never over the data or the semantic colours.
+ */
+export function paperTint(hour: number): string | null {
+  const sky = skyAt(hour);
+  if (sky.ambA < 0.02) return null;
+  const night = Math.min(1, sky.stars);
+  // The lamp at night; the sky's own ambient at twilight (gold at golden hour, violet at dawn and dusk).
+  const colour = night > 0.6 ? '#e8b46a' : sky.amb;
+  const [r, g, b] = rgb(colour);
+  const alpha = Math.round(Math.min(0.06, 0.02 + sky.ambA * 0.06) * 1000) / 1000;
+  return `rgb(${r} ${g} ${b} / ${alpha})`;
+}

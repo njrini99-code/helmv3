@@ -1,13 +1,12 @@
 import { FairwayMessages } from '@/components/fairway/pages/messages';
-import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseMessagesRoute } from '@/clubhouse/routes/messages';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 export default async function GolfMessagesPage() {
   // Clubhouse Messages (golf_clubhouse_ui): coaches and players, on the same
   // realtime hooks and server actions as the Fairway inbox.
-  const session = await getGolfSessionProfile();
-  if ((await isClubhouseFor(session?.coach ? 'coach' : session?.player ? 'player' : null))) {
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) {
     return <ClubhouseMessagesRoute />;
   }
   return <FairwayMessages />;

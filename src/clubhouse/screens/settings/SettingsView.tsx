@@ -56,12 +56,15 @@ export function SettingsView({
   writes: raw,
   device,
   initialSection,
+  opened = false,
   onDeleted,
 }: {
   data: ChSettingsData;
   writes: ChSettingsWrites;
   device: ChDevice;
   initialSection: ChSettingsSection;
+  /** The address named a section, so the phone opens it pushed (SettingsPhone). */
+  opened?: boolean;
   onDeleted: () => void;
 }) {
   const reduced = useChReducedMotion();
@@ -132,7 +135,7 @@ export function SettingsView({
   if (phone) {
     return (
       <DirtyContext.Provider value={report}>
-        <SettingsPhone data={data} writes={writes} device={device} initialSection={initialSection} onDeleted={onDeleted} />
+        <SettingsPhone data={data} writes={writes} device={device} initialSection={initialSection} opened={opened} onDeleted={onDeleted} />
         {guard}
       </DirtyContext.Provider>
     );
