@@ -30,8 +30,20 @@ vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotificat
 const gate = vi.hoisted(() => ({ clubhouse: true }));
 vi.mock('../gate', () => ({ isClubhouseFor: (role: string | null) => (role === 'coach' || role === 'player') && gate.clubhouse, isClubhouseFrontDoor: () => true }));
 
+const request = vi.hoisted(() => ({ reads: 0 }));
+vi.mock('next/headers', () => ({
+  cookies: async () => {
+    request.reads += 1;
+    return { get: () => undefined };
+  },
+  headers: async () => {
+    request.reads += 1;
+    return new Headers();
+  },
+}));
+
 import { loadWelcome } from '../data/welcome';
-import { WelcomeLoader } from '../routes/auth';
+import { ClubhouseSignInRoute, WelcomeLoader } from '../routes/auth';
 
 const item = (id: string, read: string | null = null) => ({ id, source: 'notifications', category: 'messages', title: `Item ${id}`, body: null, action_url: null, created_at: '2025-10-13T10:00:00Z', read_at: read });
 
@@ -45,6 +57,17 @@ beforeEach(() => {
   gate.clubhouse = true;
 });
 afterEach(() => vi.clearAllMocks());
+
+describe('the sign in route reads nothing from the request', () => {
+  // A route that awaited the phone hint (cookie, then headers) made /golf/login dynamic, so a tap on Log in from the
+  // home page painted golf/loading.tsx's dashboard skeleton before the sign in (owner, 2026-10-14).
+  it('renders synchronously, without a cookie or header read', () => {
+    request.reads = 0;
+    const out = ClubhouseSignInRoute();
+    expect(out).not.toBeInstanceOf(Promise);
+    expect(request.reads).toBe(0);
+  });
+});
 
 describe('CH-15903 a session the auth server has ruled invalid goes back to sign in', () => {
   it('reports signed out when there is no user', async () => {

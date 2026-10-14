@@ -69,6 +69,14 @@
   height: 100%;
 }
 .ch-au-poster .ch-au-poster__tall { display: none; }
+/* SceneMount posterWash: the hour's light over the daytime still until the course draws. A cold load learns the hour at
+   hydration, so the wash eases in; a client navigation knows it on the first frame and paints it at once. */
+.ch-au-poster__wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity var(--ch-au-t-fade) var(--ch-au-out);
+}
 .ch-au-scene {
   animation: chAuSceneIn var(--ch-au-t-panel) var(--ch-au-out) both;
 }

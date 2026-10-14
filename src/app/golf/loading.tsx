@@ -21,8 +21,11 @@ import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
  * what is INSIDE the chrome, never the chrome itself.
  *
  * Blast radius: this also covers `/golf` (a redirect page), `/golf/admin/**`
- * while its own async layout resolves, and `/golf/(auth)/demo`. Every auth,
- * onboarding and join route has its own closer `loading.tsx` and is unaffected.
+ * while its own async layout resolves, and `/golf/(auth)/demo`. A route's own
+ * `loading.tsx` sits inside that route's layout, so it does not cover an async
+ * layout: with the Clubhouse front door on, a layout that awaits (welcome's)
+ * paints this skeleton on a client navigation. The Clubhouse sign in reads
+ * nothing from the request for that reason (`ClubhouseSignInRoute`).
  * Admin gets dashboard-shaped content for a moment rather than admin-shaped —
  * strictly better than the retired cream skeleton it replaces, and admin is
  * internal-only.

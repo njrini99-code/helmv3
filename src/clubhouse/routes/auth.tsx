@@ -8,10 +8,17 @@ import { WelcomeStage } from '../screens/auth/WelcomeStage';
 import { ChPhoneHintProvider } from '../lib/use-phone';
 import { phoneHint } from '../lib/phone-hint';
 
-/** /golf/login in Clubhouse. The form is in the server HTML: the URL is read in the browser (`useQueryParam`), so nothing here waits on a Suspense boundary. */
-export async function ClubhouseSignInRoute() {
+/**
+ * /golf/login in Clubhouse. The form is in the server HTML: the URL is read in the browser (`useQueryParam`), so nothing
+ * here waits on a Suspense boundary. Nothing here reads the request either (no cookie, no header): an async route
+ * that read the phone hint made the segment dynamic, so a tap on Log in painted the nearest loading boundary,
+ * `golf/loading.tsx`'s dashboard skeleton, before the sign in (owner, 2026-10-14: "not smooth"). The hint is not
+ * needed here: the only reader is the course's crop, which draws after hydration, when the real width is known.
+ * The provider stays so the layout cookie is written for the dashboard after sign in.
+ */
+export function ClubhouseSignInRoute() {
   return (
-    <ChPhoneHintProvider phone={await phoneHint()}>
+    <ChPhoneHintProvider phone={false}>
       <SignIn />
     </ChPhoneHintProvider>
   );

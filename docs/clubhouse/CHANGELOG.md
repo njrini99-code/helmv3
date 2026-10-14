@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-14 — Log in from the home page goes straight to the sign in
+
+The tap on Log in painted the dashboard skeleton before the sign in, and at
+dusk or night the sign in opened on the daytime still before its sky drew. The
+sign-in route no longer reads the request, and the still takes the hour's light
+until the course draws (P015).
+
 ## 2026-10-14 — Old addresses reach their Clubhouse screen
 
 Found on the Simulator: every old address Clubhouse moved (Tasks,

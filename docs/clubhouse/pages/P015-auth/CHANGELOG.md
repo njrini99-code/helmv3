@@ -1,5 +1,26 @@
 # P015 — Auth: changelog
 
+## 2026-10-14 — Log in from the home page: no dashboard skeleton, no sunny course at night
+
+Owner: "Hitting login on home page hot loads the day scene then switches to
+whatever time it actually is. And just clicking login is kinda rough itself."
+Traced on the main preview in WebKit at phone size, night time zone: the tap
+painted the dashboard skeleton for about 0.4s, then the sign in; a direct load
+opened on the daytime still and the night course faded over it.
+
+- **No dashboard skeleton on the way in** (`ClubhouseSignInRoute`): the route
+  awaited the phone hint (a cookie and headers), which made /golf/login
+  dynamic, so a tap on Log in painted the nearest loading boundary,
+  golf/loading.tsx's dashboard skeleton. The route now reads nothing from the
+  request (the course's crop, the hint's only reader here, draws after
+  hydration). Test: auth-server.test.tsx "the sign in route reads nothing from
+  the request".
+- **The still takes the hour's light** (SceneMount `posterWash`): the still is a
+  daytime photo; until the course's chunk draws, a wash of the hour's sky lies
+  over it (clear by day), so the course that fades in is the same time of day.
+  A client navigation knows the hour on its first frame; a cold load learns it
+  at hydration and the wash eases in. Test: auth-scene.test.tsx.
+
 ## 2026-10-14 — The sheet rises on focus, so a tap on Password lands
 
 Owner, signing in on the iPhone Simulator: "I couldn't click password, it just

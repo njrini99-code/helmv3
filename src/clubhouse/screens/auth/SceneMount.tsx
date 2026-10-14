@@ -5,6 +5,7 @@ import { Component, type ReactNode } from 'react';
 import { chReport } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 import type { SceneCamera } from './GolfScene';
+import { skyAt } from './scene-sky';
 import { useSkyHour } from './use-hour';
 
 /**
@@ -34,6 +35,17 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
+/**
+ * The still is a daytime photo. Until the course's chunk has drawn the real sky, the still takes the hour's light: at
+ * dusk and night a wash of that sky over it, so the course that fades in over it is the same time of day and a sign in
+ * at night does not open on a sunny course (owner, 2026-10-14). Clear by day. Null hour (the server, hydration): clear.
+ */
+export function posterWash(hour: number | null): { background: string; opacity: number } {
+  if (hour === null) return { background: 'transparent', opacity: 0 };
+  const sky = skyAt(hour);
+  return { background: `linear-gradient(to bottom, ${sky.top}, ${sky.amb})`, opacity: Math.min(0.88, Math.round(sky.ambA * 1.4 * 100) / 100) };
+}
+
 export function SceneMount({ camera = 'rest', play = false, hour: fixedHour }: { camera?: SceneCamera; play?: boolean; /** A fixed hour, for the dev preview; otherwise the viewer's clock. */ hour?: number }) {
   // P015-A1: the sky follows the sun where the viewer is, not the clock.
   const localHour = useSkyHour();
@@ -50,6 +62,7 @@ export function SceneMount({ camera = 'rest', play = false, hour: fixedHour }: {
         <svg className="ch-au-poster__tall" viewBox="650 0 760 1000" preserveAspectRatio="xMidYMax slice" focusable="false">
           <image href="/clubhouse/auth/course-arrival.jpg" width="1600" height="1000" />
         </svg>
+        <div className="ch-au-poster__wash" style={posterWash(hour)} />
       </div>
       {hour !== null && (
         <SceneBoundary>
