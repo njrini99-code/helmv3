@@ -912,8 +912,11 @@ button.ch-feat {
   letter-spacing: 0.01em;
   color: var(--ch-ledger-eyebrow);
 }
+/* It wraps: under Safari's larger page text the title and a view switch outgrow a phone's line, and the switch went off
+   the right edge (List cut, Simulator at 125%, 2026-10-14). At normal sizes they share the line as before. */
 .ch-intro__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;

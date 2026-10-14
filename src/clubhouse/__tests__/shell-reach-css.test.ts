@@ -125,5 +125,7 @@ describe('the phone canvas runs to the bottom edge (section-strip.md: no tab bar
     expect(rules(shell, '  .ch-root[data-phone-hero] .ch-topbar__ptitle')[0]).toMatch(/color: var\(--ch-on-green-ink\);/);
     // The bell's drop stays a scroller when its list is short, so a pan on it never scrolls the page under it.
     expect(rules(shell, '  .ch-bst__scroll::before')[0]).toMatch(/height: calc\(100% \+ 1px\);/);
+    // A page intro's title and its view switch wrap rather than push the switch off a phone under larger page text.
+    expect(rules(ui, '.ch-intro__row')[0]).toMatch(/flex-wrap: wrap;/);
   });
 });
