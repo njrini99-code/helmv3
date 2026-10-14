@@ -19,6 +19,7 @@ import { friendlyReason, normalise, useAction } from '../../lib/use-action';
 import { newRequestId } from '../../data/recruiting-shape';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
+import { useChPhone } from '../../lib/use-phone';
 import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, seedWindow, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
 import { TYPE_ICON } from './views';
 
@@ -211,6 +212,7 @@ export function EventEditor({
 }) {
   const base = seed?.event ?? null;
   const open = seed != null;
+  const phone = useChPhone();
   const toast = useToast();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ChCalType>('practice');
@@ -484,6 +486,9 @@ export function EventEditor({
         width={1040}
         icon={base ? Pencil : CalendarPlus}
         title={base ? 'Edit event' : 'New event'}
+        // A-14: a new event starts on its title, so the coach can type at once. An edit keeps the heading first, and the
+        // phone does too, so the sheet doesn't rise with the keyboard over it (as onboarding's autoFocus={!phone}).
+        initialFocus={!base && !phone ? '#ch-ed-title' : undefined}
         description={
           // Only an event that asks for replies notifies anyone (owner, 2026-10-08).
           rsvp ? (base ? 'Changes notify everyone invited.' : 'Invited players get a notification and can reply.') : 'Invited players see it on their calendar.'

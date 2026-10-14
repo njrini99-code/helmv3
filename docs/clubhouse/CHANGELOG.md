@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-14 — A dialog can open on its first field
+
+`Modal` takes `initialFocus`, a selector inside the sheet that takes focus as
+it opens instead of the heading. Calendar's New event uses it on desktop for
+its title field (P006, audit A-14); every other dialog still opens on its
+heading.
+
 ## 2026-10-14 — Sign out ends in one request
 
 Signing out refreshed the dashboard under the jump to login (a server action

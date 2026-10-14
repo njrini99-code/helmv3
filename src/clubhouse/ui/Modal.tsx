@@ -25,9 +25,12 @@ export function Modal({
   footer,
   children,
   code,
+  initialFocus,
 }: {
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
+  /** A selector inside the sheet that takes focus as it opens instead of the heading (a new item's first field). */
+  initialFocus?: string;
   open: boolean;
   onClose: () => void;
   title: string;
@@ -44,7 +47,7 @@ export function Modal({
     direction: phone ? 'bottom' : 'center', surfaceSelector: '.ch-modal__panel',
     // The heading takes focus as the sheet opens, not the Close key: a tap-opened sheet shows no ring on Close, and
     // VoiceOver starts on the title (P001 shared finding). Tab goes on to Close and the rest.
-    focusSelector: '.ch-modal__titles h2',
+    focusSelector: initialFocus ?? '.ch-modal__titles h2',
   });
   const drag = useSheetDrag(ref, onClose, { enabled: phone && !reduced });
 

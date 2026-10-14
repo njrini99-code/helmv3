@@ -424,7 +424,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           )}
         />
       </div>
-      <h2 className="ch-in__title" style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>
+      <h2 className="ch-in__title" tabIndex={-1} style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>
         {e.title}
       </h2>
       </div>
@@ -543,7 +543,7 @@ function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
           <span className="ch-in__chip">Class</span>
           <span>{mine ? 'Your class list' : owner ? `${first(owner.name)}’s class list` : 'Owner unknown'}</span>
         </div>
-        <h2 className="ch-in__title">{course}</h2>
+        <h2 className="ch-in__title" tabIndex={-1}>{course}</h2>
         <div className="ch-in__by">
           {owner && !mine && <Avatar name={owner.name} size={26} />}
           <span>
@@ -663,7 +663,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
     <div className="ch-in">
       <Back label={e.title} onClick={() => ctx.go({ kind: 'event', id, date })} />
       <div>
-        <h2 className="ch-in__title">Attendance</h2>
+        <h2 className="ch-in__title" tabIndex={-1}>Attendance</h2>
         <div className="ch-cal-sub">
           {dowOf(e.date)} {dayNum(e.date)} · {rangeLabel(e)}
         </div>
@@ -819,7 +819,7 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
             Overlap
           </Badge>
         </div>
-        <h2 className="ch-in__title">{e.title}</h2>
+        <h2 className="ch-in__title" tabIndex={-1}>{e.title}</h2>
         <div className="ch-cal-sub">
           {dowOf(e.date)} {dayNum(e.date)} · {rangeLabel(e)}
         </div>
