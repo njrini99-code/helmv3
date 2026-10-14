@@ -229,10 +229,14 @@
 }
 /* A date or time draws its value in WebKit's own part, which globals.css paints a fixed warm-900 for Fairway: in the
    dark theme that was near-black on the dark field (the New event sheet's date and times looked empty). */
-.ch-input:is([type='date'], [type='time'], [type='datetime-local'])::-webkit-date-and-time-value {
+.ch-input[type='date']::-webkit-date-and-time-value,
+.ch-input[type='time']::-webkit-date-and-time-value,
+.ch-input[type='datetime-local']::-webkit-date-and-time-value {
   color: inherit;
 }
-.ch-input:is([type='date'], [type='time'], [type='datetime-local']):disabled::-webkit-date-and-time-value {
+.ch-input[type='date']:disabled::-webkit-date-and-time-value,
+.ch-input[type='time']:disabled::-webkit-date-and-time-value,
+.ch-input[type='datetime-local']:disabled::-webkit-date-and-time-value {
   color: var(--ch-text-tertiary);
 }
 .ch-input::placeholder,

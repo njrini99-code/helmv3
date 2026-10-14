@@ -118,7 +118,7 @@ describe('the phone canvas runs to the bottom edge (section-strip.md: no tab bar
 
   it('2026-10-14 audit: theme-proof date values, 44px small icon buttons, and readable muted and eyebrow inks', () => {
     // globals.css paints the date/time value warm-900 for Fairway; Clubhouse inherits its field's ink (dark theme).
-    expect(rules(controls, ".ch-input:is([type='date'], [type='time'], [type='datetime-local'])::-webkit-date-and-time-value")[0]).toMatch(/color: inherit;/);
+    expect(rules(controls, ".ch-input[type='datetime-local']::-webkit-date-and-time-value")[0]).toMatch(/color: inherit;/);
     expect(rules(ui, '  .ch-iconbtn.ch-btn--sm::before')[0]).toMatch(/inset: -7px;/);
     expect(tokens).toMatch(/--ch-ledger-eyebrow: #6e6038;/);
     expect(tokens).toMatch(/--ch-on-green-ink-muted: rgb\(222 214 190 \/ 0\.8\);/);
