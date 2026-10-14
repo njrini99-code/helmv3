@@ -1,5 +1,16 @@
 # P015 — Auth: changelog
 
+## 2026-10-14 — The sheet rises on focus, so a tap on Password lands
+
+Owner, signing in on the iPhone Simulator: "I couldn't click password, it just
+pulled up."
+
+- **The keyboard lift waits for focus** (SignIn `useKeyboardLift`): the sheet
+  rose on the finger's touch, and iOS focuses the field under the finger as it
+  lifts, so the rising sheet carried Password out from under the tap and nothing
+  took focus. It now rises on `focusin`; moving from Email to Password still
+  keeps it up. Test: auth.test.tsx "phone keyboard lift".
+
 ## 2026-10-13 — Sign in on the phone: standard fields, a plain notice, the sheet over the keyboard
 
 Owner: the phone sign-in had "weird rings", and the focus, sheet and keyboard

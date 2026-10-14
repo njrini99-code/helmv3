@@ -1221,8 +1221,9 @@ button.ch-more__row[disabled] {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+  /* The bar stays green in both themes, so its title takes the on-green ink: ivory-100 turns dark in the dark theme. */
   .ch-root[data-phone-hero] .ch-topbar__ptitle {
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-green-ink);
   }
   /* Beside it, the team's mark (the title is the section switcher, section-strip.md). */
   .ch-root[data-phone-hero] .ch-topbar__team {
@@ -1435,6 +1436,14 @@ button.ch-more__row[disabled] {
   /* The keyboard never resizes the WebView: a screen with a composer lifts itself by the keyboard's height. */
   body.keyboard-open .ch-pscreen[data-fw-keyboard-aware] {
     padding-bottom: var(--keyboard-height);
+  }
+  /* Mobile Safari with the keyboard up (PhoneScreen's useSafariKeyboardFit): the screen fits the visible area, so its
+     bar stays on screen while iOS scrolls to the composer. */
+  body .ch-pscreen[data-fw-keyboard-aware][data-ch-vv] {
+    top: var(--ch-vv-top);
+    bottom: auto;
+    height: var(--ch-vv-h);
+    padding-bottom: 0;
   }
   /* The page beneath a pushed screen dims as it draws back (CH-1618): PhoneUnderlay runs this scrim's opacity on the
      screen's own curves. It lies over the shell's bars and under every screen, and taps pass through it. */

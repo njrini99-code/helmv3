@@ -1,7 +1,7 @@
 'use client';
 
 import { m, useIsPresent } from 'motion/react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { poppedByUA } from '../lib/ua-pop';
@@ -53,6 +53,7 @@ export function PhoneScreen({
   const [wasCovered, setWasCovered] = useState(false);
   if (covered && !wasCovered) setWasCovered(true);
   const drawnBack = covered && !reduced;
+  useSafariKeyboardFit(ref, keyboardAware);
   useEffect(() => {
     const opener = document.activeElement;
     const title = document.getElementById(labelledBy);
@@ -90,4 +91,37 @@ export function PhoneScreen({
       {children}
     </m.section>
   );
+}
+
+/**
+ * Mobile Safari (not the app): the keyboard neither resizes the page nor reports its height, and iOS scrolls the
+ * visible area down to the focused composer, which took the screen's own bar off the top. While the keyboard is up,
+ * the screen fits the visible area instead (`data-ch-vv`, shell.css), so its bar stays and the composer sits on the
+ * keys. The app's WebView takes the other path: CapacitorProvider publishes `--keyboard-height` (body.capacitor).
+ */
+function useSafariKeyboardFit(ref: RefObject<HTMLElement | null>, on: boolean): void {
+  useEffect(() => {
+    const el = ref.current;
+    const vv = window.visualViewport;
+    if (!on || !el || !vv || document.body.classList.contains('capacitor') || !window.matchMedia?.('(pointer: coarse)').matches) return;
+    const fit = () => {
+      // A pinch-zoom shrinks the visible area too; it is not a keyboard.
+      const up = vv.scale <= 1.01 && window.innerHeight - vv.height > 120;
+      if (!up) {
+        delete el.dataset.chVv;
+        return;
+      }
+      el.style.setProperty('--ch-vv-top', `${Math.round(vv.offsetTop)}px`);
+      el.style.setProperty('--ch-vv-h', `${Math.round(vv.height)}px`);
+      el.dataset.chVv = '';
+    };
+    vv.addEventListener('resize', fit);
+    vv.addEventListener('scroll', fit);
+    fit();
+    return () => {
+      vv.removeEventListener('resize', fit);
+      vv.removeEventListener('scroll', fit);
+      delete el.dataset.chVv;
+    };
+  }, [ref, on]);
 }

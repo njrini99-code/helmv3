@@ -1,5 +1,20 @@
 # Clubhouse changelog
 
+## 2026-10-14 — Contrast and targets from the Simulator audit
+
+A rendered-pixel contrast sweep of every phone section in both themes (iPhone 17
+Pro Simulator, Safari 26.5), and a target-size scan.
+
+- **The Ledger eyebrow** (tokens.css `--ch-ledger-eyebrow`, #7a6b3f to #6e6038):
+  4.25:1 on the page and 4.4:1 as drawn on the canvas; now 5:1 or better on the
+  canvas, the page and cards. Same gilt brown, one step deeper.
+- **Muted ink on green** (tokens.css `--ch-on-green-ink-muted`, alpha 0.72 to
+  0.8): the Team Hub "Latest" card's meta and CoachHelm's focus head drew at
+  4.1:1 at the light end of the green gradients; now 4.5:1 or better there,
+  still a step under the soft ink.
+- **Small icon buttons on the phone** (ui.css): a 30px `IconButton size="sm"`
+  (Calendar's week arrows and the like) gets a 44px hit area; it draws the same.
+
 ## 2026-10-13 — Section switches: fade through, one bar change, warm inbox
 
 Measured on a real iPhone (WebDriverAgent driving the signed-in preview,

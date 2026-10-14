@@ -408,6 +408,25 @@ describe('the sign-in screen', () => {
     await waitFor(() => expect(login).toHaveBeenCalledWith('coach@example.com', 'hunter22', undefined));
   });
 
+  it('phone keyboard lift: the sheet rises on focus, not on the touch, so a tap on Password lands on Password', async () => {
+    setMedia({ phone: true });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { container } = render(<SignIn signIn={login} />);
+    const root = container.querySelector<HTMLElement>('.ch-au')!;
+    // iOS focuses the field under the finger as it lifts; moving the sheet on the touch moved Password away first.
+    fireEvent.pointerDown(password());
+    expect(root.dataset.kb).toBeUndefined();
+    act(() => password().focus());
+    expect(root.dataset.kb).toBe('up');
+    // Email to Password is a blur and a focus in one turn: the sheet stays up.
+    act(() => email().focus());
+    await act(async () => void vi.advanceTimersByTime(100));
+    expect(root.dataset.kb).toBe('up');
+    act(() => email().blur());
+    await act(async () => void vi.advanceTimersByTime(100));
+    expect(root.dataset.kb).toBe('down');
+  });
+
   it('carries the autofill and keyboard attributes password managers and iOS need', () => {
     render(<SignIn signIn={login} />);
     expect(email()).toHaveAttribute('autocomplete', 'username');

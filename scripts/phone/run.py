@@ -24,7 +24,6 @@ import wda  # noqa: E402
 
 TITLE = (60, 84)
 RIGHT = (372, 84)
-WIDTH = 402
 S = None
 LOG = None
 
@@ -37,6 +36,8 @@ def log(s):
 
 def find(label, contains=False):
     q = f"label CONTAINS '{label}'" if contains else f"label == '{label}'"
+    # Prefer a link or button: the label's static text is a child and not itself tappable.
+    q = f"({q}) AND (type == 'XCUIElementTypeLink' OR type == 'XCUIElementTypeButton')"
     els = wda.req('POST', f'/session/{S}/elements', {'using': 'predicate string', 'value': q})['value']
     return els[0]['ELEMENT'] if els else None
 
@@ -46,25 +47,27 @@ def rect(e):
 
 
 def click(label, contains=False):
+    """Tap the element with this label at its hittable point. A swipe-then-tap by coordinates raced the strip's
+    momentum and hit a neighbour."""
     for _ in range(4):
         try:
             e = find(label, contains)
             if not e:
                 log(f'MISSING {label}')
                 return False
-            r = rect(e)
-            # Scroll a horizontal strip until the target is fully on screen.
-            for _ in range(4):
-                if 0 <= r['x'] and r['x'] + r['width'] <= WIDTH:
+            # Web content: XCUITest won't scroll a horizontal strip itself. Drag it (with a hold before lifting, so it
+            # doesn't fling) until the element is hittable, then let XCUITest tap it.
+            for _ in range(5):
+                if wda.req('GET', f'/session/{S}/element/{e}/attribute/hittable')['value']:
                     break
-                cy = r['y'] + r['height'] / 2
-                if r['x'] > WIDTH - r['width']:
-                    wda.swipe(S, 320, cy, 80, cy, 250)
-                else:
-                    wda.swipe(S, 80, cy, 320, cy, 250)
-                time.sleep(0.6)
                 r = rect(e)
-            wda.tap(S, r['x'] + r['width'] / 2, r['y'] + r['height'] / 2)
+                cy = r['y'] + r['height'] / 2
+                x1, x2 = (300, 120) if r['x'] > 150 else (120, 300)
+                wda.act(S, [{'type': 'pointerMove', 'duration': 0, 'x': x1, 'y': cy}, {'type': 'pointerDown'},
+                            {'type': 'pointerMove', 'duration': 500, 'x': x2, 'y': cy}, {'type': 'pause', 'duration': 300},
+                            {'type': 'pointerUp'}])
+                time.sleep(0.6)
+            wda.req('POST', f'/session/{S}/element/{e}/click', {})
             return True
         except Exception as ex:  # WDA drops a request now and then while the page animates
             log(f'retry {label} {ex}')
@@ -114,11 +117,11 @@ def plan_calendar():
     go('Calendar')
     for v in ['Month', 'List', 'Day']:
         step(f'view-{v}', lambda v=v: click(v), 1.2, False)
-    step('month-view', lambda: click('Month'), 1.2, False)
+    # The phone pages by week (CalendarPhone), the desktop by month.
     for i in range(5):
-        step(f'next-month-{i}', lambda: click('Next month', True), 0.5, False)
+        step(f'next-week-{i}', lambda: click('Next week'), 0.5, False)
     for i in range(5):
-        step(f'prev-month-{i}', lambda: click('Previous month', True), 0.5, False)
+        step(f'prev-week-{i}', lambda: click('Previous week'), 0.5, False)
     step('newevent-open', lambda: wda.tap(S, *RIGHT), 1.5)
     step('newevent-close-x', lambda: click('Close'), 1.5, False)
     step('newevent-open2', lambda: wda.tap(S, *RIGHT), 1.5, False)
@@ -135,7 +138,7 @@ def plan_messages():
     step('thread-open2', open_thread, 2.0, False)
     step('thread-edge-swipe', lambda: wda.swipe(S, 3, 450, 330, 450, 250), 2.0)
     step('compose-open', lambda: wda.tap(S, *RIGHT), 1.5)
-    step('compose-close', lambda: click('Close'), 1.5, False)
+    step('compose-close', lambda: click('Cancel'), 1.5, False)
 
 
 def plan_keyboard():

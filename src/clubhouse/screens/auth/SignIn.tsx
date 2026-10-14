@@ -31,27 +31,24 @@ function useKeyboardLift(panel: RefObject<HTMLElement | null>): void {
     if (!el || !root || !window.matchMedia?.('(max-width: 820px) and (pointer: coarse)').matches) return;
     const typing = (t: EventTarget | null) => t instanceof HTMLInputElement && el.contains(t);
     let settle = 0;
-    // Settles back once no field has focus: moving from Email to Password blurs one and focuses the other in a turn, and
-    // a finger that landed on a field but scrolled instead never focuses it.
-    const check = (ms: number) => {
-      window.clearTimeout(settle);
-      settle = window.setTimeout(() => {
-        if (!typing(document.activeElement) && root.dataset.kb === 'up') root.dataset.kb = 'down';
-      }, ms);
-    };
+    // Rises on focus, never on the touch: iOS focuses the field the finger lifts over, so a sheet that starts moving on
+    // pointerdown carries the field out from under the tap and Password never takes focus. Settles back once no field
+    // has focus: moving from Email to Password blurs one and focuses the other in a turn.
     const up = (e: Event) => {
       if (!typing(e.target)) return;
       window.clearTimeout(settle);
       root.dataset.kb = 'up';
-      if (e.type === 'pointerdown') check(800);
     };
-    const out = () => check(60);
-    el.addEventListener('pointerdown', up, true);
+    const out = () => {
+      window.clearTimeout(settle);
+      settle = window.setTimeout(() => {
+        if (!typing(document.activeElement) && root.dataset.kb === 'up') root.dataset.kb = 'down';
+      }, 60);
+    };
     el.addEventListener('focusin', up);
     el.addEventListener('focusout', out);
     return () => {
       window.clearTimeout(settle);
-      el.removeEventListener('pointerdown', up, true);
       el.removeEventListener('focusin', up);
       el.removeEventListener('focusout', out);
       delete root.dataset.kb;

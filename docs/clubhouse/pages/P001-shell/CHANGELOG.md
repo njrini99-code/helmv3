@@ -1,5 +1,19 @@
 # P001 — Shell: changelog
 
+## 2026-10-14 — A thread keeps its bar over the Safari keyboard; Home's title in dark
+
+Found in the iPhone Simulator audit (Safari 26.5, Web Inspector attached).
+
+- **Pushed screens fit the visible area in Safari** (PhoneScreen
+  `useSafariKeyboardFit`, shell.css `data-ch-vv`): with the keyboard up, Safari
+  scrolled the visible area 310pt down to the composer and the thread's bar
+  (Back, the name, Details) left the screen. A keyboard-aware screen now takes
+  the visible area's top and height while the keyboard is up. The app's WebView
+  keeps its own path (CapacitorProvider's `--keyboard-height`).
+- **Home's bar title in the dark theme** (shell.css): the hero bar's title used
+  `--ch-ivory-100`, which turns near-black in the dark theme, on the green bar
+  (1.27:1). It takes the on-green ink, as every other bar title does.
+
 ## 2026-10-13 — Section switches fade through; the bar changes once
 
 A section switch fades the old page out before the new one fades in (no double
