@@ -178,7 +178,7 @@ export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData;
                   }}
                 >
                   <b>{s.title}</b>
-                  <span>{s.sub(data.teamName)}</span>
+                  <span>{s.sub.replace('{team}', data.teamName)}</span>
                 </button>
               </li>
             ))}

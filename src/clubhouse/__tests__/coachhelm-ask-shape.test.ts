@@ -78,12 +78,18 @@ describe('filterConversations and titles', () => {
 });
 
 describe('buildAskSuggestions: only questions the data can answer', () => {
+  it('the suggestions are plain data, so they can cross from the server to a client component (JAVASCRIPT-NEXTJS-158)', () => {
+    const s = buildAskSuggestions({ openers: ['Brief me on the team', 'Where is the team losing the most strokes?'], recentCovered: 5, rosterCount: 8 });
+    expect(JSON.parse(JSON.stringify(s))).toEqual(s);
+    expect(s.find((x) => x.id === 'brief')!.sub).toBe('on {team}');
+  });
+
   const openers = ['Brief me on Finley', 'Where is the team losing the most strokes?'];
   it('offers brief, strokes, trending and this week when the data supports them', () => {
     const s = buildAskSuggestions({ openers, recentCovered: 5, rosterCount: 8 });
     expect(s.map((x) => x.id)).toEqual(['brief', 'strokes', 'trending', 'week']);
     expect(s[0]!.text).toBe('Brief me on Finley');
-    expect(s[0]!.sub('Finley')).toBe('on Finley');
+    expect(s[0]!.sub.replace('{team}', 'Finley')).toBe('on Finley');
   });
 
   it('trending up needs three players with a recent round, as the strokes opener does', () => {

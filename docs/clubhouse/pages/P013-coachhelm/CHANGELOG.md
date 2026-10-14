@@ -1,5 +1,12 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-14 — The Ask view loads again
+
+`/golf/dashboard/coachhelm?view=ask` rendered "CoachHelm didn't load"
+(JAVASCRIPT-NEXTJS-158): each suggestion carried its second line as a function
+(`sub: (team) => ...`), and a function cannot cross from the server to a client
+component. `sub` is plain text with a `{team}` placeholder the card fills in.
+
 ## 2026-10-13 — The History drawer slides on the shared spring, over the shared backdrop
 
 The phone's History drawer slides in and out on the smooth spring instead of the
