@@ -5,6 +5,7 @@ import { CH_DUR } from './motion';
 import { acquireOverlayScroll } from './overlay-scroll';
 import { useChReducedMotion } from './reduced-motion';
 import { chSupportsLinear, chThrownExit, takeSheetFling } from './sheet-drag';
+import { chFocusQuietly } from './focus-quietly';
 
 /** Native modal lifetime shared by custom bars, action sheets and drawers. */
 export function useDialogLifetime(open: boolean, {
@@ -68,7 +69,7 @@ export function useDialogLifetime(open: boolean, {
       dialog.close();
       setRetained(false);
       const target = opener.current;
-      if (target instanceof HTMLElement && target.isConnected && !target.closest('[inert]')) target.focus({ preventScroll: true });
+      if (target instanceof HTMLElement && target.isConnected && !target.closest('[inert]')) chFocusQuietly(target);
     };
     dialog.setAttribute('data-closing', '');
     if (surface) surface.inert = true;

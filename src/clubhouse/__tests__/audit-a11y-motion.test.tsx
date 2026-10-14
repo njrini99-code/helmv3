@@ -87,3 +87,25 @@ describe('A-31: Back returns a page to where it was left', () => {
     expect(src).not.toMatch(/if \(!there && Date\.now\(\) < until\) frame = requestAnimationFrame\(step\);/);
   });
 });
+
+describe('A-25: focus handed back by code does not open a hover card', () => {
+  it('marks the element for that one focus, then clears the mark', async () => {
+    const { chFocusQuietly } = await import('../lib/focus-quietly');
+    const el = document.createElement('button');
+    document.body.append(el);
+    let markedDuringFocus = false;
+    el.addEventListener('focus', () => (markedDuringFocus = el.hasAttribute('data-ch-peek-quiet')));
+    chFocusQuietly(el);
+    expect(document.activeElement).toBe(el);
+    expect(markedDuringFocus).toBe(true);
+    await Promise.resolve();
+    expect(el.hasAttribute('data-ch-peek-quiet')).toBe(false);
+    el.remove();
+  });
+  it('Peek skips a quiet focus; dialogs and the calendar hand focus back quietly', () => {
+    const read = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
+    expect(read('ui/Peek.tsx')).toMatch(/if \(target\.closest\?\.\('\[data-ch-peek-quiet\]'\)\) return;/);
+    expect(read('lib/dialog-lifetime.ts')).toMatch(/chFocusQuietly\(target\)/);
+    expect(read('screens/calendar/Calendar.tsx')).toMatch(/chFocusQuietly\(el\)/);
+  });
+});

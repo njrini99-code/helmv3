@@ -37,6 +37,7 @@ export interface PeekAction {
 export const PEEK_HOLD_MS = 450;
 export const PEEK_HOVER_MS = 400;
 export const PEEK_FOCUS_MS = 600;
+
 const SLOP_PX = 8;
 const HOVER_GRACE_MS = 160;
 const CARD_W = 328;
@@ -154,7 +155,9 @@ export function PeekTarget({
           if (e.pointerType === 'mouse') leaveHover();
         },
         onFocus: (e: React.FocusEvent) => {
-          if (!(e.target as HTMLElement).matches?.(':focus-visible')) return;
+          const target = e.target as HTMLElement;
+          if (!target.matches?.(':focus-visible')) return;
+          if (target.closest?.('[data-ch-peek-quiet]')) return;
           clear();
           timer.current = setTimeout(() => open('hover'), PEEK_FOCUS_MS);
         },

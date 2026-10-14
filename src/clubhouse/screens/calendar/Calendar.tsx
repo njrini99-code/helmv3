@@ -37,6 +37,7 @@ import { useLightPlace } from '../../shell/light';
 import { canvasLenis, canvasScrollNow, usePanelSmoothScroll } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
+import { chFocusQuietly } from '../../lib/focus-quietly';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
@@ -563,7 +564,7 @@ export function Calendar({
     if (!el?.isConnected || el.closest('[inert], [aria-hidden="true"]')) return;
     const at = document.activeElement;
     if (at && at !== document.body && !panel.current?.contains(at)) return;
-    el.focus({ preventScroll: true });
+    chFocusQuietly(el);
   }, [insp]);
   useOpenOnNow(focusTick, dates[0]!, !phone && (view === 'week' || view === 'day') && !data.eventsError, focusHour(dates, events, now), reduced);
   // The day, week or month on show. Stepping to another slides the grid the way it went (CH-6605): a later period comes in
