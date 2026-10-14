@@ -80,6 +80,12 @@ export function SettingsView({
   const writes = useMemo(() => keepSaved(raw, setData), [raw]);
   const sections = SECTIONS[data.role];
   const [section, setSection] = useState<ChSettingsSection>(initialSection);
+  // A new ?section= on the same page re-renders without remounting: the section follows the address (2026-10-14).
+  const [seenSection, setSeenSection] = useState(initialSection);
+  if (seenSection !== initialSection) {
+    setSeenSection(initialSection);
+    setSection(initialSection);
+  }
   const [ask, setAsk] = useState<ChSettingsSection | null>(null);
   const sectionRail = useRef<HTMLElement>(null);
   const focusRevealFrame = useRef<number | null>(null);

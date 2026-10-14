@@ -105,6 +105,13 @@ export function SettingsPhone({
   const reduced = useChReducedMotion();
   const sections = SECTIONS[data.role];
   const [section, setSection] = useState<ChSettingsSection | null>(() => (opened && sections.some((x) => x.id === initialSection) ? initialSection : null));
+  // A new ?section= on the same page re-renders without remounting: the pushed section follows the address. Every
+  // ?section= link opened Account once Settings had been open (Simulator, 2026-10-14).
+  const [seenAddress, setSeenAddress] = useState({ initialSection, opened });
+  if (seenAddress.initialSection !== initialSection || seenAddress.opened !== opened) {
+    setSeenAddress({ initialSection, opened });
+    setSection(opened && sections.some((x) => x.id === initialSection) ? initialSection : null);
+  }
   const [profileOpen, setProfileOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);

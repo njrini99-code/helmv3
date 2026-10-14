@@ -122,6 +122,14 @@ export function TeamHub({
   const [tab, setTab] = useState<ChHubTab>(initialTab ?? 'home');
   // Consumed by the row on its first paint, so a later toggle, refresh or tab switch never scrolls back to it.
   const [taskToFocus, setTaskToFocus] = useState<string | null>(focusTask ?? null);
+  // A new address on the same page (a notification's ?tab=tasks&task= while Team Hub is open) re-renders the route
+  // without remounting it, so the tab and the task follow the address; the page stood on its first tab (2026-10-14).
+  const [seenAddress, setSeenAddress] = useState({ initialTab, focusTask });
+  if (seenAddress.initialTab !== initialTab || seenAddress.focusTask !== focusTask) {
+    setSeenAddress({ initialTab, focusTask });
+    if (initialTab && initialTab !== seenAddress.initialTab) setTab(initialTab);
+    if (focusTask && focusTask !== seenAddress.focusTask) setTaskToFocus(focusTask);
+  }
   const taskFocused = () => setTaskToFocus(null);
   // The underline moves on the press (CH-10602); the panel renders just behind it.
   const shownTab = useDeferredValue(tab);

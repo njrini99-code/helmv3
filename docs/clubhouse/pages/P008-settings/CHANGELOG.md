@@ -1,5 +1,11 @@
 # P008 — Settings: changelog
 
+## 2026-10-14 — A new ?section= on an open Settings opens that section
+
+Once Settings had been open, every `?section=` link (the bell's, a page's
+settings key) showed Account on the phone and the first section on desktop: the
+section was read from the address only on mount. It now follows the address.
+
 ## 2026-10-14 — Row labels keep whole words under larger page text
 
 At Safari's larger page text the phone list broke its labels mid-word

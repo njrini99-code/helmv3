@@ -1,5 +1,11 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-14 — A new ?tab= on an open Team Hub moves to that tab
+
+A notification's `?tab=tasks&task=` while Team Hub was already open re-rendered
+the route without remounting it, and the page stood on its first tab. The tab
+and the focused task now follow the address.
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet
