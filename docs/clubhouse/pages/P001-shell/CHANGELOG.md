@@ -1,5 +1,13 @@
 # P001 — Shell: changelog
 
+## 2026-10-14 — The frame clears the Dynamic Island in landscape
+
+- **Safe areas on the desktop frame** (shell.css `.ch-app`): a phone turned
+  sideways (874pt) gets the desktop layout, whose sidebar started at x=0 under
+  the Dynamic Island and the corner (iOS reports 62pt each side) and whose canvas
+  ran into the home indicator's strip. The frame now pads by the safe-area insets
+  (0 on a desktop); the green fills them.
+
 ## 2026-10-14 — A thread keeps its bar over the Safari keyboard; Home's title in dark
 
 Found in the iPhone Simulator audit (Safari 26.5, Web Inspector attached).

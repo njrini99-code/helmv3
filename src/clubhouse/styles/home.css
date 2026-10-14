@@ -730,6 +730,19 @@
   display: flex;
 }
 
+/* A narrow desktop canvas (a small window, iPad split view, a phone turned sideways): the head stacks, the actions under
+   the brief, rather than the greeting squeezed into a 90px column beside them. */
+@container (max-width: 640px) {
+  .ch-h-main--desk > .ch-h-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-h-main--desk > .ch-h-head .ch-h-head__actions {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+  }
+}
+
 /* Narrow canvas: stack the sheet. Phone layout proper waits for its approved spec (docs/clubhouse/phone/home.md). */
 @container (max-width: 860px) {
   .ch-h-sheet {

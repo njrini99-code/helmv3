@@ -3,6 +3,9 @@
 .ch-app {
   display: flex;
   height: 100dvh;
+  /* A phone turned sideways is wider than the phone breakpoint and gets this layout: the green frame fills the
+     Dynamic Island's side and the home indicator's strip, and the sidebar and canvas clear them. 0 on a desktop. */
+  padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   /* The global light's sky falls across the frame (P001-A1, tokens.css "The global light"). */
   background: var(--ch-light-sky), var(--ch-shell);
 }
