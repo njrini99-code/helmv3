@@ -2,10 +2,10 @@
 
 ## 2026-10-13 — The first visit paints the list at once
 
-The shell fills the inbox's session cache once idle (shell/use-warm-inbox.ts), so opening Messages shows the list
-immediately instead of a second skeleton while the browser loads it; the list still refreshes silently. Shared
-change: docs/clubhouse/CHANGELOG.md.
-
+The shell fills the inbox's session cache once idle (shell/use-warm-inbox.ts),
+so opening Messages shows the list immediately instead of a second skeleton
+while the browser loads it; the list still refreshes silently. Shared change:
+docs/clubhouse/CHANGELOG.md.
 
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
