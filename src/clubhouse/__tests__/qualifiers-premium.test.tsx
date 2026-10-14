@@ -170,6 +170,16 @@ describe('P009-B2 an honest Live state', () => {
     expect(await screen.findAllByRole('table', { name: /Round \d scorecard/ })).toHaveLength(2);
   });
 
+  it('a round with no tees or par says Tees not set, not a blank (Simulator audit, 2026-10-14)', async () => {
+    const d = live();
+    const roundCourses = d.roundCourses.map((c, i) => (i === d.roundCourses.length - 1 ? { ...c, teeName: null, par: null } : c));
+    await act(async () => {
+      wrap(<QualifierDetail data={{ ...d, roundCourses }} writes={fakeWrites()} live={false} />);
+    });
+    const list = within(screen.getByRole('region', { name: 'Course per round' }).querySelector('.ch-qf-list') as HTMLElement);
+    expect(list.getAllByText('Tees not set')).toHaveLength(1);
+  });
+
   it('D3 ended is a pure rule held against the day where it starts last; left without a day, nothing is reconciled', () => {
     const base = { status: 'in_progress' as const, endDate: '2026-10-01', entrants: 8, numRounds: 3, submitted: 13 };
     expect(endedLive({ ...base, today: '2026-10-01' })).toBeNull();
