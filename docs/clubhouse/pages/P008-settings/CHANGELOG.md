@@ -1,5 +1,11 @@
 # P008 — Settings: changelog
 
+## 2026-10-14 — Row labels keep whole words under larger page text
+
+At Safari's larger page text the phone list broke its labels mid-word
+("Notificati/ons"). A row's label now floors at its longest word and its
+summary ellipsizes first.
+
 ## 2026-10-13 — Sheets rise and leave on the shared spring, over the shared backdrop
 
 The phone's bottom sheets and action sheets rise on the smooth spring (462ms)

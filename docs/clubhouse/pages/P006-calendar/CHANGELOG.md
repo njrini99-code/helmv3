@@ -1,5 +1,14 @@
 # P006 — Calendar: changelog
 
+## 2026-10-14 — A finger places the event time on a tap, not as it lands
+
+Simulator audit: a scroll of the New event sheet that began on a free-time lane
+moved the event to where the finger landed (7:00 became 9:45), and Close then
+asked to discard. A touch now places the time on the lane's click, which iOS
+sends only when the finger lifts without scrolling; a mouse still places it on
+the press. The phone intro's view switch wraps under larger page text (shared
+`.ch-intro__row`, docs/clubhouse/CHANGELOG.md).
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet

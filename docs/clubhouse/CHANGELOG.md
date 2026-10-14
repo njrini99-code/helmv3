@@ -1,5 +1,15 @@
 # Clubhouse changelog
 
+## 2026-10-14 — Bell drop, page intro and settings rows from the Simulator audit
+
+- The bell's drop keeps its list a scroller at every length (`.ch-bst__scroll::before`),
+  so a pan on a short list no longer scrolls the page under it (WebKit hands a
+  pan on a non-scrolling box to the document).
+- `.ch-intro__row` wraps, so a page title and its view switch never push the
+  switch off a phone under Safari's larger page text (Calendar's List was cut).
+- Phone settings rows keep label words whole; the summary ellipsizes first (P008).
+- The event editor's free-time lanes place the time on a tap, not on touch (P006).
+
 ## 2026-10-14 — Contrast and targets from the Simulator audit
 
 A rendered-pixel contrast sweep of every phone section in both themes (iPhone 17
