@@ -602,10 +602,15 @@ export async function seedClubhouseTeam(options: SeedTeamOptions = {}): Promise<
     team.counts.shots = shotRows.length;
 
     // Completed through the one write the lifecycle guard allows, so the database's own trigger builds each round's stats cache.
+    // The guard's atomic path is open to `postgres` only (guard_golf_round_lifecycle, `current_user = 'postgres'`), and
+    // the seed connects as the stack's superuser so it may set session_replication_role: it takes the `postgres` role
+    // for this one write (without it every team seed failed "Completed rounds must be submitted...", 2026-10-14).
     await db.query("set local session_replication_role = 'origin'");
+    await db.query('set local role postgres');
     await db.query("select set_config('helm.golf_lifecycle_write', 'atomic', true)");
     await db.query("update golf_rounds set status = 'completed' where id = any($1::uuid[])", [team.roundIds]);
     await db.query("select set_config('helm.golf_lifecycle_write', '', true)");
+    await db.query('reset role');
     const cached = (await db.query('select count(*)::int as n from golf_round_stats_cache where round_id = any($1::uuid[])', [team.roundIds])).rows[0].n as number;
     if (cached !== team.roundIds.length) throw new Error(`seed: ${cached} stats cache rows for ${team.roundIds.length} rounds`);
     team.counts.rounds = team.roundIds.length;
