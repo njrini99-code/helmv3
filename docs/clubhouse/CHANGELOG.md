@@ -1,5 +1,15 @@
 # Clubhouse changelog
 
+## 2026-10-14 — Browser network text is never shown as a reason; a pushed screen returns focus to a top-bar opener
+
+`friendlyReason` (lib/friendly-reason.ts) returns nothing for a browser's own
+wording for a request that got no answer (Safari's "Load failed", "Failed to
+fetch", "NetworkError…", "Could not connect to the server", abort and timeout
+texts), so the caller's hint shows instead (`isRawBrowserFailure`). A
+`PhoneScreen` opened from the shell's top bar (inert while the screen is up)
+now gives focus back to its opener a frame after it pops, when nothing else
+took it (P007 audit A-28).
+
 ## 2026-10-14 — Sign out ends in one request
 
 Signing out refreshed the dashboard under the jump to login (a server action

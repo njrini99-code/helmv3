@@ -21,6 +21,7 @@ import { getGolfConversationMute, setGolfConversationMute } from '@/app/golf/act
 import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDetail, getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
+import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
 import { useDelayedToast, useToast } from '../../ui/Toast';
@@ -191,11 +192,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
   );
 
   const fail = useCallback(
-    (surface: string, err: unknown, title: string, hint: string, code: string) => {
+    (surface: string, err: unknown, title: string, hint: string, code: string, withReason = true) => {
       chReport(err, { surface: `messages.${surface}`, action: `messages.${surface}` });
       // CH-7701: a change that fails gives the error pattern; CH-7702: one that lands, the success pattern (each write below).
       haptic('error');
-      const reason = err instanceof Error ? friendlyReason(err.message) : null;
+      const reason = withReason && err instanceof Error ? friendlyReason(err.message) : null;
       toast({ tone: 'error', title, body: reason ?? hint, code });
     },
     [toast],
@@ -557,8 +558,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
         else await msgs.sendMessage(text);
         return true;
       } catch (err) {
-        const unknown = /network|fetch|timeout|aborted/i.test(err instanceof Error ? err.message : '');
-        fail('send', err, unknown ? "Couldn’t confirm this message sent" : "Couldn’t send the message", unknown ? 'It is in the thread: check it, then Retry from there if it did not arrive.' : 'It is in the thread, marked Not sent. Retry from there.', unknown ? 'CH-7005' : 'CH-7004');
+        // The bubble's state comes from the hook's classifySendFailure, which is this same test: the toast and the bubble
+        // tell one story (audit A-06: WebKit's "Load failed" read "Couldn’t send" over a "Couldn’t confirm" bubble).
+        if (isTransientNetworkErrorMessage(err instanceof Error ? err.message : String(err))) {
+          fail('send', err, "Couldn’t confirm this message sent", 'It is in the thread: check it, then Retry from there if it did not arrive.', 'CH-7005', false);
+        } else {
+          fail('send', err, "Couldn’t send the message", 'It is in the thread, marked Not sent. Retry from there.', 'CH-7004');
+        }
         return false;
       }
     },
@@ -587,7 +593,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
       let unknown = false;
       let checked = false;
       const ok = await attempt('sendFiles', { failed: "Couldn’t send the attachment", hint: 'Your message and files are still in the box. Try again.', code: 'CH-7006' }, async () => {
-        const res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending, ...(replyToId ? { replyToId } : {}) });
+        let res: Awaited<ReturnType<typeof sendMessageWithAttachments>>;
+        try {
+          res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending, ...(replyToId ? { replyToId } : {}) });
+        } catch (err) {
+          // No answer while the composer holds this attempt: the send reads as unconfirmed (CH-7023 in the composer), so
+          // the toast says the same rather than "Try again" (audit A-06).
+          if (!attachmentRecovery.has(selectedId)) throw err;
+          unknown = true;
+          fail('sendFiles', err, "Couldn’t confirm this send", 'Your draft and files are kept. Retry send checks the same attempt before sending again.', 'CH-7023', false);
+          return true;
+        }
         if (res.cancelled) return false;
         checked = true;
         if (res.sendOutcome === 'unknown') {

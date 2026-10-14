@@ -62,7 +62,17 @@ export function PhoneScreen({
     const target = inside?.matches('h1, [tabindex]') ? inside : inside?.querySelector<HTMLElement>('[tabindex], h1, button');
     (target ?? ref.current)?.focus({ preventScroll: true });
     return () => {
-      if (opener instanceof HTMLElement && opener.isConnected && !opener.closest('[inert]')) opener.focus({ preventScroll: true });
+      if (!(opener instanceof HTMLElement) || !opener.isConnected) return;
+      if (!opener.closest('[inert]')) {
+        opener.focus({ preventScroll: true });
+        return;
+      }
+      // An opener in the shell's top bar (Messages' New message) is still inert here: this screen's immersive hold is
+      // released in the same commit, after this runs. Focus it a frame later if nothing else took focus (audit A-28).
+      requestAnimationFrame(() => {
+        const lost = !document.activeElement || document.activeElement === document.body;
+        if (lost && opener.isConnected && !opener.closest('[inert]')) opener.focus({ preventScroll: true });
+      });
     };
   }, [labelledBy]);
   return (

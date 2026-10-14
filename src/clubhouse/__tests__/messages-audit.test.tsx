@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -124,7 +124,16 @@ function SlotHost() {
   const { setSlot } = usePhoneChromeState();
   return <div ref={setSlot} data-testid="phone-top" />;
 }
-function showPhone(d: ChMessagesData = data) {
+/** As TopBar does: the shell's top bar, which holds the page's New message, is inert while a screen is pushed. */
+function InertSlotHost() {
+  const { setSlot, immersive } = usePhoneChromeState();
+  return (
+    <header inert={immersive || undefined}>
+      <div ref={setSlot} data-testid="phone-top" />
+    </header>
+  );
+}
+function showPhone(d: ChMessagesData = data, { inertTop = false } = {}) {
   layout.phone = true;
   window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
   return render(
@@ -132,7 +141,7 @@ function showPhone(d: ChMessagesData = data) {
       <ToastProvider>
         <PhoneChromeProvider>
           <div className="ch-root" data-ui="clubhouse">
-            <SlotHost />
+            {inertTop ? <InertSlotHost /> : <SlotHost />}
             <Messages data={d} />
           </div>
         </PhoneChromeProvider>
@@ -283,5 +292,114 @@ describe('Messages · swap audit §12', () => {
     await expectCode('CH-7015', /That conversation isn’t available/);
     expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
     expect(screen.queryByRole('textbox', { name: /^Message / })).toBeNull();
+  });
+});
+
+describe('Messages · runtime audit 2026-10-14 (WebKit)', () => {
+  it.each([
+    ['WebKit', 'Load failed'],
+    ['Chrome', 'Failed to fetch'],
+    ['Firefox', 'NetworkError when attempting to fetch resource.'],
+  ])('A-06 a %s network drop on send: the toast says the outcome is unknown, as the bubble does, with no raw browser text', async (_engine, raw) => {
+    const user = userEvent.setup();
+    live.msgs.sendMessage.mockRejectedValue(new TypeError(raw));
+    show();
+    const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    await user.type(box, 'Bus at 6{Enter}');
+    await expectCode('CH-7005', /Couldn’t confirm this message sent/);
+    expect(code('CH-7005')!.textContent).toMatch(/check it, then Retry/);
+    expect(code('CH-7004')).toBeNull();
+    expect(document.body.textContent).not.toContain(raw);
+  });
+
+  it('A-06 a refusal the server words for people still reads as not sent, with its reason', async () => {
+    const user = userEvent.setup();
+    live.msgs.sendMessage.mockRejectedValue(new Error('This conversation is closed'));
+    show();
+    const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    await user.type(box, 'Bus at 6{Enter}');
+    await expectCode('CH-7004', /Couldn’t send the message/);
+    expect(code('CH-7004')!.textContent).toMatch(/This conversation is closed\./);
+    expect(code('CH-7005')).toBeNull();
+  });
+
+  it('A-06 an attachment send that throws while its earlier attempt is unconfirmed says unconfirmed, not "Try again"', async () => {
+    const user = userEvent.setup();
+    live.files.sendMessageWithAttachments.mockResolvedValueOnce({ success: false, sendOutcome: 'unknown' } as never);
+    show();
+    const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, new File(['x'], 'plan.pdf', { type: 'application/pdf' }));
+    await user.type(box, 'Here is the plan');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getAllByText('Couldn’t confirm this send').length).toBeGreaterThan(0));
+    live.files.sendMessageWithAttachments.mockRejectedValueOnce(new TypeError('Load failed'));
+    await user.click(await screen.findByRole('button', { name: 'Retry send' }));
+    await waitFor(() => expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('error'));
+    expect(code('CH-7006')).toBeNull();
+    expect(document.body.textContent).not.toContain('Load failed');
+  });
+
+  it('A-26 the reaction bar opened from the keyboard takes focus, arrows move along it, and Esc returns to React', async () => {
+    const user = userEvent.setup();
+    show();
+    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    const react = screen.getByRole('button', { name: 'React' });
+    react.focus();
+    await user.keyboard('{Enter}');
+    const bar = await screen.findByRole('menu', { name: 'Reactions' });
+    const items = within(bar).getAllByRole('menuitem');
+    await waitFor(() => expect(document.activeElement).toBe(items[0]));
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(items[1]);
+    await user.keyboard('{ArrowLeft}{ArrowLeft}');
+    expect(document.activeElement).toBe(items[items.length - 1]);
+    await user.keyboard('{Home}');
+    expect(document.activeElement).toBe(items[0]);
+    await user.keyboard('{Escape}');
+    expect(document.activeElement).toBe(react);
+    expect(react.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('A-26 a reaction picked from the keyboard saves and leaves focus on React, not on <body>', async () => {
+    const user = userEvent.setup();
+    show();
+    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    const react = screen.getByRole('button', { name: 'React' });
+    react.focus();
+    await user.keyboard('{Enter}');
+    const bar = await screen.findByRole('menu', { name: 'Reactions' });
+    await waitFor(() => expect(document.activeElement).toBe(within(bar).getAllByRole('menuitem')[0]));
+    await user.keyboard('{ArrowRight}{Enter}');
+    expect(live.reactions.setReaction).toHaveBeenCalledWith('m1', expect.any(String), true);
+    expect(document.activeElement).toBe(react);
+  });
+
+  it('A-26 Esc in the More message actions menu returns focus to its trigger', async () => {
+    const user = userEvent.setup();
+    show();
+    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    const more = screen.getByRole('button', { name: 'More message actions' });
+    more.focus();
+    await user.keyboard('{Enter}');
+    const menu = await screen.findByRole('menu', { name: 'Message actions' });
+    await waitFor(() => expect(document.activeElement).toBe(within(menu).getAllByRole('menuitem')[0]));
+    await user.keyboard('{Escape}');
+    expect(document.activeElement).toBe(more);
+  });
+
+  it.each(['coach', 'player'] as const)('A-28 phone New message (%s): focus starts on its title, and a hardware Esc cancels it back to New message', async (role) => {
+    const user = userEvent.setup();
+    showPhone(role === 'coach' ? data : { ...data, role: 'player', viewerPlayerId: 'p-me' }, { inertTop: true });
+    const opener = await screen.findByRole('button', { name: 'New message' });
+    opener.focus();
+    await user.keyboard('{Enter}');
+    const screenEl = await screen.findByRole('region', { name: 'New message' });
+    await waitFor(() => expect(document.activeElement).toBe(within(screenEl).getByRole('heading', { name: 'New message' })));
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'New message' })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'New message' })));
   });
 });
