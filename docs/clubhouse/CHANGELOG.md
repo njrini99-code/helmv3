@@ -11,7 +11,9 @@ section switches dropped no frames, so the choppy feel was the switch's design, 
   gone (the 300ms hold plus the 120ms fade) instead of fading in through it.
 - **One change to the top bar** (section-switch `switching`, TopBar, shell.css): the title changes on the tap, as
   before, and the old section's buttons and mark now step back with it; the new page brings its own. Before, the
-  title changed first and the buttons (the bell, the page's +) swapped a beat later when the page arrived.
+  title changed first and the buttons (the bell, the page's +) swapped a beat later when the page arrived. The
+  address changes when the route's skeleton commits, so the bar's buttons also wait while that skeleton is on
+  screen (checked on the phone: the shell's bell no longer shows before the page's own button).
 - **A warm inbox** (shell/use-warm-inbox.ts): the shell fills Messages' session cache once it is idle, so the first
   visit paints the list at once instead of a second skeleton for about three seconds while the browser loads it; the
   list still refreshes silently. Skipped when warm, with Data Saver on or offline.

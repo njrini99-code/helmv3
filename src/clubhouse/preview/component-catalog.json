@@ -10381,43 +10381,43 @@
           "name": "--ch-type-serif-l",
           "value": "600 32px/1.1 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 2028
+          "line": 2031
         },
         {
           "name": "--ch-type-serif-m",
           "value": "600 22px/1.15 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 2029
+          "line": 2032
         },
         {
           "name": "--ch-type-serif-s",
           "value": "600 19px/1.2 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 2030
+          "line": 2033
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "var(--ch-frame)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 2244
+          "line": 2247
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(107 187 140 / 0.12)",
           "scope": "html[data-fw-theme='dark'] .ch-empty-page",
-          "line": 2490
+          "line": 2493
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(239 133 118 / 0.12)",
           "scope": "html[data-fw-theme='dark'] .ch-empty-page--danger",
-          "line": 2493
+          "line": 2496
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "var(--ch-frame)",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] body [data-ui='clubhouse']",
-          "line": 2528
+          "line": 2531
         }
       ]
     },
