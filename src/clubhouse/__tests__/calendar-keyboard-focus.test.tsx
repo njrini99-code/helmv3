@@ -151,6 +151,29 @@ describe.each(roles)('Calendar keyboard · %s', (_role, data) => {
     expect(document.activeElement).toBe(ev);
   });
 
+  it('A-25 Back from a panel opened with the keyboard hands focus back to the event', async () => {
+    const user = userEvent.setup();
+    wrap(data);
+    const ev = block(/^Travel briefing/);
+    ev.focus();
+    await user.keyboard('{Enter}');
+    within(document.querySelector<HTMLElement>('aside.ch-in-wrap')!).getByRole('button', { name: 'Today' }).focus();
+    await user.keyboard('{Enter}');
+    expect(screen.queryByRole('heading', { level: 2, name: 'Travel briefing' })).toBeNull();
+    expect(document.activeElement).toBe(ev);
+  });
+
+  it('A-23 a press on the title while the jump panel is open closes it, rather than reopening it', async () => {
+    const user = userEvent.setup();
+    wrap(data);
+    const trigger = screen.getByRole('button', { name: /Jump to a date/ });
+    await user.click(trigger);
+    expect(screen.getByRole('dialog', { name: 'Jump to a date' })).toBeTruthy();
+    await user.click(trigger);
+    expect(screen.queryByRole('dialog', { name: 'Jump to a date' })).toBeNull();
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('A-25 a click on an event opens its panel without moving focus there', async () => {
     const user = userEvent.setup();
     wrap(data);
