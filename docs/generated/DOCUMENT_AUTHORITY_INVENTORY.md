@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 16 | 3 | 6 | 0 |
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
+| `CURRENT_FEATURE` | 27 | 27 | 14 | 1 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
@@ -221,7 +221,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/admin-replay-lab.md` | current | yes | - | - | - |
 | `memory/features/admin-selfheal.md` | current | yes | - | - | - |
 | `memory/features/admin-slo.md` | current | yes | - | yes | - |
-| `memory/features/auth-onboarding-join.md` | current | yes | - | - | - |
+| `memory/features/auth-onboarding-join.md` | current | yes | - | - | 1 |
 | `memory/features/calendar-events.md` | current | yes | - | yes | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |

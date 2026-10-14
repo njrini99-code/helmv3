@@ -648,23 +648,29 @@ describe('Settings · the live writes', () => {
     expect(client.upload.mock.calls[0]![0]).toMatch(/^u-maya\/avatar-\d+\.png$/);
   });
 
-  it('80903 after a delete this device is cleaned up first (caches, active team, session) and then sent to the sign-in page in the app or the home page on the web', async () => {
+  it('80903 after a delete this device is cleaned up first (caches, then the session and active team in one request) and then sent to the sign-in page in the app or the home page on the web', async () => {
     const assign = vi.fn();
     const real = window.location;
+    let fetchSpy: { mockRestore: () => void } | undefined;
     Object.defineProperty(window, 'location', { configurable: true, value: { ...real, assign } });
     try {
       const order: string[] = [];
       actions.clearAllCachedResources.mockImplementation(() => order.push('caches'));
-      actions.clearActiveTeam.mockImplementation(async () => void order.push('team'));
-      client.signOut.mockImplementation(async () => void order.push('session'));
+      client.signOut.mockImplementation(async () => void order.push('browser session'));
+      fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+        order.push(`session ${String(url)}`);
+        return new Response('{"success":true}', { status: 200 });
+      });
       await coachWrites().cleanupAfterDelete();
-      expect(order).toEqual(['caches', 'team', 'session']);
+      // The session and the active team end in one request (the sign-out route), so nothing re-renders under the redirect.
+      expect(order).toEqual(['caches', 'session /api/golf/auth/sign-out']);
       expect(assign).toHaveBeenLastCalledWith('/');
       native.on = true;
       expect(afterDeleteHref()).toBe('/golf/login');
       await coachWrites().cleanupAfterDelete();
       expect(assign).toHaveBeenLastCalledWith('/golf/login');
     } finally {
+      fetchSpy?.mockRestore();
       Object.defineProperty(window, 'location', { configurable: true, value: real });
     }
   });

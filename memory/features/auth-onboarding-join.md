@@ -34,6 +34,11 @@ Coach and player onboarding are separate routes. Join-code links can redirect us
 - `src/app/golf/(onboarding)/coach/**`
 - `src/app/golf/(onboarding)/player/**`
 - `src/app/golf/join/[code]/**`
+- `src/app/api/golf/auth/sign-out/route.ts` — Clubhouse sign out: POST, same-origin
+  only (Origin vs the Host / forwarded host), ends the session server-side (global,
+  then a local fallback that always clears this device's cookies) and deletes the
+  active-team cookie in the same response. Replaces the `clearActiveTeam()`
+  server action, whose cookie write re-rendered the page under the redirect.
 
 ### Components
 

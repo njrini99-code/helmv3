@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-14 — Sign out ends in one request
+
+Signing out refreshed the dashboard under the jump to login (a server action
+that clears the active team re-renders the page). It is now one request to a
+sign-out route that ends the session and clears the team together, with no
+re-render (P008).
+
 ## 2026-10-14 — Log in from the home page goes straight to the sign in
 
 The tap on Log in painted the dashboard skeleton before the sign in, and at
