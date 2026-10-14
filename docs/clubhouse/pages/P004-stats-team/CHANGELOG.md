@@ -1,5 +1,14 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-14 — A window tap re-renders the switch, not the page
+
+- **The phone's window switch reads the frame itself** (StatsTeamIslands
+  `PhoneWindowSwitch`): the phone page read the shown window, so each tap of Last
+  10, Season or Qualifiers re-rendered the whole page and its charts inside the
+  click (Simulator audit: 40ms of click handling, 48ms to the next paint, a 122ms
+  frame gap). The pill still moves on the tap; the figures change when the new
+  rounds land, as before. Re-measure on the next preview.
+
 ## 2026-10-12 — `/stats/team` follows the dashboard role
 
 The old Team stats address opens Clubhouse Stats only when the gate is on for

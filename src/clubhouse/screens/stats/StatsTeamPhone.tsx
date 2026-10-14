@@ -24,12 +24,11 @@ import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
 import { puttingNote } from './notes';
-import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow, useShownWindow } from './StatsTeamIslands';
+import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { hasRange, isFiltered } from '../../data/stats-filter';
-import { WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 
 type Sort = 'avg' | 'sg';
@@ -81,8 +80,6 @@ const legIndex = (leg: ChLegPick) => (leg === 'total' ? -1 : LEGS_LIST.indexOf(l
  * the tab root and the page adds nothing to it.
  */
 export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
-  const go = useGoWindow();
-  const shown = useShownWindow();
   // The leg and the sort come back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1).
   const [leg, setLeg] = useChSessionState<ChLegPick>('team-sg-leg', 'total');
   const [sort, setSort] = useChSessionState<Sort>('team-players-sort', 'avg');
@@ -119,7 +116,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         </header>
         {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
         <div className="ch-stm-controls">
-          <WindowSwitch value={shown} onChange={go} custom={hasRange(data.filter)} />
+          <PhoneWindowSwitch custom={hasRange(data.filter)} />
           {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
         </div>
         {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}

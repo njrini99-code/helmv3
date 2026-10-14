@@ -61,6 +61,15 @@ export function useShownWindow(): ChWindow {
   return useContext(GoFilter).shown;
 }
 
+/**
+ * The phone's window switch, reading the frame itself: a tap moves the pill at once and re-renders only this, not the
+ * whole page (the page re-rendered every chart in the click, 40ms in the Simulator audit, 2026-10-14).
+ */
+export function PhoneWindowSwitch({ custom }: { custom: boolean }) {
+  const go = useGoWindow();
+  return <WindowSwitch value={useShownWindow()} onChange={go} custom={custom} />;
+}
+
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
 export function StatsTeamFrame({ filter: current, phone, children }: { filter: ChFilter; phone?: ReactNode; children: ReactNode }) {
   const isPhone = useChPhone() && phone != null;

@@ -36,9 +36,11 @@ def log(s):
 
 def find(label, contains=False):
     q = f"label CONTAINS '{label}'" if contains else f"label == '{label}'"
-    # Prefer a link or button: the label's static text is a child and not itself tappable.
-    q = f"({q}) AND (type == 'XCUIElementTypeLink' OR type == 'XCUIElementTypeButton')"
-    els = wda.req('POST', f'/session/{S}/elements', {'using': 'predicate string', 'value': q})['value']
+    # Prefer a control (link, button, tab, radio): the label's static text is a child and not itself tappable.
+    ctl = f"({q}) AND type IN {{'XCUIElementTypeLink','XCUIElementTypeButton','XCUIElementTypeTab','XCUIElementTypeRadioButton','XCUIElementTypeSegmentedControl'}}"
+    els = wda.req('POST', f'/session/{S}/elements', {'using': 'predicate string', 'value': ctl})['value']
+    if not els:
+        els = wda.req('POST', f'/session/{S}/elements', {'using': 'predicate string', 'value': q})['value']
     return els[0]['ELEMENT'] if els else None
 
 

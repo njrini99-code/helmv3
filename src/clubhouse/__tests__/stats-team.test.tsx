@@ -1114,4 +1114,11 @@ describe('ScoreLine · the mean label keeps off the line', () => {
     expect(r.anchor).toBe('end');
     expect(r.y).toBeLessThan(r.mean);
   });
+
+  it('a window tap re-renders the switch, not the phone page (the page no longer reads the frame)', () => {
+    // The phone page read the shown window itself, so every tap re-rendered every chart in the click (2026-10-14 audit).
+    const src = readFileSync('src/clubhouse/screens/stats/StatsTeamPhone.tsx', 'utf8');
+    expect(src).not.toMatch(/useShownWindow|useGoWindow/);
+    expect(src).toMatch(/<PhoneWindowSwitch /);
+  });
 });
