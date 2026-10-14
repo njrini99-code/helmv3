@@ -1125,6 +1125,8 @@ button.ch-more__row[disabled] {
     display: block;
     height: auto;
     min-height: 100dvh;
+    /* The phone's own chassis (top bar, strip, pushed screens) owns its safe areas; the desktop frame's padding is off. */
+    padding: 0;
     background: var(--ch-bg-page);
   }
   .ch-sidebar {
