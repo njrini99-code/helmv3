@@ -4498,12 +4498,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     top: 0;
     right: 6px;
     left: 6px;
-    height: var(--ch-stm-pick-h, 44px);
+    height: 44px;
     border-radius: var(--ch-radius-md);
     background: var(--ch-bg-selected);
     box-shadow: inset 0 0 0 1px var(--ch-green-ring);
-    translate: 0 var(--ch-stm-pick-y, 0px);
-    /* Every row is 44px, so only the position moves. */
+    /* Every row is 44px under the list's 4px top padding, so the chosen row's index is its place: nothing is measured. */
+    translate: 0 calc(4px + var(--ch-stm-pick-i, 0) * 44px);
     transition: translate var(--ch-dur-base) var(--ch-ease);
   }
   /* The empty window holds the loaded section's height: a 19px header, the 64px figure and five 44px rows in their

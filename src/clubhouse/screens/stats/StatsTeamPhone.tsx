@@ -1,6 +1,5 @@
 'use client';
 
-import { Tabs } from '@base-ui/react/tabs';
 import NumberFlow from '@number-flow/react';
 import { ChartColumn, ChevronRight, Medal, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -17,6 +16,7 @@ import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/Sect
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
+import { tabListKeys } from '../../lib/tabs';
 import { CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
@@ -337,6 +337,13 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
   ];
   const scale = sgScale(rows.map((r) => r.v));
   const picked = rows.find((r) => r.key === leg) ?? rows[rows.length - 1]!;
+  const legKeys = tabListKeys(
+    rows.map((r) => r.key),
+    picked.key,
+    onLeg,
+    (k) => `ch-stm-leg-${k}`,
+    true,
+  );
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-stm-legs">
       {head}
@@ -345,29 +352,38 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
           <b className={'ch-num ' + (picked.v == null ? '' : picked.v >= 0 ? 'ch-gain' : 'ch-loss')}>{picked.v == null ? NO_DATA : <SignedFlow value={picked.v} />}</b>
           <span>{picked.total ? 'Team total' : picked.label}, a round</span>
         </p>
-        <Tabs.Root value={picked.key} onValueChange={(v) => onLeg(v as ChLegPick)} orientation="vertical">
-          <Tabs.List className="ch-stm-legs" aria-label="Strokes gained leg">
-            {rows.map(({ key, label, v, total }) => (
-              <Tabs.Tab key={key} value={key} className={'ch-stm-leg' + (total ? ' is-total' : '')} aria-label={`${label}, ${v == null ? 'no data' : formatSigned(v)}`}>
+        {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
+            mounted, two layouts of the whole arriving page inside React's commit (28ms of a switch's 163ms of script at
+            4x CPU, Chromium, production build, 2026-10-15). Every row is 44px, so the wash's place is its index. */}
+        <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
+          {rows.map(({ key, label, v, total }) => {
+            const on = key === picked.key;
+            return (
+              <button
+                key={key}
+                id={`ch-stm-leg-${key}`}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                tabIndex={on ? 0 : -1}
+                data-active={on ? '' : undefined}
+                className={'ch-stm-leg' + (total ? ' is-total' : '')}
+                aria-label={`${label}, ${v == null ? 'no data' : formatSigned(v)}`}
+                onClick={() => onLeg(key)}
+                onKeyDown={legKeys}
+              >
                 <span>{label}</span>
                 <span className="ch-stm-leg__bar" aria-hidden="true">
                   <i className="ch-stm-leg__z" />
                   {v != null && <i className={'ch-stm-leg__v ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={{ [v >= 0 ? 'left' : 'right']: '50%', width: `${sgShare(v, scale) * 50}%` }} />}
                 </span>
                 <b className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</b>
-              </Tabs.Tab>
-            ))}
-            {/* Base UI measures the chosen row; the stylesheet reads it as Clubhouse properties and slides the wash. */}
-            <Tabs.Indicator
-              className="ch-stm-legpick"
-              style={(s) =>
-                s.activeTabPosition && s.activeTabSize
-                  ? ({ '--ch-stm-pick-y': `${s.activeTabPosition.top}px`, '--ch-stm-pick-h': `${s.activeTabSize.height}px` } as CSSProperties)
-                  : undefined
-              }
-            />
-          </Tabs.List>
-        </Tabs.Root>
+              </button>
+            );
+          })}
+          {/* The chosen row's wash, at its index (stats.css slides it with `translate`). */}
+          <span className="ch-stm-legpick" aria-hidden="true" style={{ '--ch-stm-pick-i': rows.indexOf(picked) } as CSSProperties} />
+        </div>
       </div>
       <p className="ch-stm-note">{note}</p>
     </section>
