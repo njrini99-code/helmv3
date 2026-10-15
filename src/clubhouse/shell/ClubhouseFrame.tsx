@@ -1,7 +1,7 @@
 'use client';
 
 import { LazyMotion } from 'motion/react';
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, memo, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useChPhone } from '../lib/use-phone';
 import { useChDynamicType } from '../lib/dynamic-type';
 import type { GolfUserData } from '@/contexts/golf-user-context';
@@ -39,22 +39,40 @@ import { useCanvasSmoothScroll } from '../lib/smooth-scroll';
 
 /** Set under ChMotionFeatures, so a frame rendered inside it doesn't render a second one. */
 const ChMotionScope = createContext(false);
+/** What ChMotionFeatures wraps, handed past its memoized LazyMotion. */
+const ChMotionChildren = createContext<ReactNode>(null);
+
+function ChMotionSlot() {
+  return <>{useContext(ChMotionChildren)}</>;
+}
+
+/** Takes no props, so nothing above renders it again: LazyMotion renders once (and once more as the features load). */
+const ChMotionProvider = memo(function ChMotionProvider() {
+  return (
+    <LazyMotion features={chLoadMotionFeatures} strict>
+      <ChMotionScope.Provider value>
+        <ChMotionSlot />
+      </ChMotionScope.Provider>
+    </LazyMotion>
+  );
+});
 
 /**
  * The animation features (domMax, for drag and layout: the calendar's drag, the toasts' layout) for every `m` component,
  * loaded in their own chunk after first paint (D-25) and retried when that load fails (A-01).
  *
- * Render it where a navigation doesn't render it again (ClubhouseShell, above the part that reads the address).
  * LazyMotion gives its context a new object each time it renders, and every `m` component under it renders again with
- * it, memo or not. Inside the frame, which renders on every section switch, that re-rendered the notification drop's
- * swipeable cards several times a switch, and each one had Motion measure the page as it arrived: 15 to 25ms more a
- * switch for a player with unread notifications (WebKit, production build, 2026-10-15).
+ * it, memo or not. Rendered inside the frame (which renders on every section switch) or by a shell a server action's
+ * refresh renders again (marking a notification read), that re-rendered every `m` component, the notification drop's
+ * swipeable cards among them, each having Motion measure the page as it arrived: 15 to 25ms more a switch for a player
+ * with unread notifications (WebKit, production build, 2026-10-15). So LazyMotion sits in a component that takes no
+ * props, and what it wraps reaches it by context.
  */
 export function ChMotionFeatures({ children }: { children: ReactNode }) {
   return (
-    <LazyMotion features={chLoadMotionFeatures} strict>
-      <ChMotionScope.Provider value>{children}</ChMotionScope.Provider>
-    </LazyMotion>
+    <ChMotionChildren.Provider value={children}>
+      <ChMotionProvider />
+    </ChMotionChildren.Provider>
   );
 }
 

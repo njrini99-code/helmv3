@@ -36,8 +36,8 @@ export function ClubhouseShell({
   phone?: boolean;
   children: ReactNode;
 }) {
-  // Nothing here reads the address (ShellFrame does), so a navigation doesn't render this again, and the animation
-  // features' provider below renders once (ChMotionFeatures in ClubhouseFrame.tsx says why that matters).
+  // Nothing here reads the address (ShellFrame does), so a navigation doesn't render this again (the animation
+  // features' provider below must not render again: ChMotionFeatures in ClubhouseFrame.tsx).
   return (
     <ChPhoneHintProvider phone={phone}>
       <SessionActivityProvider>
