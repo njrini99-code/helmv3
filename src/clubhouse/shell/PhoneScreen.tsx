@@ -4,6 +4,7 @@ import { m, useIsPresent } from 'motion/react';
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
+import { usePaintedAfter } from '../lib/use-painted';
 import { poppedByUA } from '../lib/ua-pop';
 import { CH_UNDERLAY_SHIFT, usePhoneImmersive, usePhonePushed } from './phone-chrome';
 import { useOverlayScrollLock } from '../lib/overlay-scroll';
@@ -75,6 +76,7 @@ export function PhoneScreen({
       });
     };
   }, [labelledBy]);
+  const painted = usePaintedAfter(true);
   return (
     <m.section
       ref={ref}
@@ -88,10 +90,14 @@ export function PhoneScreen({
       inert={covered || undefined}
       tabIndex={-1}
       initial={reduced ? { opacity: 0 } : { transform: 'translateX(100%)' }}
+      // Slides in once its first frame is on screen (lib/use-painted.ts): a heavy screen (a thread, a player) spent the
+      // first half of the push on its own render, so it appeared halfway in (WebKit, 2026-10-15).
       animate={
-        drawnBack
-          ? { transform: `translateX(${-CH_UNDERLAY_SHIFT * 100}%)`, opacity: 1, transition: chSpring('smooth') }
-          : { transform: 'translateX(0%)', opacity: 1, transition: wasCovered ? (reduced || poppedByUA() ? { duration: 0 } : chSpring('smooth')) : chSpring('smooth', reduced) }
+        !painted
+          ? undefined
+          : drawnBack
+            ? { transform: `translateX(${-CH_UNDERLAY_SHIFT * 100}%)`, opacity: 1, transition: chSpring('smooth') }
+            : { transform: 'translateX(0%)', opacity: 1, transition: wasCovered ? (reduced || poppedByUA() ? { duration: 0 } : chSpring('smooth')) : chSpring('smooth', reduced) }
       }
       // Read as the pop begins, so a Back that iOS already animated doesn't play again.
       exit="pop"

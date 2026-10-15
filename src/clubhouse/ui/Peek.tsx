@@ -264,8 +264,8 @@ function HoverCard({
       role="dialog"
       aria-label={label}
       style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: CARD_W }}
-      initial={reduced ? false : { opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={reduced ? false : { opacity: 0, transform: 'translate(0px, 4px)' }}
+      animate={{ opacity: 1, transform: 'translate(0px, 0px)' }}
       transition={reduced ? { duration: 0 } : chTween('quick')}
       onPointerEnter={onEnter}
       onPointerLeave={onLeave}

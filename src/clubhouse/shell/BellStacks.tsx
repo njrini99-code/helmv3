@@ -95,7 +95,7 @@ function BellStacksView({
   return (
     <div className="ch-bst-feed">
       {feed.fresh.length === 0 && (
-        <m.div className="ch-bst-empty" data-ch-code="CH-1302" initial={reduced ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={chSpring('settle', reduced)}>
+        <m.div className="ch-bst-empty" data-ch-code="CH-1302" initial={reduced ? false : { opacity: 0, transform: 'translate(0px, -8px)' }} animate={{ opacity: 1, transform: 'translate(0px, 0px)' }} transition={chSpring('settle', reduced)}>
           <span className="ch-bst-empty__ic">
             <Icon icon={BellOff} size={20} />
           </span>
@@ -143,8 +143,8 @@ function Stack({
     <m.section
       className="ch-bst-stack"
       aria-label={stack.kind === 'earlier' ? 'Earlier notifications' : `${label}, ${stack.unread} new`}
-      initial={reduced ? false : { opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={reduced ? false : { opacity: 0, transform: 'translate(0px, -12px)' }}
+      animate={{ opacity: 1, transform: 'translate(0px, 0px)' }}
       exit={{ height: 0, marginBottom: 0, opacity: 0 }}
       transition={smooth}
     >
@@ -156,9 +156,9 @@ function Stack({
             <m.span
               key="tools"
               className="ch-bst-stack__tools"
-              initial={{ opacity: 0, x: 8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 8 }}
+              initial={{ opacity: 0, transform: 'translate(8px, 0px)' }}
+              animate={{ opacity: 1, transform: 'translate(0px, 0px)' }}
+              exit={{ opacity: 0, transform: 'translate(8px, 0px)' }}
               transition={settle}
             >
               <button type="button" className="ch-bst-pill" onClick={onToggle}>
@@ -179,8 +179,8 @@ function Stack({
             key={notificationKey(top)}
             className="ch-bst-top"
             // A new top card (the one above it was cleared) rises out of the stack's first edge.
-            initial={reduced ? false : { y: PEEK, scale: 1 - NARROW, opacity: 0.6 }}
-            animate={{ y: 0, scale: 1, opacity: 1 }}
+            initial={reduced ? false : { transform: `translate(0px, ${PEEK}px) scale(${1 - NARROW})`, opacity: 0.6 }}
+            animate={{ transform: 'translate(0px, 0px) scale(1)', opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0 } }}
             transition={settle}
           >
@@ -206,9 +206,9 @@ function Stack({
                 className="ch-bst-shell"
                 aria-hidden="true"
                 style={{ zIndex: -1 - i }}
-                initial={{ y: 0, scaleX: 1, opacity: 0 }}
-                animate={{ y: PEEK * (i + 1), scaleX: 1 - NARROW * (i + 1), opacity: i === 0 ? 0.82 : 0.55 }}
-                exit={{ y: PEEK * (i + 1) + 18, scaleX: 1, opacity: 0 }}
+                initial={{ transform: 'translate(0px, 0px) scaleX(1)', opacity: 0 }}
+                animate={{ transform: `translate(0px, ${PEEK * (i + 1)}px) scaleX(${1 - NARROW * (i + 1)})`, opacity: i === 0 ? 0.82 : 0.55 }}
+                exit={{ transform: `translate(0px, ${PEEK * (i + 1) + 18}px) scaleX(1)`, opacity: 0 }}
                 transition={smooth}
               />
             ))}
@@ -219,9 +219,9 @@ function Stack({
               <m.div
                 className="ch-bst-fan__cards"
                 // The fanned cards slide down out from under the top card as one, and fold back up under it.
-                initial={reduced ? false : { y: -36, scale: 1 - NARROW, opacity: 0 }}
-                animate={{ y: 0, scale: 1, opacity: 1 }}
-                exit={{ y: -36, scale: 1 - NARROW, opacity: 0 }}
+                initial={reduced ? false : { transform: `translate(0px, -36px) scale(${1 - NARROW})`, opacity: 0 }}
+                animate={{ transform: 'translate(0px, 0px) scale(1)', opacity: 1 }}
+                exit={{ transform: `translate(0px, -36px) scale(${1 - NARROW})`, opacity: 0 }}
                 transition={smooth}
               >
                 <AnimatePresence initial={false}>

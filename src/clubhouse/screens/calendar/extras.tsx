@@ -323,7 +323,9 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
     }
   };
 
-  if (!canEdit && files && !files.length) return null;
+  // A player sees Files only when the event has some. Not while they load either: the placeholder then went away for
+  // the usual event with none, and the sheet dropped 95px just after it rose (WebKit, 2026-10-15).
+  if (!canEdit && !failed && !files?.length) return null;
   return (
     <div className="ch-in__sec">
       <div className="ch-in__sechead">

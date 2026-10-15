@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, animate, m, useMotionValue } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { Bell as BellIcon, BellOff, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
@@ -24,6 +24,7 @@ import { InlineNotice } from '../ui/Notices';
 import { Menu } from '../ui/Menu';
 import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
+import { useAfterPaint } from '../lib/use-painted';
 import { CH_POP, chSpring, chSpringCurve } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useChPhone } from '../lib/use-phone';
@@ -125,21 +126,33 @@ export function Bell() {
   const sw = useSectionSwitch();
   // CH-1612 (owner 2026-10-12, with the section strip): on the phone the sheet drops from under the top bar, as the strip
   // does, on the smooth spring, and goes back up under it on the same spring, at the speed it was thrown when swiped up.
-  const sheetY = useMotionValue(0);
+  // The finger's offset, on the CSS `translate` property, which composes with the `transform` the drop opens and closes
+  // on: transform strings, not framer's `y`, so Motion hands them to the compositor (WAAPI) and the drop keeps moving
+  // while the page under it is busy (owner, 2026-10-15: "All transitions need fixed. All popups").
+  const dragY = useRef(0);
+  // The drop and the veil move a painted frame after the state changes, from where they are (lib/use-painted.ts).
+  const moving = useAfterPaint(open);
   const fling = useRef(0);
   const sheetMotion = {
     // The stacks drop from under the bar and land with the settle spring's slight give, a touch smaller as they come.
     // Transform and opacity only, nothing that re-rasterizes (no scale, no blur), so WebKit keeps it on the compositor.
-    shown: { y: 0, opacity: 1, visibility: 'visible', transition: reduced ? { duration: 0 } : { ...REVEAL_IN, opacity: chSpring('smooth') } },
+    shown: { transform: 'translateY(0px)', opacity: 1, visibility: 'visible', transition: reduced ? { duration: 0 } : { ...REVEAL_IN, opacity: chSpring('smooth') } },
     gone: () => {
       if (reduced) return { opacity: 0, transition: { duration: 0 }, transitionEnd: { visibility: 'hidden' } };
       // Back up under the bar from where the finger left it, at the speed it was thrown, fading as it goes.
-      const from = sheetY.get();
+      const from = dragY.current;
+      dragY.current = 0;
+      if (panel.current) panel.current.style.translate = '';
       const travel = 140;
       const left = travel + from;
       const out = chSpringCurve('smooth', { velocity: left > 0 ? fling.current / left : 0, rest: 0.5 / Math.max(left, 1) });
       fling.current = 0;
-      return { y: [from, -travel], opacity: 0, transition: { duration: out.ms / 1000, ease: out.ease }, transitionEnd: { visibility: 'hidden' } };
+      return {
+        transform: [`translateY(${from}px)`, `translateY(${-travel}px)`],
+        opacity: 0,
+        transition: { duration: out.ms / 1000, ease: out.ease },
+        transitionEnd: { visibility: 'hidden' },
+      };
     },
   };
   /** The sheet follows the finger up from its header or grab (CH-1611): past a third of its height, or flicked, it closes. */
@@ -147,6 +160,8 @@ export function Bell() {
     if (reduced || (e.pointerType === 'mouse' && e.button !== 0)) return;
     const start = e.clientY;
     const el = e.currentTarget as HTMLElement;
+    const sheet = panel.current;
+    sheet?.getAnimations?.().forEach((a) => a.cancel());
     let last = start;
     let lastT = performance.now();
     let v = 0;
@@ -161,18 +176,27 @@ export function Bell() {
       last = ev.clientY;
       lastT = now;
       const dy = ev.clientY - start;
-      sheetY.set(dy < 0 ? dy : dy * 0.15);
+      dragY.current = dy < 0 ? dy : dy * 0.15;
+      if (sheet) sheet.style.translate = `0 ${dragY.current}px`;
     };
     const up = () => {
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerup', up);
       el.removeEventListener('pointercancel', up);
       const h = panel.current?.offsetHeight ?? 600;
-      if (sheetY.get() < -h / 3 || v < -0.5) {
+      if (dragY.current < -h / 3 || v < -0.5) {
         fling.current = -v * 1000;
         haptic('commit');
         close();
-      } else animate(sheetY, 0, chSpring('smooth', false, v * 1000));
+        return;
+      }
+      // Springs back from where it was let go, at the speed it was moving.
+      const from = dragY.current;
+      dragY.current = 0;
+      if (!sheet || !from) return;
+      const back = chSpringCurve('smooth', { velocity: (-Math.sign(from) * v * 1000) / Math.abs(from) });
+      sheet.style.translate = '';
+      sheet.animate?.([{ translate: `0 ${from}px` }, { translate: '0 0' }], { duration: back.ms, easing: back.linear });
     };
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerup', up);
@@ -475,10 +499,10 @@ export function Bell() {
                 initial={false}
                 animate={
                   reduced
-                    ? { opacity: open ? 1 : 0, y: '0%', visibility: open ? 'visible' : 'hidden', transition: { duration: 0 } }
-                    : open
-                      ? { y: '0%', opacity: 1, visibility: 'visible', transition: REVEAL_IN }
-                      : { y: '-100%', opacity: 1, transition: chSpring('smooth'), transitionEnd: { visibility: 'hidden' } }
+                    ? { opacity: open ? 1 : 0, transform: 'translateY(0%)', visibility: open ? 'visible' : 'hidden', transition: { duration: 0 } }
+                    : moving
+                      ? { transform: 'translateY(0%)', opacity: 1, visibility: 'visible', transition: REVEAL_IN }
+                      : { transform: 'translateY(-100%)', opacity: 1, transition: chSpring('smooth'), transitionEnd: { visibility: 'hidden' } }
                 }
                 onClick={() => close()}
               />
@@ -499,10 +523,9 @@ export function Bell() {
                 tabIndex={-1}
                 className="ch-bst"
                 data-ui="clubhouse"
-                style={{ y: sheetY }}
                 initial={false}
                 variants={sheetMotion}
-                animate={open ? 'shown' : 'gone'}
+                animate={moving ? 'shown' : 'gone'}
               >
                 {/* No OverlayScrollLock: freezing the body re-lays out the whole page in the drop's first frame (and again as
                     it closes), the stutter. The drop covers the screen and takes the touches (touch-action in shell.css),
