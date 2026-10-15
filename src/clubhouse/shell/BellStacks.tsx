@@ -363,8 +363,6 @@ function Card({
             dragged.current = false;
           }, 0);
         }}
-        whileTap={reduced ? undefined : { scale: 0.985 }}
-        transition={chSpring('settle', reduced)}
         onClick={() => {
           if (dragged.current) return;
           onTap();

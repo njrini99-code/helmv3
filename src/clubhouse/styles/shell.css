@@ -3472,6 +3472,25 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst-card--still {
     cursor: default;
   }
+  /* The press, on the compositor: the `scale` property, which composes with the swipe's transform and the release's
+     translate. It was Motion's whileTap, which drew the card's whole transform from script every frame (its swipe
+     offset is a motion value): 72 style writes in one release. None with reduced motion or Animations off. */
+  .ch-bst-card {
+    transition: scale var(--ch-dur-release) var(--ch-ease);
+  }
+  .ch-bst-card:active:not(.ch-bst-card--still) {
+    scale: 0.985;
+    transition-duration: var(--ch-dur-press);
+  }
+  [data-motion='off'] .ch-bst-card:active,
+  [data-motion='off'].ch-bst .ch-bst-card:active {
+    scale: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ch-bst-card:active:not(.ch-bst-card--still) {
+      scale: none;
+    }
+  }
   .ch-bst-card__app {
     display: flex;
     align-items: center;
