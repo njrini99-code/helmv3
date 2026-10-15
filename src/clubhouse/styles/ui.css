@@ -347,7 +347,17 @@
   gap: 8px;
   pointer-events: none;
 }
+/* A toast rises 10px as it fades in (Toast.tsx): CSS on the compositor, so a save that keeps the page busy can't hold it. */
+@keyframes ch-toast-in {
+  from {
+    transform: translateY(10px) scale(0.98);
+  }
+}
+[data-motion='off'] .ch-toast {
+  animation: none;
+}
 .ch-toast {
+  animation: ch-toast-in var(--ch-dur-base) var(--ch-ease) backwards;
   display: flex;
   align-items: center;
   gap: 10px;

@@ -306,8 +306,10 @@ function ToastCard({
       className={'ch-toast' + (t.tone === 'error' ? ' ch-toast--error' : '')}
       role={t.tone === 'error' ? 'alert' : 'status'}
       data-ch-code={t.code}
-      initial={reduced ? false : { opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      // CH-1604: it fades in here and rises 10px by CSS (`ch-toast-in`, ui.css), on the compositor; Motion keeps the
+      // stack's reflow (layout), which owns this element's transform.
+      initial={reduced ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
       variants={leave}
       exit="gone"
       // CH-1604: a toast slides up 10px and fades in; the stack reflows (layout).
