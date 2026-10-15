@@ -67,9 +67,17 @@ function useSkeletonReveal(frame: RefObject<HTMLDivElement | null>, routeKey: st
     if (hold) root.setAttribute(HOLD, '');
     const release = () => root.removeAttribute(HOLD);
     const lapse = hold ? window.setTimeout(release, VT_DONE_MS + 500) : 0;
+    let skeleton = el.querySelector(ROUTE_SKELETON);
     const watch = new MutationObserver((records) => {
-      // Still loading, or a deeper route's skeleton took the first one's place.
-      if (el.querySelector(ROUTE_SKELETON)) return;
+      // Still loading, or a deeper route's skeleton took the first one's place. Once the first has had its turn on
+      // screen, the deeper one is there at once: it mounted under the hold mark too, and waited the hold again at
+      // opacity 0, a blank between two skeletons (WebKit, a section switch on a slow network, 2026-10-15).
+      const now = el.querySelector(ROUTE_SKELETON);
+      if (now) {
+        if (now !== skeleton && performance.now() - since >= VT_DONE_MS && now instanceof HTMLElement) now.style.animation = 'none';
+        skeleton = now;
+        return;
+      }
       watch.disconnect();
       release();
       // Arrived before the skeleton showed, or while the crossfade still runs: the page is simply there.

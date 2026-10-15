@@ -2887,6 +2887,24 @@ html[data-fw-theme='dark'] .ch-offline {
     opacity: 0;
     translate: 0 3px;
   }
+  /* A section switch whose page opens with its own large title, or made while the old page was scrolled (the new one
+     opens at its top): the bar's title steps out at the tap, the way it will be on arrival, rather than naming the
+     section and then taking the name away as the page lands (owner, 2026-10-15). */
+  [data-ui='clubhouse']
+    .ch-topbar[data-switch-quiet]
+    :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    opacity: 0;
+    translate: 0 3px;
+  }
+  /* The other way: a switch from a page whose large title is in view to one that keeps its name in the bar shows the
+     new name at the tap, coming in from its side, over the old page as it goes. (The two ids in `:has()` outrank the
+     large-title rule above, which still sees the old page's title; the sheet loads twice, so order can't decide.) */
+  [data-ui='clubhouse']:not([data-phone-hero]):has(#ch-canvas #ch-content)
+    .ch-topbar[data-switching]:not([data-switch-quiet])
+    :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    opacity: 1;
+    translate: 0 0;
+  }
   [data-ui='clubhouse'] .ch-topbar::before {
     position: absolute;
     top: 100%;
