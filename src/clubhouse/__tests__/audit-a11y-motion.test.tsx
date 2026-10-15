@@ -165,7 +165,7 @@ describe('overnight polish 2026-10-15: ink on the green stages', () => {
 describe('overnight polish 2026-10-15: dark mode keeps day-only surfaces whole', () => {
   it('the Stats stage keeps the day palette at night (it turned mint under dark ink)', () => {
     const stats = css('stats.css');
-    const at = stats.indexOf("html[data-fw-theme='dark'] .ch-st[data-canopy] .ch-sgt {");
+    const at = stats.indexOf("html[data-fw-theme='dark'] .ch-st .ch-sgt {");
     expect(at).toBeGreaterThan(-1);
     const rule = stats.slice(at, stats.indexOf('}', at));
     for (const t of ['--ch-green-700: #0f4a2f;', '--ch-green-900: #082b1c;', '--ch-ivory-100: #f4f2ea;', '--ch-ivory-400: #c9c2b1;', '--ch-control-bg:', '--ch-well-bg:']) expect(rule).toContain(t);

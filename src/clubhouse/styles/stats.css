@@ -4786,7 +4786,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 /* The stage is deep green and its ink ivory in both themes (overnight polish, 2026-10-15): drawn from the palette, it
    turned mint with dark ink at night, and the players, axis and summary fell under 2:1. At night it keeps the day's
    palette, as Home's form card does with the --ch-stage-* tokens. */
-html[data-fw-theme='dark'] .ch-st[data-canopy] .ch-sgt {
+html[data-fw-theme='dark'] .ch-st .ch-sgt {
   --ch-ivory-0: #ffffff;
   --ch-ivory-25: #fdfcf8;
   --ch-ivory-50: #f9f7f1;
