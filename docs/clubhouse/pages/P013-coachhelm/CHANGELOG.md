@@ -1,5 +1,13 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-15 — Ask's suggestion cards are plain data
+
+No visible change. The phone's Ask suggestion cards built their second line
+with a function handed from the server to the client Ask Home, which made the
+RSC render throw "Functions cannot be passed directly to Client Components"
+(Sentry JAVASCRIPT-NEXTJS-158). `sub` is now a string with a `{team}` token,
+filled on the client by `askSuggestionSub`; the cards read the same.
+
 ## 2026-10-13 — The History drawer slides on the shared spring, over the shared backdrop
 
 The phone's History drawer slides in and out on the smooth spring instead of the

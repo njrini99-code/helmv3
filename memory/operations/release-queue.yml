@@ -557,10 +557,41 @@ items:
     incident_id: memory/incidents/coachhelm_ai/INC-2026-10-13-recap-style-fallback-logged-as-llm.md
     status: verified
     risk: R1
-    sha: null
-    pr: null
+    sha: 47ec91a71a9ed69f64ce2130f11c4b974fe10d86
+    pr: 2196
     regression_tests:
       - src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts
       - src/lib/coachhelm/v3/llm/__tests__/mark-call-fell-back.test.ts
     queued_for_release: false
     first_seen: '2026-10-13T22:40:04Z'
+  - id: health-probe-stalled-connection-2026-10-15
+    feature_id: observability_supabase
+    root_cause: >-
+      /api/health made a single 2.5s readiness read; on warm instances that read
+      sometimes stalled on the connection to Supabase (the request never reached
+      PostgREST, or reached it seconds late and got a 200), and the probe
+      reported the database degraded (5725d96a).
+    incident_id: memory/incidents/observability_supabase/INC-2026-10-15-health-probe-stalled-connection.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: 2197
+    regression_tests:
+      - src/app/api/health/route.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-14T14:09:29Z'
+  - id: ask-suggestion-function-prop-2026-10-15
+    feature_id: coachhelm_ai
+    root_cause: >-
+      buildAskSuggestions returned sub as a function, and the suggestions are
+      props of the client Ask Home, so the RSC render threw "Functions cannot be
+      passed directly to Client Components" (Sentry JAVASCRIPT-NEXTJS-158).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-10-15-ask-suggestion-function-prop.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: 2197
+    regression_tests:
+      - src/clubhouse/__tests__/coachhelm-ask-shape.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-01T01:29:10Z'

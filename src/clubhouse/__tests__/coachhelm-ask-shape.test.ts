@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
 import {
   ASK_STARTERS,
+  askSuggestionSub,
   buildAskSuggestions,
   conversationTitle,
   filterConversations,
@@ -83,7 +84,17 @@ describe('buildAskSuggestions: only questions the data can answer', () => {
     const s = buildAskSuggestions({ openers, recentCovered: 5, rosterCount: 8 });
     expect(s.map((x) => x.id)).toEqual(['brief', 'strokes', 'trending', 'week']);
     expect(s[0]!.text).toBe('Brief me on Finley');
-    expect(s[0]!.sub('Finley')).toBe('on Finley');
+    expect(askSuggestionSub(s[0]!, 'Finley')).toBe('on Finley');
+    expect(askSuggestionSub(s[1]!, 'Finley')).toBe('where the team loses most');
+  });
+
+  // Sentry JAVASCRIPT-NEXTJS-158: the suggestions cross the server -> client boundary as props of the
+  // Ask Home, and a function in them made the RSC render throw "Functions cannot be passed directly to
+  // Client Components" on /golf/dashboard/coachhelm. Every field must survive a JSON round trip.
+  it('is plain data that can cross the server/client boundary (no functions)', () => {
+    const s = buildAskSuggestions({ openers, recentCovered: 5, rosterCount: 8 });
+    for (const x of s) for (const v of Object.values(x)) expect(typeof v).not.toBe('function');
+    expect(JSON.parse(JSON.stringify(s))).toEqual(s);
   });
 
   it('trending up needs three players with a recent round, as the strokes opener does', () => {

@@ -1,0 +1,28 @@
+schema_version: 1
+replay_id: ask-suggestion-function-prop-2026-10-15
+incident_id: memory/incidents/coachhelm_ai/INC-2026-10-15-ask-suggestion-function-prop.md
+feature_id: coachhelm_ai
+title: >-
+  The Clubhouse CoachHelm Ask page handed its client Home a suggestion whose
+  sub line was a function, so the RSC render threw "Functions cannot be passed
+  directly to Client Components"; sub is now a string with a {team} token.
+bad_version: ecd16beea58429ed3bdfc226643516a3e3dd1fa9
+fixed_version: 136a75dbcd92eb0772573572f65b29e612c79095
+fixture:
+  - source: coachhelm-ask-shape.test.ts
+    target: src/clubhouse/__tests__/coachhelm-ask-shape.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/clubhouse/__tests__/coachhelm-ask-shape.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: missing-export
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic openers and team names; no production rows, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-10-15"
+notes: >-
+  On bad_version askSuggestionSub is not exported and a suggestion carries a
+  function (typeof sub === 'function').
