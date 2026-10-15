@@ -1462,7 +1462,7 @@ describe('Calendar · the loader', () => {
     expect(JSON.stringify(asked.golf_events![0])).toMatch(/requires_rsvp/);
   });
 
-  it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6309), in three rounds: the team, then events with classes and busy time, then every event’s replies together', async () => {
+  it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6309), in two rounds: the team, then events with classes, busy time and the window’s replies (A-03)', async () => {
     const { asked, order } = serve({ ...healthy(), golf_events: { data: [eventRow('e1'), eventRow('e2'), eventRow('e3'), classEventRow('c1', 'k1')] } });
     await load();
     expect(Object.fromEntries(Object.entries(asked).map(([table, calls]) => [table, calls.length]))).toEqual({
@@ -1475,10 +1475,11 @@ describe('Calendar · the loader', () => {
       golf_event_attendance: 1,
     });
     expect(order.slice(0, 3).sort()).toEqual(['golf_team_members', 'golf_team_settings', 'golf_teams']);
-    expect(order.slice(3, 7).sort()).toEqual(['golf_coach_blocked_time', 'golf_events', 'golf_events', 'golf_player_classes']);
-    expect(order[7]).toBe('golf_event_attendance');
-    // The replies of the three team events are asked for together (a class takes none), never one event at a time.
-    expect(asked.golf_event_attendance![0]).toContainEqual(['in', ['event_id', ['e1', 'e2', 'e3']]]);
+    expect(order.slice(3, 8).sort()).toEqual(['golf_coach_blocked_time', 'golf_event_attendance', 'golf_events', 'golf_events', 'golf_player_classes']);
+    // The window's replies are asked for in one read beside the events, through the event they belong to (the team and
+    // the same window), never one event at a time.
+    expect(asked.golf_event_attendance![0]).toContainEqual(['eq', ['golf_events.team_id', expect.any(String)]]);
+    expect(asked.golf_event_attendance![0].some(([m]: [string]) => m === 'in')).toBe(false);
   });
 
   it('62301 a read that fails is logged under calendar and named on the page, never thrown; a write that fails is reported under calendar with its action, after a breadcrumb', async () => {

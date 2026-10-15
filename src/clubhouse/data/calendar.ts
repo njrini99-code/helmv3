@@ -1,7 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { classIdFromDescription, isClassEvent, stripClassTag } from '@/lib/calendar/class-events';
 import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurrence';
@@ -178,6 +177,18 @@ export async function loadCalendar(input: {
   const fromIso = `${addDays(range.from, -1)}T00:00:00Z`;
   const toIso = `${addDays(range.to, 2)}T00:00:00Z`;
 
+  // RSVPs are read beside the events (audit A-03: they waited for the event ids, a third round trip on every load), by
+  // the same team and window through the event they belong to; the rows of events that aren't shown are dropped below.
+  const attendanceRead = fetchAllRowsResult((from, to) =>
+    supabase
+      .from('golf_event_attendance')
+      .select('id, event_id, player_id, status, golf_events!inner(id)')
+      .eq('golf_events.team_id', input.teamId)
+      .gte('golf_events.start_time', fromIso)
+      .lt('golf_events.start_time', toIso)
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
   const [eventsRes, classesRes, busyRes, everRes] = await Promise.all([
     fetchAllRowsResult((from, to) =>
       supabase
@@ -217,17 +228,15 @@ export async function loadCalendar(input: {
   const rsvp = new Map<string, Record<string, ChRsvp>>();
   const invited = new Map<string, string[]>();
   let rsvpError = false;
-  for (const chunk of chunkIds(ids)) {
-    // 200 events x a full roster passes PostgREST's 1,000-row cap: page every chunk.
-    const { data, error } = await fetchAllRowsResult((from, to) =>
-      supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', chunk).order('id', { ascending: true }).range(from, to),
-    );
-    if (error) {
-      chLogServer('calendar', 'attendance', error, 'calendar');
-      rsvpError = true;
-      break;
-    }
-    for (const a of data ?? []) {
+  const shown = new Set(ids);
+  // Paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's 1,000-row cap.
+  const { data: attendance, error: attendanceError } = await attendanceRead;
+  if (attendanceError) {
+    chLogServer('calendar', 'attendance', attendanceError, 'calendar');
+    rsvpError = true;
+  } else {
+    for (const a of attendance ?? []) {
+      if (!shown.has(a.event_id)) continue;
       const r = rsvp.get(a.event_id) ?? {};
       r[a.player_id] = rsvpOf(a.status);
       rsvp.set(a.event_id, r);
