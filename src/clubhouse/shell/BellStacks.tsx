@@ -1,11 +1,11 @@
 'use client';
 
-import { AnimatePresence, animate, m, useMotionValue, useTransform } from 'motion/react';
+import { AnimatePresence, m, useMotionValue, useTransform } from 'motion/react';
 import { BellOff, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, X, type LucideIcon } from 'lucide-react';
-import { memo, useMemo, useRef, useState } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef, useState, type Ref, type RefObject } from 'react';
 import { isUnread, type NotificationCategoryId, type UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { haptic } from '../lib/haptics';
-import { chSpring } from '../lib/motion';
+import { chSpring, chSpringCurve } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from '../ui/Icon';
 import { InlineNotice } from '../ui/Notices';
@@ -38,7 +38,42 @@ const NARROW = 0.05;
  *
  * Every motion is a D-64 spring (smooth for what is anchored, settle for a card arriving), interruptible, and instant
  * with reduced motion or Animations off. No staggers: a fanned stack's cards move as one.
+ *
+ * All of it is transform and opacity on the compositor. The feed is laid out once at its new size and what moved slides
+ * from where it was (useFeedFlip); what leaves is lifted out of the flow and fades (popLayout). Heights and paddings
+ * animated before, and re-laid the feed out on every frame of a fan (a player's fanned stack ran to 3,000px).
  */
+/** What slides when the feed changes: the stacks, and the cards in a fanned stack. */
+const FLIP_PARTS = '.ch-bst-stack, .ch-bst-fan__item';
+
+/**
+ * After each change to the feed, every stack and fanned card whose place moved plays the move from where it was, on the
+ * smooth spring (FLIP: one layout, then WAAPI `translate`). A move still playing is taken from where it is on screen.
+ */
+function useFeedFlip(feed: RefObject<HTMLElement | null>, reduced: boolean): void {
+  const was = useRef(new WeakMap<HTMLElement, number>());
+  const playing = useRef(new WeakMap<HTMLElement, Animation>());
+  useLayoutEffect(() => {
+    const root = feed.current;
+    if (!root) return;
+    const curve = reduced ? null : chSpringCurve('smooth');
+    for (const el of root.querySelectorAll<HTMLElement>(FLIP_PARTS)) {
+      // On its way out (popLayout lifted it out of the flow): it, and what is in it, stay where they are.
+      if (el.closest('[data-motion-pop-id]')) continue;
+      const top = el.offsetTop;
+      const before = was.current.get(el);
+      was.current.set(el, top);
+      if (before === undefined || before === top || !curve) continue;
+      const running = playing.current.get(el);
+      const lift = running ? Number.parseFloat(getComputedStyle(el).translate.split(' ')[1] ?? '0') || 0 : 0;
+      running?.cancel();
+      const from = before - top + lift;
+      if (Math.abs(from) < 0.5) continue;
+      const move = el.animate?.([{ translate: `0 ${from}px` }, { translate: '0 0' }], { duration: curve.ms, easing: curve.linear });
+      if (move) playing.current.set(el, move);
+    }
+  });
+}
 /**
  * Re-rendered only when the feed, its failure or the motion setting (read here) change: opening and closing the drop (the bell's
  * own state) never re-renders the cards, so nothing but transforms happens while it moves. The handlers it is given only
@@ -62,6 +97,8 @@ function BellStacksView({
   const reduced = useChReducedMotion();
   const [chosen, setChosen] = useState<string | null>(null);
   const feed = useMemo(() => stackFeed(items ?? []), [items]);
+  const feedRef = useRef<HTMLDivElement>(null);
+  useFeedFlip(feedRef, reduced);
   const open = openStack(feed, chosen);
   // `chosen`: null until the coach picks (the only New stack then opens by itself), '' once they fold everything.
   const toggle = (key: string) => {
@@ -93,7 +130,7 @@ function BellStacksView({
     );
   }
   return (
-    <div className="ch-bst-feed">
+    <div ref={feedRef} className="ch-bst-feed">
       {feed.fresh.length === 0 && (
         <m.div className="ch-bst-empty" data-ch-code="CH-1302" initial={reduced ? false : { opacity: 0, transform: 'translate(0px, -8px)' }} animate={{ opacity: 1, transform: 'translate(0px, 0px)' }} transition={chSpring('settle', reduced)}>
           <span className="ch-bst-empty__ic">
@@ -103,13 +140,13 @@ function BellStacksView({
           <span>Messages, events, reminders and CoachHelm updates land here first.</span>
         </m.div>
       )}
-      {/* A stack cleared to nothing closes its gap on the spring, so the stacks under it rise instead of jumping. */}
-      <AnimatePresence initial={false}>
+      {/* A stack cleared to nothing fades where it was, out of the flow, and the stacks under it rise into its place. */}
+      <AnimatePresence initial={false} mode="popLayout">
         {feed.fresh.map((s) => (
           <Stack key={s.key} stack={s} open={open === s.key} reduced={reduced} onToggle={() => toggle(s.key)} onOpen={onOpen} onClear={onClear} />
         ))}
       </AnimatePresence>
-      <AnimatePresence initial={false}>
+      <AnimatePresence initial={false} mode="popLayout">
         {feed.earlier && <Stack key="earlier" stack={feed.earlier} open={open === feed.earlier.key} reduced={reduced} onToggle={() => toggle('earlier')} onOpen={onOpen} onClear={onClear} />}
       </AnimatePresence>
     </div>
@@ -117,6 +154,7 @@ function BellStacksView({
 }
 
 function Stack({
+  ref,
   stack,
   open,
   reduced,
@@ -124,6 +162,8 @@ function Stack({
   onOpen,
   onClear,
 }: {
+  /** Given by AnimatePresence (popLayout), to lift a cleared stack out of the flow as it fades. */
+  ref?: Ref<HTMLElement>;
   stack: ChNotificationStack;
   open: boolean;
   reduced: boolean;
@@ -141,11 +181,12 @@ function Stack({
   if (!top) return null;
   return (
     <m.section
+      ref={ref}
       className="ch-bst-stack"
       aria-label={stack.kind === 'earlier' ? 'Earlier notifications' : `${label}, ${stack.unread} new`}
       initial={reduced ? false : { opacity: 0, transform: 'translate(0px, -12px)' }}
       animate={{ opacity: 1, transform: 'translate(0px, 0px)' }}
-      exit={{ height: 0, marginBottom: 0, opacity: 0 }}
+      exit={{ opacity: 0 }}
       transition={smooth}
     >
       {/* Each card names its kind, so a New stack's head is only its tools while fanned; Earlier is named. */}
@@ -173,7 +214,8 @@ function Stack({
           )}
         </AnimatePresence>
       </div>
-      <m.div className="ch-bst-pile" initial={false} animate={{ paddingBottom: folded ? PEEK * Math.min(rest.length, 2) : 0 }} transition={smooth}>
+      {/* Room for the folded edges: set at once, the feed's slide (useFeedFlip) carries the stacks below. */}
+      <div className="ch-bst-pile" style={{ paddingBottom: folded ? PEEK * Math.min(rest.length, 2) : 0 }}>
         <AnimatePresence initial={false} mode="popLayout">
           <m.div
             key={notificationKey(top)}
@@ -213,9 +255,11 @@ function Stack({
               />
             ))}
         </AnimatePresence>
-        <AnimatePresence initial={false}>
+        {/* The fan takes its full height at once and its cards slide out from under the top card; folding, it is lifted out
+            of the flow while they slide back, and the stacks below rise (useFeedFlip). */}
+        <AnimatePresence initial={false} mode="popLayout">
           {open && multi && (
-            <m.div key="fan" className="ch-bst-fan" initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} transition={smooth}>
+            <m.div key="fan" className="ch-bst-fan">
               <m.div
                 className="ch-bst-fan__cards"
                 // The fanned cards slide down out from under the top card as one, and fold back up under it.
@@ -224,15 +268,9 @@ function Stack({
                 exit={{ transform: `translate(0px, -36px) scale(${1 - NARROW})`, opacity: 0 }}
                 transition={smooth}
               >
-                <AnimatePresence initial={false}>
+                <AnimatePresence initial={false} mode="popLayout">
                   {rest.map((it) => (
-                    <m.div
-                      key={notificationKey(it)}
-                      className="ch-bst-fan__item"
-                      initial={false}
-                      exit={{ height: 0, marginTop: 0, opacity: 0 }}
-                      transition={smooth}
-                    >
+                    <m.div key={notificationKey(it)} className="ch-bst-fan__item" initial={false} exit={{ opacity: 0 }} transition={smooth}>
                       <Card item={it} reduced={reduced} swipe={swipe} onTap={() => onOpen(it)} onClear={() => onClear([it])} />
                     </m.div>
                   ))}
@@ -241,7 +279,7 @@ function Stack({
             </m.div>
           )}
         </AnimatePresence>
-      </m.div>
+      </div>
     </m.section>
   );
 }
@@ -274,12 +312,13 @@ function Card({
   const reveal = useTransform(x, [-140, -40, 0], [1, 0.35, 0]);
   const dragged = useRef(false);
   const self = useRef<HTMLButtonElement>(null);
+  const clearLabel = useRef<HTMLSpanElement>(null);
   const unread = isUnread(item);
   const canSwipe = swipe && unread && !reduced;
   return (
     <div className="ch-bst-cardwrap">
       {canSwipe && (
-        <m.span className="ch-bst-clear" style={{ opacity: reveal }} aria-hidden="true">
+        <m.span ref={clearLabel} className="ch-bst-clear" style={{ opacity: reveal }} aria-hidden="true">
           Mark read
         </m.span>
       )}
@@ -301,11 +340,25 @@ function Card({
           dragged.current = true;
         }}
         onDragEnd={(_, info) => {
-          const width = self.current?.offsetWidth ?? 360;
+          const el = self.current;
+          const width = el?.offsetWidth ?? 360;
+          const from = x.get();
+          // The drag follows the finger; the release plays on the compositor (WAAPI `translate`, on top of where the drag
+          // left it), at the speed it was let go, not a Motion value stepped from the main thread.
           if (info.offset.x < -width * CLEAR_AT || info.velocity.x < -THROW) {
             haptic('select');
-            void animate(x, -width - 40, chSpring('smooth', false, info.velocity.x)).then(onClear);
-          } else void animate(x, 0, chSpring('settle', false, info.velocity.x));
+            const to = -width - 40;
+            const away = chSpringCurve('smooth', { velocity: info.velocity.x / (to - from || -1) });
+            const leave = el?.animate?.([{ translate: '0 0' }, { translate: `${to - from}px 0` }], { duration: away.ms, easing: away.linear, fill: 'forwards' });
+            if (leave) void leave.finished.then(onClear, () => {});
+            else onClear();
+          } else if (from) {
+            const back = chSpringCurve('settle', { velocity: info.velocity.x / -from });
+            const shown = reveal.get();
+            x.set(0);
+            el?.animate?.([{ translate: `${from}px 0` }, { translate: '0 0' }], { duration: back.ms, easing: back.linear });
+            clearLabel.current?.animate?.([{ opacity: shown }, { opacity: 0 }], { duration: back.ms, easing: back.linear });
+          }
           window.setTimeout(() => {
             dragged.current = false;
           }, 0);

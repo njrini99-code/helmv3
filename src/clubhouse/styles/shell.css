@@ -3381,11 +3381,14 @@ html[data-fw-theme='dark'] .ch-offline {
     content: '';
   }
 
+  /* Positioned: a stack or card on its way out is lifted out of the flow (BellStacks' popLayout) and placed against the
+     part that measured it, and the feed's slides read places from it (offsetTop). */
   .ch-bst-feed {
+    position: relative;
     display: flex;
     flex-direction: column;
   }
-  /* A margin, not the column's gap, so a stack that leaves can take its space with it. */
+  /* A margin, not the column's gap, so a stack lifted out on its way out leaves no gap behind. */
   .ch-bst-stack {
     margin-bottom: 14px;
   }
@@ -3547,6 +3550,7 @@ html[data-fw-theme='dark'] .ch-offline {
     overflow: hidden;
   }
   .ch-bst-fan__cards {
+    position: relative;
     transform-origin: 50% 0;
   }
   .ch-bst-fan__item {
