@@ -530,6 +530,9 @@ export function Bell() {
                 tabIndex={-1}
                 className="ch-bst"
                 data-ui="clubhouse"
+                // Portaled out of the Clubhouse root, so it carries the root's motion setting itself (the cards' CSS press
+                // and the motion tokens read it).
+                data-motion={reduced ? 'off' : undefined}
                 initial={false}
                 variants={sheetMotion}
                 animate={moving ? 'shown' : 'gone'}
