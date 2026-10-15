@@ -49,8 +49,13 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/observability-supabase.md`
 - **Code:** `src/app/admin/database/**`, `src/app/api/cron/db-health-sampler/**`, `src/app/api/cron/db-stat-delta/**`, `src/app/api/cron/db-observability-prune/**`, `src/app/admin/database/log-evidence-actions.ts`, `src/lib/observability/supabase/**` … and 19 more in the registry
 - **Telemetry:** none. This module IS the observability layer for Postgres/Supabase (error envelope, health/statement/platform samplers, alert policy, advisor and log-evidence integrations) — instrumenting itself would be circular, the same reasoning observability_sentry above states for the Sentry-side layer.
+<<<<<<< HEAD
 - **Incidents:** `memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md`, `memory/incidents/observability_supabase/INC-2026-10-15-health-probe-stalled-connection.md`
 - **Repair units:** `lock-incidents-active-window-2026-10-13` (verified), `health-probe-stalled-connection-2026-10-15` (verified)
+=======
+- **Incidents:** `memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md`
+- **Repair units:** `lock-incidents-active-window-2026-10-13` (released)
+>>>>>>> origin/main
 - **History:** `memory/ledgers/changes/observability_supabase.md`
 
 ## `coachhelm_ai`
@@ -60,8 +65,13 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/coachhelm-ai.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/components/golf/coachhelm/**`, `src/app/api/coachhelm/**`, `src/app/api/cron/coachhelm-calibration/**`, `src/app/api/cron/coachhelm-insight-lifecycle/**` … and 23 more in the registry
 - **Telemetry:** `coachhelm_ai_engine` (coachhelm, high), `insights_management` (coachhelm, med), `coachhelm_analytics` (coachhelm, low), `round_review_ai` (coachhelm, med)
+<<<<<<< HEAD
 - **Incidents:** `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md`, `memory/incidents/coachhelm_ai/INC-2026-10-15-ask-suggestion-function-prop.md`
 - **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging), `validation-rounds-prefetch-2026-09-26` (verified), `safety-net-coverage-prefetch-2026-09-26` (verified), `calibration-load-dedupe-2026-09-27` (verified), `exposure-returned-transient-retry-2026-09-27` (verified), `roster-cohort-batch-2026-09-28` (verified), `roster-exposure-batch-2026-09-28` (verified), `best-effort-budget-abort-2026-09-30` (verified_in_production), `pattern-miner-starvation-info-2026-10-01` (verified), `safety-net-wake-reads-batched-2026-10-03` (verified), `ask-suggestion-function-prop-2026-10-15` (verified)
+=======
+- **Incidents:** `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md`, `memory/incidents/coachhelm_ai/INC-2026-10-13-recap-style-fallback-logged-as-llm.md`
+- **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging), `validation-rounds-prefetch-2026-09-26` (verified), `safety-net-coverage-prefetch-2026-09-26` (verified), `calibration-load-dedupe-2026-09-27` (verified), `exposure-returned-transient-retry-2026-09-27` (verified), `roster-cohort-batch-2026-09-28` (verified), `roster-exposure-batch-2026-09-28` (verified), `best-effort-budget-abort-2026-09-30` (verified_in_production), `pattern-miner-starvation-info-2026-10-01` (verified), `safety-net-wake-reads-batched-2026-10-03` (verified), `recap-style-fallback-call-log-2026-10-13` (verified)
+>>>>>>> origin/main
 - **History:** `memory/ledgers/changes/coachhelm_ai.md`, `memory/ledgers/tests/coachhelm_ai.md`
 
 ## `baseball_core`
@@ -72,7 +82,7 @@ is a second thing to keep true.
 - **Code:** `src/app/baseball/**`, `src/components/baseball/**`, `src/app/api/baseball/**`, `src/app/baseball/actions/**`, `src/lib/baseball/**`, `src/lib/recruiting/**` … and 4 more in the registry
 - **Telemetry:** `baseball_academics` (baseballhelm, low), `baseball_announcements` (baseballhelm, low), `baseball_auth` (baseballhelm, med), `baseball_calendar` (baseballhelm, med), `baseball_camps` (baseballhelm, low), `baseball_classes` (baseballhelm, low), `baseball_coach_command_center` (baseballhelm, low), `baseball_coachhelm` (baseballhelm, high), `baseball_command_center` (baseballhelm, high), `baseball_compare` (baseballhelm, low), `baseball_decision_room` (baseballhelm, low), `baseball_demo_access` (baseballhelm, med), `baseball_demo_tracking` (baseballhelm, low), `baseball_dev_plans` (baseballhelm, low), `baseball_discover` (baseballhelm, low), `baseball_documents` (baseballhelm, low), `baseball_games` (baseballhelm, high), `baseball_import` (baseballhelm, high), `baseball_insights` (baseballhelm, low), `baseball_interests` (baseballhelm, low), `baseball_lift_onboarding` (baseballhelm, low), `baseball_lifting` (baseballhelm, high), `baseball_lineups` (baseballhelm, low), `baseball_messages` (baseballhelm, high), `baseball_notes` (baseballhelm, low), `baseball_notifications` (baseballhelm, low), `baseball_onboarding` (baseballhelm, med), `baseball_philosophy` (baseballhelm, low), `baseball_player_actions` (baseballhelm, low), `baseball_player_peek` (baseballhelm, low), `baseball_player_today` (baseballhelm, high), `baseball_postgame` (baseballhelm, low), `baseball_practice` (baseballhelm, high), `baseball_profile` (baseballhelm, low), `baseball_recruiting` (baseballhelm, low), `baseball_recruiting_philosophy` (baseballhelm, low), `baseball_roster` (baseballhelm, low), `baseball_scout_packet` (baseballhelm, low), `baseball_settings` (baseballhelm, med), `baseball_signals` (baseballhelm, high), `baseball_staff` (baseballhelm, low), `baseball_stats` (baseballhelm, high), `baseball_tasks` (baseballhelm, low), `baseball_teams` (baseballhelm, low), `baseball_timeline` (baseballhelm, low), `baseball_travel` (baseballhelm, low), `baseball_video` (baseballhelm, low), `baseball_watchlist` (baseballhelm, low)
 - **Incidents:** `memory/incidents/baseball_core/INC-2026-10-13-use-server-object-export-breaks-coach-onboarding.md`
-- **Repair units:** `use-server-object-export-2026-10-13` (verified)
+- **Repair units:** `use-server-object-export-2026-10-13` (released)
 - **History:** no ledger yet
 
 ## `golf_round_lifecycle`
@@ -171,7 +181,7 @@ is a second thing to keep true.
 - **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/components/golf/announcements/**` … and 43 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md`
-- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified), `last-read-deadline-abort-2026-10-13` (verified)
+- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified), `last-read-deadline-abort-2026-10-13` (released)
 - **History:** `memory/ledgers/changes/team_communications.md`, `memory/ledgers/tests/team_communications.md`
 
 ## `team_operations`
