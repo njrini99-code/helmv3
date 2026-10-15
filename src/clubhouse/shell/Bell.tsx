@@ -306,7 +306,8 @@ export function Bell() {
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
     document.addEventListener('focusin', onFocusIn);
-    const frame = requestAnimationFrame(() => panel.current?.focus({ preventScroll: true }));
+    // The phone's drop takes focus once it is moving (below): until then it is still hidden, and focus would not land.
+    const frame = phone ? 0 : requestAnimationFrame(() => panel.current?.focus({ preventScroll: true }));
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener('mousedown', onDown);
@@ -314,6 +315,12 @@ export function Bell() {
       document.removeEventListener('focusin', onFocusIn);
     };
   }, [open, close, phone]);
+  // The phone's drop is shown a painted frame after it opens (`moving`, lib/use-painted.ts); focus goes in once it is.
+  useEffect(() => {
+    if (!phone || !open || !moving) return;
+    const frame = requestAnimationFrame(() => panel.current?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [phone, open, moving]);
 
   const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: "Couldn't mark your notifications read", code: 'CH-1001' });
 
