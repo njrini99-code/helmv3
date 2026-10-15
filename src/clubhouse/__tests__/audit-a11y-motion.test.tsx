@@ -146,3 +146,18 @@ describe('review 2026-10-15: a section change fades through, and a faded bar hid
     expect(shell).toMatch(/\.ch-topbar \.ch-pbar__right \{\s*transition:\s*opacity var\(--ch-dur-quick\) var\(--ch-ease\),\s*visibility 0s;/);
   });
 });
+
+describe('overnight polish 2026-10-15: ink on the green stages', () => {
+  it('the Home form card label outranks the Ledger h2 ink (forest on forest was 1.2:1 in light)', () => {
+    // main[data-canopy] h2 is (0,2,2); the card's own label must be more specific.
+    expect(css('home.css')).toMatch(/\[data-ui='clubhouse'\] \.ch-h-form \.ch-h-form__lead h2 \{[^}]*color: var\(--ch-stage-ink-soft\);/);
+  });
+  it('the calendar plates are green in both themes, so their ink never follows --ch-ivory-50 (dark in dark mode)', () => {
+    const cal = css('calendar.css');
+    for (const sel of ['.ch-in__today {', "main[data-canopy] .ch-in__today h2.ch-in__title {", '.ch-in__plate {', "main[data-canopy] .ch-in__plate h2.ch-in__title {", '.ch-in__chip {']) {
+      const at = cal.indexOf(sel);
+      expect(at, sel).toBeGreaterThan(-1);
+      expect(cal.slice(at, cal.indexOf('}', at)), sel).not.toMatch(/color: var\(--ch-ivory-50\)/);
+    }
+  });
+});

@@ -154,7 +154,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
                 {data.cacheError && (
                   <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." covered={covered} />
                 )}
-                <Hero figure={data.figures.find((f) => f.label === 'Scoring average')} />
+                <Hero figures={data.figures} />
                 {/* The trend reads the hero, so it sits right under it; it crashes on its own. */}
                 <SectionBoundary surface="stats.team.trend" label="Scoring trend" code="CH-4205">
                   <Trend data={data} />
@@ -190,7 +190,9 @@ const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${f.value.toF
  * The one hero figure: the scoring average, its change and what the change is against ("vs. previous 10"). A window with
  * no comparison keeps the line, empty and hidden from assistive technology, so the trend below never moves.
  */
-function Hero({ figure: f }: { figure: ChFigure | undefined }) {
+/** Finds its own figure, so a malformed list crashes inside the figures' boundary, not the phone page (CH-4204). */
+function Hero({ figures }: { figures: readonly ChFigure[] }) {
+  const f = figures.find((x) => x.label === 'Scoring average');
   if (!f) return null;
   const none = f.delta == null;
   // What the average is against par a round (the loader's, per 18 holes), over the change: no bare number (2026-10-07).

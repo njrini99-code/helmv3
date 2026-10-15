@@ -258,7 +258,9 @@ async function main() {
     try {
     for (const [page, path, open] of pages) {
       const tab = await ctx.newPage();
-      const response = await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
+      let response = await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
+      // A dev server's first render of a route can fail while it compiles (a 500 that a reload clears): one retry.
+      if (!response?.ok()) response = await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
       if (!response?.ok()) throw new Error(`Preview unavailable: ${path} (${response?.status() ?? 'no response'}). Use next dev; production previews return 404.`);
       const opener = open?.[width < 600 ? 'phone' : 'wide'];
       if (open && !opener) {

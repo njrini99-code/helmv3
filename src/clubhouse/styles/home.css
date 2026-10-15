@@ -3718,7 +3718,8 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   gap: 6px;
   min-width: 0;
 }
-.ch-h-form .ch-h-form__lead h2 {
+/* Three deep so the Ledger's forest ink on every h2 (shell.css, main[data-canopy] h2) can't put green on the green stage. */
+[data-ui='clubhouse'] .ch-h-form .ch-h-form__lead h2 {
   margin: 0;
   font: 600 14px/1.2 var(--ch-font-sans);
   color: var(--ch-stage-ink-soft);
