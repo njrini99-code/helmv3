@@ -857,8 +857,9 @@ export function Bubble({
       e.preventDefault();
       items[e.key === "Home" ? 0 : items.length - 1]?.focus();
     } else if (e.key === "Tab") {
-      // As the shared Menu does: Tab closes the bar and moves on from where it is.
-      closeBar(false);
+      // As the shared Menu does (A-27): focus goes back to React first, so Tab or Shift+Tab carries on from there in
+      // the thread's order (Shift+Tab landed on the filter at the top of the page).
+      closeBar(true);
     }
   };
   if (m.deleted) {

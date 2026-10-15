@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -361,6 +361,19 @@ describe('Messages · runtime audit 2026-10-14 (WebKit)', () => {
     await user.keyboard('{Escape}');
     expect(document.activeElement).toBe(react);
     expect(react.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('A-26 Tab out of the reaction bar puts focus back on React before it closes, so Tab carries on from there', async () => {
+    const user = userEvent.setup();
+    show();
+    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    const react = screen.getByRole('button', { name: 'React' });
+    react.focus();
+    await user.keyboard('{Enter}');
+    const bar = await screen.findByRole('menu', { name: 'Reactions' });
+    await waitFor(() => expect(document.activeElement).toBe(within(bar).getAllByRole('menuitem')[0]));
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(react);
   });
 
   it('A-26 a reaction picked from the keyboard saves and leaves focus on React, not on <body>', async () => {
