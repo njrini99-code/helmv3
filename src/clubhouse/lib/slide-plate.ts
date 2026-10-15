@@ -1,7 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useRef, type RefObject } from 'react';
-import { chSpringCurve, type ChSpringKind } from './motion';
+import { CH_DUR, CH_EASE, chSpringCurve, type ChSpringKind } from './motion';
 
 /**
  * A selected plate that slides from the option it left to the one chosen (a segmented chip, the strip's plate, a tab
@@ -16,7 +16,7 @@ export function useSlidePlate(
   container: RefObject<HTMLElement | null>,
   plate: string,
   key: string | null,
-  { reduced = false, still, kind = 'settle' }: { reduced?: boolean; still?: () => boolean; kind?: ChSpringKind } = {},
+  { reduced = false, still, kind = 'settle', tween }: { reduced?: boolean; still?: () => boolean; kind?: ChSpringKind; tween?: keyof typeof CH_DUR } = {},
 ): void {
   const last = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   useLayoutEffect(() => {
@@ -31,7 +31,8 @@ export function useSlidePlate(
     last.current = to;
     if (!from || reduced || still?.() || !to.w || !to.h) return;
     if (from.x === to.x && from.y === to.y && from.w === to.w && from.h === to.h) return;
-    const { ms, linear } = chSpringCurve(kind);
+    // A tween where the plate's design gives one (CH_DUR on CH_EASE), otherwise the spring.
+    const { ms, linear } = tween ? { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})` } : chSpringCurve(kind);
     el.animate?.(
       [
         { transformOrigin: 'left top', transform: `translate(${from.x - to.x}px, ${from.y - to.y}px) scale(${from.w / to.w}, ${from.h / to.h})` },
