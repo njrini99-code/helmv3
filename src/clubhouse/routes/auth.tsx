@@ -25,10 +25,14 @@ export function ClubhouseSignInRoute() {
 }
 
 export async function WelcomeLoader() {
-  const load = await loadWelcome();
+  const [load, phone] = await Promise.all([loadWelcome(), phoneHint()]);
   // CH-15903: a session the auth server has ruled invalid goes back to sign in, as the current page does.
   if (load.kind === 'signedOut') redirect('/golf/login');
-  return <Welcome data={load.data} />;
+  return (
+    <ChPhoneHintProvider phone={phone}>
+      <Welcome data={load.data} />
+    </ChPhoneHintProvider>
+  );
 }
 
 /**
@@ -37,14 +41,15 @@ export async function WelcomeLoader() {
  * sign-in never shows an empty page, and the greeting streams in over a course
  * that has already started moving.
  */
-export async function ClubhouseWelcomeRoute() {
+export function ClubhouseWelcomeRoute() {
+  // Synchronous, as the sign-in route is (F25): awaiting the phone hint here held the whole route, so the step from
+  // sign-in showed /golf's dashboard skeleton first (audit A-02). The hint is read beside the identity, inside the
+  // Suspense boundary, and only Welcome (which forks on it) is given it; the stage doesn't read it.
   return (
-    <ChPhoneHintProvider phone={await phoneHint()}>
-      <WelcomeStage>
-        <Suspense fallback={null}>
-          <WelcomeLoader />
-        </Suspense>
-      </WelcomeStage>
-    </ChPhoneHintProvider>
+    <WelcomeStage>
+      <Suspense fallback={null}>
+        <WelcomeLoader />
+      </Suspense>
+    </WelcomeStage>
   );
 }

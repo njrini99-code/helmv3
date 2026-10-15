@@ -43,7 +43,7 @@ vi.mock('next/headers', () => ({
 }));
 
 import { loadWelcome } from '../data/welcome';
-import { ClubhouseSignInRoute, WelcomeLoader } from '../routes/auth';
+import { ClubhouseSignInRoute, ClubhouseWelcomeRoute, WelcomeLoader } from '../routes/auth';
 
 const item = (id: string, read: string | null = null) => ({ id, source: 'notifications', category: 'messages', title: `Item ${id}`, body: null, action_url: null, created_at: '2025-10-13T10:00:00Z', read_at: read });
 
@@ -64,6 +64,12 @@ describe('the sign in route reads nothing from the request', () => {
   it('renders synchronously, without a cookie or header read', () => {
     request.reads = 0;
     const out = ClubhouseSignInRoute();
+    expect(out).not.toBeInstanceOf(Promise);
+    expect(request.reads).toBe(0);
+  });
+  it('A-02 the welcome route too: its frame renders at once and the hint is read inside the Suspense boundary', () => {
+    request.reads = 0;
+    const out = ClubhouseWelcomeRoute();
     expect(out).not.toBeInstanceOf(Promise);
     expect(request.reads).toBe(0);
   });
