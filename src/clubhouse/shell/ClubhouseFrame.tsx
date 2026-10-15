@@ -1,7 +1,7 @@
 'use client';
 
 import { LazyMotion } from 'motion/react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useChPhone } from '../lib/use-phone';
 import { useChDynamicType } from '../lib/dynamic-type';
 import type { GolfUserData } from '@/contexts/golf-user-context';
@@ -36,6 +36,27 @@ import '../styles/ui.css';
 import '../styles/shell.css';
 import '../styles/controls.css';
 import { useCanvasSmoothScroll } from '../lib/smooth-scroll';
+
+/** Set under ChMotionFeatures, so a frame rendered inside it doesn't render a second one. */
+const ChMotionScope = createContext(false);
+
+/**
+ * The animation features (domMax, for the cards' drag and the toasts' layout) for every `m` component in Clubhouse,
+ * loaded in their own chunk after first paint (D-25) and retried when that load fails (A-01).
+ *
+ * Render it where a navigation doesn't render it again (ClubhouseShell, above the part that reads the address).
+ * LazyMotion gives its context a new object each time it renders, and every `m` component under it renders again with
+ * it, memo or not. Inside the frame, which renders on every section switch, that re-rendered the notification drop's
+ * swipeable cards several times a switch, and each one had Motion measure the page as it arrived: 15 to 25ms more a
+ * switch for a player with unread notifications (WebKit, production build, 2026-10-15).
+ */
+export function ChMotionFeatures({ children }: { children: ReactNode }) {
+  return (
+    <LazyMotion features={chLoadMotionFeatures} strict>
+      <ChMotionScope.Provider value>{children}</ChMotionScope.Provider>
+    </LazyMotion>
+  );
+}
 
 /**
  * The Clubhouse frame, UI only: a green frame with an inset ivory canvas
@@ -84,62 +105,61 @@ export function ClubhouseFrame({
   // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
   useEffect(() => liftHandoffCurtain(), []);
 
-  return (
+  // The live shell renders the animation features above the frame (ChMotionFeatures, below); a preview renders the frame alone.
+  const scoped = useContext(ChMotionScope);
+  const frame = (
     <ClubhouseMarker role={role}>
-      {/* The animation features (domMax, for layoutId slides) load in their own chunk, after first paint (D-25), retried
-          when that load fails (A-01). */}
-      <LazyMotion features={chLoadMotionFeatures} strict>
-        <LightProvider course={shell.course ?? null} timeZone={shell.timezone ?? null} at={lightAt}>
-          <PhoneChromeProvider>
-            <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>
-              {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-              <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
-                <ToastProvider scope={userData.teamId ?? ''}>
-                  <CrumbProvider>
-                    <AskSheetProvider pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
-                      <DockProvider>
-                        {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
-                        <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
-                          Skip to content
-                        </a>
-                        <div className="ch-app">
-                          <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
-                          <div className="ch-canvas" id="ch-canvas">
-                            <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
-                            <OfflineBanner />
-                            {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
-                            <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
-                              {rebuilt ? (
-                                children
-                              ) : (
-                                <>
-                                  <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />
-                                  {/* An old address Clubhouse moved redirects from inside its segment, and that redirect fires
-                                      only once the segment renders: dropped, the page stood on "not rebuilt" (2026-10-14). */}
-                                  {isAliased(pathname) && <div hidden>{children}</div>}
-                                </>
-                              )}
-                            </RouteFrame>
-                            {/* The phone dock's height, so a page's last row clears it (P001-C1). */}
-                            <div className="ch-dock-spacer" aria-hidden="true" />
-                          </div>
+      <LightProvider course={shell.course ?? null} timeZone={shell.timezone ?? null} at={lightAt}>
+        <PhoneChromeProvider>
+          <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>
+            {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
+            <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
+              <ToastProvider scope={userData.teamId ?? ''}>
+                <CrumbProvider>
+                  <AskSheetProvider pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
+                    <DockProvider>
+                      {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
+                      <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
+                        Skip to content
+                      </a>
+                      <div className="ch-app">
+                        <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
+                        <div className="ch-canvas" id="ch-canvas">
+                          <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
+                          <OfflineBanner />
+                          {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
+                          <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
+                            {rebuilt ? (
+                              children
+                            ) : (
+                              <>
+                                <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />
+                                {/* An old address Clubhouse moved redirects from inside its segment, and that redirect fires
+                                    only once the segment renders: dropped, the page stood on "not rebuilt" (2026-10-14). */}
+                                {isAliased(pathname) && <div hidden>{children}</div>}
+                              </>
+                            )}
+                          </RouteFrame>
+                          {/* The phone dock's height, so a page's last row clears it (P001-C1). */}
+                          <div className="ch-dock-spacer" aria-hidden="true" />
                         </div>
-                        <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
-                        <SectionStrip pathname={pathname} role={role} user={{ name: userData.name }} />
-                        <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
-                        {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
-                        <PullToRefresh pathname={pathname} />
-                      </DockProvider>
-                    </AskSheetProvider>
-                  </CrumbProvider>
-                </ToastProvider>
-              </FrameRoot>
-            </SectionSwitchProvider>
-          </PhoneChromeProvider>
-        </LightProvider>
-      </LazyMotion>
+                      </div>
+                      <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
+                      <SectionStrip pathname={pathname} role={role} user={{ name: userData.name }} />
+                      <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
+                      {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
+                      <PullToRefresh pathname={pathname} />
+                    </DockProvider>
+                  </AskSheetProvider>
+                </CrumbProvider>
+              </ToastProvider>
+            </FrameRoot>
+          </SectionSwitchProvider>
+        </PhoneChromeProvider>
+      </LightProvider>
     </ClubhouseMarker>
   );
+  return scoped ? frame : <ChMotionFeatures>{frame}</ChMotionFeatures>;
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */

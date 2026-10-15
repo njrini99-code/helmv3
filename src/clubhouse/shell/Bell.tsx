@@ -491,9 +491,12 @@ export function Bell() {
       </button>
       {hydrated &&
         createPortal(
-          <AnimatePresence>
+          <>
             {/* The phone drop stays rendered, hidden and inert, so opening it only moves it: a first frame that has to
-                render every card is the stutter it had (an 85ms frame at 4x CPU, 2026-10-12). */}
+                render every card is the stutter it had (an 85ms frame at 4x CPU, 2026-10-12). It never leaves, so it sits
+                outside AnimatePresence: that hands its children a new presence context each time the bell renders (every
+                section switch), and the swipeable cards under it rendered again with it, each having Motion measure the
+                arriving page (2026-10-15). */}
             {phone && (
               <m.div
                 key="veil"
@@ -561,31 +564,33 @@ export function Bell() {
                 <div className="ch-bst__grab" aria-hidden="true" onPointerDown={onSheetDrag} />
               </m.div>
             )}
-            {open && !phone && (
-              <m.div
-                key="popover"
-                ref={panel}
-                id={id}
-                role="dialog"
-                aria-label="Notifications"
-                tabIndex={-1}
-                className="ch-bellp ch-popover"
-                data-ui="clubhouse"
-                style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: W }}
-                {...(reduced ? {} : CH_POP)}
-              >
-                <div className="ch-bellp__head">
-                  <b>
-                    Notifications
-                    {shownUnread > 0 && <span className="ch-num"> · {shownUnread} unread</span>}
-                  </b>
-                  {filterMenu}
-                  {!listFailed && markAllButton}
-                </div>
-                {body()}
-              </m.div>
-            )}
-          </AnimatePresence>,
+            <AnimatePresence>
+              {open && !phone && (
+                <m.div
+                  key="popover"
+                  ref={panel}
+                  id={id}
+                  role="dialog"
+                  aria-label="Notifications"
+                  tabIndex={-1}
+                  className="ch-bellp ch-popover"
+                  data-ui="clubhouse"
+                  style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: W }}
+                  {...(reduced ? {} : CH_POP)}
+                >
+                  <div className="ch-bellp__head">
+                    <b>
+                      Notifications
+                      {shownUnread > 0 && <span className="ch-num"> · {shownUnread} unread</span>}
+                    </b>
+                    {filterMenu}
+                    {!listFailed && markAllButton}
+                  </div>
+                  {body()}
+                </m.div>
+              )}
+            </AnimatePresence>
+          </>,
           document.querySelector('.ch-root') ?? document.body,
         )}
     </>
