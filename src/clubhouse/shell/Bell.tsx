@@ -118,6 +118,12 @@ export function Bell() {
   const [rested, setRested] = useState(true);
   const wantedRef = useRef(wanted);
   wantedRef.current = wanted;
+  // A finger that lands on the bell and leaves without opening it (a pull to refresh begun on the bar): the drop rests
+  // again, rather than staying laid out until the bell is next opened and closed.
+  const openRef = useRef(open);
+  openRef.current = open;
+  const unprime = useRef(0);
+  useEffect(() => () => window.clearTimeout(unprime.current), []);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const [items, setItems] = useState<UnifiedNotificationItem[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -481,6 +487,13 @@ export function Bell() {
           if (open) return;
           setRested(false);
           setPrimed(true);
+          window.clearTimeout(unprime.current);
+          // Cleared when the bell opens.
+          unprime.current = window.setTimeout(() => {
+            if (openRef.current) return;
+            setPrimed(false);
+            setRested(true);
+          }, 1500);
         }}
         onClick={() => {
           // CH-1705: a tick as the bell opens; CH-1612: on the phone its sheet rises over a scrim; CH-1805: it is a dialog.
@@ -488,6 +501,7 @@ export function Bell() {
           if (open) return close(false);
           chTrail('bell open');
           sw?.setOpen(false);
+          window.clearTimeout(unprime.current);
           setRested(false);
           setOpen(true);
         }}

@@ -41,7 +41,7 @@ import { useCanvasSmoothScroll } from '../lib/smooth-scroll';
 const ChMotionScope = createContext(false);
 
 /**
- * The animation features (domMax, for the cards' drag and the toasts' layout) for every `m` component in Clubhouse,
+ * The animation features (domMax, for drag and layout: the calendar's drag, the toasts' layout) for every `m` component,
  * loaded in their own chunk after first paint (D-25) and retried when that load fails (A-01).
  *
  * Render it where a navigation doesn't render it again (ClubhouseShell, above the part that reads the address).

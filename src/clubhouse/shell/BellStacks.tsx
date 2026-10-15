@@ -1,8 +1,8 @@
 'use client';
 
-import { AnimatePresence, m, useMotionValue, useTransform } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { BellOff, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, X, type LucideIcon } from 'lucide-react';
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type Ref, type RefObject } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type Ref, type RefObject } from 'react';
 import { isUnread, type NotificationCategoryId, type UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { haptic } from '../lib/haptics';
 import { chSpring, chSpringCurve } from '../lib/motion';
@@ -300,6 +300,12 @@ function Stack({
 const CLEAR_AT = 0.34;
 const THROW = 650;
 
+/** The "Mark read" label's opacity for how far the card is pulled left: 0.35 at 40px, all of it by 140px. */
+function revealAt(x: number): number {
+  const d = Math.min(Math.max(-x, 0), 140);
+  return d <= 40 ? (d / 40) * 0.35 : 0.35 + ((d - 40) / 100) * 0.65;
+}
+
 function Card({
   item,
   reduced,
@@ -320,64 +326,109 @@ function Card({
   onClear: () => void;
 }) {
   const kind = CH_NOTIFICATION_KIND[item.category];
-  const x = useMotionValue(0);
-  const reveal = useTransform(x, [-140, -40, 0], [1, 0.35, 0]);
   const dragged = useRef(false);
-  const self = useRef<HTMLButtonElement>(null);
   const clearLabel = useRef<HTMLSpanElement>(null);
   const unread = isUnread(item);
   const canSwipe = swipe && unread && !reduced;
+
+  /**
+   * The swipe to mark read, on pointer events. Motion's drag measured every draggable card through its layout projection
+   * each time the card rendered, and a clear or a fold renders the whole feed, so the cards forced the drop's layout
+   * mid-frame (the throw's long frames). The card follows the finger once the move is more across than down (down is
+   * the list's scroll), with the give the drag had: 0.9 of the finger to the left, 0.06 to the right. The release plays
+   * on the compositor (WAAPI `translate`), at the speed it was let go.
+   */
+  const onPointerDown = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!canSwipe || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const el = e.currentTarget;
+    const label = clearLabel.current;
+    const id = e.pointerId;
+    const x0 = e.clientX;
+    const y0 = e.clientY;
+    let lock: 'x' | 'y' | null = null;
+    let dx = 0;
+    let at = 0;
+    let v = 0;
+    let last = x0;
+    let lastT = performance.now();
+    // On the window, as a drag's listeners are: a mouse that leaves the card still moves it.
+    const stop = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== id) return;
+      const now = performance.now();
+      v = 0.8 * ((ev.clientX - last) / Math.max(1, now - lastT)) + 0.2 * v;
+      last = ev.clientX;
+      lastT = now;
+      dx = ev.clientX - x0;
+      if (!lock) {
+        const dy = ev.clientY - y0;
+        if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+        lock = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+        if (lock === 'y') return stop();
+        dragged.current = true;
+        try {
+          el.setPointerCapture(id);
+        } catch {
+          // A pointer that already went away.
+        }
+        // A spring back still playing gives way to the finger.
+        el.getAnimations?.().forEach((a) => a.cancel());
+        label?.getAnimations?.().forEach((a) => a.cancel());
+      }
+      at = dx < 0 ? dx * 0.9 : dx * 0.06;
+      el.style.translate = `${at}px 0`;
+      if (label) label.style.opacity = String(revealAt(at));
+    };
+    const up = (ev: PointerEvent) => {
+      if (ev.pointerId !== id) return;
+      stop();
+      if (lock !== 'x') return;
+      window.setTimeout(() => {
+        dragged.current = false;
+      }, 0);
+      const vx = v * 1000;
+      const width = el.offsetWidth || 360;
+      if (ev.type === 'pointerup' && (dx < -width * CLEAR_AT || vx < -THROW)) {
+        haptic('select');
+        const to = -width - 40;
+        const away = chSpringCurve('smooth', { velocity: vx / (to - at || -1) });
+        el.style.translate = `${to}px 0`;
+        const leave = el.animate?.([{ translate: `${at}px 0` }, { translate: `${to}px 0` }], { duration: away.ms, easing: away.linear });
+        if (leave) void leave.finished.then(onClear, () => {});
+        else onClear();
+      } else if (at) {
+        const back = chSpringCurve('settle', { velocity: vx / -at });
+        const shown = revealAt(at);
+        el.style.translate = '';
+        if (label) label.style.opacity = '0';
+        el.animate?.([{ translate: `${at}px 0` }, { translate: '0 0' }], { duration: back.ms, easing: back.linear });
+        label?.animate?.([{ opacity: shown }, { opacity: 0 }], { duration: back.ms, easing: back.linear });
+      }
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+
   return (
     <div className="ch-bst-cardwrap">
       {canSwipe && (
-        <m.span ref={clearLabel} className="ch-bst-clear" style={{ opacity: reveal }} aria-hidden="true">
+        <span ref={clearLabel} className="ch-bst-clear" style={{ opacity: 0 }} aria-hidden="true">
           Mark read
-        </m.span>
+        </span>
       )}
-      <m.button
-        ref={self}
+      <button
         type="button"
         className="ch-bst-card"
         data-unread={unread || undefined}
         aria-label={expandLabel}
         aria-expanded={expanded}
-        style={{ x, touchAction: 'pan-y' }}
-        drag={canSwipe ? 'x' : false}
-        dragDirectionLock
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={{ left: 0.9, right: 0.06 }}
-        dragMomentum={false}
-        dragSnapToOrigin={false}
-        onDragStart={() => {
-          dragged.current = true;
-        }}
-        onDragEnd={(_, info) => {
-          // Motion has already started its own spring back into the constraints (from script, every frame); the release
-          // below replaces it, so it stops here, where the finger let go.
-          x.stop();
-          const el = self.current;
-          const width = el?.offsetWidth ?? 360;
-          const from = x.get();
-          // The drag follows the finger; the release plays on the compositor (WAAPI `translate`, on top of where the drag
-          // left it), at the speed it was let go, not a Motion value stepped from the main thread.
-          if (info.offset.x < -width * CLEAR_AT || info.velocity.x < -THROW) {
-            haptic('select');
-            const to = -width - 40;
-            const away = chSpringCurve('smooth', { velocity: info.velocity.x / (to - from || -1) });
-            const leave = el?.animate?.([{ translate: '0 0' }, { translate: `${to - from}px 0` }], { duration: away.ms, easing: away.linear, fill: 'forwards' });
-            if (leave) void leave.finished.then(onClear, () => {});
-            else onClear();
-          } else if (from) {
-            const back = chSpringCurve('settle', { velocity: info.velocity.x / -from });
-            const shown = reveal.get();
-            x.set(0);
-            el?.animate?.([{ translate: `${from}px 0` }, { translate: '0 0' }], { duration: back.ms, easing: back.linear });
-            clearLabel.current?.animate?.([{ opacity: shown }, { opacity: 0 }], { duration: back.ms, easing: back.linear });
-          }
-          window.setTimeout(() => {
-            dragged.current = false;
-          }, 0);
-        }}
+        style={{ touchAction: 'pan-y' }}
+        onPointerDown={onPointerDown}
         onClick={() => {
           if (dragged.current) return;
           onTap();
@@ -401,7 +452,7 @@ function Card({
         <span className="ch-bst-card__t">{item.title}</span>
         {item.body && <span className="ch-bst-card__b">{item.body}</span>}
         {more && <span className="ch-bst-card__more">{more}</span>}
-      </m.button>
+      </button>
     </div>
   );
 }
