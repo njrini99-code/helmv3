@@ -1,4 +1,4 @@
-# Motion report: <area>, <YYYY-MM-DD>
+# Motion report: {area}, {YYYY-MM-DD}
 
 Copy to `<YYYY-MM-DD>-<scenario>.md` in this folder. The method is the
 `helm-safari-performance` skill. Traces and screenshots stay out of git: name
