@@ -31,7 +31,9 @@ export function useSlidePlate(
     // Nothing to slide from yet (it has just mounted, or came back): where it sits is read a frame later, once the page
     // has been laid out anyway. Read here, it forced the arriving page's whole layout inside React's commit, the largest
     // part of a section switch's script (27ms of 165 at 4x CPU, a switch to Stats; Chromium, production build, 2026-10-15).
-    if (!from) {
+    // Held still (the strip shut as a section's page arrives): nothing moves, so its new place is read a frame later too.
+    if (!from || still?.()) {
+      last.current = null;
       const frame = requestAnimationFrame(() => {
         if (host.isConnected) last.current = box();
       });
@@ -39,7 +41,7 @@ export function useSlidePlate(
     }
     const to = box();
     last.current = to;
-    if (reduced || still?.() || !to.w || !to.h) return undefined;
+    if (reduced || !to.w || !to.h) return undefined;
     if (from.x === to.x && from.y === to.y && from.w === to.w && from.h === to.h) return undefined;
     // A tween where the plate's design gives one (CH_DUR on CH_EASE), otherwise the spring.
     const { ms, linear } = tween ? { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})` } : chSpringCurve(kind);
