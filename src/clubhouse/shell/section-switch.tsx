@@ -207,6 +207,7 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
   const key = (chosen ?? sw.current)?.id ?? 'page';
   const enter = reduced ? { duration: 0 } : chSpring('settle');
   const leave = reduced ? { duration: 0 } : { duration: CH_DUR.quick, ease: CH_EASE };
+  const glide = reduced ? { duration: 0 } : chSpring('smooth');
   return (
     <button
       type="button"
@@ -222,10 +223,12 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
             key={key}
             className="ch-sw__label"
             custom={sw.dir}
+            // `transform` and opacity, not `x`: Motion runs these on the compositor (WAAPI), so the change stays smooth
+            // on a phone while the new page renders on the main thread (owner, 2026-10-15: "super slow and choppy").
             variants={{
-              enter: (d: number) => ({ x: d * 28, opacity: 0 }),
-              center: { x: 0, opacity: 1, transition: enter },
-              exit: (d: number) => ({ x: d * -28, opacity: 0, transition: leave }),
+              enter: (d: number) => ({ transform: `translateX(${d * 28}px)`, opacity: 0 }),
+              center: { transform: 'translateX(0px)', opacity: 1, transition: enter },
+              exit: (d: number) => ({ transform: `translateX(${d * -28}px)`, opacity: 0, transition: leave }),
             }}
             initial="enter"
             animate="center"
@@ -235,12 +238,14 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
           </m.span>
         </AnimatePresence>
       </m.span>
-      <m.span className="ch-sw__chev" style={{ rotate: turn }} aria-hidden="true">
+      {/* The old name leaves the layout as the new one takes its place, so the chevron and dot glide to the new
+          width instead of jumping to it. */}
+      <m.span className="ch-sw__chev" layout="position" transition={{ layout: glide }} style={{ rotate: turn }} aria-hidden="true">
         <Icon icon={ChevronDown} size={15} />
       </m.span>
       {sw.attention && (
         <>
-          <span className="ch-sw__dot" aria-hidden="true" />
+          <m.span className="ch-sw__dot" layout="position" transition={{ layout: glide }} aria-hidden="true" />
           <span className="ch-sr-only">, something new in another section</span>
         </>
       )}
