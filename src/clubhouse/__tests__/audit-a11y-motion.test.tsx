@@ -177,3 +177,12 @@ describe('overnight polish 2026-10-15: dark mode keeps day-only surfaces whole',
     expect(css('shell.css')).toMatch(/color: var\(--ch-nav-well-ink, var\(--ch-green-800\)\);/);
   });
 });
+
+describe('overnight polish 2026-10-15: the now line reads as live', () => {
+  it('its dot and the phone pill breathe slowly, and Animations off stops both', () => {
+    const cal = css('calendar.css');
+    expect(cal).toMatch(/\.ch-wk__now::before \{\s*animation: ch-now-breathe 2\.8s var\(--ch-ease-io\) infinite;/);
+    expect(cal).toMatch(/animation: ch-now-pill 2\.8s var\(--ch-ease-io\) infinite;/);
+    expect(cal).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-wk__now::before,\s*\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-calm-now span \{\s*animation: none;/);
+  });
+});

@@ -519,6 +519,28 @@
   background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-bg-surface);
 }
+/* The now dot breathes (overnight polish, 2026-10-15): a slow ring, so the line reads as live time, not a rule. Reduced
+   motion runs it once (base.css); Animations off stops it. */
+@keyframes ch-now-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px var(--ch-bg-surface),
+      0 0 0 2px transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--ch-bg-surface),
+      0 0 0 6px color-mix(in oklab, var(--ch-green-fill-600) 24%, transparent);
+  }
+}
+.ch-wk__now::before {
+  animation: ch-now-breathe 2.8s var(--ch-ease-io) infinite;
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-wk__now::before,
+[data-ui='clubhouse'][data-motion='off'] .ch-calm-now span {
+  animation: none;
+}
 .ch-wk__nowlbl {
   position: absolute;
   right: 6px;
@@ -2457,6 +2479,16 @@
     background: var(--ch-green-fill-600);
     font: 600 12px/1 var(--ch-font-sans);
     color: var(--ch-text-on-accent);
+    animation: ch-now-pill 2.8s var(--ch-ease-io) infinite;
+  }
+  @keyframes ch-now-pill {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+    50% {
+      box-shadow: 0 0 0 4px color-mix(in oklab, var(--ch-green-fill-600) 22%, transparent);
+    }
   }
 
   /* Month: the grid flush on the parchment under the weekdays' engraved rule; a dot for a day with events, a dark one
