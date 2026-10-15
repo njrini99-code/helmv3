@@ -78,8 +78,8 @@ export function AskSheetProvider({
   useEffect(() => {
     if (!available) return;
     const idle = typeof window.requestIdleCallback === 'function'
-      ? window.requestIdleCallback(() => void loadAskSheetBody(), { timeout: 4000 })
-      : window.setTimeout(() => void loadAskSheetBody(), 2000);
+      ? window.requestIdleCallback(() => void loadAskSheetBody(), { timeout: 1200 })
+      : window.setTimeout(() => void loadAskSheetBody(), 800);
     return () => (typeof window.cancelIdleCallback === 'function' ? window.cancelIdleCallback(idle) : window.clearTimeout(idle));
   }, [available]);
   const warm = useCallback(() => setLoaded(true), []);
