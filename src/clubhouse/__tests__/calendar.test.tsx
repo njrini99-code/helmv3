@@ -1479,7 +1479,7 @@ describe('Calendar · the loader', () => {
     // The window's replies are asked for in one read beside the events, through the event they belong to (the team and
     // the same window), never one event at a time.
     expect(asked.golf_event_attendance![0]).toContainEqual(['eq', ['golf_events.team_id', expect.any(String)]]);
-    expect(asked.golf_event_attendance![0].some(([m]: [string]) => m === 'in')).toBe(false);
+    expect(asked.golf_event_attendance![0]!.some(([m]) => m === 'in')).toBe(false);
   });
 
   it('62301 a read that fails is logged under calendar and named on the page, never thrown; a write that fails is reported under calendar with its action, after a breadcrumb', async () => {
