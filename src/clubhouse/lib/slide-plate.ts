@@ -24,13 +24,23 @@ export function useSlidePlate(
     const host = el?.parentElement;
     if (!el || !host) {
       last.current = null;
-      return;
+      return undefined;
     }
-    const to = { x: host.offsetLeft, y: host.offsetTop, w: host.offsetWidth, h: host.offsetHeight };
+    const box = () => ({ x: host.offsetLeft, y: host.offsetTop, w: host.offsetWidth, h: host.offsetHeight });
     const from = last.current;
+    // Nothing to slide from yet (it has just mounted, or came back): where it sits is read a frame later, once the page
+    // has been laid out anyway. Read here, it forced the arriving page's whole layout inside React's commit, the largest
+    // part of a section switch's script (27ms of 165 at 4x CPU, a switch to Stats; Chromium, production build, 2026-10-15).
+    if (!from) {
+      const frame = requestAnimationFrame(() => {
+        if (host.isConnected) last.current = box();
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    const to = box();
     last.current = to;
-    if (!from || reduced || still?.() || !to.w || !to.h) return;
-    if (from.x === to.x && from.y === to.y && from.w === to.w && from.h === to.h) return;
+    if (reduced || still?.() || !to.w || !to.h) return undefined;
+    if (from.x === to.x && from.y === to.y && from.w === to.w && from.h === to.h) return undefined;
     // A tween where the plate's design gives one (CH_DUR on CH_EASE), otherwise the spring.
     const { ms, linear } = tween ? { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})` } : chSpringCurve(kind);
     el.animate?.(
@@ -40,6 +50,7 @@ export function useSlidePlate(
       ],
       { duration: ms, easing: linear },
     );
+    return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the move is per choice; `still` is read when it happens
   }, [key, reduced]);
 }
