@@ -340,6 +340,9 @@ function Card({
           dragged.current = true;
         }}
         onDragEnd={(_, info) => {
+          // Motion has already started its own spring back into the constraints (from script, every frame); the release
+          // below replaces it, so it stops here, where the finger let go.
+          x.stop();
           const el = self.current;
           const width = el?.offsetWidth ?? 360;
           const from = x.get();
