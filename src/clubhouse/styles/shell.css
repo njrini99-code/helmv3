@@ -1238,6 +1238,35 @@ button.ch-more__row[disabled] {
     font: 600 16px/1.2 var(--ch-font-sans);
     color: var(--ch-on-fill-100);
   }
+  /* Home's bar puts the team's mark (32px and the bar's 8px gap) before the section's name, so the name sits 40px
+     further in than on every other section (owner, 2026-10-15: "the top left is backwards"). Leaving Home, the mark
+     leaves the row where it stands (fading there) and the name slides from where it was into the place every other
+     section's title has; arriving, it slides from there to Home's place as the mark returns. Each slide starts from
+     where the name is on screen and ends where its layout puts it, so nothing is left to undo when the page lands. On
+     `translate`, so nothing lays out per frame. */
+  .ch-root[data-phone-hero] .ch-topbar[data-switching] .ch-topbar__team {
+    position: absolute;
+    left: 16px;
+  }
+  [data-ui='clubhouse'][data-phone-hero] .ch-topbar[data-switching] .ch-topbar__ptitle {
+    animation: ch-title-leave-home var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both;
+  }
+  [data-ui='clubhouse'][data-phone-hero] .ch-topbar[data-arrived] .ch-topbar__ptitle {
+    animation: ch-title-home var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both;
+  }
+  .ch-root[data-phone-hero] .ch-topbar[data-arrived] .ch-topbar__team {
+    animation: ch-fade var(--ch-dur-base) var(--ch-ease) both;
+  }
+  @keyframes ch-title-leave-home {
+    from {
+      translate: 40px 0;
+    }
+  }
+  @keyframes ch-title-home {
+    from {
+      translate: -40px 0;
+    }
+  }
   .ch-root[data-phone-hero] .ch-topbar__mark {
     display: grid;
     place-items: center;
@@ -2986,6 +3015,18 @@ html[data-fw-theme='dark'] .ch-offline {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .ch-sw__label--out {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+  }
+  .ch-sw__tail {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 5px;
+  }
   .ch-sw__chev {
     display: inline-flex;
     flex: none;
@@ -3096,6 +3137,7 @@ html[data-fw-theme='dark'] .ch-offline {
     inset: 0;
     z-index: -1;
     border-radius: inherit;
+    transform-origin: left center;
     background: var(--ch-on-green-ink);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), var(--ch-elevation-strip-plate);
   }

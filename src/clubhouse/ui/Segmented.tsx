@@ -1,10 +1,9 @@
 'use client';
 
-import { m } from 'motion/react';
-import { useId, useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from 'react';
+import { useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from 'react';
 import { haptic } from '../lib/haptics';
-import { chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
+import { useSlidePlate } from '../lib/slide-plate';
 
 export interface SegOption<V extends string> {
   value: V;
@@ -41,12 +40,13 @@ export function Segmented<V extends string>({
   /** The change swaps a whole view: it renders after the chip has moved (see above). */
   redraws?: boolean;
 }) {
-  const id = useId();
   const reduced = useChReducedMotion();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
+  const well = useRef<HTMLDivElement>(null);
   const [changing, startChange] = useTransition();
   const [chosen, setChosen] = useState<V | null>(null);
   const shown = changing && chosen !== null ? chosen : value;
+  useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced });
   const pick = (v: V) => {
     if (v === shown) return;
     haptic('select');
@@ -65,7 +65,7 @@ export function Segmented<V extends string>({
     refs.current[n]?.focus();
   };
   return (
-    <div className={`ch-seg ch-well ch-seg--${size}`} role="radiogroup" aria-label={label}>
+    <div ref={well} className={`ch-seg ch-well ch-seg--${size}`} role="radiogroup" aria-label={label}>
       {options.map((o, i) => {
         const on = o.value === shown;
         return (
@@ -83,14 +83,7 @@ export function Segmented<V extends string>({
             onClick={() => pick(o.value)}
             onKeyDown={(e) => onKey(e, i)}
           >
-            {on && (
-              <m.span
-                className="ch-seg__pill"
-                layoutId={reduced ? undefined : `seg-${id}`}
-                transition={chSpring('settle', reduced)}
-                aria-hidden="true"
-              />
-            )}
+            {on && <span className="ch-seg__pill" aria-hidden="true" />}
             <span className="ch-seg__l">{o.label}</span>
           </button>
         );

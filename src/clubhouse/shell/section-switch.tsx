@@ -1,13 +1,13 @@
 'use client';
 
-import { AnimatePresence, animate, m, useMotionValue, useTransform, type AnimationPlaybackControls, type MotionValue } from 'motion/react';
+import { animate, m, useMotionValue, useTransform, type AnimationPlaybackControls, type MotionValue } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import type { ChShellData } from '../data/shell';
 import { haptic } from '../lib/haptics';
-import { CH_DUR, CH_EASE, chSpring } from '../lib/motion';
+import { CH_DUR, CH_EASE, chSpring, chSpringCurve } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from '../ui/Icon';
 import { findLargeTitle } from './large-title';
@@ -40,6 +40,9 @@ export interface ChSectionSwitch {
   /** A section was chosen and its page hasn't arrived: the title already names it, and the bar's buttons (the old
    *  section's) step back until the new page brings its own (phone test 2026-10-13). */
   switching: boolean;
+  /** A section switch has just landed (a moment after its page arrives): the bar can settle into the new page's layout
+   *  with motion instead of jumping to it. */
+  arrived: boolean;
   /** The address is its section's own page (a root), where the bar's gestures apply. */
   root: boolean;
   open: boolean;
@@ -100,21 +103,66 @@ export function SectionSwitchProvider({
   const [open, setOpenState] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [dir, setDir] = useState<1 | -1>(1);
+  const [arrived, setArrived] = useState(false);
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
   const progress = useMotionValue(0);
   const dragX = useMotionValue(0);
   const travel = useRef<AnimationPlaybackControls | null>(null);
   const openRef = useRef(open);
   openRef.current = open;
 
+  // A tap's open or close runs on the compositor: the strip, its pills' fade and the chevron play the spring as WAAPI
+  // keyframes, and `progress` lands on the end when they finish (or at the start, opening, so the strip is shown). As a
+  // Motion spring it wrote those styles on the main thread each frame, so the new page rendering under a tap stalled
+  // it (owner, 2026-10-15: "super slow and choppy"). A drag and its throw stay with Motion, which carries the speed.
+  const glide = useRef<{ anims: Animation[]; from: number; to: number; ms: number; ease: (t: number) => number; t0: number } | null>(null);
+  const stopGlide = useCallback(() => {
+    const g = glide.current;
+    if (!g) return;
+    glide.current = null;
+    const t = Math.min(1, (performance.now() - g.t0) / g.ms);
+    land(g.anims);
+    progress.jump(g.from + (g.to - g.from) * g.ease(t));
+  }, [progress]);
   const setOpen = useCallback(
     (next: boolean, velocity = 0) => {
       setOpenState(next);
       travel.current?.stop();
-      travel.current = animate(progress, next ? 1 : 0, chSpring('smooth', reducedRef.current, velocity));
+      stopGlide();
+      const to = next ? 1 : 0;
+      const from = progress.get();
+      const strip = document.getElementById('ch-strip');
+      if (velocity || reducedRef.current || !strip || from === to || typeof strip.animate !== 'function') {
+        travel.current = animate(progress, to, chSpring('smooth', reducedRef.current, velocity));
+        return;
+      }
+      const { ms, ease } = chSpringCurve('smooth');
+      const n = Math.max(2, Math.round(ms / 16));
+      const ps = Array.from({ length: n + 1 }, (_, i) => from + (to - from) * ease(i / n));
+      const play = (el: Element | null | undefined, frame: (p: number) => Keyframe) =>
+        el?.animate?.(ps.map(frame), { duration: ms, easing: 'linear', fill: 'forwards' });
+      const anims = [
+        play(strip, (p) => ({ transform: `translateY(${(p - 1) * 100}%)` })),
+        play(strip.querySelector('.ch-strip__row'), (p) => ({ opacity: p < 0.4 ? (p / 0.4) * 0.55 : 0.55 + ((p - 0.4) / 0.6) * 0.45 })),
+        ...Array.from(document.querySelectorAll('.ch-sw__chev'), (el) => play(el, (p) => ({ transform: `rotate(${p * 180}deg)` }))),
+      ].filter((a): a is Animation => !!a);
+      const g = { anims, from, to, ms, ease, t0: performance.now() };
+      glide.current = g;
+      if (next) progress.jump(to);
+      anims[0]?.addEventListener('finish', () => {
+        if (glide.current !== g) return;
+        glide.current = null;
+        land(anims);
+        progress.jump(to);
+      });
     },
-    [progress],
+    [progress, stopGlide],
   );
-  const grab = useCallback(() => travel.current?.stop(), []);
+  const grab = useCallback(() => {
+    travel.current?.stop();
+    stopGlide();
+  }, [stopGlide]);
 
   const indexOf = useCallback((item: ChNavItem | undefined) => (item ? sections.findIndex((s) => s.id === item.id) : -1), [sections]);
   const shownRef = useRef(shown);
@@ -149,8 +197,13 @@ export function SectionSwitchProvider({
 
   // A new address settles the title on its own section and closes the strip.
   useEffect(() => {
+    const switched = pendingRef.current !== null;
     setPending(null);
     if (openRef.current) setOpen(false);
+    if (!switched) return;
+    setArrived(true);
+    const id = window.setTimeout(() => setArrived(false), 600);
+    return () => window.clearTimeout(id);
   }, [pathname, setOpen]);
 
   // Esc closes the strip, and focus goes back to the title.
@@ -185,8 +238,8 @@ export function SectionSwitchProvider({
   const attention = sections.some((s) => s.id !== shown?.id && (counts[s.id] ?? 0) > 0);
 
   const value = useMemo<ChSectionSwitch>(
-    () => ({ enabled: true, sections, current, shown, switching, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen, setAccountOpen }),
-    [sections, current, shown, switching, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen],
+    () => ({ enabled: true, sections, current, shown, switching, arrived, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen, setAccountOpen }),
+    [sections, current, shown, switching, arrived, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -202,12 +255,59 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
   const fallback = useMotionValue(0);
   const turn = useTransform(sw?.progress ?? fallback, [0, 1], [0, 180]);
   const fade = useTransform(sw?.dragX ?? fallback, (x) => 1 - Math.min(Math.abs(x) / 160, 0.65));
+  const chosen = sw?.shown && sw.shown.id !== sw.current?.id ? sw.shown : null;
+  const key = (chosen ?? sw?.current)?.id ?? 'page';
+  const label = chosen ? chosen.label : children;
+  // The name that is leaving: it is laid over the new one (out of the flow), so nothing is measured as they swap.
+  const [now, setNow] = useState({ key, label });
+  const [out, setOut] = useState<{ n: number; label: ReactNode; dir: 1 | -1 } | null>(null);
+  if (now.key !== key) {
+    setOut({ n: (out?.n ?? 0) + 1, label: now.label, dir: sw?.dir ?? 1 });
+    setNow({ key, label });
+  } else if (typeof label === 'string' && label !== now.label) setNow({ key, label });
+  const inRef = useRef<HTMLSpanElement>(null);
+  const outRef = useRef<HTMLSpanElement>(null);
+  // The new name comes in from the side it lies on and the old one leaves the other way, as compositor transforms
+  // (WAAPI), so the change stays smooth on a phone while the new page renders on the main thread (owner, 2026-10-15:
+  // "super slow and choppy"). Not AnimatePresence's popLayout, which measured the leaving name mid-frame.
+  const outN = out?.n;
+  useLayoutEffect(() => {
+    if (outN === undefined) return;
+    const d = out?.dir ?? 1;
+    const leave = !reduced && outRef.current?.animate?.(
+      [{ transform: 'none', opacity: 1 }, { transform: `translateX(${d * -28}px)`, opacity: 0 }],
+      { duration: CH_DUR.quick * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})`, fill: 'forwards' },
+    );
+    if (!leave) {
+      setOut(null);
+      return;
+    }
+    const { ms, linear } = chSpringCurve('settle');
+    inRef.current?.animate?.([{ transform: `translateX(${d * 28}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: ms, easing: linear });
+    leave.onfinish = () => setOut((o) => (o?.n === outN ? null : o));
+    return () => {
+      leave.onfinish = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one run per name change
+  }, [outN]);
+  const tail = useRef<HTMLSpanElement>(null);
+  const was = useRef<number | null>(null);
+  // The old name leaves the layout as the new one takes its place, so the chevron and dot glide from where they were
+  // to the new width instead of jumping to it: one read of their place per name change and a compositor `translate`
+  // (WAAPI). Not Motion's layout projection, which measured the whole bar on every render of a switch (owner,
+  // 2026-10-15: "super slow and choppy").
+  useLayoutEffect(() => {
+    const el = tail.current;
+    if (!el) return;
+    const at = el.offsetLeft;
+    const from = was.current;
+    was.current = at;
+    if (from === null || from === at || reduced) return;
+    const { ms, linear } = chSpringCurve('smooth');
+    el.getAnimations?.().forEach((a) => a.cancel());
+    el.animate?.([{ translate: `${from - at}px 0` }, { translate: '0 0' }], { duration: ms, easing: linear });
+  }, [key, reduced]);
   if (!sw?.enabled) return <>{children}</>;
-  const chosen = sw.shown && sw.shown.id !== sw.current?.id ? sw.shown : null;
-  const key = (chosen ?? sw.current)?.id ?? 'page';
-  const enter = reduced ? { duration: 0 } : chSpring('settle');
-  const leave = reduced ? { duration: 0 } : { duration: CH_DUR.quick, ease: CH_EASE };
-  const glide = reduced ? { duration: 0 } : chSpring('smooth');
   return (
     <button
       type="button"
@@ -218,39 +318,39 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
       onClick={() => sw.setOpen(!sw.open)}
     >
       <m.span className="ch-sw__track" style={{ x: sw.dragX, opacity: fade }}>
-        <AnimatePresence initial={false} mode="popLayout" custom={sw.dir}>
-          <m.span
-            key={key}
-            className="ch-sw__label"
-            custom={sw.dir}
-            // `transform` and opacity, not `x`: Motion runs these on the compositor (WAAPI), so the change stays smooth
-            // on a phone while the new page renders on the main thread (owner, 2026-10-15: "super slow and choppy").
-            variants={{
-              enter: (d: number) => ({ transform: `translateX(${d * 28}px)`, opacity: 0 }),
-              center: { transform: 'translateX(0px)', opacity: 1, transition: enter },
-              exit: (d: number) => ({ transform: `translateX(${d * -28}px)`, opacity: 0, transition: leave }),
-            }}
-            initial="enter"
-            animate="center"
-            exit="exit"
-          >
-            {chosen ? chosen.label : children}
-          </m.span>
-        </AnimatePresence>
+        {out && (
+          <span key={`out-${out.n}`} ref={outRef} className="ch-sw__label ch-sw__label--out" aria-hidden="true">
+            {out.label}
+          </span>
+        )}
+        <span key={key} ref={inRef} className="ch-sw__label">
+          {label}
+        </span>
       </m.span>
-      {/* The old name leaves the layout as the new one takes its place, so the chevron and dot glide to the new
-          width instead of jumping to it. */}
-      <m.span className="ch-sw__chev" layout="position" transition={{ layout: glide }} style={{ rotate: turn }} aria-hidden="true">
-        <Icon icon={ChevronDown} size={15} />
-      </m.span>
-      {sw.attention && (
-        <>
-          <m.span className="ch-sw__dot" layout="position" transition={{ layout: glide }} aria-hidden="true" />
-          <span className="ch-sr-only">, something new in another section</span>
-        </>
-      )}
+      <span className="ch-sw__tail" ref={tail}>
+        <m.span className="ch-sw__chev" style={{ rotate: turn }} aria-hidden="true">
+          <Icon icon={ChevronDown} size={15} />
+        </m.span>
+        {sw.attention && <span className="ch-sw__dot" aria-hidden="true" />}
+      </span>
+      {sw.attention && <span className="ch-sr-only">, something new in another section</span>}
     </button>
   );
+}
+
+/**
+ * Hands each animation's place to its element's own style before it goes, so no frame shows the style Motion has yet
+ * to rewrite. An element no longer drawn has nothing to keep.
+ */
+function land(anims: Animation[]): void {
+  for (const a of anims) {
+    try {
+      a.commitStyles();
+    } catch {
+      // Not rendered (the strip went away mid-move): nothing to carry over.
+    }
+    a.cancel();
+  }
 }
 
 /** Resistance: free travel slows as it grows; past either end it barely moves. */

@@ -329,10 +329,13 @@ export function Bell() {
   // of it and offers no Mark all read (the button keeps its badge).
   const listFailed = failed && !items?.length;
   const shownUnread = listFailed ? 0 : unread;
-  const list = items ?? [];
-  const counts = countByCategory(list);
-  const cats = NOTIFICATION_CATEGORY_IDS.filter((c) => counts[c] > 0);
-  const groups = groupByDayBucket(list.filter((i) => itemMatchesFilter(i, filter)));
+  // The bell renders on every section switch and strip open (it reads the switcher), so what it derives from the list
+  // is kept between renders (overnight jank pass, 2026-10-15: rebuilding it was most of a switch's main thread).
+  const cats = useMemo(() => {
+    const counts = countByCategory(items ?? []);
+    return NOTIFICATION_CATEGORY_IDS.filter((c) => counts[c] > 0);
+  }, [items]);
+  const groups = useMemo(() => groupByDayBucket((items ?? []).filter((i) => itemMatchesFilter(i, filter))), [items, filter]);
 
   const filterMenu = cats.length > 1 && (
     <Menu
@@ -359,7 +362,8 @@ export function Bell() {
       Mark all read
     </Button>
   );
-  const body = (
+  // The desktop popover's list: built only when the popover is open, never on the phone (its drop draws BellStacks).
+  const body = () => (
     <div className="ch-bellp__body">
       {listFailed ? (
         <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
@@ -545,7 +549,7 @@ export function Bell() {
                   {filterMenu}
                   {!listFailed && markAllButton}
                 </div>
-                {body}
+                {body()}
               </m.div>
             )}
           </AnimatePresence>,

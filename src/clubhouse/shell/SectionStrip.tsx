@@ -6,8 +6,8 @@ import { useCallback, useLayoutEffect, useRef, useState, type MouseEvent } from 
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { haptic } from '../lib/haptics';
-import { chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
+import { useSlidePlate } from '../lib/slide-plate';
 import { LinkPending } from './LinkPending';
 import { CH_PHONE_TABS, isRebuilt, type ChRole } from './nav';
 import { usePhoneChromeState } from './phone-chrome';
@@ -61,6 +61,9 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
     if (sw?.open) centre();
   }, [sw?.open, centre]);
 
+  // The plate slides from the pill it left to the one chosen, on the compositor (lib/slide-plate.ts).
+  useSlidePlate(row, '[aria-current="page"] > .ch-strip__plate', sw?.shown?.id ?? null, { reduced, still: () => shutRef.current });
+
   if (!sw?.enabled) return null;
 
   /** Tapping the open section closes the strip and does what a retapped tab did (CH-1907): pop, or scroll to the top. */
@@ -102,7 +105,7 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
                 aria-current={on ? 'page' : undefined}
                 onClick={(e) => (sw.current?.id === s.id ? retap(e, s.href) : sw.choose(s))}
               >
-                {on && <m.span layoutId="ch-strip-plate" className="ch-strip__plate" transition={chSpring('settle', reduced)} aria-hidden="true" />}
+                {on && <span className="ch-strip__plate" aria-hidden="true" />}
                 <Icon icon={s.icon} size={16} />
                 <span className="ch-strip__label">{s.label}</span>
                 {count != null && (

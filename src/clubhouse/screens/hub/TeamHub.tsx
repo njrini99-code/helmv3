@@ -2,7 +2,6 @@
 
 import { ClipboardList, Megaphone, Plane, Plus, User, UsersRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { m } from 'motion/react';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Button } from '../../ui/Button';
@@ -11,8 +10,8 @@ import { Icon } from '../../ui/Icon';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
-import { chSpring } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useSlidePlate } from '../../lib/slide-plate';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
@@ -133,7 +132,9 @@ export function TeamHub({
   const taskFocused = () => setTaskToFocus(null);
   // The underline moves on the press (CH-10602); the panel renders just behind it.
   const shownTab = useDeferredValue(tab);
+  const tabsRef = useRef<HTMLDivElement>(null);
   const reduced = useChReducedMotion();
+  useSlidePlate(tabsRef, '[aria-selected="true"] > .ch-hb-tabs__bar', tab, { reduced, kind: 'smooth' });
   const [replies, setReplies] = useState(() => new Map<string, ChRsvp>());
   const [acked, setAcked] = useState(() => new Set<string>());
   const [pendingWrites, setPendingWrites] = useState(() => new Set<string>());
@@ -409,7 +410,7 @@ export function TeamHub({
       <PageRefreshNotice parts={failedParts} />
 
       {/* CH-10801: real tabs, each controlling its panel. */}
-      <div className="ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
+      <div ref={tabsRef} className="ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
         {HUB_TABS[data.role].map(([k, l]) => (
           <button
             key={k}
@@ -423,7 +424,7 @@ export function TeamHub({
             onKeyDown={tabKeys}
           >
             {l}
-            {tab === k && <m.span className="ch-hb-tabs__bar" layoutId={reduced ? undefined : 'hb-tab'} transition={chSpring('smooth', reduced)} aria-hidden="true" />}
+            {tab === k && <span className="ch-hb-tabs__bar" aria-hidden="true" />}
           </button>
         ))}
       </div>
