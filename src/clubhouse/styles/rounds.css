@@ -3501,6 +3501,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
+  text-wrap: pretty;
 }
 .ch-rd.is-phone .ch-rd-fig__m {
   -webkit-line-clamp: 3;
