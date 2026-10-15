@@ -227,3 +227,51 @@ describe('GET /api/health — bounded query (abortSignal wired with the 2.5s bud
     expect(capturedSignal).toBeInstanceOf(AbortSignal);
   });
 });
+
+// 5725d96a regressed 2026-10-14 (5 rows, 14:09Z-21:48Z) on warm instances (uptime 15-72 min, createClientMs 0-9).
+// Supabase edge logs show each failing probe either never reached PostgREST or reached it seconds late and got a
+// 200 — the stall is the instance's connection to Supabase, not the database (db_health_samples: 0.3% connections,
+// no lock waits). One more attempt on a fresh request separates a stalled socket from a database that is down.
+describe('GET /api/health — one retry on a timeout', () => {
+  const timeout = () => new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+
+  beforeEach(() => {
+    __resetEmitThrottleForTests();
+    mocks.logServerError.mockClear();
+    mocks.scheduleBridgeWrite.mockClear();
+  });
+
+  it('a timeout followed by a good read is healthy and logs nothing', async () => {
+    let calls = 0;
+    currentSupabase = makeQueryBuilder(async () => {
+      calls += 1;
+      if (calls === 1) throw timeout();
+      return { data: [{ id: '1' }], error: null };
+    });
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect((await res.json()).status).toBe('healthy');
+    expect(currentSupabase.__fromCalls).toEqual(['users', 'users']);
+    expect(mocks.logServerError).not.toHaveBeenCalled();
+  });
+
+  it('two timeouts in a row are degraded, and the row says both attempts failed', async () => {
+    currentSupabase = makeQueryBuilder(async () => {
+      throw timeout();
+    });
+    const res = await GET();
+    expect(res.status).toBe(503);
+    expect(currentSupabase.__fromCalls).toEqual(['users', 'users']);
+    const [, ctx] = mocks.logServerError.mock.calls[0] as [string, { metadata?: Record<string, unknown> }];
+    expect(ctx.metadata).toMatchObject({ failureKind: 'timeout', attempts: 2 });
+  });
+
+  it('a PostgREST error is not retried: the database answered, and the answer was no', async () => {
+    currentSupabase = makeQueryBuilder({ data: null, error: { message: 'boom' } });
+    const res = await GET();
+    expect(res.status).toBe(503);
+    expect(currentSupabase.__fromCalls).toEqual(['users']);
+    const [, ctx] = mocks.logServerError.mock.calls[0] as [string, { metadata?: Record<string, unknown> }];
+    expect(ctx.metadata).toMatchObject({ failureKind: 'error', attempts: 1 });
+  });
+});
