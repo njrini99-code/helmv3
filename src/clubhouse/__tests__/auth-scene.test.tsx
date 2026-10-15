@@ -78,6 +78,6 @@ describe('the still takes the hour\'s light until the course draws', () => {
       </FixedClock.Provider>,
     );
     expect(Number(wash())).toBe(0);
-    expect(posterWash(null).opacity).toBe(0);
+    expect(posterWash(null)).toBeUndefined();
   });
 });

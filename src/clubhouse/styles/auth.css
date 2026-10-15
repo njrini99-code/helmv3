@@ -70,11 +70,14 @@
 }
 .ch-au-poster .ch-au-poster__tall { display: none; }
 /* SceneMount posterWash: the hour's light over the daytime still until the course draws. A cold load learns the hour at
-   hydration, so the wash eases in; a client navigation knows it on the first frame and paints it at once. */
+   hydration; until then SkyScript's guess from the viewer's clock (on <html>) is the wash, so a sign in at night opens
+   on night. A client navigation knows the hour on the first frame and paints it at once. */
 .ch-au-poster__wash {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  background: var(--ch-au-wash-bg, transparent);
+  opacity: var(--ch-au-wash-a, 0);
   transition: opacity var(--ch-au-t-fade) var(--ch-au-out);
 }
 .ch-au-scene {
@@ -355,10 +358,10 @@
 .ch-au-mark {
   display: none;
 }
-.ch-au-photo[data-dark] .ch-au-mark span {
+:is(.ch-au-photo[data-dark], html[data-ch-au-dark] .ch-au-photo) .ch-au-mark span {
   color: var(--ch-au-ivory);
 }
-.ch-au-photo[data-dark] .ch-au-mark b {
+:is(.ch-au-photo[data-dark], html[data-ch-au-dark] .ch-au-photo) .ch-au-mark b {
   color: var(--ch-hero-mint);
 }
 

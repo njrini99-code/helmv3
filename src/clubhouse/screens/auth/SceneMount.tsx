@@ -1,12 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Component, type ReactNode } from 'react';
+import { Component, useLayoutEffect, type ReactNode } from 'react';
 import { chReport } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 import type { SceneCamera } from './GolfScene';
 import { skyAt } from './scene-sky';
-import { useSkyHour } from './use-hour';
+import { clearSkyBoot, SKY_OFFSET_KEY } from './SkyScript';
+import { useLocalHour, useSkyHour } from './use-hour';
 
 /**
  * The painted course is the heaviest thing on these screens and nothing on them
@@ -38,10 +39,11 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
 /**
  * The still is a daytime photo. Until the course's chunk has drawn the real sky, the still takes the hour's light: at
  * dusk and night a wash of that sky over it, so the course that fades in over it is the same time of day and a sign in
- * at night does not open on a sunny course (owner, 2026-10-14). Clear by day. Null hour (the server, hydration): clear.
+ * at night does not open on a sunny course (owner, 2026-10-14). Clear by day. Null hour (the server, hydration): no
+ * style, so auth.css draws what SkyScript worked out before first paint (clear when it has not run).
  */
-export function posterWash(hour: number | null): { background: string; opacity: number } {
-  if (hour === null) return { background: 'transparent', opacity: 0 };
+export function posterWash(hour: number | null): { background: string; opacity: number } | undefined {
+  if (hour === null) return undefined;
   const sky = skyAt(hour);
   return { background: `linear-gradient(to bottom, ${sky.top}, ${sky.amb})`, opacity: Math.min(0.88, Math.round(sky.ambA * 1.4 * 100) / 100) };
 }
@@ -50,6 +52,20 @@ export function SceneMount({ camera = 'rest', play = false, hour: fixedHour }: {
   // P015-A1: the sky follows the sun where the viewer is, not the clock.
   const localHour = useSkyHour();
   const hour = fixedHour ?? localHour;
+  const clockHour = useLocalHour();
+  // React has the real hour: what SkyScript stamped before first paint gives way to it, and the sun's offset from the
+  // clock is kept so the next cold load's first frame is this one (the offset moves by minutes a day).
+  useLayoutEffect(() => {
+    if (fixedHour !== undefined || localHour === null) return;
+    clearSkyBoot();
+    if (clockHour === null) return;
+    const offset = ((((localHour - clockHour) % 24) + 36) % 24) - 12;
+    try {
+      localStorage.setItem(SKY_OFFSET_KEY, offset.toFixed(3));
+    } catch {
+      // Private mode or storage off: the next cold load starts from the clock alone.
+    }
+  }, [fixedHour, localHour === null, Math.round((localHour ?? 0) * 4)]); // eslint-disable-line react-hooks/exhaustive-deps
   // CH-15909: 820px or less is the phone layout: the course on top, the form on a sheet.
   const phone = useChPhone();
   return (
