@@ -7,8 +7,8 @@ title: >-
   template, but its golf_coachhelm_llm_calls row kept
   fallback_to_template=false (Bridge 1cd457e7); the style rejection now marks
   the call row as a template fallback.
-bad_version: ff0a440c394525b8f8de5b7048d88ead5ce75283
-fixed_version: d312787835ab9d4625e7b5fcc9b9c6c32dc67517
+bad_version: 220fe5bab63ccc5ef8cf223230b90296ab196bc4
+fixed_version: 890d7250d6d93d11c76a75fc2813acfea964e765
 fixture:
   - source: round-recap-style-fallback-call-log.test.ts
     target: src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts

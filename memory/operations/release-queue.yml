@@ -558,7 +558,7 @@ items:
     status: verified
     risk: R1
     sha: null
-    pr: 2192
+    pr: null
     regression_tests:
       - src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts
       - src/lib/coachhelm/v3/llm/__tests__/mark-call-fell-back.test.ts
