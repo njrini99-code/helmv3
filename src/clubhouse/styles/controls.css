@@ -299,6 +299,12 @@
   background: rgb(28 25 18 / 0.08);
 }
 
+/* A sheet's rise and its scrim wait at their first frame until the sheet has painted (useDialogLifetime). */
+.ch-root [data-ch-hold],
+.ch-root dialog[data-ch-hold]::backdrop {
+  animation-play-state: paused;
+}
+
 /* Modal on the native dialog top layer */
 .ch-modal {
   box-sizing: border-box;

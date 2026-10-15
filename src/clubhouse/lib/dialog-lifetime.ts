@@ -7,6 +7,17 @@ import { useChReducedMotion } from './reduced-motion';
 import { chSupportsLinear, chThrownExit, takeSheetFling } from './sheet-drag';
 import { chFocusQuietly } from './focus-quietly';
 
+/** Pauses the opening animations on `dialog` (its scrim) and `surface` until two frames have painted. */
+function holdRise(dialog: HTMLElement, surface: HTMLElement | null) {
+  const held = surface && surface !== dialog ? [dialog, surface] : [dialog];
+  for (const el of held) el.setAttribute('data-ch-hold', '');
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      for (const el of held) el.removeAttribute('data-ch-hold');
+    }),
+  );
+}
+
 /** Native modal lifetime shared by custom bars, action sheets and drawers. */
 export function useDialogLifetime(open: boolean, {
   direction = 'bottom',
@@ -54,6 +65,11 @@ export function useDialogLifetime(open: boolean, {
       }
       if (!dialog.open) {
         opener.current = document.activeElement;
+        // The rise (and the scrim's fade) wait, paused at their first frame, until the sheet has painted: its CSS
+        // animation's clock starts when its style lands, so the frames spent laying out a long sheet were taken off the
+        // start of the rise and it jumped up from part way (phone, owner 2026-10-15: "needs to be smoother"). Two
+        // frames later it plays from the bottom, on the compositor.
+        holdRise(dialog, surface);
         dialog.showModal();
         // A field that asked for focus (autoFocus) keeps it; otherwise the named element (a title) takes it.
         const active = document.activeElement;

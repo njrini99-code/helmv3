@@ -186,3 +186,42 @@ describe('overnight polish 2026-10-15: the now line reads as live', () => {
     expect(cal).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-wk__now::before,\s*\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-calm-now span \{\s*animation: none;/);
   });
 });
+
+describe('owner 2026-10-15: a sheet rises from the bottom, never part way', () => {
+  it('holds the rise and the scrim at their first frame until two frames have painted', async () => {
+    const { renderHook } = await import('@testing-library/react');
+    const { useDialogLifetime } = await import('../lib/dialog-lifetime');
+    const dialog = document.createElement('dialog');
+    const panel = document.createElement('div');
+    panel.className = 'ch-modal__panel';
+    dialog.append(panel);
+    document.body.append(dialog);
+    dialog.showModal ??= function (this: HTMLDialogElement) { this.setAttribute('open', ''); };
+    dialog.close ??= function (this: HTMLDialogElement) { this.removeAttribute('open'); };
+    const frames: FrameRequestCallback[] = [];
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => (frames.push(cb), frames.length));
+    renderHook(() => {
+      const life = useDialogLifetime(true, { surfaceSelector: '.ch-modal__panel' });
+      (life.ref as { current: HTMLDialogElement | null }).current = dialog;
+      return life;
+    });
+    // The ref is attached after the first render here, so open it the way Modal's commit does.
+    const { rerender } = renderHook(({ o }) => {
+      const life = useDialogLifetime(o, { surfaceSelector: '.ch-modal__panel' });
+      (life.ref as { current: HTMLDialogElement | null }).current = dialog;
+      return life;
+    }, { initialProps: { o: false } });
+    dialog.removeAttribute('open');
+    rerender({ o: true });
+    expect(panel.hasAttribute('data-ch-hold')).toBe(true);
+    expect(dialog.hasAttribute('data-ch-hold')).toBe(true);
+    frames.shift()?.(0);
+    expect(panel.hasAttribute('data-ch-hold')).toBe(true);
+    while (frames.length) frames.shift()?.(16);
+    expect(panel.hasAttribute('data-ch-hold')).toBe(false);
+    expect(dialog.hasAttribute('data-ch-hold')).toBe(false);
+    expect(css('controls.css')).toMatch(/\.ch-root \[data-ch-hold\],\s*\.ch-root dialog\[data-ch-hold\]::backdrop \{\s*animation-play-state: paused;/);
+    raf.mockRestore();
+    dialog.remove();
+  });
+});
