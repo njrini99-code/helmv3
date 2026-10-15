@@ -473,6 +473,32 @@
 .ch-wk__col.is-today {
   background-color: rgb(21 90 57 / 0.025);
 }
+/* Time that has gone (overnight polish, 2026-10-15): past days and today's hours above the now line take a faint wash,
+   and ended events step back, so the week reads from the now line forward. Hover, focus and selection bring one back. */
+.ch-wk__col.is-past,
+.ch-wk__gone {
+  background-color: color-mix(in oklab, var(--ch-text-primary) 3.5%, transparent);
+}
+.ch-wk__gone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+.ch-ev.is-past {
+  opacity: 0.56;
+  filter: saturate(0.55);
+}
+.ch-ev.is-past:hover,
+.ch-ev.is-past:focus-visible,
+.ch-ev.is-past.is-sel {
+  opacity: 1;
+  filter: none;
+}
+.ch-mo__cell.is-past .ch-mo__ev {
+  opacity: 0.6;
+}
 .ch-wk__now {
   position: absolute;
   left: 0;
@@ -521,7 +547,9 @@
   cursor: pointer;
   transition:
     box-shadow var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-quick) var(--ch-ease);
+    transform var(--ch-dur-quick) var(--ch-ease),
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    filter var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ev:focus-visible {
   outline: 2px solid var(--ch-border-focus);

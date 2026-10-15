@@ -74,6 +74,12 @@ export function clashesAt(e: ChCalEvent, to: ChMoveTarget, events: ChCalEvent[])
 
 const byStart = (a: ChCalEvent, b: ChCalEvent) => (a.allDay ? -1 : (a.start ?? 0)) - (b.allDay ? -1 : (b.start ?? 0));
 
+/** An event that has ended: on a day before today, or today with its end at or before now. */
+export function isPastEvent(e: ChCalEvent, now: ChNow): boolean {
+  if (e.date < now.date) return true;
+  return e.date === now.date && !e.allDay && e.end != null && e.end <= now.hour;
+}
+
 function EventBlock({
   e,
   lane,
@@ -86,6 +92,7 @@ function EventBlock({
   to,
   drag,
   state,
+  past = false,
 }: {
   e: ChCalEvent;
   lane: number;
@@ -101,6 +108,8 @@ function EventBlock({
   drag?: { onPointerDown: (ev: PointerEvent<HTMLButtonElement>) => void; onNudge: (dir: 1 | -1) => void; moved: () => boolean };
   /** While a block is dragged: it is the one held (`held`), the ghost where it would land (`ghost`), or a clash (`clash`). */
   state?: 'held' | 'ghost' | 'clash';
+  /** It has ended: it steps back so what is still to come reads first (it comes forward on hover, focus and selection). */
+  past?: boolean;
 }) {
   const start = Math.max(e.start!, from);
   const end = Math.min(e.end!, to);
@@ -125,9 +134,9 @@ function EventBlock({
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}`}
+      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
       style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
-      aria-label={`${title}, ${rangeLabel(e)}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
+      aria-label={`${title}, ${rangeLabel(e)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'ghost' || undefined}
       tabIndex={state === 'ghost' ? -1 : undefined}
@@ -316,8 +325,10 @@ export function TimeGrid({
         {dates.map((d) => {
           const laid = layoutLanes(groupClasses(events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null)));
           return (
-            <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : '')}>
+            <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : d < now.date ? ' is-past' : '')}>
               {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
+              {/* Today's hours behind the now line take the past days' wash, so the day reads from the line down. */}
+              {d === now.date && nowVisible && <span className="ch-wk__gone" aria-hidden="true" style={{ height: (now.hour - from) * CAL_HH }} />}
               {laid.map((l) => {
                 const g = l.e;
                 if (isClassGroup(g)) return <ClassGroupBlock key={g.id} g={g} lane={l.lane} lanes={l.lanes} selId={selId} people={people} onSelect={onSelect} from={from} to={to} />;
@@ -335,6 +346,7 @@ export function TimeGrid({
                     to={to}
                     drag={dragFor(g)}
                     state={drag?.e.id === g.id ? 'held' : clashes?.has(g.id) ? 'clash' : undefined}
+                    past={isPastEvent(g, now)}
                   />
                 </EventPeek>
                 );
@@ -406,7 +418,7 @@ export function MonthView({
               key={date}
               type="button"
               data-print-visible
-              className={'ch-mo__cell' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : '') + (date === selDate ? ' is-sel' : '')}
+              className={'ch-mo__cell' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : !out && date < now.date ? ' is-past' : '') + (date === selDate ? ' is-sel' : '')}
               aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length ? `${evs.length} ${evs.length === 1 ? 'event' : 'events'}` : 'no events'}`}
               aria-pressed={date === selDate}
               onClick={() => {
