@@ -493,6 +493,8 @@
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
   --ch-dur-shimmer: 1.9s;
+  /* A live marker's slow breath (the calendar's now line): one cycle, ambient, never a call to act. */
+  --ch-dur-live: 2.8s;
   /* The pending hairline's sweep (LinkPending, shell.css). */
   --ch-dur-sweep: 900ms;
   /* Skeletons wait this long before showing, then fade in over base. */
