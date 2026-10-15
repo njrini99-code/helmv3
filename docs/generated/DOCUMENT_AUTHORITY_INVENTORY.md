@@ -46,7 +46,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 35 |
 | `STATE_SNAPSHOT` | 8 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 53 | 15 | 2 | 4 |
+| `INCIDENT` | 55 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 27 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
@@ -582,6 +582,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-10-15-ask-suggestion-function-prop.md` | current | - | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md` | current | yes | - | yes | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md` | current | yes | - | - | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md` | current | yes | - | - | - |
@@ -607,6 +608,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md` | current | - | - | - | - |
 | `memory/incidents/observability_sentry/INC-2026-09-27-webkit-stale-chunk-route-boundary.md` | current | - | - | - | - |
 | `memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md` | current | - | - | - | - |
+| `memory/incidents/observability_supabase/INC-2026-10-15-health-probe-stalled-connection.md` | current | - | - | - | - |
 | `memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md` | current | - | - | - | - |
 | `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md` | current | - | - | - | - |
