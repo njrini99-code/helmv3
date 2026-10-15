@@ -558,7 +558,7 @@ items:
     status: verified
     risk: R1
     sha: null
-    pr: null
+    pr: 2197
     regression_tests:
       - src/app/api/health/route.test.ts
     queued_for_release: false
@@ -573,7 +573,7 @@ items:
     status: verified
     risk: R1
     sha: null
-    pr: null
+    pr: 2197
     regression_tests:
       - src/clubhouse/__tests__/coachhelm-ask-shape.test.ts
     queued_for_release: false
