@@ -161,3 +161,19 @@ describe('overnight polish 2026-10-15: ink on the green stages', () => {
     }
   });
 });
+
+describe('overnight polish 2026-10-15: dark mode keeps day-only surfaces whole', () => {
+  it('the Stats stage keeps the day palette at night (it turned mint under dark ink)', () => {
+    const stats = css('stats.css');
+    const at = stats.indexOf("html[data-fw-theme='dark'] .ch-st[data-canopy] .ch-sgt {");
+    expect(at).toBeGreaterThan(-1);
+    const rule = stats.slice(at, stats.indexOf('}', at));
+    for (const t of ['--ch-green-700: #0f4a2f;', '--ch-green-900: #082b1c;', '--ch-ivory-100: #f4f2ea;', '--ch-ivory-400: #c9c2b1;', '--ch-control-bg:', '--ch-well-bg:']) expect(rule).toContain(t);
+  });
+  it('the sidebar plate has its own night material and ink, not a half-flipped day gradient', () => {
+    const tokens = css('tokens.css');
+    const dark = tokens.slice(tokens.indexOf("html[data-fw-theme='dark'] [data-ui='clubhouse'] {"));
+    expect(dark.slice(0, dark.indexOf('\n}'))).toMatch(/--ch-nav-well-bg: linear-gradient\(180deg, #24432f, #1a3524\);[\s\S]*--ch-nav-well-ink: #f3efe6;/);
+    expect(css('shell.css')).toMatch(/color: var\(--ch-nav-well-ink, var\(--ch-green-800\)\);/);
+  });
+});

@@ -506,6 +506,13 @@
  */
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color-scheme: dark;
+  /* The sidebar's selected plate at night (overnight polish, 2026-10-15): the day plate's gradient ran from the night
+     ivory to the day's, a white bar with dark ink on the dark frame. A raised green plate under ivory ink instead. */
+  --ch-nav-well-bg: linear-gradient(180deg, #24432f, #1a3524);
+  --ch-nav-well-shadow: 0 0 0 1px rgb(205 187 142 / 0.32), 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 14px -8px rgb(0 0 0 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+  --ch-nav-well-ink: #f3efe6;
+  --ch-nav-well-icon: #9fe0b6;
   --ch-ivory-0: #1b201c;
   --ch-ivory-25: #1d231e;
   --ch-ivory-50: #202621;

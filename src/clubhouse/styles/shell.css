@@ -2097,7 +2097,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-navitem[aria-current='page'],
 .ch-navitem:has(.ch-lp) {
   background: var(--ch-nav-well-bg);
-  color: var(--ch-green-800);
+  color: var(--ch-nav-well-ink, var(--ch-green-800));
   box-shadow: var(--ch-nav-well-shadow);
   text-shadow: none;
 }
@@ -2105,7 +2105,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-navitem[aria-current='page'] .ch-navitem__count,
 .ch-navitem:has(.ch-lp) svg,
 .ch-navitem:has(.ch-lp) .ch-navitem__count {
-  color: var(--ch-green-700);
+  color: var(--ch-nav-well-icon, var(--ch-green-700));
 }
 .ch-navitem__count {
   color: var(--ch-champagne-300);
