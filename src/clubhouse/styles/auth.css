@@ -1141,8 +1141,30 @@
 
 /* ── The phone: the course on top, the form on a sheet ────────────────────── */
 
+/* Where the sheet's top is and how tall the course's window is follow the keyboard (below). They are not inherited, and
+   are declared only on the five parts that read them: declared on the frame, every keyboard change re-styled all of
+   its descendants, the course's 1,600 SVG nodes with them, 23ms each on WebKit (a Mac; more on a phone), and Sign in
+   makes two of them (the keyboard going down, then gone). Now 0ms, measured 2026-10-15. */
+@property --ch-au-phone-sheet-top {
+  syntax: '*';
+  inherits: false;
+}
+@property --ch-au-phone-window {
+  syntax: '*';
+  inherits: false;
+}
+
 @media (max-width: 820px) {
   .ch-au {
+    /* Constants: declared once, so the keyboard coming and going changes nothing the whole frame inherits. */
+    --ch-au-kb-top: calc(env(safe-area-inset-top) + 64px);
+    --ch-au-kb-lift: calc(clamp(200px, 42svh, 352px) - var(--ch-au-kb-top));
+  }
+  .ch-au-panel,
+  .ch-au-veil,
+  .ch-au-say,
+  .ch-au-photo > .ch-au-poster,
+  .ch-au-photo > .ch-au-scene {
     --ch-au-phone-sheet-top: clamp(200px, 42svh, 352px);
     --ch-au-phone-window: calc(var(--ch-au-phone-sheet-top) + 40px);
   }
@@ -1231,11 +1253,7 @@
      the fields and Sign in sit above the keyboard, and settles back as it goes. The sheet's top moves at once, so iOS
      finds the field already in view and never pans the page; a transform plays the move from where it was. The course's
      window closes with it and the line over the course fades. */
-  .ch-au[data-kb] {
-    --ch-au-kb-top: calc(env(safe-area-inset-top) + 64px);
-    --ch-au-kb-lift: calc(clamp(200px, 42svh, 352px) - var(--ch-au-kb-top));
-  }
-  .ch-au[data-kb='up'] {
+  .ch-au[data-kb='up'] :is(.ch-au-panel, .ch-au-veil, .ch-au-say, .ch-au-photo > .ch-au-poster, .ch-au-photo > .ch-au-scene) {
     --ch-au-phone-sheet-top: var(--ch-au-kb-top);
   }
   .ch-au[data-kb] .ch-au-photo,
