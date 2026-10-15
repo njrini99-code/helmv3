@@ -129,3 +129,20 @@ describe('A-29: the Ask sheet is ready before it is asked for', () => {
     expect(src).toMatch(/onPointerEnter=\{warm\}\s+onFocus=\{warm\}\s+onPointerDown=\{warm\}/);
   });
 });
+
+describe('review 2026-10-15: a section change fades through, and a faded bar hides its buttons', () => {
+  it('the new page waits for the whole fade out, so the two snapshots never overlap', () => {
+    const tokens = css('tokens.css');
+    expect(tokens).toContain('--ch-dur-vt-gap: var(--ch-dur-vt-out);');
+    expect(css('shell.css')).toMatch(/::view-transition-new\(ch-page\) \{\s*animation: var\(--ch-dur-vt-in\) var\(--ch-ease-vt-in\) var\(--ch-dur-vt-gap\) both ch-vt-in;/);
+  });
+  it('switching or a route skeleton takes the old bar buttons out of Tab and VoiceOver, after their fade', () => {
+    const shell = css('shell.css');
+    const at = shell.indexOf(".ch-topbar[data-switching] :is(.ch-topbar__actions, .ch-topbar__team, .ch-pbar__right),");
+    const rule = shell.slice(at, shell.indexOf('}', at));
+    expect(rule).toMatch(/main\[aria-busy='true'\]\[aria-label\^='Loading'\]/);
+    expect(rule).toMatch(/opacity: 0;\s*visibility: hidden;/);
+    expect(rule).toMatch(/visibility 0s linear var\(--ch-dur-press\);/);
+    expect(shell).toMatch(/\.ch-topbar \.ch-pbar__right \{\s*transition:\s*opacity var\(--ch-dur-quick\) var\(--ch-ease\),\s*visibility 0s;/);
+  });
+});

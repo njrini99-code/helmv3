@@ -1184,17 +1184,24 @@ button.ch-more__row[disabled] {
   }
   /* A section chosen, its page not here yet (section-switch's `switching`): the title already names the new section,
      so the old section's buttons and mark step back with it, and the new page's arrive with the page. One change to
-     the bar, not the title now and the buttons a beat later (phone test 2026-10-13). Opacity only. */
+     the bar, not the title now and the buttons a beat later (phone test 2026-10-13). Opacity only. Once faded they are
+     hidden too, so Tab and VoiceOver cannot reach buttons nobody can see (a slow load keeps them out for seconds);
+     visibility flips after the fade out and back at once, before the fade in. */
   .ch-topbar__actions,
   .ch-topbar__team,
   .ch-topbar .ch-pbar__right {
-    transition: opacity var(--ch-dur-quick) var(--ch-ease);
+    transition:
+      opacity var(--ch-dur-quick) var(--ch-ease),
+      visibility 0s;
   }
   .ch-topbar[data-switching] :is(.ch-topbar__actions, .ch-topbar__team, .ch-pbar__right),
   [data-ui='clubhouse']:has(main[aria-busy='true'][aria-label^='Loading']) .ch-topbar :is(.ch-topbar__actions, .ch-topbar__team) {
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition-duration: var(--ch-dur-press);
+    transition:
+      opacity var(--ch-dur-press) var(--ch-ease),
+      visibility 0s linear var(--ch-dur-press);
   }
   /* The address changes as soon as the route's skeleton commits, which ends `switching`; the skeleton's bar is the
      shell's default (the bell), not the page's, so its buttons wait for the page too (the second rule above). */

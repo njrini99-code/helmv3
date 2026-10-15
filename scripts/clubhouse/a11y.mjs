@@ -29,7 +29,7 @@ const BASE = process.env.CH_BASE ?? 'http://localhost:3100';
  * screen two taps deep on the phone).
  */
 export const CH_A11Y_PAGES = [
-  ['shell', '/clubhouse-preview/settings', { wide: '.ch-topbar button[aria-label^="Notifications"]', phone: ['.ch-topbar .ch-sw', '.ch-strip__me'] }],
+  ['shell', '/clubhouse-preview/settings', { wide: '.ch-topbar button[aria-label^="Notifications"]', phone: ['.ch-topbar .ch-sw:visible', '.ch-strip__me'] }],
   ['shell', '/clubhouse-preview/settings?bell=empty', { wide: '.ch-topbar button[aria-label^="Notifications"]' }],
   // The phone Settings screen draws its own large title with no bell, so the phone bell is opened from Home.
   ['shell', '/clubhouse-preview/home?bell=empty', { phone: '.ch-topbar button[aria-label^="Notifications"]' }],

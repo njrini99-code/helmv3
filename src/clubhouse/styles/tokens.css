@@ -769,10 +769,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
    document showing Clubhouse. */
 html:has([data-ui='clubhouse']) {
   /* A fade through, not a crossfade (phone test 2026-10-13): the old page clears quickly, then the new one fades in,
-     so two different pages are never on screen at once (a crossfade of two pages read as a washed-out double image). */
+     so two different pages are never on screen at once (a crossfade of two pages read as a washed-out double image).
+     The new page waits for the whole fade out: a shorter gap leaves both snapshots up for its last frames. */
   --ch-dur-vt-out: 120ms;
   --ch-dur-vt-in: 220ms;
-  --ch-dur-vt-gap: 90ms;
+  --ch-dur-vt-gap: var(--ch-dur-vt-out);
   --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
   --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
   /* How long a navigation onto a route skeleton keeps the old page up before the skeleton shows (native-feel audit
