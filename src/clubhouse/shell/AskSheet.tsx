@@ -76,7 +76,9 @@ export function AskSheetProvider({
   // sheet had no closed state to rise from). The chunk loads when the page is idle, and the sheet mounts closed as soon
   // as the key is approached, so the open itself is the rise.
   useEffect(() => {
-    if (!available) return;
+    // Production only: under `next dev` the preload compiles the whole chat on demand, and the rebuild reloaded pages a
+    // second after they opened (the Clubhouse quality smoke lost its state on the first popup-lab visits, CI 2026-10-15).
+    if (!available || process.env.NODE_ENV !== 'production') return;
     const idle = typeof window.requestIdleCallback === 'function'
       ? window.requestIdleCallback(() => void loadAskSheetBody(), { timeout: 1200 })
       : window.setTimeout(() => void loadAskSheetBody(), 800);
