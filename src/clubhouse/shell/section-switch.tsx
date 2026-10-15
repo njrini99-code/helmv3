@@ -314,21 +314,29 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one run per name change
   }, [outN]);
   const tail = useRef<HTMLSpanElement>(null);
-  const was = useRef<number | null>(null);
+  const width = useRef<number | null>(null);
   // The old name leaves the layout as the new one takes its place, so the chevron and dot glide from where they were
-  // to the new width instead of jumping to it: one read of their place per name change and a compositor `translate`
-  // (WAAPI). Not Motion's layout projection, which measured the whole bar on every render of a switch (owner,
-  // 2026-10-15: "super slow and choppy").
+  // to the new width instead of jumping to it, as a compositor `translate` (WAAPI). Not Motion's layout projection,
+  // which measured the whole bar on every render of a switch (owner, 2026-10-15: "super slow and choppy"). The new
+  // name's width comes from a ResizeObserver, which reports after the browser's own layout and before that frame
+  // paints: reading the tail's place in this effect forced the new page's whole layout inside React's commit, the
+  // largest single part of a switch's script (15ms of 107 at 4x CPU, Chromium, production build, 2026-10-15).
   useLayoutEffect(() => {
-    const el = tail.current;
-    if (!el) return;
-    const at = el.offsetLeft;
-    const from = was.current;
-    was.current = at;
-    if (from === null || from === at || reduced) return;
-    const { ms, linear } = chSpringCurve('smooth');
-    el.getAnimations?.().forEach((a) => a.cancel());
-    el.animate?.([{ translate: `${from - at}px 0` }, { translate: '0 0' }], { duration: ms, easing: linear });
+    const label = inRef.current;
+    if (!label || typeof ResizeObserver === 'undefined') return;
+    const watch = new ResizeObserver(([entry]) => {
+      const w = entry?.borderBoxSize?.[0]?.inlineSize ?? entry?.contentRect.width;
+      if (w === undefined) return;
+      const from = width.current;
+      width.current = w;
+      const el = tail.current;
+      if (from === null || !el || reduced || Math.abs(from - w) < 0.5) return;
+      const { ms, linear } = chSpringCurve('smooth');
+      el.getAnimations?.().forEach((a) => a.cancel());
+      el.animate?.([{ translate: `${from - w}px 0` }, { translate: '0 0' }], { duration: ms, easing: linear });
+    });
+    watch.observe(label);
+    return () => watch.disconnect();
   }, [key, reduced]);
   if (!sw?.enabled) return <>{children}</>;
   return (
