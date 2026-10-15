@@ -1,5 +1,11 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-15 — Ink that holds at night
+
+Dark mode: the offered chip and stage dot and the prospect avatar's initials now take `--ch-on-fill-*` / `--ch-forest-*` ink, which
+match the day's palette in light and stay light at night (they went dark on
+dark). Light is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-13 — Sheets rise and leave on the shared spring, over the shared backdrop
 
 The phone's form, picker and action sheets rise on the smooth spring (462ms)

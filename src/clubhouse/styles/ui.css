@@ -303,7 +303,7 @@
   box-shadow: var(--ch-score-bogey-shadow);
 }
 .ch-score--double {
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
   border-radius: 7px;
   background: linear-gradient(180deg, #3a3832 0%, #1c1b18 100%);
   box-shadow: var(--ch-score-double-shadow);
@@ -653,7 +653,7 @@
 @media (hover: hover) {
   .ch-backlink:hover {
     background: var(--ch-ledger-row-hover);
-    color: var(--ch-green-800);
+    color: var(--ch-forest-800);
   }
 }
 .ch-backlink:focus-visible {
@@ -1437,7 +1437,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   height: 34px;
   border-radius: 50%;
   background: linear-gradient(160deg, var(--ch-green-700), var(--ch-green-900));
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
   font: 700 14px/1 var(--ch-font-sans);
   box-shadow: 0 0 0 2px var(--ch-ivory-25), 0 0 0 3.5px var(--ch-champagne-500), var(--ch-elevation-mark);
 }
@@ -1445,7 +1445,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   margin: 0;
   font: 600 30px/1.1 var(--ch-font-sans);
   letter-spacing: -0.02em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-zn__id h2::after {
   content: '';

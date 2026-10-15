@@ -17,6 +17,16 @@
   --ch-ivory-200: #e7e3d8;
   --ch-ivory-300: #dcd6c8;
   --ch-ivory-400: #c9c2b1;
+  /* Ivory ink on a green fill or stage (overnight polish, 2026-10-15). The day's ivory steps, but they stay light at
+     night: the fills stay dark, and ink taken from --ch-ivory-* went dark with the page (dark on dark). */
+  --ch-on-fill-0: #ffffff;
+  --ch-on-fill-25: #fdfcf8;
+  --ch-on-fill-50: #f9f7f1;
+  --ch-on-fill-100: #f4f2ea;
+  /* Forest ink on the page or a pale green tint: the day's --ch-green-800/900, but pale mint at night, where those
+     names are surface greens and the tints under them go dark. Ink on a fill that stays light keeps --ch-green-800. */
+  --ch-forest-800: #0b3a25;
+  --ch-forest-900: #082b1c;
   /* Ink */
   --ch-ink-950: #141412;
   --ch-ink-900: #1c1b18;
@@ -513,6 +523,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     inset 0 1px 0 rgb(255 255 255 / 0.1);
   --ch-nav-well-ink: #f3efe6;
   --ch-nav-well-icon: #9fe0b6;
+  --ch-on-fill-0: #f7f2e6;
+  --ch-on-fill-25: #f5f1e7;
+  --ch-on-fill-50: #f3efe6;
+  --ch-on-fill-100: #ede7d8;
+  --ch-forest-800: #cfe6d7;
+  --ch-forest-900: #e2eee5;
   --ch-ivory-0: #1b201c;
   --ch-ivory-25: #1d231e;
   --ch-ivory-50: #202621;

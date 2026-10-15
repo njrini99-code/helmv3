@@ -570,7 +570,7 @@
 .ch-pp__row[aria-pressed='true'] .ch-pp__name b,
 .ch-pp__row[aria-selected='true'] .ch-pp__name b {
   font-weight: 600;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-pp__name span {
   font: var(--ch-type-caption);

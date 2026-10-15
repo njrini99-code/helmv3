@@ -58,7 +58,7 @@
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
 }
 .ch-ms-rail__head .ch-seg__b.is-on {
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-ms-rail__title {
   display: flex;
@@ -278,7 +278,7 @@
   width: 44px;
   height: 44px;
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-ms-row__top b {
   /* A long name wraps to a second line rather than being cut mid-word ("26-27 Group C…"). */
@@ -313,7 +313,7 @@
 }
 .ch-ms-row.is-sel .ch-ms-row__top b,
 .ch-ms-row.is-sel.is-unread .ch-ms-row__top b {
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-ms-row.is-sel .ch-ms-row__top > span,
 .ch-ms-row.is-sel.is-unread .ch-ms-row__top > span {
@@ -329,7 +329,7 @@
 }
 .ch-ms-row.is-sel .ch-ms-count {
   background: var(--ch-ivory-50);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-ms-empty {
   padding: 30px 12px;
@@ -708,12 +708,12 @@
    green chip under an ivory one. Yours carries a ring so you can tell it from the rest. */
 .ch-ms-reacts.on-mine .ch-ms-react {
   background: var(--ch-ivory-50);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.2), var(--ch-elevation-bubble);
 }
 .ch-ms-reacts.on-theirs .ch-ms-react {
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
 }
 .ch-ms-reacts .ch-ms-react.is-mine {
@@ -734,7 +734,7 @@
   stroke-width: 2.3;
 }
 .ch-ms-reacts.on-mine .ch-ms-react {
-  color: var(--ch-green-900);
+  color: var(--ch-forest-900);
 }
 .ch-ms-reacts.on-theirs .ch-ms-react,
 .ch-rx__head {
@@ -744,7 +744,7 @@
   background: rgb(255 255 255 / 0.22);
 }
 .ch-ms-reactbar__b {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-ms-reactbar__b.is-on {
   background: var(--ch-green-fill-700);
@@ -753,7 +753,7 @@
 @media (hover: hover) {
   .ch-ms-reactbar__b:hover {
     background: var(--ch-green-100);
-    color: var(--ch-green-900);
+    color: var(--ch-forest-900);
   }
   .ch-ms-reactbar__b.is-on:hover {
     background: var(--ch-green-800);
@@ -780,7 +780,7 @@
   gap: 10px;
   padding: 12px 14px;
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-rx__head b {
   font: 650 14px/1.2 var(--ch-font-sans);
@@ -1023,7 +1023,7 @@
 .ch-ms-send.is-ready {
   background: var(--ch-green-fill-700);
   box-shadow: var(--ch-green-raised-shadow);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 @media (hover: hover) {
   .ch-ms-send.is-ready:hover {
@@ -1195,7 +1195,7 @@
   background: var(--ch-green-50);
   box-shadow: var(--ch-elevation-control);
   font: 500 12.5px/1 var(--ch-font-sans);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-ms-to__c button {
   display: grid;
@@ -1269,7 +1269,7 @@
 /* Announcements */
 .ch-ms-grp.is-ann {
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-ms-grp.is-ann.is-urgent {
   background: var(--ch-warning-100);
@@ -1329,7 +1329,7 @@
   background: var(--ch-green-50);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16);
   font: var(--ch-type-body-s);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-ms-ann__done {
   display: inline-flex;
@@ -1690,7 +1690,7 @@
     width: 44px;
     height: 44px;
     background: var(--ch-green-fill-700);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-msp .ch-ms-row .ch-ms-grp.is-ann.is-urgent {
     background: var(--ch-warning-100);
@@ -1819,7 +1819,7 @@
     place-items: center;
     border-radius: 50%;
     background: var(--ch-green-fill-700);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-msp-mark.is-sm {
     width: 30px;
@@ -1962,7 +1962,7 @@
   .ch-msp-new .ch-ms-send {
     position: relative;
     background: var(--ch-ivory-300);
-    color: var(--ch-ivory-0);
+    color: var(--ch-on-fill-0);
   }
   .ch-msp-thread .ch-ms-send.is-ready,
   .ch-msp-new .ch-ms-send.is-ready {
@@ -2491,7 +2491,7 @@
   border: 0;
   border-radius: 999px;
   background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   font: 600 13px/36px var(--ch-font-sans);
   box-shadow: 0 4px 12px -4px rgb(11 58 37 / 0.45);
   cursor: pointer;

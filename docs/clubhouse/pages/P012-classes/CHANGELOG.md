@@ -1,5 +1,11 @@
 # P012 — Classes: changelog
 
+## 2026-10-15 — Ink that holds at night
+
+Dark mode: the day picker, the add and review marks and the ready icon now take `--ch-on-fill-*` / `--ch-forest-*` ink, which
+match the day's palette in light and stay light at night (they went dark on
+dark). Light is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet

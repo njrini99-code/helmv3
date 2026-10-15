@@ -54,7 +54,7 @@
 }
 .ch-hv-chip[aria-pressed='true'] {
   background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   font-weight: 600;
   box-shadow: none;
 }

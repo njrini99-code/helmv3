@@ -1,5 +1,21 @@
 # Clubhouse changelog
 
+## 2026-10-15 — Ink that holds at night, and Calendar's past steps back
+
+Overnight polish. Dark mode drew ivory and forest ink from palette steps
+that flip at night, so ink on a green fill or a pale tint went dark on dark
+(Roster's Active filter, Messages' selected thread and All filter, Round's
+figures, the Stats tape, the sidebar's selected plate). Two token families
+carry the day value in light and a light value at night: `--ch-on-fill-*`
+(ivory on a fill; 95 rules) and `--ch-forest-*` (forest ink on the page or a
+pale tint; 52 rules). Ink on a fill that stays light keeps the palette step.
+Light renders as before. The sidebar plate has its own night material
+(`--ch-nav-well-*`). Stats' trend stage keeps the day palette at night, and
+the calendar plates use the stage ink. Home's form label outranks the
+Ledger heading ink (light, 1.2:1). Calendar: ended events step back and are
+announced as ended, and past time takes a wash (P006). Phone Stats: a
+malformed figures list stays in its section (P004).
+
 ## 2026-10-14 — A dialog can open on its first field
 
 `Modal` takes `initialFocus`, a selector inside the sheet that takes focus as

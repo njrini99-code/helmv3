@@ -666,7 +666,7 @@
 }
 .ch-hl-pl.is-on .ch-hl-pl__c {
   background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-hl-cmain {
   display: flex;
@@ -897,7 +897,7 @@
     box-shadow: var(--ch-elevation-reading-hover);
   }
   .ch-hl-pl.is-on b {
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-hl-pl.is-on .ch-hl-pl__c {
     background: rgb(255 255 255 / 0.14);

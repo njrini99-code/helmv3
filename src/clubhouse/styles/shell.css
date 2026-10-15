@@ -51,7 +51,7 @@
   padding: 8px 14px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   font: 500 13.5px/1 var(--ch-font-sans);
   text-decoration: none;
   box-shadow: var(--ch-shadow-md);
@@ -340,7 +340,7 @@
   font: 600 15px/1.2 var(--ch-font-sans);
   letter-spacing: -0.02em;
   font-variation-settings: 'wdth' 92;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-next__m {
   font: var(--ch-type-caption);
@@ -1236,7 +1236,7 @@ button.ch-more__row[disabled] {
     gap: 8px;
     min-width: 0;
     font: 600 16px/1.2 var(--ch-font-sans);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-root[data-phone-hero] .ch-topbar__mark {
     display: grid;
@@ -1269,7 +1269,7 @@ button.ch-more__row[disabled] {
     background: rgb(255 255 255 / 0.08);
     background-clip: padding-box;
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   /* The Ask key (CH-1840) is the bell's twin on the hero. */
   .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask {
@@ -1281,7 +1281,7 @@ button.ch-more__row[disabled] {
     background: rgb(255 255 255 / 0.08);
     background-clip: padding-box;
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   /* Keyboard focus on the green (CH-1806): the keys' focus shadow loses to the disc's own ring here, and its green would
      vanish on the hero anyway, so the bell takes a champagne ring 2px off the disc (the clear border's width), no shadow. */
@@ -2650,7 +2650,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-resume__m {
     overflow: hidden;
     font: var(--ch-type-title);
-    color: var(--ch-green-800);
+    color: var(--ch-forest-800);
     text-overflow: ellipsis;
     white-space: nowrap;
   }

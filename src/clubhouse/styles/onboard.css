@@ -1035,7 +1035,7 @@
   color: var(--ch-text-primary);
 }
 .ch-ox-hcp__val[data-plus] {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-ox-hcp__val[data-none] {
   color: #cfc9ba;
