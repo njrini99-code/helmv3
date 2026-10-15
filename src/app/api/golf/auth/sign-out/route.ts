@@ -7,10 +7,10 @@ import { describeError } from '@/lib/utils/describe-error';
 /**
  * Sign out in one request: the session ends and the active-team cookie goes, and the caller then loads the login page.
  *
- * It replaces a `clearActiveTeam()` server action ahead of a client `auth.signOut()`. A server action that writes a
- * cookie makes Next re-render the page it was called from, so signing out refreshed the dashboard and the jump to
- * /golf/login then cut that refresh short ("TypeError: Load failed"). A route handler sets its cookies on its own
- * response and re-renders nothing (2026-10-14, both roles).
+ * It replaces the `clearActiveTeam` server action that ran ahead of a client sign-out; the caller (chEndSession) clears
+ * the browser's cached resources. A server action that writes a cookie makes Next re-render the page it was called
+ * from, so signing out refreshed the dashboard and the jump to /golf/login then cut that refresh short ("TypeError:
+ * Load failed"). A route handler sets its cookies on its own response and re-renders nothing (2026-10-14, both roles).
  */
 
 /**

@@ -1634,6 +1634,8 @@ describe('Calendar · what each role is given', () => {
     await user.click(screen.getByRole('button', { name: 'More actions' }));
     expect(menuItems()).toEqual(['Copy link']);
     await user.keyboard('{Escape}');
+    // The first menu leaves on a short exit; on a loaded runner it was still in the DOM when the next one opened (CI).
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
     await user.click(screen.getByRole('button', { name: 'More' }));
     // Printing is not planning: a player prints their week too.
     expect(menuItems()).toEqual(['Add to calendar app', 'Print week']);

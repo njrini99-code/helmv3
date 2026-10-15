@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn().mockResolvedValue(undefined),
@@ -80,6 +80,15 @@ function prediction(id: string, player: string): RipePrediction {
 }
 
 describe('prefetchCandidateRounds — one golf_rounds read per batch', () => {
+  // The fixtures' windows close in August 2026; 60 days after (NO_OUTCOME_GRACE_DAYS) the validator retires an empty
+  // window instead of grading it, so this suite started failing on 2026-10-15. Pin "today" to the incident date above.
+  beforeEach(() => {
+    vi.useFakeTimers({ now: new Date('2026-09-26T12:00:00Z'), toFake: ['Date'] });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const lone = prediction('p3', 'B');
   const batch = [prediction('p1', 'A'), prediction('p2', 'A'), lone];
 
