@@ -4,7 +4,7 @@
 - Surface: Clubhouse `/golf/dashboard/coachhelm` (new chat Home), Sentry JAVASCRIPT-NEXTJS-158
 - Status: FIXED on branch `agent/health-20261015-0054` (136a75dbc); awaiting merge and deploy.
 - Risk: R1. Data shape for one page. No schema, RLS, grant or data change.
-- Signal: Sentry -158 `Functions cannot be passed directly to Client Components ... {id: "brief", text: ..., title: ..., sub: function sub}`, 7 events 2026-10-01 → 2026-10-14 13:23Z, all with `flag.golf_clubhouse_ui: true` (the latest on a preview deploy of ecd16beea). Production has the Clubhouse off (#2188), so no production user saw it; it would ship with the flag.
+- Signal: Sentry -158 `Functions cannot be passed directly to Client Components ... {id: "brief", text: ..., title: ..., sub: function sub}`, 7 events 2026-10-01 → 2026-10-14 13:23Z, all with the Clubhouse UI flag on (the latest on a preview deploy of ecd16beea). Production has the Clubhouse off (#2188), so no production user saw it; it would ship with the flag.
 
 ## What was wrong
 
