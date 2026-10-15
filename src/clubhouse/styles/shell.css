@@ -3306,6 +3306,11 @@ html[data-fw-theme='dark'] .ch-offline {
     flex-direction: column;
     outline: none;
   }
+  /* Closed and done moving (Bell.tsx): out of the render tree. Hidden but laid out, its cards cost every view
+     transition's snapshot of the page, a section switch's included. */
+  .ch-bst[data-rest] {
+    display: none;
+  }
   .ch-bst__head {
     display: flex;
     flex: none;

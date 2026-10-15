@@ -2,7 +2,7 @@
 
 import { AnimatePresence, m, useMotionValue, useTransform } from 'motion/react';
 import { BellOff, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, X, type LucideIcon } from 'lucide-react';
-import { memo, useLayoutEffect, useMemo, useRef, useState, type Ref, type RefObject } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type Ref, type RefObject } from 'react';
 import { isUnread, type NotificationCategoryId, type UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { haptic } from '../lib/haptics';
 import { chSpring, chSpringCurve } from '../lib/motion';
@@ -53,9 +53,21 @@ const FLIP_PARTS = '.ch-bst-stack, .ch-bst-fan__item';
 function useFeedFlip(feed: RefObject<HTMLElement | null>, reduced: boolean): void {
   const was = useRef(new WeakMap<HTMLElement, number>());
   const playing = useRef(new WeakMap<HTMLElement, Animation>());
+  // The closed drop rests out of the render tree (Bell.tsx), where nothing has a place: what changes there slides from
+  // nowhere, and where things are is read as it comes back (laid out by then, so the read costs nothing).
+  useEffect(() => {
+    const root = feed.current;
+    if (!root || typeof ResizeObserver === 'undefined') return undefined;
+    const shown = new ResizeObserver(() => {
+      if (!root.getClientRects().length) return;
+      for (const el of root.querySelectorAll<HTMLElement>(FLIP_PARTS)) if (!el.closest('[data-motion-pop-id]')) was.current.set(el, el.offsetTop);
+    });
+    shown.observe(root);
+    return () => shown.disconnect();
+  });
   useLayoutEffect(() => {
     const root = feed.current;
-    if (!root) return;
+    if (!root || !root.getClientRects().length) return;
     const curve = reduced ? null : chSpringCurve('smooth');
     for (const el of root.querySelectorAll<HTMLElement>(FLIP_PARTS)) {
       // On its way out (popLayout lifted it out of the flow): it, and what is in it, stay where they are.

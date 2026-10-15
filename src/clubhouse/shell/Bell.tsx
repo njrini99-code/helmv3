@@ -111,6 +111,13 @@ export function Bell() {
   // and nothing swaps under it mid-motion. Cleared on close, so the next open fetches fresh.
   const [primed, setPrimed] = useState(false);
   const wanted = open || primed;
+  // Closed and done moving, the drop rests out of the render tree (display: none, shell.css): hidden but laid out, its
+  // cards made every view transition's snapshot of the page slower, a section switch's included (a 38ms frame against
+  // 25ms, with a player's 30 cards; WebKit, production build, 2026-10-15). It is back as the finger lands on the bell,
+  // so it is laid out before it moves, and rests again only once its move away has finished.
+  const [rested, setRested] = useState(true);
+  const wantedRef = useRef(wanted);
+  wantedRef.current = wanted;
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const [items, setItems] = useState<UnifiedNotificationItem[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -471,7 +478,9 @@ export function Bell() {
         aria-expanded={open}
         aria-controls={id}
         onPointerDown={() => {
-          if (!open) setPrimed(true);
+          if (open) return;
+          setRested(false);
+          setPrimed(true);
         }}
         onClick={() => {
           // CH-1705: a tick as the bell opens; CH-1612: on the phone its sheet rises over a scrim; CH-1805: it is a dialog.
@@ -479,6 +488,7 @@ export function Bell() {
           if (open) return close(false);
           chTrail('bell open');
           sw?.setOpen(false);
+          setRested(false);
           setOpen(true);
         }}
       >
@@ -536,9 +546,14 @@ export function Bell() {
                 // Portaled out of the Clubhouse root, so it carries the root's motion setting itself (the cards' CSS press
                 // and the motion tokens read it).
                 data-motion={reduced ? 'off' : undefined}
+                data-rest={(rested && !wanted) || undefined}
                 initial={false}
                 variants={sheetMotion}
                 animate={moving ? 'shown' : 'gone'}
+                // A move away that a reopen cut short also lands here: the drop rests only if it is still closed.
+                onAnimationComplete={(done) => {
+                  if (done === 'gone' && !wantedRef.current) setRested(true);
+                }}
               >
                 {/* No OverlayScrollLock: freezing the body re-lays out the whole page in the drop's first frame (and again as
                     it closes), the stutter. The drop covers the screen and takes the touches (touch-action in shell.css),
