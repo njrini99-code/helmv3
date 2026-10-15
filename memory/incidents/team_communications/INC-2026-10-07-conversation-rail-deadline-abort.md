@@ -3,7 +3,7 @@
 - Feature: `team_communications`
 - Surface: `/golf/dashboard/messages` (`loadGolfConversationRail`, action `fetch-team-chat-conversations`)
 - Fingerprint: af4c2c9d (`/admin/errors/af4c2c9d`), severity warning
-- Status: fix in PR (agent/health-20261007-0948), commit 90ae5607f; awaiting merge and production deploy (production ef6e017a as of 2026-10-07 09:48Z)
+- Status: released: 90ae5607f, then the last-read sibling 220fe5bab (#2192), are in production 87bd60345 (release:status, 2026-10-15 00:45Z); no 44137d5f event in the 24h to then
 - Risk: R1. Client logging decision only. No schema, RLS, grant or data-shape change.
 - Signal: `Client error: AbortError: Fetch is aborted`, first seen 2026-09-25, last 2026-10-06 18:20Z. Analysed NOT A DEFECT, auto-resolved, and re-opened as REGRESSED 4 times (`reopened_count` 4): Bridge noise.
 
