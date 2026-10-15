@@ -506,7 +506,7 @@ items:
       counted every lock incident ever recorded as open (129 rows, panel read
       'at least 100' with 0 in 24h).
     incident_id: memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md
-    status: verified
+    status: released
     risk: R1
     sha: b7dbb350b343f9304241206b98c0da2047393b42
     pr: 2191
@@ -522,9 +522,9 @@ items:
       /baseball/coach-onboarding (which imports lifting/actions/onboarding ->
       invites) returned 500.
     incident_id: memory/incidents/baseball_core/INC-2026-10-13-use-server-object-export-breaks-coach-onboarding.md
-    status: verified
+    status: released
     risk: R1
-    sha: null
+    sha: 220fe5bab63ccc5ef8cf223230b90296ab196bc4
     pr: 2192
     regression_tests:
       - src/lib/__tests__/use-server-exports.guard.test.ts
@@ -539,9 +539,9 @@ items:
       browser Supabase client's own request-deadline abort; the af4c2c9d guard
       covered only the participants read.
     incident_id: memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md
-    status: verified
+    status: released
     risk: R1
-    sha: null
+    sha: 220fe5bab63ccc5ef8cf223230b90296ab196bc4
     pr: 2192
     regression_tests:
       - src/hooks/golf/__tests__/use-golf-messages.last-read-deadline-abort.test.ts
@@ -558,7 +558,7 @@ items:
     status: verified
     risk: R1
     sha: null
-    pr: 2192
+    pr: null
     regression_tests:
       - src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts
       - src/lib/coachhelm/v3/llm/__tests__/mark-call-fell-back.test.ts

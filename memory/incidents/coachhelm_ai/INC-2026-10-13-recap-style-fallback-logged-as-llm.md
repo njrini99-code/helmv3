@@ -2,7 +2,7 @@
 
 - Feature: `coachhelm_ai`
 - Surface: `/admin/errors/1cd457e7` (info), Sentry JAVASCRIPT-NEXTJS-15A, `golf_coachhelm_llm_calls`, Bridge AI availability
-- Status: FIXED in PR #2192 (branch commit d31278783); needs owner deploy
+- Status: FIXED on branch `agent/health-20261015-0042` (commits c47febbfd, f0ea56892); needs merge and owner deploy. The first attempt (d31278783) was pushed to #2192's branch 2 minutes before that PR merged and never reached main.
 - Risk: R1. Telemetry only: one best-effort UPDATE of the call-log row compose() just wrote. No schema, RLS, grant or player-visible change.
 - Signal: `round recap: model reply broke style limits (too_many_words); using template` fired 7 times in the 24h to 2026-10-13 22:40Z (12 `round_review` calls in the same window), while every matching call row (e.g. 5424a44e, 01f1221f) said `verified=true, fallback_to_template=false`.
 
@@ -25,7 +25,7 @@ own fallbacks use. `verified` is left as written (the citations did verify).
 Best-effort: a failed write is logged, never thrown.
 
 Regression tests: `src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts`
-(fails on ff0a440c3), `src/lib/coachhelm/v3/llm/__tests__/mark-call-fell-back.test.ts`.
+(fails on ecd16beea), `src/lib/coachhelm/v3/llm/__tests__/mark-call-fell-back.test.ts`.
 Replay: `replay/manifests/recap-style-fallback-call-log-2026-10-13.yml`.
 
 ## Not fixed here
