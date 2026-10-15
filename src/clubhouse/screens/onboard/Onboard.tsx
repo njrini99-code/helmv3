@@ -36,12 +36,13 @@ type Phase = 'lift' | 'fold' | null;
  * quick beat, while the next question rises in on the design's step curve (`.ch-ox-q` in onboard.css). Reduced
  * motion and Animations off replace it at once.
  */
+// Transform strings, not framer's `y`, so Motion hands the move to the compositor (WAAPI).
 const TURN = {
-  shown: { opacity: 1, y: 0 },
-  leave: (dir: 'fwd' | 'back') => ({ opacity: 0, y: dir === 'back' ? 10 : -10, transition: { duration: CH_DUR.quick, ease: CH_EASE } }),
+  shown: { opacity: 1, transform: 'translate(0px, 0px)' },
+  leave: (dir: 'fwd' | 'back') => ({ opacity: 0, transform: `translate(0px, ${dir === 'back' ? 10 : -10}px)`, transition: { duration: CH_DUR.quick, ease: CH_EASE } }),
 };
 const TURN_INSTANT = {
-  shown: { opacity: 1, y: 0 },
+  shown: { opacity: 1, transform: 'translate(0px, 0px)' },
   leave: { opacity: 0, transition: { duration: 0 } },
 };
 

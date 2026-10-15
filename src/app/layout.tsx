@@ -36,6 +36,7 @@ import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeScript } from '@/components/golf/theme/ThemeScript';
 import { SkyScript } from '@/clubhouse/screens/auth/SkyScript';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { MarketingAnimGate } from '@/components/landing/MarketingAnimGate';
 
 export const metadata: Metadata = {
@@ -122,7 +123,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <ThemeScript />
-        <SkyScript />
+        <SkyScript frontDoor={isFlagEnabled('golf_clubhouse_front_door', { skipTelemetry: true })} />
         <MarketingAnimGate />
         {/* StaleDeploymentRecoveryScript compares this against /api/health's
             `release` field to detect a new deploy while a tab stays open.

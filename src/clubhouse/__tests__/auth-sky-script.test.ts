@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { posterWash } from '../screens/auth/SceneMount';
 import { isDarkSky, paperTint } from '../screens/auth/scene-sky';
-import { clearSkyBoot, SKY_BOOT, SKY_OFFSET_KEY } from '../screens/auth/SkyScript';
+import { clearSkyBoot, SKY_BOOT, SKY_OFFSET_KEY, skyBoot } from '../screens/auth/SkyScript';
 
 /**
  * The sign in painted day and then switched to night (owner, 2026-10-15): the server has no clock, so SkyScript
@@ -60,5 +60,37 @@ describe('SkyScript: the first frame is already the right time of day', () => {
     expect(stamped().dark).toBe(true);
     clearSkyBoot();
     expect(stamped()).toEqual({ bg: '', a: '', paper: null, dark: false });
+  });
+});
+
+describe("SkyScript, front door: the sign in never opens on the dashboard's skeleton (owner, 2026-10-15)", () => {
+  const cover = () => document.getElementById('ch-au-boot');
+  afterEach(() => cover()?.remove());
+
+  it('hides the route skeleton and paints the hour sky until the document has been read', () => {
+    vi.setSystemTime(new Date(2026, 9, 15, 23, 10));
+    new Function(skyBoot(true))();
+    expect(root.hasAttribute('data-ch-au-boot')).toBe(true);
+    expect(root.style.getPropertyValue('--ch-au-boot-sky')).toBe(root.style.getPropertyValue('--ch-au-wash-bg'));
+    expect(cover()?.textContent).toContain('[data-ch-boot-skeleton]{visibility:hidden');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    expect(root.hasAttribute('data-ch-au-boot')).toBe(false);
+    expect(cover()).toBeNull();
+  });
+
+  it('does nothing of the kind for the Fairway sign in, or on any other page', () => {
+    new Function(SKY_BOOT)();
+    expect(root.hasAttribute('data-ch-au-boot')).toBe(false);
+    window.history.replaceState(null, '', '/golf/dashboard');
+    new Function(skyBoot(true))();
+    expect(root.hasAttribute('data-ch-au-boot')).toBe(false);
+    expect(cover()).toBeNull();
+  });
+
+  it('clears with the rest once React has the hour', () => {
+    new Function(skyBoot(true))();
+    clearSkyBoot();
+    expect(root.hasAttribute('data-ch-au-boot')).toBe(false);
+    expect(cover()).toBeNull();
   });
 });

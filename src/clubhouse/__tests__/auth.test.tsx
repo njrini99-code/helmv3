@@ -756,10 +756,12 @@ describe('the welcome', () => {
     fireEvent.click(go);
     fireEvent.keyDown(window, { key: 'Enter' });
     expect(hapticSpy.mock.calls.filter(([k]) => k === 'commit')).toHaveLength(1);
+    // The fold's look lands a painted frame after the phase (AuthFrame), so the move starts on a calm frame.
+    act(() => void vi.advanceTimersByTime(40));
     expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).toBe('leaving');
     expect(container.querySelector('.ch-au-photo')?.hasAttribute('data-fold')).toBe(true);
     expect(screen.getByTestId('scene')).toHaveAttribute('data-camera', 'leave');
-    act(() => void vi.advanceTimersByTime(HANDOFF_MS.navigate - 1));
+    act(() => void vi.advanceTimersByTime(HANDOFF_MS.navigate - 41));
     expect(navigate).not.toHaveBeenCalled();
     act(() => void vi.advanceTimersByTime(1));
     expect(navigate).toHaveBeenCalledTimes(1);

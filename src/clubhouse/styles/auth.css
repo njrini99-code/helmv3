@@ -1156,8 +1156,10 @@
     bottom: 0;
     height: auto;
     border-radius: 0;
-    clip-path: inset(0 0 calc(100% - var(--ch-au-phone-window)) 0);
-    transition: clip-path var(--ch-au-t-sheet) var(--ch-au-ease);
+    /* Not clipped to the window: the opaque sheet already covers the course below it. A clip-path opening was a
+       full-screen repaint on the main thread every frame of the sign-in's exit, and its first frames were spent before
+       anyone saw them (owner, 2026-10-15: right after Sign in it was choppy). The sheet's own slide reveals the course. */
+    clip-path: none;
   }
   .ch-au-photo::after {
     display: none;
@@ -1166,6 +1168,7 @@
   .ch-au-photo > .ch-au-scene {
     transform: translateY(calc((var(--ch-au-phone-window) - 100%) * 0.55));
     transition: transform var(--ch-au-t-sheet) var(--ch-au-ease);
+    will-change: transform;
     --ch-au-inl: 0px;
     --ch-au-inr: 0px;
   }
@@ -1220,6 +1223,9 @@
     padding: 26px 20px calc(42px + var(--keyboard-height, 0px));
     box-shadow: 0 -1px 0 rgb(255 255 255 / 0.6) inset, 0 -18px 40px -20px rgb(0 0 0 / 0.5);
     transition: transform var(--ch-au-t-sheet) var(--ch-au-ease), opacity var(--ch-au-t-sheet-fade) linear;
+    /* Its own layer before it moves: promoted as the move began, the sheet was rasterized inside the move's first frames
+       and they were lost (the exit's first frame was already 65% down, WebKit video, 2026-10-15). */
+    will-change: transform, opacity;
   }
   /* The keyboard (SignIn's useKeyboardLift, a touch screen only): typing, the sheet rises to just under the status bar so
      the fields and Sign in sit above the keyboard, and settles back as it goes. The sheet's top moves at once, so iOS
@@ -1239,6 +1245,10 @@
   }
   .ch-au[data-kb='up'] .ch-au-panel {
     animation: chAuKbUp var(--ch-au-t-kb) var(--ch-au-ease);
+  }
+  /* Held at its first frame until that frame has been painted (SignIn's useKeyboardLift). */
+  .ch-au .ch-au-panel.ch-au-panel[data-ch-hold] {
+    animation-play-state: paused;
   }
   .ch-au[data-kb='down'] .ch-au-panel {
     animation: chAuKbDown var(--ch-au-t-kb) var(--ch-au-ease);
@@ -1379,7 +1389,7 @@
   }
   .ch-au[data-phase='opening'] .ch-au-photo,
   .ch-au--welcome .ch-au-photo {
-    clip-path: inset(0 0 0 0);
+    clip-path: none;
   }
   /* The welcome on a phone: the course is the whole screen, the camera where the opening left it. */
   .ch-au[data-phase='opening'] .ch-au-photo > .ch-au-scene,
@@ -1468,7 +1478,6 @@
       radial-gradient(90% 60% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%),
       radial-gradient(70% 50% at 0% 100%, rgb(255 255 255 / 0.05), transparent 70%),
       var(--ch-frame);
-    clip-path: inset(0 0 0 0);
   }
   .ch-au-rise {
     z-index: 4;
@@ -1477,12 +1486,11 @@
     box-shadow: var(--ch-shadow-lg);
     transform: translateY(102%);
   }
+  /* The green collapses to the bar by the parchment rising over it (above it in the stack), not by a clip-path, which
+     repainted the whole screen on the main thread each frame of the hand-off. */
   .ch-au[data-phase='leaving']:has(.ch-au-photo[data-fold]) .ch-au-hero {
     opacity: 1;
-    clip-path: inset(0 0 calc(100% - var(--ch-au-hb)) 0);
-    transition:
-      opacity var(--ch-au-t-hero) var(--ch-au-out),
-      clip-path var(--ch-au-t-rise) var(--ch-au-ease) var(--ch-au-rise-delay);
+    transition: opacity var(--ch-au-t-hero) var(--ch-au-out);
   }
   .ch-au[data-phase='leaving']:has(.ch-au-photo[data-fold]) .ch-au-rise {
     transform: translateY(var(--ch-au-hb));

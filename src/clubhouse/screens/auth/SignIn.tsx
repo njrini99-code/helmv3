@@ -34,21 +34,35 @@ function useKeyboardLift(panel: RefObject<HTMLElement | null>): void {
     // Rises on focus, never on the touch: iOS focuses the field the finger lifts over, so a sheet that starts moving on
     // pointerdown carries the field out from under the tap and Password never takes focus. Settles back once no field
     // has focus: moving from Email to Password blurs one and focuses the other in a turn.
+    // The sheet's move is a CSS animation, held at its first frame until that frame is on screen: the change lands in a
+    // busy frame (the keyboard going as Sign in is tapped), and the move had already covered 216px of its 290 by the
+    // first frame anyone saw (WebKit video, 2026-10-15).
+    let hold = 0;
+    const set = (kb: 'up' | 'down') => {
+      cancelAnimationFrame(hold);
+      el.setAttribute('data-ch-hold', '');
+      root.dataset.kb = kb;
+      hold = requestAnimationFrame(() => {
+        hold = requestAnimationFrame(() => el.removeAttribute('data-ch-hold'));
+      });
+    };
     const up = (e: Event) => {
       if (!typing(e.target)) return;
       window.clearTimeout(settle);
-      root.dataset.kb = 'up';
+      if (root.dataset.kb !== 'up') set('up');
     };
     const out = () => {
       window.clearTimeout(settle);
       settle = window.setTimeout(() => {
-        if (!typing(document.activeElement) && root.dataset.kb === 'up') root.dataset.kb = 'down';
+        if (!typing(document.activeElement) && root.dataset.kb === 'up') set('down');
       }, 60);
     };
     el.addEventListener('focusin', up);
     el.addEventListener('focusout', out);
     return () => {
       window.clearTimeout(settle);
+      cancelAnimationFrame(hold);
+      el.removeAttribute('data-ch-hold');
       el.removeEventListener('focusin', up);
       el.removeEventListener('focusout', out);
       delete root.dataset.kb;
