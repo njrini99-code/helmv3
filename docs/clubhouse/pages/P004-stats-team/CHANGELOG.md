@@ -1,5 +1,24 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-16 — A switch to Stats on the phone renders the first screen, then the rest
+
+A switch to coach Stats was the slowest section switch: a 74–76ms frame
+(WebKit, production build, phone), against about 40ms for the others.
+
+- **The chart sizes itself after layout.** Recharts' ResponsiveContainer read
+  the plot's box as it mounted, which laid out the whole arriving page inside
+  the switch (28ms at 4x CPU, Chromium). TeamTrendChart now takes its size from
+  a ResizeObserver alone and draws when the observer answers; the page already
+  holds the plot's box and its summary, so nothing moves.
+- **The legs, players and putting render a frame later.** They start below the
+  first screen (the legs at 802px of 852), and their rolling numbers, peeks and
+  rows were most of the frame. On a switch they render once the page's first
+  frame is painted (`useArrivalPainted`); a hard load and its hydration render
+  everything at once, as the server did.
+- With both, the switch's worst frame is 38–43ms, the same as the other
+  sections. The chart draws at full width, all five sections are there after a
+  switch and after a hard load, and the page has no hydration error.
+
 ## 2026-10-14 — Back from a player returns the team list to where it was
 
 A player's stats are the same route with `?player=`, so the shell's scroll

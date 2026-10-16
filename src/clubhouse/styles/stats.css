@@ -4230,6 +4230,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     -webkit-tap-highlight-color: transparent;
   }
   /* Nothing in the plot takes focus on purpose (it is pointer-only; the reading carries it), so a stray focus draws no ring. */
+  /* TeamTrendChart's observed box: the plot's full size, read by a ResizeObserver. */
+  .ch-stm.is-team .ch-stm-plot__box {
+    width: 100%;
+    height: 100%;
+  }
   .ch-stm.is-team .ch-stm-plot :focus {
     outline: none;
   }

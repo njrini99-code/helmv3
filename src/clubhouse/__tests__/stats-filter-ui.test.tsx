@@ -28,6 +28,9 @@ import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_PLAYER_NOMATCH, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
+// The team page's lower sections wait a painted frame on a navigation; here they render at once (use-painted.test.tsx).
+vi.mock('../lib/use-painted', async (orig) => ({ ...(await orig<typeof import('../lib/use-painted')>()), useArrivalPainted: () => true }));
+
 // A swap's leaving copy (ui/Swap.tsx) is hidden from assistive tech while it fades; read the live one.
 const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((e) => !e.closest('.ch-swap__body[aria-hidden]')) ?? null;
 async function expectCode(c: string, text?: RegExp) {

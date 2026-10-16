@@ -30,6 +30,7 @@ import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { useChSessionState } from '../../lib/session-state';
+import { useArrivalPainted } from '../../lib/use-painted';
 
 type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
@@ -97,6 +98,9 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const covered = failed.length > 1;
   // A window or filter change remounts the rolling figures, so only a leg change rolls them; new rounds swap in at once.
   const scope = JSON.stringify(data.filter);
+  // The legs, players and putting start below the first screen (the legs at 802px of 852), so a switch to Stats renders
+  // them a frame after the page has painted: their NumberFlows, peeks and rows were most of the switch's long frame.
+  const below = useArrivalPainted();
   // CH-4703: picking a leg is one selection tick, and ranks the players by it (the SG sort).
   const pickLeg = (next: ChLegPick) => {
     if (next === leg) return;
@@ -161,15 +165,19 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
                 </SectionBoundary>
                 <RoundFigures data={data} />
               </SectionBoundary>
-              <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-                <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} />
-              </SectionBoundary>
-              <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
-                <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />
-              </SectionBoundary>
-              <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
-                <Putting data={data} covered={covered} />
-              </SectionBoundary>
+              {below && (
+                <>
+                  <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
+                    <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} />
+                  </SectionBoundary>
+                  <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
+                    <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />
+                  </SectionBoundary>
+                  <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
+                    <Putting data={data} covered={covered} />
+                  </SectionBoundary>
+                </>
+              )}
             </>
           )
         )}

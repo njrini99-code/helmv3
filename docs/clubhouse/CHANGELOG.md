@@ -1,5 +1,13 @@
 # Clubhouse changelog
 
+## 2026-10-16 — A long page can render its lower part after the first paint
+
+`useArrivalPainted` (`lib/use-painted.ts`) is false while a page reached by
+navigating renders its first frame and true once that frame is on screen, so a
+switch's commit renders only what is seen. A render that hydrates is true from
+the start, so the server's HTML still matches. Phone Stats uses it for the
+sections below its first screen (P004).
+
 ## 2026-10-15 — Ink that holds at night, and Calendar's past steps back
 
 Overnight polish. Dark mode drew ivory and forest ink from palette steps
