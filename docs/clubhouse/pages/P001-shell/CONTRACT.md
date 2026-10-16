@@ -185,6 +185,7 @@ never by the frame; the pages name their own gates.
 | 10801 | — | `CLUBHOUSE_GATE` | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 | — | `ROLE_SCOPED_NAV` | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 | — | `TEAM_SWITCH_IS_A_HEAD_COACHS` | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
+| 10804 | CH-1910 | `IN_THE_IPHONE_APP_ONCE_A_LAUNCH` | In the iPhone app, once a launch at most, while iOS has not asked about push and the person has not answered this ask in either UI (the stored answer is shared with the current app's ask): a page has held for 4 seconds, nothing else is open or focused, and it is not round entry, onboarding or Settings |
 
 ## 09 — Success
 

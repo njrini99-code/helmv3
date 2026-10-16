@@ -29,6 +29,7 @@ import { useRelinkEpoch } from './relink';
 import { ClubhouseMarker } from './context';
 import { LightProvider } from './light';
 import { DockProvider, PhoneDock } from './Dock';
+import { PushAsk } from './PushAsk';
 import { AskSheetProvider } from './AskSheet';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
@@ -180,6 +181,8 @@ export function ClubhouseFrame({
                       <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
                       {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
                       <PullToRefresh pathname={pathname} />
+                      {/* The iPhone app's push ask, once, at a calm moment (CH-1910); nothing in a browser. */}
+                      <PushAsk pathname={pathname} role={role} />
                     </DockProvider>
                   </AskSheetProvider>
                 </CrumbProvider>

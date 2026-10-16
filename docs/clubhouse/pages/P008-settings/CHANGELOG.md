@@ -84,6 +84,18 @@ cases and the held-Back cases fail without the fix; the network-path cases
 behaviour that did not change. Not yet seen in Safari, the Simulator or on an
 iPhone. The Back over the list, the two-move priority order, the double reads
 and the desktop confirms' warning tick were fixed the same day (next entry).
+## 2026-10-16 — Push on this device in the iPhone app
+
+Release blocker 12 (finding N2). Notifications › This device only knew web
+push, which the app's WebView does not have, so in the app the row was hidden
+and push could not be turned on. In the app it is now the app's own push
+(`useNativePush`; docs/clubhouse/phone/push-opt-in.md): before iOS has asked, a
+switch that shows iOS's prompt (CH-8902); after, what iOS says, On or Off, with
+how to change it and Open iOS Settings, which opens GolfHelm's page in the
+Settings app (CH-8903). Coming back from Settings reads iOS again, and push
+turned on there registers with Apple at once. Send a test stays web only (its
+route sends web push). The wide layout gets the same row. The browser's row is
+unchanged. Not yet seen on a device (VERIFY).
 
 ## 2026-10-14 — Sign out ends in one request
 

@@ -58,6 +58,7 @@ function DeliveryCard({
 }) {
   const { p, dg, quiet, pending, flip, flipDigest } = useDelivery(prefs, digest, writes);
   const push = device.push;
+  const native = device.nativePush;
   const onDevice = push.status === 'subscribed';
   const togglePush = usePushToggle(push);
   const test = useTestPush(push);
@@ -79,7 +80,33 @@ function DeliveryCard({
       <Row label={<><Icon icon={Moon} size={15} /> Quiet mode</>} help="Pauses everything except messages from your team.">
         <SettingSwitch label="Quiet mode" hideLabel checked={quiet} busy={pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
       </Row>
-      {push.status !== 'unsupported' && (
+      {/* The iOS app's own push (CH-8902, CH-8903), on the wide layout too: the app in landscape on a large iPhone. */}
+      {native ? (
+        <Row
+          label={<><Icon icon={Smartphone} size={15} /> Push on this device</>}
+          help={
+            native.status === 'granted'
+              ? 'On. Turn it off in iOS Settings.'
+              : native.status === 'denied'
+                ? 'Notifications are off for GolfHelm in iOS Settings. Turn them on there, then come back.'
+                : 'Lets GolfHelm send notifications to this iPhone.'
+          }
+        >
+          {native.status === 'granted' || native.status === 'denied' ? (
+            <span className="ch-set-pair" data-ch-code="CH-8903">
+              {native.openSettings && (
+                <Button size="sm" onClick={native.openSettings}>
+                  Open iOS Settings
+                </Button>
+              )}
+            </span>
+          ) : (
+            <span className="ch-set-pair" data-ch-code="CH-8902">
+              <SettingSwitch label="Push on this device" hideLabel checked={false} disabled={native.status === 'checking'} busy={native.pending || native.status === 'checking'} onChange={(v) => v && void native.turnOn()} />
+            </span>
+          )}
+        </Row>
+      ) : push.status !== 'unsupported' && (
         <Row
           label={<><Icon icon={Smartphone} size={15} /> Push on this device</>}
           help={push.status === 'denied' ? 'Notifications are blocked for GolfHelm in this browser. Allow them in its site settings, then come back.' : 'Lets this browser show push notifications.'}
@@ -103,7 +130,7 @@ function DeliveryCard({
           {/* P008 #4: with push off here, the column still saves for other devices, and says so. */}
           <span role="columnheader">
             Push
-            {push.status !== 'unsupported' && !onDevice && <> <em className="ch-set-matrix__note">Off on this device</em></>}
+            {(native ? native.status !== 'granted' : push.status !== 'unsupported' && !onDevice) && <> <em className="ch-set-matrix__note">Off on this device</em></>}
           </span>
         </div>
         {DELIVERY_GROUPS.map((g) => {

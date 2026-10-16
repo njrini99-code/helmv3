@@ -168,7 +168,7 @@ Recruiting is for coaches. A player who opens it is sent Home before the page dr
 | 140801 | CH-14902 | `A_PLAYER_OPENS_RECRUITING` | A player opens Recruiting |
 | 140802 | CH-14903 | `THE_SERVER_REFUSES_A_WRITE_BECAUSE_THE` | The server refuses a write because the caller is not the team's coach |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1910.
 
 ## 09 — Success
 

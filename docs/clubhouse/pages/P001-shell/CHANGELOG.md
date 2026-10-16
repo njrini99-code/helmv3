@@ -219,6 +219,22 @@ Owner, desktop Safari: every switch waited on the server for the whole page.
   offline, and Next prefetches only in production builds.
 - The 22ms is the owner-session measurement from the commit; nothing was
   re-measured for this entry. Shared pieces: docs/clubhouse/CHANGELOG.md.
+## 2026-10-16 — The app asks for push, once, at a calm moment
+
+Release blocker 12 (finding N2). The push soft ask was mounted only in the
+current app's shell, so a new Clubhouse user in the iPhone app was never asked
+and push stayed off. The shell now has its own (`PushAsk`, CH-1910), built from
+a draft spec with no owner board (`docs/clubhouse/phone/push-opt-in.md`): the
+shell's bottom sheet, "Turn on notifications", with what push brings for a
+player or a coach, Not now and Turn on. It shows in the app only, once a launch
+at most, while iOS has not asked and nobody has answered it in either UI (the
+stored answer is the current app's, so an answer there counts), and only at a
+calm moment: a page held for 4 seconds with nothing else open or focused, and
+never on round entry, onboarding or Settings. Turn on is the light tap, then
+iOS's own prompt through the shared `requestPushPermission`, which registers
+with Apple; a yes is the success tap and "Notifications are on". Not now, Esc,
+the close button or a drag keep the answer and it never asks again. Nothing
+changes in a browser. Not yet seen on a device (VERIFY).
 
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 

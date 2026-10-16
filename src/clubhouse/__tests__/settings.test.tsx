@@ -82,6 +82,14 @@ function makeDevice(over: Partial<ChDevice['push']> = {}): ChDevice {
   };
 }
 
+/** The iOS app: web push unsupported, the row is Apple's push in the state given (CH-8902, CH-8903). */
+function nativeDevice(status: NonNullable<ChDevice['nativePush']>['status'], over: Partial<NonNullable<ChDevice['nativePush']>> = {}): ChDevice {
+  return {
+    ...makeDevice({ status: 'unsupported' }),
+    nativePush: { status, pending: false, turnOn: vi.fn(() => Promise.resolve()), openSettings: vi.fn(), ...over },
+  };
+}
+
 function setup(opts: { data?: ChSettingsData; writes?: Partial<ChSettingsWrites>; section?: ChSettingsSection; device?: ChDevice; onDeleted?: () => void } = {}) {
   const writes = makeWrites(opts.writes);
   const device = opts.device ?? makeDevice();
@@ -2586,6 +2594,84 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     spy.mockRestore();
     await user.click(top().getByRole('button', { name: 'Back to Settings' }));
     await screen.findByRole('navigation', { name: 'Settings sections' });
+  });
+
+  it('81901 CH-8902 in the app before iOS has asked: Push on this device is a switch that shows iOS prompt', async () => {
+    const device = nativeDevice('prompt');
+    const { user } = phone({ device });
+    await openRow(user, /^Notifications/);
+    const group = code('CH-8902') as HTMLElement;
+    expect(group).not.toBeNull();
+    const sw = within(group).getByRole('switch', { name: 'Push on this device' });
+    expect(sw).not.toBeChecked();
+    expect(sw).not.toBeDisabled();
+    // The browser's test push is not offered in the app: its route sends web push only.
+    expect(screen.queryByRole('button', { name: /Send a test/ })).toBeNull();
+    expect(screen.getByText('Push is off on this device; push choices still apply to your other devices.')).toBeTruthy();
+    await user.click(sw);
+    expect(device.nativePush!.turnOn).toHaveBeenCalledTimes(1);
+  });
+
+  it('81901 CH-8902 in the app while iOS is still being read: the switch is busy and cannot be used', async () => {
+    const { user } = phone({ device: nativeDevice('checking') });
+    await openRow(user, /^Notifications/);
+    expect(within(code('CH-8902') as HTMLElement).getByRole('switch', { name: 'Push on this device' })).toBeDisabled();
+  });
+
+  it('81901 CH-8903 in the app with push allowed: the row says On, how to turn it off, and opens iOS Settings', async () => {
+    const device = nativeDevice('granted');
+    const { user } = phone({ device });
+    await openRow(user, /^Notifications/);
+    const group = code('CH-8903') as HTMLElement;
+    expect(group.textContent).toMatch(/Push on this device\s*On/);
+    expect(group.textContent).toContain('Turn it off in iOS Settings.');
+    expect(within(group).queryByRole('switch')).toBeNull();
+    expect(screen.queryByText(/Push is off on this device/)).toBeNull();
+    await user.click(within(group).getByRole('button', { name: 'Open iOS Settings' }));
+    expect(device.nativePush!.openSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('81901 CH-8903 in the app with push turned off in iOS: the row says Off, where to turn it on, and opens iOS Settings', async () => {
+    const device = nativeDevice('denied');
+    const { user } = phone({ device });
+    await openRow(user, /^Notifications/);
+    const group = code('CH-8903') as HTMLElement;
+    expect(group.textContent).toMatch(/Push on this device\s*Off/);
+    expect(group.textContent).toContain('Notifications are off for GolfHelm in iOS Settings. Turn them on there, then come back.');
+    await user.click(within(group).getByRole('button', { name: 'Open iOS Settings' }));
+    expect(device.nativePush!.openSettings).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Push is off on this device; push choices still apply to your other devices.')).toBeTruthy();
+  });
+
+  it('81901 CH-8903 where iOS Settings cannot be opened, the row only says what iOS says', async () => {
+    const { user } = phone({ device: nativeDevice('denied', { openSettings: undefined }) });
+    await openRow(user, /^Notifications/);
+    expect(within(code('CH-8903') as HTMLElement).queryByRole('button', { name: 'Open iOS Settings' })).toBeNull();
+  });
+});
+
+describe('Settings · 89xx push in the iOS app on the wide layout', () => {
+  it('CH-8902 before iOS has asked: the switch shows iOS prompt; the push column says off on this device', async () => {
+    const device = nativeDevice('prompt');
+    const { user } = setup({ section: 'notifications', device });
+    const pair = code('CH-8902') as HTMLElement;
+    expect(screen.getByText('Lets GolfHelm send notifications to this iPhone.')).toBeTruthy();
+    expect(screen.getByText('Off on this device')).toBeTruthy();
+    await user.click(within(pair).getByRole('switch', { name: 'Push on this device' }));
+    expect(device.nativePush!.turnOn).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-8903 allowed or turned off in iOS: what iOS says, and Open iOS Settings', async () => {
+    const on = nativeDevice('granted');
+    const first = setup({ section: 'notifications', device: on });
+    expect(screen.getByText('On. Turn it off in iOS Settings.')).toBeTruthy();
+    expect(screen.queryByText('Off on this device')).toBeNull();
+    await first.user.click(within(code('CH-8903') as HTMLElement).getByRole('button', { name: 'Open iOS Settings' }));
+    expect(on.nativePush!.openSettings).toHaveBeenCalledTimes(1);
+    first.unmount();
+    setup({ section: 'notifications', device: nativeDevice('denied') });
+    expect(screen.getByText('Notifications are off for GolfHelm in iOS Settings. Turn them on there, then come back.')).toBeTruthy();
+    expect(screen.queryByRole('switch', { name: 'Push on this device' })).toBeNull();
   });
 });
 
