@@ -8,7 +8,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(45);
+SELECT plan(46);
 
 -- Users: a attacker · b head coach of V · b2 assistant in V · c new golf coach
 -- d baseball attacker · e sole coach of S · bb baseball coach of BV · f fresh
@@ -350,6 +350,21 @@ SELECT throws_ok(
   $$UPDATE public.helm_lifting_coach_invites SET organization_id = '00000000-0000-0000-0000-0000000c1b01'
     WHERE id = '00000000-0000-0000-0000-0000000c1f02'$$,
   '42501', NULL, 'an invite cannot be moved to an organization the inviter may not invite to');
+
+-- An assistant from another program (no organization on their coach row) who
+-- marks their own staff row head coach still may not invite: the app's rule
+-- also needs the coach row in the organization.
+RESET ROLE;
+INSERT INTO public.baseball_coaches (id, user_id, coach_type, organization_id)
+VALUES ('00000000-0000-0000-0000-0000000c1c11', '00000000-0000-0000-0000-0000000c1a08', 'college', NULL);
+INSERT INTO public.baseball_team_coach_staff (team_id, coach_id, role, is_primary, is_head_coach)
+VALUES ('00000000-0000-0000-0000-0000000c1d01', '00000000-0000-0000-0000-0000000c1c11', 'assistant', false, true);
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.as_user('00000000-0000-0000-0000-0000000c1a08');
+SELECT throws_ok(
+  $$INSERT INTO public.helm_lifting_coach_invites (organization_id, email, invited_by_user_id, invited_by_sport)
+    VALUES ('00000000-0000-0000-0000-0000000c1b0e', 'pgtap-s1-f@helm.test', '00000000-0000-0000-0000-0000000c1a08', 'baseball')$$,
+  '42501', NULL, 'a self-promoted assistant from outside the organization cannot invite');
 
 RESET ROLE;
 SELECT ok(

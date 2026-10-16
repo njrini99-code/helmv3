@@ -260,6 +260,7 @@ AS $$
            JOIN public.baseball_team_coach_staff s ON s.coach_id = bc.id
            JOIN public.baseball_teams t ON t.id = s.team_id
            WHERE bc.user_id = (SELECT auth.uid())
+             AND bc.organization_id = p_org
              AND t.organization_id = p_org
              AND (s.is_primary IS TRUE OR s.is_head_coach IS TRUE)
          )
@@ -269,6 +270,7 @@ AS $$
            JOIN public.golf_team_coach_staff s ON s.coach_id = gc.id
            JOIN public.golf_teams t ON t.id = s.team_id
            WHERE gc.user_id = (SELECT auth.uid())
+             AND gc.organization_id = p_org
              AND t.organization_id = p_org
              AND s.is_primary IS TRUE
          );
