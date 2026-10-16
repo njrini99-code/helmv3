@@ -1,6 +1,6 @@
 # P007 — Messages: changelog
 
-## 2026-10-16 — A failed read on the server is logged, and Delete conversation is not lost to it
+## 2026-10-16 — Failed server reads are logged; Delete is not lost to them
 
 From the code review of PR #2195. The route swallowed a failure of the
 conversation-hide check and of the announcements read. Both are now logged

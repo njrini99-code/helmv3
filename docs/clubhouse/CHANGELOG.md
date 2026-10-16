@@ -1,6 +1,6 @@
 # Clubhouse changelog
 
-## 2026-10-16 — Held pages are dated truthfully; Back to Stats lands where it was left
+## 2026-10-16 — Held pages dated truthfully; Back to Stats lands in place
 
 From the code review of PR #2195 (`use-prefetch-tabs.ts`, `lib/pop-mark.ts`,
 `lib/use-painted.ts`, `section-switch.tsx`, `SectionStrip.tsx`).
