@@ -386,6 +386,17 @@
     ]
   },
   {
+    "id": 10804,
+    "page": "P001",
+    "category": 8,
+    "item": 4,
+    "name": "IN_THE_IPHONE_APP_ONCE_A_LAUNCH",
+    "chCode": "CH-1910",
+    "meaning": "In the iPhone app, once a launch at most, while iOS has not asked about push and the person has not answered this ask in either UI (the stored answer is shared with the current app's ask): a page has held for 4 seconds, nothing else is open or focused, and it is not round entry, onboarding or Settings",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10901,
     "page": "P001",
     "category": 9,
@@ -7537,6 +7548,28 @@
     "tests": [
       "src/clubhouse/__tests__/settings-server.test.tsx"
     ]
+  },
+  {
+    "id": 80809,
+    "page": "P008",
+    "category": 8,
+    "item": 9,
+    "name": "IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE",
+    "chCode": "CH-8902",
+    "meaning": "In the iPhone app, Notifications › This device before iOS has asked about push (blocker 12)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80810,
+    "page": "P008",
+    "category": 8,
+    "item": 10,
+    "name": "IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE_2",
+    "chCode": "CH-8903",
+    "meaning": "In the iPhone app, Notifications › This device after iOS has answered: allowed, or turned off (only the phone's Settings app changes either)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
     "id": 80901,

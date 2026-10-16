@@ -33,9 +33,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-7017 | 15 Data freshness / sync | The send may or may not have landed: an unconfirmed sync, not a refusal. |
 | CH-7019 | 10 Warning | The group was created; one coach wasn't added. A partial success the coach can finish. |
 | CH-8025 | 10 Warning | Information, not an error: the in-app report form is unavailable, so email opens. |
+| CH-8902 | 08 Permission / authorization | The phone's push permission before iOS has asked: a permission request, not the network. |
+| CH-8903 | 08 Permission / authorization | The phone's push permission as iOS answered it, changed only in its Settings app. |
 | CH-09901 | 10 Warning | The qualifier is closed: a standing condition the coach and players are told about. |
 | CH-09902 | 06 Server / system error | An edit saved only in part, or not at all: the server refused a step. |
 | CH-1904 | 01 Default / core UI | Core navigation behaviour: a new page opens at the top. |
+| CH-1910 | 08 Permission / authorization | The app asks for the phone's push permission: a permission outcome, not the network. |
 | CH-1906 | 20 Keyboard / input | An input gesture (edge swipe, browser back) pops the pushed screen. |
 | CH-1907 | 20 Keyboard / input | An input gesture: a second tap on the open tab pops to its root, then scrolls it to the top. |
 | CH-1908 | 20 Keyboard / input | An input gesture: the edge swipe's Back, already animated by iOS, pops once. |
@@ -104,14 +107,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 6 |  | 14 | 5 | 3 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 25 | 1 | 3 | 1 | 3 | 1 | 1 |  | 104 |
+| P001 | 3 | 2 | 1 | 6 |  | 14 | 5 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 25 | 1 | 3 | 1 | 3 | 1 | 1 |  | 105 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 2 | 3 | 8 | 2 | 19 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 73 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 19 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 28 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 95 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 3 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 97 |
-| P008 | 2 | 1 | 3 | 6 | 15 | 41 | 2 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 131 |
+| P008 | 2 | 1 | 3 | 6 | 15 | 41 | 2 | 10 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 133 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 133 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 15 | 12 |  | 17 | 11 | 39 | 14 | 5 | 2 |  | 21 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 178 |
@@ -158,6 +161,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10801 |  | 08 Permission / authorization | `CLUBHOUSE_GATE` | implemented | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 |  | 08 Permission / authorization | `ROLE_SCOPED_NAV` | implemented | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 |  | 08 Permission / authorization | `TEAM_SWITCH_IS_A_HEAD_COACHS` | implemented | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
+| 10804 | CH-1910 | 08 Permission / authorization | `IN_THE_IPHONE_APP_ONCE_A_LAUNCH` | implemented | In the iPhone app, once a launch at most, while iOS has not asked about push and the person has not answered this ask in either UI (the stored answer is shared with the current app's ask): a page has held for 4 seconds, nothing else is open or focused, and it is not round entry, onboarding or Settings |
 | 10901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change made through useAction that lands fires the success haptic and names itself in a toast; an action with no done line (an instant switch) shows no toast, its new position being the confirmation. |
 | 11301 |  | 13 Optimistic UI | `BELL_MARK_ALL_OPTIMISTIC` | implemented | Mark all read clears the unread rows at once and puts them back when the write fails (with CH-1001); opening an unread notification marks it read at once. |
 | 11401 |  | 14 Retry / recovery | `ROUTE_TRY_AGAIN` | implemented | A page that crashes shows its error view with Try again (Reload after an update), locked while it retries, the number of tries, and Back to Home. |
@@ -817,6 +821,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80806 |  | 08 Permission / authorization | `WRITES_SCOPED_TO_THE_CALLER` | implemented | Every write is scoped to the signed-in person: profile rows by their own user id, golf details by their own player id, leaving by their own membership of their team, and join requests, invite codes and the team CoachHelm switch by their own player or team id, which the server actions and row policies check again. |
 | 80807 |  | 08 Permission / authorization | `PASSWORD_NEEDS_THE_CURRENT_ONE` | implemented | A new password is set only after the current password signs in; a wrong current password changes nothing and says 'Your current password is incorrect.' |
 | 80808 |  | 08 Permission / authorization | `REFUSED_UPDATE_IS_A_FAILURE` | implemented | An update the database refuses by hiding the row (no error, no row changed) is a failure the person sees, not a save: profile, team details (the school, then the team), golf details and the coaching settings count the rows they change and fail with 'Nothing was saved. <what> was not found, or you are not allowed to change it.', which the toast shows as 'Your account doesn’t have access to do this.'; the card stays unsaved with its edits. Leaving a team already did this. |
+| 80809 | CH-8902 | 08 Permission / authorization | `IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE` | implemented | In the iPhone app, Notifications › This device before iOS has asked about push (blocker 12) |
+| 80810 | CH-8903 | 08 Permission / authorization | `IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE_2` | implemented | In the iPhone app, Notifications › This device after iOS has answered: allowed, or turned off (only the phone's Settings app changes either) |
 | 80901 |  | 09 Success | `CHANGE_LANDED` | implemented | A save that lands (profile, team details, scoring, reminders, golf details, email confirmation sent, password updated, new invite code, left the team, join request sent or cancelled) fires the success haptic and shows a toast naming what landed; a card with a Save button also says Saved for about two seconds. |
 | 80902 |  | 09 Success | `INSTANT_SAVE_SILENT` | implemented | A switch, segment, slider or CoachHelm autosave that lands says nothing: no toast and no success haptic, because its selection tick was the feedback (D-70); the CoachHelm status line reads All changes saved. |
 | 80903 |  | 09 Success | `ACCOUNT_DELETE_LANDED` | implemented | Once the account is deleted a toast says so and the success haptic fires, then this device's caches, active team and session are cleared and the person is sent to the sign-in page in the app or the home page on the web. |

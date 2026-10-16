@@ -125,6 +125,23 @@ export async function initCapacitor(): Promise<void> {
 }
 
 /**
+ * Open this app's page in the phone's Settings app (iOS: notifications, and the rest of what the app may do), for
+ * a permission the person turned down, which only Settings can turn back on. `app-settings:` is
+ * UIApplication.openSettingsURLString: the app's WebView hands a top-level navigation to a URL that is not the app's
+ * to iOS (Capacitor's WebViewDelegationHandler), so this needs no plugin. The iOS app only; returns false elsewhere.
+ */
+export function openNativeAppSettings(): boolean {
+  if (!canOpenNativeAppSettings()) return false;
+  window.location.href = 'app-settings:';
+  return true;
+}
+
+/** Whether `openNativeAppSettings` can open anything here: the iOS app. */
+export function canOpenNativeAppSettings(): boolean {
+  return isNativeApp() && Capacitor.getPlatform() === 'ios';
+}
+
+/**
  * Open a URL in the appropriate browser.
  * In native apps, opens in-app via SFSafariViewController (iOS).
  * On web, opens in a new tab.

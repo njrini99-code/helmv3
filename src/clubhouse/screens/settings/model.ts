@@ -380,9 +380,25 @@ export interface ChSettingsWrites {
   staff: ChStaffWrites;
 }
 
+/**
+ * Push in the iOS app (docs/clubhouse/phone/push-opt-in.md): Apple's push, not web push, which the app's WebView lacks.
+ * `prompt` until iOS has asked; then `granted` or `denied`, which only the phone's Settings app changes.
+ */
+export interface ChNativePush {
+  status: 'checking' | 'prompt' | 'granted' | 'denied';
+  /** iOS's prompt is up. */
+  pending: boolean;
+  /** Shows iOS's prompt (only while `prompt`); the row follows the answer. */
+  turnOn: () => Promise<void>;
+  /** Opens GolfHelm's page in iOS Settings; absent where it can't (not the iOS app). */
+  openSettings?: () => void;
+}
+
 export interface ChDevice {
   /** Native app: shows the haptics switch. */
   native: boolean;
+  /** The app's own push (P008, blocker 12); absent on the web, where `push` is the browser's. */
+  nativePush?: ChNativePush;
   push: {
     status: 'checking' | 'unsupported' | 'denied' | 'subscribed' | 'unsubscribed';
     pending: boolean;

@@ -49,6 +49,7 @@ import '@/clubhouse/styles/messages.css';
 import { PreviewMessages } from '@/clubhouse/preview/PreviewMessages';
 import { PreviewBell } from '@/clubhouse/preview/PreviewBell';
 import { PreviewSettings } from '@/clubhouse/preview/PreviewSettings';
+import { PreviewPushAsk } from '@/clubhouse/preview/PreviewPushAsk';
 import { QualifiersList } from '@/clubhouse/screens/qualifiers/QualifiersList';
 import { HubSkeleton } from '@/clubhouse/screens/hub/HubSkeleton';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
@@ -155,11 +156,11 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round } = await searchParams;
+  const { state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask } = await searchParams;
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
   const heroTone = heroToneFrom(tone);
   const qDetail = (role: 'coach' | 'player') => {
@@ -482,6 +483,8 @@ export default async function ClubhousePreview({
         lightAt={previewLightTime(at, PREVIEW_SHELL.timezone)}
       >
         <HeroToneProvider tone={heroTone}>{entry.node}</HeroToneProvider>
+        {/* &ask=push: the iPhone app's push ask, open (CH-1910). */}
+        {ask === 'push' && <PreviewPushAsk role={user.role} />}
       </ClubhouseFrame>
       </ChPhoneHintProvider>
     </PreviewBell>
