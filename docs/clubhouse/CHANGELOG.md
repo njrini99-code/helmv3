@@ -1,5 +1,14 @@
 # Clubhouse changelog
 
+## 2026-10-16 — Back returns a page to where it was left, in WebKit too
+
+RouteFrame marks a Back (popstate) so the page it returns to goes back to where
+it was left. Its listener was registered after the router's, and React commits a
+Back inside the router's listener, so the frame read the mark before it was set
+and opened every returned page at its top (WebKit, Stats → player → Back: 1 of 6
+runs restored). The mark is now set in the capture phase, ahead of the router:
+4 of 4 runs return to the place.
+
 ## 2026-10-16 — A long page can render its lower part after the first paint
 
 `useArrivalPainted` (`lib/use-painted.ts`) is false while a page reached by

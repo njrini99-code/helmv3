@@ -30,7 +30,10 @@ const scrolled = new Map<string, { canvas: number; win: number }>();
 /** Set by a Back or Forward (popstate); a navigation that starts within this long of one is a return. */
 const RETURN_WINDOW_MS = 1500;
 let poppedAt = 0;
-if (typeof window !== 'undefined') window.addEventListener('popstate', () => (poppedAt = Date.now()));
+// Capture, so the mark is set before the router's popstate listener: React commits a Back inside that listener, and this
+// frame's layout effect read the mark before a bubbling listener had set it (registered later, as this chunk loads after
+// the router's), so every Back opened the page at its top (WebKit, Stats → player → Back, 6 of 6 runs, 2026-10-16).
+if (typeof window !== 'undefined') window.addEventListener('popstate', () => (poppedAt = Date.now()), true);
 
 /** A route's loading skeleton, as each route's loading.tsx draws it (base.css fades it in by the same mark). */
 const ROUTE_SKELETON = "main[aria-busy='true'][aria-label^='Loading']";
