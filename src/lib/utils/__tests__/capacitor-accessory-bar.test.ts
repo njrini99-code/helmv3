@@ -13,7 +13,7 @@ vi.mock('@capacitor/haptics', () => ({ Haptics: {}, ImpactStyle: {}, Notificatio
 vi.mock('@capacitor/status-bar', () => ({ StatusBar: {}, Style: {} }));
 vi.mock('@capacitor/splash-screen', () => ({ SplashScreen: {} }));
 
-import { installNumericAccessoryBar, wantsKeyboardAccessoryBar } from '@/lib/utils/capacitor';
+import { installNumericAccessoryBar, pinKeyboardAccessoryBar, wantsKeyboardAccessoryBar } from '@/lib/utils/capacitor';
 
 function input(attrs: Record<string, string>): HTMLInputElement {
   const el = document.createElement('input');
@@ -86,6 +86,103 @@ describe('installNumericAccessoryBar', () => {
     input({ inputmode: 'numeric' }).focus();
     await Promise.resolve();
     expect(setAccessoryBarVisible).toHaveBeenCalledTimes(1);
+    cleanup();
+  });
+});
+
+describe('pinKeyboardAccessoryBar (round entry holds the bar up)', () => {
+  const flush = () => Promise.resolve();
+  const shown = (fn: ReturnType<typeof vi.fn>) => fn.mock.calls.map(([o]) => (o as { isVisible: boolean }).isVisible);
+
+  it('shows the bar at once and keeps it through text fields and blurs until released', async () => {
+    const setAccessoryBarVisible = vi.fn(async () => {});
+    const cleanup = installNumericAccessoryBar({ setAccessoryBarVisible });
+    const release = pinKeyboardAccessoryBar();
+    // Pinned before any field is focused: nothing has to race the keyboard.
+    expect(shown(setAccessoryBarVisible)).toEqual([true]);
+    const yards = input({ inputmode: 'numeric' });
+    const course = input({ type: 'text' });
+    yards.focus();
+    course.focus();
+    course.blur();
+    yards.focus();
+    yards.blur();
+    expect(shown(setAccessoryBarVisible)).toEqual([true]);
+    release();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true, false]);
+    cleanup();
+  });
+
+  it('released with a text field focused hides the bar; with a numeric one it stays', async () => {
+    const setAccessoryBarVisible = vi.fn(async () => {});
+    const cleanup = installNumericAccessoryBar({ setAccessoryBarVisible });
+    const note = input({ type: 'text' });
+    const putts = input({ inputmode: 'decimal' });
+    let release = pinKeyboardAccessoryBar();
+    note.focus();
+    release();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true, false]);
+    release = pinKeyboardAccessoryBar();
+    putts.focus();
+    release();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true, false, true]);
+    // A second release of the same pin does nothing.
+    release();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true, false, true]);
+    cleanup();
+  });
+
+  it('one surface handing over to the next (unmount, then mount) never flickers the bar', async () => {
+    const setAccessoryBarVisible = vi.fn(async () => {});
+    const cleanup = installNumericAccessoryBar({ setAccessoryBarVisible });
+    const setup = pinKeyboardAccessoryBar();
+    setup();
+    const tracking = pinKeyboardAccessoryBar();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true]);
+    // Two pins at once: releasing one keeps the bar.
+    const sheet = pinKeyboardAccessoryBar();
+    sheet();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true]);
+    tracking();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true, false]);
+    cleanup();
+  });
+
+  it('a pin taken before the plugin is installed (a cold open into round entry) shows the bar on install', async () => {
+    const release = pinKeyboardAccessoryBar();
+    const setAccessoryBarVisible = vi.fn(async () => {});
+    const cleanup = installNumericAccessoryBar({ setAccessoryBarVisible });
+    expect(shown(setAccessoryBarVisible)).toEqual([true]);
+    release();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true, false]);
+    cleanup();
+  });
+
+  it('with no plugin installed (the web) a pin does nothing, and a failing plugin call keeps the count', async () => {
+    const release = pinKeyboardAccessoryBar();
+    release();
+    await flush();
+    const setAccessoryBarVisible = vi.fn(async () => {
+      throw new Error('not implemented');
+    });
+    const cleanup = installNumericAccessoryBar({ setAccessoryBarVisible });
+    expect(setAccessoryBarVisible).not.toHaveBeenCalled();
+    const again = pinKeyboardAccessoryBar();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true]);
+    input({ type: 'text' }).focus();
+    expect(shown(setAccessoryBarVisible)).toEqual([true]);
+    again();
+    await flush();
+    expect(shown(setAccessoryBarVisible)).toEqual([true, false]);
     cleanup();
   });
 });

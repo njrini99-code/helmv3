@@ -490,12 +490,13 @@ From the shell (P001): 11901 PHONE_CHROME.
 Status: DEFINED
 
 Every control on the page is a native button, link or input in the tab order, and every sheet closes on Esc with focus back on
-its opener (112001, reserved: no P011 test presses Esc). Not built: arrow keys inside the radio groups (each choice is a Tab
-stop), and the iOS number pad's Done bar on the distance box. No shortcuts of its own.
+its opener (112001, reserved: no P011 test presses Esc). In the app every keyboard in round entry has a Done key: the round
+holds the native accessory bar up from setup to submit (`useRoundDoneKey`, blocker 19; Mobile Safari draws the bar itself).
+Not built: arrow keys inside the radio groups (each choice is a Tab stop). No shortcuts of its own.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 112001 | — | `SHEETS_CLOSE_ON_ESC_AND_FOCUS_RETURNS` | Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. No P011 test presses Esc. Not built: arrow keys inside the radio groups (each choice is its own Tab stop) and the iOS number pad's Done bar. |
+| 112001 | — | `SHEETS_CLOSE_ON_ESC_AND_FOCUS_RETURNS` | Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. No P011 test presses Esc. In the app the keyboard keeps its Done key for the whole round, setup and sheets included: round entry holds the native accessory bar up (`useRoundDoneKey`; Mobile Safari draws it itself). Not built: arrow keys inside the radio groups (each choice is its own Tab stop). |
 
 From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 

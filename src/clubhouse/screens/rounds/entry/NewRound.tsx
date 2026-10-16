@@ -14,6 +14,7 @@ import { reasonText } from './labels';
 import { InProgressConflictDialog } from './InProgressConflictDialog';
 import { useRoundPorts } from './ports';
 import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRuntime';
+import { useRoundDoneKey } from './use-done-key';
 import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
 import { loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
@@ -38,6 +39,8 @@ export function NewRound({ playerId }: { playerId: string }) {
   const params = useSearchParams();
   const { ports, capture } = useRoundPorts();
   const engine = useNewRoundSession({ playerId, ports, routes: ENGINE_ROUTES, logSource: LOG_SOURCE });
+  // A Done key over the number pad for the whole round, setup to submit, sheets included (use-done-key.ts).
+  useRoundDoneKey();
   // A toast's Retry, and the setup screen's ports, are made once and outlive the render that made them, so what they
   // call is the latest engine (its `start` reads the state it was rendered with) and never the first one.
   const latest = useRef(engine);
