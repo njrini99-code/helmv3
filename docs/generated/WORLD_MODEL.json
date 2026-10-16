@@ -1237,6 +1237,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/golf/actions/conversation-hide.ts",
+        "pattern": "src/app/golf/actions/conversation-hide.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/golf/actions/course-library.ts",
         "pattern": "src/app/golf/actions/course-library.ts",
         "category": "actions"
@@ -2498,6 +2503,11 @@
       {
         "id": "tests:src/lib/security/__tests__/clubhouse-preview-headers.test.ts",
         "pattern": "src/lib/security/__tests__/clubhouse-preview-headers.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/test/actions/hide-golf-conversation.test.ts",
+        "pattern": "src/test/actions/hide-golf-conversation.test.ts",
         "category": "tests"
       },
       {
@@ -23447,6 +23457,18 @@
     },
     {
       "source": "team_communications",
+      "target": "actions:src/app/golf/actions/conversation-hide.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/conversation-hide.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "actions:src/app/golf/actions/message-attachments.ts",
       "kind": "feature_action",
       "evidence": [
@@ -23576,6 +23598,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/conversation-hide.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/message-attachments.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -23685,6 +23712,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/communication.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/conversation-hide.ts",
           "anchor": "src/lib/supabase/server"
         },
         {
@@ -24205,6 +24237,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/golf/__tests__/client-resource-cache.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/test/actions/hide-golf-conversation.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/test/actions/hide-golf-conversation.test.ts"
         }
       ]
     },
