@@ -24,7 +24,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
 import { AuthKeyLabel } from './AuthKey';
 import { AuthNotice, type AuthTone } from './AuthNotice';
-import { OPENING_MS } from './auth-motion';
+import { KB_LIFT_QUERY, OPENING_PUSH_MS } from './auth-motion';
 import { isPlainClick } from './ForgotPassword';
 import { failureFor, failureForServer, type SignInFailure } from './sign-in-state';
 import { useGlide, type Glider } from './use-glide';
@@ -156,6 +156,9 @@ export function SignInForm({
 
   // With the keyboard up, bring the button into view so it is not hidden under it.
   const revealSubmit = () => {
+    // On a touch phone the sheet rises over the keyboard with Sign in on it (SignIn's useKeyboardLift): a scroll 320ms
+    // later was a second move after the sheet had settled (owner, 2026-10-16: "a slight delay with the animation").
+    if (window.matchMedia?.(KB_LIFT_QUERY).matches) return;
     window.setTimeout(() => submitRef.current?.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }), 320);
   };
 
@@ -214,7 +217,7 @@ export function SignInForm({
       // name to greet yet, so it goes straight there.
       if (href.startsWith('/golf/welcome')) {
         onOpening();
-        if (!reduced) await new Promise((resolve) => setTimeout(resolve, OPENING_MS));
+        if (!reduced) await new Promise((resolve) => setTimeout(resolve, OPENING_PUSH_MS));
       }
       if (navigate) navigate(href);
       else router.push(href);

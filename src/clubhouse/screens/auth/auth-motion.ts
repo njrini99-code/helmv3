@@ -89,3 +89,12 @@ export const HANDOFF_MS = { lift: 420, navigate: 1000, plain: 520, reducedNaviga
 export const WELCOME_PHONE_AUTO_MS = 3600;
 /** The form leaving on the sign-in page, before the welcome route takes over. */
 export const OPENING_MS = 720;
+/**
+ * When the welcome is asked for, into the opening: the sheet's slide is front-loaded (the auth ease), so at 430ms it is
+ * about 95% off the screen. Asked for at the end of the opening, the welcome came a full round trip after the sheet had
+ * gone, over an empty course (WebKit, 700ms latency: the opening ended at 1.75s, the welcome at 2.7s). A full prefetch
+ * at the start does not help: Next asks for the route's tree, then its data, one after the other.
+ */
+export const OPENING_PUSH_MS = 430;
+/** Where the phone's sign-in sheet rises over the keyboard (SignIn's useKeyboardLift): a touch screen at phone width. */
+export const KB_LIFT_QUERY = '(max-width: 820px) and (pointer: coarse)';
