@@ -371,6 +371,24 @@ Held items:     none
 ### Verification
 
 - Each new test was run against a deliberate break of the code it guards and failed; VERIFY.md "No data lost".
+## 2026-10-16 — The number pad has a Done key in the app
+
+Release blocker 19. Round entry's number fields (the shot screen's distance,
+setup's yardages, Add a course's rating and slope, the edit-shot sheet's
+distances) open the iOS number pad, which has no return key, and the app's
+WebView hides the keyboard's accessory bar, so the pad could only be put away
+by tapping elsewhere. A focus-time toggle already asked for the bar on numeric
+fields, but its plugin call races the keyboard and was never seen on a device.
+
+Now `NewRound` and `ContinueRound` hold the system's own accessory bar
+(‹ › Done) up from mount to unmount (`useRoundDoneKey`, through the new
+`pinKeyboardAccessoryBar` in `src/lib/utils/capacitor.ts`), before any field is
+focused. It is iOS's bar, so it sits over the sheets too, and the
+`--keyboard-height` the app publishes includes it. While a round is open, text
+fields (course search, a course's name) get the bar as well, as they do in
+Mobile Safari. On the web nothing changes: Mobile Safari draws the bar itself.
+It uses `Keyboard.setAccessoryBarVisible`, which today's binary has. Not yet
+seen on a device (VERIFY). Contract 112001 and the phone draft updated.
 
 ## 2026-10-14 — The course map hydrates without a mismatch
 
