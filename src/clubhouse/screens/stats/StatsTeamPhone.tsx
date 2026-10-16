@@ -1,6 +1,5 @@
 'use client';
 
-import NumberFlow from '@number-flow/react';
 import { ChartColumn, ChevronRight, Medal, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -14,11 +13,9 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { changeTone, formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { tabListKeys } from '../../lib/tabs';
-import { CH_DUR, CH_EASE } from '../../lib/motion';
-import { useChReducedMotion } from '../../lib/reduced-motion';
 import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
 import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -39,36 +36,6 @@ export type ChLegPick = 'total' | ChLeg;
 // Recharts loads on its own chunk after the page has painted, and never on desktop (this module is imported there too).
 // The page holds the chart's box and its accessible summary, so nothing waits on it or moves when it lands.
 const TeamTrendChart = dynamic(() => import('./TeamTrendChart'), { ssr: false, loading: () => null });
-
-/** Number Flow on the Clubhouse curve: digits roll over base, fade over quick (D-64); instant when reduced. */
-const FLOW_TIMING = {
-  transformTiming: { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})` },
-  spinTiming: { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})` },
-  opacityTiming: { duration: CH_DUR.quick * 1000, easing: 'ease-out' },
-} as const;
-const ONE_PLACE = { minimumFractionDigits: 1, maximumFractionDigits: 1 } as const;
-
-/**
- * A signed strokes-gained value whose digits roll when it changes (a leg picked; never on first paint, never on a
- * window change, which remounts it). Intl draws a hyphen, so the sign is ours: a true minus, a plus, none at 0.0
- * (formatSigned's rule). Assistive technology reads the formatted text; the rolling digits are hidden from it.
- */
-function SignedFlow({ value, suffix = '' }: { value: number; suffix?: string }) {
-  const reduced = useChReducedMotion();
-  const text = formatSigned(value);
-  const sign = text.startsWith('+') ? '+' : text.startsWith(MINUS) ? MINUS : '';
-  return (
-    <>
-      <span className="ch-sr-only">
-        {text}
-        {suffix}
-      </span>
-      <span aria-hidden="true">
-        <NumberFlow value={Number(Math.abs(value).toFixed(1))} format={ONE_PLACE} prefix={sign} suffix={suffix} animated={!reduced} {...FLOW_TIMING} />
-      </span>
-    </>
-  );
-}
 
 const legIndex = (leg: ChLegPick) => (leg === 'total' ? -1 : LEGS_LIST.indexOf(leg));
 
@@ -96,10 +63,8 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
     if (data.puttsError) failed.push('team putting');
   }
   const covered = failed.length > 1;
-  // A window or filter change remounts the rolling figures, so only a leg change rolls them; new rounds swap in at once.
-  const scope = JSON.stringify(data.filter);
   // The legs, players and putting start below the first screen (the legs at 802px of 852), so a switch to Stats renders
-  // them a frame after the page has painted: their NumberFlows, peeks and rows were most of the switch's long frame.
+  // them a frame after the page has painted: their peeks and rows were most of the switch's long frame.
   const below = useArrivalPainted();
   // CH-4703: picking a leg is one selection tick, and ranks the players by it (the SG sort).
   const pickLeg = (next: ChLegPick) => {
@@ -168,10 +133,10 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
               {below && (
                 <>
                   <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-                    <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} />
+                    <Legs data={data} leg={leg} onLeg={pickLeg} />
                   </SectionBoundary>
                   <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
-                    <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />
+                    <Players data={data} leg={leg} sort={sort} onSort={setSort} />
                   </SectionBoundary>
                   <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
                     <Putting data={data} covered={covered} />
@@ -357,7 +322,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
       {head}
       <div className="ch-stm-group">
         <p className="ch-stm-sgfig">
-          <b className={'ch-num ' + (picked.v == null ? '' : picked.v >= 0 ? 'ch-gain' : 'ch-loss')}>{picked.v == null ? NO_DATA : <SignedFlow value={picked.v} />}</b>
+          <b className={'ch-num ' + (picked.v == null ? '' : picked.v >= 0 ? 'ch-gain' : 'ch-loss')}>{formatSigned(picked.v)}</b>
           <span>{picked.total ? 'Team total' : picked.label}, a round</span>
         </p>
         {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
@@ -452,7 +417,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
                     </span>
                     <span className="ch-stm-row__v ch-num">
                       <b>{p.avg == null ? NO_DATA : formatFixed(p.avg)}</b>
-                      <span className={sg == null ? '' : sg >= 0 ? 'ch-gain' : 'ch-loss'}>{sg == null ? 'Early read' : <SignedFlow value={sg} suffix=" SG" />}</span>
+                      <span className={sg == null ? '' : sg >= 0 ? 'ch-gain' : 'ch-loss'}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG`}</span>
                     </span>
                     <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
                     <LinkPending />

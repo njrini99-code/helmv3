@@ -1,5 +1,16 @@
 # P003 — Roster: changelog
 
+## 2026-10-16 — Phone figures no longer roll
+
+Owner rule, already applied on Qualifiers: numbers render directly, with no
+count-up and no digits rolling. Each phone row's trailing figure (the scoring
+average, or strokes gained a round under SG) was a Number Flow numeral that
+rolled its digits to a newly chosen sort's figure. It is now plain tabular text
+(`ch-num`) that takes the new figure at once, with a true minus and a dash for
+no data. The rows still slide to their new places on a chosen sort (CH-3604);
+only the digits stopped moving. The text-first swap from earlier today
+(`useArrivalPainted`, `.ch-rsm-flowtext`) and `figureParts` went with Number
+Flow. Catalog CH-3604 updated.
 ## 2026-10-16 — A switch to Roster on the phone draws its figures as text first
 
 Each row's figure is a Number Flow numeral (it rolls when the coach picks a

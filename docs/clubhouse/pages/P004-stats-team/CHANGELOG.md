@@ -1,5 +1,15 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-16 — Phone strokes gained figures no longer roll
+
+Owner rule, already applied on Qualifiers: numbers render directly, with no
+count-up and no digits rolling. The phone's strokes gained figure under the
+legs and each player's SG were Number Flow numerals that rolled to a picked
+leg's value. They are now plain tabular text, written at once (`formatSigned`,
+a true minus), with one text node instead of a hidden copy beside a rolling
+one. The `key` that remounted the legs and players on a window or filter change
+existed only to stop a roll there and is gone. Catalog CH-4703 and the phone
+draft (`docs/clubhouse/phone/stats-team.md`) updated.
 ## 2026-10-16 — A switch to Stats on the phone renders the first screen, then the rest
 
 A switch to coach Stats was the slowest section switch: a 74–76ms frame

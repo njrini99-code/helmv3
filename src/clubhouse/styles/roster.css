@@ -1023,18 +1023,6 @@
     color: var(--ch-text-tertiary);
     white-space: nowrap;
   }
-  /* The figure as text for the page's first frame (RosterPhone's RollFigure), laid out as Number Flow lays out the same
-     figure (its host's line height, kerning and mask padding), so nothing moves when Number Flow takes its place
-     (WebKit: the two captures match to the pixel, 2026-10-16). */
-  .ch-rsm-row__v b .ch-rsm-flowtext {
-    display: inline-block;
-    padding: calc(round(nearest, calc(0.25em / 2), 1px) * 2) 0;
-    font: inherit;
-    font-kerning: none;
-    line-height: 1;
-    color: inherit;
-    white-space: nowrap;
-  }
   /* Sorted by SG, the row leads with strokes gained a round (P1-3): gains green, losses amber (D-42). */
   .ch-rsm-row__v b.is-gain {
     color: var(--ch-chart-gain);
@@ -2003,8 +1991,8 @@
   opacity: 0.45;
 }
 
-/* CH-3701: a chosen sort slides each moved phone row to its new place on the smooth spring (D-64), its figure rolling
-   inside it. No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>, so they
+/* CH-3701: a chosen sort slides each moved phone row to its new place on the smooth spring (D-64), its figure already
+   the new sort's (no digits roll). No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>, so they
    take the spring from its tokens there (tokens.css, --ch-*-vt-push). The shell's reduced-motion rule stops it, and the
    list never asks for it then, nor with Animations off (RosterPhoneList). */
 html:has([data-ui='clubhouse'])::view-transition-group(.ch-rsm-reorder) {

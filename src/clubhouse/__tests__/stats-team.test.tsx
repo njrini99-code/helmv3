@@ -596,7 +596,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     const user = userEvent.setup();
     wrap(stats());
     const legs = within(document.getElementById('ch-stm-legs')!.closest('section')!);
-    const figure = () => document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent;
+    const figure = () => document.querySelector('.ch-stm-sgfig b')!.textContent;
     const names = () => [...document.querySelectorAll('.ch-stm-row__b b')].map((b) => b.textContent);
     // The team total by default: the window's own mean.
     expect(figure()).toBe('−0.5');
@@ -611,7 +611,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.getByRole('radio', { name: 'SG, strokes gained' }).getAttribute('aria-checked')).toBe('true');
     expect(names()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Eli Brandt', 'Priya Natarajan', 'Jonah Okafor', 'Luca Ferraro']);
     expect(document.getElementById('ch-stm-players')!.parentElement!.textContent).toContain('by Approach SG');
-    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v .ch-sr-only')!.textContent).toBe('+0.7 SG');
+    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v span')!.textContent).toBe('+0.7 SG');
     expect(screen.getByRole('link', { name: /Luca Ferraro/ }).textContent).toMatch(/Early read/);
     // The chosen leg again is silent; the tabs point at no panel that isn't there.
     await user.click(legs.getByRole('tab', { name: /^Approach/ }));
@@ -620,12 +620,27 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     // Back on Avg, the list orders by scoring average and each row shows its total.
     await user.click(screen.getByRole('radio', { name: 'Avg, scoring average' }));
     expect(names().slice(0, 3)).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist']);
-    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v .ch-sr-only')!.textContent).toBe('+1.7 SG');
+    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v span')!.textContent).toBe('+1.7 SG');
+  });
+
+  it('no digits roll (owner rule, as on Qualifiers): a picked leg writes the figures as plain tabular text at once', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    const fig = document.querySelector('.ch-stm-sgfig b')!;
+    expect(fig.className).toContain('ch-num');
+    await user.click(within(document.getElementById('ch-stm-legs')!.closest('section')!).getByRole('tab', { name: /^Approach/ }));
+    // The figure is the text itself, the same node as before the pick: no rolling numeral and no hidden copy beside it.
+    expect(document.querySelector('.ch-stm-sgfig b')).toBe(fig);
+    expect(fig.children).toHaveLength(0);
+    expect(fig.textContent).toBe('−0.7');
+    const sg = screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v span')!;
+    expect(sg.children).toHaveLength(0);
+    expect(document.querySelector('number-flow-react, .ch-sr-only + [aria-hidden]')).toBeNull();
   });
 
   it('the team total leg is the window’s mean, never the legs added up', () => {
     wrap(stats({ team: { ...PREVIEW_TEAM_STATS.team, sgMean: -1.4 } }));
-    expect(document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent).toBe('−1.4');
+    expect(document.querySelector('.ch-stm-sgfig b')!.textContent).toBe('−1.4');
     const total = within(document.getElementById('ch-stm-legs')!.closest('section')!).getByRole('tab', { name: /^Team total/ });
     expect(total.querySelector('b')!.textContent).toBe('−1.4');
   });
