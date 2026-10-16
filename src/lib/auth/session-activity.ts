@@ -29,6 +29,7 @@ import {
 } from '@/lib/auth/session-idle-shared';
 import { isDemoMetadataUser, probeSignedIn, raceWithTimeout } from '@/lib/demo/gate-probe';
 import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
+import { clearPrivateServiceWorkerCaches } from '@/lib/offline/private-caches';
 
 const ACTIVITY_CHECK_INTERVAL_MS = 60 * 1000; // Re-check every minute
 
@@ -156,6 +157,9 @@ export function useSessionActivity() {
     // survive. A no-op for baseball/lifting/admin: this cache only ever holds
     // golf-prefixed keys.
     clearAllCachedResources();
+    // The service worker's cached golf dashboard pages, for the same reason
+    // (src/lib/offline/private-caches.ts). Bounded, never throws.
+    await clearPrivateServiceWorkerCaches();
     try {
       await supabase.auth.signOut();
     } catch {

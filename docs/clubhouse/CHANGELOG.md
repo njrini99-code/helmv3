@@ -1,5 +1,19 @@
 # Clubhouse changelog
 
+## 2026-10-16 — Security review fixes (S2 to S9)
+
+From the 2026-10-16 security review. No visible change unless a line says so.
+
+- **Sign-out drops the offline copies (S2).** The service worker kept every
+  signed-in API response and golf dashboard page, keyed by address alone, and
+  nothing cleared them at sign-out: offline, the next person on a shared phone
+  could be shown the last person's roster and notes. `chEndSession`
+  (`lib/sign-out.ts`) now deletes the worker's page and API caches with the
+  session (`src/lib/offline/private-caches.ts`, also called by every Fairway
+  sign-out and the idle timeout), and the worker no longer caches API
+  responses at all (`public/sw.js`). A player's own unsynced rounds on the
+  device are kept, as before.
+
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
 Owner, testing the preview: on Stats the switcher at the top seemed to be gone.
