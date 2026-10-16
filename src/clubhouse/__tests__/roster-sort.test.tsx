@@ -26,6 +26,9 @@ vi.mock('@/app/golf/actions/v3/intent', () => ({ setIntent: vi.fn() }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: vi.fn() }));
 const motion = vi.hoisted(() => ({ reduced: false }));
+// Whether the arriving page's first frame is painted: true here (a page at rest), false to see its first frame.
+const arrival = vi.hoisted(() => ({ painted: true }));
+vi.mock('../lib/use-painted', async (orig) => ({ ...(await orig<typeof import('../lib/use-painted')>()), useArrivalPainted: () => arrival.painted }));
 vi.mock('../lib/reduced-motion', () => ({ useChReducedMotion: () => motion.reduced }));
 
 type FlowProps = { value: number; prefix?: string; animated?: boolean; format?: Intl.NumberFormatOptions; transformTiming?: { duration: number } };
@@ -168,6 +171,20 @@ describe('CH-3604 Roster phone: a sort change reorders the rows and rolls each f
   const row = (name: string) => rows().find((b) => b.getAttribute('aria-label')!.startsWith(name))!;
   const figure = (name: string) => row(name).querySelector('.ch-rsm-row__v b') as HTMLElement;
   const flowOf = (name: string) => figure(name).querySelector('[data-flow]') as HTMLElement | null;
+
+  it('a page reached by navigating draws its figures as text for the first frame, then as Number Flow, with the same text', () => {
+    arrival.painted = false;
+    try {
+      const view = phone({ ...PREVIEW_ROSTER });
+      expect(flowOf('Jonah Okafor')).toBeNull();
+      expect(figure('Jonah Okafor').querySelector('.ch-rsm-flowtext')!.textContent).toBe('74.1');
+      arrival.painted = true;
+      view.rerender(tree({ ...PREVIEW_ROSTER }));
+      expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe('74.1');
+    } finally {
+      arrival.painted = true;
+    }
+  });
 
   it('rolls the same numeral from the average to strokes gained and back, with a true minus, no count-up, one tick', async () => {
     const user = userEvent.setup();

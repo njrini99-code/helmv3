@@ -32,6 +32,7 @@ import { figureParts, formatHcp, rosterFailedParts, rosterPeek, rowNote } from '
 import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
+import { useArrivalPainted } from '../../lib/use-painted';
 
 export type { PhoneSort } from './sort';
 
@@ -294,9 +295,13 @@ function RosterPhoneList({
     drawn.current = sort;
   });
   const slide = !reduced && drawn.current !== sort;
+  // The figures are plain text for the page's first frame and become Number Flow once it is painted: mounting a list's
+  // worth of Number Flow elements was about 20ms of a switch to Roster's long frame (WebKit, phone, 57–67ms with them,
+  // 37–52ms without, 2026-10-16). The text is what Number Flow draws, so nothing moves when they swap.
+  const live = useArrivalPainted();
   const row = (p: ChRosterPlayer) => (
     <li key={p.id}>
-      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} roll={rolling && !reduced} />
+      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} roll={rolling && !reduced} live={live} />
     </li>
   );
   return (
@@ -334,6 +339,7 @@ export function RosterPhoneRow({
   onOpen,
   slide = false,
   roll = false,
+  live = true,
 }: {
   p: ChRosterPlayer;
   statsError: boolean;
@@ -341,6 +347,8 @@ export function RosterPhoneRow({
   onOpen: (id: string) => void;
   slide?: boolean;
   roll?: boolean;
+  /** Number Flow is mounted; false draws the figure as plain text (the page's first frame). */
+  live?: boolean;
 }) {
   const note = rowNote(p, statsError);
   const bySg = sort === 'sg';
@@ -374,7 +382,7 @@ export function RosterPhoneRow({
           )}
           <span className="ch-rsm-row__v" data-sort={bySg ? 'sg' : undefined}>
             <b className={`ch-num ${bySg ? changeTone(sg, false) : ''}`.trim()}>
-              <RollFigure value={bySg ? sg : p.avg} signed={bySg} roll={roll} />
+              <RollFigure value={bySg ? sg : p.avg} signed={bySg} roll={roll} live={live} />
             </b>
             <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} hcp`}</span>
           </span>
@@ -389,9 +397,10 @@ export function RosterPhoneRow({
  * with a true minus, and its spoken value is the figure as written ("−0.9", "72.4"). No data is a dash, which does not
  * roll. With reduced motion or Animations off it changes at once.
  */
-export function RollFigure({ value, signed = false, roll }: { value: number | null; signed?: boolean; roll: boolean }) {
+export function RollFigure({ value, signed = false, roll, live = true }: { value: number | null; signed?: boolean; roll: boolean; live?: boolean }) {
   const fig = figureParts(value, { signed });
   if (!fig) return <>{NO_DATA}</>;
+  if (!live) return <span className="ch-rsm-flowtext">{fig.text}</span>;
   return (
     <NumberFlow
       value={fig.size}

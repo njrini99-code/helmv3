@@ -1,5 +1,16 @@
 # P003 — Roster: changelog
 
+## 2026-10-16 — A switch to Roster on the phone draws its figures as text first
+
+Each row's figure is a Number Flow numeral (it rolls when the coach picks a
+sort), and mounting a list of them was about 20ms of a switch to Roster's long
+frame (WebKit, production build, phone: 57–67ms with them, 37–52ms without).
+The figures are now plain text for the page's first frame and become Number
+Flow once it is painted (`useArrivalPainted`); a hard load hydrates with Number
+Flow as before. The text is laid out as Number Flow lays out the same figure, and
+the two captures match to the pixel, so nothing moves when they swap. A sort
+still rolls. Worst frame of a switch to Roster: 56–67ms before, 44–53ms after.
+
 ## 2026-10-15 — Ink that holds at night
 
 Dark mode: the Active filter, the sort switch's selected segment, the request heads, codes and the selected face's name; the team-average chip keeps dark ink on its gold in both themes now take `--ch-on-fill-*` / `--ch-forest-*` ink, which
