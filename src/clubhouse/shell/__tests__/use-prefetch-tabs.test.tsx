@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const router = vi.hoisted(() => ({ prefetch: vi.fn(), push: vi.fn(), refresh: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
-import { CH_TAB_FRESH_MS, CH_TAB_HELD_MS, needsRefresh, resetPrefetchTabsForTests, usePrefetchTabs } from '../use-prefetch-tabs';
+import { CH_TAB_FRESH_MS, CH_TAB_HELD_MS, held, needsRefresh, resetPrefetchTabsForTests, usePrefetchTabs } from '../use-prefetch-tabs';
 
 const HOME = '/golf/dashboard';
 const CAL = '/golf/dashboard/calendar';
@@ -69,9 +69,86 @@ describe('usePrefetchTabs', () => {
     expect(router.refresh).not.toHaveBeenCalled();
   });
 
-  it('the first page (the document loaded on it) is never refreshed', () => {
-    renderHook(() => usePrefetchTabs(TABS, CAL));
+  it('the first page is as old as the document: shown again more than 30s after the load, it is refreshed', () => {
+    const view = renderHook(({ at }) => usePrefetchTabs(TABS, at), { initialProps: { at: CAL } });
     twoFrames();
+    expect(router.refresh).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(20_000);
+    view.rerender({ at: HOME });
+    settle();
+    expect(router.refresh).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(15_000);
+    view.rerender({ at: CAL });
+    twoFrames();
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('a refreshed page keeps the time of its refresh once it is left: back to it more than 30s later, it is refreshed again', () => {
+    const view = renderHook(({ at }) => usePrefetchTabs(TABS, at), { initialProps: { at: HOME } });
+    settle();
+    vi.advanceTimersByTime(CH_TAB_FRESH_MS + 10_000);
+    view.rerender({ at: CAL });
+    twoFrames();
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    vi.advanceTimersByTime(20_000);
+    view.rerender({ at: STATS });
+    settle();
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(15_000);
+    view.rerender({ at: CAL });
+    twoFrames();
+    expect(router.refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it('a page shown after its fetch is held 300s from the showing: fetched ahead then, it is not taken for new', () => {
+    const view = renderHook(({ at }) => usePrefetchTabs(TABS, at), { initialProps: { at: HOME } });
+    settle();
+    vi.advanceTimersByTime(20_000);
+    view.rerender({ at: CAL });
+    settle();
+    view.rerender({ at: HOME });
+    settle();
+    vi.advanceTimersByTime(CH_TAB_HELD_MS - 20_000);
+    // Stats is past its hold: the switch fetches it itself, and Calendar is asked for again from there.
+    view.rerender({ at: STATS });
+    settle();
+    expect(router.refresh).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(5000);
+    view.rerender({ at: CAL });
+    twoFrames();
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('a held page reached from outside the strip (Save for later, from the round) is refreshed whatever its age; a Back is not', () => {
+    const ROUND = '/golf/dashboard/rounds/new';
+    const view = renderHook(({ at }) => usePrefetchTabs(TABS, at, TABS), { initialProps: { at: HOME } });
+    settle();
+    view.rerender({ at: ROUND });
+    settle();
+    view.rerender({ at: CAL });
+    twoFrames();
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    view.rerender({ at: ROUND });
+    settle();
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    view.rerender({ at: CAL });
+    twoFrames();
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('off the phone (no tabs) asks for nothing and refreshes nothing', () => {
+    const view = renderHook(({ at }) => usePrefetchTabs([], at), { initialProps: { at: HOME } });
+    settle();
+    vi.advanceTimersByTime(CH_TAB_FRESH_MS + 5000);
+    view.rerender({ at: CAL });
+    settle();
+    expect(router.prefetch).not.toHaveBeenCalled();
     expect(router.refresh).not.toHaveBeenCalled();
   });
 
@@ -120,10 +197,16 @@ describe('usePrefetchTabs · the sections visited', () => {
 
 describe('needsRefresh', () => {
   it('only a page held between 30s and Next’s 300s hold; past the hold the arrival fetched it itself', () => {
-    expect(needsRefresh(undefined, 1e6)).toBe(false);
-    expect(needsRefresh(null, 1e6)).toBe(false);
-    expect(needsRefresh(1e6 - CH_TAB_FRESH_MS + 1, 1e6)).toBe(false);
-    expect(needsRefresh(1e6 - CH_TAB_FRESH_MS - 1, 1e6)).toBe(true);
-    expect(needsRefresh(1e6 - CH_TAB_HELD_MS - 1, 1e6)).toBe(false);
+    expect(needsRefresh(undefined, undefined, 1e6)).toBe(false);
+    expect(needsRefresh(null, undefined, 1e6)).toBe(false);
+    expect(needsRefresh(1e6 - CH_TAB_FRESH_MS + 1, undefined, 1e6)).toBe(false);
+    expect(needsRefresh(1e6 - CH_TAB_FRESH_MS - 1, undefined, 1e6)).toBe(true);
+    expect(needsRefresh(1e6 - CH_TAB_HELD_MS - 1, undefined, 1e6)).toBe(false);
+  });
+
+  it('counts the hold from the last showing, and the age from the fetch', () => {
+    expect(needsRefresh(1e6 - CH_TAB_HELD_MS - 10, 1e6 - 60_000, 1e6)).toBe(true);
+    expect(held(1e6 - CH_TAB_HELD_MS - 10, 1e6 - 60_000, 1e6)).toBe(true);
+    expect(held(1e6 - CH_TAB_HELD_MS - 10, undefined, 1e6)).toBe(false);
   });
 });

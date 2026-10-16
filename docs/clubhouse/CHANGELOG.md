@@ -1,5 +1,37 @@
 # Clubhouse changelog
 
+## 2026-10-16 — Held pages are dated truthfully; Back to Stats lands where it was left
+
+From the code review of PR #2195 (`use-prefetch-tabs.ts`, `lib/pop-mark.ts`,
+`lib/use-painted.ts`, `section-switch.tsx`, `SectionStrip.tsx`).
+
+- **How old a held page is.** Next answers a full prefetch from what a
+  navigation showed (its back/forward cache) for 300s from the showing,
+  without asking the server (next 16.3, `segment-cache/cache.js`), and a
+  refresh empties that cache. The hook now records when each page was shown as
+  well as fetched, so a page shown after its fetch is not taken for new 300s
+  after the fetch. The document's first page is dated at the load, a refreshed
+  page keeps the time of its refresh once it is left (it was reset to the time
+  it was next asked for), and a section dropped from the last two visited keeps
+  its date. Probed first (WebKit, 700ms latency): after a refresh, Stats was
+  fetched from the server again and showed a team renamed 120s earlier at once,
+  so a refresh still drops every held page.
+- **Save for later.** A held page reached from outside the strip's sections is
+  refreshed in place whatever its age: Save for later lands on the rounds
+  library (a player tab) from the round, and its save does not revalidate. A
+  Back is left as it was. A tap during the refresh wins: Next drops a refresh a
+  navigation overtakes (WebKit, 700ms latency, a second tap 200, 600 and 900ms
+  after the first: 3 of 3 ended on it).
+- **Back to Stats.** A page brought back by Back or Forward renders all of it
+  in its first frame (`useArrivalPainted`), so its scroll lands where it was
+  left; with only its first screen rendered, it drew clamped for two frames,
+  then jumped. That frame pays the full render again. The Back mark moved from
+  RouteFrame to `lib/pop-mark.ts`, which both read.
+- **Phone only.** The tabs are fetched ahead only at phone width; the strip's
+  hook ran on desktop too.
+- **A switch cut short.** An address reached another way (Back, a link) clears
+  what a switch left standing (the quiet title, the arrival).
+
 ## 2026-10-16 — Going back to a section is instant too
 
 The last two sections other than the tabs that were visited (Roster, Settings,

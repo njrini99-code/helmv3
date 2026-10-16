@@ -207,7 +207,12 @@ export function SectionSwitchProvider({
     const switched = pendingRef.current !== null;
     setPending(null);
     if (openRef.current) setOpen(false);
-    if (!switched) return;
+    // Reached another way (Back, a link): nothing of a switch is left standing, even one cut short.
+    if (!switched) {
+      setQuiet(false);
+      setArrived(false);
+      return;
+    }
     setArrived(true);
     const id = window.setTimeout(() => setArrived(false), 600);
     // A quiet switch keeps the bar's title out while the route's skeleton stands in for the page, which may not draw

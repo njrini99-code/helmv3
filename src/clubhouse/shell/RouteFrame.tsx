@@ -5,6 +5,7 @@ import { CH_DUR, CH_EASE } from '../lib/motion';
 import { useChPress } from '../lib/press';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { markAppRunning, RouteScope } from '../lib/session-state';
+import { chReturning } from '../lib/pop-mark';
 import { canvasScrollNow } from '../lib/smooth-scroll';
 // Registers the Back that iOS animated itself, which turns off the crossfade for that one Back (CH-1908, shell.css).
 import '../lib/ua-pop';
@@ -27,13 +28,6 @@ import { chNavKind, chNavShown } from '../lib/nav-motion';
  */
 /** Where each page was scrolled, by route and team, for Back and Forward (this tab only). */
 const scrolled = new Map<string, { canvas: number; win: number }>();
-/** Set by a Back or Forward (popstate); a navigation that starts within this long of one is a return. */
-const RETURN_WINDOW_MS = 1500;
-let poppedAt = 0;
-// Capture, so the mark is set before the router's popstate listener: React commits a Back inside that listener, and this
-// frame's layout effect read the mark before a bubbling listener had set it (registered later, as this chunk loads after
-// the router's), so every Back opened the page at its top (WebKit, Stats → player → Back, 6 of 6 runs, 2026-10-16).
-if (typeof window !== 'undefined') window.addEventListener('popstate', () => (poppedAt = Date.now()), true);
 
 /** A route's loading skeleton, as each route's loading.tsx draws it (base.css fades it in by the same mark). */
 const ROUTE_SKELETON = "main[aria-busy='true'][aria-label^='Loading']";
@@ -66,7 +60,7 @@ function useSkeletonReveal(frame: RefObject<HTMLDivElement | null>, routeKey: st
     const since = performance.now();
     // Set in the commit the view transition is capturing, so its keyframes see it.
     // Not on a Back: React commits a Back synchronously, without a view transition to hold the old page in.
-    const hold = chNavKind() === 'fade' && typeof document.startViewTransition === 'function' && Date.now() - poppedAt >= RETURN_WINDOW_MS;
+    const hold = chNavKind() === 'fade' && typeof document.startViewTransition === 'function' && !chReturning();
     if (hold) root.setAttribute(HOLD, '');
     const release = () => root.removeAttribute(HOLD);
     const lapse = hold ? window.setTimeout(release, VT_DONE_MS + 500) : 0;
@@ -180,7 +174,7 @@ export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { route
     if (first.current) first.current = false;
     else {
       const saved = scrolled.get(scrollKey);
-      if (saved && Date.now() - poppedAt < RETURN_WINDOW_MS) cancel = restoreScroll(saved);
+      if (saved && chReturning()) cancel = restoreScroll(saved);
       else {
         canvasScrollNow(0);
         window.scrollTo({ top: 0, behavior: 'instant' });

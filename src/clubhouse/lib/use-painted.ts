@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { chReturning } from './pop-mark';
 
 /**
  * False from the render where `on` turns true until that frame has been painted, then true. A popup's entrance is held
@@ -29,13 +30,18 @@ export function usePaintedAfter(on: boolean): boolean {
  * true from the start: the server rendered all of it, and a page that streams in after the shell has hydrated must
  * still match (an app-running flag here was a hydration error, #418, on a hard load of Stats). Coach Stats on the phone:
  * the worst frame of a switch fell from 74–76ms to 38–40ms with the chart's sizing (WebKit, 2026-10-16).
+ *
+ * A return by Back or Forward is true from the start too: the page goes back to where it was scrolled in its first
+ * frame (RouteFrame), and with only its first screen rendered the canvas was too short to get there, so the page drew
+ * clamped near the top for two frames, then jumped (code review, 2026-10-16). That frame pays the full render again.
  */
 const noSubscribe = () => () => {};
 const clientRender = () => false;
 const serverRender = () => true;
 export function useArrivalPainted(): boolean {
   const hydrating = useSyncExternalStore(noSubscribe, clientRender, serverRender);
-  const [painted, setPainted] = useState(hydrating);
+  // Read in the render a Back commits in: the mark is set before the router acts on the popstate (lib/pop-mark).
+  const [painted, setPainted] = useState(() => hydrating || chReturning());
   useEffect(() => {
     if (painted) return;
     let frame = requestAnimationFrame(() => {

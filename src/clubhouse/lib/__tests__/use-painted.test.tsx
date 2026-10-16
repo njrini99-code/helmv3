@@ -40,4 +40,11 @@ describe('useArrivalPainted', () => {
     await frames();
     expect(container.textContent).toBe('below');
   });
+
+  // Last: the Back's mark holds for 1.5s.
+  it('a page brought back by Back or Forward renders all of it at once, so its scroll has the height to land on', () => {
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    const { result } = renderHook(() => useArrivalPainted());
+    expect(result.current).toBe(true);
+  });
 });

@@ -6,6 +6,7 @@ import { useCallback, useLayoutEffect, useRef, useState, type MouseEvent } from 
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { haptic } from '../lib/haptics';
+import { useChPhone } from '../lib/use-phone';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useSlidePlate } from '../lib/slide-plate';
 import { LinkPending } from './LinkPending';
@@ -35,8 +36,10 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   const fade = useTransform(progress, [0, 0.4, 1], [0, 0.55, 1]);
 
   // The first sections are fetched whole ahead of the tap (P0-2), as the tab bar's were, and so are the last two others
-  // visited, for the way back.
-  const rebuiltSections = (sw?.sections ?? []).filter((s) => isRebuilt(s.href, role));
+  // visited, for the way back. On the phone only: the frame mounts the strip at every width, and a desktop sidebar link
+  // is not a tab.
+  const phone = useChPhone();
+  const rebuiltSections = phone ? (sw?.sections ?? []).filter((s) => isRebuilt(s.href, role)) : [];
   usePrefetchTabs(
     rebuiltSections.filter((s) => CH_PHONE_TABS[role].includes(s.id)).map((s) => s.href),
     pathname,

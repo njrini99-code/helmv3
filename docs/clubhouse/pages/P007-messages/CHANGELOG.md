@@ -1,5 +1,14 @@
 # P007 — Messages: changelog
 
+## 2026-10-16 — A failed read on the server is logged, and Delete conversation is not lost to it
+
+From the code review of PR #2195. The route swallowed a failure of the
+conversation-hide check and of the announcements read. Both are now logged
+(`chLogServer`, `clubhouse.messages.canHide` and `.announcements`). A failed
+hide check is left out instead of read as "no", so the inbox asks for it
+itself once it lands and Delete conversation still shows where the database
+has the per-person hide.
+
 ## 2026-10-14 — A dropped send tells one story; the reaction bar and New message work from the keyboard
 
 Runtime audit (Playwright WebKit, local stack), both roles.

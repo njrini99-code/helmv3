@@ -6,6 +6,7 @@ import { loadMessagesDirectory } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
 import { toChAnnouncement } from '../screens/messages/model';
 import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
+import { chLogServer } from '../lib/track-server';
 import { resolveClubhouseTeam } from './team';
 import '../styles/messages.css';
 
@@ -27,9 +28,16 @@ export async function ClubhouseMessagesRoute() {
   const viewerPlayerId = team.role === 'player' ? team.playerId : null;
   const [data, canHide, anns] = await Promise.all([
     loadMessagesDirectory({ role: team.role, teamId: team.teamId, viewerUserId: session.userId, viewerName, viewerPlayerId }),
-    canHideGolfConversations().catch(() => false),
-    getAnnouncementsWithMeta(team.teamId, session.userId, team.role === 'coach', viewerPlayerId).catch(() => null),
+    // Failed, it is left out and the inbox asks for it itself once it lands (Messages), rather than hiding Delete.
+    canHideGolfConversations().catch((err: unknown) => {
+      chLogServer('messages', 'canHide', err, 'messaging');
+      return undefined;
+    }),
+    getAnnouncementsWithMeta(team.teamId, session.userId, team.role === 'coach', viewerPlayerId).catch((err: unknown) => {
+      chLogServer('messages', 'announcements', err, 'messaging');
+      return null;
+    }),
   ]);
   const announcements = anns?.success && anns.data ? anns.data.map(toChAnnouncement) : null;
-  return <Messages data={{ ...data, canHide, announcements }} />;
+  return <Messages data={{ ...data, ...(canHide === undefined ? {} : { canHide }), announcements }} />;
 }
