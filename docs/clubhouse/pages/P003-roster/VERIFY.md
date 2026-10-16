@@ -187,6 +187,10 @@ before, after, baseline or evidence.
 | `P003__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 | `P003__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P003__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P003__phone-list__coach__390__sorted-avg__before__22e5426.png` | before | 22e5426 | Phone roster on Avg (WebKit, preview, reduced motion): each figure a Number Flow numeral |
+| `P003__phone-list__coach__390__sorted-sg__before__22e5426.png` | before | 22e5426 | Same after tapping SG: figures rolled to strokes gained (a still; the roll itself is motion) |
+| `P003__phone-list__coach__390__sorted-avg__after__c271010.png` | after | c271010 | Phone roster on Avg: figures plain tabular text; no pixel above the noise floor differs from the before in the list |
+| `P003__phone-list__coach__390__sorted-sg__after__c271010.png` | after | c271010 | After tapping SG: figures written at once as text (+1.8, −0.9, dash for no data) |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

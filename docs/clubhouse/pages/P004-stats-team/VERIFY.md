@@ -285,6 +285,8 @@ before, after, baseline or evidence.
 | `P004__figures-lead__coach__1280__loading__after__d16567c.png` | after | d16567c | figures-lead (coach), 1280px window, Safari TP 253; skeleton in the lead layout; loading row 213px = loaded 213px; /clubhouse-preview/stats?state=loading; synthetic preview |
 | `P004__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
 | `P004__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P004__phone__coach__390__default__before__22e5426.png` | before | 22e5426 | Team stats phone, full page (WebKit, preview): the strokes gained figure and each player's SG are Number Flow numerals |
+| `P004__phone__coach__390__default__after__c271010.png` | after | c271010 | Same page: those figures are plain tabular text in the same boxes |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
