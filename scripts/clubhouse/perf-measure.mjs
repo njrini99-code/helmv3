@@ -119,6 +119,18 @@ function readSeed() {
   return JSON.parse(readFileSync(SEED_FILE, 'utf8'));
 }
 
+/**
+ * Env for the seed and its removal: localEnv, but the database is the seed's own default (the stack's superuser) unless the caller set
+ * SUPABASE_DB_URL. Both set `session_replication_role`, which the stack's `postgres` role (status.DB_URL) is refused on current
+ * Supabase CLIs (seed failed, 2026-10-16).
+ */
+function seedEnv() {
+  const env = localEnv();
+  if (process.env.SUPABASE_DB_URL) env.SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
+  else delete env.SUPABASE_DB_URL;
+  return env;
+}
+
 async function loadSeedModule() {
   const { tsImport } = await import('tsx/esm/api');
   return tsImport('../../e2e/helpers/clubhouse-local-seed.ts', import.meta.url);
@@ -148,7 +160,7 @@ async function cmdSeed(a) {
   }
   let team;
   try {
-    Object.assign(process.env, localEnv());
+    Object.assign(process.env, seedEnv());
     const mod = await loadSeedModule();
     team = await mod.seedClubhouseTeam({ players: a.players ? Number(a.players) : undefined, roundsPerPlayer: a.rounds ? Number(a.rounds) : undefined });
     writeFileSync(fd, JSON.stringify(team, null, 2));
@@ -167,7 +179,7 @@ async function cmdRemove() {
     console.log('no seed to remove');
     return;
   }
-  Object.assign(process.env, localEnv());
+  Object.assign(process.env, seedEnv());
   const mod = await loadSeedModule();
   await mod.removeTeamSeed(readSeed());
   rmSync(SEED_FILE);
