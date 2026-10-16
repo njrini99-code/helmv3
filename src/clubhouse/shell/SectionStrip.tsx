@@ -107,6 +107,9 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
               <Link
                 key={s.id}
                 href={s.href}
+                // RouteFrame puts the page's scroll back (or at the top) itself; Next's own handling read the arriving page's
+                // layout inside the commit on every switch (getClientRects, 22ms at 4x CPU, Chromium, 2026-10-16).
+                scroll={false}
                 className="ch-strip__pill"
                 aria-current={on ? 'page' : undefined}
                 onClick={(e) => (sw.current?.id === s.id ? retap(e, s.href) : sw.choose(s))}
