@@ -43,7 +43,7 @@ fix the other doc in the same change. `PROGRESS.md` keeps the full history
   - #2198 the phone's section switcher always shows in the bar.
   - #2199 phone sign-in: the sheet moves with the keyboard, Sign in moves it
     once, Log in opens at once.
-- **Release readiness (`agent/clubhouse-readiness`, 2026-10-16, not merged):**
+- **Release readiness (2026-10-16, the PR from `agent/clubhouse-readiness`):**
   main's flaky landing test made deterministic; the Rounds "no data lost"
   contracts tested (111201, 111202, 110702); server errors tagged
   `ui=clubhouse` with a Monitoring baseline; the rollback target named; the
@@ -194,7 +194,12 @@ for the owner). Steps, before the canary deploy:
   timeouts (79 events, 15 users), -YX AbortError (78), -196 the held-migration
   trace probe (73; its noise is dropped by #2197, not yet deployed) and -15A
   the round recap style trace (32 events, 17 users). `ui:clubhouse` in the
-  same 14 days: 0 events.
+  same 14 days: 0 events. The window includes the roughly 20 hours with
+  Clubhouse on (2026-10-11 05:00 to 2026-10-12 02:00 UTC), so it is not a
+  pure Fairway baseline: 26 production error events then, all server-side and
+  all untagged (5 on round actions and the partial-save route, 21 on a cron),
+  which is the gap the server tag closes; no browser event fell in that
+  window, so the browser tag has not yet been seen in production.
 - Production database, `golf_rounds` with `status = 'completed'` and no
   `golf_holes` row: **18 of 774 completed rounds** (14 not `is_test`), the
   newest created 2026-09-28; **0 of the 64 completed in the last 14 days**.
