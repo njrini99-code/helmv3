@@ -227,6 +227,42 @@ describe('Round setup: details and starting', () => {
     await waitFor(() => expect(onStarted).toHaveBeenCalledWith('r-2'));
   });
 
+  it('111201 CH-11007 a failed start keeps the whole setup, and pressing Start again sends the same form', async () => {
+    const start = vi
+      .fn()
+      .mockReturnValueOnce(fail('Load failed'))
+      .mockReturnValue(ok({ roundId: 'r-3' }));
+    const { user, onStarted } = setup({ start });
+    await pickFinleyBlue(user);
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Hole 3 par' })).getByRole('radio', { name: '4' }));
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Round type' })).getByRole('radio', { name: 'Tournament' }));
+    const date = screen.getByLabelText('Date');
+    await user.clear(date);
+    await user.type(date, '2026-10-12');
+    const dockBefore = dock().textContent;
+
+    await user.click(startBtn());
+    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
+    expect(onStarted).not.toHaveBeenCalled();
+
+    // Nothing was cleared: the course and tees, the edited hole, the type and the date are as the player left them.
+    expect(dock().textContent).toBe(dockBefore);
+    expect(dock()).toHaveTextContent('Finley GC · Blue · 18 holes · Par 73');
+    expect(screen.getByText('1 hole edited for this round')).toBeInTheDocument();
+    expect(within(screen.getByRole('radiogroup', { name: 'Hole 3 par' })).getByRole('radio', { name: '4' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(screen.getByRole('radiogroup', { name: 'Round type' })).getByRole('radio', { name: 'Tournament' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByLabelText('Date')).toHaveValue('2026-10-12');
+    expect(startBtn()).toBeEnabled();
+
+    // Start itself (not only the toast's Retry) sends the form again, unchanged, and the round opens.
+    await user.click(startBtn());
+    await waitFor(() => expect(onStarted).toHaveBeenCalledWith('r-3'));
+    expect(start).toHaveBeenCalledTimes(2);
+    expect(start.mock.calls[1]![0]).toEqual(start.mock.calls[0]![0]);
+    expect(start.mock.calls[0]![0]).toMatchObject({ type: 'tournament', date: '2026-10-12', pick: { courseId: 'finley', teeId: 'finley-blue' } });
+    expect(start.mock.calls[0]![0].holes.find((h: { n: number }) => h.n === 3)).toMatchObject({ par: 4 });
+  });
+
   it('CH-11109 a date after today stops Start', async () => {
     const { user } = setup();
     await pickFinleyBlue(user);

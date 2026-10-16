@@ -12,6 +12,10 @@ import './dialog-polyfill';
 // jsdom has no layout: the state machine scrolls the distance box into view.
 Element.prototype.scrollIntoView ??= function () {};
 
+// A spy over the real module (a no-op off the native app), so Try again's offline warning can be seen.
+const hapticSpy = vi.hoisted(() => vi.fn());
+vi.mock('../lib/haptics', async (importOriginal) => ({ ...(await importOriginal<typeof import('../lib/haptics')>()), haptic: hapticSpy }));
+
 const deleteShot = vi.fn();
 const updateShot = vi.fn();
 vi.mock('@/app/golf/actions/shot-actions', () => ({
@@ -297,6 +301,47 @@ describe('Round tracking: holing out', () => {
     expect(onHoleComplete).toHaveBeenCalledTimes(2);
     await act(async () => finish(true));
     expect(code('CH-11003')).toBeNull();
+  });
+
+  it('111202 110702 a hole that didn’t save keeps every shot on screen and on the device, stays put, and Try again waits for a connection', async () => {
+    const played = [
+      TEE,
+      shot({ shotNumber: 2, shotType: 'approach', distanceToHoleBefore: 150, result: 'green', distanceToHoleAfter: 2, distanceUnitAfter: 'feet', shotDistance: 150 }),
+    ];
+    let finish: (ok: boolean) => void = () => {};
+    const onHoleComplete = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
+    const { user, props } = setup({ initialShots: played, initialShotNumber: 3, onHoleComplete });
+    await user.click(screen.getByRole('button', { name: /^Tap in/ }));
+    await waitFor(() => expect(onHoleComplete).toHaveBeenCalledTimes(1));
+    const stats = (onHoleComplete.mock.calls[0] as unknown[])[1];
+    expect(stats).toMatchObject({ holeNumber: 1, score: 3, putts: 1 });
+    await act(async () => finish(false));
+
+    const failed = code('CH-11003') as HTMLElement;
+    expect(failed).toHaveTextContent('Hole 1 didn’t save. Your shots are kept on this device. Try again to move on.');
+    // Every shot of the hole is still listed, and the round has not moved on.
+    const review = screen.getByRole('region', { name: 'Hole 1 shots' });
+    expect(within(review).getAllByRole('button', { name: /^Change shot \d/ }).map((b) => b.getAttribute('aria-label')!.split(':')[0])).toEqual(['Change shot 1', 'Change shot 2', 'Change shot 3']);
+    expect(props.onNavigateToHole).not.toHaveBeenCalled();
+
+    // Offline, Try again warns and sends nothing: a retry would fail the same way.
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      hapticSpy.mockClear();
+      await user.click(within(code('CH-11003') as HTMLElement).getByRole('button', { name: 'Try again' }));
+      expect(hapticSpy).toHaveBeenCalledWith('warning');
+      expect(onHoleComplete).toHaveBeenCalledTimes(1);
+    } finally {
+      onLine.mockRestore();
+    }
+
+    // Back online, Try again sends the same hole again, and the failure clears once it lands.
+    await user.click(within(code('CH-11003') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(onHoleComplete).toHaveBeenCalledTimes(2);
+    expect((onHoleComplete.mock.calls[1] as unknown[])[1]).toEqual(stats);
+    await act(async () => finish(true));
+    expect(code('CH-11003')).toBeNull();
+    expect(within(review).getAllByRole('button', { name: /^Change shot \d/ })).toHaveLength(3);
   });
 
   it('CH-11901 the save line never says "Round saved" while the holed hole is saving or after its save failed', async () => {
