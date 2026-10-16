@@ -246,6 +246,15 @@ before, after, baseline or evidence.
 | `P014__premium-audit__coach__390__case-151-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-151-chromium-normal; /clubhouse-preview/recruiting; synthetic preview |
 | `P014__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
 | `P014__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P014__upload-dialog__coach__390__film-file__before__22e5426.png` | before | 22e5426 | Upload sheet on a 64 MB .mov (WebKit, preview): Film offered and preselected |
+| `P014__documents__coach__390__detail__before__22e5426.png` | before | 22e5426 | Mason's detail on the phone: three documents, one a .mov tagged Film |
+| `P014__documents__coach__1440__drop-hint__before__22e5426.png` | before | 22e5426 | Desktop documents: drop hint "Film can be an MP4, MOV or M4V." |
+| `P014__documents__coach__390__no-documents__before__22e5426.png` | before | 22e5426 | Empty documents row: "Schedules, transcripts and film" |
+| `P014__upload-dialog__coach__390__film-file__after__477ccdf.png` | after | 477ccdf | Film off: the same .mov is refused before sending, CH-14106, body names no film |
+| `P014__upload-dialog__coach__390__document-file__after__477ccdf.png` | after | 477ccdf | Film off: a PDF's upload sheet offers Note, Schedule, Transcript, Other; no Film |
+| `P014__documents__coach__390__detail__after__477ccdf.png` | after | 477ccdf | Film off: the preview's sample film row is not shown (no video can be stored yet) |
+| `P014__documents__coach__1440__drop-hint__after__477ccdf.png` | after | 477ccdf | Film off: drop hint "Drop a file here to add it." |
+| `P014__documents__coach__390__no-documents__after__477ccdf.png` | after | 477ccdf | Film off: empty row "Schedules, transcripts and notes" |
 
 ## Historical verification gaps
 
