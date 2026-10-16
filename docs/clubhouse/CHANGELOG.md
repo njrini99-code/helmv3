@@ -1,5 +1,30 @@
 # Clubhouse changelog
 
+## 2026-10-16 — A switch to a phone tab shows the page, not its skeleton first
+
+Every section switch drew twice: the route's skeleton at once, then the page when
+the server answered (360–580ms later on the local stack, WebKit). The 30s router
+cache that let a revisit render at once (native-feel P0-2, 10-08) was removed
+app-wide on 10-13 (#2189) because Fairway, Baseball and Lift Lab served stale
+pages, and a default prefetch stops at a dynamic page's skeleton.
+
+The phone tabs (coach: Home, CoachHelm, Calendar, Stats; player: Home, CoachHelm,
+Rounds, Team Hub) are now fetched whole ahead of a tap (`use-prefetch-tabs.ts`, a
+full prefetch, which Next holds for its static stale time, 300s) on the shell's
+first idle moment and after every arrival. A switch shows the held page at once.
+If it was fetched more than 30s ago, it is refreshed in place once it has painted
+(`router.refresh()`, no skeleton), so what settles on screen is never more than
+30s old. A refresh drops every page Next held, so the other tabs are fetched
+again when idle. The owner chose this over a 30s expiry (2026-10-16): with a real
+network an expired tab was slower than today. next.config.mjs is unchanged
+(comment only). Measured (WebKit, local production build, phone, 700ms added to
+every page request): tab switches 10s and 45s after the last fetch show the page
+with no skeleton; at 45s one refresh request follows and the page updates in
+place (a team renamed in the database: the held name at 265ms, the new one at
+1,117ms). A tap within about a second of the app loading, while the first fetch
+is still in flight, can still show the skeleton. Other sections (Roster,
+Settings, Recruiting, …) still show their skeleton first.
+
 ## 2026-10-16 — Back returns a page to where it was left, in WebKit too
 
 RouteFrame marks a Back (popstate) so the page it returns to goes back to where

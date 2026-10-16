@@ -34,7 +34,7 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   const y = useTransform(progress, (p) => `${(Math.min(Math.max(p, 0), 1) - 1) * 100}%`);
   const fade = useTransform(progress, [0, 0.4, 1], [0, 0.55, 1]);
 
-  // The first sections are fetched ahead of the first tap (P0-2), as the tab bar's were.
+  // The first sections are fetched whole ahead of the tap (P0-2), as the tab bar's were.
   usePrefetchTabs(
     (sw?.sections ?? []).filter((s) => CH_PHONE_TABS[role].includes(s.id) && isRebuilt(s.href, role)).map((s) => s.href),
     pathname,
