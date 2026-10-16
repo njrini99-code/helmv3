@@ -22,7 +22,7 @@
  * timeline plus a non-scrubbed ScrollTrigger must exist to drive them.
  * ========================================================================== */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { ScrollTrigger, gsap } from '@/lib/motion/gsap/register';
 import { coachHelmDeepScene } from '../coachHelmDeepScene';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
@@ -64,6 +64,13 @@ describe('coachHelmDeepScene — the symptom sentence never parks mid-scrub', ()
     document.body.replaceChildren();
     vi.restoreAllMocks();
   });
+
+  // Registering ScrollTrigger starts a 250ms sync interval and an
+  // animation-frame loop that outlive the file and call the global
+  // `requestAnimationFrame`, which jsdom teardown deletes: a tick in that gap
+  // is an unhandled error that fails CI although every test passed (see
+  // sections/__tests__/TeamManagement.test.tsx). `disable()` clears both.
+  afterAll(() => ScrollTrigger.disable());
 
   it('reduced motion: the symptom text is plain, static content — nothing masked, nothing to park', () => {
     const root = buildCard();
