@@ -1,5 +1,17 @@
 # Clubhouse changelog
 
+## 2026-10-16 — Going back to a section is instant too
+
+The last two sections other than the tabs that were visited (Roster, Settings,
+…) are fetched whole once they are left, like the tabs, so going back to one
+shows the page at once and brings it up to date in place past 30s
+(`use-prefetch-tabs.ts`). The tabs are fetched as soon as the first page has
+painted instead of at the first idle moment. Measured (WebKit, local production
+build, 700ms added to page requests): Roster revisited after Calendar, no
+skeleton (2 of 2); a tab tapped about 0.6s after load, no skeleton; at about
+1.1s, while that first fetch is still in flight, the skeleton shows and the page
+follows at 586ms. A first visit to a section still shows its skeleton.
+
 ## 2026-10-16 — Signing out switches the phone's pushes off first, and Back cannot return
 
 From the security review of PR #2195. Sign-out now waits, up to 1.5s, for this

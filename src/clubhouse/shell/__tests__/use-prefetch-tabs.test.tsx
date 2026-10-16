@@ -31,10 +31,10 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('usePrefetchTabs', () => {
-  it('fetches the other tabs whole (a full prefetch, not just their skeleton) once the shell is idle', () => {
+  it('fetches the other tabs whole (a full prefetch, not just their skeleton) once the first page has painted', () => {
     renderHook(() => usePrefetchTabs(TABS, HOME));
     expect(router.prefetch).not.toHaveBeenCalled();
-    settle();
+    twoFrames();
     expect(router.prefetch.mock.calls.map(([href]) => href)).toEqual([CAL, STATS]);
     for (const [, options] of router.prefetch.mock.calls) expect(options).toEqual({ kind: 'full' });
   });
@@ -80,6 +80,41 @@ describe('usePrefetchTabs', () => {
     renderHook(() => usePrefetchTabs(TABS, HOME));
     settle();
     expect(router.prefetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('usePrefetchTabs · the sections visited', () => {
+  const ROSTER = '/golf/dashboard/roster';
+  const SETTINGS = '/golf/dashboard/settings';
+  const RECRUIT = '/golf/dashboard/recruiting';
+  const SECTIONS = [...TABS, ROSTER, SETTINGS, RECRUIT];
+
+  it('a section left is fetched whole for the way back; a section never visited is not', () => {
+    const view = renderHook(({ at }) => usePrefetchTabs(TABS, at, SECTIONS), { initialProps: { at: HOME } });
+    settle();
+    view.rerender({ at: ROSTER });
+    settle();
+    expect(router.prefetch.mock.calls.map(([href]) => href)).not.toContain(SETTINGS);
+    router.prefetch.mockClear();
+    view.rerender({ at: CAL });
+    settle();
+    expect(router.prefetch.mock.calls.map(([href]) => href)).toContain(ROSTER);
+    expect(router.prefetch.mock.calls.map(([href]) => href)).not.toContain(SETTINGS);
+  });
+
+  it('keeps only the last two visited', () => {
+    const view = renderHook(({ at }) => usePrefetchTabs(TABS, at, SECTIONS), { initialProps: { at: HOME } });
+    for (const at of [ROSTER, HOME, SETTINGS, HOME, RECRUIT, HOME]) {
+      view.rerender({ at });
+      settle();
+    }
+    router.prefetch.mockClear();
+    view.rerender({ at: CAL });
+    settle();
+    const asked = router.prefetch.mock.calls.map(([href]) => href);
+    expect(asked).toContain(RECRUIT);
+    expect(asked).toContain(SETTINGS);
+    expect(asked).not.toContain(ROSTER);
   });
 });
 

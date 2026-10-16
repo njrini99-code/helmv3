@@ -34,10 +34,13 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   const y = useTransform(progress, (p) => `${(Math.min(Math.max(p, 0), 1) - 1) * 100}%`);
   const fade = useTransform(progress, [0, 0.4, 1], [0, 0.55, 1]);
 
-  // The first sections are fetched whole ahead of the tap (P0-2), as the tab bar's were.
+  // The first sections are fetched whole ahead of the tap (P0-2), as the tab bar's were, and so are the last two others
+  // visited, for the way back.
+  const rebuiltSections = (sw?.sections ?? []).filter((s) => isRebuilt(s.href, role));
   usePrefetchTabs(
-    (sw?.sections ?? []).filter((s) => CH_PHONE_TABS[role].includes(s.id) && isRebuilt(s.href, role)).map((s) => s.href),
+    rebuiltSections.filter((s) => CH_PHONE_TABS[role].includes(s.id)).map((s) => s.href),
     pathname,
+    rebuiltSections.map((s) => s.href),
   );
 
   /** The current pill in the middle of the row, so it is under the finger that opened it. */

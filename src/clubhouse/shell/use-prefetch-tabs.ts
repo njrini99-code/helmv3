@@ -61,25 +61,33 @@ function whenIdle(run: () => void, timeout = 2000): () => void {
  * Shown and then brought up to date: a page held for more than 30s is shown at once and refreshed in place once it has
  * painted (`router.refresh()`, no skeleton), so what settles on screen is never more than 30s old, the 10-08 contract.
  * A refresh drops every page Next held, so the other tabs are fetched again when the thread is idle. The tabs are asked
- * for on the shell's first idle moment and after every arrival; Next fetches only what it no longer holds. Not as the
+ * for once the document's first page has painted and after every arrival; Next fetches only what it no longer holds.
+ * The last two other sections left (Roster, Settings, …) are kept the same way, so going back to one is instant too
+ * (`sections` lists them all; only the ones visited are fetched). Not as the
  * strip opens: with a real network that fetch raced the tap and the page was asked for twice (WebKit, 700ms latency:
  * skeleton at 944ms, page at 1711ms). Skipped with Data Saver on or offline. Next prefetches only in production builds.
  */
-export function usePrefetchTabs(hrefs: readonly string[], current: string): void {
+export function usePrefetchTabs(hrefs: readonly string[], current: string, sections: readonly string[] = []): void {
   const router = useRouter();
   const key = hrefs.join('|');
+  const sectionKey = sections.join('|');
   const first = useRef(true);
+  const left = useRef(current);
   useEffect(() => {
     const arrival = !first.current;
     first.current = false;
+    // A section that is not a tab, just left: kept whole too, so coming back to it is a revisit, not a skeleton.
+    const was = left.current;
+    left.current = current;
+    if (arrival && was !== current && !key.split('|').includes(was) && sectionKey.split('|').includes(was)) rememberVisit(was);
     if (!prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
     const fetchOthers = () => {
-      for (const href of key.split('|')) if (href && href !== current) fetchAhead(router, href, Date.now());
+      for (const href of [...key.split('|'), ...visited]) if (href && href !== current) fetchAhead(router, href, Date.now());
     };
     let cancel = () => {};
     if (arrival && needsRefresh(fetchedAt.get(current), Date.now())) {
-      // Once the held page has painted: bring it up to date in place, then fetch the other tabs again behind the
-      // refresh, which drops every page Next held (this one included: it is fetched again once it is left).
+      // Once the held page has painted: bring it up to date in place, then fetch the others again behind the refresh,
+      // which drops every page Next held (this one included: it is fetched again once it is left).
       let frame = requestAnimationFrame(() => {
         frame = requestAnimationFrame(() => {
           router.refresh();
@@ -91,14 +99,33 @@ export function usePrefetchTabs(hrefs: readonly string[], current: string): void
         });
       });
       cancel = () => cancelAnimationFrame(frame);
+    } else if (!arrival) {
+      // The document's first page: as soon as it has painted, not at the first idle moment, which on a phone came a
+      // second or more later and left a tap in that second to the skeleton.
+      let frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(fetchOthers);
+      });
+      cancel = () => cancelAnimationFrame(frame);
     } else {
       cancel = whenIdle(fetchOthers);
     }
     return () => cancel();
-  }, [key, current, router]);
+  }, [key, sectionKey, current, router]);
+}
+
+/** The sections other than the tabs that were visited last, newest first, kept whole like the tabs. */
+const visited: string[] = [];
+/** How many: each costs a full page render when it is fetched again (after a refresh or a save). */
+export const CH_VISITED_KEPT = 2;
+function rememberVisit(href: string): void {
+  const at = visited.indexOf(href);
+  if (at >= 0) visited.splice(at, 1);
+  visited.unshift(href);
+  for (const gone of visited.splice(CH_VISITED_KEPT)) fetchedAt.delete(gone);
 }
 
 /** Tests only: forget what was fetched. */
 export function resetPrefetchTabsForTests(): void {
   fetchedAt.clear();
+  visited.length = 0;
 }
