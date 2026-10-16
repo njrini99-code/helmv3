@@ -255,8 +255,10 @@ export function Bell() {
         if (r && (r.success || r.ok) && r.data) {
           const next = r.data.items;
           // The same feed again keeps the same list, so a refresh that lands mid-drop re-renders nothing.
+          // Read is compared as read, not by its time: a card cleared here carries this device's time until the server's
+          // arrives, and re-rendering the whole feed for that was a long frame after every clear (WebKit, 2026-10-16).
           const same = (prev: UnifiedNotificationItem[] | null) =>
-            !!prev && prev.length === next.length && prev.every((i, k) => i.id === next[k]!.id && i.source === next[k]!.source && i.read_at === next[k]!.read_at && i.title === next[k]!.title);
+            !!prev && prev.length === next.length && prev.every((i, k) => i.id === next[k]!.id && i.source === next[k]!.source && !i.read_at === !next[k]!.read_at && i.title === next[k]!.title);
           setItems((prev) => (same(prev) ? prev : next));
           setFailed(false);
         } else {
@@ -344,7 +346,12 @@ export function Bell() {
     chTrail('bell clear', { count: unreadOnes.length });
     const keys = new Set(unreadOnes.map(notificationKey));
     setItems((prev) => (prev ? markLocallyRead(prev, keys, new Date().toISOString()) : prev));
-    for (const item of unreadOnes) void api.markRead(item).catch((err: unknown) => chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' }));
+    // The server follows once the stacks below have slid into place: its answer refreshes the page under the drop and
+    // the badge's count, and each was a long frame in the middle of the slide (WebKit, production build, 2026-10-16).
+    const write = api.markRead;
+    window.setTimeout(() => {
+      for (const item of unreadOnes) void write(item).catch((err: unknown) => chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' }));
+    }, chSpringCurve('smooth').ms + 80);
   };
   const markAllNow = async () => {
     const before = items;
