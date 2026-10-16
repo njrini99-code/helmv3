@@ -3,7 +3,7 @@
 import { FileText, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import {
-  CH_DOC_CATEGORIES,
+  CH_DOC_PICK_CATEGORIES,
   DOC_ACCEPT,
   FILM_EXTENSIONS,
   categoryLabel,
@@ -18,6 +18,7 @@ import {
   type ChFileProblem,
   type ChProspect,
 } from '../../data/recruiting-shape';
+import { RECRUIT_FILM_ENABLED } from '../../data/recruiting-film';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction } from '../../lib/use-action';
@@ -51,7 +52,7 @@ const extensionOf = (name: string) => (name.includes('.') ? (name.split('.').pop
 const stagedFrom = (file: File): Staged => ({
   file,
   title: stripExtension(file.name),
-  // Film is what a video is for; the coach can still pick another category.
+  // Film is what a video is for; the coach can still pick another category. With film off no extension is film's.
   category: FILM_EXTENSIONS.includes(extensionOf(file.name)) ? 'film' : 'note',
   problem: screenFile(file),
   uploadId: newRequestId(),
@@ -273,7 +274,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
       ) : state.kind === 'failed' ? (
         <InlineNotice code="CH-14202" title="Documents didn’t load" body="Nothing is lost. Try again in a moment." onRetry={tryAgain} />
       ) : docs.length === 0 ? (
-        <EmptyRow code="CH-14305" icon={FileText} title="No documents yet" body="Schedules, transcripts and film, private to your staff." actionLabel="Upload" onAction={choose} />
+        <EmptyRow code="CH-14305" icon={FileText} title="No documents yet" body={RECRUIT_FILM_ENABLED ? 'Schedules, transcripts and film, private to your staff.' : 'Schedules, transcripts and notes, private to your staff.'} actionLabel="Upload" onAction={choose} />
       ) : (
         <>
           <ul className="ch-rec-docs">
@@ -300,7 +301,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
           <span className="ch-rec-note">Private to your staff. Files open through a link that expires.</span>
         </>
       )}
-      {!phone && state.kind === 'ready' && <span className="ch-rec-note ch-rec-drophint">Drop a file here to add it. Film can be an MP4, MOV or M4V.</span>}
+      {!phone && state.kind === 'ready' && <span className="ch-rec-note ch-rec-drophint">{RECRUIT_FILM_ENABLED ? 'Drop a file here to add it. Film can be an MP4, MOV or M4V.' : 'Drop a file here to add it.'}</span>}
       {over && (
         <div className="ch-rec-drop" aria-hidden="true">
           <Icon icon={Upload} size={18} />
@@ -419,7 +420,7 @@ function UploadDialog({
             <PillGroup<ChDocCategory>
               label="Category"
               value={staged.category}
-              options={CH_DOC_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+              options={CH_DOC_PICK_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
               onChange={(category) => onChange({ ...staged, category })}
             />
           </div>
