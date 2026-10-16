@@ -2,13 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CAPACITOR_DEBUG</key>
-	<string>$(CAPACITOR_DEBUG)</string>
-	<!-- ProMotion (2026-10-08, Clubhouse motion A5): lets the app's native layers (the WebView's scrolling and
-	     compositing, the edge swipe) run at up to 120Hz on ProMotion iPhones. WebKit's own page rendering in a
-	     WKWebView stays near 60fps until WebKit bug 294338 lands, so web animations gain nothing yet. -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>CAPACITOR_DEBUG</key>
+	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -68,11 +65,6 @@
 	</array>
 	<key>UIRequiresFullScreen</key>
 	<true/>
-	<!-- Portrait-only on iPhone (2026-08-26, iOS premium audit F-ORIENT-01):
-	     the product is designed portrait-first and iPhone landscape was
-	     declared but never audited. Plan rule: make it excellent or restrict
-	     it intentionally — this is the intentional restriction. Revisit only
-	     with real landscape QA behind it. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
