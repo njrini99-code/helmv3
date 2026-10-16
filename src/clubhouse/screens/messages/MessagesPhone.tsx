@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, useIsPresent } from "motion/react";
 import {
   ArrowUp,
   Bell,
@@ -828,6 +828,21 @@ function PhoneNewMessage({
     setBusy(false);
     if (!ok) onFirstMessage(null);
   };
+  // A hardware keyboard's Esc is Cancel (audit A-28): the same pop, history step and focus return as the button. A
+  // dialog or menu open over the screen takes its own Esc first, and a screen already leaving (after Next) ignores it,
+  // so it cannot clear a prefill the new thread is taking.
+  const present = useIsPresent();
+  useEffect(() => {
+    if (!present) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return;
+      if (e.target instanceof Element && e.target.closest("dialog, [role='dialog'], [role='menu']")) return;
+      e.preventDefault();
+      onCancel();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onCancel, present]);
   const who = to.length === 1 ? firstName(personOf(api, to[0]!)?.name ?? "them") : `${to.length} people`;
   return (
     <PhoneScreen labelledBy="ch-msp-new-title" className="ch-msp-new" keyboardAware>

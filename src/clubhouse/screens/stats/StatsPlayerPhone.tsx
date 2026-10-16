@@ -32,6 +32,7 @@ import { ProposalAnswer } from './ProposalAnswer';
 import { devProgress, devTitle, goalLine } from './dev-format';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useArrivalPainted } from '../../lib/use-painted';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -72,6 +73,9 @@ export function StatsPlayerPhone({
 }) {
   const coach = data.viewer === 'coach';
   const toast = useToast();
+  // Game detail and everything under it start below the first screen (game detail at 876px of 852), so a page reached
+  // by navigating renders them a frame after its first one is painted.
+  const below = useArrivalPainted();
   const w = data.win;
   const first = data.firstName;
   // Strokes gained needs three rounds WITH shots, so the banner keys on those, not on the round count alone.
@@ -138,7 +142,8 @@ export function StatsPlayerPhone({
         <span className="ch-spm-head__id">
           <h1>{data.name}</h1>
           <p className="ch-num">
-            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'}`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`].filter(Boolean).join(' · ')}
+            {/* The season's count, said as such: under it the window (Last 10) counts its own rounds ("5 rounds" over "10 countable rounds", 2026-10-14). */}
+            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`].filter(Boolean).join(' · ')}
           </p>
         </span>
         {coach && messageHref && (
@@ -169,6 +174,8 @@ export function StatsPlayerPhone({
         <StrokesGained data={data} />
       </SectionBoundary>
 
+      {below && (
+        <>
       <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
         {data.statsError ? (
           <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
@@ -196,10 +203,14 @@ export function StatsPlayerPhone({
       </SectionBoundary>
         </>
       )}
+        </>
+      )}
 
+      {below && (
       <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
         <Development data={data} coach={coach} onAdd={onAddFocus} onRetry={onRetry} />
       </SectionBoundary>
+      )}
     </div>
   );
 }

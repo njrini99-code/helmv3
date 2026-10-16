@@ -1332,6 +1332,26 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     return { ...utils, writes, user, onDeleted };
   }
   const top = () => within(screen.getByTestId('phone-top'));
+
+  it('a new ?section= while Settings is open pushes that section; every link opened Account (Simulator, 2026-10-14)', async () => {
+    const writes = makeWrites();
+    const tree = (section: ChSettingsSection) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PhoneChromeProvider>
+            <div className="ch-root" data-ui="clubhouse">
+              <SlotHost />
+              <SettingsView data={coachData()} writes={writes} device={makeDevice()} initialSection={section} opened onDeleted={vi.fn()} />
+            </div>
+          </PhoneChromeProvider>
+        </ToastProvider>
+      </LazyMotion>
+    );
+    const { rerender } = render(tree('account'));
+    await waitFor(() => expect(top().getByText('Account')).toBeTruthy());
+    rerender(tree('notifications'));
+    await waitFor(() => expect(top().getByText('Notifications')).toBeTruthy());
+  });
   const list = () => screen.getByRole('navigation', { name: 'Settings sections' });
   const openRow = async (user: User, name: RegExp) => {
     await user.click(within(list()).getByRole('button', { name }));

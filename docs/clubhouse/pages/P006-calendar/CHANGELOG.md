@@ -1,5 +1,40 @@
 # P006 — Calendar: changelog
 
+## 2026-10-14 — Keyboard and focus (runtime audit A-09, A-14, A-23, A-24, A-25)
+
+WebKit audit of the desktop calendar, coach and player:
+
+- A-09: the arrows on the View radios changed the view and also stepped the
+  day or week (the page's own arrows answered the same key). The page's
+  shortcuts now skip a key a control already used, and arrows inside a radio
+  group, menu, grid, list or popover; N and T still work there.
+- A-14: New event opens on its title field. An edit keeps the heading first,
+  and so does the phone, so the keyboard doesn't rise over the sheet (shared
+  `Modal` `initialFocus`, docs/clubhouse/CHANGELOG.md).
+- A-23: the jump panel pops in and out on the menu's quick pop (instant with
+  reduced motion or Animations off). Esc, Close and a picked day hand focus
+  back to the title; an outside click leaves it where it went. Its Esc no
+  longer also closes the open event, and a press on the title while it is
+  open closes it instead of reopening it.
+- A-24: the people picker pops the same way, takes focus into its search as
+  it opens, and Esc or Done hand focus back to its button.
+- A-25: Enter or Space on an event (week or day block, all-day bar, agenda
+  row) moves focus to its panel's heading, and Esc or Back hands it back to
+  the event. Read in the code, not re-run in WebKit: the card that appeared
+  about 600ms later is the event's focus peek (`PEEK_FOCUS_MS`, ui/Peek.tsx),
+  not the panel, which renders in the same commit as the key. Focus moving into
+  the panel blurs the event, which puts that peek away; Esc returning focus to
+  the event starts its peek again, as a Tab onto it does.
+
+## 2026-10-14 — A finger places the event time on a tap, not as it lands
+
+Simulator audit: a scroll of the New event sheet that began on a free-time lane
+moved the event to where the finger landed (7:00 became 9:45), and Close then
+asked to discard. A touch now places the time on the lane's click, which iOS
+sends only when the finger lifts without scrolling; a mouse still places it on
+the press. The phone intro's view switch wraps under larger page text (shared
+`.ch-intro__row`, docs/clubhouse/CHANGELOG.md).
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet

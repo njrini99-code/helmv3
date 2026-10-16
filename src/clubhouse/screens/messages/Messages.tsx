@@ -21,6 +21,7 @@ import { getGolfConversationMute, setGolfConversationMute } from '@/app/golf/act
 import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDetail, getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
+import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
 import { useDelayedToast, useToast } from '../../ui/Toast';
@@ -32,7 +33,7 @@ import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
 import { onRoster, takePrefill } from './prefill';
-import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { firstName, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
   const n = c.participant_count ?? c.participant_ids?.length ?? 0;
@@ -97,8 +98,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments({ recoverable: true });
 
   // "Delete conversation" is offered only once the database has the per-person hide (a held migration, HELD.md).
-  const [canHide, setCanHide] = useState(false);
+  const [canHide, setCanHide] = useState(data.canHide ?? false);
   useEffect(() => {
+    if (data.canHide !== undefined) return;
     let live = true;
     void canHideGolfConversations().then(
       (ok) => live && setCanHide(ok),
@@ -107,7 +109,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return () => {
       live = false;
     };
-  }, []);
+  }, [data.canHide]);
 
   // Desktop opens the newest thread beside the rail without marking it read (the coach hasn't read it yet).
   useEffect(() => {
@@ -190,11 +192,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
   );
 
   const fail = useCallback(
-    (surface: string, err: unknown, title: string, hint: string, code: string) => {
+    (surface: string, err: unknown, title: string, hint: string, code: string, withReason = true) => {
       chReport(err, { surface: `messages.${surface}`, action: `messages.${surface}` });
       // CH-7701: a change that fails gives the error pattern; CH-7702: one that lands, the success pattern (each write below).
       haptic('error');
-      const reason = err instanceof Error ? friendlyReason(err.message) : null;
+      const reason = withReason && err instanceof Error ? friendlyReason(err.message) : null;
       toast({ tone: 'error', title, body: reason ?? hint, code });
     },
     [toast],
@@ -359,33 +361,18 @@ export function Messages({ data }: { data: ChMessagesData }) {
   }, [liveIds, reactions.rows, data.viewerUserId]);
 
   // Announcements: the team feed, pinned above conversations.
-  const [anns, setAnns] = useState<ChAnnouncement[]>([]);
+  // The route reads them with the page; when it couldn't (or in the preview), the first read is here.
+  const [anns, setAnns] = useState<ChAnnouncement[]>(data.announcements ?? []);
   const [annError, setAnnError] = useState(false);
   // Announcements sit above the conversations: until their first read answers, the inbox keeps its skeleton.
-  const [annLoaded, setAnnLoaded] = useState(false);
+  const [annLoaded, setAnnLoaded] = useState(data.announcements != null);
   const [selectedAnnId, setSelectedAnnId] = useState<string | null>(null);
   const loadAnns = useCallback(async () => {
     try {
       const res = await getAnnouncementsWithMeta(data.teamId, data.viewerUserId, data.role === 'coach', data.viewerPlayerId);
       if (!res.success || !res.data) throw new Error(res.error || 'announcements read failed');
       setAnnError(false);
-      setAnns(
-        res.data.map((a) => ({
-          id: a.id,
-          title: a.title,
-          body: a.body ?? '',
-          urgent: a.urgency === 'urgent' || a.urgency === 'high',
-          publishedAt: a.published_at ?? a.publish_at ?? a.created_at,
-          requiresAck: !!a.requires_acknowledgement,
-          ackCount: a.acknowledged_count ?? 0,
-          total: a.total_recipients ?? a.recipient_count ?? 0,
-          acknowledgedByMe: !!a.has_player_acknowledged,
-          taskCount: a.task_count ?? 0,
-          completedTaskCount: a.completed_task_count ?? 0,
-          docCount: a.document_count ?? 0,
-          authorId: (a as { created_by?: string | null }).created_by ?? null,
-        })),
-      );
+      setAnns(res.data.map(toChAnnouncement));
     } catch (err) {
       chReport(err, { surface: 'messages.announcements', severity: 'low' });
       setAnnError(true);
@@ -393,7 +380,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
       setAnnLoaded(true);
     }
   }, [data.teamId, data.viewerUserId, data.role, data.viewerPlayerId]);
+  const annsPreloaded = useRef(data.announcements != null);
   useEffect(() => {
+    // Read with the page: the first read is already on screen.
+    if (annsPreloaded.current) {
+      annsPreloaded.current = false;
+      return;
+    }
     void loadAnns();
   }, [loadAnns]);
 
@@ -565,8 +558,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
         else await msgs.sendMessage(text);
         return true;
       } catch (err) {
-        const unknown = /network|fetch|timeout|aborted/i.test(err instanceof Error ? err.message : '');
-        fail('send', err, unknown ? "Couldn’t confirm this message sent" : "Couldn’t send the message", unknown ? 'It is in the thread: check it, then Retry from there if it did not arrive.' : 'It is in the thread, marked Not sent. Retry from there.', unknown ? 'CH-7005' : 'CH-7004');
+        // The bubble's state comes from the hook's classifySendFailure, which is this same test: the toast and the bubble
+        // tell one story (audit A-06: WebKit's "Load failed" read "Couldn’t send" over a "Couldn’t confirm" bubble).
+        if (isTransientNetworkErrorMessage(err instanceof Error ? err.message : String(err))) {
+          fail('send', err, "Couldn’t confirm this message sent", 'It is in the thread: check it, then Retry from there if it did not arrive.', 'CH-7005', false);
+        } else {
+          fail('send', err, "Couldn’t send the message", 'It is in the thread, marked Not sent. Retry from there.', 'CH-7004');
+        }
         return false;
       }
     },
@@ -595,7 +593,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
       let unknown = false;
       let checked = false;
       const ok = await attempt('sendFiles', { failed: "Couldn’t send the attachment", hint: 'Your message and files are still in the box. Try again.', code: 'CH-7006' }, async () => {
-        const res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending, ...(replyToId ? { replyToId } : {}) });
+        let res: Awaited<ReturnType<typeof sendMessageWithAttachments>>;
+        try {
+          res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending, ...(replyToId ? { replyToId } : {}) });
+        } catch (err) {
+          // No answer while the composer holds this attempt: the send reads as unconfirmed (CH-7023 in the composer), so
+          // the toast says the same rather than "Try again" (audit A-06).
+          if (!attachmentRecovery.has(selectedId)) throw err;
+          unknown = true;
+          fail('sendFiles', err, "Couldn’t confirm this send", 'Your draft and files are kept. Retry send checks the same attempt before sending again.', 'CH-7023', false);
+          return true;
+        }
         if (res.cancelled) return false;
         checked = true;
         if (res.sendOutcome === 'unknown') {

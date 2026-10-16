@@ -714,7 +714,7 @@ a.ch-th-rank__name::after {
   display: grid;
   place-items: center;
   background: var(--ch-green-fill-600);
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
 }
 .ch-th-act[data-status='cancelled'] .ch-th-act__icon,
 .ch-th-act[data-status='abandoned'] .ch-th-act__icon {

@@ -14,7 +14,6 @@ vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges:
 const order = vi.hoisted(() => [] as string[]);
 vi.mock('@/lib/utils/push-registration', () => ({ teardownDeviceTokenOnSignOut: () => order.push('teardown') }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { signOut: async () => void order.push('signOut') } }) }));
-vi.mock('@/app/golf/actions/team-switcher', () => ({ clearActiveTeam: async () => void order.push('clearActiveTeam') }));
 vi.mock('@/lib/golf/client-resource-cache', () => ({ clearAllCachedResources: vi.fn() }));
 vi.mock('@/app/actions/notification-preferences', () => ({ updateNotificationPreferences: vi.fn() }));
 vi.mock('@/app/golf/actions/v3/notification-prefs', () => ({ setAllChannels: vi.fn(), setCategoryChannel: vi.fn(), setQuietMode: vi.fn() }));
@@ -37,10 +36,38 @@ afterEach(() => {
 describe('Clubhouse in the iOS app', () => {
   it('signing out stops this phone getting pushes first, while still signed in', async () => {
     order.length = 0;
-    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '' } });
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '', replace } });
     const writes = createLiveWrites({ role: 'coach', userId: 'u', email: null, coachId: 'c', playerId: null, teamId: 't', refresh: () => {} });
-    await writes.signOut();
-    expect(order).toEqual(['teardown', 'clearActiveTeam', 'signOut']);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      order.push(`route ${String(url)}`);
+      return new Response('{"success":true}', { status: 200 });
+    });
+    try {
+      await writes.signOut();
+    } finally {
+      fetchSpy.mockRestore();
+    }
+    // One request ends the session and clears the active team: no server action, so the page is not re-rendered under the jump to login.
+    expect(order).toEqual(['teardown', 'route /api/golf/auth/sign-out']);
+    // The login page takes this page's place in history, as a full page load: Back cannot return to the signed-out pages.
+    expect(replace).toHaveBeenCalledWith('/golf/login');
+  });
+
+  it('a sign-out request that fails still signs the browser out', async () => {
+    order.length = 0;
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '', replace } });
+    const writes = createLiveWrites({ role: 'coach', userId: 'u', email: null, coachId: 'c', playerId: null, teamId: 't', refresh: () => {} });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'));
+    try {
+      await writes.signOut();
+    } finally {
+      fetchSpy.mockRestore();
+    }
+    expect(order).toEqual(['teardown', 'signOut']);
+    // The login page takes this page's place in history, as a full page load: Back cannot return to the signed-out pages.
+    expect(replace).toHaveBeenCalledWith('/golf/login');
   });
 
   it('the account sheet tells the shell a sheet is open, so an edge swipe cannot leave the page under it', async () => {

@@ -238,7 +238,7 @@ export function HoleMap({
       <circle cx={s.pin.x} cy={s.pin.y} r="2.4" className="ch-rt-map__cup" />
       {labels &&
         plotted
-          .filter((p) => Math.hypot(p.to.x - p.from.x, p.to.y - p.from.y) > 70)
+          .filter((p) => (p.to.x - p.from.x) ** 2 + (p.to.y - p.from.y) ** 2 > 70 * 70)
           .map((p) => {
             const text = mapLabel(p.shot, labels);
             const w = text.length * 6.6 + 20;

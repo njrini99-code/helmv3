@@ -39,12 +39,14 @@ export function Button(props: ButtonProps) {
       {leftIcon && <Icon icon={leftIcon} size={iconSize} />}
       <span>{children}</span>
       {rightIcon && <Icon icon={rightIcon} size={iconSize} />}
-      {kbd && <kbd className="ch-btn__kbd">{kbd}</kbd>}
+      {/* The hint is visual: VoiceOver read "New event, N" as the name (audit A-10); the shortcut is announced through
+          aria-keyshortcuts on the control instead. */}
+      {kbd && <kbd className="ch-btn__kbd" aria-hidden="true">{kbd}</kbd>}
     </>
   );
   if (props.href !== undefined) {
     return (
-      <Link href={props.href} className={cls} onClick={() => feel && haptic(feel)}>
+      <Link href={props.href} className={cls} aria-keyshortcuts={kbd} onClick={() => feel && haptic(feel)}>
         {inner}
       </Link>
     );
@@ -53,6 +55,7 @@ export function Button(props: ButtonProps) {
     <button
       type={props.type ?? 'button'}
       className={cls}
+      aria-keyshortcuts={kbd}
       disabled={props.disabled}
       onClick={(e) => {
         if (feel) haptic(feel);

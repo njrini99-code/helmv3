@@ -6248,7 +6248,7 @@
     "item": 1,
     "name": "THE_NETWORK_DROPS_MID_SEND",
     "chCode": "CH-7005",
-    "meaning": "The network drops mid-send",
+    "meaning": "The network drops mid-send (Safari's \"Load failed\", Chrome's \"Failed to fetch\", Firefox's \"NetworkError…\": the same test the bubble's CH-7017 uses, so the toast and the bubble agree; the browser's text is never shown)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6548,7 +6548,7 @@
     "item": 2,
     "name": "SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE",
     "chCode": "CH-7802",
-    "meaning": "Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends",
+    "meaning": "Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends. Desktop React: the reaction bar takes focus on its first reaction, ← → Home End move along it, Esc or a pick returns focus to React, Tab moves on",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6570,7 +6570,7 @@
     "item": 4,
     "name": "PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH",
     "chCode": "CH-7804",
-    "meaning": "Phone: a message's actions have a path besides the long press (a \"Message actions\" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes (\"Back to Messages\", \"Back to Chat\")",
+    "meaning": "Phone: a message's actions have a path besides the long press (a \"Message actions\" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes (\"Back to Messages\", \"Back to Chat\"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },

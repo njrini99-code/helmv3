@@ -10,7 +10,10 @@ import { CH_DUR } from '../../lib/motion';
  * piece carries its own delay, and the items' delay is their index times a step.
  *
  * Variants live out here so a render never builds them again. All of it animates
- * transform and opacity; greeting text stays sharp during its entrance.
+ * transform and opacity; greeting text stays sharp during its entrance. Transform as a
+ * string (`translate(x, y)`), not framer's `x`/`y`: Motion hands strings to the compositor
+ * (WAAPI), so the welcome keeps moving while the dashboard loads behind it (owner,
+ * 2026-10-15: right after Sign in it was choppy).
  * Times are seconds from when the welcome mounts.
  */
 export interface AuthCustom {
@@ -36,7 +39,7 @@ const tx = (takes: number, after: number, ease: Bezier, c: AuthCustom): Transiti
 
 /** The welcome leaving: each piece slides 28px left and fades, together. Reduced motion fades only, over the app's quick beat. */
 const leave = (c: AuthCustom) =>
-  c.reduced ? { opacity: 0, transition: { duration: CH_DUR.quick } } : { opacity: 0, x: -28, transition: tx(WELCOME_TAKES.leave, 0, OUT, c) };
+  c.reduced ? { opacity: 0, transition: { duration: CH_DUR.quick } } : { opacity: 0, transform: 'translate(-28px, 0px)', transition: tx(WELCOME_TAKES.leave, 0, OUT, c) };
 
 export const welcomeScrim: Variants = {
   hidden: { opacity: 0 },
@@ -49,27 +52,27 @@ export const welcomeMark: Variants = {
 };
 export const welcomeBody: Variants = { hidden: {}, show: {}, leave };
 export const welcomeDate: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.date, WELCOME_AT.date, OUT, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 10px)' },
+  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.date, WELCOME_AT.date, OUT, c) }),
 };
 /** The greeting rises without blurring readable text (owner clarity correction). */
 export const welcomeLine1: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.line1, WELCOME_AT.line1, OUT, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 16px)' },
+  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.line1, WELCOME_AT.line1, OUT, c) }),
 };
 /** The name rises out of its own clipped line. */
 export const welcomeName: Variants = {
-  hidden: { y: '108%' },
-  show: (c: AuthCustom) => ({ y: '0%', transition: tx(WELCOME_TAKES.name, WELCOME_AT.name, SMOOTH, c) }),
+  hidden: { transform: 'translate(0px, 108%)' },
+  show: (c: AuthCustom) => ({ transform: 'translate(0px, 0%)', transition: tx(WELCOME_TAKES.name, WELCOME_AT.name, SMOOTH, c) }),
 };
 export const welcomeCard: Variants = {
-  hidden: { opacity: 0, y: 18 },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.card, WELCOME_AT.card, SMOOTH, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 18px)' },
+  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.card, WELCOME_AT.card, SMOOTH, c) }),
   leave,
 };
 export const welcomeItem: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.item, WELCOME_AT.items + (c.index ?? 0) * WELCOME_AT.itemStep, OUT, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 10px)' },
+  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.item, WELCOME_AT.items + (c.index ?? 0) * WELCOME_AT.itemStep, OUT, c) }),
 };
 export const welcomeHint: Variants = {
   hidden: { opacity: 0 },

@@ -8,6 +8,8 @@ import { distribution, type ChReviewHole, type ChRoundReview } from '../../data/
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useRefresh } from '../../lib/use-refresh';
 import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -287,6 +289,7 @@ function HoleCard({
  */
 export function RoundReview({ review }: { review: ChRoundReview }) {
   const phone = useChPhone();
+  const reduced = useChReducedMotion();
   const router = useRouter();
   const { refresh, refreshing } = useRefresh();
   const r = review;
@@ -443,7 +446,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                 onPick={(n) => {
                   haptic('select');
                   pick(n);
-                  document.getElementById('ch-rz-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  chScrollIntoView(document.getElementById('ch-rz-card'), reduced); // A-11: instant when motion is off
                 }}
               />
             </ZoneBlock>
@@ -508,7 +511,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                       onClick={() => {
                         haptic('select');
                         pick(c.n);
-                        document.getElementById('ch-rz-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        chScrollIntoView(document.getElementById('ch-rz-card'), reduced); // A-11: instant when motion is off
                       }}
                     >
                       <span className="ch-rzcost__n ch-num">{c.n}</span>

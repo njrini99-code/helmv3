@@ -163,7 +163,7 @@ CH-1905.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 70701 | CH-7005 | `THE_NETWORK_DROPS_MID_SEND` | The network drops mid-send |
+| 70701 | CH-7005 | `THE_NETWORK_DROPS_MID_SEND` | The network drops mid-send (Safari's "Load failed", Chrome's "Failed to fetch", Firefox's "NetworkError…": the same test the bubble's CH-7017 uses, so the toast and the bubble agree; the browser's text is never shown) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
@@ -337,9 +337,9 @@ CH-1842, 11825 CH-1816.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 71801 | CH-7801 | `THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION` | The composer is named for the conversation ("Message Varsity team"); a message that didn't send is an alert |
-| 71802 | CH-7802 | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends |
+| 71802 | CH-7802 | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends. Desktop React: the reaction bar takes focus on its first reaction, ← → Home End move along it, Esc or a pick returns focus to React, Tab moves on |
 | 71803 | CH-7803 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
-| 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat") |
+| 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
 

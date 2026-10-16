@@ -1,5 +1,32 @@
 # P008 — Settings: changelog
 
+## 2026-10-14 — Sign out ends in one request
+
+Found on the local stack (Playwright WebKit, coach and player): Sign out cleared
+the active team through a server action, and a server action that writes a
+cookie re-renders the page it was called from, so the dashboard refreshed under
+the jump to login (a skeleton frame, about a second of work, and a "TypeError:
+Load failed" into the error boundary).
+
+- **One sign-out request** (`POST /api/golf/auth/sign-out`, lib/sign-out.ts
+  `chEndSession`): the session ends and the active team clears in one response,
+  nothing re-renders; if it fails the browser signs itself out (global, then
+  local). Same path after Delete account. Verified: route 200 in about 60ms, no
+  errors, no session or team cookie left, /golf/dashboard sends you to login.
+  Tests: route.test.ts, native.test.tsx, settings-server.test.tsx.
+
+## 2026-10-14 — A new ?section= on an open Settings opens that section
+
+Once Settings had been open, every `?section=` link (the bell's, a page's
+settings key) showed Account on the phone and the first section on desktop: the
+section was read from the address only on mount. It now follows the address.
+
+## 2026-10-14 — Row labels keep whole words under larger page text
+
+At Safari's larger page text the phone list broke its labels mid-word
+("Notificati/ons"). A row's label now floors at its longest word and its
+summary ellipsizes first.
+
 ## 2026-10-13 — Sheets rise and leave on the shared spring, over the shared backdrop
 
 The phone's bottom sheets and action sheets rise on the smooth spring (462ms)

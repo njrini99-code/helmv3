@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
 import { formatToPar, NO_DATA } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { useDialogLifetime } from '../../../lib/dialog-lifetime';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { ScoreMark } from '../../../ui/ScoreMark';
@@ -319,6 +320,7 @@ export function SubmitOverlay({
   onRetry,
   onGoBack,
   slowHref = null,
+  open = true,
 }: {
   state: 'saving' | 'done' | 'failed';
   course: string;
@@ -329,24 +331,20 @@ export function SubmitOverlay({
   onRetry: () => void;
   onGoBack?: () => void;
   slowHref?: string | null;
+  /** Closing (Go back after a failure) fades the card out on the dialog lifetime rather than unmounting it (A-18). */
+  open?: boolean;
 }) {
   const reduced = useChReducedMotion();
   // D6/D7: a real modal dialog on the top layer, so the round behind it is inert and can't be reached or read through;
   // it can't be dismissed (Esc does nothing): each state names its own way on. Focus moves to the state's title.
-  const ref = useRef<HTMLDialogElement>(null);
+  const { ref, retainContent } = useDialogLifetime(open, { direction: 'center', surfaceSelector: '.ch-rt-subm' });
   const title = useRef<HTMLHeadingElement>(null);
-  useLayoutEffect(() => {
-    const d = ref.current;
-    if (d && !d.open) d.showModal();
-    return () => {
-      if (d?.open) d.close();
-    };
-  }, []);
   useEffect(() => {
-    title.current?.focus({ preventScroll: true });
-  }, [state]);
+    if (open) title.current?.focus({ preventScroll: true });
+  }, [state, open]);
   return (
     <dialog ref={ref} className="ch-rt-scrim" data-ui="clubhouse" aria-labelledby="ch-rt-subm-t" onCancel={(e) => e.preventDefault()}>
+      {retainContent(
       <div className="ch-rt-subm" role={state === 'failed' ? 'alert' : 'status'} aria-live="polite">
         {state === 'saving' && (
           <>
@@ -402,6 +400,7 @@ export function SubmitOverlay({
           </>
         )}
       </div>
+      )}
     </dialog>
   );
 }

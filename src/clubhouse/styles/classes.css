@@ -214,7 +214,7 @@
 }
 .ch-cl-tb__over b {
   font: 600 24px/1 var(--ch-font-sans);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-cl-tb__over span {
   max-width: 96px;
@@ -275,7 +275,7 @@
   transform: translateX(-50%);
   font: 600 11px/1 var(--ch-font-sans);
   font-style: normal;
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   white-space: nowrap;
 }
 .ch-cl-tb__lab {
@@ -485,7 +485,7 @@
   height: 52px;
   border-radius: 50%;
   background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   box-shadow: 0 10px 20px -10px rgb(11 58 37 / 0.8);
 }
 .ch-cl-add b {
@@ -699,7 +699,7 @@
 }
 .ch-cl-daypick button[aria-pressed='true'] {
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   font-weight: 600;
   box-shadow: 0 1px 2px rgb(11 58 37 / 0.3);
 }
@@ -885,7 +885,7 @@
   height: 44px;
   border-radius: 50%;
   background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   box-shadow:
     0 10px 18px -8px rgb(11 58 37 / 0.8),
     0 0 0 4px var(--ch-ivory-25);
@@ -1035,7 +1035,7 @@
   padding: 12px 0;
   border-radius: 14px;
   background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-cl-rv__sum > div {
   display: flex;
@@ -1161,7 +1161,7 @@
   margin-bottom: 8px;
   border-radius: 50%;
   background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   box-shadow: 0 0 0 8px #edf4ef;
 }
 .ch-cl-ok > b {
@@ -1303,7 +1303,7 @@
 .ch-cl-tb__one {
   margin: 0;
   font: 500 14px/20px var(--ch-font-sans);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-cl-tb.is-compact .ch-cl-tb__over {
   min-height: 44px;

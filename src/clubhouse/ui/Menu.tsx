@@ -111,6 +111,9 @@ export function Menu({
       e.preventDefault();
       els[e.key === 'Home' ? 0 : els.length - 1]?.focus();
     } else if (e.key === 'Tab') {
+      // The list is portaled to the end of the page, so Tab from it fell to <body> as it closed (audit A-27): put focus
+      // back on the trigger first, and the key's own move carries on from there in the page's order.
+      btn.current?.focus({ preventScroll: true });
       close(false);
     }
   };

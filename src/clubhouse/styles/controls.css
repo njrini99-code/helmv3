@@ -227,6 +227,18 @@
   box-shadow: 0 0 0 1px var(--ch-border-hairline);
   cursor: default;
 }
+/* A date or time draws its value in WebKit's own part, which globals.css paints a fixed warm-900 for Fairway: in the
+   dark theme that was near-black on the dark field (the New event sheet's date and times looked empty). */
+.ch-input[type='date']::-webkit-date-and-time-value,
+.ch-input[type='time']::-webkit-date-and-time-value,
+.ch-input[type='datetime-local']::-webkit-date-and-time-value {
+  color: inherit;
+}
+.ch-input[type='date']:disabled::-webkit-date-and-time-value,
+.ch-input[type='time']:disabled::-webkit-date-and-time-value,
+.ch-input[type='datetime-local']:disabled::-webkit-date-and-time-value {
+  color: var(--ch-text-tertiary);
+}
 .ch-input::placeholder,
 .ch-textarea::placeholder {
   color: var(--ch-text-tertiary);
@@ -285,6 +297,12 @@
   height: 1px;
   margin: 5px 6px;
   background: rgb(28 25 18 / 0.08);
+}
+
+/* A sheet's rise and its scrim wait at their first frame until the sheet has painted (useDialogLifetime). */
+.ch-root [data-ch-hold],
+.ch-root dialog[data-ch-hold]::backdrop {
+  animation-play-state: paused;
 }
 
 /* Modal on the native dialog top layer */
@@ -558,7 +576,7 @@
 .ch-pp__row[aria-pressed='true'] .ch-pp__name b,
 .ch-pp__row[aria-selected='true'] .ch-pp__name b {
   font-weight: 600;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-pp__name span {
   font: var(--ch-type-caption);

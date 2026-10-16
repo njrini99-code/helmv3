@@ -19,6 +19,7 @@ import { friendlyReason, normalise, useAction } from '../../lib/use-action';
 import { newRequestId } from '../../data/recruiting-shape';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
+import { useChPhone } from '../../lib/use-phone';
 import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, seedWindow, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
 import { TYPE_ICON } from './views';
 
@@ -68,6 +69,9 @@ function FindTime({
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const grab = useRef<number | null>(null);
+  // The kind of pointer that last pressed a lane. A finger only moves the time once it lifts without scrolling (a click):
+  // moved on the touch, a scroll of the sheet that began on a lane carried the event to wherever the finger landed.
+  const laneTouch = useRef(false);
   const len = win[1] - win[0];
   const pct = (h: number) => ((h - FROM) / (TO - FROM)) * 100;
   const toH = (x: number) => {
@@ -83,6 +87,7 @@ function FindTime({
     }
   };
   const onDown = (e: PointerEvent<HTMLSpanElement>) => {
+    laneTouch.current = false;
     e.preventDefault();
     e.stopPropagation();
     grab.current = toH(e.clientX) - win[0];
@@ -116,11 +121,19 @@ function FindTime({
         {shown.map((pid, i) => (
           <div key={pid} style={{ display: 'contents' }}>
             <span className="ch-lanes__who">{people.get(pid)?.name.split(' ')[0] ?? 'Player'}</span>
+            {/* A pointer shortcut to place the time; the keyboard moves it with the band, the lane's slider. */}
+            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- see above */}
             <div
               className="ch-lane"
               ref={i === 0 ? ref : undefined}
               onPointerDown={(e) => {
                 if ((e.target as HTMLElement).closest('.ch-cal-ft__band')) return;
+                laneTouch.current = e.pointerType === 'touch';
+                if (!laneTouch.current) move(toH(e.clientX) - len / 2);
+              }}
+              onClick={(e) => {
+                if (!laneTouch.current || (e.target as HTMLElement).closest('.ch-cal-ft__band')) return;
+                laneTouch.current = false;
                 move(toH(e.clientX) - len / 2);
               }}
             >
@@ -199,6 +212,7 @@ export function EventEditor({
 }) {
   const base = seed?.event ?? null;
   const open = seed != null;
+  const phone = useChPhone();
   const toast = useToast();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ChCalType>('practice');
@@ -472,6 +486,9 @@ export function EventEditor({
         width={1040}
         icon={base ? Pencil : CalendarPlus}
         title={base ? 'Edit event' : 'New event'}
+        // A-14: a new event starts on its title, so the coach can type at once. An edit keeps the heading first, and the
+        // phone does too, so the sheet doesn't rise with the keyboard over it (as onboarding's autoFocus={!phone}).
+        initialFocus={!base && !phone ? '#ch-ed-title' : undefined}
         description={
           // Only an event that asks for replies notifies anyone (owner, 2026-10-08).
           rsvp ? (base ? 'Changes notify everyone invited.' : 'Invited players get a notification and can reply.') : 'Invited players see it on their calendar.'

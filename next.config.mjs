@@ -186,10 +186,12 @@ const nextConfig = {
     // hook above and docs/operations/GATES.md).
     cpus: 3,
     webpackMemoryOptimizations: true,
-    // Client router cache: left at Next's defaults (dynamic 0s). A 30s
-    // dynamic stale time (Clubhouse native-feel audit P0-2) applied app-wide
-    // and let Fairway, Baseball and Lift Lab show data up to 30s old on a
-    // revisit, so it was removed until it can be scoped to Clubhouse.
+    // Client router cache: left at Next's defaults (dynamic 0s, static
+    // 300s). A 30s dynamic stale time (Clubhouse native-feel audit P0-2)
+    // applied app-wide and let Fairway, Baseball and Lift Lab show data up to
+    // 30s old on a revisit (#2189). The Clubhouse tabs get their instant
+    // switch from a full prefetch instead (held for the static 300s), which
+    // they refresh in place past 30s: shell/use-prefetch-tabs.ts.
     // Enable server actions.
     // bodySizeLimit must cover the largest Server Action payload. Recruit
     // documents no longer pass a File through an action (they upload straight

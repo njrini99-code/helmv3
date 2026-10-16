@@ -408,6 +408,25 @@ describe('the sign-in screen', () => {
     await waitFor(() => expect(login).toHaveBeenCalledWith('coach@example.com', 'hunter22', undefined));
   });
 
+  it('phone keyboard lift: the sheet rises on focus, not on the touch, so a tap on Password lands on Password', async () => {
+    setMedia({ phone: true });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { container } = render(<SignIn signIn={login} />);
+    const root = container.querySelector<HTMLElement>('.ch-au')!;
+    // iOS focuses the field under the finger as it lifts; moving the sheet on the touch moved Password away first.
+    fireEvent.pointerDown(password());
+    expect(root.dataset.kb).toBeUndefined();
+    act(() => password().focus());
+    expect(root.dataset.kb).toBe('up');
+    // Email to Password is a blur and a focus in one turn: the sheet stays up.
+    act(() => email().focus());
+    await act(async () => void vi.advanceTimersByTime(100));
+    expect(root.dataset.kb).toBe('up');
+    act(() => email().blur());
+    await act(async () => void vi.advanceTimersByTime(100));
+    expect(root.dataset.kb).toBe('down');
+  });
+
   it('carries the autofill and keyboard attributes password managers and iOS need', () => {
     render(<SignIn signIn={login} />);
     expect(email()).toHaveAttribute('autocomplete', 'username');
@@ -737,10 +756,12 @@ describe('the welcome', () => {
     fireEvent.click(go);
     fireEvent.keyDown(window, { key: 'Enter' });
     expect(hapticSpy.mock.calls.filter(([k]) => k === 'commit')).toHaveLength(1);
+    // The fold's look lands a painted frame after the phase (AuthFrame), so the move starts on a calm frame.
+    act(() => void vi.advanceTimersByTime(40));
     expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).toBe('leaving');
     expect(container.querySelector('.ch-au-photo')?.hasAttribute('data-fold')).toBe(true);
     expect(screen.getByTestId('scene')).toHaveAttribute('data-camera', 'leave');
-    act(() => void vi.advanceTimersByTime(HANDOFF_MS.navigate - 1));
+    act(() => void vi.advanceTimersByTime(HANDOFF_MS.navigate - 41));
     expect(navigate).not.toHaveBeenCalled();
     act(() => void vi.advanceTimersByTime(1));
     expect(navigate).toHaveBeenCalledTimes(1);

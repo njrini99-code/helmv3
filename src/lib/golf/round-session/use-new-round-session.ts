@@ -2851,8 +2851,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     // the component actually unmounts).
     roundExitedSafelyRef.current = true;
     // No router.refresh() after the push (swap audit F-59): the refresh is bound to the library and, landing after a
-    // quick tap on Continue, pulled the player back to it. The push already renders the library fresh (dynamic page,
-    // no staleTimes override), as the continue engine's own Save for later does.
+    // quick tap on Continue, pulled the player back to it. Off the phone the push renders the library fresh (dynamic
+    // page, dynamic stale time 0). On the phone the library is a player tab, fetched whole ahead, so the push shows what
+    // was held: Clubhouse's tab prefetch refreshes a held page reached from outside the strip in place once it has
+    // painted (src/clubhouse/shell/use-prefetch-tabs.ts), and a tap after that wins over the refresh.
     router.push(routesRef.current.library);
   };
 

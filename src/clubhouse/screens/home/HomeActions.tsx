@@ -14,7 +14,8 @@ export function HomeActions({ teamChatId }: { teamChatId: string | null }) {
   const router = useRouter();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
+      // A key sent to the document or window has no closest.
+      const t = e.target instanceof Element ? e.target : null;
       if (e.key !== 'n' || e.metaKey || e.ctrlKey || e.altKey || t?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
       haptic('press');
       chTrail('home new event (keyboard)');

@@ -239,7 +239,9 @@ describe('Messages · actions that fail', () => {
     await user.type(box, 'Bring rain gear{Enter}');
     await expectCode('CH-7004', /Couldn’t send the message/);
     expect((box as HTMLTextAreaElement).value).toBe('');
-    live.msgs.sendMessage.mockRejectedValueOnce(new Error('network timeout'));
+    // A real transport failure, as the hook's classifySendFailure reads it for the bubble (an invented
+    // "network timeout" is a refusal there, so the toast must not call it unconfirmed: audit A-06).
+    live.msgs.sendMessage.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     await user.type(box, 'Bus at 6{Enter}');
     await expectCode('CH-7005', /Couldn’t confirm this message sent/);
   });
@@ -497,7 +499,7 @@ describe('Messages · validation, haptics, accessibility', () => {
     live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }, { ...mine, id: 'f2', content: 'Second', sendFailed: true, sendOutcome: 'unknown' }];
     show();
     await expectCode('CH-7016', /Not sent/);
-    await expectCode('CH-7017', /Couldn’t confirm this sent/);
+    await expectCode('CH-7017', /Couldn’t confirm this message sent\. Check before sending again\./);
     await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Retry' }));
     expect(live.msgs.retryMessage).toHaveBeenCalledWith('f1');
   });

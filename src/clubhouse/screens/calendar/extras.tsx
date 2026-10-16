@@ -67,7 +67,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
             Your busy time
           </Badge>
         </div>
-        <h2 className="ch-in__title">{e.title}</h2>
+        <h2 className="ch-in__title" tabIndex={-1}>{e.title}</h2>
       </div>
       <div className="ch-in__facts">
         <div className="ch-in__fact">
@@ -323,7 +323,9 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
     }
   };
 
-  if (!canEdit && files && !files.length) return null;
+  // A player sees Files only when the event has some. Not while they load either: the placeholder then went away for
+  // the usual event with none, and the sheet dropped 95px just after it rose (WebKit, 2026-10-15).
+  if (!canEdit && !failed && !files?.length) return null;
   return (
     <div className="ch-in__sec">
       <div className="ch-in__sechead">

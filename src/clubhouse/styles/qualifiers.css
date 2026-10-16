@@ -295,7 +295,7 @@
 @media (hover: hover) {
   .ch-qf-card:hover .ch-qf-cta,
   .ch-qf-hero:hover .ch-qf-cta {
-    color: var(--ch-green-800);
+    color: var(--ch-forest-800);
   }
 }
 @media (hover: hover) {
@@ -594,7 +594,7 @@
   background: var(--ch-green-50);
 }
 .ch-qf-row.is-me .ch-qf-who b {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-qf-row.is-none .ch-qf-who b {
   color: var(--ch-text-tertiary);
@@ -1189,7 +1189,7 @@
 .ch-qfs-steps li.is-done .ch-qfs-steps__n {
   background: var(--ch-green-fill-600);
   box-shadow: none;
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
 }
 .ch-qfs-picks {
   display: flex;
@@ -2573,7 +2573,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     transition-duration: var(--ch-dur-press);
   }
   .ch-qf--list[data-canopy] .ch-qf-hero:active h2 {
-    color: var(--ch-green-800);
+    color: var(--ch-forest-800);
     transition-duration: var(--ch-dur-press);
   }
   /* A player's row keeps its link at the right of the first line; their standing runs under the row. */

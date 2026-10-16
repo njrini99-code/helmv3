@@ -1,8 +1,9 @@
 'use client';
 
 import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
+import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import type { ChCalendarData } from '../../data/calendar';
 import { Avatar } from '../../ui/Avatar';
@@ -31,10 +32,12 @@ import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { CH_POP, chTween } from '../../lib/motion';
 import { useLightPlace } from '../../shell/light';
 import { canvasLenis, canvasScrollNow, usePanelSmoothScroll } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
+import { chFocusQuietly } from '../../lib/focus-quietly';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
@@ -97,6 +100,8 @@ function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | n
  * it stands, and an undone move never reaches anyone.
  */
 const MOVE_UNDO_MS = 4000;
+/** Widgets whose arrow keys move their own selection or focus, and the page's popovers (A-09). */
+const COMPOSITE = '[role="radiogroup"], [role="tablist"], [role="menu"], [role="menubar"], [role="listbox"], [role="grid"], [role="tree"], [role="slider"], [role="dialog"]';
 const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 
 /** Optimistic moves held for their Undo window, then written. Leaving the page writes a waiting move at once. */
@@ -176,24 +181,63 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
   return { moves, move };
 }
 
-function JumpPanel({ anchor, today, view, onPick, onClose }: { anchor: string; today: string; view: ChCalView; onPick: (d: string) => void; onClose: () => void }) {
+/**
+ * A page popover's enter and exit (A-23, A-24): the Menu's pop on the quick tween (CH_POP); reduced motion and Animations
+ * off fade at once. The copy on its way out leaves the accessibility tree and takes no input.
+ */
+function Pop({ panel, className, label, style, children }: { panel: RefObject<HTMLDivElement | null>; className: string; label: string; style?: CSSProperties; children: ReactNode }) {
+  const reduced = useChReducedMotion();
+  const present = useIsPresent();
+  return (
+    <m.div
+      ref={panel}
+      className={className}
+      role="dialog"
+      aria-label={label}
+      aria-hidden={!present || undefined}
+      inert={!present}
+      style={style}
+      initial={reduced ? { opacity: 0 } : CH_POP.initial}
+      animate={reduced ? { opacity: 1 } : CH_POP.animate}
+      exit={reduced ? { opacity: 0 } : CH_POP.exit}
+      transition={chTween('quick', reduced)}
+    >
+      {children}
+    </m.div>
+  );
+}
+
+/** `onClose(true)`: Esc or Close, so focus goes back to the title; an outside click leaves focus where it went. */
+function JumpPanel({ anchor, today, view, trigger, onPick, onClose }: { anchor: string; today: string; view: ChCalView; trigger: RefObject<HTMLElement | null>; onPick: (d: string) => void; onClose: (returnFocus: boolean) => void }) {
   const [month, setMonth] = useState(`${monthKey(anchor)}-01`);
   const ref = useRef<HTMLDivElement | null>(null);
   const placement = usePopoverFit(ref);
+  const present = useIsPresent();
+  const close = useRef(onClose);
+  close.current = onClose;
   const range = view === 'week' ? new Set(weekDates(anchor)) : new Set([anchor]);
+  // Opening puts focus on the day on show: once, not again each time the page behind it renders.
   useEffect(() => {
-    const onDown = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && onClose();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    ref.current?.querySelector<HTMLElement>('.is-range, .ch-cal-jump__d')?.focus();
+  }, []);
+  useEffect(() => {
+    if (!present) return;
+    // The title toggles the panel itself: a press on it is not an outside click.
+    const onDown = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && !trigger.current?.contains(e.target as Node) && close.current(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      e.preventDefault();
+      close.current(true);
+    };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
-    ref.current?.querySelector<HTMLElement>('.is-range, .ch-cal-jump__d')?.focus();
     return () => {
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
     };
-  }, [onClose]);
+  }, [present, trigger]);
   return (
-    <div className="ch-cal-jump" role="dialog" aria-label="Jump to a date" ref={ref} style={placement}>
+    <Pop panel={ref} className="ch-cal-jump" label="Jump to a date" style={placement}>
       <div className="ch-cal-jump__head">
         <span>
           {monthName(month)} {yearOf(month)}
@@ -201,7 +245,7 @@ function JumpPanel({ anchor, today, view, onPick, onClose }: { anchor: string; t
         <span className="ch-cal-jump__nav">
           <IconButton icon={ChevronLeft} label="Previous month" size="sm" onClick={() => setMonth(addMonths(month, -1))} />
           <IconButton icon={ChevronRight} label="Next month" size="sm" onClick={() => setMonth(addMonths(month, 1))} />
-          <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
+          <IconButton icon={X} label="Close" size="sm" onClick={() => onClose(true)} />
         </span>
       </div>
       <div className="ch-cal-jump__grid">
@@ -225,7 +269,7 @@ function JumpPanel({ anchor, today, view, onPick, onClose }: { anchor: string; t
           </button>
         ))}
       </div>
-    </div>
+    </Pop>
   );
 }
 
@@ -233,19 +277,31 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
   const popover = useRef<HTMLDivElement | null>(null);
   const placement = usePopoverFit(popover, open);
+  // Esc and Done hand focus back to the trigger (A-24); an outside click leaves it where it went.
+  const close = useCallback((returnFocus: boolean) => {
+    setOpen(false);
+    if (returnFocus) trigger.current?.focus();
+  }, []);
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    // Focus goes into the picker as it opens, on its search: typing finds a player, Tab reaches the list.
+    popover.current?.querySelector<HTMLElement>('input')?.focus();
+    const onDown = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && close(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      e.preventDefault();
+      close(true);
+    };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, close]);
   const chosen = people.filter((p) => sel.includes(p.id));
   const stack = (chosen.length ? chosen : people).slice(0, 4);
   const count = chosen.length || people.length;
@@ -258,7 +314,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   };
   return (
     <div className="ch-pp" ref={ref}>
-      <button type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${label}`}>
+      <button ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${label}`}>
         <span className="ch-pp__stack">
           {stack.map((p) => (
             <Avatar key={p.id} name={p.name} size={26} />
@@ -276,8 +332,9 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
           Clear
         </Button>
       )}
-      {open && (
-        <div ref={popover} className="ch-pp__pop" role="dialog" aria-label="Choose people" style={placement}>
+      <AnimatePresence>
+        {open && (
+        <Pop panel={popover} className="ch-pp__pop" label="Choose people" style={placement}>
           <SearchField className="ch-pp__search" value={q} onChange={setQ} placeholder="Find a player" label="Find a player" />
           <button type="button" className="ch-pp__row" aria-pressed={!chosen.length} onClick={() => (haptic('select'), setSel([]))}>
             <span className="ch-pp__all">
@@ -308,12 +365,13 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
           </div>
           <div className="ch-pp__foot">
             <span>{chosen.length > 1 ? 'Overlaps show where schedules collide' : 'Pick two or more to compare'}</span>
-            <Button size="sm" variant="primary" onClick={() => setOpen(false)}>
+            <Button size="sm" variant="primary" onClick={() => close(true)}>
               Done
             </Button>
           </div>
-        </div>
-      )}
+        </Pop>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -374,6 +432,11 @@ export function Calendar({
   const [subs, setSubs] = useState(false);
   const [busyOpen, setBusyOpen] = useState(false);
   const [jump, setJump] = useState(false);
+  const jumpBtn = useRef<HTMLButtonElement | null>(null);
+  const closeJump = useCallback((returnFocus: boolean) => {
+    setJump(false);
+    if (returnFocus) jumpBtn.current?.focus();
+  }, []);
   const phone = useChPhone();
   const clock = useNow();
   const now = useMemo<ChNow>(() => (clock && !frozen ? zonedNow(data.timezone, clock) : { date: data.today, hour: data.nowHour }), [clock, frozen, data.timezone, data.today, data.nowHour]);
@@ -438,8 +501,13 @@ export function Calendar({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
+      // A key sent to the document or window has no closest (TypeError on the Simulator, 2026-10-14).
+      const t = e.target instanceof Element ? e.target : null;
+      // A key a control already used (the View radios' arrows, a popover's Esc) is not also a calendar shortcut (A-09).
+      if (e.defaultPrevented) return;
       if (t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') || e.metaKey || e.ctrlKey || e.altKey || editor || cancelling || subs || busyOpen) return;
+      // Arrows inside a widget that moves its own selection, or inside a popover, belong to it; N and T still work there.
+      if (e.key.startsWith('Arrow') && t?.closest(COMPOSITE)) return;
       if (e.key === 'n' && coach) {
         e.preventDefault();
         setEditor({ event: null, date: view === 'day' ? anchor : undefined });
@@ -465,6 +533,39 @@ export function Calendar({
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement | null>(null);
   usePanelSmoothScroll(panel);
+  // A-25: was the last press a key that activates a button (Enter or Space), not a pointer?
+  const keyed = useRef(false);
+  const opener = useRef<HTMLElement | null>(null);
+  const toPanel = useRef(false);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      keyed.current = e.key === 'Enter' || e.key === ' ';
+    };
+    const point = () => {
+      keyed.current = false;
+    };
+    window.addEventListener('keydown', key, true);
+    window.addEventListener('pointerdown', point, true);
+    return () => {
+      window.removeEventListener('keydown', key, true);
+      window.removeEventListener('pointerdown', point, true);
+    };
+  }, []);
+  useEffect(() => {
+    if (insp) {
+      if (!toPanel.current) return;
+      toPanel.current = false;
+      panel.current?.querySelector<HTMLElement>('.ch-in__title')?.focus({ preventScroll: true });
+      return;
+    }
+    // Closed (Esc or Back): focus goes back to the event it was opened from, unless it has already moved on elsewhere.
+    const el = opener.current;
+    opener.current = null;
+    if (!el?.isConnected || el.closest('[inert], [aria-hidden="true"]')) return;
+    const at = document.activeElement;
+    if (at && at !== document.body && !panel.current?.contains(at)) return;
+    chFocusQuietly(el);
+  }, [insp]);
   useOpenOnNow(focusTick, dates[0]!, !phone && (view === 'week' || view === 'day') && !data.eventsError, focusHour(dates, events, now), reduced);
   // The day, week or month on show. Stepping to another slides the grid the way it went (CH-6605): a later period comes in
   // from the right, an earlier one from the left.
@@ -478,7 +579,14 @@ export function Calendar({
   const selId = insp && (insp.kind === 'event' || insp.kind === 'attendance') ? insp.id : insp?.kind === 'overlap' ? (overlaps.find((o) => o.id === insp.id)?.eventId ?? null) : null;
   const open = (id: string, date?: string) => {
     const e = data.events.find((x) => x.id === id && (!date || x.date === date)) ?? data.events.find((x) => x.id === id);
-    if (e) setInsp({ kind: 'event', id: e.id, date: e.date });
+    if (!e) return;
+    // A-25: an event opened from the keyboard (Enter or Space on its block, bar or agenda row) takes focus into its
+    // panel, and closing the panel hands focus back to it. A click leaves focus where the pointer put it.
+    const from = document.activeElement;
+    const keyboard = keyed.current && !phone && from instanceof HTMLElement && from.matches('.ch-ev, .ch-ev-bar, .ch-ag__row');
+    opener.current = keyboard ? from : null;
+    toPanel.current = keyboard;
+    setInsp({ kind: 'event', id: e.id, date: e.date });
   };
 
   // More than one read failed: the page says so once with one Try again (the shell's CH-1209), and a part with a place
@@ -663,7 +771,7 @@ export function Calendar({
     <main className="ch-cal" data-canopy="" aria-busy={pending} /* CH-6406: busy while a view, week or save is on its way; the page dims */>
       <header className="ch-cal-mast" data-canopy-head="">
         <div className="ch-cal-mast__l">
-          <button type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
+          <button ref={jumpBtn} type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
             <h1>{title.main}</h1>
             {title.year && <span className="ch-cal-title__yr">{title.year}</span>}
             <Icon icon={ChevronDown} size={16} />
@@ -671,18 +779,22 @@ export function Calendar({
           <div className="ch-cal-sub">
             {data.eventsError ? "Events didn’t load" : `${count} team ${count === 1 ? 'event' : 'events'}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
           </div>
-          {jump && (
-            <JumpPanel
-              anchor={anchor}
-              today={now.date}
-              view={view}
-              onClose={() => setJump(false)}
-              onPick={(d) => {
-                setJump(false);
-                go(view, d);
-              }}
-            />
-          )}
+          <AnimatePresence>
+            {jump && (
+              <JumpPanel
+                key="jump"
+                anchor={anchor}
+                today={now.date}
+                view={view}
+                trigger={jumpBtn}
+                onClose={closeJump}
+                onPick={(d) => {
+                  closeJump(true);
+                  go(view, d);
+                }}
+              />
+            )}
+          </AnimatePresence>
         </div>
         <div className="ch-cal-tools">
           {away && (

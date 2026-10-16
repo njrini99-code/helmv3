@@ -307,6 +307,38 @@ describe('Calendar · saves that fail', () => {
     expect(screen.queryByText(/players notified/)).toBeNull();
   });
 
+  it('a scroll that starts on a free-time lane leaves the time; a tap places it (Simulator, 2026-10-14)', async () => {
+    wrap(cal(), { initialNew: true });
+    const band = await screen.findByRole('slider', { name: 'Event time' });
+    const lane = band.closest('.ch-lane') as HTMLElement;
+    lane.getBoundingClientRect = () => ({ left: 0, width: 300, top: 0, height: 20, right: 300, bottom: 20, x: 0, y: 0, toJSON: () => ({}) });
+    const start = band.getAttribute('aria-valuenow');
+    // A finger lands on a lane and the sheet scrolls: no click follows, so the time stays.
+    fireEvent.pointerDown(lane, { pointerType: 'touch', clientX: 280 });
+    expect(band.getAttribute('aria-valuenow')).toBe(start);
+    // The same finger lifting without a scroll is a tap, and the time moves there.
+    fireEvent.click(lane, { clientX: 280 });
+    const tapped = band.getAttribute('aria-valuenow');
+    expect(tapped).not.toBe(start);
+    // A mouse places it on the press, as before.
+    fireEvent.pointerDown(lane, { pointerType: 'mouse', clientX: 20 });
+    expect(band.getAttribute('aria-valuenow')).not.toBe(tapped);
+  });
+
+  it('a key sent to the document itself does not throw in the shortcut handler (Simulator, 2026-10-14)', async () => {
+    wrap(cal());
+    await screen.findByRole('heading', { level: 2 });
+    const thrown: unknown[] = [];
+    const onError = (e: ErrorEvent) => thrown.push(e.error);
+    window.addEventListener('error', onError);
+    try {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    } finally {
+      window.removeEventListener('error', onError);
+    }
+    expect(thrown).toEqual([]);
+  });
+
   it('RSVP: a repeating series sends the toggle too, off unless turned on', async () => {
     const user = userEvent.setup();
     a.createRecurringEvent.mockResolvedValue({ success: true });
@@ -1430,7 +1462,7 @@ describe('Calendar · the loader', () => {
     expect(JSON.stringify(asked.golf_events![0])).toMatch(/requires_rsvp/);
   });
 
-  it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6309), in three rounds: the team, then events with classes and busy time, then every event’s replies together', async () => {
+  it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6309), in two rounds: the team, then events with classes, busy time and the window’s replies (A-03)', async () => {
     const { asked, order } = serve({ ...healthy(), golf_events: { data: [eventRow('e1'), eventRow('e2'), eventRow('e3'), classEventRow('c1', 'k1')] } });
     await load();
     expect(Object.fromEntries(Object.entries(asked).map(([table, calls]) => [table, calls.length]))).toEqual({
@@ -1443,10 +1475,11 @@ describe('Calendar · the loader', () => {
       golf_event_attendance: 1,
     });
     expect(order.slice(0, 3).sort()).toEqual(['golf_team_members', 'golf_team_settings', 'golf_teams']);
-    expect(order.slice(3, 7).sort()).toEqual(['golf_coach_blocked_time', 'golf_events', 'golf_events', 'golf_player_classes']);
-    expect(order[7]).toBe('golf_event_attendance');
-    // The replies of the three team events are asked for together (a class takes none), never one event at a time.
-    expect(asked.golf_event_attendance![0]).toContainEqual(['in', ['event_id', ['e1', 'e2', 'e3']]]);
+    expect(order.slice(3, 8).sort()).toEqual(['golf_coach_blocked_time', 'golf_event_attendance', 'golf_events', 'golf_events', 'golf_player_classes']);
+    // The window's replies are asked for in one read beside the events, through the event they belong to (the team and
+    // the same window), never one event at a time.
+    expect(asked.golf_event_attendance![0]).toContainEqual(['eq', ['golf_events.team_id', expect.any(String)]]);
+    expect(asked.golf_event_attendance![0]!.some(([m]) => m === 'in')).toBe(false);
   });
 
   it('62301 a read that fails is logged under calendar and named on the page, never thrown; a write that fails is reported under calendar with its action, after a breadcrumb', async () => {
@@ -1602,6 +1635,8 @@ describe('Calendar · what each role is given', () => {
     await user.click(screen.getByRole('button', { name: 'More actions' }));
     expect(menuItems()).toEqual(['Copy link']);
     await user.keyboard('{Escape}');
+    // The first menu leaves on a short exit; on a loaded runner it was still in the DOM when the next one opened (CI).
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
     await user.click(screen.getByRole('button', { name: 'More' }));
     // Printing is not planning: a player prints their week too.
     expect(menuItems()).toEqual(['Add to calendar app', 'Print week']);

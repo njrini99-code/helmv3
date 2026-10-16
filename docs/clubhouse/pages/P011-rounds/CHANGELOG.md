@@ -1,5 +1,15 @@
 # P011 — Rounds: changelog
 
+## 2026-10-14 — The course map hydrates without a mismatch
+
+Every shot-tracking screen logged "A tree hydrated but some attributes of the
+server rendered HTML didn't match" (Playwright WebKit): the map measured its
+centre line with Math.hypot, whose last digit differs between Node and
+JavaScriptCore, so a circle's cy came out 375.388364625849 on one and
+375.3883646258491 on the other. It measures with exactly-rounded arithmetic
+(Math.sqrt of a sum of squares); a guard test keeps the map free of hypot and
+trig.
+
 ## 2026-10-12 — round entry, recovery and continue follow the dashboard role
 
 No visible change for a single-profile user. `/rounds/new`, `/rounds/recover` and

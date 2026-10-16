@@ -2,7 +2,6 @@
 
 import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
-import { m } from 'motion/react';
 import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
@@ -23,7 +22,7 @@ import { useDelayedToast, useToast } from '../../ui/Toast';
 import { CH_SLOW_SAVE_AFTER, isOffline, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { chTween } from '../../lib/motion';
+import { useSlidePlate } from '../../lib/slide-plate';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
@@ -157,6 +156,9 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
     pickTab,
     (t) => `tab-${t}`,
   );
+  // The underline slides from the tab it left on the compositor (lib/slide-plate.ts), not Motion's layoutId.
+  const tabsRef = useRef<HTMLDivElement>(null);
+  useSlidePlate(tabsRef, '[aria-selected="true"] > .ch-tab-t__bar', phone ? null : tab, { reduced, tween: 'base' });
 
   const sheet = coach && coachId && <FocusAreaSheet open={focusOpen} onClose={() => setFocusOpen(false)} playerId={data.id} coachId={coachId} first={first} />;
 
@@ -255,7 +257,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
         </section>
 
         <div className="ch-pf-tabs">
-          <div className="ch-tabs" role="tablist" aria-label="Profile sections">
+          <div ref={tabsRef} className="ch-tabs" role="tablist" aria-label="Profile sections">
             {tabs.map(([t, l, n]) => (
               <button
                 key={t}
@@ -271,7 +273,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
               >
                 {l}
                 {n != null && <span className="ch-tab-t__n ch-num">{n}</span>}
-                {tab === t && <m.span className="ch-tab-t__bar" layoutId={reduced ? undefined : 'pf-tab'} transition={chTween('base', reduced)} />}
+                {tab === t && <span className="ch-tab-t__bar" aria-hidden="true" />}
               </button>
             ))}
           </div>

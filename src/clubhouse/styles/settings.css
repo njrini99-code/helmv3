@@ -94,7 +94,7 @@
 }
 .ch-set-rail__i.is-on b {
   font-weight: 600;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-set-rail__i:focus-visible {
   outline: 2px solid rgb(21 90 57 / 0.45);
@@ -261,7 +261,7 @@
 .ch-set-code {
   font: 600 calc(18 * var(--ch-type-k))/1 var(--ch-font-mono);
   letter-spacing: 0.1em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-set-acts {
   display: flex;
@@ -773,7 +773,7 @@
     overflow: hidden;
     border-radius: 50%;
     background: var(--ch-green-800);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
     font: 600 calc(19 * var(--ch-type-k))/1 var(--ch-font-sans);
     transition: opacity var(--ch-dur-base) var(--ch-ease);
   }
@@ -782,7 +782,7 @@
   }
   .ch-setm-coin.is-player {
     background: var(--ch-green-100);
-    color: var(--ch-green-800);
+    color: var(--ch-forest-800);
   }
   .ch-setm-coin.is-big {
     width: 84px;
@@ -874,12 +874,15 @@
     opacity: 0.5;
     cursor: default;
   }
+  /* Under larger page text the summary gives way first (it ellipsizes) and the label keeps its words whole: the label
+     had no floor and broke mid-word ("Notificati/ons", Simulator at 125%, 2026-10-14). */
   .ch-setm-row__l {
-    flex: 1;
-    min-width: 0;
-    overflow-wrap: anywhere;
+    flex: 1 1 auto;
+    min-width: min-content;
+    overflow-wrap: break-word;
   }
   .ch-setm-row__v {
+    min-width: 0;
     max-width: 55%;
     overflow: hidden;
     font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
@@ -1161,7 +1164,7 @@
     border: 0;
     border-radius: 999px;
     background: var(--ch-green-800);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
     font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     cursor: pointer;
     touch-action: manipulation;

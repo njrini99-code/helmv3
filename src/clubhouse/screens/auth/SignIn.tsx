@@ -21,8 +21,8 @@ import { useQueryParam } from './use-query-param';
 /**
  * The phone sheet over the keyboard (auth.css, `data-kb` on the frame): while a field in the panel is typed in, the sheet
  * rises to just under the status bar, so the fields and Sign in sit above the keyboard, and it settles back when the
- * keyboard goes. It is set as the finger lands on a field, before the field takes focus, so iOS finds the field already
- * in view and never pans the page under the sheet. A touch screen at phone width only.
+ * keyboard goes. It rises when a field takes focus, not as the finger lands: iOS focuses the field under the finger as it
+ * lifts, so a sheet already moving carried Password out from under the tap (2026-10-14). A touch screen at phone width only.
  */
 function useKeyboardLift(panel: RefObject<HTMLElement | null>): void {
   useEffect(() => {
@@ -31,27 +31,38 @@ function useKeyboardLift(panel: RefObject<HTMLElement | null>): void {
     if (!el || !root || !window.matchMedia?.('(max-width: 820px) and (pointer: coarse)').matches) return;
     const typing = (t: EventTarget | null) => t instanceof HTMLInputElement && el.contains(t);
     let settle = 0;
-    // Settles back once no field has focus: moving from Email to Password blurs one and focuses the other in a turn, and
-    // a finger that landed on a field but scrolled instead never focuses it.
-    const check = (ms: number) => {
-      window.clearTimeout(settle);
-      settle = window.setTimeout(() => {
-        if (!typing(document.activeElement) && root.dataset.kb === 'up') root.dataset.kb = 'down';
-      }, ms);
+    // Rises on focus, never on the touch: iOS focuses the field the finger lifts over, so a sheet that starts moving on
+    // pointerdown carries the field out from under the tap and Password never takes focus. Settles back once no field
+    // has focus: moving from Email to Password blurs one and focuses the other in a turn.
+    // The sheet's move is a CSS animation, held at its first frame until that frame is on screen: the change lands in a
+    // busy frame (the keyboard going as Sign in is tapped), and the move had already covered 216px of its 290 by the
+    // first frame anyone saw (WebKit video, 2026-10-15).
+    let hold = 0;
+    const set = (kb: 'up' | 'down') => {
+      cancelAnimationFrame(hold);
+      el.setAttribute('data-ch-hold', '');
+      root.dataset.kb = kb;
+      hold = requestAnimationFrame(() => {
+        hold = requestAnimationFrame(() => el.removeAttribute('data-ch-hold'));
+      });
     };
     const up = (e: Event) => {
       if (!typing(e.target)) return;
       window.clearTimeout(settle);
-      root.dataset.kb = 'up';
-      if (e.type === 'pointerdown') check(800);
+      if (root.dataset.kb !== 'up') set('up');
     };
-    const out = () => check(60);
-    el.addEventListener('pointerdown', up, true);
+    const out = () => {
+      window.clearTimeout(settle);
+      settle = window.setTimeout(() => {
+        if (!typing(document.activeElement) && root.dataset.kb === 'up') set('down');
+      }, 60);
+    };
     el.addEventListener('focusin', up);
     el.addEventListener('focusout', out);
     return () => {
       window.clearTimeout(settle);
-      el.removeEventListener('pointerdown', up, true);
+      cancelAnimationFrame(hold);
+      el.removeAttribute('data-ch-hold');
       el.removeEventListener('focusin', up);
       el.removeEventListener('focusout', out);
       delete root.dataset.kb;

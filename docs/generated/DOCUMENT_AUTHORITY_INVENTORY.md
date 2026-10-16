@@ -35,7 +35,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 16 | 3 | 6 | 0 |
-| `AGENT_SKILL` | 130 | 0 | 8 | 0 |
+| `AGENT_SKILL` | 131 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
@@ -48,9 +48,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 56 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
-| `INDEX` | 27 | 2 | 12 | 5 |
+| `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 324 | 13 | 71 | 92 |
+| `UNKNOWN` | 325 | 13 | 71 | 92 |
 
 ## Files
 
@@ -105,6 +105,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/golfhelm-creative-engine/references/creative-rules.md` | current | - | - | - | - |
 | `.claude/skills/golfhelm-creative-engine/references/design-tokens.md` | current | - | - | yes | - |
 | `.claude/skills/golfhelm-creative-engine/references/product-features.md` | current | - | - | - | - |
+| `.claude/skills/helm-safari-performance/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/helm-sentry/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/helm-supabase/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/modern-saas-ui/SKILL.md` | current | - | - | yes | - |
@@ -653,6 +654,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `public/images/README.md` | current | - | - | - | - |
 | `replay/README.md` | current | yes | - | yes | - |
 | `scripts/README.md` | current | - | - | yes | - |
+| `scripts/phone/README.md` | current | - | - | - | - |
 | `src/app/golf/README.md` | current | - | - | - | - |
 | `src/components/baseball/living-annual/README.md` | current | - | - | - | - |
 | `src/contracts/baseball/README.md` | current | - | - | yes | - |
@@ -810,6 +812,7 @@ them would bury everything above.
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P001-shell/DESIGN.md` | current | - | - | - | - |

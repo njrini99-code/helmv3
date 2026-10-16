@@ -183,6 +183,25 @@ const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i],
 };
 
+/**
+ * Old addresses whose screen Clubhouse moved: their route redirects from its layout or page (routes/alias.ts). Under
+ * the dashboard's loading boundary that redirect arrives in the stream and fires only when the segment renders, so the
+ * frame renders it (hidden) behind the not-rebuilt page instead of dropping it. A guard test keeps this list in step
+ * with every route that calls redirectToClubhouse.
+ */
+export const CH_ALIASED_ROUTES: readonly RegExp[] = [
+  /^\/golf\/dashboard\/(whats-new|tasks|intelligence|courses|announcements|team|documents|travel)$/,
+  /^\/golf\/dashboard\/roster\/[^/]+$/,
+  /^\/golf\/dashboard\/players\/[^/]+$/,
+  /^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+|genome\/compare|genome\/[^/]+)$/,
+  /^\/golf\/dashboard\/rounds\/[^/]+\/review$/,
+];
+
+export function isAliased(pathname: string): boolean {
+  const path = pathname.replace(/\/$/, '');
+  return CH_ALIASED_ROUTES.some((re) => re.test(path));
+}
+
 export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {
   const path = pathname.replace(/\/$/, '') || '/';
   if (CH_REBUILT_ROUTES[role].includes(path)) return true;

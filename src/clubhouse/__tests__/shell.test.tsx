@@ -179,6 +179,19 @@ describe('Shell · bell', () => {
     expect(screen.getByRole('button', { name: 'Notifications, 3 unread' })).toBeTruthy();
   });
 
+  it('A-30 the desktop panel closes when focus leaves it for the page', async () => {
+    const user = userEvent.setup();
+    bell({ unread: 0, load: vi.fn(() => Promise.resolve({ success: true, data: { items: [] } })) });
+    const outside = document.createElement('button');
+    outside.textContent = 'page control';
+    document.body.append(outside);
+    await user.click(screen.getByRole('button', { name: 'Notifications' }));
+    expect(screen.getByRole('dialog', { name: 'Notifications' })).toBeTruthy();
+    act(() => outside.focus());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Notifications' })).toBeNull());
+    outside.remove();
+  });
+
   it('CH-1302 nothing to show', async () => {
     const user = userEvent.setup();
     bell({ unread: 0, load: vi.fn(() => Promise.resolve({ success: true, data: { items: [] } })) });
@@ -799,6 +812,47 @@ describe('Shell · phone chrome', () => {
     expect(code('CH-1816')!.getAttribute('aria-controls')).toBe('ch-strip');
   });
 
+  it('a keyboard-aware pushed screen fits Safari\'s visible area while the keyboard is up, so its bar stays on screen', () => {
+    // Safari 26: the keyboard shrinks innerHeight with the visible area and scrolls it down to the composer; only the
+    // layout viewport's clientHeight keeps the full height.
+    const vv = Object.assign(new EventTarget(), { height: 714, offsetTop: 0, scale: 1 });
+    const realVV = Object.getOwnPropertyDescriptor(window, 'visualViewport');
+    const realMM = window.matchMedia;
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: vv });
+    window.matchMedia = ((q: string) => ({ ...realMM(q), matches: q === '(pointer: coarse)' || q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    const ch = vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(714);
+    const ih = vi.spyOn(window, 'innerHeight', 'get').mockImplementation(() => vv.height);
+    try {
+      render(
+        <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
+          <PhoneScreen labelledBy="kb-title" keyboardAware>
+            <PhoneBar title="Cole Bennett" titleId="kb-title" back={{ onBack: () => {}, ariaLabel: 'Back to Messages' }} />
+          </PhoneScreen>
+        </ClubhouseFrame>,
+      );
+      const el = document.querySelector<HTMLElement>('.ch-pscreen')!;
+      expect(el.dataset.chVv).toBeUndefined();
+      act(() => {
+        Object.assign(vv, { height: 404, offsetTop: 310 });
+        vv.dispatchEvent(new Event('resize'));
+      });
+      expect(el.dataset.chVv).toBe('');
+      expect(el.style.getPropertyValue('--ch-vv-top')).toBe('310px');
+      expect(el.style.getPropertyValue('--ch-vv-h')).toBe('404px');
+      act(() => {
+        Object.assign(vv, { height: 714, offsetTop: 0 });
+        vv.dispatchEvent(new Event('resize'));
+      });
+      expect(el.dataset.chVv).toBeUndefined();
+    } finally {
+      ch.mockRestore();
+      ih.mockRestore();
+      window.matchMedia = realMM;
+      if (realVV) Object.defineProperty(window, 'visualViewport', realVV);
+      else delete (window as { visualViewport?: unknown }).visualViewport;
+    }
+  });
+
   it('CH-1809 a pushed screen takes focus on its title and makes the shell chrome inert until it closes', async () => {
     function Page({ open }: { open: boolean }) {
       return open ? (
@@ -1172,6 +1226,31 @@ describe('Shell · behaviour contracts (P001)', () => {
     await user.keyboard('{Escape}');
     await user.click(button);
     await waitFor(() => expect(api.load).toHaveBeenCalledTimes(2));
+  });
+
+  it('on the phone the feed is read once the page settles, so the first open lands on its cards, not the skeleton (Simulator, 2026-10-14)', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    let opened!: () => void;
+    const first = new Promise<void>((r) => (opened = r));
+    try {
+      // The open's own read never answers here: the cards on screen can only be the settled read's.
+      const load = vi
+        .fn<ChBellApi['load']>()
+        .mockImplementationOnce(() => {
+          opened();
+          return Promise.resolve({ success: true, data: { items: [item()] } });
+        })
+        .mockImplementation(() => new Promise(() => {}));
+      bell({ load });
+      await act(() => first);
+      expect(load).toHaveBeenCalledTimes(1);
+      await userEvent.setup().click(screen.getByRole('button', { name: /Notifications/ }));
+      expect(await screen.findByText('Ava in Varsity team')).toBeTruthy();
+      expect(document.querySelector('.ch-bst-skel')).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
   });
 
   it('11301 Mark all read clears the rows at once, and puts them back when the write fails', async () => {

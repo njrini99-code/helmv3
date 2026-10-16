@@ -98,6 +98,24 @@ function show(data: ChTeamHub, w: ChHubWrites = writes(), tab?: ChHubTab) {
   return w;
 }
 const tab = (name: string) => userEvent.setup().click(screen.getByRole('tab', { name }));
+
+describe('Team Hub · a new address on the same page (Simulator, 2026-10-14)', () => {
+  it('a new ?tab= while Team Hub is open moves to that tab; it stood on its first tab', () => {
+    const tree = (t: ChHubTab) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <TeamHub data={PREVIEW_HUB_COACH} writes={writes()} initialTab={t} viewerName="Maya Reyes" />
+          </div>
+        </ToastProvider>
+      </LazyMotion>
+    );
+    const { rerender } = render(tree('ann'));
+    expect(screen.getByRole('tab', { name: 'Announcements' }).getAttribute('aria-selected')).toBe('true');
+    rerender(tree('tasks'));
+    expect(screen.getByRole('tab', { name: 'Tasks' }).getAttribute('aria-selected')).toBe('true');
+  });
+});
 const dialogOpen = () => document.querySelector('dialog[open]') !== null;
 
 beforeEach(() => {

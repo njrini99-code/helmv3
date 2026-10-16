@@ -1,6 +1,5 @@
 'use client';
 
-import { Tabs } from '@base-ui/react/tabs';
 import NumberFlow from '@number-flow/react';
 import { ChartColumn, ChevronRight, Medal, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -17,6 +16,7 @@ import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/Sect
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
+import { tabListKeys } from '../../lib/tabs';
 import { CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
@@ -24,13 +24,13 @@ import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
 import { puttingNote } from './notes';
-import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow, useShownWindow } from './StatsTeamIslands';
+import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { hasRange, isFiltered } from '../../data/stats-filter';
-import { WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
+import { useArrivalPainted } from '../../lib/use-painted';
 
 type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
@@ -81,8 +81,6 @@ const legIndex = (leg: ChLegPick) => (leg === 'total' ? -1 : LEGS_LIST.indexOf(l
  * the tab root and the page adds nothing to it.
  */
 export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
-  const go = useGoWindow();
-  const shown = useShownWindow();
   // The leg and the sort come back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1).
   const [leg, setLeg] = useChSessionState<ChLegPick>('team-sg-leg', 'total');
   const [sort, setSort] = useChSessionState<Sort>('team-players-sort', 'avg');
@@ -100,6 +98,9 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const covered = failed.length > 1;
   // A window or filter change remounts the rolling figures, so only a leg change rolls them; new rounds swap in at once.
   const scope = JSON.stringify(data.filter);
+  // The legs, players and putting start below the first screen (the legs at 802px of 852), so a switch to Stats renders
+  // them a frame after the page has painted: their NumberFlows, peeks and rows were most of the switch's long frame.
+  const below = useArrivalPainted();
   // CH-4703: picking a leg is one selection tick, and ranks the players by it (the SG sort).
   const pickLeg = (next: ChLegPick) => {
     if (next === leg) return;
@@ -119,7 +120,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         </header>
         {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
         <div className="ch-stm-controls">
-          <WindowSwitch value={shown} onChange={go} custom={hasRange(data.filter)} />
+          <PhoneWindowSwitch custom={hasRange(data.filter)} />
           {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
         </div>
         {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
@@ -157,22 +158,26 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
                 {data.cacheError && (
                   <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." covered={covered} />
                 )}
-                <Hero figure={data.figures.find((f) => f.label === 'Scoring average')} />
+                <Hero figures={data.figures} />
                 {/* The trend reads the hero, so it sits right under it; it crashes on its own. */}
                 <SectionBoundary surface="stats.team.trend" label="Scoring trend" code="CH-4205">
                   <Trend data={data} />
                 </SectionBoundary>
                 <RoundFigures data={data} />
               </SectionBoundary>
-              <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-                <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} />
-              </SectionBoundary>
-              <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
-                <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />
-              </SectionBoundary>
-              <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
-                <Putting data={data} covered={covered} />
-              </SectionBoundary>
+              {below && (
+                <>
+                  <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
+                    <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} />
+                  </SectionBoundary>
+                  <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
+                    <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />
+                  </SectionBoundary>
+                  <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
+                    <Putting data={data} covered={covered} />
+                  </SectionBoundary>
+                </>
+              )}
             </>
           )
         )}
@@ -193,7 +198,9 @@ const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${f.value.toF
  * The one hero figure: the scoring average, its change and what the change is against ("vs. previous 10"). A window with
  * no comparison keeps the line, empty and hidden from assistive technology, so the trend below never moves.
  */
-function Hero({ figure: f }: { figure: ChFigure | undefined }) {
+/** Finds its own figure, so a malformed list crashes inside the figures' boundary, not the phone page (CH-4204). */
+function Hero({ figures }: { figures: readonly ChFigure[] }) {
+  const f = figures.find((x) => x.label === 'Scoring average');
   if (!f) return null;
   const none = f.delta == null;
   // What the average is against par a round (the loader's, per 18 holes), over the change: no bare number (2026-10-07).
@@ -338,6 +345,13 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
   ];
   const scale = sgScale(rows.map((r) => r.v));
   const picked = rows.find((r) => r.key === leg) ?? rows[rows.length - 1]!;
+  const legKeys = tabListKeys(
+    rows.map((r) => r.key),
+    picked.key,
+    onLeg,
+    (k) => `ch-stm-leg-${k}`,
+    true,
+  );
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-stm-legs">
       {head}
@@ -346,29 +360,38 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
           <b className={'ch-num ' + (picked.v == null ? '' : picked.v >= 0 ? 'ch-gain' : 'ch-loss')}>{picked.v == null ? NO_DATA : <SignedFlow value={picked.v} />}</b>
           <span>{picked.total ? 'Team total' : picked.label}, a round</span>
         </p>
-        <Tabs.Root value={picked.key} onValueChange={(v) => onLeg(v as ChLegPick)} orientation="vertical">
-          <Tabs.List className="ch-stm-legs" aria-label="Strokes gained leg">
-            {rows.map(({ key, label, v, total }) => (
-              <Tabs.Tab key={key} value={key} className={'ch-stm-leg' + (total ? ' is-total' : '')} aria-label={`${label}, ${v == null ? 'no data' : formatSigned(v)}`}>
+        {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
+            mounted, two layouts of the whole arriving page inside React's commit (28ms of a switch's 163ms of script at
+            4x CPU, Chromium, production build, 2026-10-15). Every row is 44px, so the wash's place is its index. */}
+        <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
+          {rows.map(({ key, label, v, total }) => {
+            const on = key === picked.key;
+            return (
+              <button
+                key={key}
+                id={`ch-stm-leg-${key}`}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                tabIndex={on ? 0 : -1}
+                data-active={on ? '' : undefined}
+                className={'ch-stm-leg' + (total ? ' is-total' : '')}
+                aria-label={`${label}, ${v == null ? 'no data' : formatSigned(v)}`}
+                onClick={() => onLeg(key)}
+                onKeyDown={legKeys}
+              >
                 <span>{label}</span>
                 <span className="ch-stm-leg__bar" aria-hidden="true">
                   <i className="ch-stm-leg__z" />
                   {v != null && <i className={'ch-stm-leg__v ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={{ [v >= 0 ? 'left' : 'right']: '50%', width: `${sgShare(v, scale) * 50}%` }} />}
                 </span>
                 <b className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</b>
-              </Tabs.Tab>
-            ))}
-            {/* Base UI measures the chosen row; the stylesheet reads it as Clubhouse properties and slides the wash. */}
-            <Tabs.Indicator
-              className="ch-stm-legpick"
-              style={(s) =>
-                s.activeTabPosition && s.activeTabSize
-                  ? ({ '--ch-stm-pick-y': `${s.activeTabPosition.top}px`, '--ch-stm-pick-h': `${s.activeTabSize.height}px` } as CSSProperties)
-                  : undefined
-              }
-            />
-          </Tabs.List>
-        </Tabs.Root>
+              </button>
+            );
+          })}
+          {/* The chosen row's wash, at its index (stats.css slides it with `translate`). */}
+          <span className="ch-stm-legpick" aria-hidden="true" style={{ '--ch-stm-pick-i': rows.indexOf(picked) } as CSSProperties} />
+        </div>
       </div>
       <p className="ch-stm-note">{note}</p>
     </section>

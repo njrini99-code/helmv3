@@ -1,5 +1,10 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-14 — A round with no tees says so
+
+Course per round showed a blank beside a round whose tees and par were not set.
+It reads "Tees not set", as the qualifier form does.
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet

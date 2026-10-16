@@ -17,7 +17,7 @@ vi.mock('next/dynamic', () => ({
 }));
 
 import { FixedClock } from '../screens/auth/use-hour';
-import { SceneMount } from '../screens/auth/SceneMount';
+import { SceneMount, posterWash } from '../screens/auth/SceneMount';
 
 afterEach(() => {
   cleanup();
@@ -55,5 +55,29 @@ describe('CH-15908 a crash in the course leaves the form alone and is reported',
     );
     expect(screen.getByTestId('course')).toBeInTheDocument();
     expect(report).not.toHaveBeenCalled();
+  });
+});
+
+describe('the still takes the hour\'s light until the course draws', () => {
+  // The still is a daytime photo: a sign in at night opened on a sunny course and then switched (owner, 2026-10-14).
+  const wash = () => (document.querySelector('.ch-au-poster__wash') as HTMLElement | null)?.style.opacity;
+  it('washes the still dark at night, before the course has loaded', () => {
+    scene.throws = false;
+    render(
+      <FixedClock.Provider value={new Date(2025, 9, 14, 23, 0)}>
+        <SceneMount />
+      </FixedClock.Provider>,
+    );
+    expect(Number(wash())).toBeGreaterThan(0.6);
+  });
+  it('leaves the still clear by day and on the server', () => {
+    scene.throws = false;
+    render(
+      <FixedClock.Provider value={new Date(2025, 9, 14, 12, 30)}>
+        <SceneMount />
+      </FixedClock.Provider>,
+    );
+    expect(Number(wash())).toBe(0);
+    expect(posterWash(null)).toBeUndefined();
   });
 });

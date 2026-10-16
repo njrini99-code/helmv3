@@ -303,7 +303,7 @@
   box-shadow: var(--ch-score-bogey-shadow);
 }
 .ch-score--double {
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
   border-radius: 7px;
   background: linear-gradient(180deg, #3a3832 0%, #1c1b18 100%);
   box-shadow: var(--ch-score-double-shadow);
@@ -347,7 +347,17 @@
   gap: 8px;
   pointer-events: none;
 }
+/* A toast rises 10px as it fades in (Toast.tsx): CSS on the compositor, so a save that keeps the page busy can't hold it. */
+@keyframes ch-toast-in {
+  from {
+    transform: translateY(10px) scale(0.98);
+  }
+}
+[data-motion='off'] .ch-toast {
+  animation: none;
+}
 .ch-toast {
+  animation: ch-toast-in var(--ch-dur-base) var(--ch-ease) backwards;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -653,7 +663,7 @@
 @media (hover: hover) {
   .ch-backlink:hover {
     background: var(--ch-ledger-row-hover);
-    color: var(--ch-green-800);
+    color: var(--ch-forest-800);
   }
 }
 .ch-backlink:focus-visible {
@@ -912,8 +922,11 @@ button.ch-feat {
   letter-spacing: 0.01em;
   color: var(--ch-ledger-eyebrow);
 }
+/* It wraps: under Safari's larger page text the title and a view switch outgrow a phone's line, and the switch went off
+   the right edge (List cut, Simulator at 125%, 2026-10-14). At normal sizes they share the line as before. */
 .ch-intro__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
@@ -1434,7 +1447,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   height: 34px;
   border-radius: 50%;
   background: linear-gradient(160deg, var(--ch-green-700), var(--ch-green-900));
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
   font: 700 14px/1 var(--ch-font-sans);
   box-shadow: 0 0 0 2px var(--ch-ivory-25), 0 0 0 3.5px var(--ch-champagne-500), var(--ch-elevation-mark);
 }
@@ -1442,7 +1455,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   margin: 0;
   font: 600 30px/1.1 var(--ch-font-sans);
   letter-spacing: -0.02em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-zn__id h2::after {
   content: '';

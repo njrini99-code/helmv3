@@ -94,6 +94,9 @@ export function RoundRuntime({
   const exitOpen = sheet === 'exit' || session.engineExitOpen;
   const closedOpen = session.submitting && session.qualifierClosed && !session.completedRoundId;
   const overlayOpen = session.submitting && !closedOpen;
+  // Mounted from the first submit on, so Go back fades it out instead of dropping it in one frame (audit A-18).
+  const [submitShown, setSubmitShown] = useState(false);
+  if (overlayOpen && !submitShown) setSubmitShown(true);
   const overlayState = session.completedRoundId ? 'done' : session.error && !session.qualifierClosed ? 'failed' : 'saving';
   const finishOpen = !!session.pendingFinalStats && session.showFinishConfirm && !session.submitting;
 
@@ -338,8 +341,9 @@ export function RoundRuntime({
           void s.current.submit(stats);
         }}
       />
-      {overlayOpen && (
+      {submitShown && (
         <SubmitOverlay
+          open={overlayOpen}
           state={overlayState}
           course={course}
           shots={shots}

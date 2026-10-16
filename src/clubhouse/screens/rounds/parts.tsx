@@ -362,8 +362,9 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
             </span>
           </dd>
         )}
+        {/* A non-breaking hyphen: "two-" never ends a line on the phone (overnight polish, 2026-10-15). */}
         <dd className="ch-rd-fig__m">
-          {putts == null ? 'a round' : `a round · ${formatFixed(Math.abs(twoPutt - putts), 1)} ${putts <= twoPutt ? 'under' : 'over'} two-putting`}
+          {putts == null ? 'a round' : `a round · ${formatFixed(Math.abs(twoPutt - putts), 1)} ${putts <= twoPutt ? 'under' : 'over'} two‑putting`}
         </dd>
       </div>
       <div className="ch-rd-fig">

@@ -10,7 +10,7 @@ import { DataTable, Tiles, Trend } from './Evidence';
 import '../../../styles/coachhelm-thread.css';
 
 /** The figures behind an action card, beside the conversation on desktop and in a sheet on a phone. */
-export function AskEvidencePanel({ focus, messages, phone, onClose }: { focus: EvidenceFocus; messages: UIMessage[]; phone: boolean; onClose: () => void }) {
+export function AskEvidencePanel({ focus, messages, phone, onClose, open = true }: { focus: EvidenceFocus; messages: UIMessage[]; phone: boolean; onClose: () => void; open?: boolean }) {
   const model = useMemo(() => buildEvidencePanel(messages, focus), [messages, focus]);
   const body = (
     // `is-phone`: the sheet's figures are rows on the sheet, not tiles (coachhelm-thread.css, the cardless pass).
@@ -38,7 +38,7 @@ export function AskEvidencePanel({ focus, messages, phone, onClose }: { focus: E
 
   if (phone) {
     return (
-      <Modal open onClose={onClose} title="Evidence" description={model.subtitle} code="CH-13851">
+      <Modal open={open} onClose={onClose} title="Evidence" description={model.subtitle} code="CH-13851">
         {body}
       </Modal>
     );

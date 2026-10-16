@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { renderHook } from '@testing-library/react';
 import { useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CH_LARGE_TITLES, findLargeTitle, isTucked, usePhoneLargeTitle, watchLargeTitle } from '../shell/large-title';
+import { CH_LARGE_TITLES, chOpensWithLargeTitle, findLargeTitle, isTucked, usePhoneLargeTitle, watchLargeTitle } from '../shell/large-title';
 
 /**
  * Phone large titles (owner 2026-10-08, the cardless phone pass): the bar's title waits while the page's own large
@@ -193,5 +193,32 @@ describe('the More sheet is native inset grouped rows on the phone', () => {
     expect(block).toMatch(/\.ch-more__list,\s*\.ch-more__me \{[^}]*box-shadow: none;/);
     expect(block).toMatch(/\.ch-more__row \+ \.ch-more__row::before \{[^}]*left: 54px;/);
     expect(block).toMatch(/\.ch-more__row\[aria-current='true'\] \.ch-more__ic \{[^}]*background: none;/);
+  });
+});
+
+describe('chOpensWithLargeTitle: what a section switch knows about the page it is going to (owner, 2026-10-15)', () => {
+  it('knows the sections that are the same for both roles before any is seen', () => {
+    expect(chOpensWithLargeTitle('/golf/dashboard/roster')).toBe(true);
+    expect(chOpensWithLargeTitle('/golf/dashboard/settings/')).toBe(true);
+    expect(chOpensWithLargeTitle('/golf/dashboard/calendar')).toBe(false);
+    expect(chOpensWithLargeTitle('/golf/dashboard')).toBe(false);
+    expect(chOpensWithLargeTitle('/golf/dashboard/stats')).toBeUndefined();
+  });
+
+  it("learns a route from its loaded page, not from the page's skeleton", () => {
+    window.history.replaceState(null, '', '/golf/dashboard/stats');
+    const { bar, canvas } = mount('<main aria-busy="true" aria-label="Loading stats"></main>');
+    const stop = watchLargeTitle(bar, canvas);
+    expect(chOpensWithLargeTitle('/golf/dashboard/stats')).toBeUndefined();
+    stop();
+    const loaded = mount('<header class="ch-stm-head"><h1>Team stats</h1></header>');
+    const stop2 = watchLargeTitle(loaded.bar, loaded.canvas);
+    expect(chOpensWithLargeTitle('/golf/dashboard/stats')).toBe(true);
+    stop2();
+    window.history.replaceState(null, '', '/golf/dashboard/calendar');
+    const plain = mount('<h2>October</h2>');
+    const stop3 = watchLargeTitle(plain.bar, plain.canvas);
+    expect(chOpensWithLargeTitle('/golf/dashboard/calendar')).toBe(false);
+    stop3();
   });
 });

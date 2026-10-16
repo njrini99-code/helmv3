@@ -73,6 +73,9 @@ export function TopBar({
       data-phone={rootTitle ? 'start' : pageTop || standIn ? 'page' : 'root'}
       data-sections={swipeable ? '' : undefined}
       data-switching={sections?.switching ? '' : undefined}
+      data-switch-quiet={sections?.quiet ? '' : undefined}
+      // Only Home's bar changes shape on arrival (its team mark); elsewhere the title is already where it lands.
+      data-arrived={sections?.arrived && pathname.replace(/\/$/, '') === '/golf/dashboard' ? '' : undefined}
       inert={immersive || undefined}
     >
       <nav className="ch-topbar__crumbs" aria-label="Breadcrumb">

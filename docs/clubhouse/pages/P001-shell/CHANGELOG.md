@@ -1,5 +1,30 @@
 # P001 — Shell: changelog
 
+## 2026-10-14 — The frame clears the Dynamic Island in landscape
+
+- **Safe areas on the desktop frame** (shell.css `.ch-app`): a phone turned
+  sideways (874pt) gets the desktop layout, whose sidebar started at x=0 under
+  the Dynamic Island and the corner (iOS reports 62pt each side) and whose canvas
+  ran into the home indicator's strip. The frame now pads by the safe-area insets
+  (0 on a desktop); the green fills them.
+
+## 2026-10-14 — A thread keeps its bar over the Safari keyboard; Home's title in dark
+
+Found in the iPhone Simulator audit (Safari 26.5, Web Inspector attached).
+
+- **Pushed screens fit the visible area in Safari** (PhoneScreen
+  `useSafariKeyboardFit`, shell.css `data-ch-vv`): with the keyboard up, Safari
+  scrolled the visible area 310pt down to the composer and the thread's bar
+  (Back, the name, Details) left the screen. A keyboard-aware screen now takes
+  the visible area's top and height while the keyboard is up, read against the
+  layout viewport's `clientHeight` (Safari 26 shrinks `innerHeight` with the
+  keyboard, so `innerHeight` alone never sees it). Checked in the Simulator: the
+  bar stays and the composer sits on the keys. The app's WebView keeps its own
+  path (CapacitorProvider's `--keyboard-height`). Test: shell.test.tsx.
+- **Home's bar title in the dark theme** (shell.css): the hero bar's title used
+  `--ch-ivory-100`, which turns near-black in the dark theme, on the green bar
+  (1.27:1). It takes the on-green ink, as every other bar title does.
+
 ## 2026-10-13 — Section switches fade through; the bar changes once
 
 A section switch fades the old page out before the new one fades in (no double

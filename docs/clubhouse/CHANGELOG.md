@@ -1,5 +1,204 @@
 # Clubhouse changelog
 
+## 2026-10-16 — Held pages dated truthfully; Back to Stats lands in place
+
+From the code review of PR #2195 (`use-prefetch-tabs.ts`, `lib/pop-mark.ts`,
+`lib/use-painted.ts`, `section-switch.tsx`, `SectionStrip.tsx`).
+
+- **How old a held page is.** Next answers a full prefetch from what a
+  navigation showed (its back/forward cache) for 300s from the showing,
+  without asking the server (next 16.3, `segment-cache/cache.js`), and a
+  refresh empties that cache. The hook now records when each page was shown as
+  well as fetched, so a page shown after its fetch is not taken for new 300s
+  after the fetch. The document's first page is dated at the load, a refreshed
+  page keeps the time of its refresh once it is left (it was reset to the time
+  it was next asked for), and a section dropped from the last two visited keeps
+  its date. Probed first (WebKit, 700ms latency): after a refresh, Stats was
+  fetched from the server again and showed a team renamed 120s earlier at once,
+  so a refresh still drops every held page.
+- **Save for later.** A held page reached from outside the strip's sections is
+  refreshed in place whatever its age: Save for later lands on the rounds
+  library (a player tab) from the round, and its save does not revalidate. A
+  Back is left as it was. A tap during the refresh wins: Next drops a refresh a
+  navigation overtakes (WebKit, 700ms latency, a second tap 200, 600 and 900ms
+  after the first: 3 of 3 ended on it).
+- **Back to Stats.** A page brought back by Back or Forward renders all of it
+  in its first frame (`useArrivalPainted`), so its scroll lands where it was
+  left; with only its first screen rendered, it drew clamped for two frames,
+  then jumped. That frame pays the full render again. The Back mark moved from
+  RouteFrame to `lib/pop-mark.ts`, which both read.
+- **Phone only.** The tabs are fetched ahead only at phone width; the strip's
+  hook ran on desktop too.
+- **A switch cut short.** An address reached another way (Back, a link) clears
+  what a switch left standing (the quiet title, the arrival).
+
+## 2026-10-16 — Going back to a section is instant too
+
+The last two sections other than the tabs that were visited (Roster, Settings,
+…) are fetched whole once they are left, like the tabs, so going back to one
+shows the page at once and brings it up to date in place past 30s
+(`use-prefetch-tabs.ts`). The tabs are fetched as soon as the first page has
+painted instead of at the first idle moment. Measured (WebKit, local production
+build, 700ms added to page requests): Roster revisited after Calendar, no
+skeleton (2 of 2); a tab tapped about 0.6s after load, no skeleton; at about
+1.1s, while that first fetch is still in flight, the skeleton shows and the page
+follows at 586ms. A first visit to a section still shows its skeleton.
+
+## 2026-10-16 — Signing out switches the phone's pushes off first, and Back cannot return
+
+From the security review of PR #2195. Sign-out now waits, up to 1.5s, for this
+phone's push token to be switched off before the session ends: started and not
+waited for, the sign-out could win, the server action refused the signed-out
+caller and a shared phone kept the last person's notifications. The login page
+then replaces the current page (`location.replace`, a full page load, which
+drops the router's cache and the phone tabs fetched whole ahead), and a
+Clubhouse page Safari restores from its back-forward cache loads again instead
+of showing what it held.
+
+## 2026-10-16 — A switch to a phone tab shows the page, not its skeleton first
+
+Every section switch drew twice: the route's skeleton at once, then the page when
+the server answered (360–580ms later on the local stack, WebKit). The 30s router
+cache that let a revisit render at once (native-feel P0-2, 10-08) was removed
+app-wide on 10-13 (#2189) because Fairway, Baseball and Lift Lab served stale
+pages, and a default prefetch stops at a dynamic page's skeleton.
+
+The phone tabs (coach: Home, CoachHelm, Calendar, Stats; player: Home, CoachHelm,
+Rounds, Team Hub) are now fetched whole ahead of a tap (`use-prefetch-tabs.ts`, a
+full prefetch, which Next holds for its static stale time, 300s) on the shell's
+first idle moment and after every arrival. A switch shows the held page at once.
+If it was fetched more than 30s ago, it is refreshed in place once it has painted
+(`router.refresh()`, no skeleton), so what settles on screen is never more than
+30s old. A refresh drops every page Next held, so the other tabs are fetched
+again when idle. The owner chose this over a 30s expiry (2026-10-16): with a real
+network an expired tab was slower than today. next.config.mjs is unchanged
+(comment only). Measured (WebKit, local production build, phone, 700ms added to
+every page request): tab switches 10s and 45s after the last fetch show the page
+with no skeleton; at 45s one refresh request follows and the page updates in
+place (a team renamed in the database: the held name at 265ms, the new one at
+1,117ms). A tap within about a second of the app loading, while the first fetch
+is still in flight, can still show the skeleton. Other sections (Roster,
+Settings, Recruiting, …) still show their skeleton first.
+
+## 2026-10-16 — Back returns a page to where it was left, in WebKit too
+
+RouteFrame marks a Back (popstate) so the page it returns to goes back to where
+it was left. Its listener was registered after the router's, and React commits a
+Back inside the router's listener, so the frame read the mark before it was set
+and opened every returned page at its top (WebKit, Stats → player → Back: 1 of 6
+runs restored). The mark is now set in the capture phase, ahead of the router:
+4 of 4 runs return to the place.
+
+## 2026-10-16 — A long page can render its lower part after the first paint
+
+`useArrivalPainted` (`lib/use-painted.ts`) is false while a page reached by
+navigating renders its first frame and true once that frame is on screen, so a
+switch's commit renders only what is seen. A render that hydrates is true from
+the start, so the server's HTML still matches. Phone Stats uses it for the
+sections below its first screen (P004).
+
+## 2026-10-15 — Ink that holds at night, and Calendar's past steps back
+
+Overnight polish. Dark mode drew ivory and forest ink from palette steps
+that flip at night, so ink on a green fill or a pale tint went dark on dark
+(Roster's Active filter, Messages' selected thread and All filter, Round's
+figures, the Stats tape, the sidebar's selected plate). Two token families
+carry the day value in light and a light value at night: `--ch-on-fill-*`
+(ivory on a fill; 95 rules) and `--ch-forest-*` (forest ink on the page or a
+pale tint; 52 rules). Ink on a fill that stays light keeps the palette step.
+Light renders as before. The sidebar plate has its own night material
+(`--ch-nav-well-*`). Stats' trend stage keeps the day palette at night, and
+the calendar plates use the stage ink. Home's form label outranks the
+Ledger heading ink (light, 1.2:1). Calendar: ended events step back and are
+announced as ended, and past time takes a wash (P006). Phone Stats: a
+malformed figures list stays in its section (P004).
+
+## 2026-10-14 — A dialog can open on its first field
+
+`Modal` takes `initialFocus`, a selector inside the sheet that takes focus as
+it opens instead of the heading. Calendar's New event uses it on desktop for
+its title field (P006, audit A-14); every other dialog still opens on its
+heading.
+
+## 2026-10-14 — Browser network text is never shown as a reason; a pushed screen returns focus to a top-bar opener
+
+`friendlyReason` (lib/friendly-reason.ts) returns nothing for a browser's own
+wording for a request that got no answer (Safari's "Load failed", "Failed to
+fetch", "NetworkError…", "Could not connect to the server", abort and timeout
+texts), so the caller's hint shows instead (`isRawBrowserFailure`). A
+`PhoneScreen` opened from the shell's top bar (inert while the screen is up)
+now gives focus back to its opener a frame after it pops, when nothing else
+took it (P007 audit A-28).
+
+## 2026-10-14 — Sign out ends in one request
+
+Signing out refreshed the dashboard under the jump to login (a server action
+that clears the active team re-renders the page). It is now one request to a
+sign-out route that ends the session and clears the team together, with no
+re-render (P008).
+
+## 2026-10-14 — Log in from the home page goes straight to the sign in
+
+The tap on Log in painted the dashboard skeleton before the sign in, and at
+dusk or night the sign in opened on the daytime still before its sky drew. The
+sign-in route no longer reads the request, and the still takes the hour's light
+until the course draws (P015).
+
+## 2026-10-14 — Old addresses reach their Clubhouse screen
+
+Found on the Simulator: every old address Clubhouse moved (Tasks,
+Announcements, Team, Intelligence, Courses, What's new, Documents, Travel, a
+player's page, CoachHelm chat and genome, a round's review) stood on "hasn't
+been rebuilt yet". Their layouts redirect, but under the dashboard's loading
+boundary the redirect arrives in the stream and fires only when the segment
+renders, and the frame dropped the segment for a page that isn't rebuilt. The
+frame now renders an aliased segment hidden behind that page
+(`CH_ALIASED_ROUTES`, guarded against every route that calls
+redirectToClubhouse), so the redirect fires. Team Hub's "Assistant coach
+joined" update and task push links were the visible cases.
+
+The Calendar and Home key shortcuts no longer throw on a key sent to the
+document (TypeError on the Simulator).
+
+## 2026-10-14 — The bell drop lands on its cards, without the creep
+
+Owner: "Notifications motion was trash". Measured on the Simulator: the first
+open of a visit started on the skeleton and swapped the feed in about 400ms
+into the drop (cards jumped 29px, frames of 30-59ms), and every open took
+827ms, the last 300ms creeping the veil's final few dozen pixels.
+- On the phone the feed is read once the page settles (requestIdleCallback),
+  so the first open lands on its cards; opening still reads it again.
+- The drop and veil arrive on the reveal spring cut at 1% and rescaled to land
+  without a step: about 660ms.
+
+## 2026-10-14 — Bell drop, page intro and settings rows from the Simulator audit
+
+- The bell's drop keeps its list a scroller at every length (`.ch-bst__scroll::before`),
+  so a pan on a short list no longer scrolls the page under it (WebKit hands a
+  pan on a non-scrolling box to the document).
+- `.ch-intro__row` wraps, so a page title and its view switch never push the
+  switch off a phone under Safari's larger page text (Calendar's List was cut).
+- Phone settings rows keep label words whole; the summary ellipsizes first (P008).
+- The event editor's free-time lanes place the time on a tap, not on touch (P006).
+
+## 2026-10-14 — Contrast and targets from the Simulator audit
+
+A rendered-pixel contrast sweep of every phone section in both themes (iPhone 17
+Pro Simulator, Safari 26.5). (A target-size scan flagged 30-32px icon buttons;
+their 44px touch areas already exist as `::after` under `pointer: coarse`.)
+
+- **The Ledger eyebrow** (tokens.css `--ch-ledger-eyebrow`, #7a6b3f to #6e6038):
+  4.25:1 on the page and 4.4:1 as drawn on the canvas; now 5:1 or better on the
+  canvas, the page and cards. Same gilt brown, one step deeper.
+- **Muted ink on green** (tokens.css `--ch-on-green-ink-muted`, alpha 0.72 to
+  0.8): the Team Hub "Latest" card's meta and CoachHelm's focus head drew at
+  4.1:1 at the light end of the green gradients; now 4.5:1 or better there,
+  still a step under the soft ink.
+- **Dates and times in the dark theme** (controls.css): WebKit draws a date or
+  time value in its own part, which globals.css paints a fixed warm-900 for
+  Fairway, so the New event sheet's date and times looked empty on the dark
+  field. A Clubhouse field's value now takes the field's ink.
+
 ## 2026-10-13 — Section switches: fade through, one bar change, warm inbox
 
 Measured on a real iPhone (WebDriverAgent driving the signed-in preview,

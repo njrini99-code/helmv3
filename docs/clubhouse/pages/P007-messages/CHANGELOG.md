@@ -1,5 +1,63 @@
 # P007 — Messages: changelog
 
+## 2026-10-16 — Failed server reads are logged; Delete is not lost to them
+
+From the code review of PR #2195. The route swallowed a failure of the
+conversation-hide check and of the announcements read. Both are now logged
+(`chLogServer`, `clubhouse.messages.canHide` and `.announcements`). A failed
+hide check is left out instead of read as "no", so the inbox asks for it
+itself once it lands and Delete conversation still shows where the database
+has the per-person hide.
+
+## 2026-10-14 — A dropped send tells one story; the reaction bar and New message work from the keyboard
+
+Runtime audit (Playwright WebKit, local stack), both roles.
+
+- **A-06** A send that died on the wire in Safari showed a "Couldn’t confirm
+  this sent" bubble under a "Couldn’t send the message · Load failed." toast.
+  The toast now classifies with the same test as the bubble
+  (`isTransientNetworkErrorMessage`, which knows WebKit's "Load failed"), so it
+  reads "Couldn’t confirm this message sent" with the check-then-Retry hint
+  (CH-7005), and `friendlyReason` no longer passes a browser's own network,
+  abort or timeout text through as copy (shared: docs/clubhouse/CHANGELOG.md).
+  An attachment send that throws while its earlier attempt is unconfirmed now
+  toasts CH-7023, as the composer shows, not CH-7006 "Try again".
+- **A-07** The bubble reads "Couldn’t confirm this message sent. Check before
+  sending again." (CH-7017).
+- **A-26** Desktop React: the reaction bar rises from the bubble (quick; a fade
+  with reduced motion), takes focus on its first reaction, ← → Home End move
+  along it, and Esc or a pick returns focus to React (CH-7603, CH-7802). The
+  "More message actions" menu already returns focus to its trigger on Esc
+  (now tested). The audit's `<body>` came from the twelve Tabs it pressed
+  before Esc: the shared Menu closes on Tab (by design), but it is portaled to
+  the end of `.ch-root`, so that Tab drops focus on `<body>` (reproduced in
+  jsdom). A shared `ui/Menu.tsx` defect, likely A-27 too, left for its own
+  change.
+- **A-28** Phone New message: a hardware keyboard's Esc is Cancel, and focus
+  returns to New message (CH-7804; the PhoneScreen part is shared). The screen
+  already slid in and focused its title; the audit sampled the People list's
+  own vertical motion, which a horizontal push does not change.
+- Tests: messages-audit "runtime audit 2026-10-14", friendly-reason.test.
+  No screenshots: no dev server was run for this change.
+
+## 2026-10-14 — The inbox no longer queues two server actions before its list
+
+Simulator audit (each request held 0.8s to expose the order): opening Messages
+ran canHideGolfConversations, getAnnouncementsWithMeta and the rail's
+active-team read as server actions one after another (Next runs server actions
+one at a time), and the inbox kept its skeleton until the announcements
+answered, then the conversation chain ran.
+
+- **Read with the page** (routes/messages.tsx): whether a conversation can be
+  deleted and the announcements over the list are read on the server beside the
+  directory, in parallel, and passed in; the client reads them only when the
+  route couldn't (`announcements: null`) or in the preview. Two serialized round
+  trips gone before the list can show. Mapping shared as `toChAnnouncement`
+  (model.ts). Test: messages-audit "read with the page".
+- Still open (shared hook, Fairway uses it too): the conversation rail itself is
+  a chain of five dependent reads (RPC, team chats, members, last message and
+  unread, names); recorded in the audit for an owner decision.
+
 ## 2026-10-13 — The first visit paints the list at once
 
 The shell fills the inbox's session cache once idle (shell/use-warm-inbox.ts),

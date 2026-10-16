@@ -21,7 +21,7 @@ const redirectSpy = vi.hoisted(() =>
     throw new Error(`NEXT_REDIRECT ${to}`);
   }),
 );
-vi.mock('next/navigation', () => ({ useRouter: () => router, redirect: redirectSpy }));
+vi.mock('next/navigation', () => ({ useRouter: () => router, redirect: redirectSpy, usePathname: () => '/golf/dashboard' }));
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));

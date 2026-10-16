@@ -17,6 +17,16 @@
   --ch-ivory-200: #e7e3d8;
   --ch-ivory-300: #dcd6c8;
   --ch-ivory-400: #c9c2b1;
+  /* Ivory ink on a green fill or stage (overnight polish, 2026-10-15). The day's ivory steps, but they stay light at
+     night: the fills stay dark, and ink taken from --ch-ivory-* went dark with the page (dark on dark). */
+  --ch-on-fill-0: #ffffff;
+  --ch-on-fill-25: #fdfcf8;
+  --ch-on-fill-50: #f9f7f1;
+  --ch-on-fill-100: #f4f2ea;
+  /* Forest ink on the page or a pale green tint: the day's --ch-green-800/900, but pale mint at night, where those
+     names are surface greens and the tints under them go dark. Ink on a fill that stays light keeps --ch-green-800. */
+  --ch-forest-800: #0b3a25;
+  --ch-forest-900: #082b1c;
   /* Ink */
   --ch-ink-950: #141412;
   --ch-ink-900: #1c1b18;
@@ -143,7 +153,8 @@
      the surface with depth (owner, 2026-10-06: "more ivory and text depth in the green"). */
   --ch-on-green-ink: #f4eedd;
   --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
-  --ch-on-green-ink-muted: rgb(222 214 190 / 0.72);
+  /* 0.8, not 0.72: holds 4.5:1 at the light end of the green gradients too (rendered 4.1:1 before, 2026-10-14). */
+  --ch-on-green-ink-muted: rgb(222 214 190 / 0.8);
   --ch-on-green-text-shadow: 0 1px 0 rgb(2 18 10 / 0.45), 0 2px 10px rgb(2 18 10 / 0.25);
   --ch-on-green-text-shadow-s: 0 1px 0 rgb(2 18 10 / 0.4);
   /* The selected sidebar row: a green key with a lit top and a green-cast lift. */
@@ -347,7 +358,8 @@
   --ch-ledger-rule: rgb(110 98 62 / 0.16);
   --ch-ledger-rule-soft: rgb(110 98 62 / 0.09);
   --ch-ledger-ink: rgb(18 59 41 / 0.9);
-  --ch-ledger-eyebrow: #7a6b3f;
+  /* 5:1 or better on the canvas, the page and cards (was #7a6b3f, 4.25:1 on the page). */
+  --ch-ledger-eyebrow: #6e6038;
   --ch-ledger-row-hover: rgb(110 98 62 / 0.05);
   /* A flush row's press: a deeper green tint, not a scale (lib/press.ts scales keys up to 240px only). */
   /* The section rule the phone board draws above a heading: an engraved double hairline. */
@@ -481,6 +493,8 @@
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
   --ch-dur-shimmer: 1.9s;
+  /* A live marker's slow breath (the calendar's now line): one cycle, ambient, never a call to act. */
+  --ch-dur-live: 2.8s;
   /* The pending hairline's sweep (LinkPending, shell.css). */
   --ch-dur-sweep: 900ms;
   /* Skeletons wait this long before showing, then fade in over base. */
@@ -504,6 +518,19 @@
  */
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color-scheme: dark;
+  /* The sidebar's selected plate at night (overnight polish, 2026-10-15): the day plate's gradient ran from the night
+     ivory to the day's, a white bar with dark ink on the dark frame. A raised green plate under ivory ink instead. */
+  --ch-nav-well-bg: linear-gradient(180deg, #24432f, #1a3524);
+  --ch-nav-well-shadow: 0 0 0 1px rgb(205 187 142 / 0.32), 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 14px -8px rgb(0 0 0 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+  --ch-nav-well-ink: #f3efe6;
+  --ch-nav-well-icon: #9fe0b6;
+  --ch-on-fill-0: #f7f2e6;
+  --ch-on-fill-25: #f5f1e7;
+  --ch-on-fill-50: #f3efe6;
+  --ch-on-fill-100: #ede7d8;
+  --ch-forest-800: #cfe6d7;
+  --ch-forest-900: #e2eee5;
   --ch-ivory-0: #1b201c;
   --ch-ivory-25: #1d231e;
   --ch-ivory-50: #202621;
@@ -767,10 +794,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
    document showing Clubhouse. */
 html:has([data-ui='clubhouse']) {
   /* A fade through, not a crossfade (phone test 2026-10-13): the old page clears quickly, then the new one fades in,
-     so two different pages are never on screen at once (a crossfade of two pages read as a washed-out double image). */
+     so two different pages are never on screen at once (a crossfade of two pages read as a washed-out double image).
+     The new page waits for the whole fade out: a shorter gap leaves both snapshots up for its last frames. */
   --ch-dur-vt-out: 120ms;
   --ch-dur-vt-in: 220ms;
-  --ch-dur-vt-gap: 90ms;
+  --ch-dur-vt-gap: var(--ch-dur-vt-out);
   --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
   --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
   /* How long a navigation onto a route skeleton keeps the old page up before the skeleton shows (native-feel audit

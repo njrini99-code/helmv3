@@ -202,7 +202,7 @@
   box-shadow: var(--ch-key-frost-shadow);
 }
 .ch-h-day--today .ch-h-day__n {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   font-weight: 700;
 }
 @media (prefers-reduced-transparency: reduce) {
@@ -272,7 +272,7 @@
   font-weight: 600;
 }
 .ch-h-agenda__row.is-next .ch-h-agenda__a {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   font-weight: 600;
 }
 .ch-h-agenda__row.is-next .ch-h-agenda__b {
@@ -643,7 +643,7 @@
   letter-spacing: -0.02em;
 }
 .ch-h-lb__pos.is-lead {
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
   background: linear-gradient(180deg, var(--ch-green-fill-500), var(--ch-green-fill-700));
   box-shadow: var(--ch-score-eagle-shadow);
 }
@@ -728,6 +728,19 @@
 }
 .ch-h-lb__trend {
   display: flex;
+}
+
+/* A narrow desktop canvas (a small window, iPad split view, a phone turned sideways): the head stacks, the actions under
+   the brief, rather than the greeting squeezed into a 90px column beside them. */
+@container (max-width: 640px) {
+  .ch-h-main--desk > .ch-h-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-h-main--desk > .ch-h-head .ch-h-head__actions {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+  }
 }
 
 /* Narrow canvas: stack the sheet. Phone layout proper waits for its approved spec (docs/clubhouse/phone/home.md). */
@@ -888,7 +901,7 @@
       radial-gradient(90% 60% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%),
       radial-gradient(70% 50% at 0% 100%, rgb(255 255 255 / 0.05), transparent 70%), var(--ch-green-800);
     box-shadow: 0 1px 0 var(--ch-green-900), var(--ch-elevation-cast);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-hm-hero__date {
     font: 500 13px/1 var(--ch-font-sans);
@@ -944,7 +957,7 @@
     border-radius: 999px;
     background: rgb(255 255 255 / 0.1);
     font: 600 12px/1 var(--ch-font-sans);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-hm-next__when.is-soon {
     background: var(--ch-hero-mint-strong);
@@ -953,7 +966,7 @@
   .ch-hm-next h2 {
     font: 600 22px/1.15 var(--ch-font-sans);
     letter-spacing: -0.025em;
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   /* Two selectors deep so base.css's `.ch-root h2 { margin: 0 }` can't win the tie by loading last. */
   .ch-hm-hero .ch-hm-next h2 {
@@ -994,7 +1007,7 @@
   }
   .ch-hm-next__rsvp b {
     font-weight: 600;
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-hm-none {
     display: flex;
@@ -1033,7 +1046,7 @@
     background: rgb(255 255 255 / 0.06);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
     font: 500 13px/1 var(--ch-font-sans);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
     text-decoration: none;
   }
   .ch-hm-none__chip svg {
@@ -1400,7 +1413,7 @@
     color: rgb(244 241 232 / 0.66);
   }
   .ch-hm-week .is-major .ch-hm-week__d b {
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-hm-week .is-major .ch-hm-week__d > span {
     color: var(--ch-hero-mint);
@@ -1541,7 +1554,7 @@
   border-radius: var(--ch-radius-xl);
   background: radial-gradient(120% 140% at 90% -30%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-green-800);
   box-shadow: 0 0 0 1px var(--ch-green-900), var(--ch-elevation-cast);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   text-decoration: none;
 }
 .ch-ph-next__k {
@@ -1592,7 +1605,7 @@
 .ch-cd b {
   font: 500 22px/1 var(--ch-font-sans);
   letter-spacing: -0.04em;
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-cd em {
   font: 500 11px/1 var(--ch-font-sans);
@@ -2414,6 +2427,17 @@
   }
   .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head + .ch-h-sheet {
     margin-top: 36px;
+  }
+}
+/* The loading head stacks with the loaded one on a narrow canvas, so it doesn't jump from two columns to one. */
+@container (max-width: 640px) {
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head > .ch-h-head__actions {
+    grid-column: 1;
+    grid-row: auto;
+    flex-wrap: wrap;
   }
 }
 
@@ -3694,7 +3718,8 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   gap: 6px;
   min-width: 0;
 }
-.ch-h-form .ch-h-form__lead h2 {
+/* Three deep so the Ledger's forest ink on every h2 (shell.css, main[data-canopy] h2) can't put green on the green stage. */
+[data-ui='clubhouse'] .ch-h-form .ch-h-form__lead h2 {
   margin: 0;
   font: 600 14px/1.2 var(--ch-font-sans);
   color: var(--ch-stage-ink-soft);

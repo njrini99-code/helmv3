@@ -473,6 +473,32 @@
 .ch-wk__col.is-today {
   background-color: rgb(21 90 57 / 0.025);
 }
+/* Time that has gone (overnight polish, 2026-10-15): past days and today's hours above the now line take a faint wash,
+   and ended events step back, so the week reads from the now line forward. Hover, focus and selection bring one back. */
+.ch-wk__col.is-past,
+.ch-wk__gone {
+  background-color: color-mix(in oklab, var(--ch-text-primary) 3.5%, transparent);
+}
+.ch-wk__gone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+.ch-ev.is-past {
+  opacity: 0.56;
+  filter: saturate(0.55);
+}
+.ch-ev.is-past:hover,
+.ch-ev.is-past:focus-visible,
+.ch-ev.is-past.is-sel {
+  opacity: 1;
+  filter: none;
+}
+.ch-mo__cell.is-past .ch-mo__ev {
+  opacity: 0.6;
+}
 .ch-wk__now {
   position: absolute;
   left: 0;
@@ -492,6 +518,28 @@
   border-radius: 50%;
   background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-bg-surface);
+}
+/* The now dot breathes (overnight polish, 2026-10-15): a slow ring, so the line reads as live time, not a rule. Reduced
+   motion runs it once (base.css); Animations off stops it. */
+@keyframes ch-now-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px var(--ch-bg-surface),
+      0 0 0 2px transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--ch-bg-surface),
+      0 0 0 6px color-mix(in oklab, var(--ch-green-fill-600) 24%, transparent);
+  }
+}
+.ch-wk__now::before {
+  animation: ch-now-breathe var(--ch-dur-live) var(--ch-ease-io) infinite;
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-wk__now::before,
+[data-ui='clubhouse'][data-motion='off'] .ch-calm-now span {
+  animation: none;
 }
 .ch-wk__nowlbl {
   position: absolute;
@@ -521,7 +569,9 @@
   cursor: pointer;
   transition:
     box-shadow var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-quick) var(--ch-ease);
+    transform var(--ch-dur-quick) var(--ch-ease),
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    filter var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ev:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -606,10 +656,10 @@
 }
 .ch-ev--class.ch-ev--fill-3 {
   background: var(--ch-info-600);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-ev--class.ch-ev--fill-3 .ch-ev__who {
-  color: color-mix(in oklab, var(--ch-ivory-50) 82%, transparent);
+  color: color-mix(in oklab, var(--ch-on-fill-50) 82%, transparent);
 }
 /* The class card (P006): a slate band naming the slot, then a row a player. Colour from the class slate, not ivory. */
 .ch-cg {
@@ -629,7 +679,7 @@
   gap: 12px;
   padding: 14px 16px;
   background: var(--ch-info-600);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-cg__glyph {
   display: grid;
@@ -772,7 +822,7 @@
 .ch-ev--practice,
 .ch-ev--workout {
   background: var(--ch-green-50);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
 }
 .ch-ev--meeting,
@@ -792,7 +842,7 @@
 .ch-ev--tournament,
 .ch-ev--qualifier {
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-ev--travel {
   background: rgb(255 255 255 / 0.5);
@@ -960,7 +1010,7 @@
   padding: 4px 7px;
   border-radius: 6px;
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   font-weight: 600;
 }
 .ch-mo__ev.is-major i {
@@ -1055,7 +1105,7 @@
   gap: 2px;
   font: 600 13px/1.2 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-ag__t span {
   font: 400 12px/1.2 var(--ch-font-sans);
@@ -1316,7 +1366,7 @@
   border: 0;
   border-radius: 12px;
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   text-align: left;
   cursor: pointer;
   transition: transform var(--ch-dur-quick) var(--ch-ease);
@@ -1354,15 +1404,16 @@
   padding: 16px 16px 14px;
   border-radius: 16px;
   background: var(--ch-light-sky), var(--ch-green-fill-700);
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), var(--ch-elevation-reading);
 }
 .ch-in__today .ch-in__kick {
   color: #bfd5c6;
 }
-/* [data-ui] main[data-canopy] h2 (shell.css) sets the forest ink on every h2; the plate's title is ivory. */
+/* [data-ui] main[data-canopy] h2 (shell.css) sets the forest ink on every h2; the plate's title is ivory. The plates are
+   green in both themes, so their ink is the stage's (--ch-ivory-50 turns dark in dark mode). */
 [data-ui='clubhouse'] main[data-canopy] .ch-in__today h2.ch-in__title {
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
 }
 .ch-in__today .ch-in__next {
   background: rgb(255 255 255 / 0.1);
@@ -1417,7 +1468,7 @@
   padding: 16px 16px 14px;
   border-radius: 16px;
   background: var(--ch-light-sky), var(--ch-plate);
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), var(--ch-elevation-reading);
 }
 .ch-in__plate[data-tone='green'] {
@@ -1442,25 +1493,25 @@
 }
 .ch-in__plate .ch-in__kick .ch-badge {
   background: rgb(255 255 255 / 0.18);
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
   box-shadow: none;
 }
 .ch-in__plate .ch-in__kick .ch-btn {
   margin-left: auto;
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
 }
 .ch-in__plate .ch-cal-sub {
   color: rgb(255 255 255 / 0.84);
 }
 [data-ui='clubhouse'] main[data-canopy] .ch-in__plate h2.ch-in__title {
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
 }
 .ch-in__chip {
   padding: 3px 9px;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.18);
   font: 600 12px/1.2 var(--ch-font-sans);
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
 }
 .ch-in__by {
   display: flex;
@@ -1474,7 +1525,7 @@
   border-radius: 6px;
   background: rgb(255 255 255 / 0.16);
   font-weight: 600;
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-in__note {
   display: grid;
@@ -1576,7 +1627,7 @@
 }
 .ch-lane__b.is-ev {
   background: var(--ch-green-50);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.2);
 }
 .ch-lane__b.is-busy {
@@ -2428,6 +2479,16 @@
     background: var(--ch-green-fill-600);
     font: 600 12px/1 var(--ch-font-sans);
     color: var(--ch-text-on-accent);
+    animation: ch-now-pill var(--ch-dur-live) var(--ch-ease-io) infinite;
+  }
+  @keyframes ch-now-pill {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+    50% {
+      box-shadow: 0 0 0 4px color-mix(in oklab, var(--ch-green-fill-600) 22%, transparent);
+    }
   }
 
   /* Month: the grid flush on the parchment under the weekdays' engraved rule; a dot for a day with events, a dark one

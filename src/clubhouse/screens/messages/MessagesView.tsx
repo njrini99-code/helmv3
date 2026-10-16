@@ -45,6 +45,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, m as M } from "motion/react";
+import { chTween } from "../../lib/motion";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
@@ -831,6 +833,35 @@ export function Bubble({
         }
       : {};
   const reacts = api.reactions.get(m.id) ?? [];
+  const reduced = useChReducedMotion();
+  const reactBtn = useRef<HTMLButtonElement | null>(null);
+  const bar = useRef<HTMLDivElement | null>(null);
+  // CH-7603: the bar takes focus as it opens, so the keyboard lands on its first reaction (audit A-26).
+  useEffect(() => {
+    if (picking) bar.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+  }, [picking]);
+  const closeBar = (refocus: boolean) => {
+    setPicking(false);
+    if (refocus) reactBtn.current?.focus({ preventScroll: true });
+  };
+  const onBarKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(bar.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeBar(true);
+    } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      items[(i + (e.key === "ArrowRight" ? 1 : -1) + items.length) % items.length]?.focus();
+    } else if (e.key === "Home" || e.key === "End") {
+      e.preventDefault();
+      items[e.key === "Home" ? 0 : items.length - 1]?.focus();
+    } else if (e.key === "Tab") {
+      // As the shared Menu does (A-27): focus goes back to React first, so Tab or Shift+Tab carries on from there in
+      // the thread's order (Shift+Tab landed on the filter at the top of the page).
+      closeBar(true);
+    }
+  };
   if (m.deleted) {
     return (
       <div
@@ -900,9 +931,11 @@ export function Bubble({
           {!m.failed && !onActions && (
             <div className="ch-ms-msg__tools">
               <button
+                ref={reactBtn}
                 type="button"
                 className="ch-ms-tool"
                 aria-label="React"
+                aria-haspopup="menu"
                 aria-expanded={picking}
                 onClick={() => setPicking(!picking)}
               >
@@ -935,29 +968,46 @@ export function Bubble({
               )}
             </div>
           )}
-          {picking && (
-            <div className="ch-ms-reactbar" role="menu" aria-label="Reactions" /* CH-7603: it pops from the bubble */>
-              {REACTIONS.map((r) => {
-                const on = reacts.some((x) => x.key === r.key && x.mine);
-                return (
-                  <button
-                    key={r.key}
-                    type="button"
-                    role="menuitem"
-                    className={"ch-ms-reactbar__b" + (on ? " is-on" : "")}
-                    aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
-                    onClick={() => {
-                      haptic("select");
-                      api.react(m.id, r.key, !on);
-                      setPicking(false);
-                    }}
-                  >
-                    <Icon icon={r.icon} size={16} />
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <AnimatePresence>
+            {picking && (
+              <M.div
+                ref={bar}
+                className="ch-ms-reactbar"
+                role="menu"
+                aria-label="Reactions"
+                aria-orientation="horizontal"
+                onKeyDown={onBarKey}
+                /* CH-7603: it pops from the bubble, rising from its edge (quick; a fade alone when motion is reduced). */
+                style={{ transformOrigin: m.mine ? "bottom right" : "bottom left" }}
+                initial={reduced ? { opacity: 0 } : { opacity: 0, transform: "translateY(4px) scale(0.96)" }}
+                animate={reduced ? { opacity: 1 } : { opacity: 1, transform: "translateY(0px) scale(1)" }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, transform: "translateY(2px) scale(0.98)" }}
+                transition={chTween("quick", reduced)}
+              >
+                {REACTIONS.map((r, i) => {
+                  const on = reacts.some((x) => x.key === r.key && x.mine);
+                  return (
+                    <button
+                      key={r.key}
+                      type="button"
+                      role="menuitem"
+                      tabIndex={i === 0 ? 0 : -1}
+                      className={"ch-ms-reactbar__b" + (on ? " is-on" : "")}
+                      aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                      onClick={() => {
+                        haptic("select");
+                        api.react(m.id, r.key, !on);
+                        // Focus goes back to React, not to <body> as the bar leaves.
+                        closeBar(true);
+                      }}
+                    >
+                      <Icon icon={r.icon} size={16} />
+                    </button>
+                  );
+                })}
+              </M.div>
+            )}
+          </AnimatePresence>
         </div>
         {reacts.length > 0 && (
           <div className={"ch-ms-reacts" + (m.mine ? " on-mine" : " on-theirs")}>
@@ -973,7 +1023,7 @@ export function Bubble({
             data-ch-code={m.failed === "unknown" ? "CH-7017" : "CH-7016"}
           >
             {m.failed === "unknown"
-              ? "Couldn’t confirm this sent. Check before sending again."
+              ? "Couldn’t confirm this message sent. Check before sending again."
               : "Not sent."}
             <button
               type="button"

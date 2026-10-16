@@ -1,5 +1,14 @@
 # P002 — Home: changelog
 
+## 2026-10-14 — The desktop head stacks on a narrow canvas
+
+- **A narrow canvas stacks the head** (home.css, `@container (max-width: 640px)`):
+  in a small window, iPad split view or a phone turned sideways the greeting sat
+  in a 91px column beside its two buttons ("Welcome / back, / Nick."). Under 640px
+  of canvas the head is one column, the actions under the brief, and the loading
+  head stacks the same way so nothing jumps when the page lands. Checked in the
+  iPhone 17 Pro Simulator in landscape.
+
 ## 2026-10-12 — Home follows the dashboard layout's role
 
 - Clubhouse Home is drawn for the role the dashboard layout draws its shell

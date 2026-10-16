@@ -641,7 +641,7 @@
 }
 .ch-sgm[aria-pressed='true'] {
   background: var(--ch-green-25);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.9);
 }
 .ch-sgm__top {
@@ -911,7 +911,7 @@
   color: var(--ch-chart-flag);
 }
 .ch-board__n.is-even {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 /* Strokes gained route (design system StrokesGainedRoute). */
 .ch-yb .ch-route {
@@ -1221,7 +1221,7 @@
   }
 }
 .ch-tab-t[aria-selected='true'] {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   font-weight: 600;
 }
 .ch-tab-t__bar {
@@ -1839,7 +1839,7 @@
   align-items: center;
   gap: 2px;
   font: 500 11px/1 var(--ch-font-sans);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-cup__lbl b {
   font: 600 15px/1 var(--ch-font-sans);
@@ -4230,6 +4230,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     -webkit-tap-highlight-color: transparent;
   }
   /* Nothing in the plot takes focus on purpose (it is pointer-only; the reading carries it), so a stray focus draws no ring. */
+  /* TeamTrendChart's observed box: the plot's full size, read by a ResizeObserver. */
+  .ch-stm.is-team .ch-stm-plot__box {
+    width: 100%;
+    height: 100%;
+  }
   .ch-stm.is-team .ch-stm-plot :focus {
     outline: none;
   }
@@ -4498,12 +4503,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     top: 0;
     right: 6px;
     left: 6px;
-    height: var(--ch-stm-pick-h, 44px);
+    height: 44px;
     border-radius: var(--ch-radius-md);
     background: var(--ch-bg-selected);
     box-shadow: inset 0 0 0 1px var(--ch-green-ring);
-    translate: 0 var(--ch-stm-pick-y, 0px);
-    /* Every row is 44px, so only the position moves. */
+    /* Every row is 44px under the list's 4px top padding, so the chosen row's index is its place: nothing is measured. */
+    translate: 0 calc(4px + var(--ch-stm-pick-i, 0) * 44px);
     transition: translate var(--ch-dur-base) var(--ch-ease);
   }
   /* The empty window holds the loaded section's height: a 19px header, the 64px figure and five 44px rows in their
@@ -4781,6 +4786,48 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   border-radius: 24px;
   background: radial-gradient(120% 90% at 85% -10%, rgb(79 138 100 / 0.38), transparent 60%), linear-gradient(165deg, var(--ch-green-700), var(--ch-green-900) 70%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(176 149 96 / 0.28), var(--ch-elevation-feature);
+  color: var(--ch-on-fill-100);
+}
+/* The stage is deep green and its ink ivory in both themes (overnight polish, 2026-10-15): drawn from the palette, it
+   turned mint with dark ink at night, and the players, axis and summary fell under 2:1. At night it keeps the day's
+   palette, as Home's form card does with the --ch-stage-* tokens. */
+html[data-fw-theme='dark'] .ch-st .ch-sgt {
+  --ch-ivory-0: #ffffff;
+  --ch-ivory-25: #fdfcf8;
+  --ch-ivory-50: #f9f7f1;
+  --ch-ivory-100: #f4f2ea;
+  --ch-ivory-150: #eeebe2;
+  --ch-ivory-200: #e7e3d8;
+  --ch-ivory-300: #dcd6c8;
+  --ch-ivory-400: #c9c2b1;
+  --ch-ink-950: #141412;
+  --ch-ink-900: #1c1b18;
+  --ch-ink-700: #3a3833;
+  --ch-ink-600: #46433d;
+  --ch-ink-500: #5f5c55;
+  --ch-ink-400: #8f8b81;
+  --ch-ink-300: #b3afa5;
+  --ch-green-25: #f5f9f6;
+  --ch-green-50: #eef5f0;
+  --ch-green-100: #ddebe1;
+  --ch-green-200: #bcd6c4;
+  --ch-green-400: #4f8a64;
+  --ch-green-500: #1f6b45;
+  --ch-green-600: #155a39;
+  --ch-green-700: #0f4a2f;
+  --ch-green-800: #0b3a25;
+  --ch-green-900: #082b1c;
+  --ch-forest-800: #0b3a25;
+  --ch-forest-900: #082b1c;
+  --ch-green-fill-500: #1f6b45;
+  --ch-green-fill-600: #155a39;
+  --ch-green-fill-700: #0f4a2f;
+  --ch-champagne-100: #efe6d2;
+  --ch-champagne-300: #dccda6;
+  --ch-champagne-500: #b09560;
+  /* Its Strokes gained / Scoring switch: the day's well and raised pill, as it is drawn in light. */
+  --ch-well-bg: linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%);
+  --ch-control-bg: linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%);
   color: var(--ch-ivory-100);
 }
 .ch-st[data-canopy] .ch-sgt::after {
@@ -4799,7 +4846,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   font-weight: 600;
 }
 .ch-st[data-canopy] .ch-sgt__n {
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
   text-shadow: 0 2px 24px rgb(0 0 0 / 0.25);
 }
 .ch-st[data-canopy] .ch-sgt__n.ch-gain {
@@ -4845,7 +4892,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   margin: 0;
   font: 600 22px/1 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
 }
 .ch-st[data-canopy] .ch-sgt__facts em {
   font: var(--ch-type-caption);
@@ -4915,7 +4962,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-sgt__team-row,
 .ch-st[data-canopy] .ch-sgt__team {
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
 }
 .ch-st[data-canopy] .ch-sgt__ends .ch-sgt__team span,
 .ch-st[data-canopy] .ch-sgt__end {
@@ -4923,7 +4970,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-sgt__ends .ch-sgt__team b,
 .ch-st[data-canopy] .ch-sgt__end.is-sel {
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
 }
 .ch-st[data-canopy] .ch-sgt__end.is-sel {
   background: rgb(255 255 255 / 0.12);
@@ -4984,7 +5031,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   font-weight: 600;
 }
 .ch-st[data-canopy] .ch-tp__v {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-tp__dial {
   position: absolute;
@@ -5277,7 +5324,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   margin: 0 0 4px;
   font: var(--ch-type-serif-s);
   letter-spacing: -0.004em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-fm__head p {
   margin: 0;
@@ -5301,7 +5348,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   margin: 0;
   font: 600 20px/1 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-fm__facts em {
   font: var(--ch-type-caption);
@@ -5823,7 +5870,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-zmini > b {
   font: 600 30px/1 var(--ch-font-sans, inherit);
   letter-spacing: -0.04em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-zmini > b small {
   font-size: 14px;
@@ -5913,14 +5960,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   height: 30px;
   border-radius: 50%;
   background: var(--ch-green-800);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
   box-shadow: none;
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t h2 {
   margin: 0 0 12px;
   font: 600 27px/1.1 var(--ch-font-sans);
   letter-spacing: -0.015em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t p {
   font: 400 14.5px/1.5 var(--ch-font-sans);
@@ -5949,7 +5996,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd:not(.ch-gm__sub) {
   font-size: 32px;
   font-weight: 600;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd.ch-gain {
   color: var(--ch-green-600);
@@ -6024,7 +6071,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-dv__top b {
   display: block;
   font: 600 19px/1.2 var(--ch-font-sans);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-dv__top span {
   display: block;
@@ -6043,7 +6090,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-dv.is-done .ch-dv__top em {
   background: var(--ch-green-800);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-st[data-canopy] .ch-dv__rail {
   position: relative;
