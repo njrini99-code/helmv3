@@ -172,6 +172,10 @@ GRANT ALL ON FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_user_i
 
 GRANT ALL ON FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_user_id" "uuid") TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid", "p_user_id" "uuid") TO "service_role";
+
 REVOKE ALL ON FUNCTION "public"."current_coach_id"() FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "public"."current_coach_id"() TO "authenticated";
@@ -631,6 +635,10 @@ REVOKE ALL ON FUNCTION "public"."golf_team_by_join_code"("p_code" "text") FROM P
 GRANT ALL ON FUNCTION "public"."golf_team_by_join_code"("p_code" "text") TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."golf_team_by_join_code"("p_code" "text") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."guard_coach_organization_id"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."guard_coach_organization_id"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."guard_coach_organization_id"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."guard_users_role_self_change"() FROM PUBLIC;
 

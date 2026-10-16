@@ -15,3 +15,5 @@ CREATE OR REPLACE TRIGGER "update_baseball_player_stats_updated_at" BEFORE UPDAT
 CREATE OR REPLACE TRIGGER "update_baseball_team_invitations_updated_at" BEFORE UPDATE ON "public"."baseball_team_invitations" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 CREATE OR REPLACE TRIGGER "update_baseball_team_lineups_updated_at" BEFORE UPDATE ON "public"."baseball_team_lineups" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+CREATE OR REPLACE TRIGGER "baseball_coaches_guard_organization_id" BEFORE INSERT OR UPDATE OF "organization_id" ON "public"."baseball_coaches" FOR EACH ROW EXECUTE FUNCTION "public"."guard_coach_organization_id"();

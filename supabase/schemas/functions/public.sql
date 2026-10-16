@@ -886,6 +886,29 @@ $$;
 
 ALTER FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid", "p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT EXISTS (
+           SELECT 1 FROM public.organizations o
+           WHERE o.id = p_org_id
+             AND o.created_at > now() - interval '15 minutes'
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM public.golf_coaches c
+           WHERE c.organization_id = p_org_id AND c.user_id IS DISTINCT FROM p_user_id
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM public.baseball_coaches c
+           WHERE c.organization_id = p_org_id AND c.user_id IS DISTINCT FROM p_user_id
+         );
+$$;
+
+ALTER FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid", "p_user_id" "uuid") IS 'True when a coach may attach to the organization from the client: it was created in the last 15 minutes and no golf or baseball coach other than this user belongs to it (onboarding). Definer, because the caller cannot see other programs'' coach rows. Used by guard_coach_organization_id (S1, 2026-10-16).';
+
 CREATE OR REPLACE FUNCTION "public"."current_coach_id"() RETURNS "uuid"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -5151,6 +5174,32 @@ ALTER FUNCTION "public"."golf_user_on_conversation_team"("p_conversation_id" "uu
 
 COMMENT ON FUNCTION "public"."golf_user_on_conversation_team"("p_conversation_id" "uuid", "p_user_id" "uuid") IS 'Is the NAMED user (p_user_id, not the caller) an active player or a coach on the team that owns this conversation? SECURITY DEFINER so the participant INSERT policy can ask about a user whose roster rows the caller may not be able to read. Reads only; grants no access.';
 
+
+CREATE OR REPLACE FUNCTION "public"."guard_coach_organization_id"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.organization_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+  IF TG_OP = 'UPDATE' AND NEW.organization_id IS NOT DISTINCT FROM OLD.organization_id THEN
+    RETURN NEW;
+  END IF;
+  IF public.coach_organization_is_claimable(NEW.organization_id, NEW.user_id) THEN
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'A coach joins an existing program by invitation'
+    USING ERRCODE = '42501';
+END;
+$$;
+
+ALTER FUNCTION "public"."guard_coach_organization_id"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."guard_coach_organization_id"() IS 'S1 (2026-10-16): a direct client write may set a coach''s organization_id only to null, leave it unchanged, or point it at a program being created now (coach_organization_is_claimable). Invoker rights, so current_user is the function owner inside SECURITY DEFINER functions and server code with the service role is not checked.';
 
 CREATE OR REPLACE FUNCTION "public"."guard_users_role_self_change"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
