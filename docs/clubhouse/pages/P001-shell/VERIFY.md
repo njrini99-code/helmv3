@@ -146,6 +146,20 @@ Animation:         v2 tokens only; the animation features load after first paint
 Notes:             LCP and INP come only from sampled Sentry tracing (12101)
 ```
 
+## The push ask in the app (2026-10-16, CH-1910, blocker 12)
+
+- Tests: `src/clubhouse/shell/__tests__/push-ask.test.tsx` (12: the settle wait, the quiet routes and a navigation
+  restarting the wait, a sheet open or a field focused holding it, the role's copy, Turn on with iOS allowing and not
+  allowing, the sheet waiting while iOS's prompt is up, Not now and every other close kept and never asked again, once
+  a launch) and `src/lib/utils/__tests__/native-push-permission.test.ts` (the shared read never prompts).
+- Browser: the preview draws the sheet open with `&ask=push` (`/clubhouse-preview/home-player?ask=push`,
+  `/clubhouse-preview/home?ask=push`). The before capture is filed below; the after captures were not taken: from about
+  18:30 on 2026-10-16 no headless browser would launch on this machine (WebKit aborted at start, Chromium failed its
+  Mach bootstrap check-in), so the sheet has not been looked at in a browser.
+- Not verified: on a device. The device pass should start the app signed in on a fresh install, wait on Home, see the
+  ask once, answer Turn on and see iOS's prompt, then confirm a test push arrives; and on a second install answer Not
+  now and confirm it never comes back.
+
 ## Screenshots
 
 Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
@@ -180,6 +194,7 @@ before, after, baseline or evidence.
 | `P001__form-bar__coach__390x844__qualifier-new-loading__after__834fa2c.png` | after | 834fa2c | form-bar (coach), 390x844px, qualifier-new-loading; clubhouse-preview |
 | `P001__form-bar__coach__390x844__qualifier-new-loading__before__4141d68.png` | before | 4141d68 | form-bar (coach), 390x844px, qualifier-new-loading; clubhouse-preview |
 | `P001__hero-bell__coach__390__keyboard-focus__evidence__c1af28d.png` | evidence | c1af28d | hero-bell (coach), 390px, keyboard-focus; clubhouse-preview |
+| `P001__push-ask__player__390__home-settled__before__22e5426.png` | before | 22e5426 | Player home at 390 (WebKit, preview), 4s after load: Clubhouse has no push ask (the current app's is not mounted here) |
 
 ## Historical verification gaps
 
