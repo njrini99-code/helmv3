@@ -1,5 +1,15 @@
 # Clubhouse changelog
 
+## 2026-10-16 — No serif face is loaded
+
+`lib/fonts.ts` still declared Instrument Serif (normal and italic), so every
+Clubhouse page preloaded two serif files that nothing drew: titles moved to the
+sans on 2026-10-07 and `--ch-font-serif` resolves to it (`tokens.css`), and no
+selector names `--ch-font-instrument-serif` (premium pass audit P011 D14). The
+face and its variable are gone. Nothing on screen changes. WebKit, the player
+home preview: four font preloads before, two after (Instrument Sans and
+JetBrains Mono); the document's font set no longer lists Instrument Serif.
+
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
 Owner, testing the preview: on Stats the switcher at the top seemed to be gone.

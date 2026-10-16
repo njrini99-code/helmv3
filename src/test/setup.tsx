@@ -67,7 +67,6 @@ vi.mock('next/font/google', () => ({
   Satisfy: mockFont,
   // Clubhouse (src/clubhouse/lib/fonts.ts)
   Instrument_Sans: mockFont,
-  Instrument_Serif: mockFont,
   JetBrains_Mono: mockFont,
 }));
 
