@@ -1,5 +1,16 @@
 # Clubhouse changelog
 
+## 2026-10-16 — Signing out switches the phone's pushes off first, and Back cannot return
+
+From the security review of PR #2195. Sign-out now waits, up to 1.5s, for this
+phone's push token to be switched off before the session ends: started and not
+waited for, the sign-out could win, the server action refused the signed-out
+caller and a shared phone kept the last person's notifications. The login page
+then replaces the current page (`location.replace`, a full page load, which
+drops the router's cache and the phone tabs fetched whole ahead), and a
+Clubhouse page Safari restores from its back-forward cache loads again instead
+of showing what it held.
+
 ## 2026-10-16 — A switch to a phone tab shows the page, not its skeleton first
 
 Every section switch drew twice: the route's skeleton at once, then the page when

@@ -122,6 +122,7 @@ export function ClubhouseFrame({
   useEffect(() => chTagSession(), []);
   // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
   useEffect(() => liftHandoffCurtain(), []);
+  useReloadFromBackForwardCache();
 
   // The live shell renders the animation features above the frame (ChMotionFeatures, below); a preview renders the frame alone.
   const scoped = useContext(ChMotionScope);
@@ -286,4 +287,19 @@ function usePhoneEdges(hero: boolean) {
       restore?.();
     };
   }, [hero]);
+}
+
+/**
+ * A page Safari restores from its back-forward cache (Back after leaving the app, or after signing out) comes back with
+ * its memory: the session it was drawn for and the phone tabs the router holds, fetched whole ahead (use-prefetch-tabs).
+ * It loads again instead, so the server decides what it shows (security review, 2026-10-16).
+ */
+function useReloadFromBackForwardCache(): void {
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) window.location.reload();
+    };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, []);
 }

@@ -34,12 +34,22 @@ export async function chEndSession(surface: string): Promise<void> {
   }
 }
 
+/** How long sign-out waits for this phone's push token to be switched off before it ends the session anyway. */
+export const CH_PUSH_TEARDOWN_WAIT_MS = 1500;
+
 /**
  * Sign out, one way everywhere (Settings' Account card and the phone's More sheet): first, while still signed in, this
- * phone stops getting the person's push notifications (never awaited); then the session ends, and the login page loads.
+ * phone stops getting the person's push notifications; then the session ends, and the login page loads.
+ *
+ * The token is switched off before the session ends, waited for up to 1.5s: started and not waited for, the sign-out
+ * could win, the action then refused the signed-out caller and a shared phone kept the last person's pushes (security
+ * review, 2026-10-16). The login page loads in place of this one (`location.replace`) and as a full page load, never a
+ * client navigation: that is what drops the router's cache, which holds the phone tabs fetched whole ahead
+ * (use-prefetch-tabs), so Back cannot return to the signed-out person's pages.
  */
 export async function chSignOut(): Promise<void> {
-  teardownDeviceTokenOnSignOut();
+  const teardown = Promise.resolve(teardownDeviceTokenOnSignOut()).catch(() => undefined);
+  await Promise.race([teardown, new Promise((done) => window.setTimeout(done, CH_PUSH_TEARDOWN_WAIT_MS))]);
   await chEndSession('settings.session');
-  window.location.href = '/golf/login';
+  window.location.replace('/golf/login');
 }

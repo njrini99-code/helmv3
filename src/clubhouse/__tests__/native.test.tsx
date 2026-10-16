@@ -36,7 +36,8 @@ afterEach(() => {
 describe('Clubhouse in the iOS app', () => {
   it('signing out stops this phone getting pushes first, while still signed in', async () => {
     order.length = 0;
-    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '' } });
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '', replace } });
     const writes = createLiveWrites({ role: 'coach', userId: 'u', email: null, coachId: 'c', playerId: null, teamId: 't', refresh: () => {} });
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       order.push(`route ${String(url)}`);
@@ -49,12 +50,14 @@ describe('Clubhouse in the iOS app', () => {
     }
     // One request ends the session and clears the active team: no server action, so the page is not re-rendered under the jump to login.
     expect(order).toEqual(['teardown', 'route /api/golf/auth/sign-out']);
-    expect(window.location.href).toBe('/golf/login');
+    // The login page takes this page's place in history, as a full page load: Back cannot return to the signed-out pages.
+    expect(replace).toHaveBeenCalledWith('/golf/login');
   });
 
   it('a sign-out request that fails still signs the browser out', async () => {
     order.length = 0;
-    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '' } });
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '', replace } });
     const writes = createLiveWrites({ role: 'coach', userId: 'u', email: null, coachId: 'c', playerId: null, teamId: 't', refresh: () => {} });
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'));
     try {
@@ -63,7 +66,8 @@ describe('Clubhouse in the iOS app', () => {
       fetchSpy.mockRestore();
     }
     expect(order).toEqual(['teardown', 'signOut']);
-    expect(window.location.href).toBe('/golf/login');
+    // The login page takes this page's place in history, as a full page load: Back cannot return to the signed-out pages.
+    expect(replace).toHaveBeenCalledWith('/golf/login');
   });
 
   it('the account sheet tells the shell a sheet is open, so an edge swipe cannot leave the page under it', async () => {
