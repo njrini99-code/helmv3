@@ -43,8 +43,14 @@ interface FakeEvent {
 
 type Handlers = Record<string, (e: unknown) => void>;
 
+interface FakeCaches {
+  open: (name: string) => Promise<{ match: (r: unknown) => Promise<unknown>; put: (r: unknown, res: unknown) => Promise<void>; add: (u: string) => Promise<void> }>;
+  keys: () => Promise<string[]>;
+  delete: (name: string) => Promise<boolean>;
+}
+
 /** Load sw.js in an isolated context and return its registered handlers. */
-function loadWorker(options: { onLine: boolean }): Handlers {
+function loadWorker(options: { onLine: boolean; caches?: FakeCaches; fetch?: (r: unknown) => Promise<unknown> }): Handlers {
   const handlers: Handlers = {};
 
   const selfObj: Record<string, unknown> = {
@@ -60,14 +66,16 @@ function loadWorker(options: { onLine: boolean }): Handlers {
 
   const sandbox: Record<string, unknown> = {
     self: selfObj,
-    caches: {
+    caches: options.caches ?? {
       open: async () => ({ match: async () => undefined, put: async () => undefined, add: async () => undefined }),
       keys: async () => [],
       delete: async () => true,
     },
-    fetch: async () => {
-      throw new Error('simulated network failure');
-    },
+    fetch:
+      options.fetch ??
+      (async () => {
+        throw new Error('simulated network failure');
+      }),
     Response: class {},
     URL,
     console: { warn: () => {}, log: () => {}, error: () => {} },
@@ -228,5 +236,91 @@ describe('sw.js — no fabricated responses', () => {
     // Non-vacuity: the stripper must not have eaten the whole file.
     expect(code).toContain('addEventListener');
     expect(code.length).toBeGreaterThan(2000);
+  });
+});
+
+// =============================================================================
+// Signed-in API responses are never cached (security review, 2026-10-16).
+//
+// The worker used to keep every same-origin API GET in `golfhelm-<v>-api`,
+// keyed by URL alone, and answer from it whenever the network failed. Nothing
+// cleared it at sign-out, so offline the next person on a shared phone was
+// served the last person's roster and notes. API reads are now network only.
+// =============================================================================
+
+describe('sw.js — API responses are never cached', () => {
+  function recordingCaches(entries: Record<string, unknown> = {}) {
+    const puts: string[] = [];
+    const matches: string[] = [];
+    const deleted: string[] = [];
+    const caches: FakeCaches = {
+      open: async (name: string) => ({
+        match: async (r: unknown) => {
+          matches.push(name);
+          return entries[(r as { url: string }).url];
+        },
+        put: async () => {
+          puts.push(name);
+        },
+        add: async () => undefined,
+      }),
+      keys: async () => ['golfhelm-vsource-static', 'golfhelm-vsource-dynamic', 'golfhelm-vsource-api', 'golfhelm-vold-dynamic', 'unrelated'],
+      delete: async (name: string) => {
+        deleted.push(name);
+        return true;
+      },
+    };
+    return { caches, puts, matches, deleted };
+  }
+
+  it('does not store a successful API response', async () => {
+    const rec = recordingCaches();
+    const okResponse = { ok: true, clone: () => okResponse, headers: { get: () => 'application/json' } };
+    const worker = loadWorker({ onLine: true, caches: rec.caches, fetch: async () => okResponse });
+    const e = makeEvent('https://helmsportslabs.com/api/golf/players/p1/putt-tendencies', 'cors');
+    let responded: Promise<unknown> | null = null;
+    e.respondWith = (p) => {
+      responded = p as Promise<unknown>;
+    };
+    worker.fetch!(e);
+
+    // Non-vacuity: the worker did answer, with the network response.
+    expect(responded).not.toBeNull();
+    await expect(responded!).resolves.toBe(okResponse);
+    expect(rec.puts).toEqual([]);
+  });
+
+  it('offline, never answers an API read from a stored copy, even one left by an older worker', async () => {
+    const url = 'https://helmsportslabs.com/api/golf/rounds/r1';
+    const stale = { previousUser: 'roster and notes' };
+    const rec = recordingCaches({ [url]: stale });
+    const worker = loadWorker({ onLine: false, caches: rec.caches });
+    const e = makeEvent(url, 'cors');
+    let responded: Promise<unknown> | null = null;
+    e.respondWith = (p) => {
+      responded = p as Promise<unknown>;
+    };
+    worker.fetch!(e);
+
+    expect(responded).not.toBeNull();
+    const answer = await responded!;
+    // The offline JSON 503 (a Response), not the stored copy.
+    expect(answer).not.toBe(stale);
+    expect(rec.matches).toEqual([]);
+  });
+
+  it('activate deletes the old API cache and other versions, and keeps this version\'s static and page caches', async () => {
+    const rec = recordingCaches();
+    const worker = loadWorker({ onLine: true, caches: rec.caches });
+    let pending: Promise<unknown> | null = null;
+    worker.activate!({ waitUntil: (p: Promise<unknown>) => (pending = p) });
+    await pending;
+    expect(rec.deleted.sort()).toEqual(['golfhelm-vold-dynamic', 'golfhelm-vsource-api']);
+  });
+
+  it('source has no API cache left to fill', () => {
+    const code = SW_SOURCE.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    expect(code).not.toMatch(/API_CACHE/);
+    expect(code).toContain('handleApiRequest');
   });
 });
