@@ -2855,8 +2855,9 @@ html[data-fw-theme='dark'] .ch-offline {
 }
 
 /* Phone large titles (shell/large-title.tsx, owner 2026-10-08: "cardless, native-feeling phone Clubhouse"). The bar's
-   section switcher (.ch-topbar__ptitle) always shows, over a page's large title too (owner, 2026-10-16: on Stats the
-   switcher seemed gone while "Team stats" was in view). A pushed page that opens with its own large title does not also
+   section switcher always shows, over a page's large title too, whether the shell draws it (.ch-topbar__ptitle) or the
+   page's own bar holds it (.ch-sw in a .ch-pbar__title: Roster, Settings, Qualifiers, Recruiting) (owner, 2026-10-16:
+   on Stats the switcher seemed gone while "Team stats" was in view). A pushed page that opens with its own large title does not also
    show its name in the bar: while the large title is in view the bar's pushed title is hidden, and as it scrolls up
    under the bar (the bar is marked data-large-title="tucked") it fades in, on opacity and a 3px rise only. The :has()
    list is CH_LARGE_TITLES and must stay in step with it; it holds from the first paint. The bar's title keeps its
@@ -2883,7 +2884,7 @@ html[data-fw-theme='dark'] .ch-offline {
         ):not(.ch-sr-only, .ch-pscreen *, dialog *)
     )
     .ch-topbar:not([data-large-title='tucked'])
-    :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title):not(:has(.ch-sw)) {
     opacity: 0;
     translate: 0 3px;
   }

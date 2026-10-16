@@ -171,12 +171,16 @@ describe('the CSS that hides and fades the bar title', () => {
     for (const sel of CH_LARGE_TITLES) expect(has, sel).toContain(sel);
     expect(has).toContain(':not(.ch-sr-only, .ch-pscreen *, dialog *)');
     expect(block).toContain("[data-ui='clubhouse']:not([data-phone-hero]):has(");
-    expect(block).toMatch(/\.ch-topbar:not\(\[data-large-title='tucked'\]\)\s*:is\(\.ch-topbar__pslot > \.ch-pbar__title, \.ch-topbar__pstand \.ch-pbar__title\) \{\s*opacity: 0;\s*translate: 0 3px;/);
+    expect(block).toMatch(/\.ch-topbar:not\(\[data-large-title='tucked'\]\)\s*:is\(\.ch-topbar__pslot > \.ch-pbar__title, \.ch-topbar__pstand \.ch-pbar__title\):not\(:has\(\.ch-sw\)\) \{\s*opacity: 0;\s*translate: 0 3px;/);
   });
   it("never hides the bar's section switcher, whatever the page draws under it (owner, 2026-10-16)", () => {
     // Home's green hero swaps its own title in place; any other rule that fades the section title out is the old hiding.
     const rules = shell.split('}').filter((r) => /opacity: 0;/.test(r) && r.includes('.ch-topbar__ptitle'));
     for (const rule of rules) expect(/(?<!:not\()\[data-phone-hero\]/.test(rule), rule.slice(0, 160)).toBe(true);
+    // Roster, Settings, Qualifiers and Recruiting hold the switcher in their own bar title: it is never the one hidden.
+    const pushed = shell.split('}').filter((r) => /opacity: 0;/.test(r) && r.includes('.ch-pbar__title'));
+    expect(pushed.length).toBeGreaterThan(0);
+    for (const rule of pushed) expect(rule, rule.slice(0, 160)).toContain(':not(:has(.ch-sw))');
     expect(shell).not.toContain('data-switch-quiet');
   });
   it('fades on opacity and translate at the quick duration, and swaps at once with reduced motion or Animations off', () => {
