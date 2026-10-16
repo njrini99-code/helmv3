@@ -8,7 +8,10 @@ average, or strokes gained a round under SG) was a Number Flow numeral that
 rolled its digits to a newly chosen sort's figure. It is now plain tabular text
 (`ch-num`) that takes the new figure at once, with a true minus and a dash for
 no data. The rows still slide to their new places on a chosen sort (CH-3604);
-only the digits stopped moving. The text-first swap from earlier today
+only the digits stopped moving. The figure keeps the box and digit spacing the
+numeral had (its mask padding, no kerning between digits), so the row lays out
+as before (WebKit at 390: no pixel above the noise floor differs from the
+before capture). The text-first swap from earlier today
 (`useArrivalPainted`, `.ch-rsm-flowtext`) and `figureParts` went with Number
 Flow. Catalog CH-3604 updated.
 ## 2026-10-16 — A switch to Roster on the phone draws its figures as text first

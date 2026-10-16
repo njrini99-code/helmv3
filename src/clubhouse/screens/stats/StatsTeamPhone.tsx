@@ -417,7 +417,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
                     </span>
                     <span className="ch-stm-row__v ch-num">
                       <b>{p.avg == null ? NO_DATA : formatFixed(p.avg)}</b>
-                      <span className={sg == null ? '' : sg >= 0 ? 'ch-gain' : 'ch-loss'}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG`}</span>
+                      <span className={sg == null ? '' : `ch-stm-row__sg ${sg >= 0 ? 'ch-gain' : 'ch-loss'}`}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG`}</span>
                     </span>
                     <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
                     <LinkPending />

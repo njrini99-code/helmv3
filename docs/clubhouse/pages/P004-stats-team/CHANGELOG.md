@@ -7,7 +7,8 @@ count-up and no digits rolling. The phone's strokes gained figure under the
 legs and each player's SG were Number Flow numerals that rolled to a picked
 leg's value. They are now plain tabular text, written at once (`formatSigned`,
 a true minus), with one text node instead of a hidden copy beside a rolling
-one. The `key` that remounted the legs and players on a window or filter change
+one, and keep the numeral's box and digit spacing (mask padding, no kerning) so
+nothing moves on the page. The `key` that remounted the legs and players on a window or filter change
 existed only to stop a roll there and is gone. Catalog CH-4703 and the phone
 draft (`docs/clubhouse/phone/stats-team.md`) updated.
 ## 2026-10-16 — A switch to Stats on the phone renders the first screen, then the rest

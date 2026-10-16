@@ -1014,7 +1014,11 @@
     gap: 4px;
   }
   .ch-rsm-row__v b {
+    /* The box and digit spacing the rolling numeral had (its mask padding, no kerning between digits), kept so the
+       row reads as before now that the figure is plain text: no pair of digits closes up, so columns stay tabular. */
+    padding-block: calc(round(nearest, calc(0.25em / 2), 1px) * 2);
     font: 600 17px/1 var(--ch-font-sans);
+    font-kerning: none;
     letter-spacing: -0.02em;
     color: var(--ch-text-primary);
   }
