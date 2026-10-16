@@ -122,6 +122,10 @@ REVOKE ALL ON FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "u
 
 GRANT ALL ON FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "uuid") TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."can_delete_organization"("p_org_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."can_delete_organization"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."can_delete_organization"("p_org_id" "uuid") TO "service_role";
+
 REVOKE ALL ON FUNCTION "public"."can_insert_baseball_team_member"("p_team_id" "uuid", "p_status" "public"."team_member_status") FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "public"."can_insert_baseball_team_member"("p_team_id" "uuid", "p_status" "public"."team_member_status") TO "authenticated";
@@ -172,9 +176,9 @@ GRANT ALL ON FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_user_i
 
 GRANT ALL ON FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_user_id" "uuid") TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid", "p_user_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid", "p_user_id" "uuid") TO "service_role";
+REVOKE ALL ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."current_coach_id"() FROM PUBLIC;
 
@@ -636,9 +640,17 @@ GRANT ALL ON FUNCTION "public"."golf_team_by_join_code"("p_code" "text") TO "aut
 
 GRANT ALL ON FUNCTION "public"."golf_team_by_join_code"("p_code" "text") TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."guard_baseball_team_organization_id"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."guard_baseball_team_organization_id"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."guard_baseball_team_organization_id"() TO "service_role";
+
 REVOKE ALL ON FUNCTION "public"."guard_coach_organization_id"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."guard_coach_organization_id"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."guard_coach_organization_id"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."guard_lifting_coach_self_update"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."guard_lifting_coach_self_update"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."guard_lifting_coach_self_update"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."guard_users_role_self_change"() FROM PUBLIC;
 
@@ -759,6 +771,10 @@ REVOKE ALL ON FUNCTION "public"."helm_lifting_can_edit_org"("p_org" "uuid") FROM
 GRANT ALL ON FUNCTION "public"."helm_lifting_can_edit_org"("p_org" "uuid") TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."helm_lifting_can_edit_org"("p_org" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."helm_lifting_can_invite_coach"("p_org" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."helm_lifting_can_invite_coach"("p_org" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."helm_lifting_can_invite_coach"("p_org" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."helm_lifting_can_view_org"("p_org" "uuid", "p_sport" "text") FROM PUBLIC;
 
@@ -1157,6 +1173,10 @@ REVOKE ALL ON FUNCTION "public"."shares_my_golf_organization"("p_org_id" "uuid")
 GRANT ALL ON FUNCTION "public"."shares_my_golf_organization"("p_org_id" "uuid") TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."shares_my_golf_organization"("p_org_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."stamp_organization_creator"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."stamp_organization_creator"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."stamp_organization_creator"() TO "service_role";
 
 GRANT ALL ON FUNCTION "public"."stop_sequences_on_reply"() TO "anon";
 
