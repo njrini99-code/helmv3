@@ -169,10 +169,10 @@ Data:            golf_round_lifecycle: golf_rounds, golf_holes, golf_shots, golf
 
 ```text
 Design:         approved
-Implementation: in_progress (library, review and round entry routed over the round engine, behind the flag; gates in
+Implementation: verifying (2026-10-16: what remains is verification, with no device evidence yet; library, review and round entry routed over the round engine, behind the flag; gates in
                 PROGRESS.md; not yet seen in a browser against a live account or on an iPhone)
-Contract:       complete (CONTRACT.md: all 25 categories answered; all 44 hand contracts are reserved until the tests
-                name their Bridge IDs; 32 name a covering test and 12 have none, VERIFY.md)
+Contract:       complete (CONTRACT.md: all 25 categories answered; of 47 hand contracts, 39 are implemented and
+                name a covering test and 8 are reserved with none, VERIFY.md, 2026-10-16)
 Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
 Data:           existing (no held plan; the design's coach notes and the recap's Focus and Keep have no source
                 a player can see yet, Q-72f)

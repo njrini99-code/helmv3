@@ -105,7 +105,8 @@ budget was removed on 2026-10-07; agents now deploy directly (AGENTS.md
 Updated 2026-10-12: `golf_clubhouse_ui` and `golf_clubhouse_front_door` are off
 in production (`golf_clubhouse_ui` was on from 2026-10-08 to 2026-10-11 by
 mistake through #2180, and #2188 turned it off). `HELM_CLUBHOUSE_TEAMS`
-provides the server-side team allowlist. The canary steps, rollback and
+provides the server-side team allowlist: team ids limit Clubhouse to those
+teams, and an empty, unset or `*` value means every team. The canary steps, rollback and
 turn-on criteria are in [STATUS.md](STATUS.md). A public front-door flag applies
 globally, so a
 team canary must not be described as a per-team sign-in rollout.

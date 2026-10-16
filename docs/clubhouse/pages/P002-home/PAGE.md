@@ -132,7 +132,7 @@ Data:            team_operations, calendar_events, stats_analytics: golf_team_se
 
 ```text
 Design:         approved
-Implementation: in_progress (desktop and phone built for both roles; gates in PROGRESS.md)
+Implementation: verifying (2026-10-16: what remains is verification, with no device evidence yet; desktop and phone built for both roles; gates in PROGRESS.md)
 Contract:       complete (CONTRACT.md: all 25 categories answered)
 Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
 Data:           existing (no held plan)

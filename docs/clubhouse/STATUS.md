@@ -1,6 +1,6 @@
 # Clubhouse status: the single source of truth
 
-Updated 2026-10-12. Read this page first. If another Clubhouse doc disagrees
+Updated 2026-10-16. Read this page first. If another Clubhouse doc disagrees
 with it on current state, rollout, rollback or what is left, this page wins;
 fix the other doc in the same change. `PROGRESS.md` keeps the full history
 (gates, decisions, questions, data gaps, verification log).
@@ -10,27 +10,44 @@ fix the other doc in the same change. `PROGRESS.md` keeps the full history
 - **Production: off.** `golf_clubhouse_ui` is `production: false` in
   `config/feature-flags.yml` (#2188) and the front door
   (`golf_clubhouse_front_door`) is off. Fairway serves coaches and players.
-  Per the 2026-10-12 release check, production serves `main` (`86c43bd8e`;
-  `main` has since moved to `8e48d84d2`).
+  Production serves `87bd60345` (#2189, deployment
+  `dpl_HvAH49nAQ9xkg7wjT5MAZn67PZk6`; `npm run release:status`, 2026-10-16);
+  `main` is six merges ahead (below).
 - **Preview and development: on.** Every Vercel preview and `npm run dev`
   render Clubhouse.
 - **History:** Clubhouse was on in production from 2026-10-08 to 2026-10-11
-  through #2180, by mistake. The owner turned it off with #2188.
+  through #2180, by mistake (Vercel shows about 20 hours of successful
+  deploys with it on). The owner turned it off with #2188.
 - **End state the owner chose (2026-10-11/12): "ready, not on."** Agents make
   it ready; the owner flips it.
-- **The merge train is draft PR
-  [#2189](https://github.com/njrini99-code/helmv3/pull/2189)**
-  (`agent/clubhouse-release`). It is the only branch for Clubhouse release
-  work. It carries the Fairway regressions found during the accidental release
-  (the 30-second `staleTimes` removed; the attachment retry marker is opt-in),
-  the Q-120 app side, the #2157 port (neutral loading frame with an
-  allowlist), the player status change and round-type editor, an honest
+- **#2189, the 2026-10-12 merge train, is merged and deployed** (merged
+  2026-10-14, `87bd60345`). It carried the Fairway regressions found during the
+  accidental release (the 30-second `staleTimes` removed; the attachment retry
+  marker is opt-in), the Q-120 app side, the #2157 port (neutral loading frame
+  with an allowlist), the player status change and round-type editor, an honest
   offline banner, paused email switches, named route errors, a Clubhouse 404,
   one dashboard role resolver for the Clubhouse decision, alias redirects that
   keep the query (`?task`, `?player`, `view=chat` to Ask), task focus
   highlight, review skeleton, catalog regeneration, and the held-migration
-  hardening (lock timeouts, VERIFY blocks, rollback captures, `20260928160000`
-  marked OBSOLETE, the apply order in `HELD.md` and `PROGRESS.md` fixed).
+  hardening.
+- **Merged since #2189, not deployed** (on `main` at `22e542657`):
+  - #2194 section switches: fade through, one top-bar change, a warm inbox.
+  - #2195 the Safari audit fixes (F1 to F24), tab prefetch right after load,
+    and the Safari performance tooling (`scripts/phone/`,
+    `helm-safari-performance`).
+  - #2196 the outcome-validator test time bomb that turned every PR red; the
+    recap style fallback logged as a call.
+  - #2197 the health probe retries one stalled read; Clubhouse Ask passes
+    plain data (Sentry -158); the held-migration probe noise is ignored in
+    Sentry (-1A0, -196).
+  - #2198 the phone's section switcher always shows in the bar.
+  - #2199 phone sign-in: the sheet moves with the keyboard, Sign in moves it
+    once, Log in opens at once.
+- **Release readiness (`agent/clubhouse-readiness`, 2026-10-16, not merged):**
+  main's flaky landing test made deterministic; the Rounds "no data lost"
+  contracts tested (111201, 111202, 110702); server errors tagged
+  `ui=clubhouse` with a Monitoring baseline; the rollback target named; the
+  Messages held-column probe runs once per server instance; this refresh.
 - **Database: nothing to apply.** Every held migration stays HELD (owner,
   2026-10-12; verified correct, not applied). Clubhouse reads nothing that
   only a held migration adds.
@@ -57,10 +74,12 @@ a new production deploy.
 
 1. Every box in "Turn-on criteria" below is ticked.
 2. Set `HELM_CLUBHOUSE_TEAMS` in the Vercel production environment to the
-   canary team UUIDs (`golf_teams.id`, comma-separated). `*` or an empty value
-   means every team, so never leave it unset or empty for a canary, and the
-   same holds when the list shrinks later.
-   `scripts/check-required-env.mjs` refuses a production build with a
+   canary team UUIDs (`golf_teams.id`, comma-separated). An empty, unset or
+   `*` value means every team, so never leave it unset, empty or `*` for a
+   canary, and the same holds when the list shrinks later. The variable
+   already exists in Production, and #2180's description says it was set to
+   `*`: set it explicitly for the canary rather than trusting its current
+   value. `scripts/check-required-env.mjs` refuses a production build with a
    Clubhouse flag on and the variable unset.
 3. In `config/feature-flags.yml`, set `golf_clubhouse_ui`
    `environment.production: true`, then run `npm run flags:generate` and
@@ -122,7 +141,9 @@ unsaved.
 
 ## Turn-on criteria
 
-- [ ] #2189 builds (`npm run build`) and a browser check of it is clean.
+- [ ] The build that will carry the flag (`main` with this PR and whatever
+      else lands first) builds (`npm run build`) and a browser check of it is
+      clean. #2189 itself is merged and live with the flag off.
 - [ ] The owner's real-iPhone pass is clean (see Remaining work, item 3).
 - [ ] The Q-120 server decision is made (`20261001000000`, apply or keep
       holding with the app-side check).
@@ -187,20 +208,22 @@ for the owner). Steps, before the canary deploy:
 
 ## Remaining work, in order
 
-1. `npm run build` and a browser check of #2189.
-2. Before and after screenshots for the #2189 visible changes, logged in each
+1. Deploy the merges waiting on `main` (#2194 to #2199) with the flag off,
+   on the owner's word, then name that deployment as the rollback target.
+2. `npm run build` and a browser check of the build that will carry the flag;
+   before and after screenshots for its visible changes, logged in each
    page's VERIFY.md and placed in the PR description.
 3. Owner real-iPhone pass: coach 20 minutes; player 30 minutes, including
    airplane mode mid-round, killing the app and Recover; VoiceOver, large text
    and dark mode, 10 minutes.
-4. Dark-mode accessibility scan. `scripts/clubhouse/a11y.mjs` has no dark mode
-   yet.
+4. Dark-mode accessibility scan: `scripts/clubhouse/a11y.mjs` has the dark
+   palette now (`CH_SCHEME=light,dark npm run clubhouse:a11y`), but no dark
+   run is logged yet.
 5. Timing for Stats, Home and CoachHelm (`npm run clubhouse:perf`).
-6. Move the remaining role-rule sites to `getGolfDashboardRole`
-   (`src/lib/auth/get-golf-dashboard-role.ts`): the recruiting, `stats/team`,
-   `rounds/new`, `rounds/recover` and `rounds/continue` pages; the
-   round-partial, round-submit, qualifier-setup and message-attachments
-   actions.
+6. Done (checked 2026-10-16): the recruiting, `stats/team`, `rounds/new`,
+   `rounds/recover` and `rounds/continue` pages and the round-partial,
+   round-submit and qualifier-setup actions use `getGolfDashboardRole`;
+   message-attachments uses `pickGolfDashboardRole`.
 7. App Store build items (native, owner's call): a possible reload loop on an
    offline cold start (`ios/App/App/GolfBridgeViewController.swift`, around
    lines 156-165), and the `#F2E6D2` launch flash.
@@ -223,14 +246,17 @@ for the owner). Steps, before the canary deploy:
 - **Roster availability.**
 - **Messages delete** (`20261008160000`, held).
 - **Player CoachHelm Ask.**
-- **Open PRs:** #2096 travel, #2091 vintage theme, #2073 CoachHelm root map,
-  #2048 course factory.
+- **Open PRs:** #2177 phase 7b (near Clubhouse; its description says `*` is
+  not a wildcard, but its code and its README, like `gate.ts` on `main`, treat
+  an empty, unset or `*` `HELM_CLUBHOUSE_TEAMS` as every team), #2193 Turbopack
+  builds in CI, #2105 CoachHelm Ask errors, #2096 travel, #2091 vintage theme,
+  #2073 CoachHelm root map, #2048 course factory.
 
 ## Where things live
 
 | What | Where |
 | --- | --- |
-| The release branch and PR | `agent/clubhouse-release`, [#2189](https://github.com/njrini99-code/helmv3/pull/2189) (draft) |
+| The last release PR | [#2189](https://github.com/njrini99-code/helmv3/pull/2189), merged 2026-10-14 and live (`87bd60345`) |
 | Held migrations, reasons and apply order | `supabase/migrations/HELD.md`; the Clubhouse order is in [PROGRESS.md](PROGRESS.md) "Release with the Clubhouse deploy" |
 | Gates, decisions (D-n), questions (Q-n), data gaps | [PROGRESS.md](PROGRESS.md) |
 | Every state and outcome (CH- codes) | `catalog/` and `config/clubhouse/bridge-contracts.json` |

@@ -11,6 +11,40 @@ with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
 
+## 2026-10-16 — Release readiness: the tracker caught up with the code
+
+From the release review (blockers 2, 5, 8 and 22; `agent/clubhouse-readiness`).
+Current state, turn-on, rollback and monitoring are in [STATUS.md](STATUS.md).
+
+- **Screens table, moved only where the page's checklist
+  (`docs/clubhouse/screens/<page>.md`) already records the evidence.** A
+  section with every item ticked is `done`, a section with some ticked is
+  `doing`, none ticked stays `todo`, and `clubhouse:check`'s own rules still
+  apply. No `doing` cell was lowered, and no phone, motion or verified gate
+  was marked done (there is no current real-iPhone evidence).
+  - CoachHelm and Classes were all `todo` though both are built and tested:
+    `phone-spec` is `done` (2/2 ticked; both phone docs say "Status:
+    approved"); spec, desktop, states, error-tracking, motion, accessibility
+    and performance are `doing`; `wired` is `doing` although its six items are
+    ticked, because `spec` is not done (one tracker item, the lead's, is open);
+    phone and verified stay `todo` (0 ticked).
+  - Roster `states` and Messages `states` are `done` (12/12 each), Settings
+    `wired` is `done` (6/6, `settings-server.test.tsx`), and Rounds
+    accessibility and performance are `doing` (one item ticked each).
+  - The Player app row no longer lists Rounds, CoachHelm and Classes as next.
+- **Manifests (`config/clubhouse/pages/`).** `implementation` is `verifying`
+  where the page is built for its roles and what remains is verification: P002
+  to P007, P009 and P011 to P014. It stays `in_progress` where build or spec
+  work is open: P001 (the bell, sidebar and strip have no crash boundary,
+  review), P008 (design still draft), P010 (spec `doing`, checklist unticked)
+  and P015 (sign-up never run end to end, contract partial). `verification`
+  stays `partial` everywhere. Each PAGE.md says the same.
+- **Rounds:** 110702, 111201 and 111202 moved from reserved to implemented with
+  tests (P011 VERIFY.md "No data lost").
+- **`HELM_CLUBHOUSE_TEAMS`:** every doc now says an empty, unset or `*` value
+  means every team (`clubhouseTeamAllowlist`, `gate.ts`). #2177's description
+  says otherwise; its code and README agree with this.
+
 ## 2026-10-08 to 2026-10-12 — On by mistake, off again, ready-not-on
 
 - **2026-10-08 to 2026-10-11:** #2180 turned `golf_clubhouse_ui` on in
@@ -661,21 +695,21 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Foundation | (shell, tokens, primitives) | done | doing | doing | doing | doing | done | doing | doing | doing | doing | doing |
 | Home | /golf/dashboard | done | doing | doing | doing | doing | done | doing | todo | doing | doing | todo |
-| Roster | /golf/dashboard/roster | done | done | done | doing | doing | done | doing | doing | doing | doing | todo |
+| Roster | /golf/dashboard/roster | done | done | done | done | doing | done | doing | doing | doing | doing | todo |
 | Stats (team) | /golf/dashboard/stats | done | done | done | done | done | doing | todo | doing | done | done | doing |
 | Stats (player) | /golf/dashboard/stats?player= (coach), /golf/dashboard/stats (player) | done | done | done | done | doing | doing | todo | doing | doing | doing | todo |
 | Calendar | /golf/dashboard/calendar (coach and player) | done | done | done | done | doing | done | doing | doing | doing | doing | todo |
-| Messages | /golf/dashboard/messages (coach and player) | done | done | done | doing | doing | done | doing | doing | doing | doing | doing |
-| Settings | /golf/dashboard/settings (coach and player) | done | doing | doing | doing | doing | doing | todo | doing | doing | doing | todo |
+| Messages | /golf/dashboard/messages (coach and player) | done | done | done | done | doing | done | doing | doing | doing | doing | doing |
+| Settings | /golf/dashboard/settings (coach and player) | done | doing | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Qualifiers | /golf/dashboard/qualifiers with /new, /[id], /[id]/edit, /[id]/selection (coach; list and detail also player), /golf/dashboard/my-qualifiers (player) | done | done | done | done | done | done | doing | doing | done | done | doing |
 | Team Hub | /golf/dashboard/team-hub (coach and player) | doing | doing | doing | doing | doing | doing | doing | doing | doing | doing | todo |
-| CoachHelm | /golf/dashboard/coachhelm (coach and player; boards `Coach - CoachHelm.html`, `Player - CoachHelm.html`, phone) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
-| Rounds | /golf/dashboard/rounds with /new, /[id], /[id]/review (player; review also coach; plan `ROUNDS_PLAN.md`, Q-72) | done | doing | doing | doing | doing | done | todo | todo | todo | todo | todo |
-| Classes | /golf/dashboard/classes (player; boards `Player - Classes.html`, phone) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| CoachHelm | /golf/dashboard/coachhelm (coach and player; boards `Coach - CoachHelm.html`, `Player - CoachHelm.html`, phone) | doing | doing | doing | doing | doing | done | todo | doing | doing | doing | todo |
+| Rounds | /golf/dashboard/rounds with /new, /[id], /[id]/review (player; review also coach; plan `ROUNDS_PLAN.md`, Q-72) | done | doing | doing | doing | doing | done | todo | todo | doing | doing | todo |
+| Classes | /golf/dashboard/classes (player; boards `Player - Classes.html`, phone) | doing | doing | doing | doing | doing | done | todo | doing | doing | doing | todo |
 | Recruiting | /golf/dashboard/recruiting (coach; boards in the Clubhouse Recruiting canvas, Q-87) | done | doing | done | doing | doing | done | doing | doing | doing | doing | todo |
 | Auth | /golf/login, /golf/welcome, /golf/signup, /golf/player (signed out; boards design/handoff/auth, Q-96; flag golf_clubhouse_front_door) | done | doing | done | doing | doing | done | doing | doing | doing | doing | todo |
 | Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
-| Player app (all screens) | /golf/dashboard (player role; built: Home, Stats, Calendar, Messages, Qualifiers, Team Hub, Settings; next: Rounds, CoachHelm, Classes) | doing | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Player app (all screens) | /golf/dashboard (player role; built: Home, Stats, Calendar, Messages, Qualifiers, Team Hub, Settings, Rounds, CoachHelm, Classes; each page row carries its own gates) | doing | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 <!-- clubhouse:screens:end -->
 
 ## Release with the Clubhouse deploy (owner-run)
@@ -1709,8 +1743,9 @@ decision named.
 - Q-120 (open, 2026-09-30; held) Submit has no server-side version check, so a
   stale device can overwrite newer holes. Draft migration
   `20261001000000_submit_round_expected_updated_at.sql` is HELD for review.
-  The app sends `expected_updated_at` on `agent/clubhouse-release`, not in the
-  build production serves; the migration is not applied to production.
+  The app has sent `expected_updated_at` since #2189 (merged 2026-10-14, live in
+  `87bd60345`); the migration is not applied to production, so the server does
+  not check it yet.
 - Q-121 (open, 2026-09-30; deferred) The Demo write journeys (Calendar
   create/edit/cancel, round submit) push to the whole Demo roster, and the one
   device token on it is the owner's test player phone. Emails can be stopped

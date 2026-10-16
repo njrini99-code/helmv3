@@ -137,7 +137,7 @@ Data:            stats_analytics: golf_teams, golf_team_members, golf_players, g
 
 ```text
 Design:         approved
-Implementation: in_progress (desktop and phone built; gates in PROGRESS.md)
+Implementation: verifying (2026-10-16: what remains is verification, with no device evidence yet; desktop and phone built; gates in PROGRESS.md)
 Contract:       complete (CONTRACT.md: all 25 categories answered)
 Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
 Data:           existing (no schema change)

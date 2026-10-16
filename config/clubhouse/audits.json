@@ -213,7 +213,7 @@
     "date": "2026-10-08",
     "scope": "Coach phone screens on the iPhone 17 Pro simulator against the Vercel preview: frame-timed transitions, gestures, scroll, and the production query and RLS cost behind them.",
     "status": "in_progress",
-    "note": "Tab switches 715-1350 ms with full skeletons; golf_shots/golf_holes RLS re-checked per row (553 ms vs 4.7 ms raw). Fix plan inside.",
+    "note": "measured 2026-10-08: tab switches 715-1350 ms with full skeletons; golf_shots/golf_holes RLS re-checked per row (553 ms vs 4.7 ms raw). Since then: the RLS fix is live (both SELECT policies read golf_readable_round_ids(), pg_policies 2026-10-16), and tab prefetch, section switches and the Safari audit fixes landed (#2194, #2195). Open: a device re-measure of the current code (STATUS.md, the owner's iPhone pass).",
     "allPages": true
   },
   {

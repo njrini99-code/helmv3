@@ -152,7 +152,8 @@ None.
   (`unauthenticated`, `switching-not-permitted`, `unauthorized`) are mapped to a
   sentence in `team-switch.ts`; a new reason shows the default hint until it is
   mapped.
-- With `HELM_CLUBHOUSE_TEAMS` set, `isClubhouseFor` reads the active team: a
+- With `HELM_CLUBHOUSE_TEAMS` set to team ids (an empty, unset or `*` value
+  means every team), `isClubhouseFor` reads the active team: a
   head coach who switches to a team that is not listed gets Fairway for it (the
   allowlist, Q-131).
 - The More sheet's `max-height` and scroll (`shell.css`) apply to every role's

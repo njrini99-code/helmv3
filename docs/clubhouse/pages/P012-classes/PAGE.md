@@ -136,7 +136,7 @@ Legacy:          src/app/golf/(dashboard)/dashboard/classes/LegacyClassesPage.ts
 
 ```text
 Design:         approved
-Implementation: in_progress (desktop and phone built for players; gates in PROGRESS.md)
+Implementation: verifying (2026-10-16: what remains is verification, with no device evidence yet; desktop and phone built for players; gates in PROGRESS.md)
 Contract:       complete (CONTRACT.md: all 25 categories answered; the 29 hand contracts are reserved until
                 their tests carry the Bridge IDs, VERIFY.md)
 Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)

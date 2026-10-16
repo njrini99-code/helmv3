@@ -480,7 +480,8 @@ Owner actions (not agent work):
 
 - Apply the held migrations in the order in `supabase/migrations/HELD.md`,
   then recompute strokes gained (Q-89) and regenerate CoachHelm (Q-124).
-- Set `HELM_CLUBHOUSE_TEAMS` before the flag flip; the flip is a deploy.
+- Set `HELM_CLUBHOUSE_TEAMS` to the canary team ids before the flag flip
+  (an empty, unset or `*` value means every team); the flip is a deploy.
 - Phone sign-off (Q-133) and the preview pass (F-05).
 
 ## Links
