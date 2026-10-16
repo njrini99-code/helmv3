@@ -1,5 +1,28 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-16 — Film is hidden until its migration is applied
+
+Owner default (release blocker 18): recruit film uploads need
+`supabase/migrations/20260930140000_recruit_documents_film.sql`, which is held,
+so until then Storage refused every film after the coach had picked it, titled
+it and waited for the transfer. Film is now hidden behind one constant,
+`RECRUIT_FILM_ENABLED` in `src/clubhouse/data/recruiting-film.ts` (false):
+
+- The upload dialog offers Note, Schedule, Transcript and Other; no Film.
+- The file picker takes no video types, so an iPhone no longer offers the Photo
+  Library for it, and a video that is dropped or chosen anyway is refused in the
+  dialog before anything is sent (CH-14106, whose body no longer names film).
+- The desktop drop hint is "Drop a file here to add it." and the empty row reads
+  "Schedules, transcripts and notes, private to your staff." (CH-14305).
+- A document already filed as Film keeps its Film tag in the list. The preview's
+  sample film row shows only with film on (no video can be stored until then).
+
+Turning film back on after the apply is that one constant; the film-on page is
+unchanged and still tested (`recruiting-upload.test.tsx` and
+`recruiting.test.tsx` run with it on, `recruiting-film-off.test.tsx` with the
+default). The server actions are unchanged. HELD.md's row and the held data
+plan name the constant.
+
 ## 2026-10-15 — Ink that holds at night
 
 Dark mode: the offered chip and stage dot and the prospect avatar's initials now take `--ch-on-fill-*` / `--ch-forest-*` ink, which

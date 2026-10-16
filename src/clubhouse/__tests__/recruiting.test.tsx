@@ -45,6 +45,9 @@ vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: () => flag.on }));
 vi.mock('@/components/fairway', () => ({ Button: () => null, EmptyState: () => null }));
 vi.mock('@/components/fairway/pages/recruiting', () => ({ FairwayRecruitingPage: () => <p>The current recruiting page</p> }));
 vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (c: string) => c }));
+// The page with film on, as it is once the held film migration is applied (data/recruiting-film.ts); film off, the default
+// until then, is recruiting-film-off.test.tsx.
+vi.mock('../data/recruiting-film', () => ({ RECRUIT_FILM_ENABLED: true }));
 
 import RecruitingPage from '@/app/golf/(dashboard)/dashboard/recruiting/page';
 import RecruitingLoading from '@/app/golf/(dashboard)/dashboard/recruiting/loading';
