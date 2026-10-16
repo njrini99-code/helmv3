@@ -76,22 +76,49 @@ a new production deploy.
 
 ## Rollback
 
+**The rollback target** (recorded 2026-10-16 with read-only Vercel reads and
+`npm run release:status`):
+
+| | |
+| --- | --- |
+| Deployment | `dpl_HvAH49nAQ9xkg7wjT5MAZn67PZk6` |
+| URL | `https://helmv3-6licoabp5-nick-rinis-projects.vercel.app` |
+| Serves | `87bd60345` (#2189) with Clubhouse off: the flag is compiled off in that build, whatever `HELM_CLUBHOUSE_TEAMS` says. `release:status`: "production : 87bd60345 (verified in the served bundle)" |
+| Created | 2026-10-14 00:25 UTC from the CLI; `helmsportslabs.com` resolves to it today |
+
+**Fastest, seconds and no build:** promote it, from the linked checkout. Not
+run; the owner says when.
+
+    SCOPE=$(node -p 'require("./.vercel/project.json").orgId')
+    ./node_modules/.bin/vercel promote dpl_HvAH49nAQ9xkg7wjT5MAZn67PZk6 --scope "$SCOPE" --yes
+    npm run release:status    # expect "production : 87bd60345"
+
+A promote also drops whatever was deployed after it. If a newer flag-off
+production deploy goes out before the canary (the six merges waiting on
+`main`, for example), that deployment becomes the target: record its id here
+in its place.
+
+**Never promote `dpl_DowNH8VfxSXvSp5ggp2ZMkHMZpCb`**
+(`helmv3-2wdem48lr-nick-rinis-projects.vercel.app`, created 2026-10-01 00:43
+UTC, `ef6e017a2`). It was the 2026-09-30 train's rollback target, and Vercel
+still marks it a rollback candidate (`isRollbackCandidate: true` on
+2026-10-16), so the dashboard's Instant Rollback list offers it. Promoting it
+would undo #2170 and everything after it.
+
+**Slower ways:**
+
 - **One team:** remove its UUID from `HELM_CLUBHOUSE_TEAMS` and deploy. If it
   is the last team on the list, do the flag-off commit below instead: an empty
   or unset value means every team (`clubhouseTeamAllowlist` in
   `src/clubhouse/gate.ts`), so emptying the list would turn Clubhouse on for
   everyone.
-- **Everyone:** a flag-off commit (`production: false`, `npm run
-  flags:generate`) and a deploy.
-- **No schema to undo.** Both UIs share the round engine and the device's
-  offline stores, so a round queued under Clubhouse replays under Fairway. An
-  open tab keeps Clubhouse until it reloads; auto-reload waits while a round
-  is unsaved.
-- **Before turn-on, name the rollback deployment.** Record the current
-  flag-off production deployment id here so a promote back to it is one step.
-- **Never promote `dpl_DowNH8VfxSXvSp5ggp2ZMkHMZpCb` (`ef6e017a2`).** It was
-  the 2026-09-30 train's rollback target. Promoting it now would undo #2170
-  and everything after it.
+- **Everyone, with a build (4 to 11 minutes):** a flag-off commit
+  (`production: false`, `npm run flags:generate`) and a deploy.
+
+**No schema to undo.** Both UIs share the round engine and the device's
+offline stores, so a round queued under Clubhouse replays under Fairway. An
+open tab keeps Clubhouse until it reloads; auto-reload waits while a round is
+unsaved.
 
 ## Turn-on criteria
 
@@ -99,7 +126,8 @@ a new production deploy.
 - [ ] The owner's real-iPhone pass is clean (see Remaining work, item 3).
 - [ ] The Q-120 server decision is made (`20261001000000`, apply or keep
       holding with the app-side check).
-- [ ] The rollback deployment is named above.
+- [x] The rollback deployment is named (Rollback, 2026-10-16). Name it again
+      if a newer flag-off deploy goes out before the canary.
 - [ ] After the canary deploy: no new Sentry issue families on Clubhouse
       routes for a full weekday (the `ui:clubhouse` search in Monitoring,
       against its baseline).
