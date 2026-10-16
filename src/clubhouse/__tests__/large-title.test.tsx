@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { renderHook } from '@testing-library/react';
 import { useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CH_LARGE_TITLES, chOpensWithLargeTitle, findLargeTitle, isTucked, usePhoneLargeTitle, watchLargeTitle } from '../shell/large-title';
+import { CH_LARGE_TITLES, findLargeTitle, isTucked, usePhoneLargeTitle, watchLargeTitle } from '../shell/large-title';
 
 /**
  * Phone large titles (owner 2026-10-08, the cardless phone pass): the bar's title waits while the page's own large
@@ -171,7 +171,17 @@ describe('the CSS that hides and fades the bar title', () => {
     for (const sel of CH_LARGE_TITLES) expect(has, sel).toContain(sel);
     expect(has).toContain(':not(.ch-sr-only, .ch-pscreen *, dialog *)');
     expect(block).toContain("[data-ui='clubhouse']:not([data-phone-hero]):has(");
-    expect(block).toMatch(/\.ch-topbar:not\(\[data-large-title='tucked'\]\)\s*:is\(\.ch-topbar__ptitle, \.ch-topbar__pslot > \.ch-pbar__title, \.ch-topbar__pstand \.ch-pbar__title\) \{\s*opacity: 0;\s*translate: 0 3px;/);
+    expect(block).toMatch(/\.ch-topbar:not\(\[data-large-title='tucked'\]\)\s*:is\(\.ch-topbar__pslot > \.ch-pbar__title, \.ch-topbar__pstand \.ch-pbar__title\):not\(:has\(\.ch-sw\)\) \{\s*opacity: 0;\s*translate: 0 3px;/);
+  });
+  it("never hides the bar's section switcher, whatever the page draws under it (owner, 2026-10-16)", () => {
+    // Home's green hero swaps its own title in place; any other rule that fades the section title out is the old hiding.
+    const rules = shell.split('}').filter((r) => /opacity: 0;/.test(r) && r.includes('.ch-topbar__ptitle'));
+    for (const rule of rules) expect(/(?<!:not\()\[data-phone-hero\]/.test(rule), rule.slice(0, 160)).toBe(true);
+    // Roster, Settings, Qualifiers and Recruiting hold the switcher in their own bar title: it is never the one hidden.
+    const pushed = shell.split('}').filter((r) => /opacity: 0;/.test(r) && r.includes('.ch-pbar__title'));
+    expect(pushed.length).toBeGreaterThan(0);
+    for (const rule of pushed) expect(rule, rule.slice(0, 160)).toContain(':not(:has(.ch-sw))');
+    expect(shell).not.toContain('data-switch-quiet');
   });
   it('fades on opacity and translate at the quick duration, and swaps at once with reduced motion or Animations off', () => {
     expect(block).toMatch(/transition:\s*opacity var\(--ch-dur-quick\) var\(--ch-ease\),\s*translate var\(--ch-dur-quick\) var\(--ch-ease\);/);
@@ -193,32 +203,5 @@ describe('the More sheet is native inset grouped rows on the phone', () => {
     expect(block).toMatch(/\.ch-more__list,\s*\.ch-more__me \{[^}]*box-shadow: none;/);
     expect(block).toMatch(/\.ch-more__row \+ \.ch-more__row::before \{[^}]*left: 54px;/);
     expect(block).toMatch(/\.ch-more__row\[aria-current='true'\] \.ch-more__ic \{[^}]*background: none;/);
-  });
-});
-
-describe('chOpensWithLargeTitle: what a section switch knows about the page it is going to (owner, 2026-10-15)', () => {
-  it('knows the sections that are the same for both roles before any is seen', () => {
-    expect(chOpensWithLargeTitle('/golf/dashboard/roster')).toBe(true);
-    expect(chOpensWithLargeTitle('/golf/dashboard/settings/')).toBe(true);
-    expect(chOpensWithLargeTitle('/golf/dashboard/calendar')).toBe(false);
-    expect(chOpensWithLargeTitle('/golf/dashboard')).toBe(false);
-    expect(chOpensWithLargeTitle('/golf/dashboard/stats')).toBeUndefined();
-  });
-
-  it("learns a route from its loaded page, not from the page's skeleton", () => {
-    window.history.replaceState(null, '', '/golf/dashboard/stats');
-    const { bar, canvas } = mount('<main aria-busy="true" aria-label="Loading stats"></main>');
-    const stop = watchLargeTitle(bar, canvas);
-    expect(chOpensWithLargeTitle('/golf/dashboard/stats')).toBeUndefined();
-    stop();
-    const loaded = mount('<header class="ch-stm-head"><h1>Team stats</h1></header>');
-    const stop2 = watchLargeTitle(loaded.bar, loaded.canvas);
-    expect(chOpensWithLargeTitle('/golf/dashboard/stats')).toBe(true);
-    stop2();
-    window.history.replaceState(null, '', '/golf/dashboard/calendar');
-    const plain = mount('<h2>October</h2>');
-    const stop3 = watchLargeTitle(plain.bar, plain.canvas);
-    expect(chOpensWithLargeTitle('/golf/dashboard/calendar')).toBe(false);
-    stop3();
   });
 });

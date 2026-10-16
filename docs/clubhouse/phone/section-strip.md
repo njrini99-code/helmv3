@@ -12,10 +12,11 @@ Desktop keeps the sidebar.
   thumb dock (`PhoneDock`, `ThumbDock`) stay and sit on the bottom safe area.
 - **The section name is the switcher.** On a section's own page the top bar's
   title is a button with a small chevron:
-  "Roster ⌄". The green Home bar shows "Home ⌄" beside the team mark. Where a
-  page draws its own large title, the bar's
-  title stays hidden until it tucks (as before), and tapping the large title
-  opens the strip too.
+  "Roster ⌄". The green Home bar shows "Home ⌄" beside the team mark. The
+  bar's title shows on every section page, also where the page draws its own
+  large title ("Team stats"), which is the page's heading and opens nothing
+  (owner, 2026-10-16: on Stats the switcher seemed gone while the large title
+  was in view).
 - **The strip.** Tapping the title slides a row of pills out from under the top
   bar: every section the role has,
   in the sidebar's order with the old tabs first, then Settings, then the

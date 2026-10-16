@@ -1,5 +1,18 @@
 # Clubhouse changelog
 
+## 2026-10-16 — The section switcher always shows in the phone's bar
+
+Owner, testing the preview: on Stats the switcher at the top seemed to be gone.
+A section page that draws its own large title (Stats, Roster, Rounds,
+Qualifiers, Recruiting, Settings) hid the bar's "Stats ⌄" until that title
+scrolled under the bar, and the large title opened the strip instead. The
+bar's title now shows on every section page, as on Home and Calendar; the
+large title stays as the page's heading, with no chevron, and opens nothing.
+A pushed page still keeps its bar title back until its own large title tucks.
+The switch-time "quiet" title, which only kept the bar's name out of the way
+of a page that would hide it, is gone with it (`shell.css`, `section-switch`,
+`TopBar`, `large-title`, `ClubhouseFrame`).
+
 ## 2026-10-16 — Held pages dated truthfully; Back to Stats lands in place
 
 From the code review of PR #2195 (`use-prefetch-tabs.ts`, `lib/pop-mark.ts`,

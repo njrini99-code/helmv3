@@ -1,5 +1,13 @@
 # P001 — Shell: changelog
 
+## 2026-10-16 — The section switcher always shows in the phone's bar
+
+Owner, testing the preview: on Stats the switcher seemed gone. The bar's
+section title no longer hides behind a page's large title; the large title is
+the page's heading only (no chevron, no tap). A pushed page's bar title still
+waits for its large title to tuck. The switch-time "quiet" title is removed.
+Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-14 — The frame clears the Dynamic Island in landscape
 
 - **Safe areas on the desktop frame** (shell.css `.ch-app`): a phone turned

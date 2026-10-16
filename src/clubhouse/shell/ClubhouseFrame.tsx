@@ -204,7 +204,6 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
       data-phone-immersive={immersive ? '' : undefined}
       data-phone-notabs={noTabs || fullScreen ? '' : undefined}
       data-phone-hero={hero ? '' : undefined}
-      data-phone-section={sections?.root ? '' : undefined}
       data-strip={sections?.open ? 'open' : undefined}
     >
       {children}
