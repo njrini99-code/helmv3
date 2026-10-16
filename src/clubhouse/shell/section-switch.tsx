@@ -10,7 +10,6 @@ import { haptic } from '../lib/haptics';
 import { CH_DUR, CH_EASE, chSpring, chSpringCurve } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from '../ui/Icon';
-import { chOpensWithLargeTitle, findLargeTitle } from './large-title';
 import { phoneSectionFor, phoneSectionsFor, type ChNavItem, type ChRole } from './nav';
 import { badgeCount } from './badge-count';
 
@@ -43,10 +42,6 @@ export interface ChSectionSwitch {
   /** A section switch has just landed (a moment after its page arrives): the bar can settle into the new page's layout
    *  with motion instead of jumping to it. */
   arrived: boolean;
-  /** The switch's page will open with its own large title, or the bar shows a title only because the old page was
-   *  scrolled: the bar's title steps out at the tap rather than naming a section it will hide again on arrival. It
-   *  holds until the page itself (not its skeleton) is there. */
-  quiet: boolean;
   /** The address is its section's own page (a root), where the bar's gestures apply. */
   root: boolean;
   open: boolean;
@@ -108,7 +103,6 @@ export function SectionSwitchProvider({
   const [accountOpen, setAccountOpen] = useState(false);
   const [dir, setDir] = useState<1 | -1>(1);
   const [arrived, setArrived] = useState(false);
-  const [quiet, setQuiet] = useState(false);
   const pendingRef = useRef(pending);
   pendingRef.current = pending;
   const progress = useMotionValue(0);
@@ -179,7 +173,6 @@ export function SectionSwitchProvider({
       if (shownRef.current?.id !== item.id) {
         haptic('select');
         setDir(indexOf(item) >= from ? 1 : -1);
-        setQuiet(quietFor(item));
         setPending(item);
       }
       setOpen(false);
@@ -193,7 +186,6 @@ export function SectionSwitchProvider({
       if (!next) return false;
       haptic('select');
       setDir(delta);
-      setQuiet(quietFor(next));
       setPending(next);
       if (openRef.current) setOpen(false);
       router.push(next.href);
@@ -209,29 +201,12 @@ export function SectionSwitchProvider({
     if (openRef.current) setOpen(false);
     // Reached another way (Back, a link): nothing of a switch is left standing, even one cut short.
     if (!switched) {
-      setQuiet(false);
       setArrived(false);
       return;
     }
     setArrived(true);
     const id = window.setTimeout(() => setArrived(false), 600);
-    // A quiet switch keeps the bar's title out while the route's skeleton stands in for the page, which may not draw
-    // the large title the page will (a parent route's skeleton, before the section's own is fetched).
-    const canvas = document.getElementById('ch-canvas');
-    const busy = () => !!canvas?.querySelector(ROUTE_SKELETON);
-    let watch: MutationObserver | null = null;
-    if (busy()) {
-      watch = new MutationObserver(() => {
-        if (busy()) return;
-        watch?.disconnect();
-        setQuiet(false);
-      });
-      watch.observe(canvas!, { childList: true, subtree: true });
-    } else setQuiet(false);
-    return () => {
-      window.clearTimeout(id);
-      watch?.disconnect();
-    };
+    return () => window.clearTimeout(id);
   }, [pathname, setOpen]);
 
   // Esc closes the strip, and focus goes back to the title.
@@ -246,28 +221,12 @@ export function SectionSwitchProvider({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, setOpen]);
 
-  // On a section's own page, its large title opens the strip too (the bar's title hides behind it until it tucks).
-  const rootRef = useRef(root);
-  rootRef.current = root;
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (!rootRef.current || e.defaultPrevented || !window.matchMedia(PHONE).matches) return;
-      const t = e.target instanceof Element ? e.target : null;
-      if (!t || t.closest('a, button, input, select, textarea, label, [role="button"]')) return;
-      const canvas = document.getElementById('ch-canvas');
-      const title = canvas ? findLargeTitle(canvas) : null;
-      if (title?.contains(t)) setOpen(!openRef.current);
-    };
-    document.addEventListener('click', onClick);
-    return () => document.removeEventListener('click', onClick);
-  }, [setOpen]);
-
   const counts = useMemo(() => Object.fromEntries(sections.map((s) => [s.id, badgeCount(s, badges, shell)])), [sections, badges, shell]);
   const attention = sections.some((s) => s.id !== shown?.id && (counts[s.id] ?? 0) > 0);
 
   const value = useMemo<ChSectionSwitch>(
-    () => ({ enabled: true, sections, current, shown, switching, arrived, quiet, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen, setAccountOpen }),
-    [sections, current, shown, switching, arrived, quiet, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen],
+    () => ({ enabled: true, sections, current, shown, switching, arrived, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen, setAccountOpen }),
+    [sections, current, shown, switching, arrived, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -387,20 +346,6 @@ function land(anims: Animation[]): void {
     }
     a.cancel();
   }
-}
-
-/** A route's loading skeleton (RouteFrame's mark). */
-const ROUTE_SKELETON = "main[aria-busy='true'][aria-label^='Loading']";
-
-/**
- * Whether a switch to `item` keeps the bar's title out of the way (`quiet`): its page is known to open with a large
- * title, or the bar shows a title now only because the old page's large title is scrolled under it (the new page opens
- * at its top). A page with no large title keeps the name in its bar, so the new name comes in at the tap.
- */
-function quietFor(item: ChNavItem): boolean {
-  const known = chOpensWithLargeTitle(item.href);
-  if (known !== undefined) return known;
-  return document.querySelector('.ch-topbar')?.getAttribute('data-large-title') === 'tucked';
 }
 
 /** Resistance: free travel slows as it grows; past either end it barely moves. */

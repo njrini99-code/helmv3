@@ -4,9 +4,10 @@ import { useEffect, type RefObject } from 'react';
 
 /**
  * The phone's large titles (iOS large-title behaviour, owner 2026-10-08 "cardless, native-feeling phone Clubhouse").
- * A page that opens with its own large title ("Roster", "Lineup decisions", "Team stats") no longer shows its name
- * twice: while the large title is in view the bar's title is hidden, and as the large title scrolls up under the bar
- * the bar's title fades in. Pages with no large title keep the bar's title.
+ * The bar's section switcher always shows (owner, 2026-10-16: on Stats it seemed gone while "Team stats" was in view).
+ * A pushed page that opens with its own large title does not show its name twice: while the large title is in view
+ * the bar's pushed title is hidden, and as the large title scrolls up under the bar it fades in. Pages with no large
+ * title keep the bar's title.
  *
  * Which element is a page's large title is decided here, once, rather than on each screen: a screen can opt in with
  * `data-ch-large-title`, and the screens that already draw one are listed by their own title class. The same list
@@ -53,35 +54,6 @@ export function isTucked(entry: Pick<IntersectionObserverEntry, 'isIntersecting'
 const PHONE = '(max-width: 820px)';
 
 /**
- * Whether each section's page opens with a large title: known for the sections that are the same for both roles
- * (Roster, Rounds, Qualifiers, Recruiting and Settings draw one; Home's green bar, Calendar, Team Hub, Messages and
- * Classes keep the name in the bar), then as last seen on this device for the rest (Stats and CoachHelm differ by role
- * and view). A page seen overrides its seed. This tab only.
- */
-const seen = new Map<string, boolean>([
-  ['/golf/dashboard', false],
-  ['/golf/dashboard/calendar', false],
-  ['/golf/dashboard/team-hub', false],
-  ['/golf/dashboard/messages', false],
-  ['/golf/dashboard/classes', false],
-  ['/golf/dashboard/roster', true],
-  ['/golf/dashboard/rounds', true],
-  ['/golf/dashboard/qualifiers', true],
-  ['/golf/dashboard/recruiting', true],
-  ['/golf/dashboard/settings', true],
-]);
-const routeOf = (path: string) => path.replace(/\/$/, '') || '/';
-
-/**
- * Whether the page at `path` opens with a large title, once a page there has been seen; undefined before. A section
- * switch reads it to keep the bar's title out of the way of a page that will draw its own (owner, 2026-10-15: the
- * new name came up in the bar for a tab switch made while scrolled down, then went away as the page landed).
- */
-export function chOpensWithLargeTitle(path: string): boolean | undefined {
-  return seen.get(routeOf(path));
-}
-
-/**
  * Watches the page's large title and the page's scroll for the shell's top bar `bar`, inside `canvas`. Sets on the
  * bar `data-large-title="tucked"` once the large title is under it (the bar's title fades in), and `data-scrolled`
  * once any content has scrolled under it (the bar's scroll edge). One IntersectionObserver on the title and one
@@ -97,8 +69,6 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
   };
   const watch = () => {
     const next = findLargeTitle(canvas);
-    // A loaded page (not its skeleton) says whether this route opens with a large title.
-    if (!canvas.querySelector("main[aria-busy='true']")) seen.set(routeOf(window.location.pathname), !!next);
     if (next === target) return;
     io?.disconnect();
     io = null;

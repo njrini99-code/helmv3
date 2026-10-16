@@ -2854,12 +2854,12 @@ html[data-fw-theme='dark'] .ch-offline {
   }
 }
 
-/* Phone large titles (shell/large-title.tsx, owner 2026-10-08: "cardless, native-feeling phone Clubhouse"). A page that
-   opens with its own large title does not also show its name in the bar: while the large title is in view the bar's
-   title is hidden, and as it scrolls up under the bar (the bar is marked data-large-title="tucked") the bar's title
-   fades in, on opacity and a 3px rise only. The :has() list is CH_LARGE_TITLES and must stay in step with it; it holds
-   from the first paint, so a loaded page never shows the bar's title and then takes it away (a skeleton matches only if
-   it draws the title's block: Settings and Recruiting today). The bar's title keeps its
+/* Phone large titles (shell/large-title.tsx, owner 2026-10-08: "cardless, native-feeling phone Clubhouse"). The bar's
+   section switcher (.ch-topbar__ptitle) always shows, over a page's large title too (owner, 2026-10-16: on Stats the
+   switcher seemed gone while "Team stats" was in view). A pushed page that opens with its own large title does not also
+   show its name in the bar: while the large title is in view the bar's pushed title is hidden, and as it scrolls up
+   under the bar (the bar is marked data-large-title="tucked") it fades in, on opacity and a 3px rise only. The :has()
+   list is CH_LARGE_TITLES and must stay in step with it; it holds from the first paint. The bar's title keeps its
    place in the accessibility tree and stays the focus target for a pushed page. Pages with no large title, the green
    hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
    it (data-scrolled), drawn on ::before because ::after is the sheet's lip. */
@@ -2883,27 +2883,9 @@ html[data-fw-theme='dark'] .ch-offline {
         ):not(.ch-sr-only, .ch-pscreen *, dialog *)
     )
     .ch-topbar:not([data-large-title='tucked'])
-    :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
     opacity: 0;
     translate: 0 3px;
-  }
-  /* A section switch whose page opens with its own large title, or made while the old page was scrolled (the new one
-     opens at its top): the bar's title steps out at the tap, the way it will be on arrival, rather than naming the
-     section and then taking the name away as the page lands (owner, 2026-10-15). */
-  [data-ui='clubhouse']
-    .ch-topbar[data-switch-quiet]
-    :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
-    opacity: 0;
-    translate: 0 3px;
-  }
-  /* The other way: a switch from a page whose large title is in view to one that keeps its name in the bar shows the
-     new name at the tap, coming in from its side, over the old page as it goes. (The two ids in `:has()` outrank the
-     large-title rule above, which still sees the old page's title; the sheet loads twice, so order can't decide.) */
-  [data-ui='clubhouse']:not([data-phone-hero]):has(#ch-canvas #ch-content)
-    .ch-topbar[data-switching]:not([data-switch-quiet])
-    :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
-    opacity: 1;
-    translate: 0 0;
   }
   [data-ui='clubhouse'] .ch-topbar::before {
     position: absolute;
@@ -3188,61 +3170,6 @@ html[data-fw-theme='dark'] .ch-offline {
     display: none;
   }
 
-  /* On a section's own page its large title opens the strip too, so it carries the chevron (turning with the strip). */
-  [data-ui='clubhouse'][data-phone-section]
-    #ch-canvas
-    :is(
-      [data-ch-large-title],
-      .ch-rsm-title,
-      .ch-recm-title,
-      .ch-setm-title,
-      .ch-qf-head h1,
-      .ch-rd-h h1,
-      .ch-hl-h__t,
-      .ch-stm-head h1
-    ):not(.ch-sr-only, .ch-pscreen *) {
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  [data-ui='clubhouse'][data-phone-section]
-    #ch-canvas
-    :is(
-      [data-ch-large-title],
-      .ch-rsm-title,
-      .ch-recm-title,
-      .ch-setm-title,
-      .ch-qf-head h1,
-      .ch-rd-h h1,
-      .ch-hl-h__t,
-      .ch-stm-head h1
-    ):not(.ch-sr-only, .ch-pscreen *)::after {
-    display: inline-block;
-    width: 0.36em;
-    height: 0.36em;
-    margin-left: 0.34em;
-    border-right: 0.09em solid currentColor;
-    border-bottom: 0.09em solid currentColor;
-    opacity: 0.38;
-    content: '';
-    vertical-align: 0.2em;
-    rotate: 45deg;
-    transition: rotate var(--ch-dur-base) var(--ch-ease), translate var(--ch-dur-base) var(--ch-ease);
-  }
-  [data-ui='clubhouse'][data-phone-section][data-strip='open']
-    #ch-canvas
-    :is(
-      [data-ch-large-title],
-      .ch-rsm-title,
-      .ch-recm-title,
-      .ch-setm-title,
-      .ch-qf-head h1,
-      .ch-rd-h h1,
-      .ch-hl-h__t,
-      .ch-stm-head h1
-    ):not(.ch-sr-only, .ch-pscreen *)::after {
-    rotate: 225deg;
-    translate: 0 0.12em;
-  }
   [data-ui='clubhouse'][data-motion='off'] :is(.ch-sw, .ch-strip__pill),
   [data-ui='clubhouse'][data-motion='off'] #ch-canvas *::after {
     transition: none;
