@@ -82,6 +82,17 @@ const sharedIgnoreErrors = [
   // column on PGRST202, so until the apply each load would raise one auto-captured
   // event for a call that worked. Delete this line in the change that applies it.
   /Could not find the function public\.golf_qualifier_selection_reasons\(/,
+  // Same shape: helm_debug_record_trace_steps is the flight recorder's batch writer from the HELD
+  // 20261007106000_helm_debug_record_trace_steps_batch.sql. helm-flight-recorder.ts falls back to per-step
+  // writes on PGRST202, so every save raised one auto-captured event for a write that landed (Sentry -196).
+  // The `s\(` anchor keeps the live single-step helm_debug_record_trace_step paging. Delete with the apply.
+  /Could not find the function public\.helm_debug_record_trace_steps\(/,
+  // A HELD column, the same way: golf_conversation_participants.hidden_at comes with the HELD
+  // 20261008160000_golf_conversation_hidden_at.sql. conversation-hide.ts probes it and reads 42703 as
+  // "not available yet", so each Clubhouse Messages load raised one event for a probe that worked (Sentry
+  // -1A0, 87 events in a day). Named by table and column so any other missing column still pages. Delete
+  // this line in the change that applies the migration.
+  /column golf_conversation_participants\.hidden_at does not exist/,
   /Refresh Token Not Found/,
   // Baseball expected control-flow throws. withBaseballAction already
   // classifies these as handled/expected (admin_events + Sentry warning with

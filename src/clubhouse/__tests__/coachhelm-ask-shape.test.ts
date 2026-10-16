@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
 import {
   ASK_STARTERS,
+  askSuggestionSub,
   buildAskSuggestions,
   conversationTitle,
   filterConversations,
@@ -78,18 +79,22 @@ describe('filterConversations and titles', () => {
 });
 
 describe('buildAskSuggestions: only questions the data can answer', () => {
-  it('the suggestions are plain data, so they can cross from the server to a client component (JAVASCRIPT-NEXTJS-158)', () => {
-    const s = buildAskSuggestions({ openers: ['Brief me on the team', 'Where is the team losing the most strokes?'], recentCovered: 5, rosterCount: 8 });
-    expect(JSON.parse(JSON.stringify(s))).toEqual(s);
-    expect(s.find((x) => x.id === 'brief')!.sub).toBe('on {team}');
-  });
-
   const openers = ['Brief me on Finley', 'Where is the team losing the most strokes?'];
   it('offers brief, strokes, trending and this week when the data supports them', () => {
     const s = buildAskSuggestions({ openers, recentCovered: 5, rosterCount: 8 });
     expect(s.map((x) => x.id)).toEqual(['brief', 'strokes', 'trending', 'week']);
     expect(s[0]!.text).toBe('Brief me on Finley');
-    expect(s[0]!.sub.replace('{team}', 'Finley')).toBe('on Finley');
+    expect(askSuggestionSub(s[0]!, 'Finley')).toBe('on Finley');
+    expect(askSuggestionSub(s[1]!, 'Finley')).toBe('where the team loses most');
+  });
+
+  // Sentry JAVASCRIPT-NEXTJS-158: the suggestions cross the server -> client boundary as props of the
+  // Ask Home, and a function in them made the RSC render throw "Functions cannot be passed directly to
+  // Client Components" on /golf/dashboard/coachhelm. Every field must survive a JSON round trip.
+  it('is plain data that can cross the server/client boundary (no functions)', () => {
+    const s = buildAskSuggestions({ openers, recentCovered: 5, rosterCount: 8 });
+    for (const x of s) for (const v of Object.values(x)) expect(typeof v).not.toBe('function');
+    expect(JSON.parse(JSON.stringify(s))).toEqual(s);
   });
 
   it('trending up needs three players with a recent round, as the strokes opener does', () => {

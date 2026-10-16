@@ -46,7 +46,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { compose } from '@/lib/coachhelm/v3/llm/compose';
+import { compose, markCallFellBackToTemplate } from '@/lib/coachhelm/v3/llm/compose';
 import { buildRecapEvidencePacket, buildRecapFieldEvidence } from '@/lib/coachhelm/v3/llm/recap-evidence';
 import { buildDeterministicRecap, checkRecapStyle } from '@/lib/coachhelm/v3/llm/recap-style';
 import { isFlagEnabled } from '@/lib/flags';
@@ -643,6 +643,9 @@ Output only the two sentences. Nothing else.`;
         featureArea: 'coachhelm',
         extra: { roundId: round.id, violations, callLogId: result.call_log_id },
       });
+      // compose() already logged this call as an LLM success; the player gets
+      // the template, so the call log must say so (Bridge 1cd457e7).
+      await markCallFellBackToTemplate(result.call_log_id, { reason: 'style_violation', violations });
       return { text: fallbackText, used_llm: false, call_log_id: result.call_log_id, claim_packet_engaged };
     }
   }

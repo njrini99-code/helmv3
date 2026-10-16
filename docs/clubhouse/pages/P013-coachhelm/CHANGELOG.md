@@ -1,11 +1,12 @@
 # P013 — CoachHelm: changelog
 
-## 2026-10-14 — The Ask view loads again
+## 2026-10-15 — Ask's suggestion cards are plain data
 
-`/golf/dashboard/coachhelm?view=ask` rendered "CoachHelm didn't load"
-(JAVASCRIPT-NEXTJS-158): each suggestion carried its second line as a function
-(`sub: (team) => ...`), and a function cannot cross from the server to a client
-component. `sub` is plain text with a `{team}` placeholder the card fills in.
+No visible change. The phone's Ask suggestion cards built their second line
+with a function handed from the server to the client Ask Home, which made the
+RSC render throw "Functions cannot be passed directly to Client Components"
+(Sentry JAVASCRIPT-NEXTJS-158). `sub` is now a string with a `{team}` token,
+filled on the client by `askSuggestionSub`; the cards read the same.
 
 ## 2026-10-13 — The History drawer slides on the shared spring, over the shared backdrop
 

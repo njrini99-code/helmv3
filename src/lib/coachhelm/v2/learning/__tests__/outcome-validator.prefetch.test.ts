@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn().mockResolvedValue(undefined),
@@ -17,6 +17,23 @@ import {
 // in production (2026-09-26), all for windows that closed empty. The batch
 // prefetch makes that one read, and must not change any grading outcome.
 // ---------------------------------------------------------------------------
+
+// The validator reads the wall clock: a closed window that is still empty
+// NO_OUTCOME_GRACE_DAYS (60) after its due date is retired, not reported as
+// `no_round_in_closed_window`. These fixtures are due 2026-08-15..08-30, so on
+// a real clock they crossed that grace on 2026-10-15 and every case here
+// started reading `retired_no_outcome`. Pin "today" to a day after every due
+// date and inside the grace, which is the state these cases describe.
+const PINNED_TODAY = '2026-09-10T12:00:00Z';
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(PINNED_TODAY));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 type Row = Record<string, unknown>;
 
@@ -80,15 +97,6 @@ function prediction(id: string, player: string): RipePrediction {
 }
 
 describe('prefetchCandidateRounds — one golf_rounds read per batch', () => {
-  // The fixtures' windows close in August 2026; 60 days after (NO_OUTCOME_GRACE_DAYS) the validator retires an empty
-  // window instead of grading it, so this suite started failing on 2026-10-15. Pin "today" to the incident date above.
-  beforeEach(() => {
-    vi.useFakeTimers({ now: new Date('2026-09-26T12:00:00Z'), toFake: ['Date'] });
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   const lone = prediction('p3', 'B');
   const batch = [prediction('p1', 'A'), prediction('p2', 'A'), lone];
 
