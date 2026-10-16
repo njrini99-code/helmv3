@@ -241,7 +241,10 @@ describe('Calendar · swap audit §8 edits', () => {
 });
 
 describe('60807 Calendar · RSVP off unless the coach turns it on (owner, 2026-10-08)', () => {
-  const off = (o: Partial<ChCalEvent> = {}) => ev({ id: 'np', title: 'Range work', date: '2026-10-15', people: ['theo', 'sofia'], rsvp: { theo: 'accepted' }, rsvpRequired: false, ...o });
+  // A week ahead of the real clock: an ended event steps back and takes no replies (P006, 2026-10-15), so a fixed date
+  // turned this suite red the day after it.
+  const ahead = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+  const off = (o: Partial<ChCalEvent> = {}) => ev({ id: 'np', title: 'Range work', date: ahead, people: ['theo', 'sofia'], rsvp: { theo: 'accepted' }, rsvpRequired: false, ...o });
 
   it('the coach’s detail lists who is invited with no reply counts or badges, and Needs attention never asks for replies', async () => {
     wrap(cal([off()]), 'np');
