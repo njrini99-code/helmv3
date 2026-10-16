@@ -1,5 +1,13 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-16 — Shared Stats files: Team stats figures no longer roll
+
+`StatsTeamPhone.tsx` and `stats.css`, which this page shares with Team stats,
+changed for P004: the team's strokes gained figures are plain text, with no
+digits rolling (owner rule). Every rule touched is scoped to `.ch-stm.is-team`
+or lives in the team screen, so the player's stats draw as before; this page
+never used Number Flow. See docs/clubhouse/pages/P004-stats-team/CHANGELOG.md.
+
 ## 2026-10-16 — A switch to My stats on the phone renders the first screen, then the rest
 
 Game detail and everything under it (the trend, the rounds, development) start
