@@ -1,5 +1,29 @@
 # P015 — Auth: changelog
 
+## 2026-10-16 — Typing, opening and signing in move once, without waiting
+
+Owner, on the phone: "a slight delay with the animation right when you enter
+password", "the transition to the log in page isn't great", and after Sign in.
+Measured in Playwright WebKit (not Safari) at phone size on a local production
+build, 700ms added to each request; the iOS keyboard itself is not in that
+browser, so how the sheet keeps pace with it is not verified on a device.
+
+- **The sheet rises with the keyboard** (SignIn `useKeyboardLift`): it no
+  longer holds its first frame two frames on the way up, and a touch phone no
+  longer scrolls Sign in into view 320ms after Email takes focus (the sheet
+  already puts it above the keyboard; the scroll was a second move). Down still
+  holds its first frame.
+- **Sign in moves the sheet once**: the tap blurs the field and the keyboard
+  goes, but the sheet stays where it is while the attempt runs. It used to drop
+  with the keyboard, wait on the server, then leave: three moves. A refusal puts
+  the cursor back in a field with the sheet still up.
+- **The welcome is asked for 430ms into the opening** (`OPENING_PUSH_MS`), when
+  the sheet is about 95% off the screen, not at its end: it came a full round
+  trip after the sheet had gone, over an empty course.
+- **Log in from the home page** (shared landing header, not Clubhouse): the
+  sign-in is prefetched as the page loads. The tap waited 0.9s on the menu's
+  Log in (two round trips and the sign-in's code); now 0.09 to 0.10s.
+
 ## 2026-10-14 — Sheet up: the wordmark reads over the pines
 
 Found in Playwright WebKit on the preview (phone, keyboard lift): with the sheet

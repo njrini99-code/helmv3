@@ -44,7 +44,7 @@ import { Welcome } from '../screens/auth/Welcome';
 import { WelcomeStage } from '../screens/auth/WelcomeStage';
 import { FixedClock } from '../screens/auth/use-hour';
 import { GolfScene } from '../screens/auth/GolfScene';
-import { HANDOFF_MS, OPENING_MS, WELCOME_PHONE_AUTO_MS } from '../screens/auth/auth-motion';
+import { HANDOFF_MS, OPENING_MS, OPENING_PUSH_MS, WELCOME_PHONE_AUTO_MS } from '../screens/auth/auth-motion';
 import { useGlide } from '../screens/auth/use-glide';
 
 let reduced = false;
@@ -259,6 +259,19 @@ describe('the sign-in screen', () => {
     expect(router.refresh).not.toHaveBeenCalled();
   });
 
+  it('asks for the welcome partway into the opening, once the sheet is nearly off the screen, not after it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    login.mockResolvedValue({ success: true, redirectTo: '/golf/dashboard' });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { container } = render(<SignIn signIn={login} />);
+    await fill(user);
+    await user.click(submit());
+    await waitFor(() => expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).toBe('opening'));
+    expect(OPENING_PUSH_MS).toBeLessThan(OPENING_MS);
+    await act(async () => void vi.advanceTimersByTime(OPENING_PUSH_MS + 20));
+    expect(router.push).toHaveBeenCalledWith('/golf/welcome?next=%2Fgolf%2Fdashboard');
+  });
+
   it('CH-15902 goes straight to onboarding, with the invite code, when the person has no profile yet', async () => {
     sessionStorage.setItem('golf_login_returnTo', '/golf/join/ABC123');
     login.mockResolvedValue({ success: true, redirectTo: '/golf/player' });
@@ -425,6 +438,43 @@ describe('the sign-in screen', () => {
     act(() => email().blur());
     await act(async () => void vi.advanceTimersByTime(100));
     expect(root.dataset.kb).toBe('down');
+  });
+
+  it('phone keyboard lift: rises at once, with no held first frame and no scroll after it (owner, 2026-10-16)', async () => {
+    setMedia({ phone: true });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { container } = render(<SignIn signIn={login} />);
+    const panel = container.querySelector<HTMLElement>('.ch-au-panel')!;
+    act(() => email().focus());
+    expect(container.querySelector<HTMLElement>('.ch-au')!.dataset.kb).toBe('up');
+    expect(panel.hasAttribute('data-ch-hold')).toBe(false);
+    await act(async () => void vi.advanceTimersByTime(400));
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('phone keyboard lift: Sign in pressed keeps the sheet up while the attempt runs, and a refusal leaves it up', async () => {
+    setMedia({ phone: true });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let answer!: (r: unknown) => void;
+    login.mockReturnValue(new Promise((ok) => (answer = ok)));
+    const { container } = render(<SignIn signIn={login} />);
+    const root = container.querySelector<HTMLElement>('.ch-au')!;
+    act(() => email().focus());
+    fireEvent.change(email(), { target: { value: 'coach@example.com' } });
+    act(() => password().focus());
+    fireEvent.change(password(), { target: { value: 'hunter22' } });
+    expect(root.dataset.kb).toBe('up');
+    // The tap on Sign in blurs the field (the keyboard goes); the sheet does not drop with it.
+    fireEvent.pointerDown(submit());
+    act(() => password().blur());
+    fireEvent.click(submit());
+    await act(async () => void vi.advanceTimersByTime(1000));
+    expect(root.dataset.kb).toBe('up');
+    // Refused: the cursor goes back to a field, and the sheet never moved.
+    await act(async () => answer({ success: false, error: 'Invalid login credentials' }));
+    await act(async () => void vi.advanceTimersByTime(400));
+    expect(root.dataset.kb).toBe('up');
+    expect([email(), password()]).toContain(document.activeElement);
   });
 
   it('carries the autofill and keyboard attributes password managers and iOS need', () => {
