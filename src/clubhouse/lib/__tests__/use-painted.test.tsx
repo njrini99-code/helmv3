@@ -1,8 +1,11 @@
 import { act, render, renderHook } from '@testing-library/react';
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { useArrivalPainted } from '../use-painted';
+
+// The test setup renders every page at rest; this file tests the real hook.
+vi.unmock('@/clubhouse/lib/use-painted');
 
 const frames = () => act(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => done())))));
 

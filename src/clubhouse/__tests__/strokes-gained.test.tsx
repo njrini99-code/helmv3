@@ -47,8 +47,6 @@ import { PREVIEW_PLAYER_HOME } from '../preview/fixtures-player-home';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_ROUND } from '../preview/fixtures-round-review';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
-// The team page's lower sections wait a painted frame on a navigation; here they render at once (use-painted.test.tsx).
-vi.mock('../lib/use-painted', async (orig) => ({ ...(await orig<typeof import('../lib/use-painted')>()), useArrivalPainted: () => true }));
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const ROOT = { className: 'ch-root', 'data-ui': 'clubhouse' } as const;

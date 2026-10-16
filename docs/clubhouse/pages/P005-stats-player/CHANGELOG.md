@@ -1,5 +1,16 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-16 — A switch to My stats on the phone renders the first screen, then the rest
+
+Game detail and everything under it (the trend, the rounds, development) start
+below the first screen (game detail at 876px of 852). On a page reached by
+navigating they now render a frame after the first one is painted
+(`useArrivalPainted`); a hard load hydrates everything at once, and a link to
+the rounds still scrolls to them. Worst frame of a switch to the player's My
+stats (WebKit, production build, phone, three runs each): 72–79ms rendering
+everything, 49–57ms with the lower sections a frame later. All eight sections
+are in place after a switch, and hard loads have no errors.
+
 ## 2026-10-14 — The phone header says its count is the season's
 
 The phone player header read "5 rounds" over a Last 10 window that counts "10

@@ -27,8 +27,6 @@ import { filterFor } from '../data/stats-filter';
 import type { ChTeamStats } from '../data/stats-team';
 import type { ChPlayerProfile } from '../data/stats-player';
 
-// The team page's lower sections wait a painted frame on a navigation; here they render at once (use-painted.test.tsx).
-vi.mock('../lib/use-painted', async (orig) => ({ ...(await orig<typeof import('../lib/use-painted')>()), useArrivalPainted: () => true }));
 
 const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/stats.css'), 'utf8');
 const shell = (node: React.ReactNode) => (

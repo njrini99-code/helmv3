@@ -88,6 +88,13 @@ vi.mock('next/image', () => ({
   },
 }));
 
+// Clubhouse renders a long page's lower sections a painted frame after a navigation (useArrivalPainted). A component
+// test renders a page at rest, so they render at once; use-painted.test.tsx tests the wait with the real hook.
+vi.mock('@/clubhouse/lib/use-painted', async (orig) => ({
+  ...(await orig<typeof import('@/clubhouse/lib/use-painted')>()),
+  useArrivalPainted: () => true,
+}));
+
 // NumberFlow relies on browser animation internals that jsdom does not fully
 // implement. Tests only need the rendered value, not the digit transition.
 vi.mock('@number-flow/react', () => ({
