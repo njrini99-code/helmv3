@@ -172,6 +172,11 @@ const nextConfig = {
   // .next/cache/webpack that kept entries for sixty days. Seven days and one
   // in-memory generation means nothing is deleted by hand; the cache stops
   // hoarding. See docs/operations/GATES.md.
+  // `npm run build` uses Turbopack (`next build --turbopack`), which ignores
+  // this hook and `experimental.webpackMemoryOptimizations`; both stay for the
+  // `npm run build:webpack` fallback. Turbopack keeps its own build cache in
+  // .next/cache/turbopack (experimental.turbopackFileSystemCacheForBuild,
+  // on by default in Next 16.3).
   webpack(config) {
     if (config.cache && config.cache.type === 'filesystem') {
       config.cache.maxAge = 7 * 24 * 60 * 60 * 1000;
@@ -610,10 +615,10 @@ export default isDev
         },
         // Identifies first-party bundles for `thirdPartyErrorFilterIntegration`
         // (src/instrumentation-client.ts): at build time this key gets
-        // forwarded to @sentry/webpack-plugin's `moduleMetadata` /
-        // `applicationKey` option (webpack, which this repo builds with:
-        // `next build --webpack`) or injected via a Turbopack loader if the
-        // build ever moves to Turbopack, tagging every first-party module with
+        // injected by the SDK's Turbopack loader (`npm run build`, which runs
+        // `next build --turbopack`) or forwarded to @sentry/webpack-plugin's
+        // `moduleMetadata` / `applicationKey` option (`npm run build:webpack`),
+        // tagging every first-party module with
         // `_sentryModuleMetadata`.
         // MUST match the `filterKeys` array passed to
         // thirdPartyErrorFilterIntegration exactly — pinned together by

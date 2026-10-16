@@ -16,7 +16,7 @@ The foundation everything runs on.
 
 | Tool | Purpose | Tier/plan | Where configured | Partner-visible? | Notes |
 |------|---------|-----------|------------------|------------------|-------|
-| **Next.js 16 (App Router)** | Web app framework (server + client rendering) | Open-source | `next ^16.0.10` in package.json; `next.config.mjs` | No (they see the app it produces) | Build runs `next build --webpack` |
+| **Next.js 16 (App Router)** | Web app framework (server + client rendering) | Open-source | `next ^16.0.10` in package.json; `next.config.mjs` | No (they see the app it produces) | Build runs `next build --turbopack` (`npm run build:webpack` is the fallback) |
 | **TypeScript (strict)** | Typed language for all app code | Open-source | `typescript ^5.9.3`; `tsconfig.json` | No | `npm run typecheck` gate |
 | **Supabase** | Postgres DB + Auth (JWT) + Storage + Realtime + Row-Level Security | Paid project (single shared prod) | `@supabase/ssr ^0.10`, `@supabase/supabase-js ^2.107`; `supabase` CLI; `src/lib/supabase/` | No | **One shared prod project across golf + baseball + lifting.** RLS is a hard merge gate |
 | **Vercel** | Hosting + deploys + serverless/cron runtime | Paid | `vercel.json` (region `iad1`); Vercel CLI | Indirectly (they use the deployed site) | **No Git auto-deploys** (`git.deploymentEnabled: {"*": false}` in vercel.json): merging to `main` does not deploy; see `docs/setup/DEPLOY.md`. Project **`helmv3`** — confirmed via `package.json` `name`. Vercel team name **unverified (memory)** |
