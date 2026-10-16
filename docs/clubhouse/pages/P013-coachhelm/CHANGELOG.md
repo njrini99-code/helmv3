@@ -1,5 +1,14 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-16 — The phone Evidence sheet slides out; ivory ink holds at night
+
+- **Evidence on the phone (audit A-18):** the sheet stays mounted after its
+  first opening and keeps the evidence it showed, so closing it slides it out
+  instead of making it vanish (`Ask.tsx`, `AskEvidencePanel` takes `open`).
+- **Dark mode:** ivory ink on a green fill in the profile, the thread and the
+  views uses the `--ch-on-fill-*` tokens, which stay light at night (the shared
+  2026-10-15 ink entry).
+
 ## 2026-10-15 — Ask's suggestion cards are plain data
 
 No visible change. The phone's Ask suggestion cards built their second line
