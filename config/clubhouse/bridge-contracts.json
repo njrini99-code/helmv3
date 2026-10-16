@@ -11917,9 +11917,15 @@
     "category": 7,
     "item": 2,
     "name": "WRITES_REFUSE_OFFLINE",
-    "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard and the hole's Try again are not, so this stays reserved. The shell's tests cover useAction's refusal.",
-    "status": "reserved",
-    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview"
+    "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). Each is forced offline in a test: the library's Discard (rounds.test: nothing sent, the card stays, and Retry once back online discards it), round entry's Start, Save for later and Exit's Discard (round-entry-wiring.test, CH-1903: nothing is sent, Exit's Discard keeps a hole that exists only on the device, and a browser that says offline but reaches the server goes ahead), and the hole's Try again (round-tracking.test). A discard whose request never lands keeps the device copy and the queued entry (rounds.test for the library's write, use-new-round-session.preservation.test for the engine's). The shell's tests cover useAction's refusal.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime (discard)",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+      "src/clubhouse/__tests__/round-tracking.test.tsx",
+      "src/lib/golf/round-session/__tests__/use-new-round-session.preservation.test.tsx"
+    ]
   },
   {
     "id": 110703,
@@ -12388,9 +12394,13 @@
     "category": 12,
     "item": 1,
     "name": "SETUP_KEPT_WHEN_START_FAILS",
-    "meaning": "A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Read in this pass: the CH-11007 test proves that Retry opens the round, not that every field is kept, so no test covers this.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup"
+    "meaning": "A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. round-setup.test fails a start and checks every field and the dock, then presses Start again and checks the same form is sent; use-new-round-session.preservation.test makes the engine's create throw and checks nothing is adopted and the next start goes ahead with the same payload.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup",
+    "tests": [
+      "src/clubhouse/__tests__/round-setup.test.tsx",
+      "src/lib/golf/round-session/__tests__/use-new-round-session.preservation.test.tsx"
+    ]
   },
   {
     "id": 111202,
@@ -12398,9 +12408,13 @@
     "category": 12,
     "item": 2,
     "name": "SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE",
-    "meaning": "When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). The test forces the failure and the retry, not the kept shots, so no test covers this.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/hooks/golf/use-shot-tracking.ts#handleRetryHoleCheckpoint"
+    "meaning": "When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). round-tracking.test checks the shots, the words and that the round stays on the hole; use-new-round-session.preservation.test drops the connection on the hole's checkpoint and checks the device copy holds the hole's score and shots, that Try again sends that hole, and that the copy is cleared only once the save lands.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/hooks/golf/use-shot-tracking.ts#handleRetryHoleCheckpoint",
+    "tests": [
+      "src/clubhouse/__tests__/round-tracking.test.tsx",
+      "src/lib/golf/round-session/__tests__/use-new-round-session.preservation.test.tsx"
+    ]
   },
   {
     "id": 111301,

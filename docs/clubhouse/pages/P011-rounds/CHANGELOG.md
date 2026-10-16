@@ -25,6 +25,17 @@ Contract IDs:   111105 (CH-11505, a second way in); 110504 (CH-11104, now blocks
 Actions:        none new (handleEditShot, handleSaveEditedShot, handleDeleteShot as before)
 Data impact:    none to the schema; a meters player's comma decimal is no longer stored short
 Held items:     none
+## 2026-10-16 — "No data lost" is tested: a failed start, a failed hole save, an offline discard
+
+No visible or behaviour change: tests only. Release review blocker 2.
+
+```text
+Design package: none
+PR/commit: agent/clubhouse-readiness
+Contract IDs: 111201, 111202, 110702 (reserved to implemented)
+Actions: none
+Data impact: none
+Held items: none
 ```
 
 ### Changed
@@ -350,6 +361,16 @@ Held items:     none
   player's photo is still refused (the upload lands in the bucket either way),
   and the deploy order is safe whichever comes first. A real round's photo end
   to end was not run.
+- 111201: a failed start keeps every setup field and Start sends the identical form again (`round-setup.test`); a
+  start whose request throws adopts nothing and releases the start guard (`use-new-round-session.preservation.test`).
+- 111202: a hole that did not save keeps every shot on screen and on the device, and Try again sends it; the device
+  copy is cleared only once the save lands (`round-tracking.test`, `use-new-round-session.preservation.test`).
+- 110702: the library's Discard, Exit's Discard and the hole's Try again are forced offline, and a discard whose request
+  never lands keeps the device copy (`rounds.test`, `round-entry-wiring.test`, `round-tracking.test`, the engine test).
+
+### Verification
+
+- Each new test was run against a deliberate break of the code it guards and failed; VERIFY.md "No data lost".
 
 ## 2026-10-14 — The course map hydrates without a mismatch
 

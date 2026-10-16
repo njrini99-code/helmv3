@@ -129,29 +129,43 @@ by going back, which remounts the list) and 20 of 21 on the shot screen (the
 survivor, the quick pick's unit dispatch,
 is equivalent: the engine derives the stored unit).
 
-**Contracts a test covers, and those it does not.** Of the 46 hand contracts, 34
-are `implemented`: every test file each
-lists names its Bridge ID in a title (the 32 of the contract pass, plus 110114
-`ROUND_ENTRY_FOLLOWS_THE_FLAG` and 111404
-`A_RETRY_RUNS_THE_ROUND_AS_IT_IS_NOW`, both proved by the round-entry tests).
-110103, 110104, 110105, 110109, 110110,
-110902 and 112401 gained round-entry test files. **12 stay `reserved` with no
-covering test**: 110206 (the review's
-skeleton, not built), 110702 (offline: round entry's Start and Save for later
-are forced, the library's Discard and the
-hole's Try again are not), 110803 and 110804 (the player filter and the server
-action's checks, read not run), 111201
-and 111202 (a failed Start keeps the setup; a failed hole save keeps the shots),
-111809 (axe, a script), 111810 (the
-scorecard's focusable region), 111901 and 111903 (the phone builds), 112001
-(Esc) and 112101 (the read order). The
-catalog rows are the other contracts; those marked `preview` name no test:
-CH-11004, CH-11105, CH-11207, CH-11404,
-CH-11405, CH-11601, CH-11602, CH-11705, CH-11706, CH-11707, CH-11806, CH-11807,
-CH-11808 and CH-11901. CH-11006 is forced
-by round entry's tests and its row now names them. CH-11601 stays `reserved` in
-the registry because its code string is only in `rounds.css`
-(the registry scans `.ts` and `.tsx`).
+**Contracts a test covers, and those it does not.** Of the 47 hand contracts, 39
+are `implemented`: every test file each lists names its Bridge ID in a title.
+**8 stay `reserved` with no covering test**: 110803 and 110804 (the player
+filter and the server action's checks, read not run), 111809 (axe, a script),
+111810 (the scorecard's focusable region), 111901 and 111903 (the phone
+builds), 112001 (Esc) and 112101 (the read order). 110702, 111201 and 111202
+moved on 2026-10-16 (see "No data lost" below). The catalog rows are the other
+contracts; those marked `preview` name no test: CH-11004, CH-11105, CH-11207,
+CH-11404, CH-11405, CH-11601, CH-11602, CH-11705, CH-11706, CH-11707,
+CH-11806, CH-11807, CH-11808 and CH-11901. CH-11006 is forced by round entry's
+tests and its row now names them. CH-11601 stays `reserved` in the registry
+because its code string is only in `rounds.css` (the registry scans `.ts` and
+`.tsx`).
+
+### No data lost (2026-10-16)
+
+The three release-blocking contracts (review blocker 2) are each forced in a
+test, on the screen and on the engine both renderers share. Every test below was
+also run against a deliberate break of the code it guards and failed, then
+passed again with the code restored.
+
+| Contract | What is forced | Test |
+| --- | --- | --- |
+| 111201 a failed start loses nothing | a start fails after the course, tees, an edited hole, the type and the date are set: every field and the dock stay, Start is enabled, and pressing Start again sends the identical form and opens the round | `round-setup.test` |
+| 111201 | the engine's create throws ("Load failed"): no round id is adopted, the start guard and starting flag are released, and the next start sends the identical payload | `use-new-round-session.preservation.test` |
+| 111202 a failed hole save keeps the hole | the hole's save fails: all three shots stay listed, the card says they are kept on this device, the round does not move on; Try again sends the same hole and the failure clears when it lands | `round-tracking.test` |
+| 111202 | every attempt of the hole's checkpoint throws: the device copy holds the hole's score, putts and shots, the player stays on the hole; Try again sends that hole under the round's id and only then is the device copy cleared | `use-new-round-session.preservation.test` |
+| 110702 offline discard drops nothing | the library's Discard offline: nothing sent, the error haptic, CH-1903 with Retry, the card stays; Retry once back online discards it | `rounds.test` |
+| 110702 | the library's live discard whose request throws: the device copy is not cleared and the round is not marked discarded | `rounds.test` |
+| 110702 | Exit's Discard offline after a hole that exists only on the device: nothing sent, no navigation, the device copy unchanged | `round-entry-wiring.test` |
+| 110702 | the engine's discard whose request throws: the device copy, the queued entry and the round stay, and the round keeps saving | `use-new-round-session.preservation.test` |
+| 110702 | Try again on a hole that did not save, offline: the warning haptic and nothing sent | `round-tracking.test` |
+
+No bug was found: the code already met all three contracts. Not covered: a real
+device going offline (the owner's iPhone pass), and the app killed with a hole
+unsaved (the device copy is the same one the tests check; Recover and Continue's
+offer read it, `rounds-recover.test`).
 
 A hand contract that lists more than one test file becomes `implemented` only
 when every listed file carries its Bridge ID.
@@ -192,7 +206,7 @@ Result:       built to the approved spec and seen at 390; 430px is not recorded 
 | Server failure | CH-11001, CH-11002, CH-11003, CH-11005, CH-11007, CH-11201 to CH-11206, CH-11208 to CH-11211 | tests, `?state=failed`, `unfinished-failed`, `failwrites`, `failcourses`, `checkpointfail`, `submitfail` | toast or notice with its code; the card stays; Try again asks again |
 | Failure, preview only | CH-11004, CH-11207 | preview only | not forced by a test |
 | Retry | 111401 to 111403 | tests | Discard's Retry removes the card, Start's Retry opens the round, a hole save and a submit run again |
-| Offline | 110702, CH-1903 | `round-entry-wiring.test` (Start, Save for later) | round entry's Start and Save for later send nothing and say so; a browser that says offline but reaches the server goes ahead. **Not observed**: the library's Discard and the hole's Try again offline, and no browser run went offline |
+| Offline | 110702, CH-1903 | `round-entry-wiring.test` (Start, Save for later, Exit's Discard), `rounds.test` (the library's Discard), `round-tracking.test` (the hole's Try again) | each sends nothing and says so, and a discard keeps the device copy; a browser that says offline but reaches the server goes ahead. **Not observed**: no browser or device run went offline |
 | Permission | 110801, 110802, 110805 | tests | a coach renders nothing on the library; another player's or a missing round is one "not here" page; a closed qualifier can't be chosen |
 | Permission, read only | 110803, 110804 | read, not run | reserved: no test forces the player filter or the server action's refusals |
 | Partial read | 110619 | tests | each failed read flags only its part; the rest renders |
@@ -471,7 +485,8 @@ Further browser checks paused when the shared dev server ran out of disk.
 - Offline on the library's Discard and the hole's Try again (110702 stays
   reserved; round entry's Start and Save for
   later are forced offline), a failed Start keeping every field (111201), and
-  the qualifier preselect effect.
+  the qualifier preselect effect. (2026-10-16: 110702 and 111201 now have tests;
+  see "No data lost".)
 - `/rounds/recover` had no Clubhouse screen when this page was verified; it has
   one now (swap audit F-02, no board;
   see the row above). It was not run on a phone or against a real failed submit.
@@ -481,6 +496,10 @@ Further browser checks paused when the shared dev server ran out of disk.
   keeping the setup (111201) and a failed hole save keeping the shots (111202)
   have no test. The review's skeleton (110206) is built (`RoundReviewSkeleton`;
   corrected 2026-10-17).
+  keeping the setup (111201) and a failed hole save
+  keeping the shots (111202) have no test; the review's skeleton (110206) is not
+  built. (2026-10-16: 110702, 111201 and 111202 now have tests; see "No data
+  lost".)
 - Found and not fixed (see the report to the parent):
   - Fixed since (corrected 2026-10-17): `rounds/[id]/loading.tsx` draws
     `RoundReviewSkeleton` through `ClubhouseSwitch` (110206), and both
