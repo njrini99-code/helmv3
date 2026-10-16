@@ -46,6 +46,7 @@ import { SessionActivityProvider } from '@/components/providers/SessionActivityP
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
+import { clearPrivateServiceWorkerCaches } from '@/lib/offline/private-caches';
 import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -250,6 +251,7 @@ function useBridgeSignOut() {
       // the shared-device case client-resource-cache.ts's contract exists
       // for — the next admin to sign in must not inherit a stale warm cache.
       clearAllCachedResources();
+      await clearPrivateServiceWorkerCaches();
       const { error } = await createClient().auth.signOut();
       if (error) throw error;
 
