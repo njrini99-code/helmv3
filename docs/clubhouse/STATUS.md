@@ -237,9 +237,62 @@ a new production deploy.
 - [ ] The owner's real-iPhone pass is clean.
 - [ ] The rollback deployment is named above.
 - [ ] After the canary deploy: no new Sentry issue families on Clubhouse
-      routes for a full weekday.
+      routes for a full weekday (the `ui:clubhouse` search in Monitoring,
+      against its baseline).
 - [ ] After the canary deploy: zero rounds completed with zero holes
       (read-only SQL; zero in the seven days to 2026-10-17 with the flag off).
+      (the read-only SQL in Monitoring).
+
+## Monitoring
+
+Every Clubhouse error is tagged `ui:clubhouse`: the browser tags the session when
+the shell mounts (`chTagSession`, `src/clubhouse/lib/track.ts`), and the server
+tags the request's isolation scope when `isClubhouseFor` decides Clubhouse
+(`src/clubhouse/gate.ts`, tested in
+`src/clubhouse/__tests__/gate-sentry-tag.test.ts`). Fairway events carry no
+`ui` tag. The server tag reaches production only with the deploy that carries
+it, so take the canary from a build that includes it.
+
+**The search to save** (Sentry org `helm-xs`, project `javascript-nextjs`):
+
+    environment:production ui:clubhouse
+
+It was not saved through the tools (the Sentry tools here can create alerts and
+metric monitors, not saved searches, and an alert notifies people, so it waits
+for the owner). Steps, before the canary deploy:
+
+1. Sentry → Issues, project `javascript-nextjs`, environment `production`.
+2. Search `ui:clubhouse is:unresolved`, then Save search as
+   "Clubhouse canary (production)", visible to the organization.
+3. Optional alert: Alerts → Create alert → Issues, project
+   `javascript-nextjs`, environment `production`, when "A new issue is created"
+   and the filter "The event's tags match `ui` equals `clubhouse`", notify the
+   owner. Leave it active for the canary weekday.
+4. Discover query for counts, to compare with the baseline below:
+   dataset Errors, `environment:production ui:clubhouse`, fields `count()`,
+   `count_unique(user)`, `count_unique(issue)`, period 14d.
+
+**Baseline, recorded 2026-10-16 (read only).**
+
+- Sentry, production, the 14 days to about 2026-10-16 21:35 UTC, error events whose
+  transaction is under `/golf/dashboard` (`transaction:*golf/dashboard*` or
+  `*golf/(dashboard)*`, which covers server GET and POST, browser routes and
+  server components): **386 events, 28 issues, 26 users**. The largest:
+  JAVASCRIPT-NEXTJS-Z0 statement timeout (86 events), -XP worst-hole read
+  timeouts (79 events, 15 users), -YX AbortError (78), -196 the held-migration
+  trace probe (73; its noise is dropped by #2197, not yet deployed) and -15A
+  the round recap style trace (32 events, 17 users). `ui:clubhouse` in the
+  same 14 days: 0 events.
+- Production database, `golf_rounds` with `status = 'completed'` and no
+  `golf_holes` row: **18 of 774 completed rounds** (14 not `is_test`), the
+  newest created 2026-09-28; **0 of the 64 completed in the last 14 days**.
+  The turn-on criterion is that this stays 0 for rounds completed after the
+  canary deploy. `golf_rounds` has no completion time, so `updated_at` (which
+  the submit sets) stands in, a superset:
+
+      SELECT count(*) FROM golf_rounds r
+      WHERE r.status = 'completed' AND r.updated_at >= '<canary deploy time>'
+        AND NOT EXISTS (SELECT 1 FROM golf_holes h WHERE h.round_id = r.id);
 
 ## Stale docs found by the 2026-10-17 audit
 

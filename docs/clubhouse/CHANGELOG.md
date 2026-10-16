@@ -121,6 +121,15 @@ looks vibe coded"; "get rid of the shimmer").
   hand-on to the box around it, the contained overscroll and the dialog edge.
   Not checked with a real wheel in Safari, or on an iPhone (the easing is
   desktop only).
+## 2026-10-16 — Server errors carry ui=clubhouse too
+
+No visible change. Release review blocker 5: only the browser tagged a
+Clubhouse session `ui=clubhouse`, so a canary's server errors could not be told
+from Fairway's. When `isClubhouseFor` decides Clubhouse for a request
+(`gate.ts`), it now sets the same tag, name and value, on Sentry's isolation
+scope, which the server forks per request; a Sentry failure never changes the
+decision (`__tests__/gate-sentry-tag.test.ts`). The saved search, the alert
+steps and the baseline are in STATUS.md "Monitoring".
 
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
