@@ -200,8 +200,10 @@ Who may open it: a signed-in coach or player with the Clubhouse flag on (the she
 | 80806 | — | `WRITES_SCOPED_TO_THE_CALLER` | Every write is scoped to the signed-in person: profile rows by their own user id, golf details by their own player id, leaving by their own membership of their team, and join requests, invite codes and the team CoachHelm switch by their own player or team id, which the server actions and row policies check again. |
 | 80807 | — | `PASSWORD_NEEDS_THE_CURRENT_ONE` | A new password is set only after the current password signs in; a wrong current password changes nothing and says 'Your current password is incorrect.' |
 | 80808 | — | `REFUSED_UPDATE_IS_A_FAILURE` | An update the database refuses by hiding the row (no error, no row changed) is a failure the person sees, not a save: profile, team details (the school, then the team), golf details and the coaching settings count the rows they change and fail with 'Nothing was saved. <what> was not found, or you are not allowed to change it.', which the toast shows as 'Your account doesn’t have access to do this.'; the card stays unsaved with its edits. Leaving a team already did this. |
+| 80809 | CH-8902 | `IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE` | In the iPhone app, Notifications › This device before iOS has asked about push (blocker 12) |
+| 80810 | CH-8903 | `IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE_2` | In the iPhone app, Notifications › This device after iOS has answered: allowed, or turned off (only the phone's Settings app changes either) |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 

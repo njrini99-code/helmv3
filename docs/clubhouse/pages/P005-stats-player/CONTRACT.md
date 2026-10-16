@@ -210,7 +210,7 @@ A player may open only their own stats, and a coach the team and any player on i
 | 50805 | — | `SERVER_REFUSAL_IS_NOT_ZEROS` | Shot-level detail is read through getDetailedStats for the profile's own player id, which answers empty to a caller who is neither the player nor their coach; empty detail for a window that has rounds shows as Shot-level detail didn't load, never as zeros. |
 | 50806 | — | `ONLY_A_COACH_PROPOSES_FOCUS_AREAS` | The Add focus area buttons and sheet exist only for a coach viewing a profile (the route hands a coach id only to a coach); a player's profile never offers them. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
