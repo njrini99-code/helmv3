@@ -48,6 +48,8 @@ Owner, 2026-10-16.
   anyone's from their row, which opens a sheet as before), inside the same boundary, CH-09223. The phone list takes
   the separate sheets and the green filter chip too. Checked by the main session in Chrome at 1567 and 420px wide;
   Qualifiers vitest passed; not checked on a device.
+- **The ink ramp** in the page's contrast block is darker too, 700 down to 300 (the same step CoachHelm and Ask took,
+  see P013), so copy that names a mid ink directly reads darker.
 
 ## 2026-10-14 — A round with no tees says so
 

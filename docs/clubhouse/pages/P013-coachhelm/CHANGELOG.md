@@ -1,5 +1,20 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-16 — CoachHelm and Ask at full contrast; CoachHelm on a bright sheet
+
+Owner, 2026-10-16: "more contrast on this and the other ones", "coachhelm contrast is the same". In light mode only
+(`coachhelm.css` `.ch-hl`, `coachhelm-ask.css` `.ch-ask`; dark mode is unchanged):
+
+- Both screens take the page-scoped contrast step the Qualifiers page took: text one grade darker (secondary copy reads
+  as primary, tertiary as secondary), and the Increase Contrast rules and borders.
+- The whole ink ramp is darker, 700 down to 300, so copy that names a mid ink directly (a locked measure, a quiet
+  caption) is darker as well. The same ramp change is in Qualifiers' block (P009).
+- On the desktop (above 820px), CoachHelm sits on one bright surface sheet over the parchment, on 24px corners, so its
+  copy reads on a white ground. The phone is unchanged.
+
+Checked by the main session in Chrome on Board, Game profile, Standing and Deep dive; Ask and the phone were not
+reported as checked, and nothing was checked in Safari.
+
 ## 2026-10-16 — The other views are fetched whole once the page is idle
 
 The view strip never prefetched, so on the desktop every switch between Board, Ask and the rest waited on the
