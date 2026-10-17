@@ -1,6 +1,7 @@
 import { getNextQualifierRoundNumber, getPlayerQualifiers } from '@/app/golf/actions/qualifier-actions';
 import { getCourseDetail, getRecentlyPlayedCourses, getTeamSavedCourses, getTeeWithHoles, listCoursesStrict } from '@/app/golf/actions/course-library';
 import type { GolfCourse, GolfCourseTee } from '@/lib/types/golf-course';
+import { resolveRealCourseImage } from '@/lib/golf/course-image-assets';
 import type { NewRoundStartForm, NewRoundStartResult } from '@/lib/golf/round-session/start-form';
 import { teeColorFor } from '../../../data/rounds-shape';
 import { chReport } from '../../../lib/track';
@@ -36,6 +37,7 @@ const course = (c: GolfCourse, group: ChSetupCourse['group']): ChSetupCourse => 
   group,
   // The recent list is ordered, not dated, so there is no day to print (nothing is invented).
   lastPlayed: null,
+  image: c.image_url || resolveRealCourseImage(c.name, c.normalized_name),
 });
 
 /**

@@ -40,6 +40,8 @@ export interface ChSetupCourse {
   group: 'recent' | 'team' | 'library';
   /** "Oct 2", when the player last played it (recent only). */
   lastPlayed: string | null;
+  /** Its photo: one uploaded to the library, else a bundled photo of the real course; none means the picker's default scene. */
+  image?: string | null;
 }
 
 /** An open qualifier the player can play a round of now. */

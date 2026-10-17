@@ -777,6 +777,198 @@
 .ch-rsu-chev {
   color: var(--ch-text-tertiary);
 }
+/* The course picker's photo cards (owner, 2026-10-16: "the courses need to have pictures and look premium"). The photo is
+   the course's own (uploaded or a bundled photo of the real course) or a scene chosen by its name; the name sits on a
+   scrim in white. The button is the scroll timeline's subject and the card inside it is what moves, so the fold in
+   (entry) and the fold away (exit) are two animations on two boxes and never fight over one transform. */
+.ch-cpk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ch-cpk {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  border-radius: var(--ch-radius-lg);
+}
+.ch-cpk:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 3px;
+}
+.ch-cpk__card,
+.ch-cpk.is-skel {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 132px;
+  padding: 14px 16px;
+  overflow: hidden;
+  border-radius: var(--ch-radius-lg);
+  color: #fff;
+  background: var(--ch-green-800);
+  box-shadow:
+    0 1px 2px rgb(12 28 18 / 0.16),
+    0 10px 24px -14px rgb(12 28 18 / 0.5);
+}
+.ch-cpk__img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--ch-dur-reveal) var(--ch-ease);
+}
+/* The scrim: dark at the foot for the name, a little along the left, clear over the sky. */
+.ch-cpk__card::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgb(8 22 14 / 0) 28%, rgb(8 22 14 / 0.74) 100%),
+    linear-gradient(90deg, rgb(8 22 14 / 0.32), rgb(8 22 14 / 0) 62%);
+  content: '';
+}
+@media (hover: hover) {
+  .ch-cpk:hover .ch-cpk__img {
+    transform: scale(1.04);
+  }
+}
+/* `scale`, not `transform`: the fold owns the card's transform, and the two compose. */
+.ch-cpk:active .ch-cpk__card {
+  scale: 0.985;
+  transition: scale var(--ch-dur-press) var(--ch-ease);
+}
+.ch-cpk__b {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ch-cpk__b b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 600 19px/1.15 var(--ch-font-sans);
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.28);
+}
+.ch-cpk__b span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 500 12.5px/1.2 var(--ch-font-sans);
+  color: rgb(255 255 255 / 0.84);
+}
+.ch-cpk__meta {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-cpk__meta > span,
+.ch-cpk__meta > em {
+  padding: 5px 8px;
+  border-radius: 999px;
+  font: 600 11.5px/1 var(--ch-font-sans);
+  font-style: normal;
+  white-space: nowrap;
+  color: #fff;
+  background: rgb(8 22 14 / 0.42);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+}
+.ch-cpk__go {
+  color: rgb(255 255 255 / 0.86);
+}
+
+/* Loading: the cards' shape, a photo's depth (dark at the foot), the two lines of the name in place, and one slow sweep
+   of light across, on the compositor. */
+.ch-cpk.is-skel {
+  cursor: default;
+  background: linear-gradient(180deg, var(--ch-skel-base), rgb(28 25 18 / 0.1));
+  box-shadow: none;
+}
+.ch-cpk.is-skel::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 35%, var(--ch-skel-sheen) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: ch-shimmer-x calc(var(--ch-dur-shimmer) * 1.4) var(--ch-ease-io) infinite;
+  content: '';
+}
+.ch-cpk.is-skel .ch-cpk__b i {
+  display: block;
+  width: 46%;
+  height: 14px;
+  border-radius: 7px;
+  background: rgb(28 25 18 / 0.09);
+}
+.ch-cpk.is-skel .ch-cpk__b i + i {
+  width: 28%;
+  height: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-cpk.is-skel::before {
+    animation: none;
+    opacity: 0;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-cpk.is-skel::before {
+  animation: none;
+  opacity: 0;
+}
+.ch-cpk.is-skel:nth-child(2) {
+  opacity: 0.75;
+}
+.ch-cpk.is-skel:nth-child(3) {
+  opacity: 0.5;
+}
+
+/* The fold: a card coming up from the list's bottom edge unfolds from tilted back; one leaving the top edge folds away
+   over its foot. Scroll-driven, so it is exactly where the scroll is and costs nothing between scrolls. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-ui='clubhouse']:not([data-motion='off']) .ch-cpk:not(.is-skel) {
+      animation: ch-cpk-unfold linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+      transform-origin: 50% 0;
+    }
+    [data-ui='clubhouse']:not([data-motion='off']) .ch-cpk:not(.is-skel) .ch-cpk__card {
+      animation: ch-cpk-fold linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+      transform-origin: 50% 100%;
+    }
+  }
+}
+@keyframes ch-cpk-unfold {
+  from {
+    opacity: 0.3;
+    transform: perspective(900px) rotateX(-32deg) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ch-cpk-fold {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0.25;
+    transform: perspective(900px) rotateX(32deg) scale(0.92);
+  }
+}
+
 .ch-rsu-add {
   all: unset;
   cursor: pointer;

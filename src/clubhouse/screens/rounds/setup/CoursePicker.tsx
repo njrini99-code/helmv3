@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, MapPin, Plus, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react';
+import { resolveDefaultCourseImage } from '@/lib/golf/course-image-assets';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
@@ -77,10 +78,15 @@ function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search courses" aria-label="Search courses" type="search" autoComplete="off" />
       </label>
       {load.state === 'loading' && (
-        // CH-11403: the list is on its way, in the shape of its rows.
-        <div className="ch-rsu-plist" role="status" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-11403">
-          {[0, 1, 2, 3].map((i) => (
-            <span key={i} className="ch-rsu-crs is-skel ch-skel" />
+        // CH-11403: the list is on its way, in the shape of its cards.
+        <div className="ch-cpk-list" role="status" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-11403">
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="ch-cpk is-skel">
+              <span className="ch-cpk__b">
+                <i />
+                <i />
+              </span>
+            </span>
           ))}
         </div>
       )}
@@ -93,26 +99,32 @@ function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts
             {g.label}
             <span>{g.courses.length}</span>
           </h4>
-          <div className="ch-rsu-plist">
+          {/* Photo cards that fold back as they leave the list's top and unfold as they come up from its bottom
+              (rounds-setup.css, a scroll-driven animation on the compositor; still with reduced motion or Animations off). */}
+          <div className="ch-cpk-list">
             {g.courses.map((c) => (
               <button
                 key={c.id}
                 type="button"
-                className="ch-rsu-crs"
+                className="ch-cpk"
                 onClick={() => {
                   haptic('select');
                   onCourse(c);
                 }}
               >
-                <span className="ch-rsu-crs__ic" aria-hidden="true">
-                  <Icon icon={MapPin} size={16} />
+                <span className="ch-cpk__card">
+                  <img className="ch-cpk__img" src={c.image || resolveDefaultCourseImage(c.name)} alt="" loading="lazy" decoding="async" />
+                  <span className="ch-cpk__b">
+                    <b>{c.name}</b>
+                    {c.place && <span>{c.place}</span>}
+                  </span>
+                  <span className="ch-cpk__meta">
+                    {c.lastPlayed && <em>{c.lastPlayed}</em>}
+                    {c.par ? <span className="ch-num">Par {c.par}</span> : null}
+                    {c.teeCount ? <span className="ch-num">{`${c.teeCount} tee${c.teeCount === 1 ? '' : 's'}`}</span> : null}
+                    <Icon icon={ChevronRight} size={16} className="ch-cpk__go" />
+                  </span>
                 </span>
-                <span className="ch-rsu-crs__b">
-                  <b>{c.name}</b>
-                  <span>{[c.place, c.par ? `Par ${c.par}` : null, c.teeCount ? `${c.teeCount} tee${c.teeCount === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ')}</span>
-                </span>
-                {c.lastPlayed && <span className="ch-rsu-crs__r">{c.lastPlayed}</span>}
-                <Icon icon={ChevronRight} size={16} className="ch-rsu-chev" />
               </button>
             ))}
           </div>

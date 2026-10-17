@@ -296,6 +296,22 @@ describe('Round entry: useAction options (CH-1903, CH-11007)', () => {
 describe('Round entry: setup over the course library and the engine (ChSetupPorts)', () => {
   const course = (id: string, name: string, city = 'Chapel Hill', state = 'NC') => ({ id, name, city, state, total_par: 72 });
 
+  it("a course card's photo is the uploaded one, else the bundled photo of the real course, else none (the picker's scene)", async () => {
+    mocks.listCoursesStrict.mockResolvedValue([
+      { ...course('u', 'Uploaded GC'), image_url: 'https://example.test/u.webp' },
+      course('p', 'Pebble Beach Golf Links'),
+      course('n', 'Nowhere Muni'),
+    ]);
+    mocks.getRecentlyPlayedCourses.mockResolvedValue([]);
+    mocks.getTeamSavedCourses.mockResolvedValue([]);
+    const r = await listCoursesRead();
+    expect(r.ok && r.data.map((c) => [c.id, c.image])).toEqual([
+      ['u', 'https://example.test/u.webp'],
+      ['p', '/courses/real/pebble-beach.webp'],
+      ['n', null],
+    ]);
+  });
+
   it('CH-11510 the library is grouped recent, then team, then the rest, each course once', async () => {
     mocks.listCoursesStrict.mockResolvedValue([course('a', 'Alpha'), course('b', 'Beta'), course('c', 'Gamma', 'Durham', '')]);
     mocks.getRecentlyPlayedCourses.mockResolvedValue([course('b', 'Beta')]);
@@ -304,9 +320,9 @@ describe('Round entry: setup over the course library and the engine (ChSetupPort
     expect(r).toEqual({
       ok: true,
       data: [
-        { id: 'b', name: 'Beta', place: 'Chapel Hill, NC', par: 72, teeCount: null, group: 'recent', lastPlayed: null },
-        { id: 'a', name: 'Alpha', place: 'Chapel Hill, NC', par: 72, teeCount: null, group: 'team', lastPlayed: null },
-        { id: 'c', name: 'Gamma', place: 'Durham', par: 72, teeCount: null, group: 'library', lastPlayed: null },
+        { id: 'b', name: 'Beta', place: 'Chapel Hill, NC', par: 72, teeCount: null, group: 'recent', lastPlayed: null, image: null },
+        { id: 'a', name: 'Alpha', place: 'Chapel Hill, NC', par: 72, teeCount: null, group: 'team', lastPlayed: null, image: null },
+        { id: 'c', name: 'Gamma', place: 'Durham', par: 72, teeCount: null, group: 'library', lastPlayed: null, image: null },
       ],
     });
   });
