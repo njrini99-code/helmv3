@@ -327,13 +327,17 @@ Write path: none
 
 ### Links the chat engine writes (Ask)
 
-The receipts and pulse items come from production's chat engine (`lib/coachhelm/v3/chat`: `action-planners.ts`,
-`practice-planner.ts`, `program-pulse.ts`) and name Fairway addresses. Every one goes through `askLinkHref`
-(`data/coachhelm-chat-links.ts`): a moved address opens the Clubhouse screen its alias redirect opens for a coach
-(`/tasks` -> Team Hub Tasks, `/announcements` -> Team Hub Announcements, `/intelligence` -> the CoachHelm board or Ask),
-anything else only when `rebuiltHref(href, 'coach')` keeps it. `wiring-p013-links.test.tsx` reads the engine's source
-and fails when it writes an address that opens nothing here; a new alias in `src/app/golf/(dashboard)/dashboard/*/layout.tsx`
-for a coach needs the same target here.
+The receipts and pulse items come from production's chat engine
+(`lib/coachhelm/v3/chat`: `action-planners.ts`, `practice-planner.ts`,
+`program-pulse.ts`) and name Fairway addresses. Every one goes through
+`askLinkHref` (`data/coachhelm-chat-links.ts`): a moved address opens the
+Clubhouse screen its alias redirect opens for a coach (`/tasks` -> Team Hub
+Tasks, `/announcements` -> Team Hub Announcements, `/intelligence` -> the
+CoachHelm board or Ask), anything else only when `rebuiltHref(href, 'coach')`
+keeps it. `wiring-p013-links.test.tsx` reads the engine's source and fails when
+it writes an address that opens nothing here; a new alias in
+`src/app/golf/(dashboard)/dashboard/*/layout.tsx` for a coach needs the same
+target here.
 
 ## Held dependencies
 

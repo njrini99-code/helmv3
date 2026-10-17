@@ -13,56 +13,73 @@ Data impact:    reads golf_travel_itineraries (id, event_id) for a player's trip
 Held items:     none
 ```
 
-Every Team Hub control was checked against production's callers of the same server action (Fairway's Team Hub, player
-hub, Announcements, Tasks, Travel and Documents): arguments, the action's role check for the role that sees the
+Every Team Hub control was checked against production's callers of the same
+server action (Fairway's Team Hub, player hub, Announcements, Tasks, Travel and
+Documents): arguments, the action's role check for the role that sees the
 control, what the screen does with the result, and where its links go.
 
 ### Fixed
 
-- **A player's trip never said whether they travel.** `getPlayerHubSummaryData` selects no `event_id`, so the loader's
-  invite check had nothing to look up and every pass read "You —". The loader now reads each trip's event
-  (`tripEventIds`); production has 2 of 9 recent trips linked to an event. A failed read leaves it unknown and is
-  logged (`tripLinks`).
-- **Team Hub's badge stayed stale after a player's write.** Got it and a task's tick (and untick) now read the badge
-  again once they land, as production's hub does after the same actions; it waited up to 45s.
-- **The travel part of the badge never cleared.** Production's Travel page marks travel seen on a visit;
-  `/golf/dashboard/travel` now opens Team Hub's Travel tab, which did not. A player's Travel tab now does, once a visit.
-- **A post's attachments could not be opened.** The card said "N attachments" and nothing more; production's card
-  lists them and opens each. The count is now a disclosure: the list is read the first time it opens
-  (`getAnnouncementDetail`, which keeps a targeted post to its recipients), each file opens as a Documents file does,
-  and a failed list says so with Try again.
-- **Updates.** Opening an update marks it read in its own feed, as the bell does (it stayed unread in the bell), and a
-  link off GolfHelm is no longer followed (the bell's `isSafeInternalPath` rule, applied in the loader).
-- **A Clubhouse upload stored its extension as the file type** (`pdf`, where every production row reads
-  `application/pdf`, and the version row's `mime_type` copies it). It now stores the MIME type (`resolveMimeType`, as
-  the storage upload already did), and the file label reads either (a Word file uploaded from Fairway read "VND.").
+- **A player's trip never said whether they travel.** `getPlayerHubSummaryData`
+  selects no `event_id`, so the loader's invite check had nothing to look up and
+  every pass read "You —". The loader now reads each trip's event
+  (`tripEventIds`); production has 2 of 9 recent trips linked to an event. A
+  failed read leaves it unknown and is logged (`tripLinks`).
+- **Team Hub's badge stayed stale after a player's write.** Got it and a task's
+  tick (and untick) now read the badge again once they land, as production's hub
+  does after the same actions; it waited up to 45s.
+- **The travel part of the badge never cleared.** Production's Travel page marks
+  travel seen on a visit; `/golf/dashboard/travel` now opens Team Hub's Travel
+  tab, which did not. A player's Travel tab now does, once a visit.
+- **A post's attachments could not be opened.** The card said "N attachments"
+  and nothing more; production's card lists them and opens each. The count is
+  now a disclosure: the list is read the first time it opens
+  (`getAnnouncementDetail`, which keeps a targeted post to its recipients), each
+  file opens as a Documents file does, and a failed list says so with Try again.
+- **Updates.** Opening an update marks it read in its own feed, as the bell does
+  (it stayed unread in the bell), and a link off GolfHelm is no longer followed
+  (the bell's `isSafeInternalPath` rule, applied in the loader).
+- **A Clubhouse upload stored its extension as the file type** (`pdf`, where
+  every production row reads `application/pdf`, and the version row's
+  `mime_type` copies it). It now stores the MIME type (`resolveMimeType`, as the
+  storage upload already did), and the file label reads either (a Word file
+  uploaded from Fairway read "VND.").
 
-- **Documents took any file and blamed its size.** The picker had no type list, a drop sent anything, and a refused
-  file came back as "Check the file is under 50 MB" when the `documents` bucket's limit is 25 MB (production
-  `file_size_limit` 26214400). The picker now offers Fairway Documents' exact types (`HUB_UPLOAD_ACCEPT`, which are the
-  bucket's `allowed_mime_types`); a file of another type or over 25 MB is refused by name before anything is sent
-  ("setup.exe can’t be shared" / "Film.mov is too large", error haptic) and the rest of the drop goes on. Fairway has no
-  client-side refusal (its drop sends anything and the server refuses), so the wording is Clubhouse's. The failure
+- **Documents took any file and blamed its size.** The picker had no type list,
+  a drop sent anything, and a refused file came back as "Check the file is under
+  50 MB" when the `documents` bucket's limit is 25 MB (production
+  `file_size_limit` 26214400). The picker now offers Fairway Documents' exact
+  types (`HUB_UPLOAD_ACCEPT`, which are the bucket's `allowed_mime_types`); a
+  file of another type or over 25 MB is refused by name before anything is sent
+  ("setup.exe can’t be shared" / "Film.mov is too large", error haptic) and the
+  rest of the drop goes on. Fairway has no client-side refusal (its drop sends
+  anything and the server refuses), so the wording is Clubhouse's. The failure
   hint says 25 MB.
-- **Travel seen is the Travel tab's alone.** Opening Team Hub on Home, Announcements or Documents, or moving between
-  them, marks nothing; the Travel tab marks it once a visit, and a later visit marks it again (tests pin all of it).
+- **Travel seen is the Travel tab's alone.** Opening Team Hub on Home,
+  Announcements or Documents, or moving between them, marks nothing; the Travel
+  tab marks it once a visit, and a later visit marks it again (tests pin all of
+  it).
 
 ### Checked, no change
 
-Reply, Got it, task tick and untick, post, edit, delete, assign, plan and edit a trip, travelers, upload and open a file
-call the same actions with the same arguments as production; each action's check admits the role that sees the control
-(a coach staffed on the team, assistants included; a player with an assignment, an invite or team membership). The old
-`/announcements`, `/tasks` (with `?task=`), `/travel` and `/documents` addresses open the matching tab for both roles.
-Calendar links (`?new=1`, `?date=&event=`) open rebuilt routes. The player badge sums the same three counts as
-production's nav.
+Reply, Got it, task tick and untick, post, edit, delete, assign, plan and edit a
+trip, travelers, upload and open a file call the same actions with the same
+arguments as production; each action's check admits the role that sees the
+control (a coach staffed on the team, assistants included; a player with an
+assignment, an invite or team membership). The old `/announcements`, `/tasks`
+(with `?task=`), `/travel` and `/documents` addresses open the matching tab for
+both roles. Calendar links (`?new=1`, `?date=&event=`) open rebuilt routes. The
+player badge sums the same three counts as production's nav.
 
 ### Verification
 
-- `npx vitest run` on `wiring-p010-hub.test.tsx` (new, 20 cases) with `hub.test.tsx`, `hub-focus-task.test.tsx`,
-  `hub-paged-reads.test.ts`, `hub-trip-manage.test.tsx`: 198 passed. `hub.test.tsx`'s two player-trip fixtures no
-  longer hand the aggregate an `event_id` it never returns (they read it from the itinerary instead).
-- No screenshots: the dev server was not run in this pass (the attachment list is a visible change; capture before
-  and after when it is next run).
+- `npx vitest run` on `wiring-p010-hub.test.tsx` (new, 20 cases) with
+  `hub.test.tsx`, `hub-focus-task.test.tsx`, `hub-paged-reads.test.ts`,
+  `hub-trip-manage.test.tsx`: 198 passed. `hub.test.tsx`'s two player-trip
+  fixtures no longer hand the aggregate an `event_id` it never returns (they
+  read it from the itinerary instead).
+- No screenshots: the dev server was not run in this pass (the attachment list
+  is a visible change; capture before and after when it is next run).
 
 ## 2026-10-17 — A team list that didn't load is told on the page
 
@@ -87,12 +104,12 @@ Held items:     none
   own help line; never an empty list. Plan a trip says "Who’s traveling"
   without "0 of 0".
 - `loadTeamHub`: without the roster a trip's travelers, their ids and count
-  are unknown (null), never "0 travelers"; the "<trip> travelers" audience is
+  are unknown (null), never "0 travelers"; the "{trip} travelers" audience is
   not offered.
 - VERIFY and CONTRACT: the tablist has arrow keys, Home and End (102001); upload
   and delete check for a coach (`documents.ts`).
 
-### Verification
+### Verification (2026-10-17)
 
 - `npm run test:file -- src/clubhouse/__tests__/hub.test.tsx` (new CH-10208
   cases: page notice with Try again, page-notice wording beside another
@@ -115,12 +132,12 @@ has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
 
 ## 2026-10-12 — a task notification opens its task
 
-- A task notification (`?task=<id>`, kept through the old `/golf/dashboard/tasks`
-  address) opens Team Hub on that task: the coach's Tasks tab or the player's
-  Home, its row scrolled into view and lit once with the selected-row wash,
-  fading over the reveal duration; with reduced motion the wash stays still
-  until the row is used. An unknown or malformed id is ignored. New contract
-  100103.
+- A task notification (`?task=<id>`, kept through the old
+  `/golf/dashboard/tasks` address) opens Team Hub on that task: the coach's
+  Tasks tab or the player's Home, its row scrolled into view and lit once with
+  the selected-row wash, fading over the reveal duration; with reduced motion
+  the wash stays still until the row is used. An unknown or malformed id is
+  ignored. New contract 100103.
 - The role (coach or player hub, and the no-team copy) is the dashboard
   layout's (`getGolfDashboardRole`): a user whose player profile is the
   onboarded one and whose coach profile is not gets the player hub.
@@ -140,22 +157,53 @@ gold hairline; an RSVP row warms under the pointer.
 
 ## 2026-10-08 — the radio groups take programmatic focus
 
-Every Hub radio group (an RSVP's reply, Send to, Event, and Getting there in
-the trip sheet and the trip editor) takes `tabIndex={-1}`. The checked radio is still the one Tab stop and the group
-still routes the arrow keys, Home and End (D7); the group itself is now
-focusable, as `jsx-a11y/interactive-supports-focus` requires of an element
-that handles keys, without adding a Tab stop.
+Every Hub radio group (an RSVP's reply, Send to, Event, and Getting there in the
+trip sheet and the trip editor) takes `tabIndex={-1}`. The checked radio is
+still the one Tab stop and the group still routes the arrow keys, Home and End
+(D7); the group itself is now focusable, as
+`jsx-a11y/interactive-supports-focus` requires of an element that handles keys,
+without adding a Tab stop.
 
 ## 2026-10-08 — premium pass: the lit pass, the plate, the edited page and findings (P010-A1 to A3, D1 to D9, D14)
 
-- A1: the next trip is the page's one paper object. On desktop it keeps the paper (the room's light as `--ch-light-paper`), a rim on its sun-facing edges and a contact shadow with a long falloff leaning away from the sun (`--ch-light-*`, never on the facts), joined to its stub by a dashed perforation with two notches; its eyebrow is the page's one gilt (`--ch-ledger-eyebrow`). Later trips stay flat rows. On the phone the approved flush entry keeps everything but gains the perforated rule and notches between the facts and the plan. More contrast drops the rim and shadow for a plain border.
-- A2: the latest announcement is a lacquered plate on the phone (a rim on its sun-facing edges, a pressed headline, the Display-P3 green where the screen has it, light theme only); on desktop the flush entry's headline is debossed.
-- A3: the Announcements tab is an edited page: the newest at 36px, older posts at 22px with their date in the left margin; on desktop the coach's right margin holds the read count of the post in view, pinned while the page scrolls (only the count the page already has). On the phone an older post folds to its title and first line until tapped.
-- D1 a done task strikes its title only, not the ring's fraction. D2 the tab is in the URL (`?tab=`, replaced in place). D3 the coach preview's Updates are coach-shaped. D4 the big pass doesn't repeat Departs and Stay beside its plan, and the plan and the pass's lines share one 96px label column. D5 failure titles are ink (the shell's D5-1). D6 the head's one primary follows the tab (New announcement, Plan a trip, Assign a task; none on Documents, whose drop zone is its primary, or on a tab whose read failed); the in-panel Plan a trip and Assign duplicates are gone. D7 every radio group is one Tab stop and the arrow keys, Home and End walk it (an RSVP's arrows move without sending; Space chooses). D8 "Needs your acknowledgement". D9 an RSVP row's line keeps time and place; the date tile says the day (the full date is still read). D14 the tab underline glides on the base spring.
+- A1: the next trip is the page's one paper object. On desktop it keeps the
+  paper (the room's light as `--ch-light-paper`), a rim on its sun-facing edges
+  and a contact shadow with a long falloff leaning away from the sun
+  (`--ch-light-*`, never on the facts), joined to its stub by a dashed
+  perforation with two notches; its eyebrow is the page's one gilt
+  (`--ch-ledger-eyebrow`). Later trips stay flat rows. On the phone the approved
+  flush entry keeps everything but gains the perforated rule and notches between
+  the facts and the plan. More contrast drops the rim and shadow for a plain
+  border.
+- A2: the latest announcement is a lacquered plate on the phone (a rim on its
+  sun-facing edges, a pressed headline, the Display-P3 green where the screen
+  has it, light theme only); on desktop the flush entry's headline is debossed.
+- A3: the Announcements tab is an edited page: the newest at 36px, older posts
+  at 22px with their date in the left margin; on desktop the coach's right
+  margin holds the read count of the post in view, pinned while the page scrolls
+  (only the count the page already has). On the phone an older post folds to its
+  title and first line until tapped.
+- D1 a done task strikes its title only, not the ring's fraction. D2 the tab is
+  in the URL (`?tab=`, replaced in place). D3 the coach preview's Updates are
+  coach-shaped. D4 the big pass doesn't repeat Departs and Stay beside its plan,
+  and the plan and the pass's lines share one 96px label column. D5 failure
+  titles are ink (the shell's D5-1). D6 the head's one primary follows the tab
+  (New announcement, Plan a trip, Assign a task; none on Documents, whose drop
+  zone is its primary, or on a tab whose read failed); the in-panel Plan a trip
+  and Assign duplicates are gone. D7 every radio group is one Tab stop and the
+  arrow keys, Home and End walk it (an RSVP's arrows move without sending; Space
+  chooses). D8 "Needs your acknowledgement". D9 an RSVP row's line keeps time
+  and place; the date tile says the day (the full date is still read). D14 the
+  tab underline glides on the base spring.
 
 ## 2026-10-08 — dark: Clubhouse at night
 
-Team Hub follows GolfHelm's dark theme ("Clubhouse at night"). Row rules, the pass's perforation, task checkboxes, RSVP and read tracks become ivory hairlines; the tab underline and Going in the RSVP bar take the light green; ivory type on a filled green (RSVP choice, task tick, upload mark, audience choice, step) takes the on-green ink; the featured announcement is unchanged. Light mode is unchanged.
+Team Hub follows GolfHelm's dark theme ("Clubhouse at night"). Row rules, the
+pass's perforation, task checkboxes, RSVP and read tracks become ivory
+hairlines; the tab underline and Going in the RSVP bar take the light green;
+ivory type on a filled green (RSVP choice, task tick, upload mark, audience
+choice, step) takes the on-green ink; the featured announcement is unchanged.
+Light mode is unchanged.
 
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
@@ -261,8 +309,8 @@ Held items:     none
 ```
 
 The screen's imports and test mocks now point at the files that own the server
-actions (calendar-events.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
-by domain. No behavior change.
+actions (calendar-events.ts) after `golf.ts`, `insights.ts` and `admin-data.ts`
+were split by domain. No behavior change.
 
 ## 2026-10-06 — Whole-app release audit
 
@@ -294,9 +342,9 @@ requested action; a task reopened earlier in the visit also restores that last
 confirmed state after a failed completion. No write endpoint or role rule
 changed. Nine added regression cases verify independent saves,
 duplicate/opposite-action prevention, rollback, acknowledgment Retry, the
-reopened-task edge case, tab remounts, quiet stale Retry contention and retaining
-a confirmed acknowledgment after a later stale Retry refuses. The full Hub
-file passes 144/144 tests (exit 0, 37.46 s, one worker).
+reopened-task edge case, tab remounts, quiet stale Retry contention and
+retaining a confirmed acknowledgment after a later stale Retry refuses. The full
+Hub file passes 144/144 tests (exit 0, 37.46 s, one worker).
 
 Evidence and practical limits: `VERIFY.md` and the scoped intuitive
 secondary-screen report.
@@ -460,7 +508,7 @@ Data impact:    none
 - **Fix.** Four steps (Event, Travelers, Logistics, Itinerary) with Back and
   Next; the event fills name, place and day, its invitees are the travelers
   (written with explicit adds and removes); Publish saves the trip once, so a
-  Retry writes only the travelers. New announcement offers "<trip> travelers ·
+  Retry writes only the travelers. New announcement offers "{trip} travelers ·
   N". New states CH-10210, CH-10211, CH-10312, CH-10313. The class-clash line is
   not built (Q-84).
 - **Checked.** hub 101/101, 6 of 6 mutations caught.
@@ -561,7 +609,7 @@ Data impact:    none
 Held items:     none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
 - The six page docs, the manifest's actions (`status.docs` current,
   `status.contract` complete) and the hand
@@ -575,7 +623,7 @@ Held items:     none
   `HubSkeleton`); it used to show
   the Fairway one inside the Clubhouse shell.
 
-### Fixed (each with a test that fails without the fix)
+### Fixed (each with a test that fails without the fix) (2026-09-30)
 
 - **The toast's Retry skipped every follow-up.** All nine writes did their
   follow-up after `await x.run()`
@@ -621,6 +669,6 @@ Held items:     none
   named, and every bug class the
   Calendar and Messages passes found looked for here.
 
-### Verification
+### Verification (2026-09-30)
 
 - See VERIFY.md.

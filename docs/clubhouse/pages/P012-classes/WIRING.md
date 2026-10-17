@@ -60,10 +60,11 @@ Tests: src/clubhouse/__tests__/classes.test.tsx
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P012-classes.json` (`actions`), and the whole list is
-readable in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is refused before anything
-is sent (the shell's 10703, CH-1903; 120703). Every failure toast carries Retry, which runs the whole action
-again (121401).
+Each action's record is in `config/clubhouse/pages/P012-classes.json`
+(`actions`), and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is
+refused before anything is sent (the shell's 10703, CH-1903; 120703). Every
+failure toast carries Retry, which runs the whole action again (121401).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -140,26 +141,36 @@ Write path: the browser client to golf_player_classes, and the server actions ab
 
 ## Held dependencies
 
-None. The board's grade, next deadline and Share with coach, and a sync status column, each need an owner
-decision or new data (Q-75); none is written. Delete all classes needs neither: it uses the same table and the
-same server action as Remove (no migration).
+None. The board's grade, next deadline and Share with coach, and a sync status
+column, each need an owner decision or new data (Q-75); none is written. Delete
+all classes needs neither: it uses the same table and the same server action as
+Remove (no migration).
 
 ## Impact notes
 
-- `syncClassToCalendar` and `removeClassFromCalendar` are shared with the Fairway Classes page and the calendar:
-  a change there changes both UIs. The remove order (calendar first, then the row) is the current page's.
-- Every follow-up to a write lives inside its `useAction` function. Anything added after `await x.run()` in a
-  handler is skipped when the toast's Retry lands (121401).
-- A save passes no start on purpose: the sync deletes the occurrences it no longer generates, so a start of next
-  Monday would drop the meetings already held. An import's start is next Monday only where `syncStartFor` says the
-  sync's window for it is the class's own term (the sync re-derives another term when a start leaves a label with
-  under 21 days, `lib/golf/semester.ts`); if `parseSemesterDates` changes, `syncStartFor` must follow (121502).
-- Delete all classes repeats what Remove does, for a list, so the same rule holds: a class whose calendar events
-  are still on the team calendar keeps its row. Its answer carries three lists (removed, kept, off the calendar),
-  and the page applies exactly those, including on a half-way failure. A Retry replays the first attempt's classes:
-  `removeClassFromCalendar` cleans up a class that is already gone and a delete of a missing row is not an error, so a
-  Retry after a lost answer finishes instead of failing. It is off while any other Classes write runs.
-- The row id is made by the page (`newClassId`) and travels with the insert; `golf_player_classes` has no
-  uniqueness beyond its id, which is why a duplicate-key answer on it means "already stored" (121404).
-- The calendar flags and each class's stored start are held in the page, not in a column: a reload forgets which
-  classes failed to sync (121504), and an edit of an imported class syncs the whole term, past meetings included.
+- `syncClassToCalendar` and `removeClassFromCalendar` are shared with the
+  Fairway Classes page and the calendar: a change there changes both UIs. The
+  remove order (calendar first, then the row) is the current page's.
+- Every follow-up to a write lives inside its `useAction` function. Anything
+  added after `await x.run()` in a handler is skipped when the toast's Retry
+  lands (121401).
+- A save passes no start on purpose: the sync deletes the occurrences it no
+  longer generates, so a start of next Monday would drop the meetings already
+  held. An import's start is next Monday only where `syncStartFor` says the
+  sync's window for it is the class's own term (the sync re-derives another term
+  when a start leaves a label with under 21 days, `lib/golf/semester.ts`); if
+  `parseSemesterDates` changes, `syncStartFor` must follow (121502).
+- Delete all classes repeats what Remove does, for a list, so the same rule
+  holds: a class whose calendar events are still on the team calendar keeps its
+  row. Its answer carries three lists (removed, kept, off the calendar), and the
+  page applies exactly those, including on a half-way failure. A Retry replays
+  the first attempt's classes: `removeClassFromCalendar` cleans up a class that
+  is already gone and a delete of a missing row is not an error, so a Retry
+  after a lost answer finishes instead of failing. It is off while any other
+  Classes write runs.
+- The row id is made by the page (`newClassId`) and travels with the insert;
+  `golf_player_classes` has no uniqueness beyond its id, which is why a
+  duplicate-key answer on it means "already stored" (121404).
+- The calendar flags and each class's stored start are held in the page, not in
+  a column: a reload forgets which classes failed to sync (121504), and an edit
+  of an imported class syncs the whole term, past meetings included.

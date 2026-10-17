@@ -13,17 +13,29 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route: `/golf/dashboard/team-hub` (`?tab=home|ann|travel|docs|tasks`), for coaches and players. Spec: `docs/clubhouse/phone/team-hub.md`.
+Route: `/golf/dashboard/team-hub` (`?tab=home|ann|travel|docs|tasks`), for
+coaches and players. Spec: `docs/clubhouse/phone/team-hub.md`.
 
-A player replies to events, acknowledges posts, checks off tasks and opens files; a coach posts (with files from Documents), fixes the wording of a post, plans trips, assigns tasks, shares and deletes files, and sees who has replied, read and done each.
+A player replies to events, acknowledges posts, checks off tasks and opens
+files; a coach posts (with files from Documents), fixes the wording of a post,
+plans trips, assigns tasks, shares and deletes files, and sees who has replied,
+read and done each.
 
 Where things live:
-- Code: `src/clubhouse/screens/hub/` (`TeamHub`, `parts`, `sheets`, `TravelerClasses`, `writes`)
-- Loader: `src/clubhouse/data/hub.ts` (`loadTeamHub`); the trip's dates and the class lines, as plain functions, in `src/clubhouse/data/hub-shape.ts`; route `src/clubhouse/routes/hub.tsx`
+- Code: `src/clubhouse/screens/hub/` (`TeamHub`, `parts`, `sheets`,
+  `TravelerClasses`, `writes`)
+- Loader: `src/clubhouse/data/hub.ts` (`loadTeamHub`); the trip's dates and the
+  class lines, as plain functions, in `src/clubhouse/data/hub-shape.ts`; route
+  `src/clubhouse/routes/hub.tsx`
 - Tests: `src/clubhouse/__tests__/hub.test.tsx`
-- Preview: `/clubhouse-preview/hub` and `/clubhouse-preview/hub-player` (`?state=empty|failed|failwrites`, `&tab=`)
+- Preview: `/clubhouse-preview/hub` and `/clubhouse-preview/hub-player`
+  (`?state=empty|failed|failwrites`, `&tab=`)
 
-Every save goes through `useAction`, so these belong to the shell: offline refusal (CH-1903), slow saves (CH-1902), the success and error haptics (D-70). Everything a save does on the page (the tick and its undo, the open tab, closing and clearing a sheet, the page reading again, the row leaving) is inside that action, so a toast's Retry that lands does it too.
+Every save goes through `useAction`, so these belong to the shell: offline
+refusal (CH-1903), slow saves (CH-1902), the success and error haptics (D-70).
+Everything a save does on the page (the tick and its undo, the open tab, closing
+and clearing a sheet, the page reading again, the row leaving) is inside that
+action, so a toast's Retry that lands does it too.
 
 ## 100xx Error toasts
 

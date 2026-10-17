@@ -55,8 +55,9 @@
 
 ## How to Use This File
 
-- **Need a table name?** → `AUTOGEN:tables` below is the complete, verified list.
-  The by-feature index is a browsing aid only — confirm the name there first.
+- **Need a table name?** → `AUTOGEN:tables` below is the complete, verified
+  list. The by-feature index is a browsing aid only — confirm the name there
+  first.
 - **Need column details?** → Go to `memory/context/golfhelm-database.md`
   (its `AUTOGEN:columns` block, not its narrative — that file says so itself)
 - **Need enum values?** → `AUTOGEN:enums` at the bottom (18 enums, verified)

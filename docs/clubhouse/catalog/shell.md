@@ -15,14 +15,15 @@ assistive-technology acceptance.
 
 The frame around every page: sidebar, top bar, bell, offline banner, full-page
 errors, and the behaviour every page shares. Code `src/clubhouse/shell/`,
-`src/clubhouse/ui/`, `src/clubhouse/lib/`. Tests `src/clubhouse/__tests__/shell.test.tsx`.
+`src/clubhouse/ui/`, `src/clubhouse/lib/`. Tests
+`src/clubhouse/__tests__/shell.test.tsx`.
 
 The shell's rows apply on every page: a page's own catalog only lists what is
-specific to it. The accessibility scan (`npm run clubhouse:a11y`, axe-core,
-WCAG 2.2 AA at 1280px and 390px) covers the bell panel, the phone bell sheet
-and the phone More sheet open. The phone chrome (the tab bar, the top bar's variants, pushed
-screens) follows the owner's design (`docs/clubhouse/phone/foundation.md`,
-D-40 to D-43).
+specific to it. The accessibility scan (`npm run clubhouse:a11y`, axe-core, WCAG
+2.2 AA at 1280px and 390px) covers the bell panel, the phone bell sheet and the
+phone More sheet open. The phone chrome (the tab bar, the top bar's variants,
+pushed screens) follows the owner's design
+(`docs/clubhouse/phone/foundation.md`, D-40 to D-43).
 
 ## 10xx Error toasts
 

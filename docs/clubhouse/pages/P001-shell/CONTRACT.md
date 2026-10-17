@@ -418,7 +418,7 @@ log through chLogServer; each intent leaves a breadcrumb (12301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 12301 | — | `FAILURES_REPORTED` | A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.<read>. |
+| 12301 | — | `FAILURES_REPORTED` | A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.{read}. |
 
 ## 24 — CI / automated test
 

@@ -44,7 +44,11 @@ Sign in: the course, then the ivory panel, then the two fields and the button;
 the tagline and the mark are quiet. Welcome: the greeting, then the name, then
 the card with what is new, then Continue. After dark the type is ivory.
 
-**Type exception (2026-10-16, owner):** the wordmark "Golfhelm" is set in a script face (Norican, `--ch-font-script`, preloaded), but in the sidebar's brand (P001), not on this page: Continue only asks the sidebar to write it in (`markBrandWrite`). Nothing on the auth screens uses it; they keep Instrument Sans.
+**Type exception (2026-10-16, owner):** the wordmark "Golfhelm" is set in a
+script face (Norican, `--ch-font-script`, preloaded), but in the sidebar's brand
+(P001), not on this page: Continue only asks the sidebar to write it in
+(`markBrandWrite`). Nothing on the auth screens uses it; they keep Instrument
+Sans.
 
 ## Components
 
@@ -70,9 +74,9 @@ haptic, field and number), `auth-motion` (the welcome's variants), `use-hour`
 
 Added 2026-10-07 for the reset form in the panel: `ResetForm` and `ResetSent`
 (`ForgotPassword.tsx`), `AuthKeyLabel` (a key's two labels in one cell),
-`useAuthView` (the panel's view, kept in `?view=forgot`), `useGlide` (transform-only
-FLIP for what a refusal or a view change moves) and `forgot-state` (today's reset
-rules and words).
+`useAuthView` (the panel's view, kept in `?view=forgot`), `useGlide`
+(transform-only FLIP for what a refusal or a view change moves) and
+`forgot-state` (today's reset rules and words).
 
 ### Modified components
 
@@ -143,12 +147,12 @@ One structure with the desktop's, switched in CSS at 820px (the same width as
 device. On the phone: the course on top and the form on a sheet from
 `clamp(200px, 42svh, 352px)`, grouped rows, the Forgot link under the button,
 every control at least 44px, and the welcome full screen with the hole centred
-and the list stacked. The phone greeting is the board's 50px from a 390px
-phone, scaling down below it, one width step narrower (94) so "Good afternoon,"
-holds one line at the relaxed tracking. The keyboard scrolls the button above itself. The October
-1 owner review explicitly calls for the hole after Sign in. The course poster
-uses the same wide and tall viewboxes as the animated scene so initial rendering
-and animation loading preserve that framing.
+and the list stacked. The phone greeting is the board's 50px from a 390px phone,
+scaling down below it, one width step narrower (94) so "Good afternoon," holds
+one line at the relaxed tracking. The keyboard scrolls the button above itself.
+The October 1 owner review explicitly calls for the hole after Sign in. The
+course poster uses the same wide and tall viewboxes as the animated scene so
+initial rendering and animation loading preserve that framing.
 
 ## Accessibility intent
 

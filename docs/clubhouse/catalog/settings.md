@@ -13,26 +13,34 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route `/golf/dashboard/settings` · code `src/clubhouse/screens/settings/` (the phone screen: `phone/`) · tests
-`src/clubhouse/__tests__/settings.test.tsx` (each test is named by its number) · preview
-`/clubhouse-preview/settings` (`?state=failed|partial|failwrites|player|noteam|assistant|loading`).
+Route `/golf/dashboard/settings` · code `src/clubhouse/screens/settings/` (the
+phone screen: `phone/`) · tests `src/clubhouse/__tests__/settings.test.tsx`
+(each test is named by its number) · preview `/clubhouse-preview/settings`
+(`?state=failed|partial|failwrites|player|noteam|assistant|loading`).
 
-Success confirmations are listed next to their error: the toast shows for 4 seconds, errors for 8 with Retry.
+Success confirmations are listed next to their error: the toast shows for 4
+seconds, errors for 8 with Retry.
 
-The second line of an 80xx error toast is chosen by cause (`saveFailureBody` in `parts.tsx`). Only a save that got no
-answer (it threw, gave no reason, or failed with the browser's network wording) says "Check your connection and try
-again." A save the server refused says why: "Your account doesn't have access to do this." for a policy or a missing
-grant (also when the database words it as "violates row-level security"), the session line for an expired sign-in, the
-server's own short sentence as written, and "The server didn't accept the change. The error has been reported." for a
-technical refusal; a card's own next step (CH-8018) stands in for that last one. A switch's toast keeps "It is back
+The second line of an 80xx error toast is chosen by cause (`saveFailureBody` in
+`parts.tsx`). Only a save that got no answer (it threw, gave no reason, or
+failed with the browser's network wording) says "Check your connection and try
+again." A save the server refused says why: "Your account doesn't have access to
+do this." for a policy or a missing grant (also when the database words it as
+"violates row-level security"), the session line for an expired sign-in, the
+server's own short sentence as written, and "The server didn't accept the
+change. The error has been reported." for a technical refusal; a card's own next
+step (CH-8018) stands in for that last one. A switch's toast keeps "It is back
 where it was." in front.
 
-**Phone (81901).** At 820px or less Settings is a different screen (owner design, `docs/clubhouse/phone/settings.md`):
-a grouped list that pushes to each section, edit cards as sheets, choices as bottom sheets, destructive choices as
-action sheets. It uses the same writes, hooks (`screens/settings/hooks.ts`) and numbers as desktop, so every row below
-exists on the phone with the differences named in its "How" cell. Desktop only: CH-8009 and CH-8504 (Mute push, Mute
-email and Reset are not in the phone design, and each kind's sheet changes the same switches) and CH-8507 (there is no
-rail to switch). The tests for the phone are the "Settings · phone" group in `settings.test.tsx`.
+**Phone (81901).** At 820px or less Settings is a different screen (owner
+design, `docs/clubhouse/phone/settings.md`): a grouped list that pushes to each
+section, edit cards as sheets, choices as bottom sheets, destructive choices as
+action sheets. It uses the same writes, hooks (`screens/settings/hooks.ts`) and
+numbers as desktop, so every row below exists on the phone with the differences
+named in its "How" cell. Desktop only: CH-8009 and CH-8504 (Mute push, Mute
+email and Reset are not in the phone design, and each kind's sheet changes the
+same switches) and CH-8507 (there is no rail to switch). The tests for the phone
+are the "Settings · phone" group in `settings.test.tsx`.
 
 ## 80xx Error toasts
 
@@ -181,7 +189,9 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 
 ## 89xx Network and UX
 
-Settings uses the shared behaviour: CH-1901 offline banner, CH-1902 "Still saving…" after 5 seconds, CH-1903 a save refused while offline, and the CH-195x experience signals. See [shell](shell.md).
+Settings uses the shared behaviour: CH-1901 offline banner, CH-1902 "Still
+saving…" after 5 seconds, CH-1903 a save refused while offline, and the CH-195x
+experience signals. See [shell](shell.md).
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |

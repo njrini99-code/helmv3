@@ -55,7 +55,11 @@ Tests: src/clubhouse/__tests__/home.test.tsx (the route, Coach Home, the coach l
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P002-home.json` (`actions`), and the whole list is readable in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Home has no write, so no action goes through `useAction` and none has an offline refusal of its own (the shell's Try again offline is 10704).
+Each action's record is in `config/clubhouse/pages/P002-home.json` (`actions`),
+and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Home has no write, so no
+action goes through `useAction` and none has an offline refusal of its own (the
+shell's Try again offline is 10704).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -151,9 +155,21 @@ None.
 
 ## Impact notes
 
-- `homeClock`, `loadHomeWeek` and `latestWithHoles` serve both roles. A change to them changes Coach Home and Player Home together; `loadPlayerHome` passes `loadHomeWeek` no names, and that argument is the player's privacy (20804).
-- `page.tsx` also renders the Fairway dashboards; only its two Clubhouse branches belong to Home, and the Fairway branches must keep working while the flag is off (20801).
-- Home imports the event type label and icon from Calendar's screens (`calendar/model`, `calendar/views`) and `formatHcp` from Roster's (`roster/format`); `ui/Nine` is shared with Qualifiers.
-- Message coach depends on Messages accepting `?user=` (Messages.tsx, CH-7001). If that deep link changes, `messageCoachHref` (`player-links.ts`) changes with it.
-- `golf_teams.created_by` is a `golf_coaches.id`, not a user id (true of all ten live teams, per the fix on 2026-09-30); `coachFor` matches it against `golf_coaches.id` and returns that coach's `user_id`.
-- The desktop markup is what the server renders on every width; the phone Home replaces it at hydration (CSS hides the desktop markup at 820px and below until then).
+- `homeClock`, `loadHomeWeek` and `latestWithHoles` serve both roles. A change
+  to them changes Coach Home and Player Home together; `loadPlayerHome` passes
+  `loadHomeWeek` no names, and that argument is the player's privacy (20804).
+- `page.tsx` also renders the Fairway dashboards; only its two Clubhouse
+  branches belong to Home, and the Fairway branches must keep working while the
+  flag is off (20801).
+- Home imports the event type label and icon from Calendar's screens
+  (`calendar/model`, `calendar/views`) and `formatHcp` from Roster's
+  (`roster/format`); `ui/Nine` is shared with Qualifiers.
+- Message coach depends on Messages accepting `?user=` (Messages.tsx, CH-7001).
+  If that deep link changes, `messageCoachHref` (`player-links.ts`) changes with
+  it.
+- `golf_teams.created_by` is a `golf_coaches.id`, not a user id (true of all ten
+  live teams, per the fix on 2026-09-30); `coachFor` matches it against
+  `golf_coaches.id` and returns that coach's `user_id`.
+- The desktop markup is what the server renders on every width; the phone Home
+  replaces it at hydration (CSS hides the desktop markup at 820px and below
+  until then).

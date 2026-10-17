@@ -13,7 +13,8 @@
 -- all succeed), because a function that raises for everyone passes every
 -- refusal check.
 --
--- Plan arithmetic: 2 structural + 13 allowed (incl. evidence and hosts) + 11 refused + 2 direct-table = 28.
+-- Plan arithmetic: 2 structural + 13 allowed (incl. evidence and hosts) + 11
+-- refused + 2 direct-table = 28.
 
 BEGIN;
 \ir _helpers.sql
@@ -101,10 +102,17 @@ SELECT ok(
 );
 
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.golf_set_course_image(uuid, text)', 'EXECUTE')
-  AND NOT has_function_privilege('public', 'public.golf_set_course_image(uuid, text)', 'EXECUTE')
-  AND has_function_privilege('authenticated', 'public.golf_set_course_image(uuid, text)', 'EXECUTE'),
-  'golf_set_course_image is executable by authenticated and NOT by anon or PUBLIC'
+  NOT has_function_privilege(
+    'anon', 'public.golf_set_course_image(uuid, text)', 'EXECUTE'
+  )
+  AND NOT has_function_privilege(
+    'public', 'public.golf_set_course_image(uuid, text)', 'EXECUTE'
+  )
+  AND has_function_privilege(
+    'authenticated', 'public.golf_set_course_image(uuid, text)', 'EXECUTE'
+  ),
+  'golf_set_course_image is executable by authenticated and NOT by anon or '
+  'PUBLIC'
 );
 
 -- ============================================================================
@@ -334,7 +342,8 @@ SELECT throws_ok(
     'http://evil.example/x/storage/v1/object/public/course-images/courses/00000000-0000-0000-0000-00000016100a/p.jpg')$$,
   '22023',
   'invalid_image_url',
-  'the storage path must follow the host directly (not be buried deeper in the path)'
+  'the storage path must follow the host directly (not be buried deeper in '
+  'the path)'
 );
 
 SELECT throws_ok(

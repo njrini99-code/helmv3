@@ -13,13 +13,16 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route `/golf/dashboard/calendar` (coach and player) · code `src/clubhouse/screens/calendar/`, loader
-`src/clubhouse/data/calendar.ts` · tests `src/clubhouse/__tests__/calendar.test.tsx` · preview
-`/clubhouse-preview/calendar` (`?state=empty|failed|partial|loading`, `&view=day|month|agenda`, `&event=`, `&new=1`) and
+Route `/golf/dashboard/calendar` (coach and player) · code
+`src/clubhouse/screens/calendar/`, loader `src/clubhouse/data/calendar.ts` ·
+tests `src/clubhouse/__tests__/calendar.test.tsx` · preview
+`/clubhouse-preview/calendar` (`?state=empty|failed|partial|loading`,
+`&view=day|month|agenda`, `&event=`, `&new=1`) and
 `/clubhouse-preview/calendar-player`.
 
-Every save goes through `useAction` (offline CH-1903, slow CH-1902, commit and error haptics). Removing a
-file is optimistic with Undo, and refuses offline the same way.
+Every save goes through `useAction` (offline CH-1903, slow CH-1902, commit and
+error haptics). Removing a file is optimistic with Undo, and refuses offline the
+same way.
 
 ## 60xx Error toasts
 

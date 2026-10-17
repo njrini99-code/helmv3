@@ -53,9 +53,10 @@ Tests: src/clubhouse/__tests__/messages.test.tsx (63 cases), message-attachments
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P007-messages.json` (`actions`), and the whole list is
-readable in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is refused before
-anything is sent (the shell's 10703, CH-1903).
+Each action's record is in `config/clubhouse/pages/P007-messages.json`
+(`actions`), and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is
+refused before anything is sent (the shell's 10703, CH-1903).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -83,12 +84,15 @@ anything is sent (the shell's 10703, CH-1903).
 
 ## Production parity (2026-10-17)
 
-Each control against Fairway's call for the same write (`src/components/fairway/pages/messages/**`,
-`FairwayPlayerAnnouncementCard`) and the server action's guard. Fixed: a coach's group needs a player (a broadcast
-with none adds the whole team; `groupLacksPlayer`); an announcement's file opens through `getPreviewUrl`
-(`api.openAnnouncementDocument`), never the stored `file_url`; a deep link that arrives while the page is open is
-taken (keyed on the address, `linkKey` in `Messages.tsx`), and a `?conversation=` thread missing from the list is
-refetched once before it opens; message fields cap at 5,000 (`MESSAGE_MAX`).
+Each control against Fairway's call for the same write
+(`src/components/fairway/pages/messages/**`, `FairwayPlayerAnnouncementCard`)
+and the server action's guard. Fixed: a coach's group needs a player (a
+broadcast with none adds the whole team; `groupLacksPlayer`); an announcement's
+file opens through `getPreviewUrl` (`api.openAnnouncementDocument`), never the
+stored `file_url`; a deep link that arrives while the page is open is taken
+(keyed on the address, `linkKey` in `Messages.tsx`), and a `?conversation=`
+thread missing from the list is refetched once before it opens; message fields
+cap at 5,000 (`MESSAGE_MAX`).
 
 Differences kept:
 
@@ -100,9 +104,10 @@ Differences kept:
 | Creator leaving their group | Leave group shown to everyone | hidden for the creator | D-47 |
 | Schedule (coach) | none in Messages | desktop header and phone tile invite a direct thread's player (`&with=`) | D-47, D-52 |
 
-Built to match production the same day: the creator removes members (`removeGolfGroupMember`, after CH-7504), a
-search hit goes to its message (`use-focus-message.ts`, with `useThreadAnchor` paused), and the phone's Schedule tile
-invites the direct thread's player.
+Built to match production the same day: the creator removes members
+(`removeGolfGroupMember`, after CH-7504), a search hit goes to its message
+(`use-focus-message.ts`, with `useThreadAnchor` paused), and the phone's
+Schedule tile invites the direct thread's player.
 
 ## Components
 
@@ -167,13 +172,16 @@ Write path: createEnrichedAnnouncement (coach), acknowledgeAnnouncement and comp
 
 ## Held dependencies
 
-- `docs/clubhouse/held/features/conversation-files.md` (built, held behind the Clubhouse gate)
-- `docs/clubhouse/held/data/message-attachments-hardening.md` (applied 2026-10-03, `20261001130000`; HELD.md)
+- `docs/clubhouse/held/features/conversation-files.md` (built, held behind the
+  Clubhouse gate)
+- `docs/clubhouse/held/data/message-attachments-hardening.md` (applied
+  2026-10-03, `20261001130000`; HELD.md)
 
 ## Impact notes
 
-- The realtime hooks and message actions are shared with Fairway's Messages. A change there changes
-  both UIs; D-13 keeps them untouched from Clubhouse.
-- `sendGolfMessage` takes the client's optimistic id, so the retry path depends on it never changing.
-- The directory loader feeds names and roles for every bubble; a failed members read shows CH-7204
-  rather than blank names.
+- The realtime hooks and message actions are shared with Fairway's Messages. A
+  change there changes both UIs; D-13 keeps them untouched from Clubhouse.
+- `sendGolfMessage` takes the client's optimistic id, so the retry path depends
+  on it never changing.
+- The directory loader feeds names and roles for every bubble; a failed members
+  read shows CH-7204 rather than blank names.

@@ -115,10 +115,10 @@ VoiceOver, dark-mode scan or real-account write pass.
   workflow: the biggest test gap for round safety.
 - **Tooling:** the first dark-mode a11y scan ran 2026-10-17 (Chromium, reduced
   motion, 1280 and 390px): 304 screens and states, zero violations, after a
-  Roster fix it found and one stale opener in the scan. `clubhouse:perf` has Stats and Home from 2026-10-01;
-  CoachHelm and any re-measure since #2189 are missing (it needs a production
-  build). `clubhouse-quality` is not a required check and runs only on some
-  paths.
+  Roster fix it found and one stale opener in the scan. `clubhouse:perf` has
+  Stats and Home from 2026-10-01; CoachHelm and any re-measure since #2189 are
+  missing (it needs a production build). `clubhouse-quality` is not a required
+  check and runs only on some paths.
 - **iOS (native, owner's call):** the offline cold-start reload loop is not
   addressed (`GolfBridgeViewController.swift:158-164` treats `offline.html` as
   leaving `/golf/`, and `SceneDelegate.swift:21-29` reloads the online login,

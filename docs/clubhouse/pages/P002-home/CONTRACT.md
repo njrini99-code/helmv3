@@ -302,7 +302,7 @@ Each Home is read on the server in one request before its first paint, and no Ho
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 22101 | — | `LOADERS_NEVER_THROW` | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', <read>) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
+| 22101 | — | `LOADERS_NEVER_THROW` | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
 
 From the shell (P001): 12101 CH-1954.
 
@@ -322,7 +322,7 @@ A section that crashes is reported through `chReport` with surface `home.<sectio
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 22301 | — | `FAILURES_REPORTED` | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', <read>), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
+| 22301 | — | `FAILURES_REPORTED` | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
 
 ## 24 — CI / automated test
 

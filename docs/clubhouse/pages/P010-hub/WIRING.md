@@ -53,10 +53,11 @@ Tests: src/clubhouse/__tests__/hub.test.tsx
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P010-hub.json` (`actions`), and the whole list is
-readable in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is refused before
-anything is sent (the shell's 10703, CH-1903; 100701). Every failure toast carries Retry, which runs the
-whole action again (101401).
+Each action's record is in `config/clubhouse/pages/P010-hub.json` (`actions`),
+and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is
+refused before anything is sent (the shell's 10703, CH-1903; 100701). Every
+failure toast carries Retry, which runs the whole action again (101401).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -141,35 +142,48 @@ Write path: the server actions above, through writes.ts
 
 ## Held dependencies
 
-None. The design's Pin to the top, Schedule and Mandatory each need data or an action change the owner
-has not approved (Q-70, Q-71).
+None. The design's Pin to the top, Schedule and Mandatory each need data or an
+action change the owner has not approved (Q-70, Q-71).
 
 ## Impact notes
 
-- `respondToEvent`, `acknowledgeAnnouncement`, `completeTask`, `createTask` and the document actions are
-  shared with Fairway's Calendar, Team Hub and coach pages: a change there changes both UIs.
-- `getPlayerHubSummaryData` is the player hub's own aggregate; the loader relies on its shape, and on it
-  throwing when the events, travel or tasks read fails (the loader catches that and flags those three
-  sections). Its trips select no `event_id`, so the loader reads each trip's event itself
-  (`tripEventIds`, `golf_travel_itineraries` by id); a failed read leaves "You" unknown (C-19).
-- A player's write (Got it, a task's tick or untick) reads the shell's badge again (`useNotificationBadges().refetch`),
-  as production's hub does.
-- Updates link only to addresses inside GolfHelm (`isSafeInternalPath`, on the server), as the bell follows them.
-- A Clubhouse upload stores the file's MIME type in `file_type` (`resolveMimeType`), as Fairway's Documents does; the
-  file label reads a MIME type or an extension (`fileKind`).
-- The announcements a coach posts go to the coach's active team as the server action resolves it
-  (`resolveCoachTeamIdWithCookie`), while this page's team comes from `resolveClubhouseTeam`; both read the
-  active-team cookie, and nothing here proves they can never differ.
-- An edit changes only headline, message and acknowledgement (`updateAnnouncement` takes no audience and no attachments), and
-  sends the post's urgency back as it was read (`ChHubAnnouncement.urgency`): Messages posts `urgent`, and a fixed `normal`
-  would downgrade those. New announcement offers only documents players can open (`ChHubFile.isPublic`, from `is_public`), which Fairway's
-  composer does not check (Q-83): a coach-only file is left out of the list, and a line says how many (CH-10314).
-- `createEnrichedAnnouncement` links the files in a separate insert after the post exists. When that insert fails the post stands,
-  `success` stays true and `attachmentsError` is set; Clubhouse says so once (CH-10012) and offers no Retry, since the post is not
-  replayed. Fairway's composer and Messages ignore the field, as they did the failure. The recipients insert just above it also
+- `respondToEvent`, `acknowledgeAnnouncement`, `completeTask`, `createTask` and
+  the document actions are shared with Fairway's Calendar, Team Hub and coach
+  pages: a change there changes both UIs.
+- `getPlayerHubSummaryData` is the player hub's own aggregate; the loader relies
+  on its shape, and on it throwing when the events, travel or tasks read fails
+  (the loader catches that and flags those three sections). Its trips select no
+  `event_id`, so the loader reads each trip's event itself (`tripEventIds`,
+  `golf_travel_itineraries` by id); a failed read leaves "You" unknown (C-19).
+- A player's write (Got it, a task's tick or untick) reads the shell's badge
+  again (`useNotificationBadges().refetch`), as production's hub does.
+- Updates link only to addresses inside GolfHelm (`isSafeInternalPath`, on the
+  server), as the bell follows them.
+- A Clubhouse upload stores the file's MIME type in `file_type`
+  (`resolveMimeType`), as Fairway's Documents does; the file label reads a MIME
+  type or an extension (`fileKind`).
+- The announcements a coach posts go to the coach's active team as the server
+  action resolves it (`resolveCoachTeamIdWithCookie`), while this page's team
+  comes from `resolveClubhouseTeam`; both read the active-team cookie, and
+  nothing here proves they can never differ.
+- An edit changes only headline, message and acknowledgement
+  (`updateAnnouncement` takes no audience and no attachments), and sends the
+  post's urgency back as it was read (`ChHubAnnouncement.urgency`): Messages
+  posts `urgent`, and a fixed `normal` would downgrade those. New announcement
+  offers only documents players can open (`ChHubFile.isPublic`, from
+  `is_public`), which Fairway's composer does not check (Q-83): a coach-only
+  file is left out of the list, and a line says how many (CH-10314).
+- `createEnrichedAnnouncement` links the files in a separate insert after the
+  post exists. When that insert fails the post stands, `success` stays true and
+  `attachmentsError` is set; Clubhouse says so once (CH-10012) and offers no
+  Retry, since the post is not replayed. Fairway's composer and Messages ignore
+  the field, as they did the failure. The recipients insert just above it also
   discards its error (found, not changed here).
-- `getTravelerClassConflicts` is a new read of student data, gated three ways (a coach staffed on the team, every traveler on the
-  team's active roster, only the chosen travelers asked about) and sends only the class and its hours. A player's classes stay
-  visible to the coach who could already read them under `golf_classes_select_coaches`; nothing widens.
-- Every follow-up to a write lives inside its `useAction` function. Anything added after `await x.run()` in
-  a handler is skipped when the toast's Retry lands (101401).
+- `getTravelerClassConflicts` is a new read of student data, gated three ways (a
+  coach staffed on the team, every traveler on the team's active roster, only
+  the chosen travelers asked about) and sends only the class and its hours. A
+  player's classes stay visible to the coach who could already read them under
+  `golf_classes_select_coaches`; nothing widens.
+- Every follow-up to a write lives inside its `useAction` function. Anything
+  added after `await x.run()` in a handler is skipped when the toast's Retry
+  lands (101401).

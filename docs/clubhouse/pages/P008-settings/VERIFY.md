@@ -15,8 +15,8 @@ verification and durable writes are still pending.
 
 Desktop section swaps, phone pushes, settings sheets and reorder list.
 
-Check the single 260ms entrance without exit wait; verify instant reduced motion,
-drag/scroll conflicts and pending saves.
+Check the single 260ms entrance without exit wait; verify instant reduced
+motion, drag/scroll conflicts and pending saves.
 
 Fresh WebKit 26.6: `/clubhouse-preview/settings` at
 375, 430 and 1280px; zero Axe A/AA violations and no horizontal document

@@ -478,9 +478,9 @@ Further browser checks paused when the shared dev server ran out of disk.
   The entry routes' `error.tsx` files use the shared boundary, which draws
   Clubhouse's error view inside the shell (corrected 2026-10-17).
 - Offline (110702), Esc (112001), the read order (112101), a failed Start
-  keeping the setup (111201) and a failed hole save
-  keeping the shots (111202) have no test. The review's skeleton (110206) is built
-  (`RoundReviewSkeleton`; corrected 2026-10-17).
+  keeping the setup (111201) and a failed hole save keeping the shots (111202)
+  have no test. The review's skeleton (110206) is built (`RoundReviewSkeleton`;
+  corrected 2026-10-17).
 - Found and not fixed (see the report to the parent):
   - Fixed since (corrected 2026-10-17): `rounds/[id]/loading.tsx` draws
     `RoundReviewSkeleton` through `ClubhouseSwitch` (110206), and both

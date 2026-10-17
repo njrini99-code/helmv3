@@ -68,9 +68,10 @@ re-reads the page.
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P003-roster.json` (`actions`), and the whole list is
-readable in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is refused before
-anything is sent (30701, the shell's 10703, CH-1903).
+Each action's record is in `config/clubhouse/pages/P003-roster.json`
+(`actions`), and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is
+refused before anything is sent (30701, the shell's 10703, CH-1903).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -89,14 +90,16 @@ anything is sent (30701, the shell's 10703, CH-1903).
 | ACT-P003-CHANGE-LAYOUT | The cards or list toggle (desktop) | `changeView` | — (stored on the device) | — | kept 31202 · tick 31701 · table roles 31801 |
 | ACT-P003-TRY-AGAIN | Try again on the roster, stats, requests or join code notice | `router.refresh` | — (the page is read again) | — | follows the refresh 30303 · whole page 31402 · roster 30608 · stats 30609 · requests 30610 |
 
-The player's view (`TeamRoster`, `TeamRosterPhone`) has no write and no link out (30804, CH-3807):
+The player's view (`TeamRoster`, `TeamRosterPhone`) has no write and no link out
+(30804, CH-3807):
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
 | ACT-P003-PLAYER-VIEW | Search, the layout toggle (desktop) and the sort | `setQ`, `changeView`, `setSort` | — (the roster is already loaded; the layout is stored on the device) | — | nobody matches 30402 · tick 31701 · read-only 30804 · text, not controls 31807 |
 | ACT-P003-PLAYER-TRY-AGAIN | Try again on "The roster didn't load." | `router.refresh` | — (the page is read again) | — | roster 30617 · crash 30618 |
 
-Links out are plain links through `rebuiltHref`, so a destination that is not rebuilt for the role is not offered:
+Links out are plain links through `rebuiltHref`, so a destination that is not
+rebuilt for the role is not offered:
 
 | Link | From | To |
 | --- | --- | --- |
@@ -202,13 +205,26 @@ Write path: setIntent (an upsert on coach_id and player_id, after verifyPlayerAc
 
 ## Held dependencies
 
-- `docs/clubhouse/held/data/roster-availability.md` (the migration is written and held; nothing reads or writes the columns)
+- `docs/clubhouse/held/data/roster-availability.md` (the migration is written
+  and held; nothing reads or writes the columns)
 
 ## Impact notes
 
-- `removePlayerFromTeam`, the join request actions and `setIntent` are shared with Fairway. A change to what they return or refuse changes both UIs. Roster shows the server's `error` when it is one short sentence, and its own hint otherwise.
-- `useAction` re-runs only the action function on Retry. Anything the screen must do after a success therefore lives inside the action (31403).
-- `data.players` and `data.requests` are the server's. The screen holds only what it changed since the page arrived, and a new page replaces it (30303).
-- The sidebar's join requests count is the shell's own read (10609 when it fails). Roster does not update it. Not verified: whether it refreshes after an approval.
-- `/golf/dashboard/roster/[id]` is Fairway's player page and is not rebuilt: with Clubhouse on its layout sends a coach to that player's Stats and a player to the roster (30806).
-- The player's view reads through a separate loader on purpose. Adding a field to `ChTeammate` is a privacy decision (30805): the test that lists the selected columns and the tables asked for fails until it is made on purpose. Scores are not a teammate's to read here (the Home contract, 20803).
+- `removePlayerFromTeam`, the join request actions and `setIntent` are shared
+  with Fairway. A change to what they return or refuse changes both UIs. Roster
+  shows the server's `error` when it is one short sentence, and its own hint
+  otherwise.
+- `useAction` re-runs only the action function on Retry. Anything the screen
+  must do after a success therefore lives inside the action (31403).
+- `data.players` and `data.requests` are the server's. The screen holds only
+  what it changed since the page arrived, and a new page replaces it (30303).
+- The sidebar's join requests count is the shell's own read (10609 when it
+  fails). Roster does not update it. Not verified: whether it refreshes after an
+  approval.
+- `/golf/dashboard/roster/[id]` is Fairway's player page and is not rebuilt:
+  with Clubhouse on its layout sends a coach to that player's Stats and a player
+  to the roster (30806).
+- The player's view reads through a separate loader on purpose. Adding a field
+  to `ChTeammate` is a privacy decision (30805): the test that lists the
+  selected columns and the tables asked for fails until it is made on purpose.
+  Scores are not a teammate's to read here (the Home contract, 20803).

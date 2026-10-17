@@ -2,57 +2,78 @@
 
 ## 2026-10-17 — Standings checked against production
 
-Parity pass on the standings (which rounds count, the score, ties, the cut, the lifecycle) against what production
-serves: Fairway's live leaderboard (`FairwayQualifierLeaderboard` with `useQualifierRealtime`), the selection workspace
-its confirm commits from (`loadQualifyingWorkspace`), the unused `getQualifierLeaderboard` action and
-`get_qualifier_leaderboard` function. The board already counted the workspace's rounds in the workspace's order with
-its tie at the cut; two Clubhouse differences are fixed (`screens/qualifiers/model.ts`):
+Parity pass on the standings (which rounds count, the score, ties, the cut, the
+lifecycle) against what production serves: Fairway's live leaderboard
+(`FairwayQualifierLeaderboard` with `useQualifierRealtime`), the selection
+workspace its confirm commits from (`loadQualifyingWorkspace`), the unused
+`getQualifierLeaderboard` action and `get_qualifier_leaderboard` function. The
+board already counted the workspace's rounds in the workspace's order with its
+tie at the cut; two Clubhouse differences are fixed
+(`screens/qualifiers/model.ts`):
 
-- **The Bubble is inside the squad.** `buildBoard` marked the first player out as Bubble too (`i <= squad`), drawn
-  below the board's own travel cut, and with no coach's picks at all, when there is no place to contend for. It is now
-  the places below the line on score down to the squad size, as Fairway's tiers and DESIGN.md have it. In production
-  data this moved one row on five qualifiers (3cf7f129, b7fdd787, 8fe2c339, ec46521b, 86dad12b) from Bubble to out.
-- **A round with no stored round number counts.** It was drawn as round 1 and then dropped as a second round 1 when
-  the player had one; the workspace counts it. No production round lacks a number today. The round-by-round grid and
-  the rounds panel still draw one round per number, so such a round would be in the total but not in its own column.
+- **The Bubble is inside the squad.** `buildBoard` marked the first player out
+  as Bubble too (`i <= squad`), drawn below the board's own travel cut, and with
+  no coach's picks at all, when there is no place to contend for. It is now the
+  places below the line on score down to the squad size, as Fairway's tiers and
+  DESIGN.md have it. In production data this moved one row on five qualifiers
+  (3cf7f129, b7fdd787, 8fe2c339, ec46521b, 86dad12b) from Bubble to out.
+- **A round with no stored round number counts.** It was drawn as round 1 and
+  then dropped as a second round 1 when the player had one; the workspace counts
+  it. No production round lacks a number today. The round-by-round grid and the
+  rounds panel still draw one round per number, so such a round would be in the
+  total but not in its own column.
 
-The board's round shaping moved into `model.ts` (`roundOfRow`, `countsOnBoard`) and the loader reads `status` and
-`is_test` with each round and holds the same rule after the query, so the tests run the loader's own shaping.
+The board's round shaping moved into `model.ts` (`roundOfRow`, `countsOnBoard`)
+and the loader reads `status` and `is_test` with each round and holds the same
+rule after the query, so the tests run the loader's own shaping.
 
-Kept, where production's live leaderboard is wrong (raised as questions; WIRING.md "Standings parity"): it numbers
-ties 1, T2 and marks a tie on to par alone, puts one of two players level at the cut in by stored order, counts test
-rounds and a completed round with no total (as 0 strokes), falls back to the stored entry aggregate, and averages
-9-hole rounds with 18-hole ones. The Bubble's ⌈rounds ÷ 2⌉ minimum (P009-C2) is the owner's and stays.
+Kept, where production's live leaderboard is wrong (raised as questions;
+WIRING.md "Standings parity"): it numbers ties 1, T2 and marks a tie on to par
+alone, puts one of two players level at the cut in by stored order, counts test
+rounds and a completed round with no total (as 0 strokes), falls back to the
+stored entry aggregate, and averages 9-hole rounds with 18-hole ones. The
+Bubble's ⌈rounds ÷ 2⌉ minimum (P009-C2) is the owner's and stays.
 
-Tests: `standings-parity.test.tsx` (new, beside the Fairway leaderboard because Clubhouse code may not import Fairway:
-the three real pipelines over one fake database, 18 cases), and the `qualifiers.test.tsx` standings case, whose fourth
-player of a squad of three is now out. A read-only run over every production qualifier matched the workspace on all
-19 qualifiers Clubhouse shows (score, order, cut) before and after; the 3 test qualifiers are not shown. No visual check is recorded.
+Tests: `standings-parity.test.tsx` (new, beside the Fairway leaderboard because
+Clubhouse code may not import Fairway: the three real pipelines over one fake
+database, 18 cases), and the `qualifiers.test.tsx` standings case, whose fourth
+player of a squad of three is now out. A read-only run over every production
+qualifier matched the workspace on all 19 qualifiers Clubhouse shows (score,
+order, cut) before and after; the 3 test qualifiers are not shown. No visual
+check is recorded.
 
 ## 2026-10-17 — Qualifier writes checked against production
 
-Parity pass on the write paths (create, edit, close and reopen, the squad selection) against Fairway's create, edit and
-CoachHelm qualifying workspace. Every Clubhouse write calls the same shared action with the same arguments, so the
-server's revalidation, notifications, logging and entry rows are the same; no server action changed. Two Clubhouse
-differences are fixed:
+Parity pass on the write paths (create, edit, close and reopen, the squad
+selection) against Fairway's create, edit and CoachHelm qualifying workspace.
+Every Clubhouse write calls the same shared action with the same arguments, so
+the server's revalidation, notifications, logging and entry rows are the same;
+no server action changed. Two Clubhouse differences are fixed:
 
-- **A retired entry deadline no longer blocks an edit** (`QualifierForm.tsx`, `keptDeadline`). The form has no deadline
-  field (2026-10-16), but an older qualifier can carry one, and both the form (CH-09104) and `updateGolfQualifierDetails`
-  refuse a deadline after the start. Moving the start date before a stored deadline failed on a field the coach could
-  not see. The stored deadline now rides along while it still fits and is cleared (sent as null) once the new start
-  passes it; create sends none, as before.
-- **Every refusal of the selection service has its own words** (`writes.ts`, `selectionReason`). A tie at the cut on
-  Confirm read "Choose every pick, each with a reason", and the tie-place, scored-round and pick-slot refusals were
-  unmapped or read as a roster problem. Each is mapped from the service's exact sentence; a workspace that would not
-  read now says to try again instead of "may have been deleted".
+- **A retired entry deadline no longer blocks an edit** (`QualifierForm.tsx`,
+  `keptDeadline`). The form has no deadline field (2026-10-16), but an older
+  qualifier can carry one, and both the form (CH-09104) and
+  `updateGolfQualifierDetails` refuse a deadline after the start. Moving the
+  start date before a stored deadline failed on a field the coach could not see.
+  The stored deadline now rides along while it still fits and is cleared (sent
+  as null) once the new start passes it; create sends none, as before.
+- **Every refusal of the selection service has its own words** (`writes.ts`,
+  `selectionReason`). A tie at the cut on Confirm read "Choose every pick, each
+  with a reason", and the tie-place, scored-round and pick-slot refusals were
+  unmapped or read as a roster problem. Each is mapped from the service's exact
+  sentence; a workspace that would not read now says to try again instead of
+  "may have been deleted".
 
-Checked and unchanged (the full table is in the PR): D-61's squad and entrant edits stay held behind the flag and the
-coach dashboard role before any read; Close is offered at any stage, while Fairway only shows Conclude once the
-squad is confirmed; no recorded decision covers this, so it is left as built and raised as an open question; the squad cap of 12 is the database's
-(Fairway's field allows 50 and fails at the database).
+Checked and unchanged (the full table is in the PR): D-61's squad and entrant
+edits stay held behind the flag and the coach dashboard role before any read;
+Close is offered at any stage, while Fairway only shows Conclude once the squad
+is confirmed; no recorded decision covers this, so it is left as built and
+raised as an open question; the squad cap of 12 is the database's (Fairway's
+field allows 50 and fails at the database).
 
-Tests: `qualifier-write-parity.test.tsx` (new: payloads of every live write, each service refusal, the deadline), and
-two `qualifiers.test.tsx` assertions that pinned the old wording. Not checked in a browser.
+Tests: `qualifier-write-parity.test.tsx` (new: payloads of every live write,
+each service refusal, the deadline), and two `qualifiers.test.tsx` assertions
+that pinned the old wording. Not checked in a browser.
 
 ## 2026-10-17 — A coach on /my-qualifiers goes to Qualifiers
 
@@ -64,54 +85,73 @@ aliased list. A player's My qualifiers is unchanged (checked in Chrome). Test:
 
 ## 2026-10-16 — Qualifiers: separate sheets, the active one in focus, full contrast
 
-Owner, 2026-10-16: "better separation between qualifiers listed", "more contrast on this page", "more focal on active
-qualifiers", "way more contrast on this page". Three commits, all in `qualifiers.css` unless noted. No visual check is
+Owner, 2026-10-16: "better separation between qualifiers listed", "more contrast
+on this page", "more focal on active qualifiers", "way more contrast on this
+page". Three commits, all in `qualifiers.css` unless noted. No visual check is
 recorded for any of them.
 
-- **The desktop list** (above 820px): each qualifier is its own raised sheet on the parchment with a gap between, in
-  place of the ruled ledger seams. Titles, the lines under them, the facts and the intro step up to full ink (the
-  facts' icons are green), and the filter pills take ink when idle and the shared green chip when chosen
-  (docs/clubhouse/CHANGELOG.md). The phone's list is unchanged.
-- **The active qualifier is the list's focus** (`QualifiersList.tsx`): it sits under its own "Active" heading on a raised
-  sheet with a green edge; concluded qualifiers are quieter (secondary heading, lighter sheets). The board in the active
-  qualifier read "Leaders", which did not say it belonged to that qualifier; it reads "Standings · top N" now
-  (`qualifiers.test.tsx` follows).
-- **Full contrast in light mode**: the page takes a page-scoped step up. Text is one grade darker, and rules and borders
-  use the Increase Contrast values (`.ch-qf` re-points `--ch-text-*`, `--ch-border-*` and the ledger rules). On a
-  qualifier's own desktop page the facts, the leaderboard and the side sections sit on bright sheets. Dark mode is
-  unchanged.
+- **The desktop list** (above 820px): each qualifier is its own raised sheet on
+  the parchment with a gap between, in place of the ruled ledger seams. Titles,
+  the lines under them, the facts and the intro step up to full ink (the facts'
+  icons are green), and the filter pills take ink when idle and the shared green
+  chip when chosen (docs/clubhouse/CHANGELOG.md). The phone's list is unchanged.
+- **The active qualifier is the list's focus** (`QualifiersList.tsx`): it sits
+  under its own "Active" heading on a raised sheet with a green edge; concluded
+  qualifiers are quieter (secondary heading, lighter sheets). The board in the
+  active qualifier read "Leaders", which did not say it belonged to that
+  qualifier; it reads "Standings · top N" now (`qualifiers.test.tsx` follows).
+- **Full contrast in light mode**: the page takes a page-scoped step up. Text is
+  one grade darker, and rules and borders use the Increase Contrast values
+  (`.ch-qf` re-points `--ch-text-*`, `--ch-border-*` and the ledger rules). On a
+  qualifier's own desktop page the facts, the leaderboard and the side sections
+  sit on bright sheets. Dark mode is unchanged.
 
 ## 2026-10-16 — Thru as dots; qualifiers have no entry deadline
 
 Owner, 2026-10-16.
 
-- **Thru is a row of dots** (`ThruDots` in `parts.tsx`, desktop and phone leaderboards): one per scheduled round, green
-  for each one played, centred, labelled "2 of 3 rounds" for VoiceOver. A qualifier of more than eight rounds keeps the
-  figure ("2/9"), since a longer row of dots is not countable at a glance.
-- **No entry deadline.** The owner says qualifiers have none. The fact is gone from the desktop facts (five left) and the
-  phone's facts (two, now a two-column grid), and the field and its skeleton from the create and edit form. A stored
-  deadline is left as it is, the database is untouched, and the CH-09104 check ("The entry deadline has to be on or
-  before the start date.") and its catalog row stay, though the form can no longer set a value for it to refuse.
-  CONTRACT 90102 and 91901 and the phone notes now count the remaining facts.
-- **A player's rounds beside the leaderboard** (desktop only, `QualifierDetail.tsx`, `PlayerRounds`): a side panel on the
-  scoreboard green, "Your rounds" or "<name>’s rounds", with the total to par large and one tile per round (course,
-  date, score and plate). The best round is marked and an unplayed round is dashed. It follows the leaderboard row a
-  coach opens, otherwise the viewer's own; a player sees only their own. It reads `board.rows[].rounds`, so there is no
-  new read and no migration. The open row now lives in a small `useSyncExternalStore` store: lifting it into the page's
-  state re-rendered the page and stalled the streamed sections (CH-09410). Its boundary is **CH-09223** (the commit
-  named it CH-09216, which is already the qualifier form's boundary, so it was renumbered, on the phone too; the
-  existing crash test now names it). Qualifiers vitest passed in the main session; no visual check is recorded for this panel.
-- **A round opens in place** (`RoundsShowcase.tsx`, which now holds `PlayerRounds`, `RoundVisual`, `FieldStrip` and the
-  open-row store): a round tile is a button that opens its detail under it. The round's rank in the field comes first,
-  with every score as an anonymous dot on one line, this round lit and the average a tick. When the round has holes, a
-  hole-by-hole shape against par is drawn as SVG, with the nines as score marks and counts by kind. A link goes to the
-  whole round, `/golf/dashboard/rounds/<id>`. No new read.
-- **The phone**: a player's own rounds are shown above the board, between the facts and the leaderboard (a coach opens
-  anyone's from their row, which opens a sheet as before), inside the same boundary, CH-09223. The phone list takes
-  the separate sheets and the green filter chip too. Checked by the main session in Chrome at 1567 and 420px wide;
-  Qualifiers vitest passed; not checked on a device.
-- **The ink ramp** in the page's contrast block is darker too, 700 down to 300 (the same step CoachHelm and Ask took,
-  see P013), so copy that names a mid ink directly reads darker.
+- **Thru is a row of dots** (`ThruDots` in `parts.tsx`, desktop and phone
+  leaderboards): one per scheduled round, green for each one played, centred,
+  labelled "2 of 3 rounds" for VoiceOver. A qualifier of more than eight rounds
+  keeps the figure ("2/9"), since a longer row of dots is not countable at a
+  glance.
+- **No entry deadline.** The owner says qualifiers have none. The fact is gone
+  from the desktop facts (five left) and the phone's facts (two, now a
+  two-column grid), and the field and its skeleton from the create and edit
+  form. A stored deadline is left as it is, the database is untouched, and the
+  CH-09104 check ("The entry deadline has to be on or before the start date.")
+  and its catalog row stay, though the form can no longer set a value for it to
+  refuse. CONTRACT 90102 and 91901 and the phone notes now count the remaining
+  facts.
+- **A player's rounds beside the leaderboard** (desktop only,
+  `QualifierDetail.tsx`, `PlayerRounds`): a side panel on the scoreboard green,
+  "Your rounds" or "{name}’s rounds", with the total to par large and one tile
+  per round (course, date, score and plate). The best round is marked and an
+  unplayed round is dashed. It follows the leaderboard row a coach opens,
+  otherwise the viewer's own; a player sees only their own. It reads
+  `board.rows[].rounds`, so there is no new read and no migration. The open row
+  now lives in a small `useSyncExternalStore` store: lifting it into the page's
+  state re-rendered the page and stalled the streamed sections (CH-09410). Its
+  boundary is **CH-09223** (the commit named it CH-09216, which is already the
+  qualifier form's boundary, so it was renumbered, on the phone too; the
+  existing crash test now names it). Qualifiers vitest passed in the main
+  session; no visual check is recorded for this panel.
+- **A round opens in place** (`RoundsShowcase.tsx`, which now holds
+  `PlayerRounds`, `RoundVisual`, `FieldStrip` and the open-row store): a round
+  tile is a button that opens its detail under it. The round's rank in the field
+  comes first, with every score as an anonymous dot on one line, this round lit
+  and the average a tick. When the round has holes, a hole-by-hole shape against
+  par is drawn as SVG, with the nines as score marks and counts by kind. A link
+  goes to the whole round, `/golf/dashboard/rounds/<id>`. No new read.
+- **The phone**: a player's own rounds are shown above the board, between the
+  facts and the leaderboard (a coach opens anyone's from their row, which opens
+  a sheet as before), inside the same boundary, CH-09223. The phone list takes
+  the separate sheets and the green filter chip too. Checked by the main session
+  in Chrome at 1567 and 420px wide; Qualifiers vitest passed; not checked on a
+  device.
+- **The ink ramp** in the page's contrast block is darker too, 700 down to 300
+  (the same step CoachHelm and Ask took, see P013), so copy that names a mid ink
+  directly reads darker.
 
 ## 2026-10-14 — A round with no tees says so
 
@@ -193,33 +233,45 @@ hero keeps its scoreboard.
 
 ## 2026-10-08 — Premium pass: honest Live, standings on plates, rows that move only on a change, pace beside the total
 
-Owner-approved items P009-A1, B1, B2 and C2 (docs/clubhouse/PREMIUM_PASS_AUDIT.md), with findings D1–D5, D10, D11 and D14:
+Owner-approved items P009-A1, B1, B2 and C2
+(docs/clubhouse/PREMIUM_PASS_AUDIT.md), with findings D1–D5, D10, D11 and D14:
 
-- **Honest Live (B2, D1):** `useLiveStandings` returns the realtime feed's state (`feedReduce`). The board's chip
-  reads "Live · updated 4:12 PM" only while the channel is SUBSCRIBED; on CHANNEL_ERROR, TIMED_OUT or CLOSED, or
-  after the tab was hidden 5 minutes or more, it reads "Paused · standings from 4:12 PM" with Refresh, which re-reads
-  the page and reopens a dropped channel. A channel error is still reported. The dot stays static (D-33). The time is
-  stamped after hydration, by the chip alone.
-- **Ended (D3):** a live qualifier past its end date reads "Ended · n rounds outstanding" in its status pill (list hero
-  and cards, detail, phone), never Live. The loader stamps `today` as the date at UTC−12 (`endDayFor`), so a qualifier
-  ends only once its last day is over everywhere; a fixture or test without `today` is not reconciled.
-- **Plates (A1):** to par sits on a fixed-aspect ivory plate (condensed cell numeral; red only under par) on the
-  desktop board, the phone rows and the list's live card; ties read "T3" with a raised T; movement since the previous
-  round ("▲2", "▼1") is computed against the board with the latest round number left out (`ChQRow.move`). Nothing
-  animates in. The phone board is one 56pt row a player under a header drawn once (D4).
-- **Rows that move only on a change (B1):** when a refresh changes the ranked order (`rankOrderChanged`), each moved
-  row slides to its new place inside React's `<ViewTransition>` (class `ch-rank`, the smooth spring). No digit
-  rolling or count-ups (owner override of the spec's NumberFlow). Skipped with reduced motion or Animations off,
-  within 300ms of a scroll, with a scorecard tray, sheet or dialog open (`useRankSlide`).
-- **Pace (C2, D2):** the desktop board adds Thru and Avg; a ranked row with fewer rounds in than the most anyone has
-  carries "1 of 3 rounds"; Bubble needs at least half the scheduled rounds in, rounded up (`bubbleMinRounds`: 2 of 3),
+- **Honest Live (B2, D1):** `useLiveStandings` returns the realtime feed's state
+  (`feedReduce`). The board's chip reads "Live · updated 4:12 PM" only while the
+  channel is SUBSCRIBED; on CHANNEL_ERROR, TIMED_OUT or CLOSED, or after the tab
+  was hidden 5 minutes or more, it reads "Paused · standings from 4:12 PM" with
+  Refresh, which re-reads the page and reopens a dropped channel. A channel
+  error is still reported. The dot stays static (D-33). The time is stamped
+  after hydration, by the chip alone.
+- **Ended (D3):** a live qualifier past its end date reads "Ended · n rounds
+  outstanding" in its status pill (list hero and cards, detail, phone), never
+  Live. The loader stamps `today` as the date at UTC−12 (`endDayFor`), so a
+  qualifier ends only once its last day is over everywhere; a fixture or test
+  without `today` is not reconciled.
+- **Plates (A1):** to par sits on a fixed-aspect ivory plate (condensed cell
+  numeral; red only under par) on the desktop board, the phone rows and the
+  list's live card; ties read "T3" with a raised T; movement since the previous
+  round ("▲2", "▼1") is computed against the board with the latest round number
+  left out (`ChQRow.move`). Nothing animates in. The phone board is one 56pt row
+  a player under a header drawn once (D4).
+- **Rows that move only on a change (B1):** when a refresh changes the ranked
+  order (`rankOrderChanged`), each moved row slides to its new place inside
+  React's `<ViewTransition>` (class `ch-rank`, the smooth spring). No digit
+  rolling or count-ups (owner override of the spec's NumberFlow). Skipped with
+  reduced motion or Animations off, within 300ms of a scroll, with a scorecard
+  tray, sheet or dialog open (`useRankSlide`).
+- **Pace (C2, D2):** the desktop board adds Thru and Avg; a ranked row with
+  fewer rounds in than the most anyone has carries "1 of 3 rounds"; Bubble needs
+  at least half the scheduled rounds in, rounded up (`bubbleMinRounds`: 2 of 3),
   and the caption says so. The ranking rule is unchanged.
-- **Findings:** the Refresh and the desktop scorecards chevron are 44pt to a finger, as is Choose a player on the phone
-  (D5; the pills and the phone action row already were); the form's description help reads "format and stakes" and a
-  round with no course of its own names the qualifier's course (D10); list dates drop the year inside the current
-  year (D11); the "Active" section is "Upcoming and live" (D14).
-- Preview: `/clubhouse-preview/qualifier?q=live&state=paused | ended | reorder` (reorder refreshes to three more
-  signed rounds after 2s).
+- **Findings:** the Refresh and the desktop scorecards chevron are 44pt to a
+  finger, as is Choose a player on the phone (D5; the pills and the phone action
+  row already were); the form's description help reads "format and stakes" and a
+  round with no course of its own names the qualifier's course (D10); list dates
+  drop the year inside the current year (D11); the "Active" section is "Upcoming
+  and live" (D14).
+- Preview: `/clubhouse-preview/qualifier?q=live&state=paused | ended | reorder`
+  (reorder refreshes to three more signed rounds after 2s).
 - Tests: `src/clubhouse/__tests__/qualifiers-premium.test.tsx`.
 
 ## 2026-10-08 — States: a failed read keeps the head; one save failure, said once
@@ -321,8 +373,8 @@ Held items:     none
 ```
 
 The screen's imports and test mocks now point at the files that own the server
-actions (qualifier-actions.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
-by domain. No behavior change.
+actions (qualifier-actions.ts) after `golf.ts`, `insights.ts` and
+`admin-data.ts` were split by domain. No behavior change.
 
 ## 2026-10-07 — Presses answer; a row's scorecards drop into place
 

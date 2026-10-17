@@ -72,7 +72,8 @@ BEGIN
     ('00000000-0000-0000-0000-000000173603', '00000000-0000-0000-0000-000000173302', 'F1', 'practice', now() + interval '1 day')
   ON CONFLICT DO NOTHING;
 
-  -- E1: accepted, declined (legacy not_attending), maybe (invited only), pending.
+  -- E1: accepted, declined (legacy not_attending), maybe (invited only),
+  -- pending.
   INSERT INTO public.golf_event_attendance (event_id, player_id, status) VALUES
     ('00000000-0000-0000-0000-000000173601', '00000000-0000-0000-0000-000000173502', 'accepted'),
     ('00000000-0000-0000-0000-000000173601', '00000000-0000-0000-0000-000000173503', 'not_attending'),
@@ -96,10 +97,17 @@ SELECT ok(
   'golf_event_attendance_counts is SECURITY DEFINER with search_path = ""'
 );
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.golf_event_attendance_counts(uuid[])', 'EXECUTE')
-  AND NOT has_function_privilege('public', 'public.golf_event_attendance_counts(uuid[])', 'EXECUTE')
-  AND has_function_privilege('authenticated', 'public.golf_event_attendance_counts(uuid[])', 'EXECUTE'),
-  'golf_event_attendance_counts is executable by authenticated and NOT by anon or PUBLIC'
+  NOT has_function_privilege(
+    'anon', 'public.golf_event_attendance_counts(uuid[])', 'EXECUTE'
+  )
+  AND NOT has_function_privilege(
+    'public', 'public.golf_event_attendance_counts(uuid[])', 'EXECUTE'
+  )
+  AND has_function_privilege(
+    'authenticated', 'public.golf_event_attendance_counts(uuid[])', 'EXECUTE'
+  ),
+  'golf_event_attendance_counts is executable by authenticated and NOT by '
+  'anon or PUBLIC'
 );
 
 -- ============================================================================

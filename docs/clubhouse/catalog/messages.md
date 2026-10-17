@@ -14,17 +14,14 @@ assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
 Route `/golf/dashboard/messages` (coach and player) · code
-`src/clubhouse/screens/messages/`, loader
-`src/clubhouse/data/messages.ts` · tests
-`src/clubhouse/__tests__/messages.test.tsx` · preview
+`src/clubhouse/screens/messages/`, loader `src/clubhouse/data/messages.ts` ·
+tests `src/clubhouse/__tests__/messages.test.tsx` · preview
 `/clubhouse-preview/messages`
 (`?state=empty|rail|failed|thread-failed|loading|loading-route|announcement|ann-failed|files-failed|add-failed`)
-and
-`/clubhouse-preview/messages-player`. Below 820px the same numbers hold on the
-phone
-design (`MessagesPhone`, `docs/clubhouse/phone/messages.md`); CH-7018 to
-CH-7021,
-7214, 7215, 7306, 7307, 7409, 7410, 7604, 7704 and 7804 were added with it.
+and `/clubhouse-preview/messages-player`. Below 820px the same numbers hold on
+the phone design (`MessagesPhone`, `docs/clubhouse/phone/messages.md`); CH-7018
+to CH-7021, 7214, 7215, 7306, 7307, 7409, 7410, 7604, 7704 and 7804 were added
+with it.
 
 Messages keeps the live realtime hooks (D-13). Every change runs through one
 helper (`attempt` in `Messages.tsx`) with the same rules as `useAction`:

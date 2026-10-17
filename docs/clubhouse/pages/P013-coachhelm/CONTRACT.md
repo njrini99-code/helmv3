@@ -414,7 +414,7 @@ Failed reads are logged by name under the `coachhelm` feature, failed writes are
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 132301 | — | `FAILURES_REPORTED` | A read that fails in a loader is logged through chLogServer('coachhelm', <read>, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |
+| 132301 | — | `FAILURES_REPORTED` | A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |
 
 From the shell (P001): 12301 FAILURES_REPORTED.
 

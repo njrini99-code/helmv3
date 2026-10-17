@@ -1,5 +1,6 @@
 -- pgTAP contract for the coach policies on golf_announcement_recipients and
--- golf_announcement_tasks (20261017101000_golf_announcement_children_team_scoped.sql).
+-- golf_announcement_tasks
+-- (20261017101000_golf_announcement_children_team_scoped.sql).
 --
 -- The live coach policies compare the announcement's team with itself, so the
 -- only real gate is "has any golf_coaches row" plus whatever golf_announcements
@@ -94,7 +95,9 @@ END $$;
 SELECT is(
   (SELECT count(*)::int FROM pg_policies
     WHERE schemaname = 'public'
-      AND tablename IN ('golf_announcement_recipients', 'golf_announcement_tasks')
+      AND tablename IN (
+        'golf_announcement_recipients', 'golf_announcement_tasks'
+      )
       AND coalesce(qual, '') || coalesce(with_check, '') LIKE '%golf_coaches%'),
   0,
   'no child policy keeps the self-comparing golf_coaches predicate'
@@ -138,7 +141,8 @@ SELECT throws_ok(
   $$INSERT INTO public.golf_announcement_recipients (announcement_id, player_id)
     VALUES ('00000000-0000-0000-0000-000000172602', '00000000-0000-0000-0000-000000172503')$$,
   '42501', NULL,
-  'a player who coaches another team cannot narrow an all-team post to one player'
+  'a player who coaches another team cannot narrow an all-team post to one '
+  'player'
 );
 SELECT throws_ok(
   $$INSERT INTO public.golf_announcement_tasks (announcement_id, task_id, sort_order)
@@ -199,7 +203,8 @@ SELECT lives_ok(
      WHERE announcement_id = '00000000-0000-0000-0000-000000172601'$$,
   'the team''s coach can remove recipients'
 );
--- Re-adding the same pair would hit the table's key if the delete had not landed.
+-- Re-adding the same pair would hit the table's key if the delete had not
+-- landed.
 SELECT lives_ok(
   $$INSERT INTO public.golf_announcement_recipients (announcement_id, player_id)
     VALUES ('00000000-0000-0000-0000-000000172601', '00000000-0000-0000-0000-000000172503')$$,

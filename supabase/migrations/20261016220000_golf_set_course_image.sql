@@ -1,6 +1,6 @@
 -- STATUS: WRITTEN, NOT APPLIED. The owner merges and applies this as part of a
 -- batch.
--- Apply: npm run db:apply -- supabase/migrations/20261016220000_golf_set_course_image.sql
+-- Apply: npm run db:apply -- <this file>
 -- Risk: LOW. One new SECURITY DEFINER function, no table, policy or grant on an
 -- existing object changes. It can only write golf_courses.image_url and one
 -- golf_course_edit_history row.
@@ -42,7 +42,8 @@
 --          and http://localhost:54321. Library rows are shared across teams, so
 --          the host is pinned here and not only in the server action: a direct
 --          RPC call cannot point a course photo at an outside server. A new
---          Supabase project or a custom storage domain means updating this list.
+--          Supabase project or a custom storage domain means updating this
+--          list.
 --   P0002  the course does not exist or is soft-deleted (deleted_at set)
 --
 -- WHAT IT WRITES: golf_courses.image_url, last_edited_by_user_id,
@@ -72,8 +73,8 @@
 -- VERIFY: 'public' and tablename = 'golf_courses' and cmd = 'UPDATE') = 1;
 
 CREATE OR REPLACE FUNCTION public.golf_set_course_image(
-  p_course_id uuid,
-  p_image_url text
+    p_course_id uuid,
+    p_image_url text
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -176,12 +177,20 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.golf_set_course_image(uuid, text) IS
-  'Sets golf_courses.image_url for a course. Callable by an active golf team member, any coach, or a super admin (owner decision 2026-10-16). Updates only image_url plus last-edited attribution and writes a golf_course_edit_history row; does not widen golf_courses_update_authenticated. Errors: 28000 not signed in, 42501 not a member, 22023 bad URL, P0002 course missing or soft-deleted.';
+'Sets golf_courses.image_url for a course. Callable by an active golf team '
+'member, any coach, or a super admin (owner decision 2026-10-16). Updates '
+'only image_url plus last-edited attribution and writes a '
+'golf_course_edit_history row; does not widen '
+'golf_courses_update_authenticated. Errors: 28000 not signed in, 42501 not a '
+'member, 22023 bad URL, P0002 course missing or soft-deleted.';
 
 -- Supabase's default privileges grant EXECUTE on new public functions to anon,
 -- so revoke it explicitly.
-REVOKE ALL ON FUNCTION public.golf_set_course_image(uuid, text) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.golf_set_course_image(uuid, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.golf_set_course_image(uuid, text) FROM public,
+anon;
+GRANT EXECUTE ON FUNCTION public.golf_set_course_image(
+    uuid, text
+) TO authenticated;
 
 -- ACL assertion: the migration fails loudly on grant drift.
 DO $assert$

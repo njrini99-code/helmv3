@@ -14,10 +14,12 @@ assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
 Routes:
-- `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` and `/[id]/selection` (Manage selections)
+- `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` and
+  `/[id]/selection` (Manage selections)
 - `/golf/dashboard/my-qualifiers`
 
-Coaches and players share the list and the detail (D-30). Create, edit and Manage selections are coach-only.
+Coaches and players share the list and the detail (D-30). Create, edit and
+Manage selections are coach-only.
 
 Where things live:
 - Code: `src/clubhouse/screens/qualifiers/`
@@ -26,9 +28,13 @@ Where things live:
 - Tests: `src/clubhouse/__tests__/qualifiers.test.tsx`
 - Preview:
   - `/clubhouse-preview/qualifiers` (`?state=empty|failed|partial|loading`)
-  - `/clubhouse-preview/qualifier` (`?q=live|upcoming|selected|completed|spring`, and `?state=failed|scores|partial|failwrites|loading`)
-  - `/clubhouse-preview/qualifier-new` and `/clubhouse-preview/qualifier-edit` (`?state=failed|noroster|courses|failwrites|loading`)
-  - `/clubhouse-preview/qualifiers-player`, `/clubhouse-preview/qualifier-player` and `/clubhouse-preview/my-qualifiers`
+  - `/clubhouse-preview/qualifier`
+    (`?q=live|upcoming|selected|completed|spring`, and
+    `?state=failed|scores|partial|failwrites|loading`)
+  - `/clubhouse-preview/qualifier-new` and `/clubhouse-preview/qualifier-edit`
+    (`?state=failed|noroster|courses|failwrites|loading`)
+  - `/clubhouse-preview/qualifiers-player`,
+    `/clubhouse-preview/qualifier-player` and `/clubhouse-preview/my-qualifiers`
 
 Every save goes through `useAction`, so these belong to the shell:
 - offline refusal (CH-1903);

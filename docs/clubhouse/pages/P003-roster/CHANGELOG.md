@@ -63,33 +63,38 @@ of every Roster state passes (15).
 
 ## 2026-10-16 — Sort, filter and layout use the shared green chip
 
-The Roster's chosen sort, filter and grid or list toggle take the lit green chip every switcher draws (`roster.css`);
-the page's own green rules are removed. Shared detail: docs/clubhouse/CHANGELOG.md.
+The Roster's chosen sort, filter and grid or list toggle take the lit green chip
+every switcher draws (`roster.css`); the page's own green rules are removed.
+Shared detail: docs/clubhouse/CHANGELOG.md.
 
 ## 2026-10-16 — Roster's figures are text until a hand is on the sort (phone)
 
-Replaces the earlier entry that made them text for the first frame only: a frame after the paint the numerals still
-mounted inside the switch. The figures in `RosterPhoneList` are now the same text Number Flow draws until
-pointerdown or focus lands on the sort, the only control that rolls them (`RosterPhone`); pointerdown comes before
-the click, so the first sort still rolls. The text and Number Flow match to the pixel, so nothing moves when they
-swap. `useArrivalPainted` is no longer used here.
+Replaces the earlier entry that made them text for the first frame only: a frame
+after the paint the numerals still mounted inside the switch. The figures in
+`RosterPhoneList` are now the same text Number Flow draws until pointerdown or
+focus lands on the sort, the only control that rolls them (`RosterPhone`);
+pointerdown comes before the click, so the first sort still rolls. The text and
+Number Flow match to the pixel, so nothing moves when they swap.
+`useArrivalPainted` is no longer used here.
 
 ## 2026-10-16 — A switch to Roster on the phone draws its figures as text first
 
 Each row's figure is a Number Flow numeral (it rolls when the coach picks a
 sort), and mounting a list of them was about 20ms of a switch to Roster's long
-frame (WebKit, production build, phone: 57–67ms with them, 37–52ms without).
-The figures are now plain text for the page's first frame and become Number
-Flow once it is painted (`useArrivalPainted`); a hard load hydrates with Number
-Flow as before. The text is laid out as Number Flow lays out the same figure, and
-the two captures match to the pixel, so nothing moves when they swap. A sort
-still rolls. Worst frame of a switch to Roster: 56–67ms before, 44–53ms after.
+frame (WebKit, production build, phone: 57–67ms with them, 37–52ms without). The
+figures are now plain text for the page's first frame and become Number Flow
+once it is painted (`useArrivalPainted`); a hard load hydrates with Number Flow
+as before. The text is laid out as Number Flow lays out the same figure, and the
+two captures match to the pixel, so nothing moves when they swap. A sort still
+rolls. Worst frame of a switch to Roster: 56–67ms before, 44–53ms after.
 
 ## 2026-10-15 — Ink that holds at night
 
-Dark mode: the Active filter, the sort switch's selected segment, the request heads, codes and the selected face's name; the team-average chip keeps dark ink on its gold in both themes now take `--ch-on-fill-*` / `--ch-forest-*` ink, which
-match the day's palette in light and stay light at night (they went dark on
-dark). Light is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+Dark mode: the Active filter, the sort switch's selected segment, the request
+heads, codes and the selected face's name; the team-average chip keeps dark ink
+on its gold in both themes now take `--ch-on-fill-*` / `--ch-forest-*` ink,
+which match the day's palette in light and stay light at night (they went dark
+on dark). Light is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
 
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
@@ -125,7 +130,7 @@ Held items: none
 - Owner decision: rebuild the dropped Fairway "Change status"
   (`FairwayPlayerActionsMenu`).
 
-### Verification
+### Verification (2026-10-12)
 
 - roster.test (CH-3502, CH-3404, CH-3008, CH-1903, the phone ⋯ sheet). Not
   observed in a browser or on a device; no screenshots.
@@ -224,7 +229,11 @@ roster is its own component); the desktop roster is unchanged.
 
 From the native-feel audit (P1-3). Not yet reviewed by the owner.
 
-- **Sorted by SG**, each phone row's trailing column shows strokes gained per round (`+0.8`, `−1.2`, `—` when there is none) over "SG / rd", with gains in green and losses in amber. The row's VoiceOver label reads the same figure. Sorted by Avg or Name, the column keeps the average and handicap; under Name, the name already leads the row (`RosterPhoneRow`'s `sort` prop).
+- **Sorted by SG**, each phone row's trailing column shows strokes gained per
+  round (`+0.8`, `−1.2`, `—` when there is none) over "SG / rd", with gains in
+  green and losses in amber. The row's VoiceOver label reads the same figure.
+  Sorted by Avg or Name, the column keeps the average and handicap; under Name,
+  the name already leads the row (`RosterPhoneRow`'s `sort` prop).
 
 ## 2026-10-08 — Premium pass: ranks, one material, the lit ledger, the peek
 
@@ -555,14 +564,18 @@ Data impact:    none
 
 ### Schedule 1:1 on desktop (Clickables gap 4)
 
-- **Issue.** The desktop Roster panel had no way to plan a 1:1, which the phone had.
-- **Fix.** Schedule 1:1 opens Calendar's editor with only that player invited (`calendar?new=1&with=<id>`, D-52).
+- **Issue.** The desktop Roster panel had no way to plan a 1:1, which the phone
+  had.
+- **Fix.** Schedule 1:1 opens Calendar's editor with only that player invited
+  (`calendar?new=1&with=<id>`, D-52).
 - **Checked.** roster + stats-player 124/124, 2 of 2 mutations caught.
 
 ### View insights in the row menu (Clickables gap 16)
 
-- **Issue.** The List view's row menu had no way to CoachHelm's read of a player.
-- **Fix.** The menu starts with View insights, which opens CoachHelm on that player (an id not on the board opens the most pressing player).
+- **Issue.** The List view's row menu had no way to CoachHelm's read of a
+  player.
+- **Fix.** The menu starts with View insights, which opens CoachHelm on that
+  player (an id not on the board opens the most pressing player).
 - **Checked.** roster + coachhelm 178/178, 2 of 2 mutations caught.
 
 ## 2026-09-30 — V2 page docs (copied from Messages); eight fixes found while writing them
@@ -576,51 +589,66 @@ Held items:     roster-availability (data)
 
 ### Changed (2026-09-30 V2 page docs)
 
-- The six page docs, the manifest's actions, and the 22 behaviour contracts (core view, deep link, refresh, safe
-  export, offline, the coach-only gate, private notes, refused changes, success, note kept, layout kept, note reads
-  back, optimistic decisions, Approve all retry, Try again, toast Retry, Remove's warning, note on leaving the field,
-  the loader, failures reported, the tests).
-- A route adapter, `src/clubhouse/routes/roster.tsx`, so the role check, the team and the no-team state have a seam a
-  test can reach. The page calls it for a coach with the flag on.
-- The catalog gains CH-3306, and `docs/clubhouse/screens/roster.md` now says the loader reads in two parallel rounds.
+- The six page docs, the manifest's actions, and the 22 behaviour contracts
+  (core view, deep link, refresh, safe export, offline, the coach-only gate,
+  private notes, refused changes, success, note kept, layout kept, note reads
+  back, optimistic decisions, Approve all retry, Try again, toast Retry,
+  Remove's warning, note on leaving the field, the loader, failures reported,
+  the tests).
+- A route adapter, `src/clubhouse/routes/roster.tsx`, so the role check, the
+  team and the no-team state have a seam a test can reach. The page calls it for
+  a coach with the flag on.
+- The catalog gains CH-3306, and `docs/clubhouse/screens/roster.md` now says the
+  loader reads in two parallel rounds.
 
 ### Fixed
 
-- The toast's Retry did not finish the change on screen. It re-ran only the server call, so a retried removal left
-  the player listed and the dialog open, a retried approval put the request back in the list (and Approve then failed
-  as already processed), and a retried note save left the note marked unsaved. What a change does on screen now
-  happens inside its action.
-- Try again after a failed read still showed "No players yet": the screen kept the players and requests from its first
-  render and ignored the page the server sent back. By the same code an approved player would not appear until a
-  reload. The list now follows the server's page, with only the changes made since laid on top.
-- A saved note read back as the old text when the player was opened again. Saving now updates the roster the screen
-  holds.
-- Remove player fired no warning haptic (D-70 and the phone spec both ask for one). It does now.
-- A coach with no team saw Home's empty state, whose text is about Home. Roster has its own (CH-3306).
-- On desktop, pressing Approve on a second request while the first was still being decided did nothing and said
-  nothing. Every Approve and Decline now waits until the decision in flight has answered, as on the phone.
-- The CSV export wrote a player's name as typed. A name that starts with `=`, `+`, `-` or `@` (or a tab or a return)
-  could be read by a spreadsheet as a formula; it is now written as text.
-- Esc inside the Remove or Invite dialog also closed the player panel behind it. It now closes only the dialog.
+- The toast's Retry did not finish the change on screen. It re-ran only the
+  server call, so a retried removal left the player listed and the dialog open,
+  a retried approval put the request back in the list (and Approve then failed
+  as already processed), and a retried note save left the note marked unsaved.
+  What a change does on screen now happens inside its action.
+- Try again after a failed read still showed "No players yet": the screen kept
+  the players and requests from its first render and ignored the page the server
+  sent back. By the same code an approved player would not appear until a
+  reload. The list now follows the server's page, with only the changes made
+  since laid on top.
+- A saved note read back as the old text when the player was opened again.
+  Saving now updates the roster the screen holds.
+- Remove player fired no warning haptic (D-70 and the phone spec both ask for
+  one). It does now.
+- A coach with no team saw Home's empty state, whose text is about Home. Roster
+  has its own (CH-3306).
+- On desktop, pressing Approve on a second request while the first was still
+  being decided did nothing and said nothing. Every Approve and Decline now
+  waits until the decision in flight has answered, as on the phone.
+- The CSV export wrote a player's name as typed. A name that starts with `=`,
+  `+`, `-` or `@` (or a tab or a return) could be read by a spreadsheet as a
+  formula; it is now written as text.
+- Esc inside the Remove or Invite dialog also closed the player panel behind it.
+  It now closes only the dialog.
 
 ### Why (2026-09-30 V2 page docs)
 
-- D-62 and D-69: every page gets the Messages contract, and writing the contract against the code found these five
-  places where the code did not keep it.
+- D-62 and D-69: every page gets the Messages contract, and writing the contract
+  against the code found these five places where the code did not keep it.
 
 ### Verification (2026-09-30 V2 page docs)
 
-- `npx vitest run src/clubhouse` 536/536; each new test fails with the code it guards broken (VERIFY.md).
+- `npx vitest run src/clubhouse` 536/536; each new test fails with the code it
+  guards broken (VERIFY.md).
 - `npx eslint` and `npm run -s typecheck:fast` exit 0.
 
 ## 2026-09-29 — Phone build, v2 motion, haptics and page empty state
 
-- The phone list, pushed profile, join requests sheet and ⋯ sheet on the approved design (D-50 to D-59), Approve all
-  (D-55), the Calendar 1:1 seed (D-52) and the Stats `tab` parameter (D-53).
-- v2 motion (D-64), v2 haptics (D-70) and the page empty state for "No players yet" (D-71); Roster moved under More on
-  the phone (D-66).
+- The phone list, pushed profile, join requests sheet and ⋯ sheet on the
+  approved design (D-50 to D-59), Approve all (D-55), the Calendar 1:1 seed
+  (D-52) and the Stats `tab` parameter (D-53).
+- v2 motion (D-64), v2 haptics (D-70) and the page empty state for "No players
+  yet" (D-71); Roster moved under More on the phone (D-66).
 
 ## 2026-09-29 — Desktop build
 
-- Desktop Roster on the Clubhouse loader, with the join requests, Needs a look, cards and list, the player panel, the
-  coach's note, Export and Invite, and the full state catalog (CH-30xx to CH-38xx).
+- Desktop Roster on the Clubhouse loader, with the join requests, Needs a look,
+  cards and list, the player panel, the coach's note, Export and Invite, and the
+  full state catalog (CH-30xx to CH-38xx).

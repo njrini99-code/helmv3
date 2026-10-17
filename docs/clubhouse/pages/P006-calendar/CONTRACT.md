@@ -432,7 +432,7 @@ Loader reads log through `chLogServer("calendar", <read>)` and are named on the 
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 62301 | — | `FAILURES_REPORTED` | A read that fails in the loader is logged through chLogServer("calendar", <read>) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance). |
+| 62301 | — | `FAILURES_REPORTED` | A read that fails in the loader is logged through chLogServer("calendar", {read}) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance). |
 
 From the shell (P001): 12301 FAILURES_REPORTED.
 

@@ -1149,7 +1149,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.<read>.",
+    "meaning": "A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.{read}.",
     "status": "implemented",
     "where": "src/clubhouse/lib/track.ts, track-server.ts, use-action.ts",
     "tests": [
@@ -1838,7 +1838,7 @@
     "category": 21,
     "item": 1,
     "name": "LOADERS_NEVER_THROW",
-    "meaning": "Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', <read>) and flagged on its own section instead of throwing, so one failed read never takes the page down.",
+    "meaning": "Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down.",
     "status": "implemented",
     "where": "src/clubhouse/data/home.ts#loadCoachHome; src/clubhouse/data/player-home.ts#loadPlayerHome",
     "tests": [
@@ -1852,7 +1852,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', <read>), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round).",
+    "meaning": "A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round).",
     "status": "implemented",
     "where": "src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/data/home.ts; src/clubhouse/data/player-home.ts; src/clubhouse/screens/home/HomeActions.tsx; src/clubhouse/screens/home/HomePhone.tsx",
     "tests": [
@@ -5568,7 +5568,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A read that fails in the loader is logged through chLogServer(\"calendar\", <read>) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance).",
+    "meaning": "A read that fails in the loader is logged through chLogServer(\"calendar\", {read}) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance).",
     "status": "implemented",
     "where": "src/clubhouse/data/calendar.ts; src/clubhouse/lib/use-action.ts; the section loaders in editor.tsx, extras.tsx and inspector.tsx",
     "tests": [
@@ -9721,7 +9721,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', <read>).",
+    "meaning": "A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', {read}).",
     "status": "implemented",
     "where": "src/clubhouse/lib/use-action.ts#useAction; ui/SectionBoundary.tsx; CoursePicker.tsx; src/clubhouse/data/qualifiers.ts",
     "tests": [
@@ -9812,7 +9812,7 @@
     "category": 1,
     "item": 3,
     "name": "TASK_LINK_OPENS_THE_TASK",
-    "meaning": "?task=<id> (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
+    "meaning": "?task={id} (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
     "status": "implemented",
     "where": "src/clubhouse/screens/hub/parts.tsx#TaskRow; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute; src/app/golf/(dashboard)/dashboard/tasks/layout.tsx",
     "tests": [
@@ -10788,7 +10788,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A read that fails in the loader is logged through chLogServer(\"hub\", <read>) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab <tab>, action hub.<name>); a section that crashes reports under its own surface (hub.updates and the rest).",
+    "meaning": "A read that fails in the loader is logged through chLogServer(\"hub\", {read}) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab {tab}, action hub.{name}); a section that crashes reports under its own surface (hub.updates and the rest).",
     "status": "implemented",
     "where": "src/clubhouse/data/hub.ts#log; src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/ui/SectionBoundary.tsx#SectionBoundary",
     "tests": [
@@ -15597,7 +15597,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A read that fails in a loader is logged through chLogServer('coachhelm', <read>, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players).",
+    "meaning": "A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players).",
     "status": "reserved",
     "where": "src/clubhouse/data/coachhelm.ts#log; src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/ui/SectionBoundary.tsx#SectionBoundary",
     "tests": [

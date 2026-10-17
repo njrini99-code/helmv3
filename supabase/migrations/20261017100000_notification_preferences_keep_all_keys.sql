@@ -1,6 +1,6 @@
 -- STATUS: WRITTEN, NOT APPLIED. Written 2026-10-17; the owner applies it after
 -- review (supabase/migrations/HELD.md row).
--- Apply: npm run db:apply -- supabase/migrations/20261017100000_notification_preferences_keep_all_keys.sql
+-- Apply: npm run db:apply -- <this file>
 -- Risk: LOW. One trigger function body changes (CREATE OR REPLACE keeps its
 -- owner, ACL and the trigger itself). No table, policy, grant or data change.
 --
@@ -13,7 +13,8 @@
 --   email_profile_views, email_announcements, push_enabled, push_messages,
 --   push_events, digest_frequency
 -- Every other key is silently dropped on write. The app writes six more, all
--- booleans, through the one writer of this column, updateNotificationPreferences
+-- booleans, through the one writer of this column,
+-- updateNotificationPreferences
 -- (src/app/actions/notification-preferences.ts, zod schema), from Clubhouse
 -- Settings (src/clubhouse/screens/settings/writes.ts setDelivery) and Fairway
 -- Settings (FairwaySettingsGeneral.tsx); delivery reads them in
@@ -47,15 +48,33 @@
 --   BEGIN
 --     IF NEW.notification_preferences IS NOT NULL THEN
 --       NEW.notification_preferences = jsonb_build_object(
---         'email_messages', COALESCE((NEW.notification_preferences->>'email_messages')::boolean, true),
---         'email_pipeline_updates', COALESCE((NEW.notification_preferences->>'email_pipeline_updates')::boolean, true),
---         'email_event_reminders', COALESCE((NEW.notification_preferences->>'email_event_reminders')::boolean, true),
---         'email_profile_views', COALESCE((NEW.notification_preferences->>'email_profile_views')::boolean, false),
---         'email_announcements', COALESCE((NEW.notification_preferences->>'email_announcements')::boolean, true),
---         'push_enabled', COALESCE((NEW.notification_preferences->>'push_enabled')::boolean, true),
---         'push_messages', COALESCE((NEW.notification_preferences->>'push_messages')::boolean, true),
---         'push_events', COALESCE((NEW.notification_preferences->>'push_events')::boolean, true),
---         'digest_frequency', COALESCE(NEW.notification_preferences->>'digest_frequency', 'daily'));
+--         'email_messages',
+--         COALESCE((NEW.notification_preferences->>'email_messages')::boolean,
+--         true),
+--         'email_pipeline_updates',
+--  COALESCE((NEW.notification_preferences->>'email_pipeline_updates')::boolean,
+--         true),
+--         'email_event_reminders',
+--   COALESCE((NEW.notification_preferences->>'email_event_reminders')::boolean,
+--         true),
+--         'email_profile_views',
+--     COALESCE((NEW.notification_preferences->>'email_profile_views')::boolean,
+--         false),
+--         'email_announcements',
+--     COALESCE((NEW.notification_preferences->>'email_announcements')::boolean,
+--         true),
+--         'push_enabled',
+--         COALESCE((NEW.notification_preferences->>'push_enabled')::boolean,
+--         true),
+--         'push_messages',
+--         COALESCE((NEW.notification_preferences->>'push_messages')::boolean,
+--         true),
+--         'push_events',
+--         COALESCE((NEW.notification_preferences->>'push_events')::boolean,
+--         true),
+--         'digest_frequency',
+--         COALESCE(NEW.notification_preferences->>'digest_frequency',
+--         'daily'));
 --     END IF;
 --     RETURN NEW;
 --   END; $f$;
@@ -69,7 +88,8 @@
 -- VERIFY: '%quiet_mode%' and p.prosrc like '%push_announcements%') = 1;
 -- VERIFY: select 1 where (select count(*) from pg_trigger t where t.tgrelid =
 -- VERIFY: 'public.users'::regclass and t.tgname =
--- VERIFY: 'validate_notification_preferences_trigger' and t.tgenabled = 'O') = 1;
+-- VERIFY: 'validate_notification_preferences_trigger' and t.tgenabled = 'O') =
+-- VERIFY: 1;
 -- pgTAP: supabase/tests/rls/notification_preferences_keep_all_keys.sql
 
 SET LOCAL lock_timeout = '3s';
@@ -123,4 +143,8 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.validate_notification_preferences() IS
-  'BEFORE INSERT/UPDATE on public.users: normalises notification_preferences. The nine original keys are cast and defaulted; email_task_reminders, email_coachhelm, push_announcements, push_task_reminders, push_coachhelm and quiet_mode are kept when present as JSON booleans (never defaulted); every other key is dropped. 20261017100000.';
+'BEFORE INSERT/UPDATE on public.users: normalises notification_preferences. '
+'The nine original keys are cast and defaulted; email_task_reminders, '
+'email_coachhelm, push_announcements, push_task_reminders, push_coachhelm and '
+'quiet_mode are kept when present as JSON booleans (never defaulted); every '
+'other key is dropped. 20261017100000.';

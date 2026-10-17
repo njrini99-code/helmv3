@@ -87,7 +87,7 @@ Data impact:    reads golf_event_attendance_counts (held migration 2026101710200
 Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
 ```
 
-### Changed
+### Changed (2026-10-17)
 
 - `loadClubhouseShell` (`data/shell.ts`): for a player, the sidebar next-event
   card's "N of M confirmed" comes from `golf_event_attendance_counts` (numbers
@@ -102,7 +102,7 @@ Held items:     supabase/migrations/20261017102000_golf_event_attendance_players
 - Migration 20261017102000 narrows `golf_event_attendance` so a player reads
   only their own row; without this the player's count would read "1 of 1".
 
-### Verification
+### Verification (2026-10-17)
 
 - `npm run test:file -- src/clubhouse/__tests__/attendance-counts.test.ts
   src/clubhouse/__tests__/shell.test.tsx` (function path, fallback, failure,
@@ -138,31 +138,30 @@ simplified SVG wheel, the PNG in an ivory-ringed disc, CSS outlines on the
 sidebar size).
 
 `HelmMark` (`shell/BrandWord.tsx`) is the GolfHelm logo redrawn from the 300px
-master (`public/anim/helm-golf-icon.png`), every part measured from it: the
-rim (radius 84.9 to 105.7), eight round-tipped spokes 23 wide reaching 146, the
-ball (radius 71.6) whose face is the overlap of two circles (the crescent below
-is its shade), the 13 dimples and the 6 highlights along the shade, each at its
+master (`public/anim/helm-golf-icon.png`), every part measured from it: the rim
+(radius 84.9 to 105.7), eight round-tipped spokes 23 wide reaching 146, the ball
+(radius 71.6) whose face is the overlap of two circles (the crescent below is
+its shade), the 13 dimples and the 6 highlights along the shade, each at its
 place in the master. Checked side by side with the master at 280px. Colours on
 the green: helm and shade in the mint "helm" is set in
-(`--ch-hero-mint-strong`), face and highlights ivory,
-dimples green (`--ch-green-500`), the gap open to the panel. "Golf" and the face
-share a darker, warmer ivory, `--ch-brand-ivory` #ebe1c8 ("golf should be
-ivory", "darker ivory"; picked from four shades on the panel). 34px, centred with
-the word in the panel (28px and 30px at the sides). Sharp at any size.
+(`--ch-hero-mint-strong`), face and highlights ivory, dimples green
+(`--ch-green-500`), the gap open to the panel. "Golf" and the face share a
+darker, warmer ivory, `--ch-brand-ivory` #ebe1c8 ("golf should be ivory",
+"darker ivory"; picked from four shades on the panel). 34px, centred with the
+word in the panel (28px and 30px at the sides). Sharp at any size.
 
 ## 2026-10-16 — The wordmark in Norican, in its frosted panel
 
 Owner: "fix the script font it looks trash" and "fix the layout". Great Vibes
 was too thin to read at sidebar size; the owner picked Norican from twelve
 scripts compared side by side on the sidebar green. The word is 34px and the
-wheel 28px, 9px after it, in the brand's frosted panel (the open green was
-tried and the owner asked for the panel back), tinted twice as strong as
-before with a light top edge ("give pane more tint"). Then "fix the layout so its
-even": the panel is as wide as the nav's rows (it overhung them by 2px), the
-word and wheel are centred in it (58px of empty space sat on the right), and the
-script is lifted 3px so its ink, the wheel and the panel share one centre
-(measured in Chrome: about 13.5px above and below the ink, 31px and 33px at the
-sides).
+wheel 28px, 9px after it, in the brand's frosted panel (the open green was tried
+and the owner asked for the panel back), tinted twice as strong as before with a
+light top edge ("give pane more tint"). Then "fix the layout so its even": the
+panel is as wide as the nav's rows (it overhung them by 2px), the word and wheel
+are centred in it (58px of empty space sat on the right), and the script is
+lifted 3px so its ink, the wheel and the panel share one centre (measured in
+Chrome: about 13.5px above and below the ink, 31px and 33px at the sides).
 
 ## 2026-10-16 — The team names its own group; the brand stands alone
 
@@ -170,49 +169,56 @@ Owner: "put the team name somewhere else". The brand block is only "Golfhelm"
 and the wheel. The team's name now heads the sidebar's Team group in place of
 the word "Team" (a group with no team keeps "Team"); a head coach on more than
 one team gets that heading as the switch (`TeamSwitch`, CH-1813, its label now
-"<team>. Switch team"). The footer's identity line still reads role · team.
+"{team}. Switch team"). The footer's identity line still reads role · team.
 
 ## 2026-10-16 — The brand is "Golfhelm" in script, then the wheel
 
 Owner: "script then logo". The sidebar's brand (and the team switcher's) reads
-"Golfhelm" in script (now Norican, above), helm in mint, with the wheel after the word
-and the team name under both (`shell/BrandWord.tsx`, shell.css
+"Golfhelm" in script (now Norican, above), helm in mint, with the wheel after
+the word and the team name under both (`shell/BrandWord.tsx`, shell.css
 `.ch-brand__line`). Opening the app from the welcome, the dashboard draws first,
 then the word writes itself in left to right (a mask wipe, 1.3s after a 0.6s
-hold), then the wheel turns a quarter into place. It plays once per sign in
-(a session flag set by the welcome's Continue and cleared on read); reduced
-motion and Animations off draw it whole. An owner-requested exception to the
-sans-only type rule, for this wordmark only. Checked in Chrome at 1440: word
-hidden until about 0.6s after the dashboard, written by 1.9s, wheel in by 2.5s.
+hold), then the wheel turns a quarter into place. It plays once per sign in (a
+session flag set by the welcome's Continue and cleared on read); reduced motion
+and Animations off draw it whole. An owner-requested exception to the sans-only
+type rule, for this wordmark only. Checked in Chrome at 1440: word hidden until
+about 0.6s after the dashboard, written by 1.9s, wheel in by 2.5s.
 
 ## 2026-10-16 — The sidebar sorted into clear groups
 
 Owner, 2026-10-16: "sort the side bar and make it look better".
 
-- **The order** (`nav.ts`): Team Hub and Qualifiers move under Team, for both roles. A coach's sidebar reads Home,
-  CoachHelm, Calendar, Messages; Team: Team Hub, Roster, Stats, Qualifiers, Recruiting. A player's reads Home, CoachHelm,
-  Calendar, Messages; Team: Team Hub, Roster, Qualifiers; My game: Rounds, My stats; then Classes. `shell.test.tsx`'s
-  order expectations follow. The phone strip lists the old tabs first and then the sidebar's order, so its later pills
-  follow this order too (docs/clubhouse/phone/section-strip.md).
-- **The look** (`shell.css`, desktop above 820px): each titled group is headed by its name in mint, with no panel or
-  shade behind it (a soft well was tried and removed), the rows a little taller (36px) with brighter ink on those not
-  chosen; the chosen row keeps the plate's own green ink. The phone is unchanged. No visual check is recorded; the shell vitest passed in the main
+- **The order** (`nav.ts`): Team Hub and Qualifiers move under Team, for both
+  roles. A coach's sidebar reads Home, CoachHelm, Calendar, Messages; Team: Team
+  Hub, Roster, Stats, Qualifiers, Recruiting. A player's reads Home, CoachHelm,
+  Calendar, Messages; Team: Team Hub, Roster, Qualifiers; My game: Rounds, My
+  stats; then Classes. `shell.test.tsx`'s order expectations follow. The phone
+  strip lists the old tabs first and then the sidebar's order, so its later
+  pills follow this order too (docs/clubhouse/phone/section-strip.md).
+- **The look** (`shell.css`, desktop above 820px): each titled group is headed
+  by its name in mint, with no panel or shade behind it (a soft well was tried
+  and removed), the rows a little taller (36px) with brighter ink on those not
+  chosen; the chosen row keeps the plate's own green ink. The phone is
+  unchanged. No visual check is recorded; the shell vitest passed in the main
   session.
 
 ## 2026-10-16 — Section switches skip Next's scroll; the sidebar's sections are fetched ahead
 
 Owner, desktop Safari: every switch waited on the server for the whole page.
 
-- **RouteFrame owns the scroll** (`SectionStrip`, `Sidebar`, `section-switch`): the strip's and the sidebar's links
-  and the swipe's `router.push` pass `scroll: false`. Next's own scroll-to-top read the arriving page's layout
-  inside the navigation commit on every switch (`getClientRects`, 22ms at 4x CPU, Chromium); RouteFrame already
-  opens a new page at the top and restores Back and Forward positions.
-- **The section prefetch runs at every width** (`use-prefetch-tabs.ts`, `SectionStrip`). It was phone only, so on
-  the desktop a sidebar link fetched only down to the route's loading boundary. `fetchAhead` and `whenIdle` are
-  exported for CoachHelm's views to reuse. Still skipped with Data Saver on or offline, and Next prefetches only in
-  production builds.
-- The 22ms is the owner-session measurement from the commit; nothing was re-measured for this entry. Shared pieces:
-  docs/clubhouse/CHANGELOG.md.
+- **RouteFrame owns the scroll** (`SectionStrip`, `Sidebar`, `section-switch`):
+  the strip's and the sidebar's links and the swipe's `router.push` pass
+  `scroll: false`. Next's own scroll-to-top read the arriving page's layout
+  inside the navigation commit on every switch (`getClientRects`, 22ms at 4x
+  CPU, Chromium); RouteFrame already opens a new page at the top and restores
+  Back and Forward positions.
+- **The section prefetch runs at every width** (`use-prefetch-tabs.ts`,
+  `SectionStrip`). It was phone only, so on the desktop a sidebar link fetched
+  only down to the route's loading boundary. `fetchAhead` and `whenIdle` are
+  exported for CoachHelm's views to reuse. Still skipped with Data Saver on or
+  offline, and Next prefetches only in production builds.
+- The 22ms is the owner-session measurement from the commit; nothing was
+  re-measured for this entry. Shared pieces: docs/clubhouse/CHANGELOG.md.
 
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
@@ -226,9 +232,9 @@ Shared detail: docs/clubhouse/CHANGELOG.md.
 
 - **Safe areas on the desktop frame** (shell.css `.ch-app`): a phone turned
   sideways (874pt) gets the desktop layout, whose sidebar started at x=0 under
-  the Dynamic Island and the corner (iOS reports 62pt each side) and whose canvas
-  ran into the home indicator's strip. The frame now pads by the safe-area insets
-  (0 on a desktop); the green fills them.
+  the Dynamic Island and the corner (iOS reports 62pt each side) and whose
+  canvas ran into the home indicator's strip. The frame now pads by the
+  safe-area insets (0 on a desktop); the green fills them.
 
 ## 2026-10-14 — A thread keeps its bar over the Safari keyboard; Home's title in dark
 
@@ -717,8 +723,10 @@ the real components (390px, touch).
 - Pulled up 160px, the sheet gives 47px over its floor.
 - A Back flagged `hasUAVisualTransition` removes the pushed screen on the first
   frame.
-- With reduced motion, the `Modal` fades in 1ms and the plate jumps with no animation.
-- Frame-sampled once load fell to 14 to 18 (headless WebKit draws about every 10ms):
+- With reduced motion, the `Modal` fades in 1ms and the plate jumps with no
+  animation.
+- Frame-sampled once load fell to 14 to 18 (headless WebKit draws about every
+  10ms):
   - More rises within half a pixel at 474ms and closes by the scrim in 446ms.
   - Thrown at 2.4px/ms, More runs 3.8 to 4.3px/ms and is gone at 431ms; the old
     fixed ease-out started near 10px/ms. Its first frame runs faster (6.7px/ms),
@@ -1206,7 +1214,7 @@ Actions:        7 (ACT-P001-*)
 Data impact:    none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
 - The six page docs, the manifest's actions, and 11 behaviour contracts, each
   named by a test.
@@ -1220,7 +1228,7 @@ Data impact:    none
 - `useAction`'s doc comment said a success fires the commit haptic; it fires
   success (D-70). Fixed.
 
-### Verification
+### Verification (2026-09-30)
 
 - `npx vitest run src/clubhouse/__tests__/shell.test.tsx
   src/clubhouse/__tests__/gate.test.ts`: 42/42.

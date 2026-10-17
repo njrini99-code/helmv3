@@ -13,38 +13,44 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Status: approved (owner design, design/handoff/mobile/Messages Mobile.html, m-msg.jsx, m-shell.jsx, m.css)
+Status: approved (owner design, design/handoff/mobile/Messages Mobile.html,
+m-msg.jsx, m-shell.jsx, m.css)
 
-The owner's brief: "this is messages mobile for the both player and coach to match desktop". The
-design is six boards from the design project (commit 1fd55a79c; `m.css` refreshed in ccbd33465):
-Inbox, New message, Team chat, Group details, 1:1 thread, and Chat details. The shell they sit in
-is `foundation.md`.
+The owner's brief: "this is messages mobile for the both player and coach to
+match desktop". The design is six boards from the design project (commit
+1fd55a79c; `m.css` refreshed in ccbd33465): Inbox, New message, Team chat, Group
+details, 1:1 thread, and Chat details. The shell they sit in is `foundation.md`.
 
-The phone uses the same container, hooks, actions and catalog as desktop (`MOBILE.md`, D-13):
+The phone uses the same container, hooks, actions and catalog as desktop
+(`MOBILE.md`, D-13):
 
-- `Messages.tsx` builds `ChMessagesApi` from `useGolfConversations`, `useGolfMessages`,
-  `useMessageReactions` and `useMessageAttachments`, and from the server actions it already calls.
-- Below 820px, `useChPhone()` renders a phone stack in place of `MessagesView`. The data layer doesn't
-  change.
+- `Messages.tsx` builds `ChMessagesApi` from `useGolfConversations`,
+  `useGolfMessages`, `useMessageReactions` and `useMessageAttachments`, and from
+  the server actions it already calls.
+- Below 820px, `useChPhone()` renders a phone stack in place of `MessagesView`.
+  The data layer doesn't change.
 - Every CH-7xxx number keeps its meaning.
 
-Anything the design shows without a backend is listed under "Gaps". The owner answered every question
-on 2026-09-29 (Q-48 to Q-64, decided as D-44 to D-49; the shell's are D-40 to D-43), and each row names
-the decision it follows.
+Anything the design shows without a backend is listed under "Gaps". The owner
+answered every question on 2026-09-29 (Q-48 to Q-64, decided as D-44 to D-49;
+the shell's are D-40 to D-43), and each row names the decision it follows.
 
 ## Build status (2026-09-29)
 
-Built on `agent/clubhouse-messages-mobile` as `MessagesPhone.tsx`, on the same container, hooks and
-actions: the Inbox, Thread, Details, New message and the announcement screens, for coach and player, with
-one new read action, `getGolfConversationFiles` (D-48). Checked at 390px and 430px next to the design's
-boards (captures below); checklist `screens/messages.md`, phone section.
+Built on `agent/clubhouse-messages-mobile` as `MessagesPhone.tsx`, on the same
+container, hooks and actions: the Inbox, Thread, Details, New message and the
+announcement screens, for coach and player, with one new read action,
+`getGolfConversationFiles` (D-48). Checked at 390px and 430px next to the
+design's boards (captures below); checklist `screens/messages.md`, phone
+section.
 
 Open, with who owns each:
 
 - The check on a real iPhone through `npm run ios:dev`: the owner.
-- The e2e run (`npm run test:e2e -- e2e/messages.spec.ts`), the full build and the full test suite: the
-  merge pass.
-- Reduced motion with the OS setting on, and a full keyboard walk, in a browser: the next agent slot.
+- The e2e run (`npm run test:e2e -- e2e/messages.spec.ts`), the full build and
+  the full test suite: the merge pass.
+- Reduced motion with the OS setting on, and a full keyboard walk, in a browser:
+  the next agent slot.
 - Owner review of the built screens: the owner.
 
 ## Screens and navigation
@@ -54,23 +60,27 @@ Open, with who owns each:
 
 - Each screen pushes with a 260ms slide, and back pops it.
 - The tab bar shows on the Inbox only.
-- Opening a thread calls `api.select(id)`, and going back calls `api.select(null)`. Desktop opens a
-  thread automatically only at 821px and wider (`Messages.tsx`), so a phone starts on the Inbox.
+- Opening a thread calls `api.select(id)`, and going back calls
+  `api.select(null)`. Desktop opens a thread automatically only at 821px and
+  wider (`Messages.tsx`), so a phone starts on the Inbox.
 
-New phone components go in `src/clubhouse/screens/messages/`, beside the desktop ones:
+New phone components go in `src/clubhouse/screens/messages/`, beside the desktop
+ones:
 
 - `MessagesPhone`, the stack
 - `PhoneInbox`, `PhoneNewMessage`, `PhoneThread` and `PhoneDetails`
 
 They reuse:
 
-- from `MessagesView.tsx`: `Bubble`'s parts, `Attachments`, `Composer` and `MessageHits`. These are
-  module-private today, and exporting them changes no behaviour.
-- from `announcements.tsx`: `AnnouncementsSection` and `AnnouncementPane`, which D-44 keeps
-- from `model.ts`: `filterConvs`, `sectionOf`, `railTime`, `threadItems`, `clock`, `dayLabel` and
-  `firstName`
-- from `ui/`: `Avatar`, `Icon`, `SearchField`, `Switch`, `InlineNotice`, `EmptyState`, `Skeleton`,
-  `SectionBoundary`, and `Modal` shown as a sheet
+- from `MessagesView.tsx`: `Bubble`'s parts, `Attachments`, `Composer` and
+  `MessageHits`. These are module-private today, and exporting them changes no
+  behaviour.
+- from `announcements.tsx`: `AnnouncementsSection` and `AnnouncementPane`, which
+  D-44 keeps
+- from `model.ts`: `filterConvs`, `sectionOf`, `railTime`, `threadItems`,
+  `clock`, `dayLabel` and `firstName`
+- from `ui/`: `Avatar`, `Icon`, `SearchField`, `Switch`, `InlineNotice`,
+  `EmptyState`, `Skeleton`, `SectionBoundary`, and `Modal` shown as a sheet
 
 ## 1. Inbox (board 1; captures 01 to 04)
 
@@ -96,7 +106,8 @@ States keep their numbers:
 - CH-7302: nothing matches the search or filter
 - CH-7210: the list crashed
 
-The old draft's swipe to mark as unread has no backend, and the design doesn't draw it.
+The old draft's swipe to mark as unread has no backend, and the design doesn't
+draw it.
 
 ## 2. New message (board 2; captures 05 to 10)
 
@@ -112,9 +123,10 @@ A pushed full screen with no tab bar. Desktop uses a modal instead.
 | Hint: "Messages to 2 people start a new group. You can name it after sending." | `PhoneNewMessage` | No rename action exists, so a coach names the group before it is created, and the hint says so (D-45) |
 | Composer: "Message Jonah", "Message 2 people", "Choose who to message" | `Composer` | The first message goes after the conversation exists: `startDirect` or `createGroup`, then `api.send` (or `sendFiles`) on the new id. If the conversation is created but the message fails, the draft stays in the thread's composer (a phone-only state; its number is given at build) |
 
-- Desktop's Direct / Group / Announcement choice isn't drawn. A coach's New message keeps an
-  Announcement choice (D-44).
-- Desktop requires a group name up front (CH-7104), and so does the phone (D-45).
+- Desktop's Direct / Group / Announcement choice isn't drawn. A coach's New
+  message keeps an Announcement choice (D-44).
+- Desktop requires a group name up front (CH-7104), and so does the phone
+  (D-45).
 
 States keep their numbers:
 
@@ -145,11 +157,13 @@ Not drawn, so these follow desktop, laid out for the phone:
 - A failed send with Retry and Discard (CH-7016, CH-7017).
 - "Message deleted".
 - Enter sends (CH-7802).
-- Reactions, Edit and Delete. Desktop shows them on hover; on the phone a long press on a bubble
-  opens an action sheet with them (a `press` haptic, a phone-only state numbered at build). The Edit
-  modal and the delete confirm (CH-7501) become sheets.
-- The keyboard: the composer lifts by `--keyboard-height` (`data-fw-keyboard-aware`), and the thread
-  stays pinned to the bottom when it already was (CH-7601).
+- Reactions, Edit and Delete. Desktop shows them on hover; on the phone a long
+  press on a bubble opens an action sheet with them (a `press` haptic, a
+  phone-only state numbered at build). The Edit modal and the delete confirm
+  (CH-7501) become sheets.
+- The keyboard: the composer lifts by `--keyboard-height`
+  (`data-fw-keyboard-aware`), and the thread stays pinned to the bottom when it
+  already was (CH-7601).
 
 States keep their numbers:
 
@@ -187,7 +201,8 @@ States: CH-7213 when Details crashes.
 
 ## Coach and player
 
-Every board shows a head coach. The player's view below comes from D-15 and the current code.
+Every board shows a head coach. The player's view below comes from D-15 and the
+current code.
 
 | Capability | Coach | Player | Decided by |
 | --- | --- | --- | --- |
@@ -225,12 +240,13 @@ Every board shows a head coach. The player's view below comes from D-15 and the 
 
 Each has a catalog row and a test (`catalog/messages.md`):
 
-- the long-press action sheet: CH-7604, with its haptic CH-7704 and a path besides the long press, CH-7804
+- the long-press action sheet: CH-7604, with its haptic CH-7704 and a path
+  besides the long press, CH-7804
 - push and pop: the shell's CH-1610 and CH-1906
-- "conversation created, first message not sent" from New message: the draft stays in the thread's
-  composer, CH-7004
-- copying a message, shared files and adding members: CH-7018 to CH-7021, CH-7214, CH-7215, CH-7306,
-  CH-7307, CH-7409 and CH-7410
+- "conversation created, first message not sent" from New message: the draft
+  stays in the thread's composer, CH-7004
+- copying a message, shared files and adding members: CH-7018 to CH-7021,
+  CH-7214, CH-7215, CH-7306, CH-7307, CH-7409 and CH-7410
 - (pull to refresh waits for a design, D-43)
 
 ## Before the build: 390px on 2026-09-29 (captures `messages-preview-*`)
@@ -240,7 +256,8 @@ The preview reflowed the desktop layout:
 - a breadcrumb bar with the bell and Settings
 - the green tab bar with a Messages tab
 - the Announcements section
-- a thread whose hover tools are always visible and that keeps the desktop hint line
+- a thread whose hover tools are always visible and that keeps the desktop hint
+  line
 - Details as a side panel that covers most of the thread
 - New message as a bottom sheet with Direct / Group / Announcement
 
@@ -248,8 +265,9 @@ The phone build replaced all of this with the stack above.
 
 ## Captures
 
-Not committed. They are saved in the session scratchpad under `messages-mobile/`: every design board
-at 390 × 844 @2x, and our preview at 390 × 844 for coach and player.
+Not committed. They are saved in the session scratchpad under
+`messages-mobile/`: every design board at 390 × 844 @2x, and our preview at 390
+× 844 for coach and player.
 
 | File | Shows |
 | --- | --- |
@@ -266,5 +284,5 @@ at 390 × 844 @2x, and our preview at 390 × 844 for coach and player.
 | `messages-preview-{coach,player}-*` | Our preview before the build: the list, threads, details, New message, the More sheet, and an announcement |
 | `built/built-{390,430}-*` | The built phone screens, named after the board captures they match (`01-inbox` to `40-announcement`) |
 
-No board has an open sheet, a keyboard, or an empty, loading or failed state. Those follow the
-catalog, laid out for the phone.
+No board has an open sheet, a keyboard, or an empty, loading or failed state.
+Those follow the catalog, laid out for the phone.

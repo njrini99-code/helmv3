@@ -426,7 +426,7 @@ Failures are reported, server reads logged, intents breadcrumbed (92301, 92304).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 92301 | — | `FAILURES_REPORTED` | A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', <read>). |
+| 92301 | — | `FAILURES_REPORTED` | A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', {read}). |
 | 92302 | — | `HELD_SETUP_ACTIONS_REFUSE_OFF` | The squad-size and entrants actions refuse before any read unless the Clubhouse UI is on for the caller (D-61). |
 | 92303 | — | `SELECTION_REFUSAL_KEPT_FOR_THE_TRAIL` | The selection actions' own refusal text, cut at 200 characters, goes to a chTrail breadcrumb ('qualifiers selection refused') and not to the coach, so Sentry keeps what the server said. |
 | 92304 | — | `INTENTS_LEAVE_BREADCRUMBS` | Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action qualifiers.<name>). |

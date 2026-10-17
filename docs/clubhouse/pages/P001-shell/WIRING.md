@@ -142,9 +142,11 @@ Write path: setActiveTeam (checks canSwitch and that the team is staffed, then s
 
 ## Notification links (checked 2026-10-17)
 
-Every `action_url` shape in production (`notifications`, `golf_calendar_notifications`; read-only aggregate) and every
-writer that sets one, followed for each role that receives it, lands on a rebuilt screen or an alias that moves it to
-one, and the query naming the item is read there (`__tests__/wiring-p001-notification-links.test.ts`):
+Every `action_url` shape in production (`notifications`,
+`golf_calendar_notifications`; read-only aggregate) and every writer that sets
+one, followed for each role that receives it, lands on a rebuilt screen or an
+alias that moves it to one, and the query naming the item is read there
+(`__tests__/wiring-p001-notification-links.test.ts`):
 
 | Address | Receives | Lands on |
 | --- | --- | --- |
@@ -160,14 +162,18 @@ one, and the query naming the item is read there (`__tests__/wiring-p001-notific
 | `/qualifiers/<id>` | coach, player | the qualifier |
 | `/golf/dashboard` | coach, player | Home |
 
-The calendar table's `notification_type` carries dedupe keys (`event_updated:<start>|<end>`, `rsvp_response:<id>`);
-the bell never reads the type for that table, so they render as events. A message row from that table is filed under
-Events, not Messages, by the shared model (`categorizeCalendarNotificationRow`), in Fairway too: raised, not changed here.
+The calendar table's `notification_type` carries dedupe keys
+(`event_updated:<start>|<end>`, `rsvp_response:<id>`); the bell never reads the
+type for that table, so they render as events. A message row from that table is
+filed under Events, not Messages, by the shared model
+(`categorizeCalendarNotificationRow`), in Fairway too: raised, not changed here.
 
-A link to the screen already open (the bell's `?conversation=` while Messages is up) armed `shell/relink.ts` first: the
-frame (`useRelinkEpoch`, in RouteFrame's key) mounts the screen again once that address arrives, as Messages and Calendar
-read their item only on mount. Universal links (`DeepLinks`) arm it the same way, and a tapped push is armed from
-`helm:push-navigate`, which CapacitorProvider pushes.
+A link to the screen already open (the bell's `?conversation=` while Messages is
+up) armed `shell/relink.ts` first: the frame (`useRelinkEpoch`, in RouteFrame's
+key) mounts the screen again once that address arrives, as Messages and Calendar
+read their item only on mount. Universal links (`DeepLinks`) arm it the same
+way, and a tapped push is armed from `helm:push-navigate`, which
+CapacitorProvider pushes.
 
 ## Held dependencies
 

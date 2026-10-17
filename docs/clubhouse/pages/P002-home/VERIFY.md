@@ -223,14 +223,14 @@ before, after, baseline or evidence.
   walk; LCP and layout shift.
 - Answered read-only on 2026-10-17 (`pg_policies` on the production project,
   matching `supabase/migrations/20260527000000_prod_public_baseline.sql:19070`):
-  yes, a player can read other players' replies. `golf_event_attendance_select_team`
-  allows SELECT on every row of an event whose team the reader coaches or plays
-  on (`is_golf_team_coach(e.team_id) OR is_golf_team_player(e.team_id)`), with
-  no `player_id` condition, so a player's own session can read each teammate's
-  `player_id` and `status` on every team event, invited or not. Player Home
-  draws only counts from those rows (going, "N of M confirmed") and no names
-  (20804); the exposure is at the API, not on the page. Not changed here: a
-  policy decision for the owner.
+  yes, a player can read other players' replies.
+  `golf_event_attendance_select_team` allows SELECT on every row of an event
+  whose team the reader coaches or plays on (`is_golf_team_coach(e.team_id) OR
+  is_golf_team_player(e.team_id)`), with no `player_id` condition, so a player's
+  own session can read each teammate's `player_id` and `status` on every team
+  event, invited or not. Player Home draws only counts from those rows (going,
+  "N of M confirmed") and no names (20804); the exposure is at the API, not on
+  the page. Not changed here: a policy decision for the owner.
 - Fixed since (source and tests, 2026-10-17): the day labels and a page left
   open past midnight. "Today", "Tomorrow" and the weekday compare both dates on
   the team's clock (`whenLabel`, since 2026-10-02; home-day-rollover.test
@@ -239,12 +239,13 @@ before, after, baseline or evidence.
   and pageshow; home-day-rollover.test). The phone skeleton is phone-shaped and
   in the reader's role since 2026-10-08 (`SkeletonPhoneHero`); the desktop
   skeleton is still the coach's shape for both roles.
-- Not fixed, found in this pass: the desktop Up next in the player's week and the pagers leave no breadcrumb.
-  The coach lookup behind Message coach sets no order on `golf_coaches`, so when
-  the team's creating coach has no account, which other coach is named is not
-  fixed (rare: `created_by` matches on the live teams). The first-run Invite
-  players button (primary) gives the light tap, which no contract lists by name;
-  the rule is in CONTRACT.md 17 (only primary buttons tap).
+- Not fixed, found in this pass: the desktop Up next in the player's week and
+  the pagers leave no breadcrumb. The coach lookup behind Message coach sets no
+  order on `golf_coaches`, so when the team's creating coach has no account,
+  which other coach is named is not fixed (rare: `created_by` matches on the
+  live teams). The first-run Invite players button (primary) gives the light
+  tap, which no contract lists by name; the rule is in CONTRACT.md 17 (only
+  primary buttons tap).
 - Fixed 2026-09-30: a stored team timezone that is not a real zone threw in
   `homeClock` and failed the whole page; it now reads as Eastern and is logged
   (20618, the test failed before the fix). The player's countdown was named

@@ -45,7 +45,7 @@ function initials(name: string): string {
 
 type LoadState =
   | { status: 'loading' }
-  | { status: 'loaded'; attendees: Attendee[] }
+  | { status: 'loaded'; attendees: Attendee[]; total: number }
   | { status: 'failed'; error: string };
 
 export function EventPeopleSection({ eventId, active, showReplies = true }: EventPeopleSectionProps) {
@@ -64,7 +64,9 @@ export function EventPeopleSection({ eventId, active, showReplies = true }: Even
           setState({ status: 'failed', error: result.error || 'Could not load who’s invited.' });
           return;
         }
-        setState({ status: 'loaded', attendees: result.data.summary.attendees });
+        // A player is sent only their own row (RSVP privacy, migration 20261017102000); the total still counts everyone.
+        const { attendees, total } = result.data.summary;
+        setState({ status: 'loaded', attendees, total: Math.max(total, attendees.length) });
       } catch {
         if (requestId === requestRef.current) {
           setState({ status: 'failed', error: 'Could not load who’s invited.' });
@@ -91,7 +93,7 @@ export function EventPeopleSection({ eventId, active, showReplies = true }: Even
           <Users className="h-[18px] w-[18px]" aria-hidden />
         </span>
         <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-          People{state.status === 'loaded' ? ` · ${attendees.length}` : ''}
+          People{state.status === 'loaded' ? ` · ${state.total}` : ''}
         </p>
       </div>
       {state.status === 'loading' ? (

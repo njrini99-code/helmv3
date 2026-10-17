@@ -56,10 +56,13 @@ Tests: src/clubhouse/__tests__/calendar.test.tsx, and the calendar model in logi
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P006-calendar.json` (`actions`), and the whole list is readable
-in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write that goes through `useAction` is refused
-before anything is sent (the shell's 10703, CH-1903); file removal and its Undo do the same by hand (60701). A `*`
-marks an action a player cannot use (60801): the control is not drawn, and the server refuses it as well (60806).
+Each action's record is in `config/clubhouse/pages/P006-calendar.json`
+(`actions`), and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write that
+goes through `useAction` is refused before anything is sent (the shell's 10703,
+CH-1903); file removal and its Undo do the same by hand (60701). A `*` marks an
+action a player cannot use (60801): the control is not drawn, and the server
+refuses it as well (60806).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -175,17 +178,22 @@ None. Data is existing and no held plan is listed.
 
 ## Impact notes
 
-- The server actions are shared with Fairway's calendar and with Team Hub (`respondToEvent`). A change to one changes
-  both UIs.
-- The toast's Retry runs the action of the render that showed the failure, so anything that follows a landed write
-  (closing a dialog, moving the panel, `router.refresh()`, re-reading a list) has to live inside the function passed
-  to `useAction`, guarded by `normalise(res).success`, never in the button's handler (61401). `PlayerReply` keeps the
-  last confirmed answer in a ref for the same reason.
-- `loadCalendar` trims a player's data (60802, 60803). A new field on `ChCalEvent` has to be decided for a player in
-  the loader, not on the screen.
-- The `Calendar` container serves the phone as well: a change to a dialog or a write changes both layouts.
-- `ChCalendarData.today` and `nowHour` are the server's reading of the team's zone; the browser's clock only moves the
-  now line (61501) and decides when a player's reply locks (`ChNow.ms`, against the stored start and the deadline).
-- A timed event over several days is one `ChCalEvent` per day, each with the run in `span` (`start` and `end` hours as
-  well as the dates). Anything that edits, duplicates or moves an event works from the run, never from one day's entry
+- The server actions are shared with Fairway's calendar and with Team Hub
+  (`respondToEvent`). A change to one changes both UIs.
+- The toast's Retry runs the action of the render that showed the failure, so
+  anything that follows a landed write (closing a dialog, moving the panel,
+  `router.refresh()`, re-reading a list) has to live inside the function passed
+  to `useAction`, guarded by `normalise(res).success`, never in the button's
+  handler (61401). `PlayerReply` keeps the last confirmed answer in a ref for
+  the same reason.
+- `loadCalendar` trims a player's data (60802, 60803). A new field on
+  `ChCalEvent` has to be decided for a player in the loader, not on the screen.
+- The `Calendar` container serves the phone as well: a change to a dialog or a
+  write changes both layouts.
+- `ChCalendarData.today` and `nowHour` are the server's reading of the team's
+  zone; the browser's clock only moves the now line (61501) and decides when a
+  player's reply locks (`ChNow.ms`, against the stored start and the deadline).
+- A timed event over several days is one `ChCalEvent` per day, each with the run
+  in `span` (`start` and `end` hours as well as the dates). Anything that edits,
+  duplicates or moves an event works from the run, never from one day's entry
   (`runOf` in editor.tsx); `movable` refuses it.

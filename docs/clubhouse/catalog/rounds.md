@@ -13,18 +13,68 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Routes: `/golf/dashboard/rounds` (the library, for players), `/golf/dashboard/rounds/[id]` (a round's review, for the player and a coach of their team), and, for players, round entry: `/golf/dashboard/rounds/new` and `/golf/dashboard/rounds/continue/[id]`. Coaches have no Rounds library in v2; they reach a round from Stats, Home and Qualifiers, and a coach on the entry addresses gets the shell's not-rebuilt page (a coach does not log rounds). For players, `/golf/dashboard/rounds/recover` is rebuilt too (swap audit F-02): where the engines send a submit that couldn't reach the server, and the one place a round the device holds and the server may not can be restored, synced again or discarded. Spec: `docs/clubhouse/phone/rounds.md`. Plan: `docs/clubhouse/ROUNDS_PLAN.md`.
+Routes: `/golf/dashboard/rounds` (the library, for players),
+`/golf/dashboard/rounds/[id]` (a round's review, for the player and a coach of
+their team), and, for players, round entry: `/golf/dashboard/rounds/new` and
+`/golf/dashboard/rounds/continue/[id]`. Coaches have no Rounds library in v2;
+they reach a round from Stats, Home and Qualifiers, and a coach on the entry
+addresses gets the shell's not-rebuilt page (a coach does not log rounds). For
+players, `/golf/dashboard/rounds/recover` is rebuilt too (swap audit F-02):
+where the engines send a submit that couldn't reach the server, and the one
+place a round the device holds and the server may not can be restored, synced
+again or discarded. Spec: `docs/clubhouse/phone/rounds.md`. Plan:
+`docs/clubhouse/ROUNDS_PLAN.md`.
 
-The library shows the round in progress, the season's scoring, then every posted round by month or by course. Review, New round and Continue are rebuilt, so their controls are drawn for a player (`nav.rebuiltHref`); a control for a screen that is not rebuilt is still not drawn, so no control ever leads nowhere. New round and Continue run over the round engine (`src/lib/golf/round-session/`, #2104), through one round screen for both (`RoundRuntime`).
+The library shows the round in progress, the season's scoring, then every
+posted round by month or by course. Review, New round and Continue are rebuilt,
+so their controls are drawn for a player (`nav.rebuiltHref`); a control for a
+screen that is not rebuilt is still not drawn, so no control ever leads
+nowhere. New round and Continue run over the round engine
+(`src/lib/golf/round-session/`, #2104), through one round screen for both
+(`RoundRuntime`).
 
 Where things live:
-- Code: `src/clubhouse/screens/rounds/` (`RoundsLibrary`, `parts`, `writes`, `RoundsSkeleton`, `RoundReview`, `ReviewLoadFailed`), `setup/` for a new round (`RoundSetup`, `CoursePicker`, `AddCourseSheet`, `HoleConfig`, `shape`), `track/` for the shot screen (`RoundTracking` over the shared `useShotTracking`, `ShotEntry`, `HoleReview`, `sheets`, `round-sheets`, `labels`), and `entry/` for the round around them: `NewRound` and `ContinueRound` (each maps its engine into a `ChRoundSession`), `RoundRuntime` (the Exit and finish sheets, the banners, the submit; `RecoveryHost`), the dialogs (`RecoveryDialog`, `InProgressConflictDialog`, `SaveAsPracticeSheet`, `QualifierRoundSheet`, `ReloadBanner`), `ports` (the engines' toast port), `routes` (`ENGINE_ROUTES`, where the engines send the player), `setup-reads` (the course library reads and the engine's start form) and `failures`, and `recover/` for recovery (`RoundRecover`, `scan` over the device's four stores, `ports` for Restore, Retry sync and Discard)
-- Loaders: `src/clubhouse/data/rounds.ts` (`loadRoundsLibrary`) and `round-review.ts` (`loadRoundReview`), with their pure steps in `rounds-shape.ts` and `round-review-shape.ts`
-- Routes: `src/clubhouse/routes/rounds.tsx`, `round-review.tsx`, `round-new.tsx`, `round-continue.tsx`, `round-recover.tsx` (the pages `rounds/new/page.tsx`, `rounds/continue/[id]/page.tsx` and `rounds/recover/page.tsx` branch on `isClubhouseFor('player')`; their `loading.tsx` use `ClubhouseSwitch`)
-- Tests: `src/clubhouse/__tests__/rounds.test.tsx` (library), `round-review.test.tsx` (review) and `round-setup.test.tsx` (a new round), `round-tracking.test.tsx` (the shot screen), `round-entry.test.tsx` (the entry dialogs and banners), and, through the real engines, `round-entry-wiring.test.tsx` (/rounds/new), `round-entry-continue.test.tsx` (/rounds/continue/[id]) and `round-entry-routes.test.tsx` (the addresses, the pages, the ports), and `rounds-recover.test.tsx` and `rounds-recover-ports.test.ts` (recovery: the screen and the address, then the device scan and the three writes)
-- Preview: `/clubhouse-preview/rounds` (`?state=idle|many|empty|noseason|failed|unfinished-failed|failwrites`) `/clubhouse-preview/round` (`?state=coach|noshots|noholes|total|holebyhole`) `/clubhouse-preview/setup` (`?state=failcourses|failtees|failholes|failstart|noqualifiers|qualifiersfailed`) and `/clubhouse-preview/track` (`?state=approach|putt|holed|checkpointfail|last|meters|exit|card|summary|submitting|posted|submitfail`)
+- Code: `src/clubhouse/screens/rounds/` (`RoundsLibrary`, `parts`, `writes`,
+  `RoundsSkeleton`, `RoundReview`, `ReviewLoadFailed`), `setup/` for a new round
+  (`RoundSetup`, `CoursePicker`, `AddCourseSheet`, `HoleConfig`, `shape`),
+  `track/` for the shot screen (`RoundTracking` over the shared
+  `useShotTracking`, `ShotEntry`, `HoleReview`, `sheets`, `round-sheets`,
+  `labels`), and `entry/` for the round around them: `NewRound` and
+  `ContinueRound` (each maps its engine into a `ChRoundSession`), `RoundRuntime`
+  (the Exit and finish sheets, the banners, the submit; `RecoveryHost`), the
+  dialogs (`RecoveryDialog`, `InProgressConflictDialog`, `SaveAsPracticeSheet`,
+  `QualifierRoundSheet`, `ReloadBanner`), `ports` (the engines' toast port),
+  `routes` (`ENGINE_ROUTES`, where the engines send the player), `setup-reads`
+  (the course library reads and the engine's start form) and `failures`, and
+  `recover/` for recovery (`RoundRecover`, `scan` over the device's four stores,
+  `ports` for Restore, Retry sync and Discard)
+- Loaders: `src/clubhouse/data/rounds.ts` (`loadRoundsLibrary`) and
+  `round-review.ts` (`loadRoundReview`), with their pure steps in
+  `rounds-shape.ts` and `round-review-shape.ts`
+- Routes: `src/clubhouse/routes/rounds.tsx`, `round-review.tsx`,
+  `round-new.tsx`, `round-continue.tsx`, `round-recover.tsx` (the pages
+  `rounds/new/page.tsx`, `rounds/continue/[id]/page.tsx` and
+  `rounds/recover/page.tsx` branch on `isClubhouseFor('player')`; their
+  `loading.tsx` use `ClubhouseSwitch`)
+- Tests: `src/clubhouse/__tests__/rounds.test.tsx` (library),
+  `round-review.test.tsx` (review) and `round-setup.test.tsx` (a new round),
+  `round-tracking.test.tsx` (the shot screen), `round-entry.test.tsx` (the entry
+  dialogs and banners), and, through the real engines,
+  `round-entry-wiring.test.tsx` (/rounds/new), `round-entry-continue.test.tsx`
+  (/rounds/continue/[id]) and `round-entry-routes.test.tsx` (the addresses, the
+  pages, the ports), and `rounds-recover.test.tsx` and
+  `rounds-recover-ports.test.ts` (recovery: the screen and the address, then the
+  device scan and the three writes)
+- Preview: `/clubhouse-preview/rounds`
+  (`?state=idle|many|empty|noseason|failed|unfinished-failed|failwrites`)
+  `/clubhouse-preview/round` (`?state=coach|noshots|noholes|total|holebyhole`)
+  `/clubhouse-preview/setup`
+  (`?state=failcourses|failtees|failholes|failstart|noqualifiers|qualifiersfailed`)
+  and `/clubhouse-preview/track`
+  (`?state=approach|putt|holed|checkpointfail|last|meters|exit|card|summary|submitting|posted|submitfail`)
 
-Discard goes through `useAction`, so these belong to the shell: offline refusal (CH-1903), slow saves (CH-1902), and the success and error haptics (D-70).
+Discard goes through `useAction`, so these belong to the shell: offline refusal
+(CH-1903), slow saves (CH-1902), and the success and error haptics (D-70).
 
 ## 110xx Error toasts
 
@@ -53,7 +103,8 @@ Discard goes through `useAction`, so these belong to the shell: offline refusal 
 
 ## 111xx Validation (tracking)
 
-Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the same the Fairway entry runs, so the hint can never disagree with the button.
+Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the
+same the Fairway entry runs, so the hint can never disagree with the button.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |

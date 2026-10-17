@@ -62,11 +62,13 @@ Tests: src/clubhouse/__tests__/stats-player.test.tsx
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P005-stats-player.json` (`actions`), and the whole list is
-readable in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. The window switch has the page's own
-offline and slow rows (50701, 50702; CH-5901, CH-5902); adding a focus area is refused offline by the
-shell (10703).
-The tab strip, the Game detail chips and the phone's All N rounds are local state and have no action record.
+Each action's record is in `config/clubhouse/pages/P005-stats-player.json`
+(`actions`), and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. The window switch has the
+page's own offline and slow rows (50701, 50702; CH-5901, CH-5902); adding a
+focus area is refused offline by the shell (10703). The tab strip, the Game
+detail chips and the phone's All N rounds are local state and have no action
+record.
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -102,7 +104,8 @@ The tab strip, the Game detail chips and the phone's All N rounds are local stat
 | `src/clubhouse/shell/crumbs.tsx` (`usePageCrumbs`), `shell/phone-chrome.tsx` (`PhoneTop`, `useBackFromMore`) | Clubhouse | `StatsPlayer`, `StatsPlayerPhone` |
 | `next/navigation` `useRouter`, React `useTransition` | framework | `StatsPlayer` |
 
-There are no realtime hooks: the page is read once per render, and again after a write or Try again.
+There are no realtime hooks: the page is read once per render, and again after a
+write or Try again.
 
 ## Services / server actions
 
@@ -154,47 +157,67 @@ None.
 
 ## Impact notes
 
-- The round filter (2026-09-30): `data/stats-filter.ts` is pure (no server-only) and shared by both loaders, the route
-  and the sheet. `roundsInFilter`, `previousInFilter` and `earlierInFilter` (stats-common) replace `roundsInWindow`
-  and `previousWindow`, so a missed call site does not compile. `StatsFilter.tsx`, `WindowSwitch.tsx` (a Custom pill,
-  `changeWords`) and `links.ts` are shared with Team stats (P004). The page file also passes the address through
-  (`src/app/golf/(dashboard)/dashboard/stats/page.tsx`); `stats/team/page.tsx` still renders the route with no
-  parameters (the old address has no filter).
-- Holes (2026-09-30): the filter carries `holes` (18, 9 or all). `data/stats-weight.ts` is pure and shared with Team stats:
-  `weightedMean` (a round weighs holes over 18), `effectiveRounds` / `effectiveCount` (the floors in whole rounds),
-  `summarizeWindow` (`ChWindowSeason`: `ChPlayerSeason` plus `effRounds` and `effSgRounds`; `season.ts`'s `summarizePlayer`,
-  `MIN_SG_ROUNDS` and `isFull18` are unchanged because Home and Roster share them) and `perEighteen`, the adapter that
-  restates the calculator's per-round counts, average to par and scoring by round type per 18 when a nine-hole round is in
-  the window (the shared calculator is not edited, Q-93). `loadPlayerProfile` returns `win: ChWindowSeason`,
-  `extra.bests` (18-hole), `extra.bests9`, `extra.nineRounds` and each round's `holes`. A player's read is still only
-  their own rounds (Q-91): `teamIds` is the player alone, and `stats-filter-data.test` asserts no other player's rounds,
-  round figures or shots are asked for under any holes choice. No new table or column.
+- The round filter (2026-09-30): `data/stats-filter.ts` is pure (no server-only)
+  and shared by both loaders, the route and the sheet. `roundsInFilter`,
+  `previousInFilter` and `earlierInFilter` (stats-common) replace
+  `roundsInWindow` and `previousWindow`, so a missed call site does not compile.
+  `StatsFilter.tsx`, `WindowSwitch.tsx` (a Custom pill, `changeWords`) and
+  `links.ts` are shared with Team stats (P004). The page file also passes the
+  address through (`src/app/golf/(dashboard)/dashboard/stats/page.tsx`);
+  `stats/team/page.tsx` still renders the route with no parameters (the old
+  address has no filter).
+- Holes (2026-09-30): the filter carries `holes` (18, 9 or all).
+  `data/stats-weight.ts` is pure and shared with Team stats: `weightedMean` (a
+  round weighs holes over 18), `effectiveRounds` / `effectiveCount` (the floors
+  in whole rounds), `summarizeWindow` (`ChWindowSeason`: `ChPlayerSeason` plus
+  `effRounds` and `effSgRounds`; `season.ts`'s `summarizePlayer`,
+  `MIN_SG_ROUNDS` and `isFull18` are unchanged because Home and Roster share
+  them) and `perEighteen`, the adapter that restates the calculator's per-round
+  counts, average to par and scoring by round type per 18 when a nine-hole round
+  is in the window (the shared calculator is not edited, Q-93).
+  `loadPlayerProfile` returns `win: ChWindowSeason`, `extra.bests` (18-hole),
+  `extra.bests9`, `extra.nineRounds` and each round's `holes`. A player's read
+  is still only their own rounds (Q-91): `teamIds` is the player alone, and
+  `stats-filter-data.test` asserts no other player's rounds, round figures or
+  shots are asked for under any holes choice. No new table or column.
 
-- `charts.tsx`, `WindowSwitch.tsx`, `ScoreLine` (in `StatsTeamPhone.tsx`) and `StatsSkeleton` are shared with
-  Team stats (P004): a change there changes both pages.
-- `createFocusArea` is shared with the Fairway development screens. It writes the signed-in coach's
-  id (the `coach_id` the page sends is ignored) and always runs its roster check: no team, or a player
-  not active on the coach's team, refuses. Fixed 2026-10-08.
-- The Message link and the "All N" link from Roster (`window=season&tab=rounds`) are addresses other pages
-  build; a change to `?player=`, `?tab=` or `?window=` breaks them (D-53, Messages' 70102).
-- `loadPlayerProfile` throws on a failed player or membership read: the stats route has no catch, so the
-  route error view is what shows.
-- Strokes gained (2026-09-30): `loadPlayerProfile` adds `tour`, `sgChange`, `puttBands` (via `loadPutts` and
-  `bandPutts` in `stats-common.ts`, shared with Team stats), each round's `sgLegs` and the strokes gained rows
-  of `comparisons` (`sg: true`; a player's `team` is always null). `lib/sg.ts` holds the baseline label, the bar
-  scale and the tint. No new table or column.
-- Parity with the production page (2026-09-30, PARITY.md): `loadPlayerProfile` now asks `getDetailedStats` for
-  the window's round ids (the same rounds the Rounds table lists, of the lengths the filter chose, newest 100 at most) instead of a date
-  preset, reads the window's holes, approach shots and spray in the same pass (each failing on its own:
-  `extra.holesError`, `approachError`, `puttsError`, `sprayError`), and returns `extra` (bests, the per-round
-  series, this window against the one before, the pressure gap, the opening hole, the toughest holes, approach
-  proximity against the Tour, where shots finish, the nine putt bands). `comparisons` gains `group`, `signed`
-  and `floor` and the standing rows (par scoring, big numbers, proximity, scrambling by lie, sand saves,
-  three-putts, make rates, penalty strokes, pressure gap, opening hole). The shot-level reads add golf_holes
-  and two golf_shots reads (putts, approaches) and one `getSprayChartData` call per page; no new table or column.
-  The team figures on the new rows are pooled from the window's round cache for a coach only.
-- `bandPutts` changed its edges from [3, 5) to (3, 5], the calculator's own cut, so Team stats' bands move a
-  little too (a putt of exactly 3 or 5 feet is common). `windowFilter` is gone: nothing passes a date preset to
+- `charts.tsx`, `WindowSwitch.tsx`, `ScoreLine` (in `StatsTeamPhone.tsx`) and
+  `StatsSkeleton` are shared with Team stats (P004): a change there changes both
+  pages.
+- `createFocusArea` is shared with the Fairway development screens. It writes
+  the signed-in coach's id (the `coach_id` the page sends is ignored) and always
+  runs its roster check: no team, or a player not active on the coach's team,
+  refuses. Fixed 2026-10-08.
+- The Message link and the "All N" link from Roster (`window=season&tab=rounds`)
+  are addresses other pages build; a change to `?player=`, `?tab=` or `?window=`
+  breaks them (D-53, Messages' 70102).
+- `loadPlayerProfile` throws on a failed player or membership read: the stats
+  route has no catch, so the route error view is what shows.
+- Strokes gained (2026-09-30): `loadPlayerProfile` adds `tour`, `sgChange`,
+  `puttBands` (via `loadPutts` and `bandPutts` in `stats-common.ts`, shared with
+  Team stats), each round's `sgLegs` and the strokes gained rows of
+  `comparisons` (`sg: true`; a player's `team` is always null). `lib/sg.ts`
+  holds the baseline label, the bar scale and the tint. No new table or column.
+- Parity with the production page (2026-09-30, PARITY.md): `loadPlayerProfile`
+  now asks `getDetailedStats` for the window's round ids (the same rounds the
+  Rounds table lists, of the lengths the filter chose, newest 100 at most)
+  instead of a date preset, reads the window's holes, approach shots and spray
+  in the same pass (each failing on its own: `extra.holesError`,
+  `approachError`, `puttsError`, `sprayError`), and returns `extra` (bests, the
+  per-round series, this window against the one before, the pressure gap, the
+  opening hole, the toughest holes, approach proximity against the Tour, where
+  shots finish, the nine putt bands). `comparisons` gains `group`, `signed` and
+  `floor` and the standing rows (par scoring, big numbers, proximity, scrambling
+  by lie, sand saves, three-putts, make rates, penalty strokes, pressure gap,
+  opening hole). The shot-level reads add golf_holes and two golf_shots reads
+  (putts, approaches) and one `getSprayChartData` call per page; no new table or
+  column. The team figures on the new rows are pooled from the window's round
+  cache for a coach only.
+- `bandPutts` changed its edges from [3, 5) to (3, 5], the calculator's own cut,
+  so Team stats' bands move a little too (a putt of exactly 3 or 5 feet is
+  common). `windowFilter` is gone: nothing passes a date preset to
   `getDetailedStats` any more.
-- `ApproachDrill` in production shades its efficiency matrix with hard-coded college targets, `PuttingBenchmarkSheet`
-  carries a D1 column and `COLLEGE_BENCHMARKS` ranks the weaknesses: none of them is reproduced here (Q-88).
+- `ApproachDrill` in production shades its efficiency matrix with hard-coded
+  college targets, `PuttingBenchmarkSheet` carries a D1 column and
+  `COLLEGE_BENCHMARKS` ranks the weaknesses: none of them is reproduced here
+  (Q-88).

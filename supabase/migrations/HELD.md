@@ -3,7 +3,8 @@
 <!-- markdownlint-disable MD013 MD060 -->
 
 A migration file that exists here but has no row in the ledger looks identical
-whether it was **held on purpose** or **forgotten**. This file is the difference.
+whether it was **held on purpose** or **forgotten**. This file is the
+difference.
 
 ## Why this exists
 
@@ -86,7 +87,7 @@ actions. This covers a decision that leaves no runtime trace at all.
 | `20261016220000_golf_set_course_image.sql` | **HOLD** | Owner decision 2026-10-16: any golf team member (coach or player) may set a course's photo. Adds one SECURITY DEFINER function, `public.golf_set_course_image(uuid, text)`, that checks membership and pins the storage host and the course's folder, then writes only `image_url`, the last-edited columns and one `golf_course_edit_history` row; no table, policy or grant changes. Apply after PR #2201 merges, with the owner's OK. Until it is applied the app falls back to the coach-only `updateCourse` write (`setCourseImageUrl`, PGRST202 or 42883), so coaches keep uploading photos and a player's photo is refused. Rollback: `DROP FUNCTION IF EXISTS public.golf_set_course_image(uuid, text);`. | 2026-10-16 |
 | `20261017100000_notification_preferences_keep_all_keys.sql` | **HOLD** | Written 2026-10-17; owner applies after review. Clubhouse Settings P008: the `validate_notification_preferences_trigger` on `public.users` rebuilds `notification_preferences` from nine fixed keys, so `email_task_reminders`, `email_coachhelm`, `push_announcements`, `push_task_reminders`, `push_coachhelm` and `quiet_mode` (all written by `updateNotificationPreferences`) save and then read back as their defaults. `CREATE OR REPLACE` of the trigger function only: the nine keys keep today's casts and defaults; the six are kept when present as JSON booleans and never defaulted; unknown keys are still dropped. SECURITY INVOKER and `search_path = ''` kept as live; no table, policy, grant or data change; nothing to backfill. Low risk. pgTAP `supabase/tests/rls/notification_preferences_keep_all_keys.sql` (16, run 2026-10-17 on the local stack with the migration in a rolled-back transaction: all pass; without it 9 fail). | 2026-10-17 |
 | `20261017101000_golf_announcement_children_team_scoped.sql` | **HOLD** | Written 2026-10-17; owner applies after review. Clubhouse Announcements P010: the coach INSERT, DELETE and SELECT policies on `golf_announcement_recipients` and the INSERT and DELETE policies on `golf_announcement_tasks` compare the announcement's team with itself, so they pass for anyone with any `golf_coaches` row who can see the post (nested RLS on `golf_announcements` stops a plain other-team coach, but not a player on the team who coaches elsewhere, or an admin with a coach row: they can narrow an all-team post, strip its recipients and attach tasks). Re-creates the five as `EXISTS (golf_announcements a WHERE a.id = announcement_id AND is_golf_team_coach(a.team_id))`, TO authenticated as live. `select_own` and `ann_tasks_select_team` untouched. App writes (`src/app/golf/actions/announcements.ts`) run as the team's coach and pass. Low-medium risk. pgTAP `supabase/tests/rls/golf_announcement_children_team_scoped.sql` (14, run 2026-10-17 locally in a rolled-back transaction: all pass; without it the dual-role cases fail). | 2026-10-17 |
-| `20261017102000_golf_event_attendance_players_own_rows.sql` | **HOLD** | Written 2026-10-17; owner applies after review. Owner-flagged (`docs/clubhouse/STATUS.md`): `golf_event_attendance_select_team` lets an active player read every teammate's RSVP row. Adds SECURITY DEFINER `golf_event_attendance_counts(uuid[])` (invited, accepted, declined, pending, and `coach_invited` — rows the coach's invitation wrote, so a player's own reply keeps a team-wide event open — per event of the caller's own teams; `search_path = ''`; EXECUTE authenticated only) and re-creates the SELECT policy so a player sees only their own row (coach branch unchanged; roles public to authenticated). Strictly narrower: no caller gains a row. **Apply after** the Clubhouse change that reads the function (`src/clubhouse/data/attendance-counts.ts`; shell, player Home, player Calendar and Classes' week overlap list (`data/classes.ts`, `coachOnlyMeetings`) fall back to the direct read until then) is deployed. Checked live callers: player own-row reads and the player RSVP upsert still pass; coach paths unchanged; `get_player_hub_events` / `get_coach_today_schedule` are SECURITY DEFINER. `getEventRSVP` has no role gate, and (corrected 2026-10-17) its live caller, Fairway's event drawer (`FairwayEventDetailDrawer.tsx` → `EventPeopleSection`), shows the People list to players too: **after apply, a Fairway player sees only their own reply there, not teammates' names and replies. Visible change on live Fairway; owner decides it with the apply.** The legacy `EventDetailModal` is mounted only by the baseball `PremiumCalendarClient`. Medium risk. pgTAP `supabase/tests/rls/golf_event_attendance_players_own_rows.sql` (12, run 2026-10-17 locally in a rolled-back transaction: all pass). | 2026-10-17 |
+| `20261017102000_golf_event_attendance_players_own_rows.sql` | **HOLD** | Written 2026-10-17; owner applies after review. Owner-flagged (`docs/clubhouse/STATUS.md`): `golf_event_attendance_select_team` lets an active player read every teammate's RSVP row. Adds SECURITY DEFINER `golf_event_attendance_counts(uuid[])` (invited, accepted, declined, pending, and `coach_invited` — rows the coach's invitation wrote, so a player's own reply keeps a team-wide event open — per event of the caller's own teams; `search_path = ''`; EXECUTE authenticated only) and re-creates the SELECT policy so a player sees only their own row (coach branch unchanged; roles public to authenticated). Strictly narrower: no caller gains a row. **Apply after** the Clubhouse change that reads the function (`src/clubhouse/data/attendance-counts.ts`; shell, player Home, player Calendar and Classes' week overlap list (`data/classes.ts`, `coachOnlyMeetings`) fall back to the direct read until then) is deployed. Checked live callers: player own-row reads and the player RSVP upsert still pass; coach paths unchanged; `get_player_hub_events` / `get_coach_today_schedule` are SECURITY DEFINER. `getEventRSVP` has no role gate, and (corrected 2026-10-17) its live caller, Fairway's event drawer (`FairwayEventDetailDrawer.tsx` → `EventPeopleSection`), shows the People list to players too: **after apply, a Fairway player sees only their own reply there, not teammates' names and replies. Visible change on live Fairway; owner decides it with the apply.** The header count still counts everyone (`getEventRSVP` takes its totals from `golf_event_attendance_counts`, test `get-event-rsvp-counts.test.ts`). Re-verified 2026-10-17: full local pgTAP 98/98 with the three 20261017 migrations applied, and each file's VERIFY queries return rows. The legacy `EventDetailModal` is mounted only by the baseball `PremiumCalendarClient`. Medium risk. pgTAP `supabase/tests/rls/golf_event_attendance_players_own_rows.sql` (12, run 2026-10-17 locally in a rolled-back transaction: all pass). | 2026-10-17 |
 
 ## Why `20260528011000` is obsolete rather than pending
 
@@ -481,7 +482,8 @@ treat it with the same R3 deliberateness as the SQL actions below.
 
 ### O6(a) — insert the two missing ledger rows
 
-**APPLIED 2026-09-06** (owner-authorized). Both rows verified present by `SELECT version, name` immediately after the INSERT.
+**APPLIED 2026-09-06** (owner-authorized). Both rows verified present by `SELECT
+version, name` immediately after the INSERT.
 
 Closes the "NO LEDGER ROW" note on `20260903190000` and `20260903193000`
 above. `supabase_migrations.schema_migrations` columns (confirmed live via
@@ -513,18 +515,19 @@ ON CONFLICT (version) DO NOTHING;
 
 ### O6(b) — a read-only role for the Repair stage
 
-**APPLIED 2026-09-06** (owner-authorized). Role, four grants and four policies created; `pg_policies` shows the four `helm_repair_ro_*` rows. Minting `HELM_REPAIR_DB_KEY` still needs the JWT secret and remains an owner step.
+**APPLIED 2026-09-06** (owner-authorized). Role, four grants and four policies
+created; `pg_policies` shows the four `helm_repair_ro_*` rows. Minting
+`HELM_REPAIR_DB_KEY` still needs the JWT secret and remains an owner step.
 
-`docs/ai-system/selfheal/repair-contract.md` names exactly what Repair reads
-and writes: SELECT on `public.background_job_logs` (STEP 0b), `public.admin_events`
-and `public.admin_error_resolutions` (STEP 1); INSERT — never UPDATE or
-DELETE — on `public.background_job_logs`, and only its own heartbeat row
-(STEP 6). This role is what
-`.github/workflows/selfheal-repair.yml`'s planned `HELM_REPAIR_DB_KEY` secret
-(see that workflow's TODO) should actually authenticate as, in place of the
-full `SUPABASE_SERVICE_ROLE_KEY` the workflow uses today — the contract has
-never needed write access to anything but its own heartbeat, so the
-credential should not be able to do more than that.
+`docs/ai-system/selfheal/repair-contract.md` names exactly what Repair reads and
+writes: SELECT on `public.background_job_logs` (STEP 0b), `public.admin_events`
+and `public.admin_error_resolutions` (STEP 1); INSERT — never UPDATE or DELETE —
+on `public.background_job_logs`, and only its own heartbeat row (STEP 6). This
+role is what `.github/workflows/selfheal-repair.yml`'s planned
+`HELM_REPAIR_DB_KEY` secret (see that workflow's TODO) should actually
+authenticate as, in place of the full `SUPABASE_SERVICE_ROLE_KEY` the workflow
+uses today — the contract has never needed write access to anything but its own
+heartbeat, so the credential should not be able to do more than that.
 
 All three tables have RLS enabled (confirmed live, `list_tables`: 276 of 276
 `public` tables carry `rls_enabled = true`), so a bare `GRANT` is necessary
@@ -575,17 +578,23 @@ not have access to and does not attempt to derive here.
 
 ### O6(c) — stop exposing `graphql_public` over the API
 
-**NOT applied as SQL, by decision 2026-09-06.** Live check: `authenticator` has no `pgrst.db_schemas` in `rolconfig`, so the exposed-schema list is dashboard-managed on this project, and Supabase's own troubleshooting docs state that a manual `ALTER ROLE authenticator SET pgrst.db_schemas` makes the dashboard stop managing schemas from then on. Do this in Dashboard → Project Settings → Data API → Exposed schemas: remove `graphql_public`, save. The SQL below is kept only as the documented alternative.
+**NOT applied as SQL, by decision 2026-09-06.** Live check: `authenticator` has
+no `pgrst.db_schemas` in `rolconfig`, so the exposed-schema list is
+dashboard-managed on this project, and Supabase's own troubleshooting docs state
+that a manual `ALTER ROLE authenticator SET pgrst.db_schemas` makes the
+dashboard stop managing schemas from then on. Do this in Dashboard → Project
+Settings → Data API → Exposed schemas: remove `graphql_public`, save. The SQL
+below is kept only as the documented alternative.
 
 Independently confirmed 2026-09-05 (`grep -rn "graphql" src/ --include="*.ts"
 --include="*.tsx" -i`): exactly 4 lines, all references to the
 `graphql_public`/`graphql` schema keys Supabase's own `db:types` generator
-always emits into `src/lib/types/database.ts`, plus one test asserting
-against that same generated structure. **Zero application code issues a
-GraphQL query, imports a GraphQL client, or calls `/graphql/v1` anywhere in
-`src/`.** The ~430 `pg_graphql_anon_table_exposed`/`pg_graphql_authenticated_table_exposed`
-WARN-level security-advisor findings (126 + 308 unique tables) are dead
-surface with no code path depending on them.
+always emits into `src/lib/types/database.ts`, plus one test asserting against
+that same generated structure. **Zero application code issues a GraphQL query,
+imports a GraphQL client, or calls `/graphql/v1` anywhere in `src/`.** The ~430
+`pg_graphql_anon_table_exposed`/`pg_graphql_authenticated_table_exposed`
+WARN-level security-advisor findings (126 + 308 unique tables) are dead surface
+with no code path depending on them.
 
 `supabase/config.toml`'s `[api] schemas = ["public", "graphql_public"]`
 governs the **local** stack only. In production the exposed-schemas list is a
@@ -612,7 +621,19 @@ source for that, only `src/`).
 
 ### O7 — investigate and, if warranted, restore the `admin_allowlist` vs `users.role` divergence
 
-**(a) RUN 2026-09-06 — one row.** The divergent allowlist entry is the founder account (the `note` column records it was added 2026-07-29 so `is_super_admin()` would pass); its `users.role` is `coach`. **(b) deliberately NOT run**: `users.role = 'admin'` still drives post-login routing (`src/app/golf/actions/auth.ts`, `src/app/golf/(dashboard)/layout.tsx`) and team-creation behavior (`src/app/golf/actions/teams.ts`), so flipping the founder's role changes their day-to-day coach experience — an owner decision. Owner confirmed 2026-09-06 that `coach` is intentional (that login is the test-coach account; `admin@` is the admin account, role `admin` and allowlisted). Resolved by changing the drift check, not the row: `check-supabase-drift.mjs` now fails only on a `users.role = 'admin'` account missing from `admin_allowlist` (the 2026-07-29 Forbidden shape) and reports allowlisted non-admin accounts as deliberate dual-role logins.
+**(a) RUN 2026-09-06 — one row.** The divergent allowlist entry is the founder
+account (the `note` column records it was added 2026-07-29 so `is_super_admin()`
+would pass); its `users.role` is `coach`. **(b) deliberately NOT run**:
+`users.role = 'admin'` still drives post-login routing
+(`src/app/golf/actions/auth.ts`, `src/app/golf/(dashboard)/layout.tsx`) and
+team-creation behavior (`src/app/golf/actions/teams.ts`), so flipping the
+founder's role changes their day-to-day coach experience — an owner decision.
+Owner confirmed 2026-09-06 that `coach` is intentional (that login is the
+test-coach account; `admin@` is the admin account, role `admin` and
+allowlisted). Resolved by changing the drift check, not the row:
+`check-supabase-drift.mjs` now fails only on a `users.role = 'admin'` account
+missing from `admin_allowlist` (the 2026-07-29 Forbidden shape) and reports
+allowlisted non-admin accounts as deliberate dual-role logins.
 
 Closes the register's "INVESTIGATE, not a migration" row above (F040 in the
 2026-09-05 coverage matrix). `db-drift.yml`'s "admin_allowlist and
@@ -744,18 +765,17 @@ by app code or RLS. Full working detail: `scratchpad/exec/phase2-P3.md`
 The result is nine names, not zero and not 141:
 `20260905100000_revoke_secdef_execute_from_authenticated.sql` (register row
 below, PENDING OWNER REVIEW) revokes `authenticated`/`anon`/`PUBLIC` EXECUTE
-from eight pure trigger functions
-(`extract_email_click_from_event`, `sync_coach_last_email_event`,
-`sync_email_snapshot_from_event`, `golf_event_documents_assert_same_team`,
-`golf_holes_recompute_round_totals_fn`, `set_calendar_feed_token`,
-`update_round_stats_cache`, `log_crm_stage_transition` — Postgres never
-checks the triggering session's EXECUTE privilege on a trigger function,
-regardless of SECURITY mode, so this is a categorical guarantee, not an
-inference from absent evidence) plus one internal composability gate,
-`__admin_rollup_b_gate()` (called only via `PERFORM
+from eight pure trigger functions (`extract_email_click_from_event`,
+`sync_coach_last_email_event`, `sync_email_snapshot_from_event`,
+`golf_event_documents_assert_same_team`, `golf_holes_recompute_round_totals_fn`,
+`set_calendar_feed_token`, `update_round_stats_cache`,
+`log_crm_stage_transition` — Postgres never checks the triggering session's
+EXECUTE privilege on a trigger function, regardless of SECURITY mode, so this is
+a categorical guarantee, not an inference from absent evidence) plus one
+internal composability gate, `__admin_rollup_b_gate()` (called only via `PERFORM
 public.__admin_rollup_b_gate();` from within its ~17 sibling admin-rollup
-SECURITY DEFINER functions, themselves deliberately kept — see those
-siblings' own history in `20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql`
+SECURITY DEFINER functions, themselves deliberately kept — see those siblings'
+own history in `20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql`
 and `20260709010100_gate_admin_event_summary.sql` — and owned by the same
 `postgres` role as its callers, so the nested call needs no grant).
 

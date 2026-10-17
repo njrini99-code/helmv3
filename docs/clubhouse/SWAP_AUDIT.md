@@ -331,29 +331,29 @@ quiet rerun.
   renders the library fresh, as the continue engine already did); Save for
   later now reaches the library in about 1s instead of 10s on the dev stack.
   The e2e taps Continue at once and passes 3/3.
-- **§13 CoachHelm (run 2026-10-01, read-only, Demo team).** No P0. Stored
-  putt, approach and tee bands, and sand saves, match a non-test recompute
-  except where the cache counts test rounds (one 15-25 ft band reads 19.2%
-  stored vs 5.8%; a driver vs layback comparison flips): the fix is the held
-  cache migrations (Q-124) and a regeneration (Q-125), both owner decisions.
-  Fixed in code: stale warm-up cards are hidden (CH13-3), the open-signal
-  count matches what is drawn (CH13-4), focus areas carry their team (CH13-5),
-  development notifications open Stats (CH13-7), evidence nouns and freshness
-  (CH13-9), confidence words follow the shared labels (CH13-10), no-finding
-  cards are not assignable (CH13-11), card voice per role (CH13-13),
-  acknowledged cards are not "Priority" (CH13-16), and Ask and its stream
-  endpoint respect the CoachHelm gate (CH13-20). Fixed 2026-10-01: Undo after
-  Dismiss keeps an acknowledgement (CH13-14, `024a7669a`); Assign as focus
-  tells the player, and the link follows the player's team under the
-  allowlist (CH13-24, `f0c107d34`); Assign sends the player's value now as
-  the focus's starting point (CH13-22, `1435fc9dd`, `39270df3b`); a declined
-  focus says so and Assign reads Propose again (CH13-23, `22a26ff00`); only
-  the cards a Clubhouse page draws are recorded as shown (CH13-21,
-  `5107895ee`). CH13-8 (unlabelled round sets): every live card (599 of 599,
-  read-only) carries its window ("90 days", "All rounds") and sample since
-  CH13-9; the test rounds in the stored cache are Q-124's apply. CH13-27 (stored strokes impact not
-  reproducible) is gone after the Q-125 regeneration; the 10 team-level cards
-  (bubble player, pattern) were not regenerated.
+- **§13 CoachHelm (run 2026-10-01, read-only, Demo team).** No P0. Stored putt,
+  approach and tee bands, and sand saves, match a non-test recompute except
+  where the cache counts test rounds (one 15-25 ft band reads 19.2% stored vs
+  5.8%; a driver vs layback comparison flips): the fix is the held cache
+  migrations (Q-124) and a regeneration (Q-125), both owner decisions. Fixed in
+  code: stale warm-up cards are hidden (CH13-3), the open-signal count matches
+  what is drawn (CH13-4), focus areas carry their team (CH13-5), development
+  notifications open Stats (CH13-7), evidence nouns and freshness (CH13-9),
+  confidence words follow the shared labels (CH13-10), no-finding cards are not
+  assignable (CH13-11), card voice per role (CH13-13), acknowledged cards are
+  not "Priority" (CH13-16), and Ask and its stream endpoint respect the
+  CoachHelm gate (CH13-20). Fixed 2026-10-01: Undo after Dismiss keeps an
+  acknowledgement (CH13-14, `024a7669a`); Assign as focus tells the player, and
+  the link follows the player's team under the allowlist (CH13-24, `f0c107d34`);
+  Assign sends the player's value now as the focus's starting point (CH13-22,
+  `1435fc9dd`, `39270df3b`); a declined focus says so and Assign reads Propose
+  again (CH13-23, `22a26ff00`); only the cards a Clubhouse page draws are
+  recorded as shown (CH13-21, `5107895ee`). CH13-8 (unlabelled round sets):
+  every live card (599 of 599, read-only) carries its window ("90 days", "All
+  rounds") and sample since CH13-9; the test rounds in the stored cache are
+  Q-124's apply. CH13-27 (stored strokes impact not reproducible) is gone after
+  the Q-125 regeneration; the 10 team-level cards (bubble player, pattern) were
+  not regenerated.
 - **F-58 (P2 data, fixed `c7e24b4f9`).** CoachHelm's program pulse used the
   hole-by-hole rule, so a team posting qualifiers as totals read "no rounds
   in 60 days". It now uses the Q-123 score rule (shared in

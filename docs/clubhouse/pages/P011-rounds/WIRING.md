@@ -15,8 +15,9 @@ counts include wrappers rather than unique popups.
 
 ## Entry points
 
-The library, the review and round entry (setup, then the shot screen) are routed, each behind `golf_clubhouse_ui`
-for the player. Round entry runs over the round engine in `src/lib/golf/round-session/` (#2104), the same hooks the
+The library, the review and round entry (setup, then the shot screen) are
+routed, each behind `golf_clubhouse_ui` for the player. Round entry runs over
+the round engine in `src/lib/golf/round-session/` (#2104), the same hooks the
 Fairway clients use; the dev preview is unchanged.
 
 ```text
@@ -151,7 +152,8 @@ Tests: src/clubhouse/__tests__/rounds.test.tsx, round-review.test.tsx, round-set
        src/lib/golf/__tests__/shot-entry-rules.test.ts
 ```
 
-Round entry (Start, Save for later, Discard, Change to practice, Submit) has the same shape over the engine:
+Round entry (Start, Save for later, Discard, Change to practice, Submit) has the
+same shape over the engine:
 
 ```text
 UI (RoundSetup's Start; RoundRuntime's Exit sheet, closed-qualifier sheet, Round complete and Submitting)
@@ -179,11 +181,14 @@ Tests: src/clubhouse/__tests__/round-entry-wiring.test.tsx (the real new-round e
 
 ## Actions
 
-Seven actions are registered in `config/clubhouse/pages/P011-rounds.json` (`actions`): the library's two, and the
-five a routed round-entry control reaches. The whole list is readable in
-`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, an action is refused before anything is sent (the shell's
-10703, CH-1903; 110702, reserved, no test). The failure toast carries Retry, which runs the whole action again (111401);
-a Retry in round entry runs it against the round as it is now (111404).
+Seven actions are registered in `config/clubhouse/pages/P011-rounds.json`
+(`actions`): the library's two, and the five a routed round-entry control
+reaches. The whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, an action is
+refused before anything is sent (the shell's 10703, CH-1903; 110702, reserved,
+no test). The failure toast carries Retry, which runs the whole action again
+(111401); a Retry in round entry runs it against the round as it is now
+(111404).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -200,8 +205,9 @@ a Retry in round entry runs it against the round as it is now (111404).
 
 ### Controls inside round entry (not registered)
 
-These run through ports, the engine's shared hook or the round screen's props. They keep the contracts they had in
-the preview; the round screen now supplies the ports.
+These run through ports, the engine's shared hook or the round screen's props.
+They keep the contracts they had in the preview; the round screen now supplies
+the ports.
 
 | Control | Component | Handler -> what it calls | Contracts |
 | --- | --- | --- | --- |
@@ -255,7 +261,8 @@ the preview; the round screen now supplies the ports.
 | `src/clubhouse/lib/haptics.ts`, `track.ts`, `reduced-motion.ts` | Clubhouse | throughout |
 | `src/hooks/golf/use-shot-tracking.ts` (`useShotTracking`, `ShotTrackingPorts`) with `use-shot-state-machine.ts`, `use-edit-shot-modal.ts`, `use-undo-manager.ts`, `use-penalty-handler.ts` and `use-distance-units.ts` | Shared (the Fairway screen runs the same) | RoundTracking, ShotEntry |
 
-There are no realtime hooks: the library and the review are read once on the server per visit.
+There are no realtime hooks: the library and the review are read once on the
+server per visit.
 
 ## Services / server actions
 
@@ -292,55 +299,80 @@ Write path: deleteInProgressRound through writes.ts; the shot screen's writes th
 
 ## Held dependencies
 
-None. A coach's note on a round and the recap's Focus and Keep each need data or a decision the owner has not
-approved (Q-72f).
+None. A coach's note on a round and the recap's Focus and Keep each need data or
+a decision the owner has not approved (Q-72f).
 
 ## Impact notes
 
-- `deleteInProgressRound` is shared with Fairway's library and continue-round: a change there changes both UIs.
-- `useShotTracking` and `shot-entry-rules` are shared with the Fairway shot screen (the parity tests
-  `FairwayShotTracking.ready-state-parity.test.ts` and `.stale-checkpoint.test.ts` guard the move): a change
-  to either changes both screens.
-- Engine change, opt-in (2026-10-17): `NewRoundStartForm.yardage` ('every' by default; Clubhouse passes 'none' for a
-  library tee and 'any' for a saved course, Fairway's preloaded-start rules) and `NewRoundStartForm.libraryOffer`
-  (Clubhouse's saved course with no library link: `handleHolesSave` runs `contributeCourseFromRound` with those holes and
-  sets the engine's course and tee refs, as `startWithPreloadedConfigs` does, so later writes link the round). Only
-  `start(form)` reads them and only Clubhouse calls it; Fairway's path and payloads are unchanged (the round-session and
-  Fairway round tests, and `round-lifecycle-parity.test.tsx`).
-- The round engine (`src/lib/golf/round-session/`, #2104) is shared with the Fairway clients and pinned by source-text
-  tests (`new-round-client.*.test.ts`, `continue-round-client.*.test.ts`): Clubhouse reads its returned state and
-  calls its handlers, and never edits it. A change to an engine handler's contract (what it throws, what it toasts,
-  what it returns) changes both UIs; the wiring depends on `start(form)`'s failure reasons, `handleSaveForLater`
-  throwing, `handleDeleteRound` and `handleSaveAsPractice` setting `error`, and the two engines wording the conflict
-  message differently (`isRoundConflictMessage` matches both).
-- The two round screens share one `RoundRuntime`; a change to a sheet or an action is a change to both routes.
-- `useAction`'s `quiet`, `retry` and `offline` options are new and shared with the other Clubhouse screens; their defaults
-  are unchanged. Its gate against a second run is now a ref, not the render's `pending`, so a Retry or a quick second call
-  that reaches a `run` from an earlier render is judged on the action's real state (111404); every screen gets this.
-- Both routes call `resolveClubhouseTeam`, which throws when a player's team membership read fails (the route
-  error view, never "no team"). The library needs the team only for the time zone of "today", but a failed
-  membership read still fails the whole library.
-- A coach sees a review only for a player on the coach's active team (the team cookie), so a coach with two teams
-  sees the other team's players' rounds as "not here" until they switch.
-- A Clubhouse player can now review, discard, start and continue rounds (`/rounds/new` and `/rounds/continue/[id]`
-  are in the shell's rebuilt list for a player, so New round, Start a round, Continue and Submit draw everywhere they
-  link: the library, Home, CoachHelm). A coach's are still not drawn. Flag off, all of it stays Fairway's.
-- `/rounds/recover` is rebuilt for a player (swap audit F-02; it was Fairway's until then). A submit that could not
-  reach the server leaves the round on the device and opens it, `?from=submit` (CH-11905, CH-11911, `ENGINE_ROUTES` in
-  `entry/routes.ts`), where Restore, Retry sync and Discard work on the rounds the device holds (CH-11017 to CH-11019,
-  CH-11520). The Library does not link to it. Fairway's recovery is ported, not moved: `FairwayRecoverRound`'s tests
-  pin its source, so the two share the lower layers (`round-missing-recovery`, the emergency save, the stores) and
-  not the scan, which is duplicated until Fairway is retired.
-- Continue's page skips the Fairway round-type editor and its qualifier reads for a Clubhouse player; Clubhouse's
-  own sheet (CH-11521) reads its options in the route (`loadRoundTypeOptions`). A submitted round is re-typed from its
-  review (CH-11522, 2026-10-17), with the Fairway round page's rules; the review's loader reads the options beside the
-  holes (`readRoundTypeOptions`): its entries (and, for a coach, the team's qualifiers) ride in the holes' wave, and
-  only the taken-slot read follows, when there is a qualifier to offer (`rounds-reads.test.ts`).
-- The entry routes' `error.tsx` files are still the shared Fairway `RouteErrorBoundary`.
-- The start's city and state (2026-10-17): a setup pick carries the course's own `city` and `state` (`ChSetupPick`), and
-  `toStartForm` saves those; `place` is display only. A pick without them (an older fixture) still splits `place`.
-- The recap (2026-10-17): `generateRoundRecap` is the only writer of `ai_recap`, and only a review calls it, in both UIs
-  (Fairway's round page and, now, Clubhouse's). It is idempotent and single-flight on the server.
-- Strokes gained on the review (2026-09-30): `loadRoundReview` also selects the round's five
-  `strokes_gained_*` columns and reads `golf_teams.gender` for the viewer's team (a player viewer carries an
-  optional `teamId` from the route); `toReview` shapes `strokesGained` and `tour`. No new table or column.
+- `deleteInProgressRound` is shared with Fairway's library and continue-round: a
+  change there changes both UIs.
+- `useShotTracking` and `shot-entry-rules` are shared with the Fairway shot
+  screen (the parity tests `FairwayShotTracking.ready-state-parity.test.ts` and
+  `.stale-checkpoint.test.ts` guard the move): a change to either changes both
+  screens.
+- Engine change, opt-in (2026-10-17): `NewRoundStartForm.yardage` ('every' by
+  default; Clubhouse passes 'none' for a library tee and 'any' for a saved
+  course, Fairway's preloaded-start rules) and `NewRoundStartForm.libraryOffer`
+  (Clubhouse's saved course with no library link: `handleHolesSave` runs
+  `contributeCourseFromRound` with those holes and sets the engine's course and
+  tee refs, as `startWithPreloadedConfigs` does, so later writes link the
+  round). Only `start(form)` reads them and only Clubhouse calls it; Fairway's
+  path and payloads are unchanged (the round-session and Fairway round tests,
+  and `round-lifecycle-parity.test.tsx`).
+- The round engine (`src/lib/golf/round-session/`, #2104) is shared with the
+  Fairway clients and pinned by source-text tests (`new-round-client.*.test.ts`,
+  `continue-round-client.*.test.ts`): Clubhouse reads its returned state and
+  calls its handlers, and never edits it. A change to an engine handler's
+  contract (what it throws, what it toasts, what it returns) changes both UIs;
+  the wiring depends on `start(form)`'s failure reasons, `handleSaveForLater`
+  throwing, `handleDeleteRound` and `handleSaveAsPractice` setting `error`, and
+  the two engines wording the conflict message differently
+  (`isRoundConflictMessage` matches both).
+- The two round screens share one `RoundRuntime`; a change to a sheet or an
+  action is a change to both routes.
+- `useAction`'s `quiet`, `retry` and `offline` options are new and shared with
+  the other Clubhouse screens; their defaults are unchanged. Its gate against a
+  second run is now a ref, not the render's `pending`, so a Retry or a quick
+  second call that reaches a `run` from an earlier render is judged on the
+  action's real state (111404); every screen gets this.
+- Both routes call `resolveClubhouseTeam`, which throws when a player's team
+  membership read fails (the route error view, never "no team"). The library
+  needs the team only for the time zone of "today", but a failed membership read
+  still fails the whole library.
+- A coach sees a review only for a player on the coach's active team (the team
+  cookie), so a coach with two teams sees the other team's players' rounds as
+  "not here" until they switch.
+- A Clubhouse player can now review, discard, start and continue rounds
+  (`/rounds/new` and `/rounds/continue/[id]` are in the shell's rebuilt list for
+  a player, so New round, Start a round, Continue and Submit draw everywhere
+  they link: the library, Home, CoachHelm). A coach's are still not drawn. Flag
+  off, all of it stays Fairway's.
+- `/rounds/recover` is rebuilt for a player (swap audit F-02; it was Fairway's
+  until then). A submit that could not reach the server leaves the round on the
+  device and opens it, `?from=submit` (CH-11905, CH-11911, `ENGINE_ROUTES` in
+  `entry/routes.ts`), where Restore, Retry sync and Discard work on the rounds
+  the device holds (CH-11017 to CH-11019, CH-11520). The Library does not link
+  to it. Fairway's recovery is ported, not moved: `FairwayRecoverRound`'s tests
+  pin its source, so the two share the lower layers (`round-missing-recovery`,
+  the emergency save, the stores) and not the scan, which is duplicated until
+  Fairway is retired.
+- Continue's page skips the Fairway round-type editor and its qualifier reads
+  for a Clubhouse player; Clubhouse's own sheet (CH-11521) reads its options in
+  the route (`loadRoundTypeOptions`). A submitted round is re-typed from its
+  review (CH-11522, 2026-10-17), with the Fairway round page's rules; the
+  review's loader reads the options beside the holes (`readRoundTypeOptions`):
+  its entries (and, for a coach, the team's qualifiers) ride in the holes' wave,
+  and only the taken-slot read follows, when there is a qualifier to offer
+  (`rounds-reads.test.ts`).
+- The entry routes' `error.tsx` files are still the shared Fairway
+  `RouteErrorBoundary`.
+- The start's city and state (2026-10-17): a setup pick carries the course's own
+  `city` and `state` (`ChSetupPick`), and `toStartForm` saves those; `place` is
+  display only. A pick without them (an older fixture) still splits `place`.
+- The recap (2026-10-17): `generateRoundRecap` is the only writer of `ai_recap`,
+  and only a review calls it, in both UIs (Fairway's round page and, now,
+  Clubhouse's). It is idempotent and single-flight on the server.
+- Strokes gained on the review (2026-09-30): `loadRoundReview` also selects the
+  round's five `strokes_gained_*` columns and reads `golf_teams.gender` for the
+  viewer's team (a player viewer carries an optional `teamId` from the route);
+  `toReview` shapes `strokesGained` and `tour`. No new table or column.

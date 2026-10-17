@@ -33,8 +33,8 @@ Clubhouse flag on, `/golf/dashboard/rounds/recover` opens the Clubhouse recovery
 screen. New and Continue round use that destination when submission requires
 recovery. The screen exposes device snapshots with Restore, Retry and explicit
 Discard, rather than sending the player to a library that cannot read them
-(resolved F-02, `docs/clubhouse/SWAP_AUDIT.md`). Source and unit verification are
-recorded there; a physical-device failed-submit journey remains unverified.
+(resolved F-02, `docs/clubhouse/SWAP_AUDIT.md`). Source and unit verification
+are recorded there; a physical-device failed-submit journey remains unverified.
 
 This is one of the highest-risk product areas because a broken write path can
 lose user-entered golf data, corrupt stats, or feed bad evidence into CoachHelm.
@@ -114,9 +114,13 @@ separate `recordWorkflow` calls directly in `golf.ts`.
 ### Actions
 
 - `src/app/golf/actions/round-submit.ts` (`submitGolfRoundComprehensive`)
-- `src/app/golf/actions/round-partial.ts` (`savePartialRound`, `deleteInProgressRound`)
-- `src/app/golf/actions/saved-courses.ts`, `src/app/golf/actions/golf-action-shared.ts`
-- The former `golf.ts` was split by domain; the older prose in this document that says `golf.ts` means these files (map: `src/app/golf/actions/ACTIONS.md`).
+- `src/app/golf/actions/round-partial.ts` (`savePartialRound`,
+  `deleteInProgressRound`)
+- `src/app/golf/actions/saved-courses.ts`,
+  `src/app/golf/actions/golf-action-shared.ts`
+- The former `golf.ts` was split by domain; the older prose in this document
+  that says `golf.ts` means these files (map:
+  `src/app/golf/actions/ACTIONS.md`).
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/round-recap.ts`
 - `src/app/golf/actions/round-review-system.ts`
@@ -194,14 +198,14 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   final submit; it never invents a qualifier result from a browser backup.
 - Authenticated users must only create or modify rounds they are allowed to own
   or coach.
-- Round-start validation must accept whatever the course library stores for
-  the course's city and state. The library's `golf_courses.state` is free text
+- Round-start validation must accept whatever the course library stores for the
+  course's city and state. The library's `golf_courses.state` is free text
   (Canadian courses carry "Ontario", not "ON") and the tee picker copies it into
   the round verbatim, so both round schemas allow `courseState` up to 100
   characters — the same cap as `courseCity`; the `golf_rounds.course_state`
-  column is `text`. A fresh round's first save carries no holes, so a
-  validation failure on any top-level field is unsalvageable and reaches the
-  player as a bare `retry` ("start round does nothing"). See
+  column is `text`. A fresh round's first save carries no holes, so a validation
+  failure on any top-level field is unsalvageable and reaches the player as a
+  bare `retry` ("start round does nothing"). See
   `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`.
 - Direct database writes cannot create, mutate, or delete a completed round
   or its child shots. Only the postgres-owned SECURITY DEFINER round RPCs may
@@ -619,15 +623,15 @@ reload (`lieFromShotResult`) restore position from.
   round setup (owner decision 2026-10-16). `attachCourseImage` uploads to the
   public `course-images` bucket, then `setCourseImageUrl` calls the
   `golf_set_course_image` RPC (SECURITY DEFINER; it checks active team
-  membership, coach or super admin, that the URL is in this course's folder,
-  and that the course is not soft-deleted, then writes only `image_url`, the
-  last-edited columns and a `golf_course_edit_history` row). Players are
-  still refused every other `golf_courses` write: the UPDATE policy was not
-  widened. If the RPC is missing (PGRST202 or 42883, code deployed before the
-  migration), `setCourseImageUrl` logs a warning and falls back to the old
-  coach-only `updateCourse` path. `removeCourseImage` stays coach-only. Before this, a player's photo
-  went through `updateCourse` and its coach gate, so the upload succeeded and
-  the photo silently never landed.
+  membership, coach or super admin, that the URL is in this course's folder, and
+  that the course is not soft-deleted, then writes only `image_url`, the
+  last-edited columns and a `golf_course_edit_history` row). Players are still
+  refused every other `golf_courses` write: the UPDATE policy was not widened.
+  If the RPC is missing (PGRST202 or 42883, code deployed before the migration),
+  `setCourseImageUrl` logs a warning and falls back to the old coach-only
+  `updateCourse` path. `removeCourseImage` stays coach-only. Before this, a
+  player's photo went through `updateCourse` and its coach gate, so the upload
+  succeeded and the photo silently never landed.
 - A round-start failure is shown beside the control that started the round.
   On the confirmed-course path that control is `FairwayHoleConfig`'s own
   "Start round" dock, so the parent's error travels down as `submitError`
@@ -652,22 +656,21 @@ reload (`lieFromShotResult`) restore position from.
 
 ## Known Risk Areas
 
-- **Golf player round and shot history is an owner-level absolute
-  constraint: never deletable outside the two protected write paths**
-  (`submit_round_atomic`/`save_partial_round_atomic`, both `SECURITY
-  DEFINER` and self-checking `player_id`; or the player-scoped JS
-  fallback authorized by the player's own delete policies). A confirmed
-  2026-08-19 defect let any `assistant_coach` (not just the head coach)
-  delete a team's entire round/shot history through three role-blind
-  DELETE policies — closed by
+- **Golf player round and shot history is an owner-level absolute constraint:
+  never deletable outside the two protected write paths**
+  (`submit_round_atomic`/`save_partial_round_atomic`, both `SECURITY DEFINER`
+  and self-checking `player_id`; or the player-scoped JS fallback authorized by
+  the player's own delete policies). A confirmed 2026-08-19 defect let any
+  `assistant_coach` (not just the head coach) delete a team's entire round/shot
+  history through three role-blind DELETE policies — closed by
   `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`.
   Any new DELETE/ALL policy on `golf_rounds`/`golf_shots`/`golf_holes`/
   `golf_round_reviews` must use `is_golf_team_head_coach()`, never the
   existence-only `is_golf_team_coach()` — see
-  `memory/context/engineering-methodology.md`'s Row-Level Security
-  section for the verification technique. A decrease in `golf_rounds`,
-  `golf_shots`, `golf_holes`, `golf_players` or `golf_round_reviews` row
-  counts is this class of incident recurring, not a discrepancy.
+  `memory/context/engineering-methodology.md`'s Row-Level Security section for
+  the verification technique. A decrease in `golf_rounds`, `golf_shots`,
+  `golf_holes`, `golf_players` or `golf_round_reviews` row counts is this class
+  of incident recurring, not a discrepancy.
 - Race conditions between save draft, submit, and recovery.
 - Undo, edit, and delete actions share a local single-flight guard. If the
   authorized server lookup confirms a shot is already absent, Undo and Delete

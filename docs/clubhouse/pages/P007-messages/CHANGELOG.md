@@ -4,68 +4,92 @@
 
 Three gaps against Fairway's Messages, built on the same actions:
 
-- **The group's creator removes members.** Desktop Details has a Remove beside each member and the phone a remove icon
-  on the member's row, for the creator only and never on their own row (theirs is Leave group, which D-47 keeps from
-  the creator). It asks first (CH-7504, "Remove Eli from Varsity team?"; Remove carries the warning haptic, D-70),
-  then calls `removeGolfGroupMember(conversationId, userId)` as Fairway does. The row leaves at once; a refusal puts
-  it back and says so (CH-7024, "Couldn’t remove Eli", with the server's reason where it is a readable one). Landed:
-  the success haptic, "Removed Eli from Varsity team", and the rail and the members read again (the list stays on
-  screen while it does) (`RemoveMemberModal`, `api.removeMember`).
-- **A search hit goes to its message.** Opening a hit opens its thread and scrolls the matched message to the middle
-  of the view (at once with reduced motion), then rings it in green for 2.4 s (`FOUND_FOR_MS`; the ring fades on
-  `--ch-dur-base`). While it does, the end-anchor is paused (`useThreadAnchor` `paused`): its 700 ms settle hold
-  stops, and neither the messages loading under the jump nor a resize pull the thread to its end. A hit outside the
+- **The group's creator removes members.** Desktop Details has a Remove beside
+  each member and the phone a remove icon on the member's row, for the creator
+  only and never on their own row (theirs is Leave group, which D-47 keeps from
+  the creator). It asks first (CH-7504, "Remove Eli from Varsity team?"; Remove
+  carries the warning haptic, D-70), then calls
+  `removeGolfGroupMember(conversationId, userId)` as Fairway does. The row
+  leaves at once; a refusal puts it back and says so (CH-7024, "Couldn’t remove
+  Eli", with the server's reason where it is a readable one). Landed: the
+  success haptic, "Removed Eli from Varsity team", and the rail and the members
+  read again (the list stays on screen while it does) (`RemoveMemberModal`,
+  `api.removeMember`).
+- **A search hit goes to its message.** Opening a hit opens its thread and
+  scrolls the matched message to the middle of the view (at once with reduced
+  motion), then rings it in green for 2.4 s (`FOUND_FOR_MS`; the ring fades on
+  `--ch-dur-base`). While it does, the end-anchor is paused (`useThreadAnchor`
+  `paused`): its 700 ms settle hold stops, and neither the messages loading
+  under the jump nor a resize pull the thread to its end. A hit outside the
   loaded history gives the thread back its end (`use-focus-message.ts`).
-- **The phone's Schedule invites the direct thread's player** (`&with=<golf_players.id>`), as the desktop header
-  does; a group or a coach's thread invites nobody (D-52).
+- **The phone's Schedule invites the direct thread's player**
+  (`&with=<golf_players.id>`), as the desktop header does; a group or a coach's
+  thread invites nobody (D-52).
 
-Tests: `__tests__/wiring-p007-messages.test.tsx`. Source and jsdom only; not checked in a browser, and the scroll
-itself is not measured (jsdom has no layout).
+Tests: `__tests__/wiring-p007-messages.test.tsx`. Source and jsdom only; not
+checked in a browser, and the scroll itself is not measured (jsdom has no
+layout).
 
 ## 2026-10-17 — Every control checked against the write Fairway makes for it
 
-Wiring audit: every Messages control (CLICKABLES, the P007 manifest's 19 actions, and a grep of the screens) traced
-to its server action, compared with Fairway's call (`FairwayMessages`, `FairwayTeamBroadcastSheet`,
-`FairwayNewMessageSheet`, `MessageComposer`, `FairwayPlayerAnnouncementCard`) and the action's own guard. Four
-differences fixed:
+Wiring audit: every Messages control (CLICKABLES, the P007 manifest's 19
+actions, and a grep of the screens) traced to its server action, compared with
+Fairway's call (`FairwayMessages`, `FairwayTeamBroadcastSheet`,
+`FairwayNewMessageSheet`, `MessageComposer`, `FairwayPlayerAnnouncementCard`)
+and the action's own guard. Four differences fixed:
 
-- **A coach's group of coaches alone reached the whole team.** A coach's group is `createGolfTeamBroadcast`, and a
-  broadcast given no players adds every player on the team; the coaches picked join after (D-45). Picking only
-  coaches (desktop Group, or two coaches on the phone) therefore created a whole-team chat. New message now asks for
-  at least one player first, as Fairway's group sheet does (CH-7105, "Choose at least one player. Coaches join the
-  group once it exists."), and `createGroup` refuses such a call itself (`groupLacksPlayer`, `model.ts`).
-- **An announcement's file never opened.** Its Files rows linked the stored `file_url`, which points at the private
-  documents bucket (Fairway #1259: a dead `/object/public/` link). A file now opens through a signed link asked for
-  at the tap (`getPreviewUrl`, `api.openAnnouncementDocument`), as Fairway's announcement card and the Team Hub open
-  one: the tab opens inside the tap (Safari) and the link fills it; a link that can't be had closes it and says so
-  (CH-7021, "That file has no stored copy to open." for a document with no stored file).
-- **A deep link arriving while Messages was open was dropped.** `?conversation=` (a bell notification tapped on this
-  page, which keeps it mounted), `?player=`, `?user=` and `?prefill=` were taken once per mount. Each new address is
-  now taken. A thread the list doesn't hold yet is looked for once more (the rail's refetch) before it opens; one
-  still missing says so (CH-7015), as before.
-- **Message fields stop at the server's limit.** The composer, Edit and the phone's first message take at most 5,000
-  characters (`MESSAGE_MAX`, sendMessageSchema's `content.max(5000)`), as Fairway's field does; past it a send was
-  refused and its Retry could never land.
+- **A coach's group of coaches alone reached the whole team.** A coach's group
+  is `createGolfTeamBroadcast`, and a broadcast given no players adds every
+  player on the team; the coaches picked join after (D-45). Picking only coaches
+  (desktop Group, or two coaches on the phone) therefore created a whole-team
+  chat. New message now asks for at least one player first, as Fairway's group
+  sheet does (CH-7105, "Choose at least one player. Coaches join the group once
+  it exists."), and `createGroup` refuses such a call itself
+  (`groupLacksPlayer`, `model.ts`).
+- **An announcement's file never opened.** Its Files rows linked the stored
+  `file_url`, which points at the private documents bucket (Fairway #1259: a
+  dead `/object/public/` link). A file now opens through a signed link asked for
+  at the tap (`getPreviewUrl`, `api.openAnnouncementDocument`), as Fairway's
+  announcement card and the Team Hub open one: the tab opens inside the tap
+  (Safari) and the link fills it; a link that can't be had closes it and says so
+  (CH-7021, "That file has no stored copy to open." for a document with no
+  stored file).
+- **A deep link arriving while Messages was open was dropped.** `?conversation=`
+  (a bell notification tapped on this page, which keeps it mounted), `?player=`,
+  `?user=` and `?prefill=` were taken once per mount. Each new address is now
+  taken. A thread the list doesn't hold yet is looked for once more (the rail's
+  refetch) before it opens; one still missing says so (CH-7015), as before.
+- **Message fields stop at the server's limit.** The composer, Edit and the
+  phone's first message take at most 5,000 characters (`MESSAGE_MAX`,
+  sendMessageSchema's `content.max(5000)`), as Fairway's field does; past it a
+  send was refused and its Retry could never land.
 
-Checked and matching production: send, retry, attachments, edit, delete, reactions, mute, search, leave, Add (the
-group's creator; the server's `loadGolfGroupIOwn` rule), delete conversation, acknowledge, task done, posting an
-announcement (the coach's active team, cookie-resolved in both), the realtime channels (shared hooks, unchanged), and
-the Schedule and View stats targets (rebuilt for a coach). Differences kept, with reasons, are in WIRING.md
-"Production parity (2026-10-17)". Tests: `__tests__/wiring-p007-messages.test.tsx`. Source and jsdom only; not
-checked in a browser.
+Checked and matching production: send, retry, attachments, edit, delete,
+reactions, mute, search, leave, Add (the group's creator; the server's
+`loadGolfGroupIOwn` rule), delete conversation, acknowledge, task done, posting
+an announcement (the coach's active team, cookie-resolved in both), the realtime
+channels (shared hooks, unchanged), and the Schedule and View stats targets
+(rebuilt for a coach). Differences kept, with reasons, are in WIRING.md
+"Production parity (2026-10-17)". Tests:
+`__tests__/wiring-p007-messages.test.tsx`. Source and jsdom only; not checked in
+a browser.
 
 ## 2026-10-16 — Conversations first, announcements folded under them
 
-Owner, 2026-10-16: messages first. The inbox lists conversations, then the team's announcements as one raised row:
-how many there are, the newest title, and how many wait on your acknowledgement. The row opens in place to the newest
-three with a link to the earlier ones; a search or an open announcement unfolds it. On the desktop rail and the
-phone's Inbox alike (`announcements.tsx`, `MessagesView`, `MessagesPhone`, `messages.css`). The tests open the fold
-before an announcement. Checked in Chrome at desktop width, open and closed; not checked at phone width.
+Owner, 2026-10-16: messages first. The inbox lists conversations, then the
+team's announcements as one raised row: how many there are, the newest title,
+and how many wait on your acknowledgement. The row opens in place to the newest
+three with a link to the earlier ones; a search or an open announcement unfolds
+it. On the desktop rail and the phone's Inbox alike (`announcements.tsx`,
+`MessagesView`, `MessagesPhone`, `messages.css`). The tests open the fold before
+an announcement. Checked in Chrome at desktop width, open and closed; not
+checked at phone width.
 
 ## 2026-10-16 — The filter chips use the shared green chip
 
-All, Unread and Groups take the lit green chip every switcher draws (`messages.css`); the page's own rule is removed.
-Shared detail: docs/clubhouse/CHANGELOG.md.
+All, Unread and Groups take the lit green chip every switcher draws
+(`messages.css`); the page's own rule is removed. Shared detail:
+docs/clubhouse/CHANGELOG.md.
 
 ## 2026-10-16 — Failed server reads are logged; Delete is not lost to them
 
@@ -143,10 +167,9 @@ has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
 ## 2026-10-12 — conversation files follow the dashboard role
 
 `getGolfConversationFiles` (HELD) asks the gate with the dashboard layout's
-role, not
-`session.role`, so a user with a coach row on the player dashboard gets the
-files Clubhouse
-Messages shows them under a team allowlist. Membership still decides who reads what.
+role, not `session.role`, so a user with a coach row on the player dashboard
+gets the files Clubhouse Messages shows them under a team allowlist. Membership
+still decides who reads what.
 
 ## 2026-10-12 — attachment retry stays Clubhouse-only
 
@@ -201,29 +224,77 @@ Owner review:
 
 ## 2026-10-08 — the player peek (P003-C1)
 
-The shared PlayerPeek: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages already holds. The bubble keeps its own hold for message actions; coaches and people off the roster don't peek. No new reads.
+The shared PlayerPeek: for the coach, a player's avatar and name in a thread
+peek at the player, from the team directory Messages already holds. The bubble
+keeps its own hold for message actions; coaches and people off the roster don't
+peek. No new reads.
 
 ## 2026-10-08 — premium pass: a stale chunk reloads once, in Clubhouse's voice (D3)
 
-`ClubhouseRouteError` (`shell/ClubhouseRouteError.tsx`) is a route `error.tsx` body for Clubhouse screens, inside the shell or above it. On a ChunkLoadError ("Loading chunk …", stale assets after a deploy), the shared RouteErrorBoundary asks the one recovery coordinator (`lib/recovery/client`) for a reload. The coordinator reloads once, under the session's attempt budget and latch, and never over unsaved work; there is no second sessionStorage flag, because the coordinator's own doc forbids any other `location.reload()`. Any other error shows Clubhouse's route error (CH-1206). Above the shell it brings its own `.ch-root`, fonts and tokens. `/clubhouse-preview` now uses it, where the audit's crash fell through to the app's generic Helm page. The live Messages route already reached the same view through the shell.
+`ClubhouseRouteError` (`shell/ClubhouseRouteError.tsx`) is a route `error.tsx`
+body for Clubhouse screens, inside the shell or above it. On a ChunkLoadError
+("Loading chunk …", stale assets after a deploy), the shared RouteErrorBoundary
+asks the one recovery coordinator (`lib/recovery/client`) for a reload. The
+coordinator reloads once, under the session's attempt budget and latch, and
+never over unsaved work; there is no second sessionStorage flag, because the
+coordinator's own doc forbids any other `location.reload()`. Any other error
+shows Clubhouse's route error (CH-1206). Above the shell it brings its own
+`.ch-root`, fonts and tokens. `/clubhouse-preview` now uses it, where the
+audit's crash fell through to the app's generic Helm page. The live Messages
+route already reached the same view through the shell.
 
 ## 2026-10-08 — premium pass: findings D1, D2, D4
 
-- D1: a thread is held at its newest message while it settles (`useThreadAnchor`, 700 ms). A push during hydration that resets the scroll under it no longer leaves it at the oldest message. The hold stops the moment the reader scrolls, touches or types.
-- D2: a message that didn't send keeps full-ink text, on a muted fill inside a dashed edge, beside "Not sent · Retry". It is no longer faded to about 2.8:1, so it can be read before you retry it.
-- D4: the preview opens the team thread only on desktop, after hydration, as the live screen does. The phone preview stays on the inbox. The live loader already auto-opens only at 821px and wider.
+- D1: a thread is held at its newest message while it settles
+  (`useThreadAnchor`, 700 ms). A push during hydration that resets the scroll
+  under it no longer leaves it at the oldest message. The hold stops the moment
+  the reader scrolls, touches or types.
+- D2: a message that didn't send keeps full-ink text, on a muted fill inside a
+  dashed edge, beside "Not sent · Retry". It is no longer faded to about 2.8:1,
+  so it can be read before you retry it.
+- D4: the preview opens the team thread only on desktop, after hydration, as the
+  live screen does. The phone preview stays on the inbox. The live loader
+  already auto-opens only at 821px and wider.
 
 ## 2026-10-08 — premium pass: announcements as letterhead (P007-A1)
 
-An announcement reads as a signed team letter. The letterhead is one engraved line, the team and the full date ("Varsity · Wednesday 14 October"), with the asks in words at its end ("Urgent · please acknowledge") instead of two chips; then the 28px title, the body in full ink at a reading measure, and the posting coach's name and title over a 1px gilt rule. Tasks, files and receipts follow as before. On desktop the sheet takes the room's light as paper (`--ch-light-paper`, never on the words); on the phone it stays flush. No monogram or crest (owner: crests are declined, D3-2). The loader adds `signers` (the program's coaches by golf_coaches.id) and the announcement carries `authorId` (`created_by`); an unknown author shows no signature.
+An announcement reads as a signed team letter. The letterhead is one engraved
+line, the team and the full date ("Varsity · Wednesday 14 October"), with the
+asks in words at its end ("Urgent · please acknowledge") instead of two chips;
+then the 28px title, the body in full ink at a reading measure, and the posting
+coach's name and title over a 1px gilt rule. Tasks, files and receipts follow as
+before. On desktop the sheet takes the room's light as paper
+(`--ch-light-paper`, never on the words); on the phone it stays flush. No
+monogram or crest (owner: crests are declined, D3-2). The loader adds `signers`
+(the program's coaches by golf_coaches.id) and the announcement carries
+`authorId` (`created_by`); an unknown author shows no signature.
 
 ## 2026-10-08 — premium pass: prefilled messages (D2-7)
 
-Actions that reach players open Messages prefilled and never send: `messagesPrefillHref({ players, draft, title })` (`screens/messages/prefill.ts`) links to `?prefill=<key>`: the key is an opaque hash, and the people, the draft and the group name stay in this tab's sessionStorage under it, never in the URL (query strings land in logs and history, and a draft can name a minor's health or schoolwork). Messages takes the entry once and deletes it (`takePrefill`); a cold link, a new tab or a used key opens Messages with nothing prefilled. Players not on the team are left out and reported (CH-7001); the rest stay chosen. One player with a thread opens it with the draft in its composer (an unsent draft of the coach's own wins); otherwise New message opens with the people chosen (a coach's two or more as a group named `title`) and the draft quoted. Nothing is created until the coach presses on, and the draft lands in the new thread's composer, where the coach presses Send. A player's prefill keeps one person (D-15). When nobody in it is on the team, CH-7001 says so.
+Actions that reach players open Messages prefilled and never send:
+`messagesPrefillHref({ players, draft, title })` (`screens/messages/prefill.ts`)
+links to `?prefill=<key>`: the key is an opaque hash, and the people, the draft
+and the group name stay in this tab's sessionStorage under it, never in the URL
+(query strings land in logs and history, and a draft can name a minor's health
+or schoolwork). Messages takes the entry once and deletes it (`takePrefill`); a
+cold link, a new tab or a used key opens Messages with nothing prefilled.
+Players not on the team are left out and reported (CH-7001); the rest stay
+chosen. One player with a thread opens it with the draft in its composer (an
+unsent draft of the coach's own wins); otherwise New message opens with the
+people chosen (a coach's two or more as a group named `title`) and the draft
+quoted. Nothing is created until the coach presses on, and the draft lands in
+the new thread's composer, where the coach presses Send. A player's prefill
+keeps one person (D-15). When nobody in it is on the team, CH-7001 says so.
 
 ## 2026-10-08 — dark: Clubhouse at night
 
-Messages follows GolfHelm's dark theme ("Clubhouse at night"). Sent bubbles keep the green gradient with ivory type (not white); row hover and press, tool hovers and the reaction hover become ivory washes; the selected thread's rail, the To chips and the announcement acknowledgement take the light text green; announcement marks, the phone's group marks and Jump to latest keep their filled green with ivory type; the phone's idle Send glyph reads on its grey plate. Light mode is unchanged.
+Messages follows GolfHelm's dark theme ("Clubhouse at night"). Sent bubbles keep
+the green gradient with ivory type (not white); row hover and press, tool hovers
+and the reaction hover become ivory washes; the selected thread's rail, the To
+chips and the announcement acknowledgement take the light text green;
+announcement marks, the phone's group marks and Jump to latest keep their filled
+green with ivory type; the phone's idle Send glyph reads on its grey plate.
+Light mode is unchanged.
 
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
@@ -608,7 +679,7 @@ Contract IDs:   71202 (new: DRAFT_KEPT_ACROSS_THREADS); tests attached to all 16
 Data impact:    none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
 - Drafts are kept per conversation by the container; switching threads no longer
   loses them.
@@ -617,7 +688,7 @@ Data impact:    none
   72001, 71202, 72301).
 - CONTRACT.md tables are generated by `registry.mjs sync`; the notes are kept.
 
-### Verification
+### Verification (2026-09-30)
 
 - `npx vitest run src/clubhouse` 382/382; the 71202 test fails with the fix
   removed.
@@ -633,7 +704,7 @@ Data impact:    none
 Held items:     conversation-files (feature), message-attachments-hardening (data)
 ```
 
-### Changed
+### Changed (2026-09-29)
 
 - The six page docs, the manifest's actions, and the 15 behaviour contracts
   (core view, deep links,
@@ -646,7 +717,7 @@ Held items:     conversation-files (feature), message-attachments-hardening (dat
 - D-62: Messages is the gold standard the other pages copy. D-69: every category
   answered.
 
-### Verification
+### Verification (2026-09-29)
 
 - `clubhouse:check` clean with the contract check on; `npx vitest run
   src/clubhouse` 377/377.
@@ -657,7 +728,7 @@ Held items:     conversation-files (feature), message-attachments-hardening (dat
 Contract IDs: 70408 (new: no team, CH-7308)
 ```
 
-### Changed
+### Changed (2026-09-29, 2)
 
 - v2 motion (D-64), v2 haptics (D-70): sends and changes that land fire success;
   Retry and Add are
