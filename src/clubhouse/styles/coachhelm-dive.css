@@ -1333,7 +1333,7 @@ main[data-canopy] .ch-hd-rail {
 main[data-canopy] .ch-hd-it.is-on,
 .ch-hd-it.is-on {
   background: color-mix(in srgb, var(--ch-green-fill-600) 12%, var(--ch-bg-surface));
-  box-shadow: inset 3px 0 0 var(--ch-green-fill-600);
+  box-shadow: none;
 }
 .ch-hl .ch-hd-sec__h h3,
 .ch-hl .ch-hd-sec > h3,
