@@ -48,7 +48,7 @@ export function useBrandWrite(): boolean {
 /** The brand's line (owner, 2026-10-16: "script then logo"): the word first, then the wheel after it. */
 export function BrandLine({ write }: { write: boolean }) {
   return (
-    <span className="ch-brand__line">
+    <span className={'ch-brand__line' + (write ? ' is-write' : '')}>
       <span className={'ch-brand__word is-script' + (write ? ' is-write' : '')}>
         Golf<b>helm</b>
       </span>
