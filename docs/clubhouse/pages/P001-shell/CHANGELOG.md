@@ -1,5 +1,14 @@
 # P001 — Shell: changelog
 
+## 2026-10-16 — The brand's wheel, drawn matte in an ivory ring
+
+Owner: "put a ivory border around the logo so it stands out a little more, and
+make it matte and matching the greens". The bright PNG wheel in the sidebar
+brand is now drawn (`HelmMark` in `shell/BrandWord.tsx`): a 30px badge with an
+ivory ring round a deep-green disc (`--ch-green-700`), the helm in the mint
+"helm" uses (`--ch-hero-mint-strong`), and an ivory ball with green dimples.
+Flat fills, no glow. The welcome and auth screens keep the PNG.
+
 ## 2026-10-16 — The wordmark in Norican, in its frosted panel
 
 Owner: "fix the script font it looks trash" and "fix the layout". Great Vibes

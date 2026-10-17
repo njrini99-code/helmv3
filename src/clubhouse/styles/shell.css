@@ -3574,8 +3574,30 @@ html[data-fw-theme='dark'] .ch-offline {
   min-width: 0;
 }
 .ch-brand .ch-brand__mark {
-  width: 28px;
-  height: 28px;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  overflow: visible;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+/* The drawn wheel: matte, in the sidebar's own greens, inside an ivory ring so it holds its own on the frosted panel. */
+.ch-brand__mark-disc {
+  fill: var(--ch-green-700);
+  stroke: var(--ch-on-green-ink);
+  stroke-width: 1.6;
+}
+.ch-brand__mark-helm {
+  fill: none;
+  stroke: var(--ch-hero-mint-strong);
+  stroke-width: 2.1;
+  stroke-linecap: round;
+}
+.ch-brand__mark-ball {
+  fill: var(--ch-on-green-ink);
+}
+.ch-brand__mark-dimples {
+  fill: var(--ch-green-400);
 }
 .ch-brand__word.is-script {
   display: inline-block;
