@@ -1,5 +1,43 @@
 # P002 — Home: changelog
 
+## 2026-10-17 — "Today" turns at the team's midnight
+
+```text
+Design package: none (no visible change to the design)
+PR/commit:      uncommitted (owner request "fix whatever needs it")
+Contract IDs:   none new (20301's prose in CONTRACT 03)
+Actions:        ACT-P002-OPEN-COACH-HOME, ACT-P002-OPEN-PLAYER-HOME
+Data impact:    none (the loaders return the team clock they already read)
+Held items:     none
+```
+
+### Changed
+
+- Both Homes carry the team clock they were read on (`clock: { tz, day }`, from
+  `homeClock`). `useHomeDayRollover` compares the team-local date now with that
+  day, in the team's zone (the device's only when a page has no clock), and
+  reads the page again when it has turned: at the team's next midnight, and
+  when the page comes back into view (visibilitychange, focus, pageshow), at
+  most three times for one new day if the server still answers with the old
+  one. The date line, greeting, week strip, Today and the day card no longer
+  keep yesterday on a page left open overnight. A frozen preview clock never
+  rolls.
+- "Today", "Tomorrow" and the weekday already compared both dates on the
+  team's clock (2026-10-02); now covered by a test across zones.
+- VERIFY: the `golf_event_attendance` read question answered (players can read
+  teammates' replies through the API; Home shows counts only), and the
+  skeleton gap corrected (the phone skeleton is phone-shaped and role-aware
+  since 2026-10-08; the desktop one is still the coach's shape). CONTRACT 02
+  and 20301 follow.
+
+### Verification
+
+- `npm run test:file -- src/clubhouse/__tests__/home-day-rollover.test.tsx
+  src/clubhouse/__tests__/home.test.tsx src/clubhouse/__tests__/player-home.test.tsx`;
+  the rollover file also under `TZ=Pacific/Auckland` and
+  `TZ=America/Los_Angeles`. No screenshots: nothing visible changed and the dev
+  server was not run.
+
 ## 2026-10-14 — The desktop head stacks on a narrow canvas
 
 - **A narrow canvas stacks the head** (home.css, `@container (max-width: 640px)`):

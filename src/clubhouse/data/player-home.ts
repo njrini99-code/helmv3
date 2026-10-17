@@ -2,7 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
-import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
+import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
 import { isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
 import { holeRounds } from './round-scope';
 import { loadRoundCache, loadTourBenchmarks, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
@@ -65,6 +65,8 @@ export interface ChPlayerHome {
   /** "Good afternoon, Theo." */
   greeting: string;
   todayLabel: string;
+  /** The team clock the page was read on (zone and date), for the day rollover (useHomeDayRollover). Optional for fixtures. */
+  clock?: ChHomeClock;
   /** One sentence from the player's own rounds; null before their first round or when rounds didn't load. */
   brief: string | null;
   /** The coach "Message coach" opens a thread with; null opens Messages. */
@@ -122,7 +124,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
   const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, tourForGender(team.data.gender), 'home') : null));
   const coachRead = teamRead.then((team) => coachFor(supabase, team.data ?? null));
-  const [{ greeting, todayLabel }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId] = await Promise.all([
+  const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId] = await Promise.all([
     clockRead,
     weekRead,
     roundsRead,
@@ -156,6 +158,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   return {
     greeting: `${greeting}, ${input.firstName}.`,
     todayLabel,
+    clock: { tz, day },
     brief: roundsRes.error ? null : briefFor(full, legs?.rows ?? []),
     coachUserId,
     week: wk.week,

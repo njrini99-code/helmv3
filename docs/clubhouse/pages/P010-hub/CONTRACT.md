@@ -296,7 +296,7 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-170
 
 Status: DEFINED
 
-The tabs are a real tablist, each controlling its panel; a reply is a radio group named for its event; a task's box names the task and says when it is done; each card is a section named by its heading, and a failed-read or crash notice is an alert (101801). Toasts are announced by the shell. Axe over every preview state at 1280 and 390 is reserved: it was not run in this pass (101802). Not built: arrow keys moving between tabs (Tab visits each).
+The tabs are a real tablist, each controlling its panel; a reply is a radio group named for its event; a task's box names the task and says when it is done; each card is a section named by its heading, and a failed-read or crash notice is an alert (101801). Toasts are announced by the shell. Axe over every preview state at 1280 and 390 is reserved: it was not run in this pass (101802). The tabs are one stop: the arrows, Home and End move between them (102001).
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814

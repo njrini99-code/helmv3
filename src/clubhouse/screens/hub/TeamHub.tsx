@@ -346,6 +346,9 @@ export function TeamHub({
     data.updates.error && 'updates',
     data.tasks.error && (coach ? 'tasks' : 'your tasks'),
     data.documents.error && 'documents',
+    // CH-10208: the coach's roster read failed. The pickers in New announcement, Plan a trip and Assign a task have
+    // nobody to offer, so the page says so up front instead of letting an empty picker read as an empty team.
+    coach && data.playersError && 'the team list',
   ].filter((part): part is string => !!part);
   const covered = failedParts.length > 1;
 
@@ -408,6 +411,13 @@ export function TeamHub({
       </header>
 
       <PageRefreshNotice parts={failedParts} />
+      {coach && data.playersError && !covered && (
+        <RefreshNotice
+          code="CH-10208"
+          title="The team list didn’t load."
+          body="Players can’t be chosen for a post, a trip or a task until it does; a post to the whole team still goes out. Try again; the error has been reported."
+        />
+      )}
 
       {/* CH-10801: real tabs, each controlling its panel. */}
       <div ref={tabsRef} className="ch-hb-tabs" role="tablist" aria-label="Team Hub sections">

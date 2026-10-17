@@ -1,5 +1,40 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-17 — A team list that didn't load is told on the page
+
+```text
+Design package: none (existing InlineNotice / RefreshNotice pattern)
+PR/commit:      uncommitted (owner request "fix whatever needs it")
+Contract IDs:   none new (CH-10208 / 100617)
+Actions:        ACT-P010-POST-ANNOUNCEMENT, ACT-P010-PLAN-TRIP, ACT-P010-ASSIGN-TASK, ACT-P010-TRY-AGAIN
+Data impact:    none (the loader's roster read already reported its failure)
+Held items:     none
+```
+
+### Changed
+
+- A coach whose roster read failed sees "The team list didn’t load" under the
+  page head, with Try again, before opening any sheet: players can't be chosen
+  for a post, a trip or a task, and a post to the whole team still goes out.
+  With another failed read, "the team list" is named in the page notice
+  (CH-1209) instead of a second notice. Players never see it.
+- The pickers in New announcement, Plan a trip and Assign a task show the same
+  refresh notice (CH-10208, Try again reads the page again) instead of their
+  own help line; never an empty list. Plan a trip says "Who’s traveling"
+  without "0 of 0".
+- `loadTeamHub`: without the roster a trip's travelers, their ids and count
+  are unknown (null), never "0 travelers"; the "<trip> travelers" audience is
+  not offered.
+- VERIFY and CONTRACT: the tablist has arrow keys, Home and End (102001); upload
+  and delete check for a coach (`documents.ts`).
+
+### Verification
+
+- `npm run test:file -- src/clubhouse/__tests__/hub.test.tsx` (new CH-10208
+  cases: page notice with Try again, page-notice wording beside another
+  failure, none for a player, no "0 of 0", null travelers). No screenshots:
+  the dev server was not run in this pass.
+
 ## 2026-10-14 — A new ?tab= on an open Team Hub moves to that tab
 
 A notification's `?tab=tasks&task=` while Team Hub was already open re-rendered
