@@ -52,6 +52,10 @@ function Row({ r }: { r: ChStandRow }) {
         </p>
       </div>
       <div className="ch-hs-tr" aria-hidden="true">
+        {/* The gap to the Tour, filled in the row's colour so how far you sit from it reads at a glance (owner, 2026-10-16). */}
+        {r.tour && (
+          <i className="ch-hs-tr__gap" style={{ left: `${Math.min(r.tour.pct, r.youPct)}%`, width: `${Math.abs(r.youPct - r.tour.pct)}%` }} />
+        )}
         {r.team && <i className="ch-hs-tr__team" style={{ left: `${r.team.pct}%` }} />}
         {r.tour && <i className="ch-hs-tr__tour" style={{ left: `${r.tour.pct}%` }} />}
         <i className="ch-hs-tr__you" style={{ left: `${r.youPct}%` }} />
