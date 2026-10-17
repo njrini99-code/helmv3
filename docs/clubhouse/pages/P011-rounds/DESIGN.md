@@ -171,7 +171,7 @@ Radio groups have no arrow keys (each choice is a Tab stop).
 
 ## Data assumptions
 
-Only data the app has. Course photos are shown only when one exists (2026-10-16): the course picker and Add a course
+Only data the app has. Course photos are shown only when one exists, and a coach or a player may add one to a course (2026-10-16): the course picker and Add a course
 show a course's uploaded `image_url`, else a bundled photo of the real course, else a flag tile; the library, tee hero,
 review hero and setup card still use a typographic band with the tee swatch. Not shown because no source exists (Q-72): "50+ stats tracked" (a plain list of what is tracked instead), a drawn hole map (no hole geometry
 exists: a labelled schematic), the submit overlay's timed steps (it names the real shot count), the board's coach
