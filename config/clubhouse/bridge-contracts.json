@@ -14673,6 +14673,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130637,
+    "page": "P013",
+    "category": 6,
+    "item": 37,
+    "name": "PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD",
+    "chCode": "CH-13261",
+    "meaning": "Profile: what CoachHelm sees doesn't load (the player's insight read fails)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130701,
     "page": "P013",
     "category": 7,

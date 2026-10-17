@@ -1,5 +1,27 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-16 — The Game profile reads what CoachHelm says; Standing is greener and organized
+
+Owner, 2026-10-16: base the profile on actual CoachHelm output ("make it based on actual CoachHelm output"). The genome
+alone read 3 rounds (the last 90 days, countable rounds only) while the Board's insights read 23.
+
+- **The profile leads with CoachHelm's insights** (`Profile.tsx`, `coachhelm-profile.ts`). `loadPlayerProfile` now also
+  calls `loadPlayerCoachHelm`, the Board's own ranked read for the player, and carries it as `ChProfile.sees`. On the
+  green board the top insight is the headline with its lede, sample, window and date, then **Costing you** and
+  **Working** (up to four each), every row opening its evidence in Deep dive. Insights that are out of date are left
+  off, and the text is the engine's, nothing written for the page. The genome follows as a quieter section, "The shape
+  of your game". The intro line now reads "What CoachHelm reads in your rounds, and the shape of your game."
+- **The insights not loading** is its own notice, CH-13261 ("What CoachHelm sees didn’t load", with Try again), never
+  "nothing to say"; the measures stay. A new screen test and a loader test cover it, and CH-13261 is in the catalog.
+- **The genome's section is organized and greener** (`coachhelm-profile.css`): how many measures are read is a row of
+  dots, the measures split into "With a read" and "Still filling in" (green-tinted tiles that each say what they still
+  need), and a measure with no stance draws on green. Inside a green board the ledger heading ink resets to the board's.
+- **Standing is greener and organized** (`Standing.tsx`, `coachhelm-standing.css`): the headline and Most to gain sit on
+  the green board; each group's head carries its tally against the Tour ("n ahead, n behind") over a green rule; a stat
+  ahead of the Tour sits on a faint green wash. The data is unchanged (`golf_player_standing`, the nightly read).
+
+Checked: the vitest above. No visual check is recorded for these three commits, and no migration is involved.
+
 ## 2026-10-16 — CoachHelm and Ask at full contrast; CoachHelm on a bright sheet
 
 Owner, 2026-10-16: "more contrast on this and the other ones", "coachhelm contrast is the same". In light mode only

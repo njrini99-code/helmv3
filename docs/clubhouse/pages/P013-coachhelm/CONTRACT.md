@@ -186,6 +186,7 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130634 | CH-13208 | `A_READ_BESIDE_THE_CARDS_FAILED_THE` | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round |
 | 130635 | CH-13226 | `ASK_A_READ_THE_PULSE_IS_MADE` | Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed |
 | 130636 | CH-13272 | `STANDING_THE_COHORT_LOOKUP_FAILED` | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
+| 130637 | CH-13261 | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
 
 ## 07 — Network / offline
 

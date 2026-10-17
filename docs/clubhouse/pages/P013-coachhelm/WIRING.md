@@ -130,7 +130,7 @@ component) -> the view's loader, for session.player.id
 ↓
 Reads (the shared client unless the lib's own loader says otherwise; every
 failure logs through chLogServer('coachhelm', …)):
-  profile   -> loadGenome (golf_player_genome)
+  profile   -> loadGenome (golf_player_genome) and loadPlayerCoachHelm (the Board's insight read, carried as `sees`)
   standing  -> loadPlayerStandingMap (golf_player_standing; the lib's
                service-role client, scoped by the player id and filtered to
                it), golf_player_stats_cache (rounds played and the scoring

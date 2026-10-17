@@ -256,6 +256,13 @@ describe('the Game profile screen', () => {
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it('CH-13261 CoachHelm\u2019s insights not loading says so under the head, never that it has nothing to say, and the measures stay', async () => {
+    show(profileLoad({ ...PREVIEW_PROFILE_PARTIAL, sees: { list: [], error: true } }));
+    expect(code('CH-13261')!.textContent).toMatch(/What CoachHelm sees didn\u2019t load.*Your measures below are still right/);
+    await userEvent.click(within(code('CH-13261') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
   it('CH-13304 CoachHelm off for them: the board’s own page, in the coach’s words, and no sub-navigation to lead anywhere', () => {
     show({ status: 'off', reason: 'Back after the qualifier' });
     expect(code('CH-13304')!.textContent).toMatch(/CoachHelm is off for your team.*Your coach turned it off: “Back after the qualifier”/);

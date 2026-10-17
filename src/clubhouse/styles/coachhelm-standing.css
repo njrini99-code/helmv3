@@ -651,7 +651,7 @@ main[data-canopy] .ch-hs-hero.ch-scoreboard .ch-hs-hero__k,
 .ch-hs-hero.ch-scoreboard .ch-hs-hero__sub {
   color: var(--ch-text-secondary);
 }
-.ch-hl .ch-hs-hero.ch-scoreboard h2 {
+[data-ui='clubhouse'] .ch-hs-hero.ch-scoreboard h2 {
   color: var(--ch-text-primary);
 }
 .ch-hs-hero.ch-scoreboard .ch-hs-count {
@@ -685,7 +685,7 @@ main[data-canopy] .ch-hs-hero.ch-scoreboard .ch-hs-gaps,
   align-items: center;
   gap: 10px;
 }
-.ch-hl .ch-hs-g h2 {
+[data-ui='clubhouse'] .ch-hs-g h2 {
   color: var(--ch-green-700);
 }
 main[data-canopy] .ch-hs-g__h {
