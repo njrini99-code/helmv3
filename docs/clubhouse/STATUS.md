@@ -52,15 +52,15 @@ VoiceOver, dark-mode scan or real-account write pass.
 | Page | Verdict | What blocks or caveats it |
 | --- | --- | --- |
 | P001 Shell | Ready with caveats | No device or VoiceOver pass for the frame every page sits in; the 10-16 brand and team-heading work is on #2201 |
-| P002 Home | Ready with caveats | Settle `golf_event_attendance` RLS for players (can a player read others' replies?); day labels compare device date with team date and can be a day off near midnight |
-| P003 Roster | Ready with caveats | Status-change write never watched in a real session; availability stays read-only (held `20260929120000`); `roster?tab=requests` from the join-request notification is ignored |
-| P004 Stats (team) | Ready with caveats | A coach whose dashboard role resolves to player falls through to Fairway Team stats (`stats/team/page.tsx:111,117`); no phone browser capture |
+| P002 Home | Ready with caveats | `golf_event_attendance` RLS lets a player read every teammate's replies through the API (Home shows counts only; decision 5); day labels and the midnight rollover fixed 2026-10-17 |
+| P003 Roster | Ready with caveats | Status-change write never watched in a real session; availability stays read-only (held `20260929120000`); `roster?tab=requests` from the join-request notification is ignored. Fixed 2026-10-17: a `?player=` link on the phone could open the list instead of the profile |
+| P004 Stats (team) | Ready with caveats | No phone browser capture. Fixed 2026-10-17: whoever the dashboard draws as a player now goes to their Stats instead of "not rebuilt" |
 | P005 Stats (player) | Ready with caveats | Focus-area write untested in a real session; strokes-gained figures wait on the held fix (data quality, not a blocker) |
-| P006 Calendar | Ready with caveats | Retry after a lost create answer can create the event twice; no device pass |
+| P006 Calendar | Ready with caveats | No device pass. Retry after a lost reply is safe for events and series (C-17) and busy time (fixed 2026-10-17) |
 | P007 Messages | Ready with caveats | Conversation files is a HELD feature that turns on with the flag (decision 1); the Messages E2E signs in to production and waits for the owner |
-| P008 Settings | Ready with caveats | Desktop built from the system with no handoff screen, never owner-reviewed (decision 3); iOS edge-swipe drops a sheet with unsaved edits; a refused save always says "Check your connection" |
-| P009 Qualifiers | Not ready | Squad-size and entrant edits are HELD and turn on with the flag (decision 1); held `20260929200000` (coach reasoning coach-only, D-35; the app already reads it coach-only); a coach on `/my-qualifiers` gets "not rebuilt" |
-| P010 Team Hub | Ready with caveats | `clubhouse:a11y` never run for it; a failed roster read leaves the audience and assignee pickers empty with no notice |
+| P008 Settings | Ready with caveats | Desktop built from the system with no handoff screen, never owner-reviewed (decision 3); Back over the Settings list itself with a Profile, Email or Password sheet open still leaves without asking. Fixed 2026-10-17: a refused save says why; Back over a section's sheet with edits asks first |
+| P009 Qualifiers | Not ready | Squad-size and entrant edits are HELD and turn on with the flag (decision 1); held `20260929200000` (coach reasoning coach-only, D-35; the app already reads it coach-only). Fixed 2026-10-17: a coach on `/my-qualifiers` goes to Qualifiers |
+| P010 Team Hub | Ready with caveats | No device pass. Fixed 2026-10-17: a failed roster read says so with Try again (CH-10208); the dark scan passes |
 | P011 Rounds | Not ready | Q-120 decision (decision 2); the owner's device pass (airplane mode, kill the app, Recover); 11 contracts without a test, including writes refused offline; the round E2E runs only against a local stack, never in CI |
 | P012 Classes | Ready with caveats | Import and calendar writes never run live; a retried import after a lost answer syncs nothing, duplicate rows from one import both insert (no fix recorded) |
 | P013 CoachHelm | Ready with caveats | Q-124 (the stats cache counts test rounds; fix is the held stats chain); 17 contracts without a test; Player Ask decision open |
@@ -72,11 +72,11 @@ VoiceOver, dark-mode scan or real-account write pass.
 - **Routes (54 dashboard pages):** 24 Clubhouse screens, 18 alias redirects
   (15 layouts), 10 `next.config.mjs` redirects, 2 dev and catch-all; none
   renders Fairway inside Clubhouse.
-  - Suspected bug, not yet checked in a browser: a coach on `/rounds` likely
-    gets "not rebuilt" instead of moving on to `stats/team`. `rounds/page.tsx:50`
-    uses a plain `redirect()` that the frame never runs, the failure fixed for
-    aliases on 2026-10-14; `alias-frame.test.ts` only looks for
-    `redirectToClubhouse(`.
+  - Fixed 2026-10-17: a coach on `/rounds` or `/my-qualifiers` and a player on
+    `/stats/team` stood on "not rebuilt" (each page's plain `redirect()` never
+    ran, because the frame drops a page not rebuilt for the role). They redirect
+    through `redirectToClubhouse` and are on the frame's aliased list; the
+    player cases checked in Chrome, the coach cases by `alias-frame.test.ts`.
 - **Role checks:** all nine sites use the dashboard role rule (the five pages,
   round-partial, round-submit, qualifier-setup; message-attachments through
   `pickGolfDashboardRole`).
@@ -101,8 +101,9 @@ VoiceOver, dark-mode scan or real-account write pass.
   (32 tests) all skip without their environment; CI runs only quality and
   playground. The round, team-switch, phone-audit and materials specs run in no
   workflow: the biggest test gap for round safety.
-- **Tooling:** the dark-mode a11y scan is supported (`CH_SCHEME=light,dark`)
-  and has never been run. `clubhouse:perf` has Stats and Home from 2026-10-01;
+- **Tooling:** the first dark-mode a11y scan ran 2026-10-17 (Chromium, reduced
+  motion, 1280 and 390px): 304 screens and states, zero violations, after a
+  Roster fix it found and one stale opener in the scan. `clubhouse:perf` has Stats and Home from 2026-10-01;
   CoachHelm and any re-measure since #2189 are missing (it needs a production
   build). `clubhouse-quality` is not a required check and runs only on some
   paths.
@@ -122,7 +123,10 @@ VoiceOver, dark-mode scan or real-account write pass.
 3. **Settings desktop:** review the screen built from the design system.
 4. **Builds:** the turn-on criteria and `clubhouse:perf` need one production
    build; the owner said no builds on 2026-10-17. Decide when one is allowed.
-5. Also open: `20260929200000` (qualifier privacy); white cards and Instrument
+5. **Attendance privacy:** `golf_event_attendance`'s select policy lets a player
+   read every teammate's reply on every team event through the API (Home shows
+   counts only). Narrow it to the player's own rows, or accept it.
+6. Also open: `20260929200000` (qualifier privacy); white cards and Instrument
    Sans against the brand doc; making `clubhouse-quality` required; held
    migration timing for the stats chain, the strokes-gained fix and Messages
    delete; roster availability; Player CoachHelm Ask; the iOS items; open PRs
@@ -132,12 +136,13 @@ VoiceOver, dark-mode scan or real-account write pass.
 
 1. Land #2201 (draft; gates pass) and apply `20261016220000` with the owner's
    OK.
-2. Agent fix pass: the coach `/rounds` redirect (verify, then fix); the Stats
-   team role fall-through; the coach `/my-qualifiers` dead end; Calendar's
-   duplicate on Retry; Settings' refused-save message and edge-swipe discard;
-   the Team Hub empty pickers notice; the Home attendance RLS read-only check
-   and the day-label date; a CI job for the round E2E against a local stack;
-   the dark-mode a11y scan; the stale docs listed below.
+2. Agent fix pass: done 2026-10-17 (the three route dead ends, busy-time
+   retry, Settings' refused-save message and Back with edits, Team Hub's
+   failed-roster notice, Home's midnight rollover, the Roster `?player=` link,
+   the dark-mode scan, the stale docs). Left: a CI job for the round E2E
+   against a local stack (it adds runner minutes to every push; owner's call)
+   and Settings' Back over the list with a Profile, Email or Password sheet
+   open.
 3. Deploy `main` (the six undeployed commits, then #2201) with the flag still
    off, and confirm with `npm run release:status -- --strict`.
 4. Owner decisions 1 and 2 above.
@@ -219,7 +224,9 @@ a new production deploy.
 
 ## Stale docs found by the 2026-10-17 audit
 
-To fix in the agent fix pass (step 2), so they stop disagreeing with this page:
+Fixed in the fix pass the same day, except the PROGRESS gate rows (a gate moves
+only with evidence) and two manifest `held` entries that link plan docs
+already marked RELEASED:
 
 - `SWAP_AUDIT.md` §3: no row for the `coachhelm/qualifying/[id]` alias; says
   `team` is not rebuilt (it is aliased); says the tasks alias drops `?task`
