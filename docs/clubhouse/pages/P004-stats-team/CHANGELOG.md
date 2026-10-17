@@ -1,5 +1,15 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-17 — A player on Team stats goes to their own Stats
+
+Readiness audit (2026-10-17): Team stats is coach-only, and whoever the
+dashboard draws as a player (no coach row, or a coach row whose dashboard role
+resolves to player) stood on "not rebuilt" at `/golf/dashboard/stats/team`:
+the frame dropped the page, so neither its `redirect()` nor the Fairway
+fall-through ran. The page now sends them to Stats (`redirectToClubhouse`)
+and the address is on the frame's aliased list. Checked in Chrome as a player:
+`/stats/team` lands on `/stats`. Test: `alias-frame.test.ts`.
+
 ## 2026-10-16 — A switch to Stats on the phone renders the first screen, then the rest
 
 A switch to coach Stats was the slowest section switch: a 74–76ms frame

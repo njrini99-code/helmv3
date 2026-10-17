@@ -11,6 +11,7 @@ import { logServerException } from '@/lib/server-error-logger';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseRoundsRoute } from '@/clubhouse/routes/rounds';
+import { redirectToClubhouse } from '@/clubhouse/routes/alias';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import {
@@ -47,7 +48,10 @@ export default async function RoundsPage() {
   const chRole = await getGolfDashboardRole();
   if (chRole === 'player' && player && (await isClubhouseFor('player'))) return <ClubhouseRoundsRoute />;
   // A coach's rounds are read through Team stats in Clubhouse (v2 has no coach library; owner, 2026-10-01: alias).
-  if (chRole === 'coach' && coach && (await isClubhouseFor('coach'))) redirect('/golf/dashboard/stats/team');
+  // Through the alias helper, and on the frame's aliased list (nav.ts), so the redirect runs: a plain redirect() here
+  // never fired, since the frame drops a page that isn't rebuilt for the role and the coach stood on "not rebuilt"
+  // (readiness audit, 2026-10-17).
+  if (chRole === 'coach' && coach) await redirectToClubhouse({ coach: '/golf/dashboard/stats/team' });
 
   const supabase = await createClient();
 
