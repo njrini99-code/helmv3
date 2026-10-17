@@ -93,7 +93,6 @@ export function QualifierDetailPhone({
         </span>
       ) : null,
     ],
-    ['Deadline', data.deadline ? dayLabel(data.deadline) : '—'],
   ];
 
   return (

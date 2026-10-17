@@ -433,7 +433,6 @@ export function QualifierFormSkeleton() {
                 <SkelField label={70} />
                 <SkelField label={76} help={FORM_HELP.endDate} />
               </div>
-              <SkelField label={104} help={FORM_HELP.entryDeadline} />
             </div>
             <div className="ch-qf-fs">
               <div className="ch-qf-fs__h">
