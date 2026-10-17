@@ -3574,30 +3574,23 @@ html[data-fw-theme='dark'] .ch-offline {
   min-width: 0;
 }
 .ch-brand .ch-brand__mark {
+  display: grid;
   flex: none;
-  width: 30px;
-  height: 30px;
-  overflow: visible;
-  transform-box: fill-box;
-  transform-origin: center;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  /* The logo on a matte green disc inside an ivory ring, so it holds its own on the frosted panel. */
+  background: var(--ch-green-700);
+  box-shadow:
+    0 0 0 1.5px var(--ch-on-green-ink),
+    0 2px 6px -2px rgb(2 18 10 / 0.5);
 }
-/* The drawn wheel: matte, in the sidebar's own greens, inside an ivory ring so it holds its own on the frosted panel. */
-.ch-brand__mark-disc {
-  fill: var(--ch-green-700);
-  stroke: var(--ch-on-green-ink);
-  stroke-width: 1.6;
-}
-.ch-brand__mark-helm {
-  fill: none;
-  stroke: var(--ch-hero-mint-strong);
-  stroke-width: 2.1;
-  stroke-linecap: round;
-}
-.ch-brand__mark-ball {
-  fill: var(--ch-on-green-ink);
-}
-.ch-brand__mark-dimples {
-  fill: var(--ch-green-400);
+.ch-brand .ch-brand__mark img {
+  width: 26px;
+  height: 26px;
+  /* Matte: the PNG's bright green is toned to the sidebar's greens. */
+  filter: saturate(0.62) brightness(0.98) contrast(0.95);
 }
 .ch-brand__word.is-script {
   display: inline-block;
