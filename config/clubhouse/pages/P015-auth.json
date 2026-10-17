@@ -6,7 +6,9 @@
   "area": "auth",
   "routes": [
     "/golf/login",
-    "/golf/welcome"
+    "/golf/welcome",
+    "/golf/signup",
+    "/golf/player"
   ],
   "roles": [],
   "semanticFeatures": [

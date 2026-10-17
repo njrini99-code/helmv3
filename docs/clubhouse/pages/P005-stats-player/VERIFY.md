@@ -189,7 +189,7 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 | P005__filter__coach__390__populated__after__cca081c.png | after | cca081c (working-tree after) | WebKit iPhone 13; Phoneplayerstatsfilter44×44px target withremainingcontrolsvisible |
 | P005__overview__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone player stats before page spacing and material repairs |
 | P005__overview__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered overview and strokes gained panels,16px rhythm and readable captions |
-| Skeleton | CH-4401 | the route's loading.tsx (Team stats' shape); test on Team stats | busy skeleton; a profile's first paint moves it |
+| Skeleton | CH-4401 | the route's loading.tsx, profile-aware (`StatsRouteSkeleton.tsx`: a player or a coach's `?player=` draws the profile's shape; corrected 2026-10-17) | busy skeleton |
 | Empty | 50401 to 50405 | `?state=early` (preview), tests | each tab or section says what is missing; an early read names what will move |
 | Validation | 50501 | test | message under the field, the field focused, the warning tick, nothing sent |
 | Server failure | 50601 to 50611 | tests (each read forced with its logged name, four tab crashes, the save, the share); preview `?state=failed` | toast or notice with its code; the text is kept |
@@ -237,8 +237,8 @@ Text scaling:   not checked.
 ## Performance
 
 ```text
-Layout shift:      not measured for the profile; the route skeleton is Team stats' shape, so a profile's
-                   hero (taller) moves what the skeleton drew
+Layout shift:      not measured for the profile; the route skeleton is profile-shaped
+                   (`StatsRouteSkeleton.tsx`, corrected 2026-10-17)
 Request waterfall: a test now holds the shape (52101): the team, player and membership together, then the
                    rounds, shot detail, benchmarks, focus areas and goals together, then the round figures once
 Large list:        not measured
@@ -335,8 +335,8 @@ before, after, baseline or evidence.
 - `clubhouse:a11y` rerun for the phone profile and every state.
 - Forced states against a live session; the shot-level refusal against a real
   other-team coach.
-- Layout shift for the profile, and a profile-shaped loading state (a
-  loading.tsx cannot read the address).
+- Layout shift for the profile (the loading state is profile-shaped now,
+  `StatsRouteSkeleton.tsx`).
 - Found and fixed 2026-09-30: a failed player or membership read showed "That
   player isn't on your team"; a
   pending or removed member opened as Active; the Message button opened the bare

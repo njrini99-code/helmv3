@@ -325,7 +325,8 @@ before, after, baseline or evidence.
   written as text now (40501), and the test fails with the fix taken out
   (checked).
 - v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet"
-  (D-71); not built, owner decision.
+  (D-71): built for Team stats (`StatsTeamFirstRun.tsx`; corrected
+  2026-10-17).
 
 ## 2026-10-02 — Settled WebKit filter-sheet targets
 

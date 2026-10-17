@@ -30,7 +30,7 @@ Server loader:           src/clubhouse/data/rounds.ts loadRoundsLibrary (pure st
                          read logs through chLogServer('rounds', …) and never throws)
 Screen:                  src/clubhouse/screens/rounds/RoundsLibrary.tsx -> parts.tsx (UnfinishedCard, SeasonCard, Ribbon, RoundRow)
 Skeleton:                src/clubhouse/screens/rounds/RoundsSkeleton.tsx (CH-11401), from rounds/loading.tsx through ClubhouseSwitch
-Route error:             rounds/error.tsx (the shared Fairway RouteErrorBoundary; there is no Clubhouse error view yet)
+Route error:             rounds/error.tsx (the shared RouteErrorBoundary, which draws Clubhouse's RouteErrorView inside the Clubhouse shell; corrected 2026-10-17)
 
 REVIEW (routed)
 Route:                   /golf/dashboard/rounds/[id]
@@ -42,8 +42,8 @@ Clubhouse route adapter: src/clubhouse/routes/round-review.tsx ClubhouseRoundRev
 Server loader:           src/clubhouse/data/round-review.ts loadRoundReview (pure steps in data/round-review-shape.ts; logs
                          through chLogServer('rounds.review', …))
 Screen:                  src/clubhouse/screens/rounds/RoundReview.tsx (ReviewNine, HoleCard) and ReviewLoadFailed.tsx (CH-11206)
-Skeleton:                none of its own: rounds/[id]/loading.tsx is Fairway's (110206)
-Route error:             rounds/[id]/error.tsx (the shared Fairway RouteErrorBoundary)
+Skeleton:                RoundReviewSkeleton from rounds/[id]/loading.tsx through ClubhouseSwitch (110206; corrected 2026-10-17)
+Route error:             rounds/[id]/error.tsx (the shared RouteErrorBoundary; Clubhouse's view inside the shell)
 
 NEW ROUND (routed, player)
 Route:                   /golf/dashboard/rounds/new
@@ -62,7 +62,7 @@ Page:                    src/app/golf/(dashboard)/dashboard/rounds/continue/[id]
 Clubhouse route adapter: src/clubhouse/routes/round-continue.tsx ClubhouseContinueRoundRoute(props)
 Round screen:            src/clubhouse/screens/rounds/entry/ContinueRound.tsx (useContinueRoundSession, then RoundRuntime)
 Skeleton:                RoundEntrySkeleton (CH-11407) from rounds/continue/[id]/loading.tsx
-Route error:             both routes' error.tsx are the shared Fairway RouteErrorBoundary
+Route error:             both routes' error.tsx are the shared RouteErrorBoundary (Clubhouse's view inside the shell)
 
 SETUP (inside NewRound)
 Screen:                  src/clubhouse/screens/rounds/setup/RoundSetup.tsx -> CoursePicker.tsx, AddCourseSheet.tsx, HoleConfig.tsx

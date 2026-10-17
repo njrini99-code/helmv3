@@ -475,16 +475,16 @@ Further browser checks paused when the shared dev server ran out of disk.
 - `/rounds/recover` had no Clubhouse screen when this page was verified; it has
   one now (swap audit F-02, no board;
   see the row above). It was not run on a phone or against a real failed submit.
-  The entry routes' `error.tsx` files
-  are still Fairway's.
+  The entry routes' `error.tsx` files use the shared boundary, which draws
+  Clubhouse's error view inside the shell (corrected 2026-10-17).
 - Offline (110702), Esc (112001), the read order (112101), a failed Start
   keeping the setup (111201) and a failed hole save
-  keeping the shots (111202) have no test; the review's skeleton (110206) is not
-  built.
+  keeping the shots (111202) have no test. The review's skeleton (110206) is built
+  (`RoundReviewSkeleton`; corrected 2026-10-17).
 - Found and not fixed (see the report to the parent):
-  - `rounds/[id]/loading.tsx` is Fairway's, so a Clubhouse review loads under
-    the Fairway skeleton (110206); both
-    `error.tsx` files are the shared Fairway boundary.
+  - Fixed since (corrected 2026-10-17): `rounds/[id]/loading.tsx` draws
+    `RoundReviewSkeleton` through `ClubhouseSwitch` (110206), and both
+    `error.tsx` files draw Clubhouse's view inside the shell.
   - A failed team-membership read fails the whole library although only "today"
     depends on the team.
   - The checklist `screens/rounds.md` covers only the library, and its desktop,

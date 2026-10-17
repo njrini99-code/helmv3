@@ -20,6 +20,6 @@ Every registered page: identity, routes, roles, semantic features and status. Th
 | P012 | Classes | `/golf/dashboard/classes` | player | calendar_events | approved | in_progress | complete | reserved | existing | partial | current |
 | P013 | CoachHelm | `/golf/dashboard/coachhelm` | coach, player | coachhelm_ai, player_coachhelm_development, coach_intelligence_triage | approved | in_progress | complete | reserved | existing | partial | current |
 | P014 | Recruiting | `/golf/dashboard/recruiting` | coach | recruiting | approved | in_progress | complete | reserved | existing | partial | current |
-| P015 | Auth | `/golf/login`<br>`/golf/welcome` | signed out | auth_onboarding_join | approved | in_progress | partial | reserved | existing | partial | current |
+| P015 | Auth | `/golf/login`<br>`/golf/welcome`<br>`/golf/signup`<br>`/golf/player` | signed out | auth_onboarding_join | approved | in_progress | partial | reserved | existing | partial | current |
 
 A page gets its ID when its build starts (D-60, D-67); a page not designed yet has none. Every v2 page (`design/handoff/VERSIONS.md`) is registered: Team Hub P010, Rounds P011, Classes P012, CoachHelm P013, with player Home under P002. Current state and what is left: `docs/clubhouse/STATUS.md`.
