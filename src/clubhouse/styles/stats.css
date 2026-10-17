@@ -1383,37 +1383,13 @@
   gap: 18px;
 }
 .ch-gd__nav {
-  position: sticky;
-  top: calc(var(--ch-topbar-h) + 8px);
-  z-index: 5;
+  /* Scrolls away with the page (owner, 2026-10-16: a bar riding over the sections "looks bad"). */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin: 0 -8px;
   padding: 8px;
-  border-radius: 14px;
-  background: rgb(244 242 234 / 0.86);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-}
-/* P005-D5: without backdrop-filter, or under Reduce Transparency, the sticky bar is opaque parchment. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .ch-gd__nav {
-    background: var(--ch-bg-page);
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .ch-gd__nav {
-    background: var(--ch-bg-page);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-:root[data-reduce-transparency] .ch-gd__nav {
-  background: var(--ch-bg-page);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 .ch-gd__src {
   margin-left: auto;
@@ -4047,9 +4023,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-pf-goal__c {
   color: var(--ch-text-on-accent);
 }
-:where(html[data-fw-theme='dark']) .ch-gd__nav {
-  background: rgb(17 21 18 / 0.86);
-}
 :where(html[data-fw-theme='dark']) .ch-gm__ic {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.16);
 }
@@ -5945,8 +5918,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__id {
   display: grid;
   position: sticky;
-  /* Sticks under the section bar (.ch-gd__nav: its own top, its 46px height, then an 18px gap), never behind it. */
-  top: calc(var(--ch-topbar-h) + 8px + 46px + 18px);
+  top: 24px;
   align-content: start;
   align-self: start;
   gap: 18px;
