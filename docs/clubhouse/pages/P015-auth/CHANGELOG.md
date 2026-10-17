@@ -1,18 +1,19 @@
 # P015 — Auth: changelog
 
-## 2026-10-16 — The welcome writes "Golfhelm" in script (a type-rule exception)
+## 2026-10-16 — Continue hands the wordmark's write to the sidebar
 
-Owner, 2026-10-16, after sign in: "a cursive thing of script". The Welcome's mark (`Welcome.tsx`, `auth.css`) is now
-"Golfhelm" in Great Vibes, drawn on from left to right like a pen by a mask wipe, with "helm" in the green (mint over a
-night sky), and then the wheel turns a quarter into place beside it. Reduced motion draws it whole at once. The mark
-is an image with the label "GolfHelm" and the letters are hidden from assistive technology.
+The welcome's own wordmark is back to its original sans lockup; the script
+"Golfhelm" moved to the sidebar's brand (P001), which Continue now asks to
+write itself in once the dashboard is drawn (`markBrandWrite`).
 
-**This is an owner-requested exception to the doctrine of Instrument Sans for display, body and data**
-(`.claude/rules/clubhouse.md`, "Sentence case: no tracked uppercase, no serif"): the script face is for this wordmark
-only. `lib/fonts.ts` adds `Great_Vibes` as `--ch-font-script`, with `preload: false`, so no other page loads it.
-The two easings are tokens in `auth-tokens.css` (`--ch-au-write-ease`, `--ch-au-wheel-ease`), the one place a literal easing is
-allowed, and the shared test setup (`src/test/setup.tsx`) mocks `Great_Vibes` like the other fonts. The animation was not
-checked on a device or in Safari.
+## 2026-10-16 — The welcome tried "Golfhelm" in script, then handed it to the sidebar
+
+Owner, 2026-10-16, after sign in: "a cursive thing of script". The Welcome's mark was first drawn as "Golfhelm" in
+Great Vibes written on by a mask wipe, with the wheel turning into place. That version is superseded: the Welcome is
+back to its sans lockup and the script wordmark lives in the sidebar's brand (entry above, and P001). What stays from the
+first attempt is the font (`lib/fonts.ts`, `Great_Vibes` as `--ch-font-script`) and the shared test setup mocking it
+(`src/test/setup.tsx`). The script face is an owner-requested exception to the doctrine of Instrument Sans for
+display, body and data (`.claude/rules/clubhouse.md`), for the wordmark only.
 
 ## 2026-10-16 — Keychain AutoFill keeps the dark field; the sign-in scrolls smoothly
 

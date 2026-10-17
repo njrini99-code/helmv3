@@ -14,6 +14,7 @@ import { ResumeRoundCard } from "./Dock";
 import { badgeCount } from "./badge-count";
 import { BrandTeamSwitch } from "./TeamSwitch";
 import type { ChTeamSwitch } from "./team-switch";
+import { BrandLine, useBrandWrite } from './BrandWord';
 
 export { badgeCount };
 
@@ -34,20 +35,15 @@ export function Sidebar({
   const current = activeNavItem(pathname, userData.role)?.id;
   const sections = CH_NAV_SECTIONS;
 
+  const brandWrite = useBrandWrite();
   return (
     <aside className="ch-sidebar" aria-label="Sidebar">
       {teamSwitch ? (
-        <BrandTeamSwitch model={teamSwitch} teamName={userData.teamName ?? null} />
+        <BrandTeamSwitch model={teamSwitch} teamName={userData.teamName ?? null} write={brandWrite} />
       ) : (
         <div className="ch-brand">
-          <img
-            src="/clubhouse/auth/helm-golf-mark.png"
-            alt=""
-            width={32}
-            height={32}
-          />
           <div className="ch-brand__txt">
-            <span className="ch-brand__word">GolfHelm</span>
+            <BrandLine write={brandWrite} />
             {userData.teamName && (
               <span className="ch-brand__team" data-ch-code="CH-1305">
                 {userData.teamName}

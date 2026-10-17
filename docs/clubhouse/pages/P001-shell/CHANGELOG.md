@@ -1,5 +1,18 @@
 # P001 — Shell: changelog
 
+## 2026-10-16 — The brand is "Golfhelm" in script, then the wheel
+
+Owner: "script then logo". The sidebar's brand (and the team switcher's) reads
+"Golfhelm" in Great Vibes, helm in mint, with the wheel after the word at 24px
+and the team name under both (`shell/BrandWord.tsx`, shell.css
+`.ch-brand__line`). Opening the app from the welcome, the dashboard draws first,
+then the word writes itself in left to right (a mask wipe, 1.3s after a 0.6s
+hold), then the wheel turns a quarter into place. It plays once per sign in
+(a session flag set by the welcome's Continue and cleared on read); reduced
+motion and Animations off draw it whole. An owner-requested exception to the
+sans-only type rule, for this wordmark only. Checked in Chrome at 1440: word
+hidden until about 0.6s after the dashboard, written by 1.9s, wheel in by 2.5s.
+
 ## 2026-10-16 — The sidebar sorted into clear groups
 
 Owner, 2026-10-16: "sort the side bar and make it look better".

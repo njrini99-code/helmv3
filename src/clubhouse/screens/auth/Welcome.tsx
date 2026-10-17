@@ -12,6 +12,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { dropHandoffCurtain } from '../../lib/handoff';
+import { markBrandWrite } from '../../shell/BrandWord';
 import { HANDOFF_MS, WELCOME_PHONE_AUTO_MS, welcomeBody, welcomeCard, welcomeDate, welcomeHint, welcomeItem, welcomeLine1, welcomeMark, welcomeName, welcomeScrim, type AuthCustom } from './auth-motion';
 import { greetingWord, isDarkSky } from './scene-sky';
 import { useLastHereLabel, useLocalDateLabel, useLocalHour, useSkyHour } from './use-hour';
@@ -113,6 +114,8 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
     started.current = true;
     // CH-15604, CH-15705: Continue (or Return) commits once and folds the course into the canvas.
     haptic('commit');
+    // The sidebar's wordmark writes itself in once when the app opens from here (owner, 2026-10-16).
+    markBrandWrite();
     setLeaving(true);
     stage.begin(fold ? 'fold' : 'fade');
     timer.current = window.setTimeout(
@@ -159,12 +162,10 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
           {spoken}
         </div>
         <m.div className="ch-au-wl-scrim" variants={welcomeScrim} custom={custom} />
-        {/* After the sign in (owner, 2026-10-16): "Golfhelm" writes itself in script, helm in green, then the wheel turns
-            into place beside it. Reduced motion draws it whole at once. */}
-        <m.div className={'ch-au-wl-mark is-script' + (reduced ? ' is-still' : '')} variants={welcomeMark} custom={custom} role="img" aria-label="GolfHelm">
-          <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={44} height={44} className="ch-au-script__mark" />
-          <span className="ch-au-script__w" aria-hidden="true">
-            Golf<b>helm</b>
+        <m.div className="ch-au-wl-mark" variants={welcomeMark} custom={custom}>
+          <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={32} height={32} />
+          <span>
+            Golf<b>Helm</b>
           </span>
         </m.div>
         <m.div className="ch-au-wl-body" variants={welcomeBody} custom={custom}>
