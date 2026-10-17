@@ -1,12 +1,23 @@
 # P009 — Qualifiers: changelog
 
-## 2026-10-16 — The desktop list: each qualifier on its own sheet, stronger ink, green filter chip
+## 2026-10-16 — Qualifiers: separate sheets, the active one in focus, full contrast
 
-Owner, 2026-10-16: "better separation between qualifiers listed", "more contrast on this page". Above 820px
-(`qualifiers.css`), each qualifier is its own raised sheet on the parchment with a gap between, in place of the ruled
-ledger seams. The titles, the lines under them, the facts and the page's intro step up to full ink (the facts' icons
-are green), and the filter pills take ink on the idle ones and the shared green chip on the chosen one
-(docs/clubhouse/CHANGELOG.md). No visual check is recorded for it; the phone's list is unchanged.
+Owner, 2026-10-16: "better separation between qualifiers listed", "more contrast on this page", "more focal on active
+qualifiers", "way more contrast on this page". Three commits, all in `qualifiers.css` unless noted. No visual check is
+recorded for any of them.
+
+- **The desktop list** (above 820px): each qualifier is its own raised sheet on the parchment with a gap between, in
+  place of the ruled ledger seams. Titles, the lines under them, the facts and the intro step up to full ink (the
+  facts' icons are green), and the filter pills take ink when idle and the shared green chip when chosen
+  (docs/clubhouse/CHANGELOG.md). The phone's list is unchanged.
+- **The active qualifier is the list's focus** (`QualifiersList.tsx`): it sits under its own "Active" heading on a raised
+  sheet with a green edge; concluded qualifiers are quieter (secondary heading, lighter sheets). The board in the active
+  qualifier read "Leaders", which did not say it belonged to that qualifier; it reads "Standings · top N" now
+  (`qualifiers.test.tsx` follows).
+- **Full contrast in light mode**: the page takes a page-scoped step up. Text is one grade darker, and rules and borders
+  use the Increase Contrast values (`.ch-qf` re-points `--ch-text-*`, `--ch-border-*` and the ledger rules). On a
+  qualifier's own desktop page the facts, the leaderboard and the side sections sit on bright sheets. Dark mode is
+  unchanged.
 
 ## 2026-10-14 — A round with no tees says so
 

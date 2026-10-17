@@ -66,10 +66,13 @@ Held items:     none
   and listed in VERIFY.md. The fixture's courses carry no photo, so the captures show the flag tiles: a photo card
   with a real photo was not captured.
 - Not verified: a real iPhone Safari pass; the photo upload end to end against a real round. Note for review: the
-  image write goes through `setCourseImageUrl` -> `updateCourse`, which is gated to coaches (and the database policy
-  `golf_courses_update_authenticated` refuses players too), so as this branch stands a player's photo is refused and
-  swallowed. The owner decided any golf team member may set a course's photo; the fix (a narrow RPC, `golf_set_course_image`)
-  is in progress on `agent/course-photo-members` and is to be folded into this PR. Its migration needs applying after merge.
+  image write used to go through `setCourseImageUrl` -> `updateCourse`, which is gated to coaches (and the policy
+  `golf_courses_update_authenticated` refuses players too), so a player's photo was refused and swallowed. The owner
+  decided any golf team member may set a course's photo. `setCourseImageUrl` now calls a narrow `SECURITY DEFINER` RPC,
+  `golf_set_course_image` (migration `20261016220000_golf_set_course_image.sql`; tests: pgTAP
+  `supabase/tests/rls/golf_set_course_image.sql`, vitest `set-course-image-url.test.ts`). The migration is NOT applied
+  to production: it needs applying after merge, and until then the write fails for everyone (the upload still lands
+  in the bucket). A real round's photo end to end was not run.
 
 ## 2026-10-14 — The course map hydrates without a mismatch
 
