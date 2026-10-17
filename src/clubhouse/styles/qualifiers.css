@@ -3209,9 +3209,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
    labels and heads carry more weight. Light appearance only; dark keeps its own ramp. */
 html:not([data-fw-theme='dark']) .ch-qf {
   /* The mid inks a grade darker too, for the copy that names them directly (a locked measure, a quiet caption). */
-  --ch-ink-500: #46433d;
-  --ch-ink-400: #5f5c55;
-  --ch-ink-300: #8f8b81;
+  --ch-ink-700: #1c1b18;
+  --ch-ink-600: #2b2a26;
+  --ch-ink-500: #3a3833;
+  --ch-ink-400: #55524b;
+  --ch-ink-300: #7c786f;
   --ch-text-primary: var(--ch-ink-950);
   --ch-text-secondary: var(--ch-ink-900);
   --ch-text-tertiary: var(--ch-ink-700);
