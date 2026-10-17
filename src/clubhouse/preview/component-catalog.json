@@ -4513,7 +4513,7 @@
       "file": "src/clubhouse/shell/TeamSwitch.tsx",
       "group": "shell",
       "exports": [
-        "BrandTeamSwitch",
+        "TeamSwitch",
         "MoreTeamSwitch"
       ],
       "styles": [

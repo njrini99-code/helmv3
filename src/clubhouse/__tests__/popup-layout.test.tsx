@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Modal } from '../ui/Modal';
 import { Menu } from '../ui/Menu';
 import { FormSheet } from '../screens/settings/phone/sheets';
-import { BrandTeamSwitch } from '../shell/TeamSwitch';
+import { TeamSwitch } from '../shell/TeamSwitch';
 import { usePopoverFit } from '../lib/use-popover-fit';
 import { useRef } from 'react';
 import { RecActionSheet } from '../screens/recruiting/RecSheet';
@@ -65,7 +65,7 @@ describe('popup layout and native dialog containment', () => {
   it('bounds a long team list below the sidebar trigger', () => {
     vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(300);
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ top: 20, bottom: 80, left: 16, right: 224, width: 208, height: 60, x: 16, y: 20, toJSON() {} });
-    const view = render(<BrandTeamSwitch teamName="Team one" model={{ activeId: 'one', choices: [{ id: 'one', label: 'Team one' }, { id: 'two', label: 'Team two' }] }} />);
+    const view = render(<TeamSwitch teamName="Team one" model={{ activeId: 'one', choices: [{ id: 'one', label: 'Team one' }, { id: 'two', label: 'Team two' }] }} />);
     fireEvent.click(view.getByRole('button', { name: /Switch team/ }));
     const popup = document.querySelector<HTMLElement>('.ch-tsw')!;
     expect(Number.parseFloat(popup.style.maxHeight)).toBe(206);

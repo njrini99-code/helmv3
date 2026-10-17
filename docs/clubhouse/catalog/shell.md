@@ -112,7 +112,7 @@ that the screen does not show.
 | CH-1704 | Opening the account sheet; swiping it away | A tick; a medium tap as the sheet settles shut (D-70) | `SectionStrip`, `AccountSheet`, `useSheetDrag` | shell.test › CH-1611 (the swipe), CH-1704 (the tick) |
 | CH-1705 | Opening the bell, a notification, or a menu item | A selection tick | `Bell`, `Menu` | shell.test › CH-1705 |
 | CH-1706 | The connection drops | The OS warning pattern | `OfflineBanner` | shell.test › CH-1706 |
-| CH-1707 | Picking another team in the switcher | A selection tick; nothing more when it lands (the new team is the confirmation), the error pattern when it fails | `BrandTeamSwitch`, `MoreTeamSwitch`, `useAction` | team-switch.test › CH-1707 |
+| CH-1707 | Picking another team in the switcher | A selection tick; nothing more when it lands (the new team is the confirmation), the error pattern when it fails | `TeamSwitch`, `MoreTeamSwitch`, `useAction` | team-switch.test › CH-1707 |
 | CH-1708 | A finger scrubs a slider | The Taptic Engine warms as the finger lands, a selection tick marks each step it crosses (at most every 40ms), and the engine idles on release; a key press ticks once (D-70 selection) | `Slider` → `hapticScrub` (`lib/haptics.ts`, the bridge's selectionStart, selectionChanged and selectionEnd) | motion-physics.test › CH-1708 |
 | CH-1709 | A pull to refresh passes its trigger (the iPhone app, CH-1909) | The medium tap, once (D-70's settle; owner-approved for the pull 2026-10-08) | `PullToRefresh` → `haptic('commit')` | motion-approved.test › CH-1909 |
 
