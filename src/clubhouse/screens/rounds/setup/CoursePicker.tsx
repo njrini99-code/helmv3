@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, Plus, Search } from 'lucide-react';
-import { DEFAULT_COURSE_IMAGES, resolveDefaultCourseImage } from '@/lib/golf/course-image-assets';
+import { ChevronLeft, Flag, Plus, Search } from 'lucide-react';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
@@ -77,51 +76,42 @@ export function CoursePicker({
     [listTees],
   );
   return (
-    <Modal open={open} onClose={onClose} title={course ? course.name : 'Where are you playing?'} description={course ? (course.place ?? undefined) : undefined} width={880} code="CH-11510">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={course ? course.name : 'Where are you playing?'}
+      description={course ? (course.place ?? undefined) : undefined}
+      width={880}
+      code="CH-11510"
+      // Typing a course in is in the head's corner, always in reach (owner, 2026-10-16), not under the whole library.
+      action={
+        course ? undefined : (
+          <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" onClick={onAddCourse}>
+            <Icon icon={Plus} size={14} />
+            <span>Add a course</span>
+          </button>
+        )
+      }
+    >
       {open &&
         (course ? (
           <TeeList course={course} listTees={teesFor} onBack={() => setCourse(null)} onPick={(t) => onPick(course, t)} />
         ) : (
-          <CourseList ports={ports} onCourse={setCourse} onReach={teesFor} onAddCourse={onAddCourse} />
+          <CourseList ports={ports} onCourse={setCourse} onReach={teesFor} />
         ))}
     </Modal>
   );
-}
-
-/**
- * Each course's photo: its own when it has one, else a default scene. A course keeps the scene its name picks unless
- * one of the six cards before it in the list already shows that scene, then it takes the next scene none of them
- * shows, so no photo repeats within two rows of three; the same list always gets the same photos.
- */
-export function coursePhotos(courses: readonly ChSetupCourse[]): string[] {
-  const out: string[] = [];
-  for (const c of courses) {
-    if (c.image) {
-      out.push(c.image);
-      continue;
-    }
-    const near = new Set(out.slice(-6));
-    let photo = resolveDefaultCourseImage(c.name);
-    for (let i = DEFAULT_COURSE_IMAGES.indexOf(photo), n = 0; near.has(photo) && n < DEFAULT_COURSE_IMAGES.length; n++) {
-      i = (i + 1) % DEFAULT_COURSE_IMAGES.length;
-      photo = DEFAULT_COURSE_IMAGES[i]!;
-    }
-    out.push(photo);
-  }
-  return out;
 }
 
 function CourseList({
   ports,
   onCourse,
   onReach,
-  onAddCourse,
 }: {
   ports: Pick<ChSetupPorts, 'listCourses'>;
   onCourse: (c: ChSetupCourse) => void;
   /** A hand is on its way to this course's card: its tees are fetched ahead. */
   onReach: (courseId: string) => unknown;
-  onAddCourse: () => void;
 }) {
   const [q, setQ] = useState('');
   const [load, retry] = useRead(ports.listCourses);
@@ -150,7 +140,6 @@ function CourseList({
         <InlineNotice code="CH-11209" title="The course library didn’t load" body="Your round isn’t started yet, so nothing is lost. Try again, or add the course by hand." onRetry={retry} />
       )}
       {groups.map((g) => {
-        const photos = coursePhotos(g.courses);
         return (
           <section key={g.key} className="ch-rsu-psec" aria-label={g.label}>
             <h4>
@@ -160,7 +149,7 @@ function CourseList({
             {/* Photo cards that fold back as they leave the list's top and unfold as they come up from its bottom
                 (rounds-setup.css, a scroll-driven animation on the compositor; still with reduced motion or Animations off). */}
             <div className="ch-cpk-list">
-              {g.courses.map((c, i) => (
+              {g.courses.map((c) => (
                 <button
                   key={c.id}
                   type="button"
@@ -174,8 +163,10 @@ function CourseList({
                   }}
                 >
                   <span className="ch-cpk__card">
-                    <span className="ch-cpk__media">
-                      <img src={photos[i]} alt="" loading="lazy" decoding="async" />
+                    {/* The course's own photo (one its team uploaded, or the real course's), never a stand-in scene: a
+                        course without one is a quiet tile with the flag (owner, 2026-10-16). */}
+                    <span className={'ch-cpk__media' + (c.image ? '' : ' is-blank')}>
+                      {c.image ? <img src={c.image} alt="" loading="lazy" decoding="async" /> : <Icon icon={Flag} size={20} />}
                     </span>
                     <span className="ch-cpk__row">
                       <span className="ch-cpk__b">
@@ -196,16 +187,9 @@ function CourseList({
       {load.state === 'ok' && !groups.length && (
         // CH-11310: nothing matches (or the library is empty).
         <p className="ch-rsu-none" data-ch-code="CH-11310">
-          {q.trim() ? `No courses match “${q.trim()}”. Check the spelling, or add it by hand.` : 'No courses yet. Add the one you’re playing.'}
+          {q.trim() ? `No courses match “${q.trim()}”. Check the spelling, or use Add a course.` : 'No courses yet. Use Add a course for the one you’re playing.'}
         </p>
       )}
-      <button type="button" className="ch-rsu-add" onClick={onAddCourse}>
-        <span aria-hidden="true">
-          <Icon icon={Plus} size={16} />
-        </span>
-        <b>Add a course</b>
-        <em>Enter its pars and yardages yourself</em>
-      </button>
     </div>
   );
 }

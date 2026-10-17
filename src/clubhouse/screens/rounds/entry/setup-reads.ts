@@ -181,6 +181,8 @@ export function toStartForm(f: ChSetupForm): NewRoundStartForm {
     teeId: pick?.teeId ?? null,
     holes: holesForRound(f.holes, f.count, f.nine).map((h, i) => ({ holeNumber: i + 1, par: h.par, yardage: parseInt(h.yards, 10) })),
     saveCourse: f.saveCourse,
+    // Only a course typed by hand is saved by the start, so only it carries a photo.
+    courseImage: pick && !pick.courseId && f.saveCourse ? (f.coursePhoto ?? null) : null,
   };
 }
 

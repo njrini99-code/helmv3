@@ -23,10 +23,13 @@ export function Modal({
   icon,
   width = 520,
   footer,
+  action,
   children,
   code,
   initialFocus,
 }: {
+  /** A control in the head beside Close (the course picker's Add a course). */
+  action?: ReactNode;
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
   /** A selector inside the sheet that takes focus as it opens instead of the heading (a new item's first field). */
@@ -84,6 +87,7 @@ export function Modal({
               </h2>
               {description && <p id={descriptionId}>{description}</p>}
             </div>
+            {action && <div className="ch-modal__action">{action}</div>}
             <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={onClose}>
               <Icon icon={X} size={15} />
             </button>

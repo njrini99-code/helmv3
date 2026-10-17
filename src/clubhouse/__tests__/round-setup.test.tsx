@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { PREVIEW_SETUP_COURSES, PREVIEW_SETUP_QUALIFIERS, PREVIEW_SETUP_TEES, PREVIEW_SETUP_TODAY, previewTeeHoles } from '../preview/fixtures-setup';
@@ -296,12 +296,43 @@ describe('Round setup: details and starting', () => {
     expect(code('CH-11108')).toHaveTextContent('Hole 1 needs a yardage');
     for (let n = 1; n <= 9; n++) await user.type(within(sheet).getByLabelText(`Hole ${n} yardage`), String(300 + n));
     await user.click(next());
-    expect(within(sheet).getByText('Chapel Ridge GC')).toBeInTheDocument();
+    // The review's summary and the preview beside it both name the course.
+    expect(within(sheet.querySelector('.ch-acs-sum') as HTMLElement).getByText('Chapel Ridge GC')).toBeInTheDocument();
     expect(within(sheet).getByRole('checkbox')).toBeChecked();
     await user.click(next());
     expect(dock()).toHaveTextContent('Chapel Ridge GC · Blue · 9 holes · Par 36');
     await user.click(startBtn());
     await waitFor(() => expect(ports.start).toHaveBeenCalled());
     expect(vi.mocked(ports.start).mock.calls[0]![0]).toMatchObject({ pick: { courseId: null, teeId: null, courseName: 'Chapel Ridge GC' }, count: 9, saveCourse: true });
+  });
+
+  it('CH-11511 the photo chosen for a typed course goes with the round\u2019s start, and only a real image is taken', async () => {
+    const { user, ports } = setup();
+    await user.click(screen.getByRole('button', { name: /Browse courses/ }));
+    await user.click(await screen.findByRole('button', { name: /Add a course/ }));
+    const sheet = code('CH-11511')!;
+    // jsdom draws no images: the preview's object URL is stubbed.
+    const made = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:course');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const slot = sheet.querySelector('.ch-acs__photo input[type=file]') as HTMLInputElement;
+    fireEvent.change(slot, { target: { files: [new File(['x'], 'notes.txt', { type: 'text/plain' })] } });
+    expect(within(sheet).getByRole('alert')).toHaveTextContent('Use a JPG, PNG, WebP or AVIF photo');
+    const photo = new File(['img'], 'course.webp', { type: 'image/webp' });
+    fireEvent.change(slot, { target: { files: [photo] } });
+    expect(within(sheet).queryByRole('alert')).toBeNull();
+    expect(made).toHaveBeenCalledWith(photo);
+    const next = () => within(sheet).getByRole('button', { name: /Next|Use this course/ });
+    await user.type(within(sheet).getByLabelText('Course name'), 'Chapel Ridge GC');
+    await user.click(within(sheet).getByRole('radio', { name: '9 holes' }));
+    await user.click(next());
+    await user.click(within(sheet).getByRole('radio', { name: 'Blue' }));
+    await user.click(next());
+    for (let n = 1; n <= 9; n++) await user.type(within(sheet).getByLabelText(`Hole ${n} yardage`), String(300 + n));
+    await user.click(next());
+    await user.click(next());
+    await user.click(startBtn());
+    await waitFor(() => expect(ports.start).toHaveBeenCalled());
+    expect(vi.mocked(ports.start).mock.calls[0]![0].coursePhoto).toBe(photo);
+    vi.restoreAllMocks();
   });
 });

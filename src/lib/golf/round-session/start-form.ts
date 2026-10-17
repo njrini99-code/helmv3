@@ -47,6 +47,11 @@ export interface NewRoundStartForm extends NewRoundSetup {
   holes: HoleConfig[];
   /** A hand-typed course: save it to the player's library and offer it to the cloud library (the legacy "save course" opt-in). */
   saveCourse: boolean;
+  /**
+   * A hand-typed course's photo (Clubhouse's Add a course). Uploaded to the library course the save resolves to, and set
+   * as its photo only when that course has none, best-effort: a photo never blocks or undoes a started round.
+   */
+  courseImage?: File | null;
 }
 
 export type NewRoundStartFailureReason =
