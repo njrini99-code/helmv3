@@ -294,6 +294,9 @@
 
   /* Shell literals promoted to tokens (P001-D6), so dark mode and the light can reach them. */
   --ch-on-green-bright: #fbfaf6;
+  /* The sidebar brand's ivory: "Golf" and the logo's ball (owner, 2026-10-16: "darker ivory"). On the green in both
+     themes, so it is not remapped. */
+  --ch-brand-ivory: #ebe1c8;
   --ch-on-green-glyph: #cfc7b2;
   --ch-on-green-plate: #f4f1e8;
   --ch-on-green-label: #e9e4d6;
