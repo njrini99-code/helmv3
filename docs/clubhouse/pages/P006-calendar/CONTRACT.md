@@ -33,7 +33,7 @@ gate is proved.
 
 Status: DEFINED
 
-Calendar opens on the week that holds today, with the team's events on a grid and the day's panel beside it (60101). The address decides the view, the day and the open event, and anything that is not real falls back (60102). Other pages open New event through `?new=1` and its seeds (60103). Every time is in the team's zone (60104). On the phone the same data is Day, Month and List (61901). The page opens at the top (10101). Open, not built: v2 also draws a whole-page first-run state for a team that has never scheduled anything (D-71); an empty range still draws the grid, and the panel says there is nothing on the team calendar today (60402).
+Calendar opens on the week that holds today, with the team's events on a grid and the day's panel beside it (60101). The address decides the view, the day and the open event, and anything that is not real falls back (60102). Other pages open New event through `?new=1` and its seeds (60103). Every time is in the team's zone (60104). On the phone the same data is Day, Month and List (61901). The page opens at the top (10101). v2 also draws a whole-page first-run state for a team that has never scheduled anything (D-71): built, `CalendarFirstRun` (corrected 2026-10-17); an empty range on a team that has scheduled before still draws the grid, and the panel says there is nothing on the team calendar today (60402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -142,9 +142,10 @@ one, so a failure can leave either state, and the links are read again so the
 row shows what exists. Removing a link has one (60627). A server refusal written
 for a person is shown as the toast's reason (a reply's lock: the deadline
 passed, the event started or was cancelled); one written for a developer is
-replaced by the toast's own hint. Open, not fixed: a create whose answer is lost
-on the way back may have landed, and Retry then creates it a second time (no
-write here carries an idempotency key).
+replaced by the toast's own hint. A create whose answer is lost on the way back
+is safe to retry: a new event, a repeating series and busy time each send a
+request id that becomes the row's key, and a repeat returns the row that landed
+(C-17; busy time 2026-10-17).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

@@ -526,6 +526,52 @@ describe('Calendar · saves that fail', () => {
     expect(dialog.hasAttribute('open')).toBe(true);
   });
 
+  it('CH-6006 a busy-time add sends a request id and keeps it across a Retry and a reopened sheet, so a lost reply cannot add it twice', async () => {
+    const user = userEvent.setup();
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    a.addCoachBlockedTime.mockImplementation(fail);
+    wrap(cal());
+    const open = async () => {
+      await user.click(screen.getByRole('button', { name: /More/ }));
+      await user.click(await screen.findByRole('menuitem', { name: /Add busy time/ }));
+      return within((await screen.findByRole('heading', { name: 'Add busy time' })).closest('dialog') as HTMLElement);
+    };
+    let d = await open();
+    await user.type(d.getByPlaceholderText('Recruiting call'), 'Film');
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await expectCode('CH-6006', /Couldn’t add your busy time/);
+    const retries = await screen.findAllByRole('button', { name: 'Retry' });
+    await user.click(retries[retries.length - 1]!);
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(2));
+    const ids = () => a.addCoachBlockedTime.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
+    expect(ids()[0]).toMatch(UUID);
+    expect(ids()[1]).toBe(ids()[0]);
+    // Closing and opening the sheet again, then adding the same block: still the same block, so the same id.
+    await user.click(d.getByRole('button', { name: 'Cancel' }));
+    d = await open();
+    await user.type(d.getByPlaceholderText('Recruiting call'), 'Film');
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(3));
+    expect(ids()[2]).toBe(ids()[0]);
+    // Different contents are a different block.
+    await user.type(d.getByPlaceholderText('Recruiting call'), ' review');
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(4));
+    expect(ids()[3]).toMatch(UUID);
+    expect(ids()[3]).not.toBe(ids()[0]);
+    // Once an add lands, the next one with the same contents is a new block with a new id.
+    a.addCoachBlockedTime.mockResolvedValue({ success: true, data: { id: 'b-new' } });
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(5));
+    expect(ids()[4]).toBe(ids()[3]);
+    d = await open();
+    await user.type(d.getByPlaceholderText('Recruiting call'), 'Film review');
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(6));
+    expect(ids()[5]).toMatch(UUID);
+    expect(ids()[5]).not.toBe(ids()[3]);
+  });
+
   it('CH-6008 CH-6207 CH-6403 CH-6303 files: loading, failing, empty, and a failed remove', async () => {
     const user = userEvent.setup();
     a.getEventDocuments.mockImplementationOnce(never);

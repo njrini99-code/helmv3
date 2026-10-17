@@ -1,5 +1,38 @@
 # P006 — Calendar: changelog
 
+## 2026-10-17 — Retry cannot add the same busy time twice; stale VERIFY rows corrected
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner request "fix whatever needs it")
+Contract IDs:   60606 (CH-6006), 60409 (CH-6309)
+Actions:        addCoachBlockedTime takes an optional requestId
+Data impact:    none (no migration; the id becomes the busy-time row's primary key)
+Held items:     none
+```
+
+### Fixed
+
+- VERIFY's open bug "Retry can create the same event twice when a create's
+  answer is lost" was already fixed for events: New event and a repeating
+  series have sent a request id that becomes the row's key since C-17. Busy
+  time was the last create the toast can retry without one. The sheet now
+  makes one id per set of contents and keeps it across Retry, Add again and a
+  reopened sheet until an add lands; `addCoachBlockedTime` stores the block
+  under it, and a repeat that hits the key answers with the block that landed
+  once it reads back as the coach's own with the same title and start (anything
+  else keeps the existing failure). Messages are unchanged. Without an id
+  (Fairway's availability screen) the add behaves as before.
+- VERIFY said the D-71 first-run page was not built; it is (CH-6309,
+  2026-09-30). Both rows now name only what is still unverified.
+
+### Verification
+
+- Unit tests: `blocked-time-idempotency.test.ts` (server: no second row, a
+  mismatched or another coach's id refused) and `calendar.test.tsx` CH-6006
+  (client: the same id across Retry and a reopened sheet, a new one for new
+  contents or after a landed add). Not run against a database or in a browser.
+
 ## 2026-10-14 — Keyboard and focus (runtime audit A-09, A-14, A-23, A-24, A-25)
 
 WebKit audit of the desktop calendar, coach and player:
