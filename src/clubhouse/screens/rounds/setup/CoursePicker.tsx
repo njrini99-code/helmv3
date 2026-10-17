@@ -55,19 +55,51 @@ export function CoursePicker({
   useEffect(() => {
     if (open) setCourse(initialCourse);
   }, [open, initialCourse]);
+  // A course's tees are asked for as a hand reaches its card (hover, focus, press), so they are usually there by the
+  // click, and the tee list opens on them instead of on a wait (owner, 2026-10-16: no shimmer after picking a course).
+  // Kept while the picker is open; a fresh open asks again.
+  const tees = useRef(new Map<string, Promise<ChResult<ChSetupTee[]>>>());
+  useEffect(() => {
+    if (open) tees.current.clear();
+  }, [open]);
+  const listTees = ports.listTees;
+  const teesFor = useCallback(
+    (id: string) => {
+      let p = tees.current.get(id);
+      if (!p) {
+        p = listTees(id);
+        // A failed read is not kept: Try again asks the server again.
+        p.then((r) => !r.ok && tees.current.delete(id)).catch(() => tees.current.delete(id));
+        tees.current.set(id, p);
+      }
+      return p;
+    },
+    [listTees],
+  );
   return (
     <Modal open={open} onClose={onClose} title={course ? course.name : 'Where are you playing?'} description={course ? (course.place ?? undefined) : undefined} width={880} code="CH-11510">
       {open &&
         (course ? (
-          <TeeList course={course} ports={ports} onBack={() => setCourse(null)} onPick={(t) => onPick(course, t)} />
+          <TeeList course={course} listTees={teesFor} onBack={() => setCourse(null)} onPick={(t) => onPick(course, t)} />
         ) : (
-          <CourseList ports={ports} onCourse={setCourse} onAddCourse={onAddCourse} />
+          <CourseList ports={ports} onCourse={setCourse} onReach={teesFor} onAddCourse={onAddCourse} />
         ))}
     </Modal>
   );
 }
 
-function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts, 'listCourses'>; onCourse: (c: ChSetupCourse) => void; onAddCourse: () => void }) {
+function CourseList({
+  ports,
+  onCourse,
+  onReach,
+  onAddCourse,
+}: {
+  ports: Pick<ChSetupPorts, 'listCourses'>;
+  onCourse: (c: ChSetupCourse) => void;
+  /** A hand is on its way to this course's card: its tees are fetched ahead. */
+  onReach: (courseId: string) => unknown;
+  onAddCourse: () => void;
+}) {
   const [q, setQ] = useState('');
   const [load, retry] = useRead(ports.listCourses);
   const groups = load.state === 'ok' ? groupCourses(load.data, q) : [];
@@ -107,6 +139,9 @@ function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts
                 key={c.id}
                 type="button"
                 className="ch-cpk"
+                onPointerEnter={() => onReach(c.id)}
+                onPointerDown={() => onReach(c.id)}
+                onFocus={() => onReach(c.id)}
                 onClick={() => {
                   haptic('select');
                   onCourse(c);
@@ -147,8 +182,7 @@ function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts
   );
 }
 
-function TeeList({ course, ports, onBack, onPick }: { course: ChSetupCourse; ports: Pick<ChSetupPorts, 'listTees'>; onBack: () => void; onPick: (t: ChSetupTee) => void }) {
-  const listTees = ports.listTees;
+function TeeList({ course, listTees, onBack, onPick }: { course: ChSetupCourse; listTees: (courseId: string) => Promise<ChResult<ChSetupTee[]>>; onBack: () => void; onPick: (t: ChSetupTee) => void }) {
   const read = useCallback(() => listTees(course.id), [listTees, course.id]);
   const [load, retry] = useRead(read);
   const tees = load.state === 'ok' ? load.data : [];
@@ -161,10 +195,10 @@ function TeeList({ course, ports, onBack, onPick }: { course: ChSetupCourse; por
       </button>
       <h4 className="ch-rsu-teek">Choose your tees</h4>
       {load.state === 'loading' && (
+        // The tees on their way: a quiet space the height of a tee, no shimmer (owner, 2026-10-16). Usually never seen,
+        // as the tees were asked for when the hand reached the course's card.
         <div className="ch-rsu-tees" role="status" aria-busy="true" aria-label="Loading tees" data-ch-code="CH-11404">
-          {[0, 1, 2].map((i) => (
-            <span key={i} className="ch-rsu-tee is-skel ch-skel" />
-          ))}
+          <span className="ch-rsu-tee-wait" />
         </div>
       )}
       {load.state === 'failed' && <InlineNotice code="CH-11208" title={`The tees at ${course.name} didn’t load`} body="Try again, or add the course by hand." onRetry={retry} />}

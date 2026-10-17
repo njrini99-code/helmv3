@@ -1087,6 +1087,10 @@
   flex-direction: column;
   gap: 8px;
 }
+.ch-rsu-tee-wait {
+  display: block;
+  height: 118px;
+}
 .ch-rsu-tee {
   all: unset;
   cursor: pointer;

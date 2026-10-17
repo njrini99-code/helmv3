@@ -124,6 +124,18 @@ describe('112401 Round setup: picking a course', () => {
     expect(await screen.findByRole('region', { name: 'Team courses' })).toBeInTheDocument();
   });
 
+  it('CH-11404 a course\u2019s tees are asked for as the hand reaches its card, once, and the tee list opens on them', async () => {
+    const { user, ports } = setup();
+    await user.click(screen.getByRole('button', { name: /Browse courses/ }));
+    const card = await within(code('CH-11510')!).findByRole('button', { name: /^Finley GC/ });
+    await user.hover(card);
+    expect(ports.listTees).toHaveBeenCalledTimes(1);
+    expect(ports.listTees).toHaveBeenCalledWith('finley');
+    await user.click(card);
+    expect(await screen.findByRole('button', { name: 'Play the Blue tees, 6,984 yards' })).toBeEnabled();
+    expect(ports.listTees).toHaveBeenCalledTimes(1);
+  });
+
   it('CH-11403 the library is on its way, in the shape of its rows', async () => {
     const { user } = setup({ listCourses: vi.fn(() => new Promise<never>(() => {})) });
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
