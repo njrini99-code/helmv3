@@ -5918,7 +5918,8 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__id {
   display: grid;
   position: sticky;
-  top: 24px;
+  /* Below the sticky top bar, never behind it. */
+  top: calc(var(--ch-topbar-h) + 24px);
   align-content: start;
   align-self: start;
   gap: 18px;
