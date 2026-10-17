@@ -1,5 +1,15 @@
 # P011 — Rounds: changelog
 
+## 2026-10-17 — Add a course draws the chosen photo itself
+
+The photo chosen in Add a course is drawn on a canvas from the file's own
+pixels (`LocalPhoto` in `setup/AddCourseSheet.tsx`, cropped like the card's
+`object-fit: cover`) instead of an `<img>` whose source is an object URL made
+from the file. It looks the same; nothing on the page is built from the file,
+which clears code scanning's `js/xss-through-dom` finding on the PR. Checked in
+WebKit: the frame draws at device resolution. Test: `round-setup.test.tsx`
+CH-11511.
+
 ## 2026-10-17 — Shot entry checked against production: a shot changes mid-hole, and distances are numbers
 
 Parity pass on the in-round hole and shot entry (`track/`: ShotEntry, the

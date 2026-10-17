@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, ChevronLeft, ImagePlus, Info } from 'lucide-react';
 import { ALLOWED_COURSE_IMAGE_MIME, MAX_COURSE_IMAGE_BYTES } from '@/lib/golf/course-library';
 import type { ChTeeColor } from '../../../data/rounds-shape';
@@ -62,14 +62,7 @@ export function AddCourseSheet({
   // The course's photo, the team's own (owner, 2026-10-16): chosen here, shown at once from the file, uploaded with the
   // course when the round's start saves it.
   const [photo, setPhoto] = useState<File | null>(null);
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoIssue, setPhotoIssue] = useState<string | null>(null);
-  useEffect(() => {
-    if (!photo) return setPhotoUrl(null);
-    const url = URL.createObjectURL(photo);
-    setPhotoUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [photo]);
   const choosePhoto = (file: File | undefined) => {
     if (!file) return;
     if (!(ALLOWED_COURSE_IMAGE_MIME as readonly string[]).includes(file.type)) return setPhotoIssue('Use a JPG, PNG, WebP or AVIF photo');
@@ -273,7 +266,7 @@ export function AddCourseSheet({
         {step !== 2 && (
           <CoursePreview
             name={f.name}
-            photoUrl={photoUrl}
+            photo={photo}
           photoIssue={photoIssue}
           onPhoto={choosePhoto}
           onClearPhoto={() => setPhoto(null)}
@@ -298,7 +291,7 @@ function CoursePreview({
   place,
   meta,
   tee,
-  photoUrl,
+  photo,
   photoIssue,
   onPhoto,
   onClearPhoto,
@@ -308,7 +301,7 @@ function CoursePreview({
   place: string | null;
   meta: string;
   tee: { name: string; color: ChTeeColor | null; yards: number | null } | null;
-  photoUrl: string | null;
+  photo: File | null;
   photoIssue: string | null;
   onPhoto: (file: File | undefined) => void;
   onClearPhoto: () => void;
@@ -319,7 +312,7 @@ function CoursePreview({
     <aside className="ch-acs__preview" aria-label="How the course will look">
       <span className="ch-acs__k">Preview</span>
       <label
-        className={'ch-cpk__media ch-acs__photo' + (photoUrl ? '' : ' is-blank')}
+        className={'ch-cpk__media ch-acs__photo' + (photo ? '' : ' is-blank')}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
@@ -327,9 +320,9 @@ function CoursePreview({
         }}
       >
         <input type="file" accept={ALLOWED_COURSE_IMAGE_MIME.join(',')} className="ch-sr-only" onChange={(e) => onPhoto(e.target.files?.[0])} />
-        {photoUrl ? (
+        {photo ? (
           <>
-            <img src={photoUrl} alt="" />
+            <LocalPhoto file={photo} />
             <span className="ch-acs__photo-change">Change photo</span>
           </>
         ) : (
@@ -345,12 +338,12 @@ function CoursePreview({
           {photoIssue}
         </span>
       )}
-      {photoUrl && (
+      {photo && (
         <button type="button" className="ch-acs__photo-remove" onClick={onClearPhoto}>
           Remove photo
         </button>
       )}
-      {photoUrl && !saved && <span className="ch-acs__photo-note">The photo is kept only when the course is saved.</span>}
+      {photo && !saved && <span className="ch-acs__photo-note">The photo is kept only when the course is saved.</span>}
       <span className="ch-cpk__row">
         <span className="ch-cpk__b">
           <b className={shown ? undefined : 'is-empty'}>{shown || 'Course name'}</b>
@@ -367,4 +360,46 @@ function CoursePreview({
       )}
     </aside>
   );
+}
+
+/**
+ * The chosen photo drawn straight from the file's pixels, cropped to fill the frame as the course's picture is
+ * (object-fit: cover): the file never becomes a URL on the page. Nothing is drawn where the browser can't decode it.
+ */
+function LocalPhoto({ file }: { file: File }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas || typeof createImageBitmap !== 'function') return;
+    let bitmap: ImageBitmap | null = null;
+    let live = true;
+    const draw = () => {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (!bitmap || !w || !h) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      const scale = Math.max(canvas.width / bitmap.width, canvas.height / bitmap.height);
+      const dw = bitmap.width * scale;
+      const dh = bitmap.height * scale;
+      canvas.getContext('2d')?.drawImage(bitmap, (canvas.width - dw) / 2, (canvas.height - dh) / 2, dw, dh);
+    };
+    createImageBitmap(file).then(
+      (b) => {
+        if (!live) return b.close();
+        bitmap = b;
+        draw();
+      },
+      () => {},
+    );
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(draw) : null;
+    ro?.observe(canvas);
+    return () => {
+      live = false;
+      ro?.disconnect();
+      bitmap?.close();
+    };
+  }, [file]);
+  return <canvas ref={ref} aria-hidden="true" />;
 }

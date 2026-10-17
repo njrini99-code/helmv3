@@ -322,16 +322,16 @@ describe('Round setup: details and starting', () => {
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
     await user.click(await screen.findByRole('button', { name: /Add a course/ }));
     const sheet = code('CH-11511')!;
-    // jsdom draws no images: the preview's object URL is stubbed.
-    const made = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:course');
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
     const slot = sheet.querySelector('.ch-acs__photo input[type=file]') as HTMLInputElement;
     fireEvent.change(slot, { target: { files: [new File(['x'], 'notes.txt', { type: 'text/plain' })] } });
     expect(within(sheet).getByRole('alert')).toHaveTextContent('Use a JPG, PNG, WebP or AVIF photo');
     const photo = new File(['img'], 'course.webp', { type: 'image/webp' });
     fireEvent.change(slot, { target: { files: [photo] } });
     expect(within(sheet).queryByRole('alert')).toBeNull();
-    expect(made).toHaveBeenCalledWith(photo);
+    // The preview is drawn from the file's pixels (a canvas), never from a URL made of the file.
+    expect(sheet.querySelector('.ch-acs__photo canvas')).not.toBeNull();
+    expect(sheet.querySelector('.ch-acs__photo img')).toBeNull();
+    expect(within(sheet).getByRole('button', { name: 'Remove photo' })).toBeInTheDocument();
     const next = () => within(sheet).getByRole('button', { name: /Next|Use this course/ });
     await user.type(within(sheet).getByLabelText('Course name'), 'Chapel Ridge GC');
     await user.click(within(sheet).getByRole('radio', { name: '9 holes' }));

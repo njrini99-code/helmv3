@@ -40,11 +40,9 @@ async function coachOnlyMeetings(supabase: Awaited<ReturnType<typeof createClien
     return new Set();
   }
   const { data, error } = await supabase.from('golf_event_attendance').select('event_id').in('event_id', ids).limit(1000);
-  if (error) {
-    log('meetingInvites', error);
-    return new Set();
-  }
-  const invited = new Set((data ?? []).map((a) => a.event_id));
+  if (error) log('meetingInvites', error);
+  // A failed read counts every meeting as invited, so none is hidden as the coach's own.
+  const invited = new Set(error ? ids : (data ?? []).map((a) => a.event_id));
   return new Set(ids.filter((id) => !invited.has(id)));
 }
 
