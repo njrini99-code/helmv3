@@ -1,14 +1,16 @@
 # P001 — Shell: changelog
 
-## 2026-10-16 — The brand's logo, matte with its spokes outlined in ivory
+## 2026-10-16 — The brand's logo: the real wheel, in mint, outlined in ivory
 
 Owner: "put a ivory border around the logo so it stands out a little more, and
-make it matte and matching the greens", then "use the actual logo" and "not a
-wheel around like outlining it all … outline the spokes" (a redrawn wheel, then
-a disc in an ivory ring, were tried first). The real wheel PNG, 28px, toned to
-the sidebar's matte greens (saturate 0.62), with a 0.75px ivory line
-(`--ch-on-green-ink`) traced round its own shape, rim and spokes, by four
-`drop-shadow`s; nothing behind it (`HelmMark` in `shell/BrandWord.tsx`).
+make it matte and matching the greens", "use the actual logo", "outline the
+spokes", then "fix it make it look better". Tried first and replaced: a redrawn
+SVG wheel, the PNG in an ivory-ringed disc, and CSS drop-shadow outlines on the
+116px PNG (soft and fuzzy at 28px). Now a purpose-made asset,
+`public/clubhouse/brand/helm-wheel-sidebar.png` (96px, drawn at 30px), built
+from the 300px logo by `scripts/clubhouse/make-brand-wheel.py`: the green
+recoloured to the mint "helm" uses (#7bc79a), the white to ivory (#f4eedd), and
+a clean ivory line traced round the rim and spokes. No filters at runtime.
 
 ## 2026-10-16 — The wordmark in Norican, in its frosted panel
 
