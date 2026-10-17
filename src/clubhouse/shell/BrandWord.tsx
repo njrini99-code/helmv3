@@ -58,14 +58,15 @@ export function BrandLine({ write }: { write: boolean }) {
 }
 
 /**
- * The wheel, the real logo (owner, 2026-10-16: "an ivory border around the logo so it stands out a little more, and
- * make it matte and matching the greens"; "use the actual logo"; "outline the spokes"): the PNG, toned to the
- * sidebar's matte greens, with an ivory line traced round its own shape.
+ * The wheel, the real logo (owner, 2026-10-16: an ivory border so it stands out, "matte and matching the greens", "use
+ * the actual logo", "outline the spokes", "make it look better"). A purpose-made asset from the 300px source
+ * (`scripts/clubhouse/make-brand-wheel.py`): recoloured to the mint "helm" is set in, the ball ivory, with a clean
+ * ivory line traced round the rim and spokes, at 3x so it stays sharp; CSS filters on the small PNG blurred it.
  */
 function HelmMark({ write }: { write: boolean }) {
   return (
     <span className={'ch-brand__mark' + (write ? ' is-write' : '')} aria-hidden="true">
-      <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={24} height={24} />
+      <img src="/clubhouse/brand/helm-wheel-sidebar.png" alt="" width={30} height={30} />
     </span>
   );
 }
