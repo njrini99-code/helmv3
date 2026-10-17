@@ -1,5 +1,21 @@
 # P015 — Auth: changelog
 
+## 2026-10-16 — Sign in starts moving sooner
+
+Owner: "right after you click sign in, the animation still stalls for a
+second". Nothing moves until the sign-in answers, and the answer waited on
+seven network round trips one after another. The server's sign-in
+(`loginAction`, `src/app/golf/actions/auth.ts`) now sends the lockout check and
+both rate limits together (one round trip, not three; refusals keep their
+order, and an attempt now counts against both limits even when an earlier check
+refuses it, which only counts more), and after a successful sign-in reads the
+role and both profiles together with the failed-attempts reset (one round trip,
+not two plus a serial reset). On the client the form starts leaving the moment
+the sign-in lands; the 100ms cookie beat now sits inside the opening's own
+430ms wait instead of before it. Auth tests pass; not measured end to end here
+(signing in sends real credentials to production, so it was left to the
+owner).
+
 ## 2026-10-16 — Continue hands the wordmark's write to the sidebar
 
 The welcome's own wordmark is back to its original sans lockup; the script
