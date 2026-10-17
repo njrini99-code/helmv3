@@ -1,18 +1,24 @@
 # P001 — Shell: changelog
 
-## 2026-10-16 — The brand's logo: the real wheel, in mint, outlined in ivory
+## 2026-10-16 — The brand's logo, redrawn from the master as a detailed vector
 
-Owner: "put a ivory border around the logo so it stands out a little more, and
-make it matte and matching the greens", "use the actual logo", "outline the
-spokes", then "fix it make it look better". Tried first and replaced: a redrawn
-SVG wheel, the PNG in an ivory-ringed disc, and CSS drop-shadow outlines on the
-116px PNG (soft and fuzzy at 28px). Now a purpose-made asset,
-`public/clubhouse/brand/helm-wheel-sidebar.png` (96px, drawn at 30px), built
-from the 300px logo by `scripts/clubhouse/make-brand-wheel.py`: the green
-recoloured to the mint "helm" uses (#7bc79a), the ball's face ivory (#f4eedd),
-the gap between ball and rim deep green (#1d5a3b; all ivory read as "not filled
-in"), and a clean ivory line traced round the rim and spokes. No filters at
-runtime.
+Owner: an ivory border, "matte and matching the greens", "use the actual
+logo", "outline the spokes", "not filled in its all white", then "pull up the
+actual logo and fix it. be detailed." Tried and replaced along the way: a
+simplified SVG wheel, the PNG in an ivory-ringed disc, CSS outlines on the
+116px PNG, and a built PNG with a traced outline (all soft or off-model at
+sidebar size).
+
+`HelmMark` (`shell/BrandWord.tsx`) is the GolfHelm logo redrawn from the 300px
+master (`public/anim/helm-golf-icon.png`), every part measured from it: the
+rim (radius 84.9 to 105.7), eight round-tipped spokes 23 wide reaching 146, the
+ball (radius 71.6) whose face is the overlap of two circles (the crescent below
+is its shade), the 13 dimples and the 6 highlights along the shade, each at its
+place in the master. Checked side by side with the master at 280px. Colours on
+the green: helm and shade in the mint "helm" is set in
+(`--ch-hero-mint-strong`), face and highlights ivory (`--ch-on-green-ink`),
+dimples green (`--ch-green-500`), the gap open to the panel. 34px, centred with
+the word in the panel (28px and 30px at the sides). Sharp at any size.
 
 ## 2026-10-16 — The wordmark in Norican, in its frosted panel
 

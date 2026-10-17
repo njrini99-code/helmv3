@@ -3574,15 +3574,25 @@ html[data-fw-theme='dark'] .ch-offline {
   min-width: 0;
 }
 .ch-brand .ch-brand__mark {
-  display: grid;
   flex: none;
-  place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
+  transform-box: fill-box;
+  transform-origin: center;
 }
-.ch-brand .ch-brand__mark img {
-  width: 30px;
-  height: 30px;
+/* The logo's colours on the green: the helm and the ball's shade in the mint "helm" is set in, the face and its
+   highlights ivory, the dimples green. Flat fills, no outline or glow. */
+.ch-brand__mark-helm {
+  stroke: var(--ch-hero-mint-strong);
+}
+.ch-brand__mark-ball {
+  fill: var(--ch-hero-mint-strong);
+}
+.ch-brand__mark-face {
+  fill: var(--ch-on-green-ink);
+}
+.ch-brand__mark-dimples {
+  fill: var(--ch-green-500);
 }
 .ch-brand__word.is-script {
   display: inline-block;
