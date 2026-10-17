@@ -1566,13 +1566,10 @@
   padding: 0 9px;
   font-size: 12px;
 }
-.ch-in__att .ch-seg__b.is-on.is-late .ch-seg__l {
-  color: var(--ch-warning-600);
-}
+/* On the green chip the chosen mark is ivory whatever it is (amber ink on green was unreadable); absent keeps its strike. */
 .ch-in__att .ch-seg__b.is-on.is-absent .ch-seg__l {
-  color: var(--ch-text-primary);
   text-decoration: line-through;
-  text-decoration-color: var(--ch-warning-600);
+  text-decoration-color: rgb(249 247 241 / 0.7);
 }
 .ch-in__note {
   margin: 0;

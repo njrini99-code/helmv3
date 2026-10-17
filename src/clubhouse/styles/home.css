@@ -2198,14 +2198,9 @@
   color: var(--ch-ink-600);
   font-size: 13.5px;
 }
-.ch-ph-game.is-phone .ch-seg .ch-seg__b.is-on {
-  color: var(--ch-green-700);
-}
-/* The chip is a quiet raised ivory, not the deep key of the desktop's toggles (.mp-seg [aria-pressed]). */
+/* The chip is the green every switcher draws (controls.css, owner 2026-10-16), on this switch's tighter corner. */
 .ch-ph-game.is-phone .ch-seg .ch-seg__pill {
   border-radius: calc(var(--ch-radius-lg) - 3px);
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-seg-pill-lift-shadow);
 }
 .ch-ph-game.is-phone .ch-ph-game__top {
   grid-template-columns: minmax(0, 1fr);
