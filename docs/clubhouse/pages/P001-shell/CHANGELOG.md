@@ -9,8 +9,10 @@ SVG wheel, the PNG in an ivory-ringed disc, and CSS drop-shadow outlines on the
 116px PNG (soft and fuzzy at 28px). Now a purpose-made asset,
 `public/clubhouse/brand/helm-wheel-sidebar.png` (96px, drawn at 30px), built
 from the 300px logo by `scripts/clubhouse/make-brand-wheel.py`: the green
-recoloured to the mint "helm" uses (#7bc79a), the white to ivory (#f4eedd), and
-a clean ivory line traced round the rim and spokes. No filters at runtime.
+recoloured to the mint "helm" uses (#7bc79a), the ball's face ivory (#f4eedd),
+the gap between ball and rim deep green (#1d5a3b; all ivory read as "not filled
+in"), and a clean ivory line traced round the rim and spokes. No filters at
+runtime.
 
 ## 2026-10-16 — The wordmark in Norican, in its frosted panel
 

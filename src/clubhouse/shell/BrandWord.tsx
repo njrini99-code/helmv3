@@ -60,7 +60,8 @@ export function BrandLine({ write }: { write: boolean }) {
 /**
  * The wheel, the real logo (owner, 2026-10-16: an ivory border so it stands out, "matte and matching the greens", "use
  * the actual logo", "outline the spokes", "make it look better"). A purpose-made asset from the 300px source
- * (`scripts/clubhouse/make-brand-wheel.py`): recoloured to the mint "helm" is set in, the ball ivory, with a clean
+ * (`scripts/clubhouse/make-brand-wheel.py`): recoloured to the mint "helm" is set in, the ball ivory, the gap
+ * round it deep green so it reads filled ("now its not filled in its all white"), with a clean
  * ivory line traced round the rim and spokes, at 3x so it stays sharp; CSS filters on the small PNG blurred it.
  */
 function HelmMark({ write }: { write: boolean }) {
