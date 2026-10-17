@@ -1,5 +1,16 @@
 # P001 — Shell: changelog
 
+## 2026-10-16 — A more premium entrance for the brand
+
+Owner: "it needs to be more premium. i do like the wheel turning tho". After
+sign in, about 3.5s in all: the dashboard settles (0.55s); "Golfhelm" writes in
+behind a wide feathered edge while it comes into focus (a 3px blur and a 3px
+rise settling out with it, 1.5s); the wheel spins in three quarters of a turn
+from 55% and slows to a stop with a 5° settle (`--ch-ease-spring-smooth`,
+1.3s, overlapping the end of the word); then one soft glint crosses the frosted
+panel (1.1s). Measured in Chrome through Welcome → Continue: written by 2.0s,
+wheel settled by 2.5s, glint done by 3.5s. Reduced motion draws it all at once.
+
 ## 2026-10-16 — The brand's logo, redrawn from the master as a detailed vector
 
 Owner: an ivory border, "matte and matching the greens", "use the actual

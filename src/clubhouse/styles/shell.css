@@ -3611,19 +3611,38 @@ html[data-fw-theme='dark'] .ch-offline {
   font-weight: 400;
   color: var(--ch-hero-mint);
 }
+/* The entrance after sign in (owner, 2026-10-16: "more premium. i do like the wheel turning"), about 3.5s in all:
+   the dashboard settles for about 0.55s; the word writes in left to right behind a wide feathered edge while it comes
+   into focus (blur and a 3px rise settling out), over about 1.5s; the wheel spins in three quarters of a turn from
+   small and slows to a stop with a slight settle, overlapping the last of the word; then one glint of light crosses
+   the frosted panel. */
 .ch-brand__word.is-write {
-  -webkit-mask-image: linear-gradient(90deg, #000 44%, transparent 56%);
-  mask-image: linear-gradient(90deg, #000 44%, transparent 56%);
-  -webkit-mask-size: 230% 100%;
-  mask-size: 230% 100%;
+  -webkit-mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
+  mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
+  -webkit-mask-size: 260% 100%;
+  mask-size: 260% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
-  /* Hold a beat for the dashboard (about 0.6s), then write over about 1.3s. */
-  animation: ch-brand-write calc(var(--ch-dur-reveal) * 2.5) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.15) both;
+  animation:
+    ch-brand-write calc(var(--ch-dur-reveal) * 2.9) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both,
+    ch-brand-focus calc(var(--ch-dur-reveal) * 3.1) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both;
 }
 .ch-brand__mark.is-write {
-  /* The wheel once the word is written (about 1.85s in). */
-  animation: ch-brand-wheel calc(var(--ch-dur-reveal) * 1.2) var(--ch-ease-spring) calc(var(--ch-dur-reveal) * 3.55) both;
+  animation: ch-brand-wheel calc(var(--ch-dur-reveal) * 2.5) var(--ch-ease-spring-smooth) calc(var(--ch-dur-reveal) * 3) both;
+}
+.ch-brand:has(.ch-brand__line.is-write) {
+  position: relative;
+  overflow: hidden;
+}
+.ch-brand:has(.ch-brand__line.is-write)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 250 235 / 0.28) 50%, transparent 65%) no-repeat;
+  background-size: 250% 100%;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  animation: ch-brand-glint calc(var(--ch-dur-reveal) * 2.2) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 4.6) both;
 }
 @keyframes ch-brand-write {
   from {
@@ -3635,21 +3654,49 @@ html[data-fw-theme='dark'] .ch-offline {
     mask-position: 0 0;
   }
 }
-@keyframes ch-brand-wheel {
+@keyframes ch-brand-focus {
   from {
-    opacity: 0;
-    transform: rotate(-90deg) scale(0.6);
+    filter: blur(3px);
+    transform: translateY(3px);
   }
   to {
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes ch-brand-wheel {
+  0% {
+    opacity: 0;
+    transform: rotate(-270deg) scale(0.55);
+  }
+  30% {
+    opacity: 1;
+  }
+  82% {
+    transform: rotate(5deg) scale(1.03);
+  }
+  100% {
     opacity: 1;
     transform: none;
   }
 }
+@keyframes ch-brand-glint {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -30% 0;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .ch-brand__word.is-write,
-  .ch-brand__mark.is-write {
+  .ch-brand__mark.is-write,
+  .ch-brand:has(.ch-brand__line.is-write)::after {
     animation: none;
     -webkit-mask-image: none;
     mask-image: none;
+  }
+  .ch-brand:has(.ch-brand__line.is-write)::after {
+    content: none;
   }
 }
