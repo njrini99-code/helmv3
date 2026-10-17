@@ -3549,3 +3549,40 @@ html[data-fw-theme='dark'] .ch-offline {
     background: color-mix(in oklab, var(--ch-text-primary) 9%, transparent);
   }
 }
+
+/* The sidebar, sorted and clearer (owner, 2026-10-16: "sort the side bar and make it look better"): each titled group
+   sits in a soft well on the green with its name in mint over it, the rows a touch taller with brighter ink, so the
+   app's places read as four groups rather than one long list. Desktop only; the phone's strip is its own. */
+@media (min-width: 821px) {
+  .ch-sidebar .ch-nav {
+    gap: 10px;
+  }
+  .ch-sidebar .ch-nav__group {
+    gap: 2px;
+  }
+  .ch-sidebar .ch-nav__group:has(.ch-nav__section) {
+    padding: 4px 4px 6px;
+    border-radius: 14px;
+    background: rgb(250 248 241 / 0.045);
+    box-shadow: inset 0 0 0 1px rgb(250 248 241 / 0.06);
+  }
+  .ch-sidebar .ch-nav__section {
+    padding: 10px 10px 6px;
+    font: 600 11.5px/1 var(--ch-font-sans);
+    letter-spacing: 0.01em;
+    color: var(--ch-hero-mint);
+    opacity: 0.9;
+  }
+  .ch-sidebar .ch-navitem {
+    height: 36px;
+    gap: 11px;
+    font-size: 14px;
+  }
+  /* Brighter ink on the rows that are not chosen; the chosen row keeps the plate's own green ink. */
+  .ch-sidebar .ch-navitem:not([aria-current='page']):not(:has(.ch-lp)) {
+    color: var(--ch-on-green-ink);
+  }
+  .ch-sidebar .ch-navitem:not([aria-current='page']):not(:has(.ch-lp)) svg {
+    color: var(--ch-on-green-ink-soft);
+  }
+}

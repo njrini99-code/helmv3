@@ -38,12 +38,13 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
   { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
-  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  // Team Hub sits under Team, with the roster (owner, 2026-10-16).
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound, section: 'Team' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
-  { id: 'recruiting', label: 'Recruiting', href: '/golf/dashboard/recruiting', icon: GraduationCap, section: 'Team' },
   { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
   { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'Team' },
+  { id: 'recruiting', label: 'Recruiting', href: '/golf/dashboard/recruiting', icon: GraduationCap, section: 'Team' },
 ];
 
 /**
@@ -58,12 +59,13 @@ export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
   { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
-  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound, badge: 'hub' },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  // Team Hub sits under Team, with the roster (owner, 2026-10-16).
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound, badge: 'hub', section: 'Team' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team' },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'My game' },
   { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'My game' },
-  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'My game' },
   { id: 'classes', label: 'Classes', href: '/golf/dashboard/classes', icon: GraduationCap, section: 'School' },
 ];
 
