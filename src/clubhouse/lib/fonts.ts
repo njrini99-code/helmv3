@@ -1,4 +1,4 @@
-import { Instrument_Sans, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
+import { Great_Vibes, Instrument_Sans, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
 
 /**
  * Clubhouse type: Instrument Sans (variable weight and width) for everything,
@@ -30,4 +30,14 @@ export const jetbrainsMono = JetBrains_Mono({
   variable: '--ch-font-jetbrains',
 });
 
-export const clubhouseFontVariables = `${instrumentSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`;
+/** The welcome's handwritten wordmark (owner, 2026-10-16: "a cursive thing of script" after the sign in). That one place
+ *  only; not preloaded, so no other page pays for it. */
+export const greatVibes = Great_Vibes({
+  subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+  preload: false,
+  variable: '--ch-font-script',
+});
+
+export const clubhouseFontVariables = `${instrumentSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} ${greatVibes.variable}`;

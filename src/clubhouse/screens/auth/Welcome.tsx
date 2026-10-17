@@ -159,10 +159,12 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
           {spoken}
         </div>
         <m.div className="ch-au-wl-scrim" variants={welcomeScrim} custom={custom} />
-        <m.div className="ch-au-wl-mark" variants={welcomeMark} custom={custom}>
-          <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={32} height={32} />
-          <span>
-            Golf<b>Helm</b>
+        {/* After the sign in (owner, 2026-10-16): "Golfhelm" writes itself in script, helm in green, then the wheel turns
+            into place beside it. Reduced motion draws it whole at once. */}
+        <m.div className={'ch-au-wl-mark is-script' + (reduced ? ' is-still' : '')} variants={welcomeMark} custom={custom} role="img" aria-label="GolfHelm">
+          <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={44} height={44} className="ch-au-script__mark" />
+          <span className="ch-au-script__w" aria-hidden="true">
+            Golf<b>helm</b>
           </span>
         </m.div>
         <m.div className="ch-au-wl-body" variants={welcomeBody} custom={custom}>
