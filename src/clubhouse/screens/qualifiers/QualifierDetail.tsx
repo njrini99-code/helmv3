@@ -19,7 +19,7 @@ import { haptic } from '../../lib/haptics';
 import { useLastGood } from '../../lib/use-last-good';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
-import { formatFixed, formatToPar } from '../../lib/format';
+import { formatFixed } from '../../lib/format';
 import { bubbleNote, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
 import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -27,6 +27,7 @@ import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
 import { StandingsSpread } from './StandingsSpread';
+import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
 import { LIST_HREF, noteIfSelectionLink, useStepBack } from './return-state';
 import { CardBodySkeleton, ParLineSkeleton, SecondaryProvider, Streamed, fulfilled, secondaryOf, settled, type ChQDetailView } from './streamed';
@@ -811,89 +812,4 @@ function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number
       </ScrollRegion>
     </section>
   );
-}
-
-/**
- * A player's rounds in this qualifier, beside the leaderboard (owner, 2026-10-16): the row opened on the board, else
- * your own, else (for a coach) the leader. One line a scheduled round: its course and day, total and to par, or "Not
- * played yet". A player only ever sees their own here, as with the scorecards.
- */
-function PlayerRounds({ data, openRow }: { data: ChQDetailCore; openRow: OpenRow }) {
-  const open = useSyncExternalStore(openRow.subscribe, openRow.get, openRow.get);
-  const b = data.board;
-  if (!b) return null;
-  const coach = data.role === 'coach';
-  const mine = b.rows.find((r) => r.playerId === data.viewerPlayerId);
-  const picked = b.rows.find((r) => r.playerId === open && (coach || r.playerId === data.viewerPlayerId));
-  const row = picked ?? mine ?? (coach ? b.rows[0] : undefined);
-  if (!row) return null;
-  const me = row.playerId === data.viewerPlayerId;
-  const byNumber = new Map(row.rounds.map((rd) => [rd.number, rd]));
-  const totals = row.rounds.map((rd) => rd.total).filter((t): t is number => t != null);
-  const best = row.rounds.length > 1 && totals.length ? Math.min(...totals) : null;
-  return (
-    // Shown off, not filed (owner, 2026-10-16: "they're showing off their rounds"): the team board's green, the total to
-    // par large, one tile a round with its score, the best one marked, and the rounds still to play held open.
-    <section className="ch-qf-prounds ch-scoreboard" aria-labelledby="ch-qf-prounds" aria-live="polite">
-      <div className="ch-qf-prounds__head">
-        <h2 id="ch-qf-prounds">{me ? 'Your rounds' : `${row.name}’s rounds`}</h2>
-        {row.position != null && <span className="ch-qf-prounds__pos ch-num">{positionLabel(row)}</span>}
-      </div>
-      <div className="ch-qf-prounds__big">
-        <b className={'ch-num' + (row.toPar != null && row.toPar < 0 ? ' is-under' : '')}>{formatToPar(row.toPar)}</b>
-        <span className="ch-num">
-          {[row.total != null ? `${row.total} strokes` : null, `${row.played} of ${plural(data.numRounds, 'round')}`].filter(Boolean).join(' · ')}
-        </span>
-      </div>
-      <ol className="ch-qf-prounds__list">
-        {Array.from({ length: data.numRounds }, (_, i) => i + 1).map((n) => {
-          const rd = byNumber.get(n);
-          if (!rd) {
-            return (
-              <li key={n} className="ch-qf-prounds__r is-todo">
-                <span className="ch-qf-prounds__n">R{n}</span>
-                <span className="ch-qf-prounds__m">
-                  <b>Still to play</b>
-                </span>
-              </li>
-            );
-          }
-          const isBest = best != null && rd.total === best;
-          return (
-            <li key={n} className={'ch-qf-prounds__r' + (isBest ? ' is-best' : '')}>
-              <span className="ch-qf-prounds__n">R{n}</span>
-              <span className="ch-qf-prounds__m">
-                <b>{rd.course ?? `Round ${n}`}</b>
-                <small className="ch-num">
-                  {dayLabel(rd.date)}
-                  {isBest && ' · Best round'}
-                </small>
-              </span>
-              <span className="ch-qf-prounds__s ch-num">{rd.total ?? '—'}</span>
-              <ToParPlate value={rd.toPar} size="card" />
-            </li>
-          );
-        })}
-      </ol>
-      {coach && !picked && <p className="ch-qf-prounds__hint">Choose a player on the leaderboard to see their rounds here.</p>}
-    </section>
-  );
-}
-
-type OpenRow = { get: () => string | null; set: (playerId: string | null) => void; subscribe: (listener: () => void) => () => void };
-
-function createOpenRow(): OpenRow {
-  let value: string | null = null;
-  const listeners = new Set<() => void>();
-  return {
-    get: () => value,
-    set: (next) => {
-      value = next;
-      listeners.forEach((l) => l());
-    },
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
 }

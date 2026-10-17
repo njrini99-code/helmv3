@@ -25,6 +25,7 @@ import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
 import { SerifText } from '../../ui/SerifText';
+import { createOpenRow, PlayerRounds as ShowcaseRounds } from './RoundsShowcase';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -36,6 +37,9 @@ const LIST = '/golf/dashboard/qualifiers';
  * confirmed squad sits above the leaderboard. Same data, writes and catalog
  * as desktop; the close confirm is the desktop's, passed in.
  */
+/** The phone has no open row to follow: its rows open a sheet instead. */
+const NO_OPEN_ROW = createOpenRow();
+
 export function QualifierDetailPhone({
   data,
   stale,
@@ -155,6 +159,13 @@ export function QualifierDetailPhone({
       {data.selectionState === 'selected' && (
         <SectionBoundary surface="qualifiers.selections" label="Squad" code="CH-09214">
           <Selections data={data} status={status} topScore={topScore} />
+        </SectionBoundary>
+      )}
+
+      {/* A player's own rounds, shown off above the board (owner, 2026-10-16); a coach opens anyone's from their row. */}
+      {data.role !== 'coach' && (
+        <SectionBoundary surface="qualifiers.player-rounds" label="Your rounds" code="CH-09216">
+          <ShowcaseRounds data={data} openRow={NO_OPEN_ROW} ownOnly />
         </SectionBoundary>
       )}
 
