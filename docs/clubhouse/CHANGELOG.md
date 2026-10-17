@@ -1,5 +1,14 @@
 # Clubhouse changelog
 
+## 2026-10-16 — The chosen segment of every switcher is a lit green chip
+
+Owner, 2026-10-16: green, with more depth. Every segmented switcher now draws its chosen segment the same way: a green
+chip lifted off its well, with the light on its top edge, a contact shadow and a soft one under it, and ivory ink with
+a hairline of shadow under the letters (`controls.css` `.ch-seg`, from the new `--ch-seg-on-bg`, `--ch-seg-on-shadow`
+and `--ch-seg-on-ink` in `tokens.css`, with a dark-mode shadow). Home, Roster, Calendar, Messages and Rounds had
+their own greens or an ivory raised chip; those rules are gone and the pages use the shared one. Phone and desktop
+alike. Checked in Chrome (Stats, Roster, Messages, light and dark); not in Safari, and not on an iPhone.
+
 ## 2026-10-16 — One material for every desktop window; smooth wheel and no scrollbars everywhere
 
 Owner, 2026-10-16 ("more premium and add same blur"; the course picker "still looks vibe coded"; "get rid of the shimmer").

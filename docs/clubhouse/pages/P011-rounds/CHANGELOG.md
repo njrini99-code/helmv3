@@ -1,5 +1,13 @@
 # P011 — Rounds: changelog
 
+## 2026-10-16 — Round type, holes and the track strip take the shared green chip
+
+The chosen Round type and Holes in setup, and the chosen chip in the track strip, are the lit green chip every switcher
+draws (`rounds-setup.css`, `rounds-track.css`). The window-only light-track version of the Holes choice in Add a course
+is gone with it, so the window and the page match. Add a course's photo refusal is drawn in warning amber, not danger
+red: nothing is lost by it, and the red-token rule (D-42) reserves red for under par, the flag and destructive actions.
+Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — The course picker and Add a course, rebuilt
 
 Owner, 2026-10-16, across the day: "wider than tall", "Claude and ChatGPT and Apple level", "it still looks vibe
@@ -40,8 +48,7 @@ Held items:     none
   `useNewRoundSession`): only a course typed by hand and saved carries it. After `contributeCourseFromRound`
   resolves the library course, the start uploads the photo and sets it as the course's image only when the course
   has none, not awaited and best-effort: a photo never blocks or undoes a started round.
-- The photo's refusal message is `.ch-acs__photo-error` (it was `-issue`, which the red-token gate could not read as
-  an error); no visible change.
+- The photo's refusal message is `.ch-acs__photo-error`, in warning amber (see the segmented-switcher entry above).
 
 ### Why
 
@@ -58,8 +65,10 @@ Held items:     none
   and listed in VERIFY.md. The fixture's courses carry no photo, so the captures show the flag tiles: a photo card
   with a real photo was not captured.
 - Not verified: a real iPhone Safari pass; the photo upload end to end against a real round. Note for review: the
-  image write goes through `setCourseImageUrl` -> `updateCourse`, which is gated to coaches, so for a player the
-  write may be refused and swallowed; confirm before relying on the player's photo.
+  image write goes through `setCourseImageUrl` -> `updateCourse`, which is gated to coaches (and the database policy
+  `golf_courses_update_authenticated` refuses players too), so as this branch stands a player's photo is refused and
+  swallowed. The owner decided any golf team member may set a course's photo; the fix (a narrow RPC, `golf_set_course_image`)
+  is in progress on `agent/course-photo-members` and is to be folded into this PR. Its migration needs applying after merge.
 
 ## 2026-10-14 — The course map hydrates without a mismatch
 

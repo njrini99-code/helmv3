@@ -1,5 +1,10 @@
 # P002 — Home: changelog
 
+## 2026-10-16 — The phone's game switch takes the shared green chip
+
+The chosen segment of the phone's game switch (`.ch-ph-game`) is the lit green chip every switcher draws now, on this
+switch's tighter corner, instead of a quiet raised ivory one (`home.css`). Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-14 — The desktop head stacks on a narrow canvas
 
 - **A narrow canvas stacks the head** (home.css, `@container (max-width: 640px)`):

@@ -1,5 +1,11 @@
 # P006 — Calendar: changelog
 
+## 2026-10-16 — The attendance switch takes the shared green chip
+
+The chosen attendance choice is ivory on the shared green chip, whatever it is: amber ink on green was unreadable, so
+Late no longer draws its own colour, and Absent keeps its strike in a lighter line (`calendar.css`, `.ch-in__att`).
+Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-14 — Keyboard and focus (runtime audit A-09, A-14, A-23, A-24, A-25)
 
 WebKit audit of the desktop calendar, coach and player:

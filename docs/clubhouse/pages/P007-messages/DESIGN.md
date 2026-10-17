@@ -117,7 +117,7 @@ float over the thread; below 720px it is rail or thread, one at a time (containe
 
 ## Phone
 
-Approved spec `docs/clubhouse/phone/messages.md`: Inbox with announcements above today, a pushed
+Approved spec `docs/clubhouse/phone/messages.md`: Inbox with the announcements folded under the conversations (2026-10-16), a pushed
 Thread, pushed Details (members, mute, files), New message with group naming (D-45), the long-press
 sheet for a message's actions, and a Message actions button for VoiceOver and keyboards (CH-7804).
 

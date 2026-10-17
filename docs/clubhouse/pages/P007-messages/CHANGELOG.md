@@ -1,5 +1,18 @@
 # P007 — Messages: changelog
 
+## 2026-10-16 — Conversations first, announcements folded under them
+
+Owner, 2026-10-16: messages first. The inbox lists conversations, then the team's announcements as one raised row:
+how many there are, the newest title, and how many wait on your acknowledgement. The row opens in place to the newest
+three with a link to the earlier ones; a search or an open announcement unfolds it. On the desktop rail and the
+phone's Inbox alike (`announcements.tsx`, `MessagesView`, `MessagesPhone`, `messages.css`). The tests open the fold
+before an announcement. Checked in Chrome at desktop width, open and closed; not checked at phone width.
+
+## 2026-10-16 — The filter chips use the shared green chip
+
+All, Unread and Groups take the lit green chip every switcher draws (`messages.css`); the page's own rule is removed.
+Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — Failed server reads are logged; Delete is not lost to them
 
 From the code review of PR #2195. The route swallowed a failure of the

@@ -1,5 +1,10 @@
 # P003 — Roster: changelog
 
+## 2026-10-16 — Sort, filter and layout use the shared green chip
+
+The Roster's chosen sort, filter and grid or list toggle take the lit green chip every switcher draws (`roster.css`);
+the page's own green rules are removed. Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — Roster's figures are text until a hand is on the sort (phone)
 
 Replaces the earlier entry that made them text for the first frame only: a frame after the paint the numerals still
