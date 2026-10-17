@@ -7,7 +7,12 @@ was too thin to read at sidebar size; the owner picked Norican from twelve
 scripts compared side by side on the sidebar green. The word is 34px and the
 wheel 28px, 9px after it, in the brand's frosted panel (the open green was
 tried and the owner asked for the panel back), tinted twice as strong as
-before with a light top edge ("give pane more tint").
+before with a light top edge ("give pane more tint"). Then "fix the layout so its
+even": the panel is as wide as the nav's rows (it overhung them by 2px), the
+word and wheel are centred in it (58px of empty space sat on the right), and the
+script is lifted 3px so its ink, the wheel and the panel share one centre
+(measured in Chrome: about 13.5px above and below the ink, 31px and 33px at the
+sides).
 
 ## 2026-10-16 — The team names its own group; the brand stands alone
 

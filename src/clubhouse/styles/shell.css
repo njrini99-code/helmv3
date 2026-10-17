@@ -80,9 +80,11 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  /* Its own frosted panel (owner, 2026-10-16: "put those in a frost bar like it was before"). */
-  margin: 0 -2px 14px;
-  padding: 12px 12px 13px;
+  /* Its own frosted panel (owner, 2026-10-16: "put those in a frost bar like it was before"), as wide as the nav's
+     rows, with the word and wheel centred in it ("fix the layout so its even"). */
+  justify-content: center;
+  margin: 0 0 14px;
+  padding: 12px;
   border-radius: var(--ch-radius-lg);
   background: rgb(250 248 241 / 0.14);
   box-shadow:
@@ -3574,13 +3576,15 @@ html[data-fw-theme='dark'] .ch-offline {
 .ch-brand .ch-brand__mark {
   width: 28px;
   height: 28px;
-  margin-top: 2px;
 }
 .ch-brand__word.is-script {
   display: inline-block;
   /* Room for the script's swashes, which overhang the box the write mask clips to. */
   margin: 0 -6px -4px -2px;
   padding: 2px 6px 4px 2px;
+  /* The script's ink sits low in its box (long descenders): lift it so word, wheel and panel share one centre. */
+  position: relative;
+  top: -3px;
   font: 400 34px/1 var(--ch-font-script);
   letter-spacing: 0.005em;
   color: var(--ch-on-green-bright);
