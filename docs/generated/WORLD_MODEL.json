@@ -3745,6 +3745,10 @@
         "definedIn": "supabase/migrations/20260614020000_recruit_documents.sql"
       },
       {
+        "id": "golf_set_course_image",
+        "definedIn": "supabase/migrations/20261016220000_golf_set_course_image.sql"
+      },
+      {
         "id": "golf_team_by_join_code",
         "definedIn": "supabase/migrations/20260803120200_golf_join_code_requires_proof.sql"
       },
@@ -16805,6 +16809,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260923080000_recap_provenance_and_single_flight.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_set_course_image",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/golf/actions/course-library.ts",
+          "anchor": "golf_set_course_image"
         }
       ]
     },

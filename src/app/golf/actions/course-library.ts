@@ -1340,8 +1340,14 @@ async function setCourseDeleted(courseId: string, deleted: boolean): Promise<Res
 /**
  * Set golf_courses.image_url to a freshly-uploaded course photo. Accepts ONLY a
  * public URL we minted in our own course-images bucket (never an arbitrary
- * external URL). Goes through the audited updateCourse path (attribution +
- * edit-history).
+ * external URL).
+ *
+ * Any golf team member (coach or player) may set a course photo (owner
+ * decision 2026-10-16), so this does NOT go through updateCourse and its coach
+ * gate. It calls golf_set_course_image, a SECURITY DEFINER function that
+ * re-checks membership and the URL's course folder, updates image_url and the
+ * last-edited attribution only, and writes the edit-history row itself.
+ * golf_courses_update_authenticated is deliberately not widened.
  */
 async function setCourseImageUrlImpl(
   courseId: string,
@@ -1376,9 +1382,37 @@ async function setCourseImageUrlImpl(
     return { success: false, error: 'Invalid image URL' };
   }
 
-  const result = await updateCourse(courseId, { imageUrl });
-  if (!result.success) return { success: false, error: result.error };
+  const { error } = await supabase.rpc('golf_set_course_image', {
+    p_course_id: courseId,
+    p_image_url: imageUrl,
+  });
+  if (error) {
+    await logServerError(`setCourseImageUrl failed: ${describeError(error)}`, {
+      action: 'courseLibrary.setCourseImageUrl',
+      featureArea: 'course_library',
+      extra: { courseId, code: error.code },
+    });
+    return { success: false, error: courseImageRpcErrorMessage(error.code) };
+  }
+
+  revalidateLibrary();
   return { success: true, data: { imageUrl } };
+}
+
+/** golf_set_course_image SQLSTATEs (20261016220000) → short user message. */
+function courseImageRpcErrorMessage(code: string | undefined): string {
+  switch (code) {
+    case '28000':
+      return 'You must be logged in';
+    case '42501':
+      return 'Only members of a golf team can set a course photo';
+    case '22023':
+      return 'Invalid image URL';
+    case 'P0002':
+      return 'That course no longer exists';
+    default:
+      return 'Failed to save the course photo';
+  }
 }
 
 const observedSetCourseImageUrl = withAdminObserved(
