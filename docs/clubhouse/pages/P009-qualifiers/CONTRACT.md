@@ -30,7 +30,7 @@ and Manage selections are coach-only.
 
 Status: DEFINED
 
-Every screen opens final on first paint, read on the server in one pass. The list opens on the live qualifier as its hero, with Active and Concluded below it (90101). A qualifier opens on six facts and the leaderboard, with round-by-round scores, selections and the course per round beside it for a coach (90102). The form opens with the whole active roster ticked and sensible defaults, or prefilled when editing (90103). Manage selections opens on its three steps (90104). Every address renders in place, never as a redirect (90105, D-23). `/my-qualifiers` is the player's own list (90106); a coach is not offered it, and inside the Clubhouse frame the shell shows its not-rebuilt page there (10401). With the Clubhouse off, the selection address sends a coach to the existing CoachHelm workspace (90107).
+Every screen opens final on first paint, read on the server in one pass. The list opens on the live qualifier as its hero, with Active and Concluded below it (90101). A qualifier opens on six facts and the leaderboard, with round-by-round scores, selections and the course per round beside it for a coach (90102); its rounds, order, ties and cut are the ones the squad is confirmed from, and the Bubble sits inside the squad (WIRING.md, "Standings parity"). The form opens with the whole active roster ticked and sensible defaults, or prefilled when editing (90103). Manage selections opens on its three steps (90104). Every address renders in place, never as a redirect (90105, D-23). `/my-qualifiers` is the player's own list (90106); a coach is not offered it, and inside the Clubhouse frame the shell shows its not-rebuilt page there (10401). With the Clubhouse off, the selection address sends a coach to the existing CoachHelm workspace (90107).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -101,7 +101,7 @@ First-run and filtered are distinct, and a failed read is never drawn as empty. 
 
 Status: DEFINED
 
-Checked in the form before anything is sent. Each problem sits under its field (name, start date, end date, rounds, the one-round confirmation, players, squad size, coach's picks: 90501 to 90509), the top of the form says how many (90510), and focus moves to the first one (92001). Enter submits the form and shows the same problems (92002). The pick dialog needs a player (90512) and a reason (90511). Editing adds two rules the server also holds: a player with a round or a squad place stays entered (90513), and once the squad is confirmed its size is fixed (90514). Problems are alerts tied to their fields (91804).
+Checked in the form before anything is sent. Each problem sits under its field (name, start date, end date, rounds, the one-round confirmation, players, squad size, coach's picks: 90501 to 90509), the top of the form says how many (90510), and focus moves to the first one (92001). Enter submits the form and shows the same problems (92002). The pick dialog needs a player (90512) and a reason (90511). Editing adds two rules the server also holds: a player with a round or a squad place stays entered (90513), and once the squad is confirmed its size is fixed (90514). The form has no entry deadline field: a stored deadline is sent back unchanged while it is on or before the start date, and cleared once a new start date passes it, so 90504 never fires on a field the coach can't see (2026-10-17). Problems are alerts tied to their fields (91804).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

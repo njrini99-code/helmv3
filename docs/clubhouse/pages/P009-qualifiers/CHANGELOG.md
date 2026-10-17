@@ -1,5 +1,59 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-17 — Standings checked against production
+
+Parity pass on the standings (which rounds count, the score, ties, the cut, the lifecycle) against what production
+serves: Fairway's live leaderboard (`FairwayQualifierLeaderboard` with `useQualifierRealtime`), the selection workspace
+its confirm commits from (`loadQualifyingWorkspace`), the unused `getQualifierLeaderboard` action and
+`get_qualifier_leaderboard` function. The board already counted the workspace's rounds in the workspace's order with
+its tie at the cut; two Clubhouse differences are fixed (`screens/qualifiers/model.ts`):
+
+- **The Bubble is inside the squad.** `buildBoard` marked the first player out as Bubble too (`i <= squad`), drawn
+  below the board's own travel cut, and with no coach's picks at all, when there is no place to contend for. It is now
+  the places below the line on score down to the squad size, as Fairway's tiers and DESIGN.md have it. In production
+  data this moved one row on five qualifiers (3cf7f129, b7fdd787, 8fe2c339, ec46521b, 86dad12b) from Bubble to out.
+- **A round with no stored round number counts.** It was drawn as round 1 and then dropped as a second round 1 when
+  the player had one; the workspace counts it. No production round lacks a number today. The round-by-round grid and
+  the rounds panel still draw one round per number, so such a round would be in the total but not in its own column.
+
+The board's round shaping moved into `model.ts` (`roundOfRow`, `countsOnBoard`) and the loader reads `status` and
+`is_test` with each round and holds the same rule after the query, so the tests run the loader's own shaping.
+
+Kept, where production's live leaderboard is wrong (raised as questions; WIRING.md "Standings parity"): it numbers
+ties 1, T2 and marks a tie on to par alone, puts one of two players level at the cut in by stored order, counts test
+rounds and a completed round with no total (as 0 strokes), falls back to the stored entry aggregate, and averages
+9-hole rounds with 18-hole ones. The Bubble's ⌈rounds ÷ 2⌉ minimum (P009-C2) is the owner's and stays.
+
+Tests: `standings-parity.test.tsx` (new, beside the Fairway leaderboard because Clubhouse code may not import Fairway:
+the three real pipelines over one fake database, 18 cases), and the `qualifiers.test.tsx` standings case, whose fourth
+player of a squad of three is now out. A read-only run over every production qualifier matched the workspace on all
+19 qualifiers Clubhouse shows (score, order, cut) before and after; the 3 test qualifiers are not shown. No visual check is recorded.
+
+## 2026-10-17 — Qualifier writes checked against production
+
+Parity pass on the write paths (create, edit, close and reopen, the squad selection) against Fairway's create, edit and
+CoachHelm qualifying workspace. Every Clubhouse write calls the same shared action with the same arguments, so the
+server's revalidation, notifications, logging and entry rows are the same; no server action changed. Two Clubhouse
+differences are fixed:
+
+- **A retired entry deadline no longer blocks an edit** (`QualifierForm.tsx`, `keptDeadline`). The form has no deadline
+  field (2026-10-16), but an older qualifier can carry one, and both the form (CH-09104) and `updateGolfQualifierDetails`
+  refuse a deadline after the start. Moving the start date before a stored deadline failed on a field the coach could
+  not see. The stored deadline now rides along while it still fits and is cleared (sent as null) once the new start
+  passes it; create sends none, as before.
+- **Every refusal of the selection service has its own words** (`writes.ts`, `selectionReason`). A tie at the cut on
+  Confirm read "Choose every pick, each with a reason", and the tie-place, scored-round and pick-slot refusals were
+  unmapped or read as a roster problem. Each is mapped from the service's exact sentence; a workspace that would not
+  read now says to try again instead of "may have been deleted".
+
+Checked and unchanged (the full table is in the PR): D-61's squad and entrant edits stay held behind the flag and the
+coach dashboard role before any read; Close is offered at any stage, while Fairway only shows Conclude once the
+squad is confirmed; no recorded decision covers this, so it is left as built and raised as an open question; the squad cap of 12 is the database's
+(Fairway's field allows 50 and fails at the database).
+
+Tests: `qualifier-write-parity.test.tsx` (new: payloads of every live write, each service refusal, the deadline), and
+two `qualifiers.test.tsx` assertions that pinned the old wording. Not checked in a browser.
+
 ## 2026-10-17 — A coach on /my-qualifiers goes to Qualifiers
 
 Readiness audit (2026-10-17): "My qualifiers" is a player's screen, and a coach

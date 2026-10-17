@@ -27,6 +27,16 @@ import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
 import '../../styles/qualifiers.css';
 
 const LIST = '/golf/dashboard/qualifiers';
+
+/**
+ * The form has no entry deadline (owner, 2026-10-16: qualifiers don't have one), but an older qualifier can carry one,
+ * and both the form's check (CH-09104) and `updateGolfQualifierDetails` refuse a deadline after the start date. Moving
+ * the start before a stored deadline would then fail on a field the coach can't see or change. So a stored deadline
+ * rides along unchanged while it still fits, and is cleared once the new start date passes it.
+ */
+export function keptDeadline(v: Pick<ChQFormValues, 'entryDeadline' | 'startDate'>): string {
+  return v.entryDeadline && v.startDate && v.entryDeadline > v.startDate ? '' : v.entryDeadline;
+}
 const FIELD_ID: Record<ChQField, string> = {
   name: 'qf-name',
   startDate: 'qf-start',
@@ -56,7 +66,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
   // What a failed edit save did and didn't save. The toast is brief; this stays until the next save.
   const [saveNote, setSaveNote] = useState<string | null>(null);
 
-  const problems = useMemo(() => (tried ? validateForm(v, { minRounds: data.minRounds }) : []), [tried, v, data.minRounds]);
+  const checked = useMemo(() => ({ ...v, entryDeadline: keptDeadline(v) }), [v]);
+  const problems = useMemo(() => (tried ? validateForm(checked, { minRounds: data.minRounds }) : []), [tried, checked, data.minRounds]);
   const problemOf = (f: ChQField): ChQProblem | undefined => problems.find((p) => p.field === f);
   const set = <K extends keyof ChQFormValues>(k: K, value: ChQFormValues[K]) => setV((cur) => ({ ...cur, [k]: value }));
   const rounds = /^\d+$/.test(v.rounds) ? Math.min(Number(v.rounds), 50) : 0;
@@ -80,7 +91,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
         name: v.name.trim(),
         description: v.description.trim() || undefined,
         courseName: v.course.trim() || undefined,
-        entryDeadline: v.entryDeadline || undefined,
+        entryDeadline: keptDeadline(v) || undefined,
         rules: v.rules.trim() || undefined,
         startDate: v.startDate,
         endDate: v.endDate || undefined,
@@ -114,7 +125,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           description: v.description.trim() || null,
           courseName: v.course.trim() || null,
           rules: v.rules.trim() || null,
-          entryDeadline: v.entryDeadline || null,
+          entryDeadline: keptDeadline(v) || null,
           startDate: v.startDate,
           endDate: v.endDate || null,
         },
@@ -155,7 +166,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
   const submit = async () => {
     setTried(true);
     chTrail(editing ? 'qualifiers save' : 'qualifiers create');
-    const found = validateForm(v, { minRounds: data.minRounds });
+    const found = validateForm(checked, { minRounds: data.minRounds });
     if (found.length) {
       const first = FIELD_ORDER.find((f) => found.some((p) => p.field === f));
       if (first) document.getElementById(FIELD_ID[first])?.focus();

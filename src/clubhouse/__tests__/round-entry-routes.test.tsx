@@ -361,12 +361,18 @@ describe('Round entry: setup over the course library and the engine (ChSetupPort
     const q = (id: string, over = {}) => ({ id, name: `Q ${id}`, status: 'in_progress', numRounds: 3, roundsCompleted: 0, courseName: 'Finley GC', ...over });
     mocks.getPlayerQualifiers.mockResolvedValue({ success: true, data: [q('open'), q('closed', { status: 'completed' }), q('full', { roundsCompleted: 3 }), q('active'), q('gone')] });
     mocks.getNextQualifierRoundNumber.mockImplementation(async (id: string) =>
-      id === 'active' ? { success: true, data: { nextRoundNumber: 1, availableRounds: [1], activeRoundId: 'r-9' } } : id === 'gone' ? { success: false, error: 'x' } : { success: true, data: { nextRoundNumber: 2, availableRounds: [2, 3] } },
+      id === 'active'
+        ? { success: true, data: { nextRoundNumber: 1, availableRounds: [1], activeRoundId: 'r-9' } }
+        : id === 'gone'
+          ? { success: false, error: 'x' }
+          : id === 'full'
+            ? { success: false, code: 'qualifier_round_limit_reached', error: 'This qualifier is still open, but your coach configured 3 rounds.' }
+            : { success: true, data: { nextRoundNumber: 2, availableRounds: [2, 3] } },
     );
     const list = (await loadSetupQualifiers())!;
     expect(list.map((x) => x.id)).toEqual(['open', 'full', 'active', 'gone']);
     expect(list[0]).toMatchObject({ nextRound: 2, rounds: 3, completed: 0, blocked: null, courseName: 'Finley GC', teeId: null });
-    expect(list[1]).toMatchObject({ nextRound: null, blocked: 'All 3 rounds are in; your coach is selecting.' });
+    expect(list[1]).toMatchObject({ nextRound: null, blocked: 'All 3 rounds are in. Ask your coach to add a round if you need another.' });
     expect(list[2]).toMatchObject({ nextRound: null, blocked: 'A round is already in progress. Continue it from Rounds.' });
     expect(list[3]!.nextRound).toBeNull();
     mocks.getPlayerQualifiers.mockResolvedValue({ success: false, error: 'nope' });

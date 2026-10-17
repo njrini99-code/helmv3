@@ -50,5 +50,5 @@ export async function ClubhouseRoundReviewRoute({ id }: { id: string }) {
       </main>
     );
   }
-  return <RoundReview review={result.review} />;
+  return <RoundReview review={result.review} typeEdit={result.typeEdit} />;
 }

@@ -203,6 +203,8 @@ describe('Calendar · new event deep link', () => {
 });
 
 describe('Calendar · saves that fail', () => {
+  // Two replies below freeze the clock to the sample's day; nothing after them runs on it.
+  afterEach(() => vi.useRealTimers());
   it('CH-6101 CH-6001 61202 a new event needs a title; a failed publish keeps the editor with everything as typed', async () => {
     const user = userEvent.setup();
     a.createGolfEvent.mockImplementation(fail);
@@ -630,6 +632,8 @@ describe('Calendar · saves that fail', () => {
   });
 
   it('CH-6010 a player reply that fails goes back to what it was', async () => {
+    // The reply is offered only before the meeting (Sat 17, 1 PM): on the sample's own day, never the real clock's.
+    freezeClock();
     const user = userEvent.setup();
     a.respondToEvent.mockImplementation(fail);
     wrap(PREVIEW_CALENDAR_PLAYER, { initialEvent: 'e13' });
@@ -639,6 +643,8 @@ describe('Calendar · saves that fail', () => {
   });
 
   it('CH-6010 a player reply lost on the network (the send throws) goes back too, never left showing as sent', async () => {
+    // The reply is offered only before the meeting (Sat 17, 1 PM): on the sample's own day, never the real clock's.
+    freezeClock();
     const user = userEvent.setup();
     a.respondToEvent.mockRejectedValueOnce(new Error('Failed to fetch'));
     wrap(PREVIEW_CALENDAR_PLAYER, { initialEvent: 'e13' });

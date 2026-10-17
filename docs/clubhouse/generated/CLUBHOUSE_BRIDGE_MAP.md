@@ -114,7 +114,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P008 | 2 | 1 | 3 | 6 | 15 | 41 | 2 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 131 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 134 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
-| P011 | 15 | 12 |  | 17 | 11 | 39 | 14 | 5 | 2 |  | 21 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 178 |
+| P011 | 15 | 12 |  | 17 | 11 | 39 | 14 | 5 | 2 |  | 22 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 179 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 37 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 157 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
@@ -1152,7 +1152,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110414 | CH-11313 | 04 Empty | `A_ROUND_WITH_NO_STROKES_GAINED` | implemented | A round with no strokes gained (posted without shots) |
 | 110415 | CH-11314 | 04 Empty | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | implemented | Nothing on this device to recover |
 | 110416 | CH-11315 | 04 Empty | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | implemented | Completed rounds with no score at all (no total and no nines) |
-| 110417 | CH-11316 | 04 Empty | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | implemented | Change round type: the player is in no qualifier |
+| 110417 | CH-11316 | 04 Empty | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | implemented | Change round type: there is no qualifier to choose |
 | 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
 | 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
 | 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |
@@ -1201,8 +1201,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110635 | CH-11216 | 06 Server / system error | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | implemented | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
 | 110636 | CH-11217 | 06 Server / system error | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | implemented | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
 | 110637 | CH-11213 | 06 Server / system error | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | implemented | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
-| 110638 | CH-11020 | 06 Server / system error | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | implemented | Changing a live round's type fails (Continue round) |
-| 110639 | CH-11218 | 06 Server / system error | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | implemented | Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load |
+| 110638 | CH-11020 | 06 Server / system error | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | implemented | Changing a round's type fails (Continue round, or a submitted round's review, CH-11522) |
+| 110639 | CH-11218 | 06 Server / system error | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | implemented | Change round type: the player's qualifier entries (or the slots their rounds hold, or, for a coach on a review, the team's qualifiers) didn't load |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 110702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard and the hole's Try again are not, so this stays reserved. The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | 07 Network / offline | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | implemented | The round changed on another device and this one stopped saving |
@@ -1244,7 +1244,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111118 | CH-11518 | 11 Destructive | `A_SAVED_QUALIFIER_ROUND_WITH_NO_ROUND` | implemented | A saved qualifier round with no round number (it predates the durable number) is finished and submitted |
 | 111119 | CH-11519 | 11 Destructive | `THE_SAME_AND_NO_ROUND_IS_LEFT` | implemented | The same, and no round is left to choose |
 | 111120 | CH-11520 | 11 Destructive | `DISCARD_ON_A_SAVED_ROUND` | implemented | Discard on a saved round (Recover) |
-| 111121 | CH-11521 | 11 Destructive | `CHANGE_ROUND_TYPE` | implemented | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward.") |
+| 111121 | CH-11521 | 11 Destructive | `CHANGE_ROUND_TYPE` | implemented | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward."; a submitted round: its review's Change round type, CH-11522) |
+| 111122 | CH-11522 | 11 Destructive | `CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS` | implemented | Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`) |
 | 111201 |  | 12 State preservation | `SETUP_KEPT_WHEN_START_FAILS` | reserved | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Read in this pass: the CH-11007 test proves that Retry opens the round, not that every field is kept, so no test covers this. |
 | 111202 |  | 12 State preservation | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | reserved | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). The test forces the failure and the retry, not the kept shots, so no test covers this. |
 | 111301 |  | 13 Optimistic UI | `DISCARD_WAITS_FOR_THE_SERVER` | implemented | Nothing on the library is optimistic: Discard keeps the card until the server has deleted the round, and the card leaves only on success, from the question or from Retry. The device's emergency copy is cleared only when the delete worked. |

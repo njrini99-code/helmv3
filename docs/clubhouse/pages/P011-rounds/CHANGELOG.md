@@ -1,5 +1,50 @@
 # P011 — Rounds: changelog
 
+## 2026-10-17 — Change a submitted round's type from its review; qualifier rounds checked against production
+
+Parity pass on how a round becomes a qualifier round, against Fairway's new-round setup, its continue editor and its
+round page (`RoundTypeEditor`), and the live `reclassify_golf_round` and `submit_round_atomic`.
+
+```text
+Design package: none (no board); the review's control is the existing Change round type sheet (CH-11521)
+PR/commit:      agent/course-picker-premium-pr (see the PR)
+Contract IDs:   111122 (CH-11522, new); 111121, 110638, 110639, 110417 (copy widened)
+Actions:        ACT-P011-REVIEW-CHANGE-ROUND-TYPE (new), on the existing updateRoundType
+Data impact:    none new; a coach's save inserts the player's golf_qualifier_entries row, as on Fairway
+Held items:     none
+```
+
+### Changed
+
+- **A submitted round's type can be changed from its review** (CH-11522, `RoundReview.tsx` `ChangeRoundType`). Fairway's
+  round page has had this since 2026-08-19 (the coach's report of players who tapped Practice for a qualifier round);
+  the Clubhouse review had no way to do it. The rules are Fairway's: the owning player and a coach of the player's team;
+  the player's entered qualifiers, finished ones included; for a coach, the round's team's other qualifiers too (test
+  ones left out), marked "Not entered yet. Saving enters the player in it.", and `updateRoundType` enters them. Taken
+  slots are shown and not offered. The options are read beside the holes (`data/rounds-type-options.ts`); any of the
+  reads failing is "didn't load" (CH-11218), never a shorter list.
+- **The sheet's words follow the viewer and the round** (`RoundTypeSheet.tsx`, `round-type.ts`). A coach with no team
+  qualifier is told to create one, not to ask a coach (CH-11316); a coach's permission refusal is worded for a coach
+  (CH-11020); the toast says when the save entered the player. On a live round a closed qualifier now says "Closed. It
+  has to be reopened before this round can be submitted.": the live `submit_round_atomic` still refuses a completed
+  qualifier, though `round-submit.ts`'s comment says that check was removed, so the old "Adding this round changes its
+  final standings" was only true of a submitted round.
+- **Setup asks the server about every open qualifier** (`setup-reads.ts`). A qualifier whose entry count said "all
+  rounds in" was blocked without asking, and any refusal read "Try again in a moment". Now the server's next round
+  decides, as on Fairway, and its definitive refusals are said as such (every round in, more than one saved round, no
+  longer entered, gone, `qualifierBlockedReason`); only a failed read says to try again.
+
+Unchanged after the check: the new-round payload (the engine's `start(form)` with the qualifier and its round, or none
+for practice and tournament), the device's day for the date, the in-progress round that opens instead of starting,
+and Continue's options (the player's entered qualifiers).
+
+### Verification
+
+round-type-review.test (new: the options for both viewers, the coach's non-entered qualifier and the payload of its
+save, the loader for both viewers, CH-11316, CH-11020, the live-round hint, the setup's refusals), round-entry-routes
+(CH-11211 follows the server rule), and the action's own `round-type.test.ts` for the coach entering the player. Not
+checked in a browser or on a device; no screenshots.
+
 ## 2026-10-17 — A coach on /rounds goes to Team stats
 
 Readiness audit (2026-10-17): a coach on `/golf/dashboard/rounds` stood on

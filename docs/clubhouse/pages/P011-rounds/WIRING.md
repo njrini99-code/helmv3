@@ -40,7 +40,8 @@ Clubhouse route adapter: src/clubhouse/routes/round-review.tsx ClubhouseRoundRev
                          or the coach's active team; no viewer is the same "not here" page; a round in progress redirects
                          to /rounds/continue/[id]; CH-11307 is the not-here page)
 Server loader:           src/clubhouse/data/round-review.ts loadRoundReview (pure steps in data/round-review-shape.ts; logs
-                         through chLogServer('rounds.review', …))
+                         through chLogServer('rounds.review', …)); the round-type options beside it
+                         (data/rounds-type-options.ts readRoundTypeOptions, CH-11522)
 Screen:                  src/clubhouse/screens/rounds/RoundReview.tsx (ReviewNine, HoleCard) and ReviewLoadFailed.tsx (CH-11206)
 Skeleton:                RoundReviewSkeleton from rounds/[id]/loading.tsx through ClubhouseSwitch (110206; corrected 2026-10-17)
 Route error:             rounds/[id]/error.tsx (the shared RouteErrorBoundary; Clubhouse's view inside the shell)
@@ -188,6 +189,7 @@ a Retry in round entry runs it against the round as it is now (111404).
 | ACT-P011-DISCARD-ROUND | Discard round in the Exit sheet (asks again) and the closed-qualifier sheet | `discard.run` (useAction `rounds.discardRound`) -> `handleDeleteRound` / `handleSubmitDiscard` | `deleteInProgressRound` | golf_rounds (holes and shots cascade), the device's emergency copy | asks CH-11507 · failed CH-11006 (inline in Exit) or CH-11011 (toast, sheet closed) · Retry 111404 |
 | ACT-P011-SAVE-AS-PRACTICE | Change to practice on a closed qualifier | `practice.run` (useAction `rounds.saveAsPractice`) -> `handleSaveAsPractice` | `updateRoundType` | golf_rounds (round_type, qualifier link) | failed CH-11012 (inline) · Retry 111404 |
 | ACT-P011-CHANGE-ROUND-TYPE | Continue round: Exit › Change round type, then Practice / Tournament / Qualifier (which one, which round) and Save | `changeType.run` (useAction `rounds.changeType`, the engine's `offline`) in `ContinueRound`, then `router.refresh` in a transition; auto-save is held while the sheet is open and until the refreshed setup arrives, and the engine's qualifier round number is set to the new one | `updateRoundType`; options from `loadRoundTypeOptions` (`routes/round-continue.tsx`: the player's `golf_qualifier_entries`, and the slots their other non-abandoned rounds hold) | golf_rounds (round_type, qualifier_id, qualifier_round_number); golf_qualifier_entries, golf_rounds (read) | sheet 111121 · in flight 110212 · failed 110638 (CH-11020, permission and inactive-member copy) · didn't load 110639 · no qualifier 110417 · every round held 110511 · offline CH-1903 · Retry 111404 |
+| ACT-P011-REVIEW-CHANGE-ROUND-TYPE | Review of a submitted round: Change round type (the owning player, or a coach of the player's team), then Practice / Tournament / Qualifier (which one, which round) and Save | `change.run` (useAction `rounds.review.changeType`) in `RoundReview`'s `ChangeRoundType`, then `router.refresh` | `updateRoundType` (a coach's save inserts the player's `golf_qualifier_entries` row first, as on Fairway); options from `loadRoundReview` -> `readRoundTypeOptions` (`data/rounds-type-options.ts`: the player's entries, for a coach the round's team's non-test qualifiers, and the slots the player's other non-abandoned rounds hold) | golf_rounds (round_type, qualifier_id, qualifier_round_number, via `reclassify_golf_round`); golf_qualifier_entries (read; insert on a coach's save); golf_qualifiers (read) | button 111122 · sheet 111121 · in flight 110212 · failed 110638 (CH-11020, coach and player copy) · didn't load 110639 · no qualifier 110417 · every round held 110511 · Retry 111404 |
 | ACT-P011-SUBMIT-ROUND | Submit on Round complete, and Retry on the Submitting overlay | `RoundCompleteSheet` onSubmit -> `handleRoundSubmit` (new) / `requestRoundSubmission` (continue, which asks the qualifier round number first) | `submitGolfRoundComprehensive` | golf_rounds, golf_holes, golf_shots, the player stats cache | posted 110902 · failed CH-11005 · Try again 111403 · slow CH-11909 · saved on the device CH-11905 |
 
 ### Controls inside round entry (not registered)
@@ -315,9 +317,11 @@ approved (Q-72f).
   CH-11520). The Library does not link to it. Fairway's recovery is ported, not moved: `FairwayRecoverRound`'s tests
   pin its source, so the two share the lower layers (`round-missing-recovery`, the emergency save, the stores) and
   not the scan, which is duplicated until Fairway is retired.
-- Continue's page skips the Fairway round-type editor and its qualifier reads for a Clubhouse player, so a
-  round's type cannot be retyped mid-round there; Change to practice on a closed qualifier is the one retype
-  (also proposed as a question).
+- Continue's page skips the Fairway round-type editor and its qualifier reads for a Clubhouse player; Clubhouse's
+  own sheet (CH-11521) reads its options in the route (`loadRoundTypeOptions`). A submitted round is re-typed from its
+  review (CH-11522, 2026-10-17), with the Fairway round page's rules; the review's loader reads the options beside the
+  holes (`readRoundTypeOptions`): its entries (and, for a coach, the team's qualifiers) ride in the holes' wave, and
+  only the taken-slot read follows, when there is a qualifier to offer (`rounds-reads.test.ts`).
 - The entry routes' `error.tsx` files are still the shared Fairway `RouteErrorBoundary`.
 - Strokes gained on the review (2026-09-30): `loadRoundReview` also selects the round's five
   `strokes_gained_*` columns and reads `golf_teams.gender` for the viewer's team (a player viewer carries an

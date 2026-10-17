@@ -1069,6 +1069,11 @@ a.ch-rd-sc:focus-visible {
   background: linear-gradient(180deg, var(--ch-ivory-25), #f6f9f6);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.14);
 }
+/* CH-11522: Change round type, under the figures, on the page's own ground (the hero's colour changes by layout). */
+.ch-rv-type {
+  display: flex;
+  justify-content: flex-end;
+}
 .ch-rv-figs > div {
   padding: 0 18px;
   display: flex;

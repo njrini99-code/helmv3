@@ -170,6 +170,33 @@ Ownership:  the list reads `team_id = the viewer's team`; the detail, form and s
             qualifier's team_id with the viewer's and answer "not found" otherwise (90805)
 ```
 
+### Standings parity (2026-10-17)
+
+The board's rounds are `golf_rounds` linked by `qualifier_id` (never by date), `status = 'completed'`, `is_test = false`,
+with a total and a to-par, for entered players only; a second round in one numbered slot counts once (the first by id),
+a round with no number always counts. `model.ts` `countsOnBoard` and `roundOfRow` hold the rule; `readRounds` filters
+the query on it and again after it. Order is `ranking.ts` (to par, strokes, more rounds, name); ties on to par and
+strokes share a T position; players level across the last place on score are "Tie at cut" (Q-114); the Bubble is the
+places below the line on score down to the squad size, with at least ⌈rounds ÷ 2⌉ rounds in (P009-C2). Status is the
+stored column; only the first round moves upcoming to live, and only the coach closes.
+
+Against production (`src/components/fairway/pages/qualifiers/__tests__/standings-parity.test.tsx` runs all three):
+
+| Behaviour | Selection workspace (confirm) | Fairway live leaderboard | Clubhouse |
+| --- | --- | --- | --- |
+| Rounds counted | completed, not test, total and to-par | completed, any `is_test`, a null total as 0 strokes | as the workspace |
+| No completed round | unscored | the stored entry aggregate | unscored |
+| Same slot twice / no number | first by id / counts | both / counts | as the workspace |
+| Order | to par, strokes, rounds, name | to par, strokes, stored position | as the workspace |
+| Tie label | none (rank 1..n) | 1, T2; T on to par alone | T2, T2 on to par and strokes |
+| Level at the cut | tie, the coach gives the place | first by stored order is in | tie |
+| Bubble | none | below the line, inside the squad | below the line, inside the squad, ⌈rounds ÷ 2⌉ rounds in |
+| Average | none | every round | 18-hole rounds only |
+| A pick saved before confirm | the pick leaves the places on score; the next player takes one | not read until confirm | not read until confirm (a player cannot read selections before it) |
+
+`get_qualifier_leaderboard` and the `getQualifierLeaderboard` action have no caller in the app; the function orders by
+strokes, not to par, and counts test rounds.
+
 ## Held dependencies
 
 - `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` (built, held behind the Clubhouse gate, D-61)
@@ -180,7 +207,11 @@ Ownership:  the list reads `team_id = the viewer's team`; the detail, form and s
 - The five server actions in `golf.ts` and the four in `v3/qualifying.ts` are shared. Fairway's Qualifiers and the
   CoachHelm qualifying workspace call them too, so a change to their wording or result shape changes both UIs;
   `selectionReason` maps their refusal strings to sentences and falls back to the toast's own hint for a string it
-  does not know.
+  does not know. Its cases are written from `lib/coachhelm/v3/qualifying/service.ts`'s exact sentences
+  (`qualifier-write-parity.test.tsx`), the specific ones before the general "cannot confirm" and "could not verify";
+  a reworded service refusal falls back to the hint until a case follows it.
+- Edit sends `entryDeadline` back from the stored value (`keptDeadline`): unchanged while it is on or before the
+  start date, null once a new start date passes it (the form has no deadline field).
 - Manage selections reads through `loadQualifyingWorkspace`, the loader the confirm itself uses, so the squad
   shown is the squad committed. It reads `golf_qualifiers` twice (ownership, then the workspace).
 - `createGolfQualifier` is not atomic: it inserts the qualifier, then the round courses, then the entries. If the

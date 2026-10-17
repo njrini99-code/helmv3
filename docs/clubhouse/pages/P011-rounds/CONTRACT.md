@@ -116,7 +116,7 @@ empty (110413). A test covers 110413.
 | 110414 | CH-11313 | `A_ROUND_WITH_NO_STROKES_GAINED` | A round with no strokes gained (posted without shots) |
 | 110415 | CH-11314 | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | Nothing on this device to recover |
 | 110416 | CH-11315 | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | Completed rounds with no score at all (no total and no nines) |
-| 110417 | CH-11316 | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | Change round type: the player is in no qualifier |
+| 110417 | CH-11316 | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | Change round type: there is no qualifier to choose |
 
 ## 05 — Validation
 
@@ -197,8 +197,8 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 | 110635 | CH-11216 | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
 | 110636 | CH-11217 | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
 | 110637 | CH-11213 | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
-| 110638 | CH-11020 | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | Changing a live round's type fails (Continue round) |
-| 110639 | CH-11218 | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load |
+| 110638 | CH-11020 | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | Changing a round's type fails (Continue round, or a submitted round's review, CH-11522) |
+| 110639 | CH-11218 | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | Change round type: the player's qualifier entries (or the slots their rounds hold, or, for a coach on a review, the team's qualifiers) didn't load |
 
 ## 07 — Network / offline
 
@@ -326,7 +326,8 @@ unchanged when the flag is off.
 | 111118 | CH-11518 | `A_SAVED_QUALIFIER_ROUND_WITH_NO_ROUND` | A saved qualifier round with no round number (it predates the durable number) is finished and submitted |
 | 111119 | CH-11519 | `THE_SAME_AND_NO_ROUND_IS_LEFT` | The same, and no round is left to choose |
 | 111120 | CH-11520 | `DISCARD_ON_A_SAVED_ROUND` | Discard on a saved round (Recover) |
-| 111121 | CH-11521 | `CHANGE_ROUND_TYPE` | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward.") |
+| 111121 | CH-11521 | `CHANGE_ROUND_TYPE` | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward."; a submitted round: its review's Change round type, CH-11522) |
+| 111122 | CH-11522 | `CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS` | Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`) |
 
 ## 12 — State preservation
 

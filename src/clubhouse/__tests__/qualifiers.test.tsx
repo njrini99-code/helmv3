@@ -179,8 +179,9 @@ describe('Qualifiers · the standings model', () => {
       ['e', 5, false],
     ]);
     // Two places on score (3 places, 1 pick). B and C are level at the second place, so they share a tie at the cut
-    // until the coach chooses (Q-114); D is on the bubble; the rest are out.
-    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', 'bubble', null]);
+    // until the coach chooses (Q-114). D is fourth of a squad of three, below the travel cut, so D is out, not on the
+    // Bubble: the Bubble is inside the squad (DESIGN.md, production's tiers; the parity fix of 2026-10-17).
+    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', null, null]);
     expect(b.submitted).toBe(6);
   });
   it('averages full rounds only, and counts the shorter ones it left out', () => {
@@ -2311,10 +2312,10 @@ describe('Qualifiers · Manage selections', () => {
     expect(selectionReason('reasoning required for coach-pick')).toBe('Say why you picked this player.');
     expect(selectionReason('That player is not on this team')).toBe('That player isn’t on this team.');
     expect(selectionReason("Couldn't confirm your roster just now. Please try again.")).toBe('The roster couldn’t be checked just now. Try again.');
-    expect(selectionReason('could not verify remaining coach-pick slots; please try again')).toBe('The roster couldn’t be checked just now. Try again.');
+    expect(selectionReason('could not verify remaining coach-pick slots; please try again')).toBe('The picks already made couldn’t be checked just now. Try again.');
     expect(selectionReason('cannot confirm: state must be closed, all coach picks chosen with reasoning')).toBe('Choose every pick, each with a reason, before confirming.');
     expect(selectionReason('Qualifier not found')).toMatch(/couldn’t be found/);
-    expect(selectionReason('workspace not loadable')).toMatch(/couldn’t be found/);
+    expect(selectionReason('workspace not loadable')).toMatch(/couldn’t be read just now/);
     expect(selectionReason(undefined)).toBeNull();
   });
 

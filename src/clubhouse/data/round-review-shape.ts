@@ -1,5 +1,7 @@
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import type { ChSgTour } from '../lib/sg';
+import type { EditableRoundType } from '@/lib/golf/round-type-options';
+import type { ChRoundTypeCurrent, ChRoundTypeOptions, ChRoundTypeViewer } from '../screens/rounds/entry/round-type';
 import { roundType, teeColorFor, teeLabel, type ChRoundType, type ChTeeColor } from './rounds-shape';
 
 /**
@@ -97,6 +99,22 @@ export interface ChRoundReview {
   playerError?: boolean;
   /** The team's read failed: which Tour the strokes gained is measured against is unknown, and the card says so (no team at all is not this). */
   tourError?: boolean;
+}
+
+/**
+ * Changing a submitted round's type from its review (CH-11522): what it counts as now, what it can change to, and who
+ * is asking. The owning player and a coach of the player's team may (the Fairway round page's `canChangeType`).
+ */
+export interface ChReviewTypeEdit {
+  viewer: ChRoundTypeViewer;
+  current: ChRoundTypeCurrent;
+  options: ChRoundTypeOptions;
+}
+
+/** What a submitted round counts as now, from its row. A type outside the three editable ones reads as practice, as the Fairway editor reads it. */
+export function currentRoundType(r: { round_type: string | null; qualifier_id?: string | null; qualifier_round_number?: number | null }): ChRoundTypeCurrent {
+  const type: EditableRoundType = roundType(r.round_type) ?? 'practice';
+  return { type, qualifierId: type === 'qualifier' ? (r.qualifier_id ?? null) : null, roundNumber: type === 'qualifier' ? (r.qualifier_round_number ?? null) : null };
 }
 
 export type ChDistribution = Array<{ label: 'Eagle+' | 'Birdie' | 'Par' | 'Bogey' | 'Double+'; count: number }>;
@@ -221,6 +239,10 @@ export type ChReviewRoundRow = {
   strokes_gained_approach: number | null;
   strokes_gained_around_green: number | null;
   strokes_gained_putting: number | null;
+  /** Read for the round-type change (CH-11522); absent in older fixtures. */
+  team_id?: string | null;
+  qualifier_id?: string | null;
+  qualifier_round_number?: number | null;
 };
 
 /** The round's strokes gained; null when none of the five values is there. */

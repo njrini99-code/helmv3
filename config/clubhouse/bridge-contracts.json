@@ -11270,7 +11270,7 @@
     "item": 17,
     "name": "CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN",
     "chCode": "CH-11316",
-    "meaning": "Change round type: the player is in no qualifier",
+    "meaning": "Change round type: there is no qualifier to choose",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -11814,7 +11814,7 @@
     "item": 38,
     "name": "CHANGING_A_LIVE_ROUNDS_TYPE_FAILS",
     "chCode": "CH-11020",
-    "meaning": "Changing a live round's type fails (Continue round)",
+    "meaning": "Changing a round's type fails (Continue round, or a submitted round's review, CH-11522)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -11825,7 +11825,7 @@
     "item": 39,
     "name": "CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES",
     "chCode": "CH-11218",
-    "meaning": "Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load",
+    "meaning": "Change round type: the player's qualifier entries (or the slots their rounds hold, or, for a coach on a review, the team's qualifiers) didn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -12296,7 +12296,18 @@
     "item": 21,
     "name": "CHANGE_ROUND_TYPE",
     "chCode": "CH-11521",
-    "meaning": "Change round type (Continue round: the Exit sheet's \"Change round type\" row, \"Practice now. Changes what it counts toward.\")",
+    "meaning": "Change round type (Continue round: the Exit sheet's \"Change round type\" row, \"Practice now. Changes what it counts toward.\"; a submitted round: its review's Change round type, CH-11522)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111122,
+    "page": "P011",
+    "category": 11,
+    "item": 22,
+    "name": "CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS",
+    "chCode": "CH-11522",
+    "meaning": "Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
