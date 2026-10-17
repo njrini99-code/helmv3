@@ -3707,3 +3707,255 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     content: none;
   }
 }
+
+/* -- The folding sidebar (owner, 2026-10-17: "a little circle that collapses the sidebar and just shows the golfhelm
+   logo and all the icons") --------------------------------------------------------------------------------------------
+   The rail is the sidebar at --ch-rail-w; the canvas is the rest of the row, so the page simply gains the width. One
+   motion carries it: the sidebar's edge, the circle riding it, the word's track and the brand panel all move on the
+   smooth spring, so the edge slides and the wheel glides to the rail's centre as one object. The icons never move: the
+   rail is exactly as wide as the icons' column. The words leave first and arrive last: folding, they fade out quickly
+   before the edge reaches them; opening, they fade in once the edge has passed, drifting the last 4px into place, so
+   no label is ever seen squeezed. Reduced motion and Animations off swap at once (the tokens go to 0). Desktop only. */
+@media (min-width: 821px) {
+  .ch-app {
+    position: relative;
+  }
+  .ch-app[data-ch-rail='folded'] {
+    --ch-sidebar-w: var(--ch-rail-w);
+  }
+  .ch-sidebar {
+    overflow-x: hidden;
+    transition: width var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+
+  /* The circle on the seam, level with the brand panel's centre. */
+  .ch-railtoggle {
+    position: absolute;
+    top: 33px;
+    left: calc(env(safe-area-inset-left, 0px) + var(--ch-sidebar-w) - 11px);
+    z-index: var(--ch-z-sticky);
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--ch-nav-well-bg);
+    color: var(--ch-green-700);
+    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25), 0 4px 10px -4px rgb(0 0 0 / 0.4),
+      inset 0 1px 0 #fff;
+    cursor: pointer;
+    transition: left var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+      transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-railtoggle svg {
+    transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  .ch-app[data-ch-rail='folded'] .ch-railtoggle svg {
+    transform: rotate(180deg);
+  }
+  @media (hover: hover) {
+    .ch-railtoggle:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 4px rgb(0 0 0 / 0.25), 0 8px 16px -6px rgb(0 0 0 / 0.45),
+        inset 0 1px 0 #fff;
+    }
+  }
+  .ch-railtoggle:active {
+    transform: scale(0.94);
+    transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
+  }
+  .ch-railtoggle:focus-visible {
+    outline: 2px solid var(--ch-champagne-300);
+    outline-offset: 2px;
+  }
+
+  /* The brand: the word's track closes to nothing (a grid column from 1fr to 0fr), the gap with it, and the panel
+     tightens to the wheel, so the wheel ends at the rail's centre. */
+  .ch-brand {
+    transition: margin var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+      padding var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  .ch-brand__line {
+    transition: gap var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  .ch-brand__fold {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-width: 0;
+    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+      opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+  }
+  .ch-brand__fold > .ch-brand__word {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-brand {
+    margin-right: -6px;
+    margin-left: -6px;
+    padding-right: 7px;
+    padding-left: 7px;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-brand__line {
+    gap: 0;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-brand__fold {
+    grid-template-columns: 0fr;
+    opacity: 0;
+    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+      opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+  }
+
+  /* The words: out first, in last. The icon keeps its size while the row narrows; the label gives way. */
+  .ch-navitem {
+    white-space: nowrap;
+  }
+  .ch-navitem > svg {
+    flex: none;
+  }
+  .ch-navitem__label {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .ch-navitem__label,
+  .ch-nav__head > *,
+  .ch-identity__txt,
+  .ch-sidebar__card {
+    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
+      transform var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
+      visibility 0s linear 0s;
+  }
+  .ch-app[data-ch-rail='folded'] :is(.ch-navitem__label, .ch-nav__head > *, .ch-identity__txt, .ch-sidebar__card) {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
+      transform calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
+      visibility 0s linear calc(var(--ch-dur-quick) * 0.7);
+  }
+  /* The card is wide and fixed, so it never reflows while the edge passes over it; on the rail it is hidden. */
+  .ch-sidebar__card {
+    width: 212px;
+  }
+  .ch-sidebar__card:empty {
+    display: none;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-sidebar__card {
+    visibility: hidden;
+  }
+
+  /* A group's heading becomes a short rule centred on the icons' column. */
+  .ch-nav__head {
+    position: relative;
+  }
+  .ch-nav__head::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    width: 16px;
+    height: 1px;
+    background: rgb(220 205 166 / 0.4);
+    opacity: 0;
+    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+  }
+  .ch-app[data-ch-rail='folded'] .ch-nav__head::before {
+    opacity: 1;
+    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+  }
+
+  /* A count rides the icon's corner on the rail. */
+  .ch-app[data-ch-rail='folded'] .ch-navitem__count {
+    position: absolute;
+    top: 3px;
+    right: 1px;
+    display: grid;
+    place-items: center;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--ch-hero-mint);
+    color: var(--ch-green-800);
+    font: 600 9.5px/1 var(--ch-font-sans);
+    box-shadow: 0 0 0 1.5px var(--ch-shell);
+    animation: ch-rail-count var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8) both;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-navitem {
+    position: relative;
+  }
+
+  /* The avatar centres on the rail; the foot's rule goes with the card. */
+  .ch-identity .ch-avatar {
+    transition: margin var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  .ch-app[data-ch-rail='folded'] .ch-identity .ch-avatar {
+    margin-left: -5px;
+  }
+  .ch-sidebar__foot {
+    transition: border-color var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-app[data-ch-rail='folded'] .ch-sidebar__foot {
+    border-top-color: transparent;
+  }
+
+  /* The name tip beside a row on the rail. Fixed, so the sidebar's own scroll box does not clip it. */
+  .ch-railtip {
+    position: fixed;
+    left: calc(env(safe-area-inset-left, 0px) + var(--ch-rail-w) + 8px);
+    z-index: var(--ch-z-overlay);
+    padding: 6px 10px;
+    border-radius: var(--ch-radius-md);
+    background: var(--ch-nav-well-bg);
+    color: var(--ch-green-800);
+    font: 600 13px/1 var(--ch-font-sans);
+    white-space: nowrap;
+    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-4px, -50%);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-railtip[data-shown] {
+    opacity: 1;
+    transform: translate(0, -50%);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
+      top var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+}
+@keyframes ch-rail-count {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 820px) {
+  .ch-railtoggle,
+  .ch-railtip {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-sidebar,
+  .ch-railtoggle,
+  .ch-railtoggle svg,
+  .ch-brand,
+  .ch-brand__line,
+  .ch-brand__fold,
+  .ch-navitem__label,
+  .ch-nav__head > *,
+  .ch-nav__head::before,
+  .ch-identity__txt,
+  .ch-identity .ch-avatar,
+  .ch-sidebar__card,
+  .ch-railtip {
+    transition: none !important;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-navitem__count {
+    animation: none;
+  }
+}

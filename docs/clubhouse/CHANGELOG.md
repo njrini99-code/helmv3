@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-17 — Rail width token and the curtain follows a folded sidebar
+
+`tokens.css` adds `--ch-rail-w` (56px), the sidebar folded to its icon rail
+(P001). `lib/rail-cookie.ts` names the cookie that remembers the fold;
+`lib/phone-hint.ts` reads it on the server (`railHint`), and `lib/handoff.ts`
+draws the hand-off curtain's canvas edge at the rail when it is set.
+
 ## 2026-10-17 — Player RSVP counts come from a narrow function
 
 `data/attendance-counts.ts` (new) calls `golf_event_attendance_counts(p_event_ids)`

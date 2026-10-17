@@ -207,7 +207,7 @@ Status: N/A — the frame has no destructive control. Sign out lives in Settings
 
 ## 12 — State preservation
 
-Status: N/A — the frame holds nothing the user typed. A refused offline save changes nothing (10703), and the pages keep their own drafts (for example Messages 71202).
+Status: N/A — the frame holds nothing the user typed. A refused offline save changes nothing (10703), and the pages keep their own drafts (for example Messages 71202). Since 2026-10-17 the frame keeps one choice of the user's: the sidebar folded to its icon rail (RailToggle), in the `ch_rail` cookie, read by the layout so a reload draws the same layout first.
 
 ## 13 — Optimistic UI
 

@@ -49,8 +49,11 @@ export function useBrandWrite(): boolean {
 export function BrandLine({ write }: { write: boolean }) {
   return (
     <span className={'ch-brand__line' + (write ? ' is-write' : '')}>
-      <span className={'ch-brand__word is-script' + (write ? ' is-write' : '')}>
-        Golf<b>helm</b>
+      {/* The word's own track, so the folding sidebar can close it to nothing and leave the wheel (shell.css). */}
+      <span className="ch-brand__fold">
+        <span className={'ch-brand__word is-script' + (write ? ' is-write' : '')}>
+          Golf<b>helm</b>
+        </span>
       </span>
       <HelmMark write={write} />
     </span>

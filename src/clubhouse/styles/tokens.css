@@ -225,6 +225,8 @@
   /* Space and layout */
   --ch-gutter: 40px;
   --ch-sidebar-w: 240px;
+  /* The sidebar folded to its icon rail (RailToggle): the rows' 16px icons, 20px in from the edge, stay where they are. */
+  --ch-rail-w: 56px;
   --ch-topbar-h: 56px;
   /* Phone chrome (owner design, design/handoff/mobile/m-shell.jsx, m.css; D-40, D-43) */
   --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */

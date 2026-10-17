@@ -28,12 +28,15 @@ export function ClubhouseShell({
   userData,
   shell,
   phone = false,
+  folded = false,
   children,
 }: {
   userData: GolfUserData;
   shell: ChShellData;
   /** The device's last layout from the server's cookie, so a cold phone load draws the phone structure first (F-36). */
   phone?: boolean;
+  /** The sidebar folded to its icon rail, from the server's cookie, so a reload draws the rail first (RailToggle). */
+  folded?: boolean;
   children: ReactNode;
 }) {
   // Nothing here reads the address (ShellFrame does), so a navigation doesn't render this again (the animation
@@ -48,7 +51,7 @@ export function ClubhouseShell({
         <GolfUserProvider userData={userData}>
           <NotificationBadgeProvider>
             <ChMotionFeatures>
-              <ShellFrame userData={userData} shell={shell}>
+              <ShellFrame userData={userData} shell={shell} folded={folded}>
                 {children}
               </ShellFrame>
             </ChMotionFeatures>
@@ -63,10 +66,12 @@ export function ClubhouseShell({
 function ShellFrame({
   userData,
   shell,
+  folded,
   children,
 }: {
   userData: GolfUserData;
   shell: ChShellData;
+  folded: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname() ?? "/golf/dashboard";
@@ -81,6 +86,7 @@ function ShellFrame({
       shell={shell}
       pathname={pathname}
       search={search}
+      folded={folded}
     >
       {children}
     </ClubhouseFrame>

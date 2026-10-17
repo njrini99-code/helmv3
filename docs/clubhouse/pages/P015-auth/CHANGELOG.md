@@ -1,5 +1,15 @@
 # P015 — Auth: changelog
 
+## 2026-10-17 — Sign in drops its subtitle
+
+Owner: "get rid of the words under sign in". The heading now stands alone
+over the fields ("Coaches and players use the same sign-in. We'll open the
+right clubhouse for you." is gone, and its phone-only `.ch-au-sub__more` rule
+with it). Then "fix the spacing with logo and sign in text": the heading sat
+flush under the lockup (base.css zeroes `.ch-root h1`, which had quietly taken
+its 36px), so on desktop it now has 28px under the logo, written under `.ch-au`
+like the paragraph spacing. The reset and check-your-email headings share it.
+
 ## 2026-10-16 — The welcome reads the dashboard in full before Continue
 
 Owner: "look through the login and animation mechanics and fix it". The
