@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, ViewTransition, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, ViewTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
@@ -19,7 +19,7 @@ import { haptic } from '../../lib/haptics';
 import { useLastGood } from '../../lib/use-last-good';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
-import { formatFixed } from '../../lib/format';
+import { formatFixed, formatToPar } from '../../lib/format';
 import { bubbleNote, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
 import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -68,6 +68,10 @@ export function QualifierDetail({
   const { value: shown, stale } = useLastGood(fresh.id, whole, (w) => w.data.board !== null);
   const data = shown.data;
   const coach = data.role === 'coach';
+  // The leaderboard row that is open (its scorecards), shared with the side column's rounds (owner, 2026-10-16). A small
+  // store rather than state here: opening a row re-renders the board and the side panel, not the page (whose streamed
+  // sections would otherwise start over).
+  const [openRow] = useState(createOpenRow);
   const [status, setStatus] = useState<ChQStatus>(data.status);
   const [confirmClose, setConfirmClose] = useState(false);
   useEffect(() => setStatus(data.status), [data.status]);
@@ -242,7 +246,7 @@ export function QualifierDetail({
         <div className="ch-qf-body">
           <div className="ch-qf-col">
             <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
-              <Leaderboard data={data} status={status} stale={stale} feed={feed} />
+              <Leaderboard data={data} status={status} stale={stale} feed={feed} openRow={openRow} />
             </SectionBoundary>
             {coach && b && b.rows.length > 0 && (
               <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
@@ -256,6 +260,9 @@ export function QualifierDetail({
             </SectionBoundary>
             <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
               <Courses data={data} />
+            </SectionBoundary>
+            <SectionBoundary surface="qualifiers.player-rounds" label="A player’s rounds" code="CH-09216">
+              <PlayerRounds data={data} openRow={openRow} />
             </SectionBoundary>
             {data.rules && (
               <section className="ch-qf-side" aria-labelledby="ch-qf-rules">
@@ -336,9 +343,23 @@ function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
 /** Pos, Player, Thru, Avg, Total, To par (the plate), Status, the scorecards' chevron (P009-A1, C2). */
 const LB_COLS = '56px minmax(0, 1fr) 48px 52px 52px 64px 108px 28px';
 
-function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; status: ChQStatus; stale: boolean; feed: LiveFeedView }) {
+function Leaderboard({
+  data,
+  status,
+  stale,
+  feed,
+  openRow,
+}: {
+  data: ChQDetailCore;
+  status: ChQStatus;
+  stale: boolean;
+  feed: LiveFeedView;
+  /** The row whose scorecards are open, shared with the side column so it can show that player's rounds. */
+  openRow: OpenRow;
+}) {
   const { refresh, refreshing } = useRefresh();
-  const [open, setOpen] = useState<string | null>(null);
+  const open = useSyncExternalStore(openRow.subscribe, openRow.get, openRow.get);
+  const setOpen = openRow.set;
   const [announce, setAnnounce] = useState('');
   const b = data.board;
   const coach = data.role === 'coach';
@@ -790,4 +811,89 @@ function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number
       </ScrollRegion>
     </section>
   );
+}
+
+/**
+ * A player's rounds in this qualifier, beside the leaderboard (owner, 2026-10-16): the row opened on the board, else
+ * your own, else (for a coach) the leader. One line a scheduled round: its course and day, total and to par, or "Not
+ * played yet". A player only ever sees their own here, as with the scorecards.
+ */
+function PlayerRounds({ data, openRow }: { data: ChQDetailCore; openRow: OpenRow }) {
+  const open = useSyncExternalStore(openRow.subscribe, openRow.get, openRow.get);
+  const b = data.board;
+  if (!b) return null;
+  const coach = data.role === 'coach';
+  const mine = b.rows.find((r) => r.playerId === data.viewerPlayerId);
+  const picked = b.rows.find((r) => r.playerId === open && (coach || r.playerId === data.viewerPlayerId));
+  const row = picked ?? mine ?? (coach ? b.rows[0] : undefined);
+  if (!row) return null;
+  const me = row.playerId === data.viewerPlayerId;
+  const byNumber = new Map(row.rounds.map((rd) => [rd.number, rd]));
+  const totals = row.rounds.map((rd) => rd.total).filter((t): t is number => t != null);
+  const best = row.rounds.length > 1 && totals.length ? Math.min(...totals) : null;
+  return (
+    // Shown off, not filed (owner, 2026-10-16: "they're showing off their rounds"): the team board's green, the total to
+    // par large, one tile a round with its score, the best one marked, and the rounds still to play held open.
+    <section className="ch-qf-prounds ch-scoreboard" aria-labelledby="ch-qf-prounds" aria-live="polite">
+      <div className="ch-qf-prounds__head">
+        <h2 id="ch-qf-prounds">{me ? 'Your rounds' : `${row.name}’s rounds`}</h2>
+        {row.position != null && <span className="ch-qf-prounds__pos ch-num">{positionLabel(row)}</span>}
+      </div>
+      <div className="ch-qf-prounds__big">
+        <b className={'ch-num' + (row.toPar != null && row.toPar < 0 ? ' is-under' : '')}>{formatToPar(row.toPar)}</b>
+        <span className="ch-num">
+          {[row.total != null ? `${row.total} strokes` : null, `${row.played} of ${plural(data.numRounds, 'round')}`].filter(Boolean).join(' · ')}
+        </span>
+      </div>
+      <ol className="ch-qf-prounds__list">
+        {Array.from({ length: data.numRounds }, (_, i) => i + 1).map((n) => {
+          const rd = byNumber.get(n);
+          if (!rd) {
+            return (
+              <li key={n} className="ch-qf-prounds__r is-todo">
+                <span className="ch-qf-prounds__n">R{n}</span>
+                <span className="ch-qf-prounds__m">
+                  <b>Still to play</b>
+                </span>
+              </li>
+            );
+          }
+          const isBest = best != null && rd.total === best;
+          return (
+            <li key={n} className={'ch-qf-prounds__r' + (isBest ? ' is-best' : '')}>
+              <span className="ch-qf-prounds__n">R{n}</span>
+              <span className="ch-qf-prounds__m">
+                <b>{rd.course ?? `Round ${n}`}</b>
+                <small className="ch-num">
+                  {dayLabel(rd.date)}
+                  {isBest && ' · Best round'}
+                </small>
+              </span>
+              <span className="ch-qf-prounds__s ch-num">{rd.total ?? '—'}</span>
+              <ToParPlate value={rd.toPar} size="card" />
+            </li>
+          );
+        })}
+      </ol>
+      {coach && !picked && <p className="ch-qf-prounds__hint">Choose a player on the leaderboard to see their rounds here.</p>}
+    </section>
+  );
+}
+
+type OpenRow = { get: () => string | null; set: (playerId: string | null) => void; subscribe: (listener: () => void) => () => void };
+
+function createOpenRow(): OpenRow {
+  let value: string | null = null;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => value,
+    set: (next) => {
+      value = next;
+      listeners.forEach((l) => l());
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
 }
