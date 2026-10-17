@@ -85,7 +85,7 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
   player see the team as a plain label. Catalog CH-1003, CH-1305, CH-1813,
   CH-1814; `team-switch.test.tsx`.
 
-### Formerly not rebuilt: where each route goes now (updated 2026-10-12)
+### Formerly not rebuilt: where each route goes now (updated 2026-10-17)
 
 Every row the audit left open is now an alias or built. Route files are under
 `src/app/golf/(dashboard)/dashboard/`. **RETIRED** means the owner decided on
@@ -99,7 +99,10 @@ Every row the audit left open is now an alias or built. Route files are under
 | `/players/[id]/game/print` (printable scouting report) | coach | **RETIRED** (owner, 2026-10-12); covered by the `players/[id]` alias to `stats?player=<id>` | `players/[playerId]/layout.tsx` |
 | `/coachhelm/genome/compare` | coach | **RETIRED** (owner, 2026-10-12); alias to `stats/team` | `coachhelm/genome/compare/layout.tsx` |
 | `/team` | both | Alias: coach to `settings?section=team`, player to `settings?section=golf` | `team/layout.tsx` |
-| `/rounds` | coach | Redirect to `stats/team` (v2 has no coach library, Q-79) | `rounds/page.tsx` |
+| `/rounds` | coach | Alias to `stats/team` (v2 has no coach library, Q-79); on the frame's aliased list since 2026-10-17, when a plain `redirect()` left the coach on NotRebuilt | `rounds/page.tsx` |
+| `/my-qualifiers` | coach | Alias to `qualifiers` (a player's screen; since 2026-10-17) | `my-qualifiers/page.tsx` |
+| `/stats/team` | player | Alias to `stats` (coach-only; whoever the dashboard draws as a player; since 2026-10-17) | `stats/team/page.tsx` |
+| `/coachhelm/qualifying/[id]` | coach | Alias to `qualifiers/[id]/selection` | `coachhelm/qualifying/[id]/layout.tsx` |
 | `/coachhelm/chat` | both | Alias: coach to `coachhelm?view=ask`, player to `coachhelm` | `coachhelm/chat/layout.tsx` |
 | `/courses` | coach | **RETIRED** (course management; owner, 2026-10-12); alias to Home | `courses/layout.tsx` |
 | `/whats-new` | both | Alias to Home | `whats-new/layout.tsx` |
@@ -117,13 +120,12 @@ Every row the audit left open is now an alias or built. Route files are under
 | `announcements` | 136 | aliased to Team Hub (announcements tab) |
 | `coachhelm` | 94 | rebuilt |
 | `roster` | 65 | rebuilt. `roster?tab=requests` (code source) is **ignored** by Clubhouse Roster; requests show in the Roster header instead (P2) |
-| `team` | 3 | **NotRebuilt** (see table) |
+| `team` | 3 | aliased: coach to `settings?section=team`, player to `settings?section=golf` |
 
 Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias
-drops `task`; P2. Source-confirmed against Next.js 16.2.9: a layout never
-receives `searchParams`, so no layout alias can carry a query string; it needs a
-page or Proxy redirect, and Clubhouse Team Hub has no single-task view to land
-on), `intelligence*`, `my-development`, `coachhelm?view=development`.
+keeps `task`: the proxy hands the query to the layout in `x-helm-search`, and
+Team Hub scrolls to the task, `tasks/layout.tsx`), `intelligence*`,
+`my-development`, `coachhelm?view=development`.
 
 ## 4. Findings
 

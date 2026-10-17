@@ -1709,8 +1709,8 @@ decision named.
 - Q-120 (open, 2026-09-30; held) Submit has no server-side version check, so a
   stale device can overwrite newer holes. Draft migration
   `20261001000000_submit_round_expected_updated_at.sql` is HELD for review.
-  The app sends `expected_updated_at` on `agent/clubhouse-release`, not in the
-  build production serves; the migration is not applied to production.
+  The app sends `expected_updated_at` since #2189, which production serves
+  (re-checked 2026-10-17); the migration is not applied to production.
 - Q-121 (open, 2026-09-30; deferred) The Demo write journeys (Calendar
   create/edit/cancel, round submit) push to the whole Demo roster, and the one
   device token on it is the owner's test player phone. Emails can be stopped
