@@ -392,7 +392,7 @@ function Group({ id, title, note, items, pickedId, onPick }: { id: string; title
 function Hero({ d }: { d: ChDeepDive }) {
   const { insights, needs, working, inPlan } = d.counts;
   return (
-    <section className="ch-hd-hero" aria-labelledby="ch-hd-hero-t">
+    <section className="ch-hd-hero ch-scoreboard" aria-labelledby="ch-hd-hero-t">
       <div className="ch-hd-hero__main">
         <span className="ch-hd-hero__k">What CoachHelm has found</span>
         <h2 id="ch-hd-hero-t">
