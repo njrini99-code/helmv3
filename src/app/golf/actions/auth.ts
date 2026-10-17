@@ -95,14 +95,13 @@ async function loginActionImpl(
   const country = headersList.get('x-vercel-ip-country') ?? undefined;
   const city = headersList.get('x-vercel-ip-city') ?? undefined;
 
-  // The lockout and both rate limits are independent reads, so they go out together: one round trip before the
-  // sign-in instead of three (owner, 2026-10-16: the sign-in "stalls for a second" before anything moves). The
-  // refusals below keep their order. Running them together counts an attempt against both limits even when an earlier
-  // check refuses it, which only ever counts more, never less.
-  const [lockoutStatus, emailRateLimit, ipRateLimit] = await Promise.all([
+  // The lockout and the email's rate limit go out together (owner, 2026-10-16: the sign-in "stalls for a second"
+  // before anything moves). Counting the email while its account is locked only touches that one address. The IP's
+  // limit is counted after both pass, as before: on a shared network (school wifi) one person retrying a locked or
+  // limited account must not use up everyone else's allowance.
+  const [lockoutStatus, emailRateLimit] = await Promise.all([
     checkAccountLockout(normalizedEmail),
     checkRateLimit(`login:email:${normalizedEmail}`, RATE_LIMITS.LOGIN),
-    checkRateLimit(`login:ip:${ip}`, RATE_LIMITS.LOGIN),
   ]);
   if (lockoutStatus.locked && lockoutStatus.lockedUntil) {
     // Security: Account is locked due to too many failed attempts
@@ -121,6 +120,8 @@ async function loginActionImpl(
       error: `Too many login attempts. Please try again in ${remaining}.`,
     };
   }
+
+  const ipRateLimit = await checkRateLimit(`login:ip:${ip}`, RATE_LIMITS.LOGIN);
 
   if (!ipRateLimit.allowed) {
     const remaining = formatTimeRemaining(ipRateLimit.resetAt - Date.now());
