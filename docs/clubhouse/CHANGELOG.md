@@ -1,5 +1,13 @@
 # Clubhouse changelog
 
+## 2026-10-16 — No card or row has a green side bar
+
+The owner's standing rule: never a card with a green side. Every remaining green left-edge bar
+(`inset Npx 0 0 var(--ch-green...)` or the field green) is removed, in three commits: the open read in Deep dive
+(`coachhelm-dive.css`), the selected row in Messages in light and dark (`messages.css`), the CoachHelm well
+(`coachhelm.css`), and the plaque hero's title (`hero-tones.css`, whose title also loses the 14px of left padding that
+made room for the bar). The selected rows keep their fill and raised shadow. CSS only; no visual check is recorded.
+
 ## 2026-10-16 — Zone and game-detail summaries stick below the top bar
 
 A zone summary (`.ch-zn__id`, `ui.css`) and a game-detail summary (`.ch-gm__id`, `stats.css`) stuck at 24px, behind

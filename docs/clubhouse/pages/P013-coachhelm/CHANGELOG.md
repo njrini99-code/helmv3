@@ -20,7 +20,16 @@ alone read 3 rounds (the last 90 days, countable rounds only) while the Board's 
   the green board; each group's head carries its tally against the Tour ("n ahead, n behind") over a green rule; a stat
   ahead of the Tour sits on a faint green wash. The data is unchanged (`golf_player_standing`, the nightly read).
 
-Checked: the vitest above. No visual check is recorded for these three commits, and no migration is involved.
+- **Standing's bars show the gap** (`Standing.tsx`, `coachhelm-standing.css`): a new `.ch-hs-tr__gap` fills the space from
+  the Tour's mark to the player's, green when ahead and amber when behind. The track is green-tinted and the marker
+  solid. The Game profile's scales get the same track, a full-strength fill and a solid marker
+  (`coachhelm-profile.css`).
+- **Deep dive at more contrast** (`DeepDive.tsx`, `coachhelm-dive.css`): the hero is a green board (`ch-scoreboard`), the
+  rail a bright panel with the open read lit green, the heads field green, and the gauge track green-tinted. The open
+  read no longer has a green side bar (see the shared entry).
+
+Checked: the vitest above; the Standing and profile tests (64) and the CoachHelm tests passed in the main session. No
+visual check is recorded for these commits, and no migration is involved.
 
 ## 2026-10-16 — CoachHelm and Ask at full contrast; CoachHelm on a bright sheet
 

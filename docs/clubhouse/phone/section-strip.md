@@ -19,7 +19,8 @@ Desktop keeps the sidebar.
   was in view).
 - **The strip.** Tapping the title slides a row of pills out from under the top
   bar: every section the role has,
-  in the sidebar's order with the old tabs first, then Settings, then the
+  in the sidebar's order with the old tabs first (since 2026-10-16 Team Hub and Qualifiers sit under Team in the sidebar,
+  so the pills after the old tabs follow that order: for a coach Messages, Team Hub, Roster, Qualifiers, Recruiting), then Settings, then the
   account pill (who you are; it opens the
   account sheet with the team switch, Help and Sign out). The current section is
   centred and filled green. The row

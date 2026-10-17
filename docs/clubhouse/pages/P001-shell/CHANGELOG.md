@@ -1,5 +1,19 @@
 # P001 — Shell: changelog
 
+## 2026-10-16 — The sidebar sorted into clear groups
+
+Owner, 2026-10-16: "sort the side bar and make it look better".
+
+- **The order** (`nav.ts`): Team Hub and Qualifiers move under Team, for both roles. A coach's sidebar reads Home,
+  CoachHelm, Calendar, Messages; Team: Team Hub, Roster, Stats, Qualifiers, Recruiting. A player's reads Home, CoachHelm,
+  Calendar, Messages; Team: Team Hub, Roster, Qualifiers; My game: Rounds, My stats; then Classes. `shell.test.tsx`'s
+  order expectations follow. The phone strip lists the old tabs first and then the sidebar's order, so its later pills
+  follow this order too (docs/clubhouse/phone/section-strip.md).
+- **The look** (`shell.css`, desktop above 820px): each titled group sits in a soft well on the green with its name in
+  mint above it, the rows a little taller (36px) with brighter ink on those not chosen; the chosen row keeps the
+  plate's own green ink. The phone is unchanged. No visual check is recorded; the shell vitest passed in the main
+  session.
+
 ## 2026-10-16 — Section switches skip Next's scroll; the sidebar's sections are fetched ahead
 
 Owner, desktop Safari: every switch waited on the server for the whole page.
