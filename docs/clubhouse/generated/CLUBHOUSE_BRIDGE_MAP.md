@@ -750,7 +750,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80403 | CH-8303 | 04 Empty | `A_PLAYER_HAS_ASKED_TO_JOIN_AND` | implemented | A player has asked to join and is waiting |
 | 80404 | CH-8304 | 04 Empty | `NO_PROFILE_PHOTO` | implemented | No profile photo |
 | 80405 |  | 04 Empty | `SETTINGS_OPEN_WITHOUT_A_TEAM` | implemented | A coach or player with no team still gets Settings, never a no-team page: Account, Notifications and Preferences work, a coach's Team section says why it is empty (CH-8301) and a player's Golf profile offers Join a team (CH-8302). |
-| 80406 | CH-8320 | 04 Empty | `THE_TEAMS_COURSE_LOCATION` | implemented | The team's course location (Team; held migration 20261008150000) |
+| 80406 | CH-8320 | 04 Empty | `THE_TEAMS_COURSE_LOCATION` | implemented | The team's course location (Team; migration 20261008150000, applied 2026-10-11) |
 | 80501 | CH-8101 | 05 Validation | `A_COACH_CLEARS_THEIR_NAME` | implemented | A coach clears their name |
 | 80502 | CH-8102 | 05 Validation | `A_PLAYER_CLEARS_FIRST_OR_LAST_NAME` | implemented | A player clears first or last name |
 | 80503 | CH-8103 | 05 Validation | `NEW_EMAIL_ISNT_AN_ADDRESS` | implemented | New email isn't an address |
@@ -828,7 +828,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81103 | CH-8503 | 11 Destructive | `MAKE_A_NEW_INVITE_CODE` | implemented | Make a new invite code |
 | 81104 | CH-8504 | 11 Destructive | `RESET_COACHHELM_UPDATES` | implemented | Reset CoachHelm updates (player) |
 | 81105 | CH-8505 | 11 Destructive | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | implemented | Turn off CoachHelm on your dashboards |
-| 81106 | CH-8509 | 11 Destructive | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | implemented | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes |
+| 81106 | CH-8509 | 11 Destructive | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | implemented | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes |
 | 81107 | CH-8510 | 11 Destructive | `PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS` | implemented | Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet |
 | 81201 | CH-8506 | 12 State preservation | `FOLLOWING_A_LINK_OFF_SETTINGS_WITH_UNSAVED` | implemented | Following a link off Settings with unsaved changes |
 | 81202 | CH-8507 | 12 State preservation | `SWITCHING_SECTION_WITH_UNSAVED_CHANGES` | implemented | Switching section with unsaved changes |

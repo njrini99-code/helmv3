@@ -281,18 +281,28 @@ before, after, baseline or evidence.
   CoachHelm access check made a head
   coach see the switch disabled with "Only the head coach can change this."
   (80804).
+- Fixed 2026-10-17 (each has a test in `settings.test.tsx` that fails without
+  the fix; jsdom only, not yet seen in Safari, the Simulator or on an iPhone):
+  - Phone: the browser's Back or the iOS edge swipe while an edit sheet holds
+    edits over a section (Team details, Golf details, a reminder time, Join a
+    team, Profile over Account) now asks the CH-8509 discard question and keeps
+    the section; Keep editing leaves the sheet as typed, Discard closes it, and
+    the next Back pops the section as before. A Back while a sheet saves does
+    nothing. A clean sheet still goes with its section. The page puts the
+    section's history entry back before the stack sees the pop
+    (`SettingsPhone`, `HeldSheetsContext` in `phone/sheets.tsx`).
+  - A refused save says why instead of "Check your connection": a switch, a
+    CoachHelm autosave (CH-8022), a form save and the course location. A policy
+    refusal that arrives as an error ("violates row-level security") reads
+    "Your account doesn’t have access to do this."; only a save that threw, gave
+    no reason or failed with the browser's network wording keeps "Check your
+    connection and try again." (`saveFailureBody` in `parts.tsx`).
 - Found and not fixed:
-  - Phone: the browser's Back or the iOS edge swipe while a section-level sheet
-    (Team details, Golf details, a reminder
-    time, Join a team) holds edits pops the section behind it and drops the
-    sheet without the discard question. The page
-    guard (CH-8508, CH-8506) covers closing the tab and links, not history
-    entries; the sheets are not history entries.
-  - A refused instant save (a switch or CoachHelm autosave) always says "Check
-    your connection", because it never shows
-    the server's reason; a refusal that arrives as an error (an upsert against a
-    policy, "violates row-level
-    security") reads the same way on a form save.
+  - Phone: a Back while the Profile, Change email or Password sheet holds edits
+    over the list itself (not a section) leaves Settings for the page before it
+    without asking. That Back leaves the route, so the address has already
+    changed when the page hears it; holding it there would need the sheets to
+    be history entries.
   - Two CoachHelm priority moves in a row: if the first save fails and the
     second lands, the screen shows the order
     from before the first move while the server has both moves.
