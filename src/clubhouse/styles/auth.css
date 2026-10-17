@@ -1674,4 +1674,3 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
     transform: translateY(calc(var(--ch-au-kb-lift) * -1));
   }
 }
-
