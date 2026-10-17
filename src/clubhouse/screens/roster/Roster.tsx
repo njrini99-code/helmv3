@@ -48,6 +48,9 @@ const nullsLast = (a: number | null, b: number | null) => (a == null ? (b == nul
 /** A spreadsheet reads a cell that starts with = + - @ (or a tab or a return) as a formula. Players type their own names, so the export writes them as text (30502). */
 const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
+/** A `?player=` link's player, held across a remount until the profile opens (see the effect in Roster). */
+let linkedPlayer: string | null = null;
+
 export function Roster({ data }: { data: ChRoster }) {
   const copy = useCopyText();
   const toast = useToast();
@@ -83,12 +86,20 @@ export function Roster({ data }: { data: ChRoster }) {
   useEffect(() => {
     if (!phone) return;
     const url = new URL(window.location.href);
-    const id = url.searchParams.get('player');
+    const id = url.searchParams.get('player') ?? linkedPlayer;
     if (!id) return;
-    url.searchParams.delete('player');
-    window.history.replaceState(null, '', url.pathname + url.search);
+    // Kept until the profile is on screen: dropping the param can remount this screen (the address changed under the
+    // route), and the new copy would otherwise find no param and open the list (dark a11y scan, 2026-10-17).
+    linkedPlayer = id;
+    if (url.searchParams.has('player')) {
+      url.searchParams.delete('player');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
     setOpenId(id);
   }, [phone]);
+  useEffect(() => {
+    if (openId && players.some((p) => p.id === openId)) linkedPlayer = null;
+  }, [openId, players]);
   const openPlayer = useCallback((id: string) => {
     chTrail('roster open player');
     // CH-3701: a tick on opening a player, changing a filter, layout or sort.

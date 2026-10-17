@@ -1,5 +1,17 @@
 # P003 — Roster: changelog
 
+## 2026-10-17 — A link to a player opens their profile on the phone every time
+
+Found by the first dark-mode accessibility scan (2026-10-17). On the phone a
+`?player=` link opens that player's profile once and drops the param, but
+dropping it changes the address under the route, and a remount then found no
+param and showed the list: the profile never opened (reproduced in Chromium
+after earlier tabs had warmed the dev server; the trace showed the param
+stripped and no push of the profile). The linked player is now held until the
+profile is on screen, so a remount still opens it. Reproduced and fixed with
+the same tab sequence the scan uses; Roster tests pass (103) and the dark scan
+of every Roster state passes (15).
+
 ## 2026-10-16 — Sort, filter and layout use the shared green chip
 
 The Roster's chosen sort, filter and grid or list toggle take the lit green chip every switcher draws (`roster.css`);
