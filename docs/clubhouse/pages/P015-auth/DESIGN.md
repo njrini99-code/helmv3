@@ -44,6 +44,8 @@ Sign in: the course, then the ivory panel, then the two fields and the button;
 the tagline and the mark are quiet. Welcome: the greeting, then the name, then
 the card with what is new, then Continue. After dark the type is ivory.
 
+**Type exception (2026-10-16, owner):** the Welcome's wordmark "Golfhelm" is set in a script face (Great Vibes, `--ch-font-script`, not preloaded), drawn on like a pen, with "helm" in the green. It is the only place the Clubhouse sets script; everything else on this page keeps Instrument Sans.
+
 ## Components
 
 ### Reused Clubhouse primitives

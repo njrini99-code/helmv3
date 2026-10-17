@@ -9,9 +9,9 @@ Owner, 2026-10-16: "sort the side bar and make it look better".
   Calendar, Messages; Team: Team Hub, Roster, Qualifiers; My game: Rounds, My stats; then Classes. `shell.test.tsx`'s
   order expectations follow. The phone strip lists the old tabs first and then the sidebar's order, so its later pills
   follow this order too (docs/clubhouse/phone/section-strip.md).
-- **The look** (`shell.css`, desktop above 820px): each titled group sits in a soft well on the green with its name in
-  mint above it, the rows a little taller (36px) with brighter ink on those not chosen; the chosen row keeps the
-  plate's own green ink. The phone is unchanged. No visual check is recorded; the shell vitest passed in the main
+- **The look** (`shell.css`, desktop above 820px): each titled group is headed by its name in mint, with no panel or
+  shade behind it (a soft well was tried and removed), the rows a little taller (36px) with brighter ink on those not
+  chosen; the chosen row keeps the plate's own green ink. The phone is unchanged. No visual check is recorded; the shell vitest passed in the main
   session.
 
 ## 2026-10-16 — Section switches skip Next's scroll; the sidebar's sections are fetched ahead

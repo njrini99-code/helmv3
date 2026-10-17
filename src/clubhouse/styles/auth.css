@@ -1693,7 +1693,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   mask-size: 230% 100%;
   -webkit-mask-position: 100% 0;
   mask-position: 100% 0;
-  animation: ch-au-write 1.5s cubic-bezier(0.45, 0.05, 0.35, 1) 0.45s forwards;
+  animation: ch-au-write 1.5s var(--ch-au-write-ease) 0.45s forwards;
 }
 .ch-au-wl-mark.is-script .ch-au-script__w b {
   font-weight: 400;
@@ -1704,7 +1704,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   height: 44px;
   opacity: 0;
   transform: rotate(-90deg) scale(0.6);
-  animation: ch-au-wheel 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.15) 1.95s forwards;
+  animation: ch-au-wheel 0.7s var(--ch-au-wheel-ease) 1.95s forwards;
 }
 .ch-au-wl[data-dark] .ch-au-wl-mark.is-script .ch-au-script__w {
   color: var(--ch-au-ivory);

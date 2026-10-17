@@ -1,5 +1,19 @@
 # P015 — Auth: changelog
 
+## 2026-10-16 — The welcome writes "Golfhelm" in script (a type-rule exception)
+
+Owner, 2026-10-16, after sign in: "a cursive thing of script". The Welcome's mark (`Welcome.tsx`, `auth.css`) is now
+"Golfhelm" in Great Vibes, drawn on from left to right like a pen by a mask wipe, with "helm" in the green (mint over a
+night sky), and then the wheel turns a quarter into place beside it. Reduced motion draws it whole at once. The mark
+is an image with the label "GolfHelm" and the letters are hidden from assistive technology.
+
+**This is an owner-requested exception to the doctrine of Instrument Sans for display, body and data**
+(`.claude/rules/clubhouse.md`, "Sentence case: no tracked uppercase, no serif"): the script face is for this wordmark
+only. `lib/fonts.ts` adds `Great_Vibes` as `--ch-font-script`, with `preload: false`, so no other page loads it.
+The two easings are tokens in `auth-tokens.css` (`--ch-au-write-ease`, `--ch-au-wheel-ease`), the one place a literal easing is
+allowed, and the shared test setup (`src/test/setup.tsx`) mocks `Great_Vibes` like the other fonts. The animation was not
+checked on a device or in Safari.
+
 ## 2026-10-16 — Keychain AutoFill keeps the dark field; the sign-in scrolls smoothly
 
 - **AutoFill in dark mode** (`auth.css`, `.ch-au-input`): WebKit paints an autofilled input a light fill with dark
