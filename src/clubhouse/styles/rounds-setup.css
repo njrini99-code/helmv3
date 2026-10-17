@@ -777,6 +777,46 @@
 .ch-rsu-chev {
   color: var(--ch-text-tertiary);
 }
+/* The course picker on the desktop is a pane of frosted glass (owner, 2026-10-16): the page behind it is softened and
+   the panel lets it through, blurred, so the photos sit on light rather than on a sheet of paper. Not where the system
+   asks for less transparency: the panel stays its paper (light or dark). */
+@media (min-width: 821px) and (not (prefers-reduced-transparency: reduce)) {
+  .ch-modal[data-ch-code='CH-11510']::backdrop {
+    background: rgb(20 20 18 / 0.22);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
+    background: rgb(250 248 242 / 0.66);
+    -webkit-backdrop-filter: blur(28px) saturate(1.5);
+    backdrop-filter: blur(28px) saturate(1.5);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.55),
+      0 24px 64px -20px rgb(12 20 14 / 0.45),
+      0 2px 6px rgb(12 20 14 / 0.12);
+  }
+  .ch-modal[data-ch-code='CH-11510'] .ch-rsu-search {
+    background: rgb(255 255 255 / 0.62);
+  }
+  .ch-modal[data-ch-code='CH-11510'] .ch-rsu-add {
+    border-color: rgb(28 25 18 / 0.18);
+    background: rgb(255 255 255 / 0.3);
+  }
+  html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
+    background: rgb(26 28 24 / 0.6);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.1),
+      0 24px 64px -20px rgb(0 0 0 / 0.7),
+      0 2px 6px rgb(0 0 0 / 0.3);
+  }
+  html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510'] .ch-rsu-search {
+    background: rgb(255 255 255 / 0.08);
+  }
+  html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510'] .ch-rsu-add {
+    border-color: rgb(255 255 255 / 0.16);
+    background: rgb(255 255 255 / 0.04);
+  }
+}
 /* The course picker's photo cards (owner, 2026-10-16: "the courses need to have pictures and look premium"). The photo is
    the course's own (uploaded or a bundled photo of the real course) or a scene chosen by its name; the name sits on a
    scrim in white. The button is the scroll timeline's subject and the card inside it is what moves, so the fold in
