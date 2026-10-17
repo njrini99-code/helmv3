@@ -628,7 +628,7 @@ describe('Qualifiers · one qualifier', () => {
     const d = detail();
     wrap(<QualifierDetail data={d} writes={fakeWrites()} live={false} />);
     const fact = (k: string) => [...document.querySelectorAll('.ch-qf-facts > div')].find((f) => f.querySelector('dt')!.textContent === k)!.textContent;
-    expect([...document.querySelectorAll('.ch-qf-facts dt')].map((t) => t.textContent)).toEqual(['Dates', 'Entry deadline', 'Entrants', 'Rounds submitted', 'Course', 'Spots']);
+    expect([...document.querySelectorAll('.ch-qf-facts dt')].map((t) => t.textContent)).toEqual(['Dates', 'Entrants', 'Rounds submitted', 'Course', 'Spots']);
     expect(fact('Dates')).toMatch(/2026 · 3 rounds$/);
     expect(fact('Entrants')).toBe('Entrants8players');
     expect(fact('Rounds submitted')).toBe('Rounds submitted13of 24');
@@ -2397,7 +2397,7 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
   it('91901 board 02: facts, the leaderboard as cards, and Manage selections for the coach', () => {
     wrap(<QualifierDetail data={detail('live')} writes={fakeWrites()} live={false} />);
     const facts = document.querySelector('.ch-qfm-facts')!;
-    expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots', 'Deadline']);
+    expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots']);
     expect(facts.textContent).toMatch(/4\+1/);
     // Drawn, decoratively: the rounds posted along the rounds due, and the squad's seats (four won on score, one pick).
     expect(facts.querySelector('.ch-qf-bar i')).not.toBeNull();

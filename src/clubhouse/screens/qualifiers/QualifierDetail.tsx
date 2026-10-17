@@ -289,7 +289,7 @@ function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
   const facts: Array<[string, string, ReactNode, ReactNode?]> = [
     // A date never splits from its day; the range wraps at the dash (D-33: the fact wraps, never truncates).
     ['Dates', shortRange(data.startDate, data.endDate).replace(/ (?=\d)/g, '\u00a0'), `${yearOf(data.startDate)} · ${plural(data.numRounds, 'round')}`],
-    ['Entry deadline', data.deadline ? dayLabel(data.deadline) : '—', data.deadline ? yearOf(data.deadline) : 'Not set'],
+    // No entry deadline: qualifiers don't have one (owner, 2026-10-16).
     ['Entrants', data.entriesError ? '—' : String(data.entrants), 'players'],
     [
       'Rounds submitted',
