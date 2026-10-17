@@ -1,5 +1,14 @@
 # P001 — Shell: changelog
 
+## 2026-10-16 — The brand's entrance waits until the dashboard is seen
+
+The entrance counted from the sidebar's mount, but after the welcome the
+hand-off curtain stays up until fonts are in and then fades over 0.52s, so on
+a slow load the word wrote itself in under the curtain. The curtain now marks
+`<html data-ch-handoff>` while it is up and the entrance holds on its first
+frame until it lifts (`lib/handoff.ts`, shell.css). Measured in Chrome: curtain
+gone at 2.97s, the word starts at 3.63s.
+
 ## 2026-10-16 — A more premium entrance for the brand
 
 Owner: "it needs to be more premium. i do like the wheel turning tho". After

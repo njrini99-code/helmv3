@@ -1,5 +1,16 @@
 # P015 — Auth: changelog
 
+## 2026-10-16 — The welcome reads the dashboard in full before Continue
+
+Owner: "look through the login and animation mechanics and fix it". The
+welcome prefetched the dashboard with the default kind, which for a dynamic
+page stops at its loading boundary, so the dashboard was only asked for when
+the fold had landed and the empty frame waited a server render (measured in dev
+Chrome: fold done at 1.0s, frame empty until 1.7s warm and over 2s cold). It now
+prefetches in full (`PrefetchKind.FULL`, as the shell's tab prefetch does)
+while the greeting plays. Next does not prefetch on the dev server, so the gain
+shows in production only; not measured there (no build, owner's call).
+
 ## 2026-10-16 — Sign in starts moving sooner
 
 Owner: "right after you click sign in, the animation still stalls for a

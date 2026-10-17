@@ -2,6 +2,7 @@
 
 import { ArrowRight, CalendarDays, CircleAlert, CircleCheck, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, type LucideIcon } from 'lucide-react';
 import { m } from 'motion/react';
+import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotificationCategoryId } from '@/app/golf/actions/unified-notifications-model';
@@ -91,9 +92,12 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   // The fold lands on the dashboard's canvas, so it is drawn only when that is where this goes and it is Clubhouse.
   const fold = data.clubhouseDashboard && isDashboardDestination(destination) && !reduced;
 
-  // The destination is known at mount, so it is fetched while the person reads.
+  // The destination is known at mount, so it is fetched while the person reads: in full, data and all (owner,
+  // 2026-10-16, "fix the login and animation mechanics"). The default prefetch of a dynamic page stops at its loading
+  // boundary, so the dashboard was only asked for when the fold had landed and the empty frame waited a server render
+  // (0.7s warm, over 2s cold, in dev). Read in full while the greeting plays, it is ready when Continue is pressed.
   useEffect(() => {
-    if (!navigate) router.prefetch(destination);
+    if (!navigate) router.prefetch(destination, { kind: PrefetchKind.FULL });
   }, [router, destination, navigate]);
 
   // Nothing starts before hydration has settled what the viewer's motion setting is: the text waits a frame.

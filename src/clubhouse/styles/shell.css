@@ -3644,6 +3644,13 @@ html[data-fw-theme='dark'] .ch-offline {
   pointer-events: none;
   animation: ch-brand-glint calc(var(--ch-dur-reveal) * 2.2) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 4.6) both;
 }
+/* Arriving from the welcome, the entrance holds on its first frame while the hand-off's curtain is up (lib/handoff.ts),
+   so the dashboard is seen first and the word starts writing after it. */
+html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand__word.is-write,
+html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand__mark.is-write,
+html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-write)::after {
+  animation-play-state: paused;
+}
 @keyframes ch-brand-write {
   from {
     -webkit-mask-position: 100% 0;
