@@ -1,5 +1,13 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-17 — A coach on /my-qualifiers goes to Qualifiers
+
+Readiness audit (2026-10-17): "My qualifiers" is a player's screen, and a coach
+on `/golf/dashboard/my-qualifiers` stood on "not rebuilt". The page now sends a
+coach to Qualifiers (`redirectToClubhouse`) and the address is on the frame's
+aliased list. A player's My qualifiers is unchanged (checked in Chrome). Test:
+`alias-frame.test.ts`.
+
 ## 2026-10-16 — Qualifiers: separate sheets, the active one in focus, full contrast
 
 Owner, 2026-10-16: "better separation between qualifiers listed", "more contrast on this page", "more focal on active

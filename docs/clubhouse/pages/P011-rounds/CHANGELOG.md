@@ -1,5 +1,15 @@
 # P011 — Rounds: changelog
 
+## 2026-10-17 — A coach on /rounds goes to Team stats
+
+Readiness audit (2026-10-17): a coach on `/golf/dashboard/rounds` stood on
+"not rebuilt". The page's plain `redirect()` to Team stats never ran: the frame
+drops a page that is not rebuilt for the role. It now redirects through
+`redirectToClubhouse`, and `/rounds` (exactly, not its children) is on the
+frame's aliased list (`CH_ALIASED_ROUTES`, nav.ts), so the segment renders
+hidden and its redirect fires. A player's Rounds is unchanged (checked in
+Chrome). Test: `alias-frame.test.ts`.
+
 ## 2026-10-16 — Round type, holes and the track strip take the shared green chip
 
 The chosen Round type and Holes in setup, and the chosen chip in the track strip, are the lit green chip every switcher

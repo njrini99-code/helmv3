@@ -197,6 +197,9 @@ export const CH_ALIASED_ROUTES: readonly RegExp[] = [
   /^\/golf\/dashboard\/players\/[^/]+$/,
   /^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+|genome\/compare|genome\/[^/]+)$/,
   /^\/golf\/dashboard\/rounds\/[^/]+\/review$/,
+  // Rebuilt for one role and moved for the other (a coach's Rounds to Team stats and My qualifiers to Qualifiers, a
+  // player's Team stats to their Stats): the segment must render for its redirect to run.
+  /^\/golf\/dashboard\/(rounds|my-qualifiers|stats\/team)$/,
 ];
 
 export function isAliased(pathname: string): boolean {
