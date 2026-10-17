@@ -1340,11 +1340,6 @@ main[data-canopy] .ch-hd-it.is-on,
 [data-ui='clubhouse'] .ch-hd-sec__h h2 {
   color: var(--ch-green-700);
 }
-/* The measured gauge: a green-tinted track and a marker you can find. */
-.ch-hd-sec .ch-hl-g__t {
-  background: color-mix(in srgb, var(--ch-green-fill-600) 14%, var(--ch-bg-surface));
-  box-shadow: inset 0 1px 2px rgb(11 58 37 / 0.12);
-}
 /* The open read's category over its title reads in the field green, not the faint champagne. */
 [data-ui='clubhouse'] .ch-hd-dos__h > :first-child,
 [data-ui='clubhouse'] .ch-hd-dos__h > :first-child span:first-child {
