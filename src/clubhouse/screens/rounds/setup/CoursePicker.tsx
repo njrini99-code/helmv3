@@ -56,7 +56,7 @@ export function CoursePicker({
     if (open) setCourse(initialCourse);
   }, [open, initialCourse]);
   return (
-    <Modal open={open} onClose={onClose} title={course ? course.name : 'Where are you playing?'} description={course ? (course.place ?? undefined) : undefined} width={560} code="CH-11510">
+    <Modal open={open} onClose={onClose} title={course ? course.name : 'Where are you playing?'} description={course ? (course.place ?? undefined) : undefined} width={880} code="CH-11510">
       {open &&
         (course ? (
           <TeeList course={course} ports={ports} onBack={() => setCourse(null)} onPick={(t) => onPick(course, t)} />
@@ -80,7 +80,7 @@ function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts
       {load.state === 'loading' && (
         // CH-11403: the list is on its way, in the shape of its cards.
         <div className="ch-cpk-list" role="status" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-11403">
-          {[0, 1, 2].map((i) => (
+          {[0, 1, 2, 3].map((i) => (
             <span key={i} className="ch-cpk is-skel">
               <span className="ch-cpk__b">
                 <i />

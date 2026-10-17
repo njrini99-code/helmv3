@@ -798,6 +798,19 @@
   .ch-modal[data-ch-code='CH-11510'] .ch-rsu-search {
     background: rgb(255 255 255 / 0.62);
   }
+  /* Landscape (owner, 2026-10-16): wider than tall, the photo cards two to a row. */
+  .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
+    --ch-modal-max-h: min(680px, calc(100dvh - 48px));
+  }
+  .ch-modal[data-ch-code='CH-11510'] .ch-cpk-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .ch-modal[data-ch-code='CH-11510'] .ch-cpk__card,
+  .ch-modal[data-ch-code='CH-11510'] .ch-cpk.is-skel {
+    height: 156px;
+  }
   .ch-modal[data-ch-code='CH-11510'] .ch-rsu-add {
     border-color: rgb(28 25 18 / 0.18);
     background: rgb(255 255 255 / 0.3);
@@ -981,6 +994,9 @@
   opacity: 0.75;
 }
 .ch-cpk.is-skel:nth-child(3) {
+  opacity: 0.5;
+}
+.ch-cpk.is-skel:nth-child(4) {
   opacity: 0.5;
 }
 
