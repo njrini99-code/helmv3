@@ -1,5 +1,22 @@
 # Clubhouse changelog
 
+## 2026-10-17 — New shadows use the depth tokens; the rail's small parts move by translate
+
+The CSS quality gate (`npm run clubhouse:css`) found 18 new blur shadows
+written as raw values. Each keeps its ring and inset layers and takes the
+nearest depth token for the blur: Qualifiers' ledger cards, facts and board
+`--ch-elevation-cast` (hover `--ch-elevation-overlay`), its hero
+`--ch-elevation-board` (hover `-board-hover`), the CoachHelm dive rail and the
+announcement section `--ch-elevation-reading-accent`, the standing and profile
+dots `--ch-elevation-mark-ink`, the desktop modal `--ch-elevation-overlay`, the
+rail toggle `--ch-elevation-on-frame` (hover and the name tip
+`-on-frame-card-hover`). Dark mode now follows the tokens' dark values. On the
+folding sidebar (P001), the toggle, the avatar and the name tip move by
+`translate` instead of `left`, `margin` and `top`, so they never re-run layout;
+their places are unchanged (toggle at 229px open and 45px folded, tip centred
+on its row). The sidebar's width and the brand's track still animate layout:
+an owner decision (STATUS.md).
+
 ## 2026-10-17 — Rail width token and the curtain follows a folded sidebar
 
 `tokens.css` adds `--ch-rail-w` (56px), the sidebar folded to its icon rail

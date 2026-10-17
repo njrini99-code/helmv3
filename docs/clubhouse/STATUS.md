@@ -138,7 +138,15 @@ VoiceOver, dark-mode scan or real-account write pass.
 5. **Attendance privacy:** `golf_event_attendance`'s select policy lets a player
    read every teammate's reply on every team event through the API (Home shows
    counts only). Narrow it to the player's own rows, or accept it.
-6. Also open: `20260929200000` (qualifier privacy); white cards and Instrument
+6. **Folding sidebar motion:** the fold animates the sidebar's width (and the
+   brand's margin, padding and word track) on the smooth spring, so the canvas
+   reflows each frame. `clubhouse:css` flags it as new layout motion, which
+   keeps the `presentation` check red (not required for merge). Keep it as the
+   reviewed exception, or move to a transform-only fold (the sidebar draws over
+   the canvas and the canvas reflows once, at the start or the end). Frame
+   cost in Safari is NOT VERIFIED: timing needs a production build (item 4).
+   Recommendation: keep the spring; measure on the first allowed build.
+7. Also open: `20260929200000` (qualifier privacy); white cards and Instrument
    Sans against the brand doc; making `clubhouse-quality` required; held
    migration timing for the stats chain, the strokes-gained fix and Messages
    delete; roster availability; Player CoachHelm Ask; the iOS items; open PRs
@@ -146,8 +154,8 @@ VoiceOver, dark-mode scan or real-account write pass.
 
 ## Shortest path to turn-on, in order
 
-1. Land #2201 (draft; gates pass) and apply `20261016220000` with the owner's
-   OK.
+1. Land #2201 (ready; required checks pass) and apply `20261016220000` with
+   the owner's OK.
 2. Agent fix pass: done 2026-10-17 (the three route dead ends, busy-time
    retry, Settings' refused-save message and Back with edits, Team Hub's
    failed-roster notice, Home's midnight rollover, the Roster `?player=` link,

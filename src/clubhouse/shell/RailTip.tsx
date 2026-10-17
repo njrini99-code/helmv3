@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FocusEvent, type PointerEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FocusEvent, type PointerEvent } from 'react';
 
 export type ChRailTipState = { label: string; y: number; shown: boolean } | null;
 
@@ -41,7 +41,12 @@ export function useRailTip(folded: boolean) {
 export function RailTip({ tip }: { tip: ChRailTipState }) {
   if (!tip) return null;
   return (
-    <span className="ch-railtip" data-shown={tip.shown ? '' : undefined} style={{ top: tip.y }} aria-hidden="true">
+    <span
+      className="ch-railtip"
+      data-shown={tip.shown ? '' : undefined}
+      style={{ '--ch-railtip-y': `${tip.y}px` } as CSSProperties}
+      aria-hidden="true"
+    >
       {tip.label}
     </span>
   );

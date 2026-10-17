@@ -1023,5 +1023,5 @@ main[data-canopy] .ch-hg-hero.is-second,
   box-shadow:
     0 0 0 3px var(--ch-ivory-25),
     0 0 0 4.5px color-mix(in srgb, var(--ch-hg-tone) 45%, transparent),
-    0 2px 6px rgb(0 0 0 / 0.25);
+    var(--ch-elevation-mark-ink);
 }

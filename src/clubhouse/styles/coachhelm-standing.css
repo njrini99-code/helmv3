@@ -755,7 +755,7 @@ main[data-canopy] .ch-hs-r.is-ahead,
   box-shadow:
     0 0 0 3px var(--ch-ivory-25),
     0 0 0 4.5px color-mix(in srgb, var(--ch-hs-tone) 45%, transparent),
-    0 2px 6px rgb(0 0 0 / 0.25);
+    var(--ch-elevation-mark-ink);
 }
 .ch-hs-r.is-ahead {
   --ch-hs-tone: var(--ch-green-fill-600);

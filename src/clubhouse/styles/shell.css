@@ -3732,8 +3732,9 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-railtoggle {
     position: absolute;
     top: 33px;
-    left: calc(env(safe-area-inset-left, 0px) + var(--ch-sidebar-w) - 11px);
+    left: calc(env(safe-area-inset-left, 0px) + var(--ch-rail-w) - 11px);
     z-index: var(--ch-z-sticky);
+    translate: calc(var(--ch-sidebar-w) - var(--ch-rail-w)) 0;
     display: grid;
     place-items: center;
     width: 22px;
@@ -3743,10 +3744,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     border-radius: 50%;
     background: var(--ch-nav-well-bg);
     color: var(--ch-green-700);
-    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25), 0 4px 10px -4px rgb(0 0 0 / 0.4),
-      inset 0 1px 0 #fff;
+    box-shadow:
+      inset 0 1px 0 #fff,
+      var(--ch-elevation-on-frame);
     cursor: pointer;
-    transition: left var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
       transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-railtoggle svg {
@@ -3758,8 +3760,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   @media (hover: hover) {
     .ch-railtoggle:hover {
       transform: scale(1.08);
-      box-shadow: 0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 4px rgb(0 0 0 / 0.25), 0 8px 16px -6px rgb(0 0 0 / 0.45),
-        inset 0 1px 0 #fff;
+      box-shadow: var(--ch-elevation-on-frame-card-hover);
     }
   }
   .ch-railtoggle:active {
@@ -3887,10 +3888,10 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 
   /* The avatar centres on the rail; the foot's rule goes with the card. */
   .ch-identity .ch-avatar {
-    transition: margin var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
   .ch-app[data-ch-rail='folded'] .ch-identity .ch-avatar {
-    margin-left: -5px;
+    translate: -5px 0;
   }
   .ch-sidebar__foot {
     transition: border-color var(--ch-dur-base) var(--ch-ease);
@@ -3910,9 +3911,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     color: var(--ch-green-800);
     font: 600 13px/1 var(--ch-font-sans);
     white-space: nowrap;
-    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
+    top: 0;
+    box-shadow: var(--ch-elevation-on-frame-card-hover);
     pointer-events: none;
     opacity: 0;
+    translate: 0 var(--ch-railtip-y, 0);
     transform: translate(-4px, -50%);
     transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
   }
@@ -3920,7 +3923,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     opacity: 1;
     transform: translate(0, -50%);
     transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
-      top var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+      translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
 }
 @keyframes ch-rail-count {

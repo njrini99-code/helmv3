@@ -958,7 +958,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     background: #fbfaf6;
     box-shadow:
       0 0 0 1px rgb(16 18 14 / 0.08),
-      0 25px 50px -12px rgb(16 18 14 / 0.28);
+      var(--ch-elevation-overlay);
   }
   .ch-modal__head {
     padding: 22px 18px 8px 24px;
@@ -983,7 +983,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     background: rgb(32 32 30);
     box-shadow:
       0 0 0 1px rgb(255 255 255 / 0.14),
-      0 25px 50px -12px rgb(0 0 0 / 0.5);
+      var(--ch-elevation-overlay);
   }
   html[data-fw-theme='dark'] .ch-modal__foot {
     border-top-color: rgb(255 255 255 / 0.08);
