@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-16 — A script face for the wordmark only
+
+`lib/fonts.ts` adds Norican as `--ch-font-script`, preloaded, for the
+sidebar's "Golfhelm" wordmark (P001) and nothing else: an owner-requested
+exception to the sans-only type rule. It replaces Great Vibes, which was tried
+first and was too thin at sidebar size.
+
 ## 2026-10-16 — No card or row has a green side bar
 
 The owner's standing rule: never a card with a green side. Every remaining green left-edge bar

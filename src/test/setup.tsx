@@ -69,7 +69,7 @@ vi.mock('next/font/google', () => ({
   Instrument_Sans: mockFont,
   Instrument_Serif: mockFont,
   JetBrains_Mono: mockFont,
-  Great_Vibes: mockFont,
+  Norican: mockFont,
 }));
 
 // Mock Next.js image
