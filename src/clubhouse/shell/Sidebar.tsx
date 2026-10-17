@@ -71,6 +71,8 @@ export function Sidebar({
                   <Link
                     key={i.id}
                     href={i.href}
+                    // RouteFrame restores the scroll (SectionStrip says why Next's is off).
+                    scroll={false}
                     className="ch-navitem"
                     aria-current={current === i.id ? "page" : undefined}
                   >

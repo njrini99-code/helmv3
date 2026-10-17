@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, render, renderHook, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -172,25 +172,30 @@ describe('CH-3604 Roster phone: a sort change reorders the rows and rolls each f
   const figure = (name: string) => row(name).querySelector('.ch-rsm-row__v b') as HTMLElement;
   const flowOf = (name: string) => figure(name).querySelector('[data-flow]') as HTMLElement | null;
 
-  it('a page reached by navigating draws its figures as text for the first frame, then as Number Flow, with the same text', () => {
-    arrival.painted = false;
-    try {
-      const view = phone({ ...PREVIEW_ROSTER });
-      expect(flowOf('Jonah Okafor')).toBeNull();
-      expect(figure('Jonah Okafor').querySelector('.ch-rsm-flowtext')!.textContent).toBe('74.1');
-      arrival.painted = true;
-      view.rerender(tree({ ...PREVIEW_ROSTER }));
-      expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe('74.1');
-    } finally {
-      arrival.painted = true;
-    }
+  it('draws its figures as text until a hand or focus is on the sort, then as Number Flow, with the same text', () => {
+    phone({ ...PREVIEW_ROSTER });
+    expect(flowOf('Jonah Okafor')).toBeNull();
+    expect(figure('Jonah Okafor').querySelector('.ch-rsm-flowtext')!.textContent).toBe('74.1');
+    expect(flow.mounts).toBe(0);
+    fireEvent.pointerDown(screen.getByRole('radio', { name: 'SG, strokes gained' }));
+    expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe('74.1');
+    expect(flowOf('Jonah Okafor')!.dataset.animated).toBe('false');
+  });
+
+  it('focus on the sort, from the keyboard, also mounts the numerals before a sort is chosen', () => {
+    phone({ ...PREVIEW_ROSTER });
+    expect(flowOf('Jonah Okafor')).toBeNull();
+    act(() => screen.getByRole('radio', { name: 'Avg, scoring average' }).focus());
+    expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe('74.1');
   });
 
   it('rolls the same numeral from the average to strokes gained and back, with a true minus, no count-up, one tick', async () => {
     const user = userEvent.setup();
     phone({ ...PREVIEW_ROSTER });
+    // A hand on the sort mounts the numerals before the click (pointerdown comes first).
+    fireEvent.pointerDown(screen.getByRole('radio', { name: 'SG, strokes gained' }));
     const mountsAtFirstPaint = flow.mounts;
-    // First paint is the figure as it is: the numeral is drawn at its value and does not animate, so nothing counts up.
+    // The numeral is drawn at its value and does not animate, so nothing counts up.
     expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe('74.1');
     expect(flowOf('Jonah Okafor')!.dataset.animated).toBe('false');
     expect(Number(flowOf('Jonah Okafor')!.dataset.ms)).toBe(CH_DUR.base * 1000);
@@ -262,7 +267,7 @@ describe('CH-3604 Roster phone: a sort change reorders the rows and rolls each f
     motion.reduced = true;
     const user = userEvent.setup();
     phone({ ...PREVIEW_ROSTER });
-    expect(flowOf('Theo Marchetti')!.dataset.animated).toBe('false');
+    expect(flowOf('Theo Marchetti')).toBeNull();
     await user.click(screen.getByRole('radio', { name: 'SG, strokes gained' }));
     expect(flowOf('Theo Marchetti')!.dataset.animated).toBe('false');
     expect(flowOf('Theo Marchetti')!.getAttribute('aria-label')).toBe('+1.8');

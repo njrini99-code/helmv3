@@ -4,7 +4,7 @@ import NumberFlow from '@number-flow/react';
 import { ChartColumn, ChevronRight, Medal, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useMemo, type CSSProperties } from 'react';
+import { createContext, useContext, useMemo, useState, type CSSProperties } from 'react';
 import type { ChFigure, ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
@@ -49,12 +49,21 @@ const FLOW_TIMING = {
 const ONE_PLACE = { minimumFractionDigits: 1, maximumFractionDigits: 1 } as const;
 
 /**
+ * Whether the rolling figures are Number Flow yet. They are plain text until a finger or focus lands on the leg rows, the
+ * only control that changes them: pointerdown comes before the click, so the elements are mounted showing the current
+ * values when the pick rolls them. Mounting nine Number Flow elements (each its own shadow root and measuring) was the
+ * second long frame of a switch to Stats.
+ */
+const FlowLive = createContext(false);
+
+/**
  * A signed strokes-gained value whose digits roll when it changes (a leg picked; never on first paint, never on a
  * window change, which remounts it). Intl draws a hyphen, so the sign is ours: a true minus, a plus, none at 0.0
  * (formatSigned's rule). Assistive technology reads the formatted text; the rolling digits are hidden from it.
  */
 function SignedFlow({ value, suffix = '' }: { value: number; suffix?: string }) {
   const reduced = useChReducedMotion();
+  const live = useContext(FlowLive);
   const text = formatSigned(value);
   const sign = text.startsWith('+') ? '+' : text.startsWith(MINUS) ? MINUS : '';
   return (
@@ -64,7 +73,15 @@ function SignedFlow({ value, suffix = '' }: { value: number; suffix?: string }) 
         {suffix}
       </span>
       <span aria-hidden="true">
-        <NumberFlow value={Number(Math.abs(value).toFixed(1))} format={ONE_PLACE} prefix={sign} suffix={suffix} animated={!reduced} {...FLOW_TIMING} />
+        {/* The text is what Number Flow draws (the sign, then the size to one place), so nothing moves when they swap. */}
+        {live ? (
+          <NumberFlow value={Number(Math.abs(value).toFixed(1))} format={ONE_PLACE} prefix={sign} suffix={suffix} animated={!reduced} {...FLOW_TIMING} />
+        ) : (
+          <>
+            {text}
+            {suffix}
+          </>
+        )}
       </span>
     </>
   );
@@ -101,6 +118,10 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   // The legs, players and putting start below the first screen (the legs at 802px of 852), so a switch to Stats renders
   // them a frame after the page has painted: their NumberFlows, peeks and rows were most of the switch's long frame.
   const below = useArrivalPainted();
+  const [flowLive, setFlowLive] = useState(false);
+  const goLive = () => {
+    if (!flowLive) setFlowLive(true);
+  };
   // CH-4703: picking a leg is one selection tick, and ranks the players by it (the SG sort).
   const pickLeg = (next: ChLegPick) => {
     if (next === leg) return;
@@ -111,6 +132,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   return (
     // Sections that crash together are told once, under the controls (CH-1210).
     <SectionGroup>
+      <FlowLive.Provider value={flowLive}>
       <div className="ch-stm is-team">
         <header className="ch-stm-head">
           <span className="ch-num">
@@ -168,7 +190,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
               {below && (
                 <>
                   <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-                    <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} />
+                    <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} onIntent={goLive} />
                   </SectionBoundary>
                   <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
                     <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />
@@ -182,6 +204,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
           )
         )}
       </div>
+      </FlowLive.Provider>
     </SectionGroup>
   );
 }
@@ -315,7 +338,7 @@ function RoundFigures({ data }: { data: ChTeamStats }) {
  * of zero on the data's own scale, the total under them on the same scale. The rows are the leg picker (Base UI Tabs,
  * vertical): a wash slides to the chosen row, its figure rolls, and the players below rank by it.
  */
-function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: (leg: ChLegPick) => void }) {
+function Legs({ data, leg, onLeg, onIntent }: { data: ChTeamStats; leg: ChLegPick; onLeg: (leg: ChLegPick) => void; onIntent: () => void }) {
   const baseline = sgBaseline(data.tour);
   const legs = LEGS_LIST.map((l, i) => ({ l, v: data.legTotals[i] ?? null }));
   const known = legs.filter((x): x is { l: ChLeg; v: number } => x.v != null);
@@ -363,7 +386,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
         {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
             mounted, two layouts of the whole arriving page inside React's commit (28ms of a switch's 163ms of script at
             4x CPU, Chromium, production build, 2026-10-15). Every row is 44px, so the wash's place is its index. */}
-        <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
+        <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical" onPointerDownCapture={onIntent} onFocusCapture={onIntent}>
           {rows.map(({ key, label, v, total }) => {
             const on = key === picked.key;
             return (

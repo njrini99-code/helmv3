@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -590,6 +590,21 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(document.querySelector('.ch-stm-cover')?.textContent).toMatch(/Hole stats from/);
     expect(document.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBeNull();
     expect(document.querySelector('.ch-stm-hero__c b')?.textContent).toBe('−0.9');
+  });
+
+  it('the strokes gained figures are text until a hand or focus is on the leg rows, then Number Flow, with the same text', () => {
+    wrap(stats());
+    // Number Flow is a <span> in tests (src/test/setup.tsx); the text form has no element inside its aria-hidden span.
+    const sgfig = () => document.querySelector('.ch-stm-sgfig b [aria-hidden="true"]')!;
+    const rowFlows = () => document.querySelectorAll('.ch-stm-row__v [aria-hidden="true"] > span').length;
+    expect(sgfig().childElementCount).toBe(0);
+    expect(sgfig().textContent).toBe('−0.5');
+    expect(rowFlows()).toBe(0);
+    fireEvent.pointerDown(within(document.getElementById('ch-stm-legs')!.closest('section')!).getByRole('tab', { name: /^Approach/ }));
+    expect(sgfig().childElementCount).toBe(1);
+    expect(sgfig().textContent).toBe('−0.5');
+    expect(rowFlows()).toBeGreaterThan(0);
+    expect(document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent).toBe('−0.5');
   });
 
   it('CH-4703 a strokes gained leg row picks the leg: one selection tick, the team figure reads it, and the players rank by it', async () => {
