@@ -21,7 +21,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
 import { bubbleNote, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ToPar, ToParPlate } from './parts';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
@@ -491,7 +491,7 @@ function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; statu
                       </span>
                     </span>
                     <span role="cell" className="r ch-qf-num">
-                      {r.played}/{data.numRounds}
+                      <ThruDots played={r.played} total={data.numRounds} />
                     </span>
                     <span role="cell" className="r ch-qf-num">
                       {r.avg != null ? formatFixed(r.avg) : '—'}
