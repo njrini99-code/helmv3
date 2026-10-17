@@ -631,3 +631,88 @@
 :where(html[data-fw-theme='dark']) .ch-hs-tr {
   background: rgb(237 231 216 / 0.1);
 }
+
+/* Greener and organized (owner, 2026-10-16: "same with standing"). Where you stand is the green board: the headline
+   and what is most to gain on the green, the gains panel a lighter well on it. Each group's head carries its tally
+   against the Tour, and a stat that is ahead of the Tour sits on a faint green wash. */
+main[data-canopy] .ch-hs-hero.ch-scoreboard,
+.ch-hs-hero.ch-scoreboard {
+  padding: 30px 32px 28px;
+  border-radius: 24px;
+  background: var(--ch-board-bg);
+  box-shadow: var(--ch-board-shadow);
+}
+main[data-canopy] .ch-hs-hero.ch-scoreboard .ch-hs-hero__k,
+.ch-hs-hero.ch-scoreboard .ch-hs-hero__k {
+  box-shadow: inset 0 -1px 0 rgb(237 231 216 / 0.16);
+  color: var(--ch-hero-mint);
+}
+.ch-hs-hero.ch-scoreboard .ch-hs-hero__k span:last-child,
+.ch-hs-hero.ch-scoreboard .ch-hs-hero__sub {
+  color: var(--ch-text-secondary);
+}
+.ch-hl .ch-hs-hero.ch-scoreboard h2 {
+  color: var(--ch-text-primary);
+}
+.ch-hs-hero.ch-scoreboard .ch-hs-count {
+  color: var(--ch-hero-mint);
+}
+main[data-canopy] .ch-hs-hero.ch-scoreboard .ch-hs-gaps,
+.ch-hs-hero.ch-scoreboard .ch-hs-gaps {
+  padding: 16px 18px 12px;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.ch-hs-hero.ch-scoreboard .ch-hs-gaps h3 {
+  color: #e3b45c;
+}
+.ch-hs-hero.ch-scoreboard .ch-hs-gaps li {
+  border-top-color: rgb(237 231 216 / 0.12);
+}
+.ch-hs-hero.ch-scoreboard .ch-hs-gaps__v b {
+  color: #e3b45c;
+}
+.ch-hs-hero.ch-scoreboard .ch-hs-gaps__v em,
+.ch-hs-hero.ch-scoreboard .ch-hs-gaps > p {
+  color: var(--ch-text-secondary);
+}
+
+/* A group's head: its name in the field green with the tally beside it, over a green rule. */
+.ch-hs-g__t {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.ch-hl .ch-hs-g h2 {
+  color: var(--ch-green-700);
+}
+main[data-canopy] .ch-hs-g__h {
+  box-shadow: inset 0 -2px 0 var(--ch-green-fill-600);
+}
+.ch-hs-tally {
+  display: inline-flex;
+  gap: 6px;
+}
+.ch-hs-tally > span {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font: 600 12px/1 var(--ch-font-sans);
+}
+.ch-hs-tally .is-ahead {
+  background: var(--ch-green-fill-600);
+  color: var(--ch-on-fill-50);
+}
+.ch-hs-tally .is-behind {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+/* A stat ahead of the Tour sits on a faint green wash, so the strengths stand out of the list. */
+main[data-canopy] .ch-hs-r.is-ahead,
+.ch-hs-r.is-ahead {
+  margin-inline: -12px;
+  padding-inline: 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ch-green-fill-600) 7%, transparent);
+}
