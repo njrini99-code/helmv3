@@ -191,7 +191,13 @@ export function QualifiersList({ data }: { data: ChQList }) {
               </div>
             ) : (
               <>
-                {hero && <Hero item={hero} standingsError={data.standingsError} today={data.today} />}
+                {/* The active qualifier is the page's focus (owner, 2026-10-16): its own raised sheet under its own head. */}
+                {hero && (
+                  <section className="ch-qf-sec is-focus" aria-labelledby="ch-qf-now">
+                    <h2 id="ch-qf-now">Active</h2>
+                    <Hero item={hero} standingsError={data.standingsError} today={data.today} />
+                  </section>
+                )}
                 {rest.length > 0 && (
                   <section className="ch-qf-sec" aria-labelledby="ch-qf-active">
                     {/* P009-D14: the section holds upcoming qualifiers as well as live ones. */}
@@ -204,7 +210,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                   </section>
                 )}
                 {filter !== 'active' && (
-                  <section className="ch-qf-sec" aria-labelledby="ch-qf-concluded">
+                  <section className="ch-qf-sec is-done" aria-labelledby="ch-qf-concluded">
                     <h2 id="ch-qf-concluded">Concluded</h2>
                     {concluded.length ? (
                       <div className="ch-qf-grid is-ledger">
@@ -264,7 +270,8 @@ function Hero({ item, standingsError, today }: { item: ChQListItem; standingsErr
       {live && (
         <div className="ch-qf-lead ch-scoreboard">
           <div className="ch-qf-lead__h ch-num">
-            <span>Leaders</span>
+            {/* This qualifier's standings, its top few (only the active qualifier shows a board). */}
+            <span>Standings · top {item.leaders.length}</span>
             <span>
               {item.submitted} of {item.entrants * item.numRounds} rounds in
             </span>
