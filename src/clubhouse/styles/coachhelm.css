@@ -1808,3 +1808,8 @@ html:not([data-fw-theme='dark']) .ch-hl {
 .ch-hl .ch-scoreboard {
   --ch-ledger-ink: var(--ch-text-primary);
 }
+/* The measured gauge (Board and Deep dive): a green-tinted track you can see (owner, 2026-10-16). */
+.ch-hl .ch-hl-g__t {
+  background: color-mix(in srgb, var(--ch-green-fill-600) 14%, var(--ch-bg-surface));
+  box-shadow: inset 0 1px 2px rgb(11 58 37 / 0.12);
+}

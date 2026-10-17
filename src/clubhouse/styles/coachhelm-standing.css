@@ -651,7 +651,7 @@ main[data-canopy] .ch-hs-hero.ch-scoreboard .ch-hs-hero__k,
 .ch-hs-hero.ch-scoreboard .ch-hs-hero__sub {
   color: var(--ch-text-secondary);
 }
-.ch-hl .ch-hs-hero.ch-scoreboard h2 {
+[data-ui='clubhouse'] .ch-hs-hero.ch-scoreboard h2 {
   color: var(--ch-text-primary);
 }
 .ch-hs-hero.ch-scoreboard .ch-hs-count {
@@ -685,7 +685,7 @@ main[data-canopy] .ch-hs-hero.ch-scoreboard .ch-hs-gaps,
   align-items: center;
   gap: 10px;
 }
-.ch-hl .ch-hs-g h2 {
+[data-ui='clubhouse'] .ch-hs-g h2 {
   color: var(--ch-green-700);
 }
 main[data-canopy] .ch-hs-g__h {
@@ -719,7 +719,7 @@ main[data-canopy] .ch-hs-r.is-ahead,
 
 /* Bars you can see (owner, 2026-10-16: "make the bars like green, you can't even see anything"): a green-tinted
    track, the gap to the Tour filled green when ahead and amber when behind, your mark a solid dot ringed in ivory. */
-.ch-hl .ch-hs-tr {
+[data-ui='clubhouse'] .ch-hs-tr {
   height: 10px;
   border-radius: 5px;
   background: color-mix(in srgb, var(--ch-green-fill-600) 14%, var(--ch-bg-surface));
@@ -739,14 +739,14 @@ main[data-canopy] .ch-hs-r.is-ahead,
 .ch-hs-r.is-behind .ch-hs-tr__gap {
   background: linear-gradient(90deg, #d9a441, #b8862b);
 }
-.ch-hl .ch-hs-tr__tour {
+[data-ui='clubhouse'] .ch-hs-tr__tour {
   z-index: 1;
   top: -7px;
   bottom: -7px;
   width: 3px;
   margin-left: -1.5px;
 }
-.ch-hl .ch-hs-tr__you {
+[data-ui='clubhouse'] .ch-hs-tr__you {
   z-index: 2;
   width: 18px;
   height: 18px;
