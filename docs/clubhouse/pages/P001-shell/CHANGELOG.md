@@ -1,5 +1,13 @@
 # P001 — Shell: changelog
 
+## 2026-10-16 — The wordmark in Norican, on the open green
+
+Owner: "fix the script font it looks trash" and "fix the layout". Great Vibes
+was too thin to read at sidebar size; the owner picked Norican from twelve
+scripts compared side by side on the sidebar green. The brand leaves its boxed
+panel for the open green with a hairline under it; the word is 34px and the
+wheel 28px, 9px after it.
+
 ## 2026-10-16 — The team names its own group; the brand stands alone
 
 Owner: "put the team name somewhere else". The brand block is only "Golfhelm"
@@ -11,7 +19,7 @@ one team gets that heading as the switch (`TeamSwitch`, CH-1813, its label now
 ## 2026-10-16 — The brand is "Golfhelm" in script, then the wheel
 
 Owner: "script then logo". The sidebar's brand (and the team switcher's) reads
-"Golfhelm" in Great Vibes, helm in mint, with the wheel after the word at 24px
+"Golfhelm" in script (now Norican, above), helm in mint, with the wheel after the word
 and the team name under both (`shell/BrandWord.tsx`, shell.css
 `.ch-brand__line`). Opening the app from the welcome, the dashboard draws first,
 then the word writes itself in left to right (a mask wipe, 1.3s after a 0.6s

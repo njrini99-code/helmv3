@@ -1,4 +1,4 @@
-import { Great_Vibes, Instrument_Sans, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
+import { Instrument_Sans, Instrument_Serif, JetBrains_Mono, Norican } from 'next/font/google';
 
 /**
  * Clubhouse type: Instrument Sans (variable weight and width) for everything,
@@ -31,12 +31,13 @@ export const jetbrainsMono = JetBrains_Mono({
 });
 
 /** The sidebar's script wordmark, "Golfhelm" (owner, 2026-10-16: "a cursive thing of script" after the sign in). The
- *  brand is on every page, so it is preloaded and the word never swaps in from a fallback. */
-export const greatVibes = Great_Vibes({
+ *  brand is on every page, so it is preloaded and the word never swaps in from a fallback. Norican, a script with
+ *  real weight (owner, 2026-10-16, picked from twelve: the thin Great Vibes "looks trash" at sidebar size). */
+export const norican = Norican({
   subsets: ['latin'],
   weight: '400',
   display: 'swap',
   variable: '--ch-font-script',
 });
 
-export const clubhouseFontVariables = `${instrumentSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} ${greatVibes.variable}`;
+export const clubhouseFontVariables = `${instrumentSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} ${norican.variable}`;

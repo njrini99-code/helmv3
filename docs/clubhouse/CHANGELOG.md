@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-16 — A script face for the wordmark only
+
+`lib/fonts.ts` adds Norican as `--ch-font-script`, preloaded, for the
+sidebar's "Golfhelm" wordmark (P001) and nothing else: an owner-requested
+exception to the sans-only type rule. It replaces Great Vibes, which was tried
+first and was too thin at sidebar size.
+
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
 Owner, testing the preview: on Stats the switcher at the top seemed to be gone.
