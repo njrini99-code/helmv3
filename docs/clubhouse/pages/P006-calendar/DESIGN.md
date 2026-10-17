@@ -163,8 +163,8 @@ D-11 (types are the database's), D-22 (the phone board is the spec), D-47 and D-
 ## Explicit non-goals
 
 Two-way sync with a calendar app (the links are one-way), a Workout type, Message
-invitees, and a first-run page empty state for a team that has never scheduled anything (D-71 names it;
-it is not built yet, and an empty range still draws the grid).
+invitees, and, built since (corrected 2026-10-17), the first-run page empty state for a team that has never
+scheduled anything (D-71, `CalendarFirstRun`).
 
 ## Fresh-build confirmation
 
