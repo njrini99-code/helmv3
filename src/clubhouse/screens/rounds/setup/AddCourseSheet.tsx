@@ -93,6 +93,9 @@ export function AddCourseSheet({ open, onClose, onDone }: { open: boolean; onClo
       code="CH-11511"
       footer={
         <>
+          <span className="ch-rsu-grow ch-rsu-foot-note" role="status" aria-live="polite" data-ch-code={issue ? 'CH-11108' : undefined}>
+            {issue ?? ['Name and place', 'One tee set', `${filled} of ${count} holes`, 'Ready for this round'][step]}
+          </span>
           {step > 0 ? (
             <button type="button" className="ch-btn ch-btn--ghost" onClick={() => setStep(step - 1)}>
               <Icon icon={ChevronLeft} size={15} />
@@ -103,9 +106,6 @@ export function AddCourseSheet({ open, onClose, onDone }: { open: boolean; onClo
               <span>Cancel</span>
             </button>
           )}
-          <span className="ch-rsu-grow ch-rsu-foot-note" role="status" aria-live="polite" data-ch-code={issue ? 'CH-11108' : undefined}>
-            {issue ?? ['Name and place', 'One tee set', `${filled} of ${count} holes`, 'Ready for this round'][step]}
-          </span>
           <button type="button" className="ch-btn ch-btn--primary" disabled={!!issue} onClick={() => (step < 3 ? setStep(step + 1) : done())}>
             <span>{step < 3 ? `Next: ${STEPS[step + 1]}` : 'Use this course'}</span>
             <Icon icon={step < 3 ? ArrowRight : Check} size={15} />

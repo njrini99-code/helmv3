@@ -100,7 +100,8 @@
   margin: 0 0 16px;
 }
 .ch-rsu-spine--sm i {
-  background: linear-gradient(90deg, var(--ch-green-500) var(--ch-rsu-fill, 0%), rgb(28 25 18 / 0.08) var(--ch-rsu-fill, 0%));
+  height: 3px;
+  background: linear-gradient(90deg, var(--ch-green-600) var(--ch-rsu-fill, 0%), rgb(16 18 14 / 0.08) var(--ch-rsu-fill, 0%));
 }
 .ch-rsu-spine--sm em {
   color: var(--ch-text-tertiary);
@@ -322,9 +323,10 @@
   line-height: 50px;
 }
 .ch-rsu-in:focus-visible {
+  outline: none;
   box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.6),
-    0 0 0 4px rgb(28 25 18 / 0.06);
+    0 0 0 1px var(--ch-green-600),
+    0 0 0 4px rgb(21 90 57 / 0.12);
 }
 .ch-rsu-in[aria-invalid='true'] {
   box-shadow: 0 0 0 1.5px var(--ch-danger-600);
@@ -781,35 +783,10 @@
    the panel lets it through, blurred, so the photos sit on light rather than on a sheet of paper. Not where the system
    asks for less transparency (below; Safari doesn't know that query, and a `not` of it matched nothing there). */
 @media (min-width: 821px) {
-  /* The page behind: a plain dim with a light blur, no tint and no saturation, as the Claude and ChatGPT dialogs and
-     Apple's sheets keep it (research, 2026-10-16: both dim at most and neither blurs; the owner asked for a blur). */
-  .ch-modal[data-ch-code='CH-11510']::backdrop {
-    background: rgb(12 12 10 / 0.38);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-  }
-  /* The panel: a solid surface, one hairline edge, one soft shadow, 20px corners (Claude's dialog: solid, a 1px edge,
-     20px, one shadow 0 25px 50px -12px; ChatGPT's: the same at 16px). The glass, its gradient and its two catch-lights
-     read as generated and are gone. */
-  .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
-    border-radius: 20px;
-    background: #fbfaf6;
-    box-shadow:
-      0 0 0 1px rgb(16 18 14 / 0.08),
-      0 25px 50px -12px rgb(16 18 14 / 0.28);
-  }
+  /* The material is every window's (controls.css); the picker's title is a size up, as Claude's search dialog's. */
   .ch-modal[data-ch-code='CH-11510'] .ch-modal__titles h2 {
     font: 600 22px/1.2 var(--ch-font-sans);
     letter-spacing: -0.012em;
-  }
-  html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510']::backdrop {
-    background: rgb(0 0 0 / 0.5);
-  }
-  html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
-    background: rgb(32 32 30);
-    box-shadow:
-      0 0 0 1px rgb(255 255 255 / 0.14),
-      0 25px 50px -12px rgb(0 0 0 / 0.5);
   }
   /* Landscape (owner, 2026-10-16): wider than tall, the photo cards two to a row. */
   .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
@@ -1193,6 +1170,42 @@
   min-width: 0;
   font: 400 12.5px/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+/* In a window the choice between two is a light track with the chosen side lifted on a hairline, not an inset well
+   with a raised green button. */
+.ch-modal .ch-rsu-seg {
+  padding: 3px;
+  border-radius: 12px;
+  background: rgb(16 18 14 / 0.05);
+  box-shadow: none;
+}
+.ch-modal .ch-rsu-seg button {
+  height: 36px;
+  border-radius: 9px;
+  line-height: 36px;
+}
+.ch-modal .ch-rsu-seg button[aria-checked='true'] {
+  color: var(--ch-text-primary);
+  background: #fff;
+  box-shadow:
+    0 0 0 0.5px rgb(16 18 14 / 0.12),
+    0 1px 2px rgb(16 18 14 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-modal .ch-rsu-seg {
+  background: rgb(255 255 255 / 0.06);
+}
+html[data-fw-theme='dark'] .ch-modal .ch-rsu-seg button[aria-checked='true'] {
+  background: rgb(255 255 255 / 0.14);
+  box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.1);
+}
+/* In a window the body already sets the inset: the form takes none of its own, so its fields line up under the title
+   (they sat 20px further in). */
+.ch-modal .ch-rsu-form {
+  padding: 0;
+  gap: 16px;
+}
+.ch-modal .ch-rsu-spine--sm {
+  margin: 2px 0 22px;
 }
 .ch-modal .ch-rsu-hc {
   box-shadow: none;
