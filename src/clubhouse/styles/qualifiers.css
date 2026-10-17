@@ -3703,3 +3703,8 @@ button.ch-qf-prounds__r.is-open {
     margin-top: -4px;
   }
 }
+/* Inside a green board the ledger's heading ink is the board's own, not the page's darker step. */
+.ch-qf .ch-scoreboard,
+.ch-qfm .ch-scoreboard {
+  --ch-ledger-ink: var(--ch-text-primary);
+}

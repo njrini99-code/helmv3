@@ -19,6 +19,9 @@ const sessionClient = vi.hoisted(() => ({ marker: 'the session client' }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => sessionClient }));
 const genomeRead = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock('@/lib/coachhelm/v3/genome/loader', () => ({ loadGenome: genomeRead.load }));
+// The profile also reads the player's CoachHelm insights, the Board's own read (owner, 2026-10-16).
+const helmRead = vi.hoisted(() => ({ load: vi.fn() }));
+vi.mock('../data/coachhelm', () => ({ loadPlayerCoachHelm: helmRead.load }));
 
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { loadPlayerProfile } from '../data/coachhelm-profile';
@@ -129,6 +132,19 @@ describe('the genome as the profile draws it', () => {
 });
 
 describe('the loader reads the player’s own genome through the session’s client, and says when it could not', () => {
+  beforeEach(() => {
+    helmRead.load.mockResolvedValue({ off: null, proposals: { list: [], error: false }, insights: { list: [], error: false }, rounds: null });
+  });
+
+  it('what CoachHelm sees is the Board’s own insight read for the same player, carried beside the genome', async () => {
+    genomeRead.load.mockResolvedValue(null);
+    const insights = { list: [{ id: 'i1' }], error: false };
+    helmRead.load.mockResolvedValue({ off: null, proposals: { list: [], error: false }, insights, rounds: null });
+    const out = await loadPlayerProfile({ playerId: 'pl-jonah' });
+    expect(helmRead.load).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
+    expect(out).toMatchObject({ status: 'ready', data: { sees: insights } });
+  });
+
   it('ready: the row the session client reads, for the player id it was given', async () => {
     genomeRead.load.mockResolvedValue({ player_id: 'pl-jonah', vector: { par3_proficiency: { value: -0.38, confidence: 1, label: 'Under par' } }, computed_at: '2026-09-30T02:30:00Z', rounds_basis: 9 });
     const out = await loadPlayerProfile({ playerId: 'pl-jonah' });
@@ -155,6 +171,20 @@ describe('the loader reads the player’s own genome through the session’s cli
 
 describe('the Game profile screen', () => {
   const show = (load = profileLoad(PREVIEW_PROFILE)) => render(wrap(<Profile load={load} />));
+
+  it('what CoachHelm sees: the top insight as the headline, then what is costing strokes and what is working, each opening its evidence', () => {
+    const ins = (id: string, title: string, strength: boolean, stale: unknown = null) =>
+      ({ id, title, strength, stale, category: 'Putting', value: '28%', lede: `${title} lede.`, evidence: { sample: '83 putts', window: '132 days', asOf: 'As of Oct 1' } }) as never;
+    const sees = { list: [ins('a', '5-10 ft putting: 28%', false), ins('b', '125-175 yd approach: 84%', true), ins('c', 'Old read', false, { since: 'x' })], error: false };
+    show(profileLoad({ ...PREVIEW_PROFILE_PARTIAL, sees }));
+    const board = screen.getByRole('region', { name: '5-10 ft putting: 28%' });
+    expect(within(board).getByText('What CoachHelm sees')).toBeTruthy();
+    expect(within(board).getByText('83 putts · 132 days · As of Oct 1')).toBeTruthy();
+    expect(within(within(board).getByRole('region', { name: 'Costing you' })).getByRole('link').getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive&insight=a');
+    expect(within(board).getByRole('region', { name: 'Working' }).textContent).toContain('125-175 yd approach: 84%');
+    // An out-of-date read is not drawn as current.
+    expect(within(board).queryByText('Old read')).toBeNull();
+  });
 
   it('CH-13860 the page is labelled by CoachHelm; the shape of the game, then every measure, are labelled regions', () => {
     show();

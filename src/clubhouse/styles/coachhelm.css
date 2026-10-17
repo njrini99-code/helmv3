@@ -1804,3 +1804,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
       0 18px 40px -26px rgb(28 25 18 / 0.35);
   }
 }
+/* Inside a green board the ledger's heading ink is the board's own, not the page's darker step. */
+.ch-hl .ch-scoreboard {
+  --ch-ledger-ink: var(--ch-text-primary);
+}

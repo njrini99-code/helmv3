@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, Dna, Lock, Play } from 'lucide-react';
+import { ChevronDown, ChevronRight, Dna, Lock, Play } from 'lucide-react';
 import { useId } from 'react';
 import type { ChMeasure, ChProfile } from '../../../data/coachhelm-profile-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
@@ -14,7 +14,7 @@ import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { KeepReading } from './KeepReading';
 
-const LINE = 'How you play, read from the rounds you posted in the last 90 days.';
+const LINE = 'What CoachHelm reads in your rounds, and the shape of your game.';
 
 /**
  * A measure on its own scale. The track is decoration (the figure and the words carry every number); a gap from its "no
@@ -92,14 +92,67 @@ function Measure({ m }: { m: ChMeasure }) {
   );
 }
 
+/** Deep dive opened on one insight. */
+const diveHref = (id: string) => `${PLAYER_HELM_HREF['deep-dive']}&insight=${encodeURIComponent(id)}`;
+
+/**
+ * What CoachHelm sees (owner, 2026-10-16: "make it based on actual CoachHelm output"): the player's own insights, ranked as
+ * the Board ranks them, split into what is working and what is costing strokes. Each row is the insight's title and
+ * headline number, and opens its evidence in Deep dive. Nothing here is written for the page: it is the engine's text.
+ */
+function Sees({ sees }: { sees: NonNullable<ChProfile['sees']> }) {
+  if (sees.error) {
+    return <RefreshNotice code="CH-13261" title="What CoachHelm sees didn’t load" body="Your measures below are still right; try again in a moment." />;
+  }
+  const live = sees.list.filter((i) => !i.stale);
+  if (!live.length) return null;
+  const groups = [
+    { key: 'warn', title: 'Costing you', rows: live.filter((i) => !i.strength).slice(0, 4) },
+    { key: 'good', title: 'Working', rows: live.filter((i) => i.strength).slice(0, 4) },
+  ].filter((g) => g.rows.length > 0);
+  const top = live[0]!;
+  const meta = [top.evidence.sample, top.evidence.window, top.evidence.asOf].filter(Boolean).join(' · ');
+  return (
+    <section className="ch-hg-sees ch-scoreboard" aria-labelledby="ch-hg-sees-t">
+      <div className="ch-hg-hero__k">
+        <span>What CoachHelm sees</span>
+        {meta && <span className="ch-num">{meta}</span>}
+      </div>
+      <h2 id="ch-hg-sees-t">{top.title}</h2>
+      {top.lede && <p className="ch-hg-sees__lede">{top.lede}</p>}
+      <div className="ch-hg-sees__cols">
+        {groups.map((g) => (
+          <section key={g.key} aria-label={g.title} className={'ch-hg-sees__c is-' + g.key}>
+            <h3>{g.title}</h3>
+            <ul>
+              {g.rows.map((i) => (
+                <li key={i.id}>
+                  <a href={diveHref(i.id)} className="ch-hg-sees__r">
+                    <span className="ch-hg-sees__b">
+                      <small>{i.category}</small>
+                      <b>{i.title}</b>
+                    </span>
+                    {i.value && <span className="ch-hg-sees__v ch-num">{i.value}</span>}
+                    <Icon icon={ChevronRight} size={15} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Hero({ p }: { p: ChProfile }) {
   const meta = [`Last ${p.windowDays} days`, p.rounds != null ? `${p.rounds} ${p.rounds === 1 ? 'round' : 'rounds'}` : null, p.refreshed ? `Refreshed ${p.refreshed}` : null].filter(Boolean);
   const none = p.strengths.length === 0 && p.watchouts.length === 0;
   return (
     // The shape of the game on the team board's green (owner, 2026-10-16: "more green"), with how much of it is read so far.
-    <section className="ch-hg-hero ch-scoreboard" aria-labelledby="ch-hg-hero-t">
+    <section className={'ch-hg-hero' + (p.sees?.list.some((i) => !i.stale) ? ' is-second' : ' ch-scoreboard')} aria-labelledby="ch-hg-hero-t">
       <div className="ch-hg-hero__k">
-        <span>Your game</span>
+        <span>The shape of your game</span>
         <span className="ch-num">{meta.join(' · ')}</span>
       </div>
       <h2 id="ch-hg-hero-t">{p.courseProfile ?? 'What your rounds say so far'}</h2>
@@ -205,6 +258,7 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
         </>
       ) : (
         <SectionBoundary surface="coachhelm.profile" label="Your game profile" code="CH-13204">
+          {p.sees && <Sees sees={p.sees} />}
           <Hero p={p} />
           <section className="ch-hg-sec" aria-labelledby="ch-hg-all">
             <div className="ch-hg-sec__h">
