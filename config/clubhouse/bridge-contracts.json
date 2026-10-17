@@ -917,7 +917,7 @@
     "item": 13,
     "name": "ON_A_DESKTOP_A_HEAD_COACH_ON",
     "chCode": "CH-1813",
-    "meaning": "On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team",
+    "meaning": "On a desktop a head coach on more than one team sees the sidebar's Team group heading (the team's name) as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },

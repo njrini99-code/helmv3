@@ -369,7 +369,8 @@ describe('Recruiting · the loader, the route and the page', () => {
   it('Recruiting is in the coach\'s sidebar under Team, after Roster, and is a rebuilt route for coaches only', () => {
     const i = CH_NAV_COACH.findIndex((n) => n.id === 'recruiting');
     expect(CH_NAV_COACH[i]).toMatchObject({ label: 'Recruiting', href: '/golf/dashboard/recruiting', section: 'Team' });
-    expect(CH_NAV_COACH[i - 1]?.id).toBe('roster');
+    // After Roster in the Team group (owner, 2026-10-16: Qualifiers sits between them now).
+    expect(i).toBeGreaterThan(CH_NAV_COACH.findIndex((n) => n.id === 'roster'));
     expect(isRebuilt('/golf/dashboard/recruiting', 'coach')).toBe(true);
     expect(isRebuilt('/golf/dashboard/recruiting', 'player')).toBe(false);
     expect(CH_REBUILT_ROUTES.player).not.toContain('/golf/dashboard/recruiting');

@@ -9,16 +9,15 @@ import { haptic } from '../lib/haptics';
 import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useTeamSwitch, type ChTeamSwitch } from './team-switch';
-import { BrandLine } from './BrandWord';
 
 const OPTION = '[role="option"]';
 
 /**
- * Desktop: the sidebar's team line is a menu button (the boards draw its up-down chevrons) that opens the coach's
+ * Desktop: the sidebar's Team group is headed by the team's name, a menu button (the boards draw its up-down chevrons) that opens the coach's
  * teams. A listbox in a portal, so the sidebar's scroll never clips it: arrows, Home and End move, Enter or Space
  * picks, Esc closes and focus goes back to the button.
  */
-export function BrandTeamSwitch({ model, teamName, write = false }: { model: ChTeamSwitch; teamName: string | null; write?: boolean }) {
+export function TeamSwitch({ model, teamName }: { model: ChTeamSwitch; teamName: string | null }) {
   const sw = useTeamSwitch(model);
   const reduced = useChReducedMotion();
   const id = useId();
@@ -102,8 +101,8 @@ export function BrandTeamSwitch({ model, teamName, write = false }: { model: ChT
       <button
         ref={btn}
         type="button"
-        className="ch-brand ch-brand--switch"
-        aria-label={`GolfHelm, ${current ?? 'your team'}. Switch team`}
+        className="ch-nav__section ch-nav__team ch-nav__team--switch"
+        aria-label={`${current ?? 'Your team'}. Switch team`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -117,14 +116,9 @@ export function BrandTeamSwitch({ model, teamName, write = false }: { model: ChT
           }
         }}
       >
-        <span className="ch-brand__txt">
-          <BrandLine write={write} />
-          {/* The board's team line: the name, then the up-down chevrons that say it opens. */}
-          <span className="ch-brand__team ch-brand__team--switch">
-            <span>{current ?? 'Choose a team'}</span>
-            <Icon icon={ChevronsUpDown} size={13} />
-          </span>
-        </span>
+        {/* The team's name, then the up-down chevrons that say it opens (the boards' team chip). */}
+        <span>{current ?? 'Choose a team'}</span>
+        <Icon icon={ChevronsUpDown} size={13} />
       </button>
       {typeof document !== 'undefined' &&
         createPortal(

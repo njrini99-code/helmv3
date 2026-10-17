@@ -487,17 +487,17 @@ describe('Shell · sidebar data', () => {
         [...g.querySelectorAll('a')].map((a) => a.textContent?.replace(/\d+$/, '').trim()),
       ]);
     const { unmount } = wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
-    // Owner, 2026-10-16: Team Hub and Qualifiers sit under Team.
+    // Owner, 2026-10-16: Team Hub and Qualifiers sit under Team, and the team's own name heads that group.
     expect(read()).toEqual([
       ['', ['Home', 'CoachHelm', 'Calendar', 'Messages']],
-      ['Team', ['Team Hub', 'Roster', 'Stats', 'Qualifiers', 'Recruiting']],
+      ['Varsity', ['Team Hub', 'Roster', 'Stats', 'Qualifiers', 'Recruiting']],
     ]);
     unmount();
     const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;
     wrap(<Sidebar userData={player} shell={shell} pathname="/golf/dashboard" />);
     expect(read()).toEqual([
       ['', ['Home', 'CoachHelm', 'Calendar', 'Messages']],
-      ['Team', ['Team Hub', 'Roster', 'Qualifiers']],
+      ['Varsity', ['Team Hub', 'Roster', 'Qualifiers']],
       ['My game', ['Rounds', 'My stats']],
       ['School', ['Classes']],
     ]);
