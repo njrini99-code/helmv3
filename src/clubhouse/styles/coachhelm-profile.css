@@ -740,3 +740,150 @@
 :where(html[data-fw-theme='dark']) .ch-hg-sc__t {
   background: rgb(237 231 216 / 0.1);
 }
+
+/* Organized and greener (owner, 2026-10-16: "more green. the cards are unorganized and doesn't make much sense"). The shape
+   of the game is the green board, with how much of it is read as a row of dots; the measures split into what has a read
+   and what is still filling in, the second as small green-tinted tiles that each say what they still need. */
+main[data-canopy] .ch-hg-hero.ch-scoreboard,
+.ch-hg-hero.ch-scoreboard {
+  gap: 20px;
+  padding: 30px 32px 26px;
+  border-radius: 24px;
+  background: var(--ch-board-bg);
+  box-shadow: var(--ch-board-shadow);
+}
+main[data-canopy] .ch-hg-hero.ch-scoreboard .ch-hg-hero__k,
+.ch-hg-hero.ch-scoreboard .ch-hg-hero__k {
+  padding-bottom: 12px;
+  box-shadow: inset 0 -1px 0 rgb(237 231 216 / 0.16);
+  color: var(--ch-hero-mint);
+}
+.ch-hg-hero.ch-scoreboard .ch-hg-hero__k span:last-child {
+  color: var(--ch-text-secondary);
+}
+.ch-hl .ch-hg-hero.ch-scoreboard h2 {
+  color: var(--ch-text-primary);
+}
+.ch-hg-hero.ch-scoreboard .ch-hg-hero__none {
+  color: var(--ch-text-secondary);
+}
+main[data-canopy] .ch-hg-hero.ch-scoreboard .ch-hg-stand__c,
+.ch-hg-hero.ch-scoreboard .ch-hg-stand__c {
+  padding: 14px 16px 4px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.ch-hg-hero.ch-scoreboard .ch-hg-stand__c h3 {
+  color: var(--ch-hero-mint);
+}
+.ch-hg-hero.ch-scoreboard .ch-hg-stand__c li {
+  border-top-color: rgb(237 231 216 / 0.12);
+}
+.ch-hg-hero.ch-scoreboard .ch-hg-stand__v {
+  color: var(--ch-text-primary);
+}
+.ch-hg-ready {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 14px;
+  box-shadow: inset 0 1px 0 rgb(237 231 216 / 0.16);
+}
+.ch-hg-ready__dots {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+}
+.ch-hg-ready__dots i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.4);
+}
+.ch-hg-ready__dots i.is-on {
+  background: var(--ch-hero-mint);
+  box-shadow: 0 0 0 3px rgb(159 224 182 / 0.18);
+}
+.ch-hg-hero.ch-scoreboard .ch-hg-early {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font: 500 13.5px/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hg-hero.ch-scoreboard .ch-hg-early b {
+  color: var(--ch-hero-mint);
+}
+
+/* The two groups of measures, each under a green head with its count. */
+.ch-hg-grp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 26px 0 10px;
+  font: 600 15px/1.2 var(--ch-font-sans);
+  color: var(--ch-green-700);
+}
+.ch-hg-grp span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--ch-green-fill-600);
+  font: 700 12px/1 var(--ch-font-sans);
+  color: var(--ch-on-fill-50);
+}
+.ch-hg-grp.is-locked span {
+  background: color-mix(in srgb, var(--ch-green-fill-600) 16%, transparent);
+  color: var(--ch-green-700);
+}
+/* What is read keeps the ruled table, with a green rule on top. */
+main[data-canopy] .ch-hg-grid:not(.is-locked) {
+  box-shadow: inset 0 2px 0 var(--ch-green-fill-600);
+}
+/* What is still filling in: three small tiles a row, green-tinted, each the measure, a quiet lock and what it needs. */
+main[data-canopy] .ch-hg-grid.is-locked,
+.ch-hg-grid.is-locked {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+main[data-canopy] .ch-hg-grid.is-locked > .ch-hg-m,
+main[data-canopy] .ch-hg-grid.is-locked > .ch-hg-m:nth-child(n),
+.ch-hg-grid.is-locked > .ch-hg-m {
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ch-green-100) 45%, var(--ch-bg-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 18%, transparent);
+}
+.ch-hg-grid.is-locked .ch-hg-m h3 {
+  font-size: 15px;
+}
+.ch-hg-grid.is-locked .ch-hg-m__lock {
+  gap: 5px;
+  font: 600 12.5px/1.2 var(--ch-font-sans);
+  letter-spacing: 0;
+  color: var(--ch-green-700);
+}
+.ch-hg-grid.is-locked .ch-hg-m__mean {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.ch-hg-grid.is-locked .ch-hg-m__floor {
+  font-size: 12px;
+}
+/* The way on closes the section under both groups. */
+.ch-hg-sec > .ch-hg-tail {
+  margin-top: 24px;
+}
+html[data-fw-theme='dark'] .ch-hg-grid.is-locked > .ch-hg-m {
+  background: color-mix(in srgb, var(--ch-green-fill-600) 12%, var(--ch-bg-surface));
+}
+/* A measure with no stance reads on green rather than grey: the fill and marker take the field green. */
+.ch-hl .ch-hg-m:not(.is-good):not(.is-warn) {
+  --ch-hg-tone: var(--ch-green-fill-600);
+}
