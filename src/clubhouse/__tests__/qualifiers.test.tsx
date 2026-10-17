@@ -569,7 +569,7 @@ describe('Qualifiers · list', () => {
     const hero = document.querySelector('.ch-qf-hero') as HTMLAnchorElement;
     expect(hero.getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${data.items[0]!.id}`);
     expect(hero.textContent).toMatch(/Pinehurst qualifier.*View leaderboard/);
-    expect(within(hero).getByText('Leaders')).toBeTruthy();
+    expect(within(hero).getByText(/^Standings · top \d+$/)).toBeTruthy();
     const titles = (heading: string) =>
       [...(screen.getByRole('heading', { level: 2, name: heading }).closest('section') as HTMLElement).querySelectorAll('h3')].map((h) => h.textContent);
     expect(titles('Upcoming and live')).toEqual(['Conference qualifier']);

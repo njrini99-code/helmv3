@@ -3147,3 +3147,58 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     opacity: 0.8;
   }
 }
+
+/* The active qualifier is the focus (owner, 2026-10-16: "more focal on active qualifiers"): a raised sheet with a green
+   edge, the board beside it named for what it is; concluded qualifiers step back to quiet bordered rows. */
+@media (min-width: 821px) {
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-focus {
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-focus > h2 {
+    color: var(--ch-green-700);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-hero {
+    margin-top: 0;
+    padding: 30px 32px;
+    border-radius: 20px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 30%, transparent),
+      0 2px 4px rgb(11 58 37 / 0.06),
+      0 18px 40px -22px rgb(11 58 37 / 0.45);
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-qf--list[data-canopy] .ch-qf-hero:hover {
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 45%, transparent),
+        0 2px 4px rgb(11 58 37 / 0.08),
+        0 22px 46px -22px rgb(11 58 37 / 0.5);
+    }
+  }
+  .ch-qf--list .ch-qf-lead__h > span:first-child {
+    font-weight: 600;
+    color: var(--ch-on-fill-50);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done {
+    margin-top: 28px;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done > h2 {
+    font-size: 16px;
+    color: var(--ch-text-secondary);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-grid.is-ledger {
+    gap: 8px;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-grid.is-ledger .ch-qf-card,
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
+    padding: 14px 22px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--ch-bg-surface) 70%, transparent);
+    box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-card h3 {
+    font-size: 15px;
+  }
+}
