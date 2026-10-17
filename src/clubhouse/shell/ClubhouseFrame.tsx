@@ -35,7 +35,7 @@ import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 import '../styles/controls.css';
-import { useCanvasSmoothScroll } from '../lib/smooth-scroll';
+import { useCanvasSmoothScroll, useSmoothWheelEverywhere } from '../lib/smooth-scroll';
 
 /** Set under ChMotionFeatures, so a frame rendered inside it doesn't render a second one. */
 const ChMotionScope = createContext(false);
@@ -119,6 +119,8 @@ export function ClubhouseFrame({
   const { showAnimations } = useAppearancePreferences();
   // Smooth wheel scrolling on the desktop canvas (off on a phone, with reduced motion and with Animations off).
   useCanvasSmoothScroll();
+  // …and every other box that scrolls: lists, panes, a modal's body, a sheet.
+  useSmoothWheelEverywhere();
   useEffect(() => chTagSession(), []);
   // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
   useEffect(() => liftHandoffCurtain(), []);
