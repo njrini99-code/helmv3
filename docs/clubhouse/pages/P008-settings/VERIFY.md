@@ -297,19 +297,24 @@ before, after, baseline or evidence.
     "Your account doesn’t have access to do this."; only a save that threw, gave
     no reason or failed with the browser's network wording keeps "Check your
     connection and try again." (`saveFailureBody` in `parts.tsx`).
-- Found and not fixed:
-  - Phone: a Back while the Profile, Change email or Password sheet holds edits
-    over the list itself (not a section) leaves Settings for the page before it
-    without asking. That Back leaves the route, so the address has already
-    changed when the page hears it; holding it there would need the sheets to
-    be history entries.
-  - Two CoachHelm priority moves in a row: if the first save fails and the
-    second lands, the screen shows the order
-    from before the first move while the server has both moves.
-  - The loader reads `golf_coach_philosophy` and `golf_teams` twice each.
-  - Leave team, Make a new invite code, Reset CoachHelm updates and Turn off
-    CoachHelm open their confirm without the
-    warning haptic (an owner decision under D-70).
+- Fixed 2026-10-17 (the rest of the list):
+  - Phone: a Back while the Profile, Change email or Password sheet is open over
+    the list itself now closes the sheet instead of leaving Settings, and asks
+    first when it holds edits: a sheet over the list is a history entry of its
+    own, as a section is. Test `settings.test.tsx` (fails without the fix);
+    checked in WebKit at 390px (Back with edits stayed on Settings, asked, kept
+    the text).
+  - Two CoachHelm priority moves in a row where the first save fails and the
+    second lands: a failed save now puts back only the fields nothing has
+    changed since it was sent, so the screen keeps the second move, as the
+    server does. Test `settings-philosophy-save.test.tsx` (fails without the
+    fix).
+  - The loader reads `golf_coach_philosophy` and `golf_teams` once each (the
+    digest is a column of the philosophy row; the team name comes from the team
+    row each role reads). Test `settings-server.test.tsx` (fails without it).
+  - Leave team, Make a new code, Reset CoachHelm updates and Turn off CoachHelm
+    give the warning tick as their desktop confirm opens (D-70); the phone's
+    action sheets already did. Tests CH-8502 to CH-8505.
 
 ## 2026-10-02 — Custom native overlay lifetime
 

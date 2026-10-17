@@ -496,6 +496,8 @@ describe('Settings · 85xx confirm', () => {
     const { user, writes } = setup({ data: playerData(true), section: 'golf' });
     await user.click(screen.getByRole('button', { name: 'Leave team' }));
     await expectCode('CH-8502', /Leave Varsity/);
+    // D-70: the warning tick as a confirm for something that cannot be taken back opens (2026-10-17).
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
     await user.click(screen.getByRole('button', { name: 'Stay on the team' }));
     expect(writes.leaveTeam).not.toHaveBeenCalled();
   });
@@ -504,6 +506,8 @@ describe('Settings · 85xx confirm', () => {
     const { user, writes } = setup({ section: 'team' });
     await user.click(within(card('Invite players')).getByRole('button', { name: 'Make a new code' }));
     await expectCode('CH-8503', /K7M2Q9XA stops working/);
+    // D-70: the warning tick as a confirm for something that cannot be taken back opens (2026-10-17).
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
     await user.click(screen.getByRole('button', { name: 'Keep this code' }));
     expect(writes.regenerateCode).not.toHaveBeenCalled();
   });
@@ -512,6 +516,8 @@ describe('Settings · 85xx confirm', () => {
     const { user, writes } = setup({ data: playerData(true), section: 'notifications' });
     await user.click(screen.getByRole('button', { name: 'Reset' }));
     await expectCode('CH-8504', /Reset CoachHelm updates/);
+    // D-70: the warning tick as a confirm for something that cannot be taken back opens (2026-10-17).
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
     expect(writes.setRoutingAll).not.toHaveBeenCalled();
   });
 
@@ -519,6 +525,8 @@ describe('Settings · 85xx confirm', () => {
     const { user, writes } = setup({ section: 'coachhelm' });
     await user.click(screen.getByRole('switch', { name: 'CoachHelm on your dashboards' }));
     await expectCode('CH-8505', /Turn off CoachHelm/);
+    // D-70: the warning tick as a confirm for something that cannot be taken back opens (2026-10-17).
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
     expect(writes.setCoachHelmCoach).not.toHaveBeenCalled();
   });
 
@@ -2232,6 +2240,32 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await waitFor(() => expect(document.querySelector('[data-ch-code="CH-8509"][open]')).not.toBeNull());
       expect(top().getByRole('heading', { level: 1, name: 'Account' })).toBeTruthy();
       expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes Jr');
+    });
+
+    it('81901 CH-8509 the Profile sheet over the Settings list: Back with edits asks and stays on Settings; Back with none closes the sheet', async () => {
+      const { user } = phone();
+      await screen.findByRole('navigation', { name: 'Settings sections' });
+      await user.click(screen.getByRole('button', { name: /Maya Reyes/ }));
+      // Open over the list, the sheet is a history entry of its own.
+      await waitFor(() => expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1));
+      await user.type(within(dialog('Profile')).getByLabelText('Full name'), ' Jr');
+      act(() => window.history.back());
+      await waitFor(() => expect(document.querySelector('[data-ch-code="CH-8509"][open]')).not.toBeNull());
+      expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes Jr');
+      expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
+      expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1);
+      await user.click(within(document.querySelector('[data-ch-code="CH-8509"][open]') as HTMLElement).getByRole('button', { name: 'Discard changes' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull());
+      // Opened again with nothing changed, Back just closes it, and Settings stays.
+      await user.click(screen.getByRole('button', { name: /Maya Reyes/ }));
+      await waitFor(() => expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1));
+      await act(async () => {
+        window.history.back();
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull());
+      expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
+      expect(sheetOf('CH-8509')).toBeNull();
     });
 
     it('81901 a Back over a sheet with nothing changed pops the section without asking, as before', async () => {

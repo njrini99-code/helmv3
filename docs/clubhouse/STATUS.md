@@ -58,7 +58,7 @@ VoiceOver, dark-mode scan or real-account write pass.
 | P005 Stats (player) | Ready with caveats | Focus-area write untested in a real session; strokes-gained figures wait on the held fix (data quality, not a blocker) |
 | P006 Calendar | Ready with caveats | No device pass. Retry after a lost reply is safe for events and series (C-17) and busy time (fixed 2026-10-17) |
 | P007 Messages | Ready with caveats | Conversation files is a HELD feature that turns on with the flag (decision 1); the Messages E2E signs in to production and waits for the owner |
-| P008 Settings | Ready with caveats | Desktop built from the system with no handoff screen, never owner-reviewed (decision 3); Back over the Settings list itself with a Profile, Email or Password sheet open still leaves without asking. Fixed 2026-10-17: a refused save says why; Back over a section's sheet with edits asks first |
+| P008 Settings | Ready with caveats | Desktop built from the system with no handoff screen, never owner-reviewed (decision 3). Fixed 2026-10-17: a refused save says why; Back over any edit sheet with edits asks first and keeps Settings; the priority order after a failed save; one read per table; warning ticks on destructive confirms |
 | P009 Qualifiers | Not ready | Squad-size and entrant edits are HELD and turn on with the flag (decision 1); held `20260929200000` (coach reasoning coach-only, D-35; the app already reads it coach-only). Fixed 2026-10-17: a coach on `/my-qualifiers` goes to Qualifiers |
 | P010 Team Hub | Ready with caveats | No device pass. Fixed 2026-10-17: a failed roster read says so with Try again (CH-10208); the dark scan passes |
 | P011 Rounds | Not ready | Q-120 decision (decision 2); the owner's device pass (airplane mode, kill the app, Recover); 11 contracts without a test, including writes refused offline; the round E2E runs only against a local stack, never in CI |
@@ -140,9 +140,8 @@ VoiceOver, dark-mode scan or real-account write pass.
    retry, Settings' refused-save message and Back with edits, Team Hub's
    failed-roster notice, Home's midnight rollover, the Roster `?player=` link,
    the dark-mode scan, the stale docs). Left: a CI job for the round E2E
-   against a local stack (it adds runner minutes to every push; owner's call)
-   and Settings' Back over the list with a Profile, Email or Password sheet
-   open.
+   against a local stack (it adds runner minutes to every push; owner's
+   call).
 3. Deploy `main` (the six undeployed commits, then #2201) with the flag still
    off, and confirm with `npm run release:status -- --strict`.
 4. Owner decisions 1 and 2 above.
