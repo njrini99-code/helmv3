@@ -21603,6 +21603,10 @@ export type Database = {
       }
       golf_normalize_name: { Args: { p: string }; Returns: string }
       golf_readable_round_ids: { Args: never; Returns: string[] }
+      golf_set_course_image: {
+        Args: { p_course_id: string; p_image_url: string }
+        Returns: undefined
+      }
       golf_team_by_join_code: {
         Args: { p_code: string }
         Returns: {
