@@ -3068,3 +3068,82 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 .ch-qfm .ch-qf-board .ch-qfm-lb__sub .ch-badge {
   font-size: 12.5px;
 }
+
+/* The desktop list, separated and stronger (owner, 2026-10-16: "better separation between qualifiers listed", "more
+   contrast on this page"): each qualifier is its own raised sheet on the parchment with a gap between, the ruled ledger
+   seams give way to that gap, and the copy, facts and filters step up to full ink. */
+@media (min-width: 821px) {
+  .ch-qf--list[data-canopy] .ch-qf-sec > h2 {
+    padding: 0 0 4px;
+    box-shadow: none;
+    color: var(--ch-text-primary);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger {
+    gap: 12px;
+    margin: 12px 0 0;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card {
+    padding: 20px 24px;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px var(--ch-border-subtle),
+      0 1px 2px rgb(28 25 18 / 0.06),
+      0 8px 20px -14px rgb(28 25 18 / 0.3);
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
+    box-shadow:
+      inset 0 0 0 1px var(--ch-border-subtle),
+      0 1px 2px rgb(28 25 18 / 0.06),
+      0 8px 20px -14px rgb(28 25 18 / 0.3);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card::before {
+    display: none;
+  }
+  @media (hover: hover) {
+    .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:hover {
+      background: var(--ch-bg-surface);
+      box-shadow:
+        inset 0 0 0 1px var(--ch-border-strong),
+        0 2px 4px rgb(28 25 18 / 0.06),
+        0 12px 26px -14px rgb(28 25 18 / 0.36);
+    }
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-mine {
+    margin-top: -6px;
+  }
+  .ch-qf--list .ch-qf-card h3,
+  .ch-qf--list[data-canopy] .ch-qf-card h3 {
+    font-weight: 600;
+    color: var(--ch-text-primary);
+  }
+  .ch-qf--list .ch-qf-card__h p,
+  .ch-qf--list .ch-qf-hero__main p,
+  .ch-qf--list .ch-qf-meta {
+    color: var(--ch-text-primary);
+  }
+  .ch-qf--list .ch-qf-meta svg {
+    color: var(--ch-green-700);
+  }
+  .ch-qf--list .ch-qf-head p {
+    color: var(--ch-text-primary);
+  }
+  /* The filters read as the app's other switchers: ink on the idle pills, the green chip on the chosen one. */
+  .ch-qf-pill {
+    color: var(--ch-text-primary);
+    box-shadow: inset 0 0 0 1px var(--ch-border-control);
+  }
+  .ch-qf-pill span {
+    color: var(--ch-text-secondary);
+  }
+  .ch-qf-pill[aria-pressed='true'] {
+    background: var(--ch-seg-on-bg);
+    color: var(--ch-seg-on-ink);
+    box-shadow: var(--ch-seg-on-shadow);
+  }
+  .ch-qf-pill[aria-pressed='true'] span {
+    color: var(--ch-seg-on-ink);
+    opacity: 0.8;
+  }
+}
