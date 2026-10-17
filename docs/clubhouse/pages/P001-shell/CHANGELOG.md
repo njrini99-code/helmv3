@@ -1,5 +1,13 @@
 # P001 — Shell: changelog
 
+## 2026-10-16 — The team names its own group; the brand stands alone
+
+Owner: "put the team name somewhere else". The brand block is only "Golfhelm"
+and the wheel. The team's name now heads the sidebar's Team group in place of
+the word "Team" (a group with no team keeps "Team"); a head coach on more than
+one team gets that heading as the switch (`TeamSwitch`, CH-1813, its label now
+"<team>. Switch team"). The footer's identity line still reads role · team.
+
 ## 2026-10-16 — The brand is "Golfhelm" in script, then the wheel
 
 Owner: "script then logo". The sidebar's brand (and the team switcher's) reads

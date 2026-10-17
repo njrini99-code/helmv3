@@ -92,50 +92,47 @@
   width: 32px;
   height: 32px;
 }
-.ch-brand__txt {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-.ch-brand__word {
-  font: 600 18px/1 var(--ch-font-sans);
-  letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 92;
-  color: var(--ch-on-green-bright);
-}
-.ch-brand__team {
+/* The Team group's heading is the team (owner, 2026-10-16: the name left the brand). A head coach on more than one
+   team gets it as a menu button, with the boards' up-down chevrons. */
+.ch-nav__team {
   overflow: hidden;
-  font: 500 12.5px/1.2 var(--ch-font-sans);
-  color: var(--ch-on-green-glyph);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* Team switcher (a head coach on more than one team): the brand block is the button, as the boards' team chip is. */
-.ch-brand--switch {
-  width: calc(100% + 4px);
+.ch-nav__team--switch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
   border: 0;
-  color: inherit;
-  font: inherit;
+  border-radius: var(--ch-radius-sm);
+  background: none;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-brand--switch[aria-expanded='true'] {
+.ch-nav__team--switch > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ch-nav__team--switch svg {
+  flex: none;
+  color: var(--ch-on-green-glyph);
+}
+.ch-nav__team--switch[aria-expanded='true'] {
   background: rgb(250 248 241 / 0.1);
-  box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.28);
 }
 @media (hover: hover) {
-  .ch-brand--switch:hover {
+  .ch-nav__team--switch:hover {
     background: rgb(250 248 241 / 0.1);
-    box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.28);
   }
 }
-.ch-brand--switch:focus-visible {
+.ch-nav__team--switch:focus-visible {
   outline: 2px solid var(--ch-champagne-300);
   outline-offset: 1px;
 }
-.ch-brand--switch[aria-busy='true'] {
+.ch-nav__team--switch[aria-busy='true'] {
   cursor: progress;
 }
 /* A team switch in flight: the old team's page fades out and takes no taps until the new team's page commits
@@ -153,21 +150,7 @@
     transition: none;
   }
 }
-.ch-brand__team--switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.ch-brand__team--switch > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ch-brand__team--switch svg {
-  flex: none;
-  color: var(--ch-on-green-glyph);
-}
-/* The coach's teams, under the brand block: a popover panel (.ch-popover) of two or three rows. */
+/* The coach's teams, under the Team heading: a popover panel (.ch-popover) of two or three rows. */
 .ch-tsw {
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -2094,11 +2077,6 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 /* The Frame (owner, 2026-10-07, matching the Coach Home handoff): the sidebar is the frame's green with the brand in
    its own panel (the base .ch-brand), ivory type on the green, and an ivory plate for the selected row; the
    next-event card stays a light sheet. */
-.ch-brand__team,
-.ch-brand__team--switch svg {
-  color: var(--ch-on-green-ink-muted);
-}
-.ch-brand--switch:focus-visible,
 .ch-navitem:focus-visible {
   outline-color: var(--ch-champagne-300);
 }
