@@ -35,6 +35,7 @@ function makeClient(opts: {
     b.eq = () => b;
     b.maybeSingle = async () => ({ data: table === 'golf_coaches' ? (opts.coach ?? null) : null, error: null });
     b.update = vi.fn(() => b);
+    b.insert = vi.fn(async () => ({ error: null }));
     return b;
   });
   const rpc = vi.fn(async () => opts.rpc ?? { data: null, error: null });
@@ -103,6 +104,45 @@ describe('setCourseImageUrl', () => {
       expect.objectContaining({ action: 'courseLibrary.setCourseImageUrl' }),
       'warning',
     );
+  });
+
+  it.each(['PGRST202', '42883'])(
+    'falls back to the coach-only updateCourse path when the RPC is missing (%s), and logs it',
+    async (code) => {
+      const updated = { id: COURSE_ID, name: 'Test Course', image_url: GOOD_URL, created_by_user_id: 'u2' };
+      const golfCourses: Record<string, unknown> = {};
+      golfCourses.select = () => golfCourses;
+      golfCourses.eq = () => golfCourses;
+      golfCourses.is = () => golfCourses;
+      golfCourses.single = async () => ({ data: updated, error: null });
+      golfCourses.maybeSingle = async () => ({ data: { id: COURSE_ID, image_url: null, created_by_user_id: 'u2' }, error: null });
+      golfCourses.update = vi.fn(() => golfCourses);
+      const client = makeClient({ coach: { id: 'co1', organization_id: 'org1' }, rpc: { error: { code, message: 'function not found' } } });
+      const baseFrom = client.from;
+      client.from = vi.fn((t: string) => (t === 'golf_courses' ? golfCourses : baseFrom(t))) as typeof client.from;
+      currentClient = client;
+
+      const res = await setCourseImageUrl(COURSE_ID, GOOD_URL);
+
+      expect(res).toEqual({ success: true, data: { imageUrl: GOOD_URL } });
+      expect(client.rpc).toHaveBeenCalledTimes(1);
+      expect(golfCourses.update).toHaveBeenCalledWith(expect.objectContaining({ image_url: GOOD_URL }));
+      expect(logServerError).toHaveBeenCalledWith(
+        expect.stringContaining('not deployed yet'),
+        expect.objectContaining({ action: 'courseLibrary.setCourseImageUrl', extra: { courseId: COURSE_ID, code } }),
+        'warning',
+      );
+    },
+  );
+
+  it('falls back to the old refusal for a player when the RPC is missing', async () => {
+    const client = makeClient({ coach: null, rpc: { error: { code: 'PGRST202', message: 'function not found' } } });
+    currentClient = client;
+
+    const res = await setCourseImageUrl(COURSE_ID, GOOD_URL);
+
+    expect(res).toEqual({ success: false, error: 'Only coaches can manage the course library' });
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   it.each([

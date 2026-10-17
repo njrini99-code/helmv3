@@ -1386,6 +1386,23 @@ async function setCourseImageUrlImpl(
     p_course_id: courseId,
     p_image_url: imageUrl,
   });
+  if (error && isMissingRpcError(error.code)) {
+    // The code shipped before 20261016220000 was applied. Fall back to the old
+    // coach-only path so coaches keep working; a player gets updateCourse's
+    // refusal until the migration is applied.
+    await logServerError(
+      `golf_set_course_image is not deployed yet, falling back to updateCourse: ${describeError(error)}`,
+      {
+        action: 'courseLibrary.setCourseImageUrl',
+        featureArea: 'course_library',
+        extra: { courseId, code: error.code },
+      },
+      'warning',
+    );
+    const fallback = await updateCourse(courseId, { imageUrl });
+    if (!fallback.success) return { success: false, error: fallback.error };
+    return { success: true, data: { imageUrl } };
+  }
   if (error) {
     await logServerError(`setCourseImageUrl failed: ${describeError(error)}`, {
       action: 'courseLibrary.setCourseImageUrl',
@@ -1397,6 +1414,11 @@ async function setCourseImageUrlImpl(
 
   revalidateLibrary();
   return { success: true, data: { imageUrl } };
+}
+
+/** PostgREST PGRST202 (no such function in the schema cache) or Postgres 42883 (undefined_function). */
+function isMissingRpcError(code: string | undefined): boolean {
+  return code === 'PGRST202' || code === '42883';
 }
 
 /** golf_set_course_image SQLSTATEs (20261016220000) → short user message. */
