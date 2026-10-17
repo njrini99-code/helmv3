@@ -213,19 +213,12 @@
   color: var(--ch-green-700);
 }
 
-/* Roster controls (owner, 2026-10-08: "ivory buttons ... need to be green"): the chosen sort, filter and layout is a green
-   chip with ivory ink, on every width. Avg score, Handicap, Rounds, Name; Active, Inactive, All; the grid and list toggle. */
-.ch-rs .ch-seg__pill {
-  background: var(--ch-green-fill-700);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
-}
-.ch-rs .ch-seg__b.is-on {
-  color: var(--ch-on-fill-50);
-}
+/* Roster controls (owner, 2026-10-08: "ivory buttons ... need to be green"): the chosen sort, filter and layout is the
+   green chip every switcher draws (controls.css, 2026-10-16), the pills and the grid and list toggle with it. */
 .ch-rs .ch-pill[aria-pressed='true'],
 .ch-rs .ch-rs-vt__b[aria-pressed='true'] {
-  background: var(--ch-green-fill-700);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
+  background: var(--ch-seg-on-bg);
+  box-shadow: var(--ch-seg-on-shadow);
   color: var(--ch-on-fill-50);
 }
 @media (hover: hover) {

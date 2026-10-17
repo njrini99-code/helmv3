@@ -52,14 +52,8 @@
 .ch-ms-rail__head .ch-seg__b {
   flex: 1;
 }
-/* All, Unread, Groups (owner, 2026-10-08: never ivory on ivory): the chosen filter is a green chip with ivory ink. */
-.ch-ms-rail__head .ch-seg__pill {
-  background: var(--ch-green-fill-700);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
-}
-.ch-ms-rail__head .ch-seg__b.is-on {
-  color: var(--ch-on-fill-50);
-}
+/* All, Unread, Groups: the chosen filter is the green chip every switcher now draws (controls.css; owner, 2026-10-08
+   and 2026-10-16). */
 .ch-ms-rail__title {
   display: flex;
   align-items: center;

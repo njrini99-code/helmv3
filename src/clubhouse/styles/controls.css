@@ -41,9 +41,9 @@
   }
 }
 .ch-seg__b.is-on {
-  color: var(--ch-green-700);
+  color: var(--ch-seg-on-ink);
   font-weight: 600;
-  text-shadow: none;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
 }
 /* CH-1617: pressed, an option that isn't chosen takes the Ledger's press tint over the press beat, after the beat UIKit
    waits so a scroll that starts on it never flashes it; letting go clears it at once. It never scales (lib/press.ts):
@@ -60,8 +60,8 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--ch-control-bg);
-  box-shadow: var(--ch-elevation-control);
+  background: var(--ch-seg-on-bg);
+  box-shadow: var(--ch-seg-on-shadow);
 }
 .ch-seg__l {
   position: relative;

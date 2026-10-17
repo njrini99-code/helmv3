@@ -353,9 +353,10 @@
 }
 .ch-rsu-seg button[aria-checked='true'] {
   font-weight: 600;
-  color: var(--ch-green-700);
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  color: var(--ch-seg-on-ink);
+  background: var(--ch-seg-on-bg);
+  box-shadow: var(--ch-seg-on-shadow);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
 }
 .ch-rsu-seg button:disabled {
   cursor: default;
@@ -1287,7 +1288,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
 }
 .ch-acs__photo-issue {
   font: 500 12.5px/1.3 var(--ch-font-sans);
-  color: var(--ch-danger-600);
+  color: var(--ch-warning-600);
 }
 .ch-acs__photo-note {
   font: 400 12px/1.3 var(--ch-font-sans);
@@ -1401,33 +1402,6 @@ html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
   min-width: 0;
   font: 400 12.5px/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
-}
-/* In a window the choice between two is a light track with the chosen side lifted on a hairline, not an inset well
-   with a raised green button. */
-.ch-modal .ch-rsu-seg {
-  padding: 3px;
-  border-radius: 12px;
-  background: rgb(16 18 14 / 0.05);
-  box-shadow: none;
-}
-.ch-modal .ch-rsu-seg button {
-  height: 36px;
-  border-radius: 9px;
-  line-height: 36px;
-}
-.ch-modal .ch-rsu-seg button[aria-checked='true'] {
-  color: var(--ch-text-primary);
-  background: #fff;
-  box-shadow:
-    0 0 0 0.5px rgb(16 18 14 / 0.12),
-    0 1px 2px rgb(16 18 14 / 0.08);
-}
-html[data-fw-theme='dark'] .ch-modal .ch-rsu-seg {
-  background: rgb(255 255 255 / 0.06);
-}
-html[data-fw-theme='dark'] .ch-modal .ch-rsu-seg button[aria-checked='true'] {
-  background: rgb(255 255 255 / 0.14);
-  box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.1);
 }
 /* In a window the body already sets the inset: the form takes none of its own, so its fields line up under the title
    (they sat 20px further in). */
