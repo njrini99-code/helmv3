@@ -781,57 +781,35 @@
    the panel lets it through, blurred, so the photos sit on light rather than on a sheet of paper. Not where the system
    asks for less transparency (below; Safari doesn't know that query, and a `not` of it matched nothing there). */
 @media (min-width: 821px) {
-  /* The page behind: dimmed a little and deeply blurred, neutral (no tint), as Apple's sheets and the Claude and
-     ChatGPT dialogs do, so the page is a soft field of its own colours rather than a wash. */
+  /* The page behind: a plain dim with a light blur, no tint and no saturation, as the Claude and ChatGPT dialogs and
+     Apple's sheets keep it (research, 2026-10-16: both dim at most and neither blurs; the owner asked for a blur). */
   .ch-modal[data-ch-code='CH-11510']::backdrop {
-    background: rgb(14 16 14 / 0.26);
-    -webkit-backdrop-filter: blur(22px) saturate(1.35) brightness(0.94);
-    backdrop-filter: blur(22px) saturate(1.35) brightness(0.94);
+    background: rgb(12 12 10 / 0.38);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
   }
-  /* The panel: one sheet of frosted material. Light falls from above (a brighter top and a catch-light along the top
-     edge), a hairline holds the edge on any background, and two shadows set it off the page: a wide soft one for
-     depth and a tight one for contact. */
+  /* The panel: a solid surface, one hairline edge, one soft shadow, 20px corners (Claude's dialog: solid, a 1px edge,
+     20px, one shadow 0 25px 50px -12px; ChatGPT's: the same at 16px). The glass, its gradient and its two catch-lights
+     read as generated and are gone. */
   .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
-    border-radius: 24px;
-    background: linear-gradient(180deg, rgb(255 255 255 / 0.74), rgb(248 246 240 / 0.62));
-    -webkit-backdrop-filter: blur(48px) saturate(1.8);
-    backdrop-filter: blur(48px) saturate(1.8);
+    border-radius: 20px;
+    background: #fbfaf6;
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.85),
-      inset 0 0 0 1px rgb(255 255 255 / 0.32),
-      0 0 0 0.5px rgb(16 20 16 / 0.12),
-      0 8px 20px -10px rgb(16 20 16 / 0.22),
-      0 40px 100px -30px rgb(16 20 16 / 0.42);
+      0 0 0 1px rgb(16 18 14 / 0.08),
+      0 25px 50px -12px rgb(16 18 14 / 0.28);
   }
-  .ch-modal[data-ch-code='CH-11510'] .ch-rsu-search {
-    background: rgb(255 255 255 / 0.66);
-    box-shadow:
-      inset 0 0 0 0.5px rgb(16 20 16 / 0.14),
-      0 1px 2px rgb(16 20 16 / 0.04);
-  }
-  .ch-modal[data-ch-code='CH-11510'] .ch-rsu-add {
-    border-color: rgb(16 20 16 / 0.14);
-    background: rgb(255 255 255 / 0.32);
+  .ch-modal[data-ch-code='CH-11510'] .ch-modal__titles h2 {
+    font: 600 22px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.012em;
   }
   html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510']::backdrop {
-    background: rgb(0 0 0 / 0.42);
+    background: rgb(0 0 0 / 0.5);
   }
   html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
-    background: linear-gradient(180deg, rgb(44 46 42 / 0.66), rgb(26 28 24 / 0.6));
+    background: rgb(32 32 30);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.12),
-      inset 0 0 0 1px rgb(255 255 255 / 0.06),
-      0 0 0 0.5px rgb(0 0 0 / 0.6),
-      0 8px 20px -10px rgb(0 0 0 / 0.5),
-      0 40px 100px -30px rgb(0 0 0 / 0.75);
-  }
-  html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510'] .ch-rsu-search {
-    background: rgb(255 255 255 / 0.08);
-    box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.12);
-  }
-  html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510'] .ch-rsu-add {
-    border-color: rgb(255 255 255 / 0.14);
-    background: rgb(255 255 255 / 0.04);
+      0 0 0 1px rgb(255 255 255 / 0.14),
+      0 25px 50px -12px rgb(0 0 0 / 0.5);
   }
   /* Landscape (owner, 2026-10-16): wider than tall, the photo cards two to a row. */
   .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
@@ -839,36 +817,21 @@
   }
   .ch-modal[data-ch-code='CH-11510'] .ch-cpk-list {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px 14px;
   }
-  .ch-modal[data-ch-code='CH-11510'] .ch-cpk__card,
-  .ch-modal[data-ch-code='CH-11510'] .ch-cpk.is-skel {
-    height: 156px;
-  }
-}
-@media (min-width: 821px) and (prefers-reduced-transparency: reduce) {
-  .ch-modal[data-ch-code='CH-11510']::backdrop,
-  .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
-    background: #faf8f2;
-  }
-  html[data-fw-theme='dark'] .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
-    background: var(--ch-sheet-bg);
+  .ch-modal[data-ch-code='CH-11510'] .ch-cpk__media {
+    aspect-ratio: 3 / 2;
   }
 }
-
-/* The course picker's photo cards (owner, 2026-10-16: "the courses need to have pictures and look premium"). The photo is
-   the course's own (uploaded or a bundled photo of the real course) or a scene chosen by its name; the name sits on a
-   scrim in white. The button is the scroll timeline's subject and the card inside it is what moves, so the fold in
-   (entry) and the fold away (exit) are two animations on two boxes and never fight over one transform. */
+/* The course picker's cards (owner, 2026-10-16: pictures, premium). The photo on top on its own rounded corners, the
+   name, place and par under it in the page's type on the panel's surface, as a booking app lists places: nothing is
+   printed over the photo, so there is no scrim and no chip. The button is the scroll timeline's subject and the card
+   inside it is what moves, so the fold in (entry) and the fold away (exit) never fight over one transform. */
 .ch-cpk-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 .ch-cpk {
   all: unset;
@@ -876,51 +839,43 @@
   box-sizing: border-box;
   display: block;
   width: 100%;
-  border-radius: var(--ch-radius-lg);
+  border-radius: 14px;
 }
 .ch-cpk:focus-visible {
   outline: 2px solid var(--ch-green-600);
-  outline-offset: 3px;
+  outline-offset: 4px;
 }
-.ch-cpk__card,
-.ch-cpk.is-skel {
-  position: relative;
-  isolation: isolate;
+.ch-cpk__card {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  height: 132px;
-  padding: 14px 16px;
-  overflow: hidden;
-  border-radius: var(--ch-radius-lg);
-  color: #fff;
-  background: var(--ch-green-800);
-  box-shadow:
-    0 1px 2px rgb(12 28 18 / 0.16),
-    0 10px 24px -14px rgb(12 28 18 / 0.5);
+  flex-direction: column;
+  gap: 10px;
 }
-.ch-cpk__img {
+.ch-cpk__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--ch-skel-base);
+}
+/* A hairline inside the photo's edge, so a pale sky never bleeds into the panel. */
+.ch-cpk__media::after {
   position: absolute;
   inset: 0;
-  z-index: -2;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgb(16 18 14 / 0.08);
+  content: '';
+}
+.ch-cpk__media img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform var(--ch-dur-reveal) var(--ch-ease);
 }
-/* The scrim: dark at the foot for the name, a little along the left, clear over the sky. */
-.ch-cpk__card::after {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background:
-    linear-gradient(180deg, rgb(8 22 14 / 0) 28%, rgb(8 22 14 / 0.74) 100%),
-    linear-gradient(90deg, rgb(8 22 14 / 0.32), rgb(8 22 14 / 0) 62%);
-  content: '';
-}
 @media (hover: hover) {
-  .ch-cpk:hover .ch-cpk__img {
-    transform: scale(1.04);
+  .ch-cpk:hover .ch-cpk__media img {
+    transform: scale(1.03);
   }
 }
 /* `scale`, not `transform`: the fold owns the card's transform, and the two compose. */
@@ -928,93 +883,62 @@
   scale: 0.985;
   transition: scale var(--ch-dur-press) var(--ch-ease);
 }
+.ch-cpk__row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 0 2px;
+}
 .ch-cpk__b {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 .ch-cpk__b b {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font: 600 19px/1.15 var(--ch-font-sans);
-  letter-spacing: -0.01em;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.28);
+  font: 600 15px/1.25 var(--ch-font-sans);
+  letter-spacing: -0.006em;
+  color: var(--ch-text-primary);
 }
 .ch-cpk__b span {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font: 500 12.5px/1.2 var(--ch-font-sans);
-  color: rgb(255 255 255 / 0.84);
+  font: 400 13px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
 }
 .ch-cpk__meta {
   flex: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.ch-cpk__meta > span,
-.ch-cpk__meta > em {
-  padding: 5px 8px;
-  border-radius: 999px;
-  font: 600 11.5px/1 var(--ch-font-sans);
-  font-style: normal;
   white-space: nowrap;
-  color: #fff;
-  background: rgb(8 22 14 / 0.42);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
-}
-.ch-cpk__go {
-  color: rgb(255 255 255 / 0.86);
+  font: 500 13px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
 }
 
-/* Loading: the cards' shape, a photo's depth (dark at the foot), the two lines of the name in place, and one slow sweep
-   of light across, on the compositor. */
+/* Loading: the cards' shape, still (no sweep): a photo's block and the two lines of the name. */
 .ch-cpk.is-skel {
   cursor: default;
-  background: linear-gradient(180deg, var(--ch-skel-base), rgb(28 25 18 / 0.1));
-  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.ch-cpk.is-skel::before {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 35%, var(--ch-skel-sheen) 50%, transparent 65%);
-  transform: translateX(-100%);
-  animation: ch-shimmer-x calc(var(--ch-dur-shimmer) * 1.4) var(--ch-ease-io) infinite;
-  content: '';
+.ch-cpk.is-skel .ch-cpk__b {
+  padding: 0 2px;
+  gap: 6px;
 }
 .ch-cpk.is-skel .ch-cpk__b i {
   display: block;
-  width: 46%;
-  height: 14px;
-  border-radius: 7px;
-  background: rgb(28 25 18 / 0.09);
+  width: 52%;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--ch-skel-base);
 }
 .ch-cpk.is-skel .ch-cpk__b i + i {
-  width: 28%;
+  width: 30%;
   height: 10px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-cpk.is-skel::before {
-    animation: none;
-    opacity: 0;
-  }
-}
-[data-ui='clubhouse'][data-motion='off'] .ch-cpk.is-skel::before {
-  animation: none;
-  opacity: 0;
-}
-.ch-cpk.is-skel:nth-child(2) {
-  opacity: 0.75;
-}
-.ch-cpk.is-skel:nth-child(3) {
-  opacity: 0.5;
-}
-.ch-cpk.is-skel:nth-child(4) {
-  opacity: 0.5;
 }
 
 /* The fold: a card coming up from the list's bottom edge unfolds from tilted back; one leaving the top edge folds away

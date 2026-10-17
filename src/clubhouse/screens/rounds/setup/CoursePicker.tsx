@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react';
-import { resolveDefaultCourseImage } from '@/lib/golf/course-image-assets';
+import { ChevronLeft, Plus, Search } from 'lucide-react';
+import { DEFAULT_COURSE_IMAGES, resolveDefaultCourseImage } from '@/lib/golf/course-image-assets';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
@@ -88,6 +88,29 @@ export function CoursePicker({
   );
 }
 
+/**
+ * Each course's photo: its own when it has one, else a default scene. A course keeps the scene its name picks unless
+ * one of the six cards before it in the list already shows that scene, then it takes the next scene none of them
+ * shows, so no photo repeats within two rows of three; the same list always gets the same photos.
+ */
+export function coursePhotos(courses: readonly ChSetupCourse[]): string[] {
+  const out: string[] = [];
+  for (const c of courses) {
+    if (c.image) {
+      out.push(c.image);
+      continue;
+    }
+    const near = new Set(out.slice(-6));
+    let photo = resolveDefaultCourseImage(c.name);
+    for (let i = DEFAULT_COURSE_IMAGES.indexOf(photo), n = 0; near.has(photo) && n < DEFAULT_COURSE_IMAGES.length; n++) {
+      i = (i + 1) % DEFAULT_COURSE_IMAGES.length;
+      photo = DEFAULT_COURSE_IMAGES[i]!;
+    }
+    out.push(photo);
+  }
+  return out;
+}
+
 function CourseList({
   ports,
   onCourse,
@@ -112,8 +135,9 @@ function CourseList({
       {load.state === 'loading' && (
         // CH-11403: the list is on its way, in the shape of its cards.
         <div className="ch-cpk-list" role="status" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-11403">
-          {[0, 1, 2, 3].map((i) => (
+          {[0, 1, 2, 3, 4, 5].map((i) => (
             <span key={i} className="ch-cpk is-skel">
+              <span className="ch-cpk__media" />
               <span className="ch-cpk__b">
                 <i />
                 <i />
@@ -125,46 +149,50 @@ function CourseList({
       {load.state === 'failed' && (
         <InlineNotice code="CH-11209" title="The course library didn’t load" body="Your round isn’t started yet, so nothing is lost. Try again, or add the course by hand." onRetry={retry} />
       )}
-      {groups.map((g) => (
-        <section key={g.key} className="ch-rsu-psec" aria-label={g.label}>
-          <h4>
-            {g.label}
-            <span>{g.courses.length}</span>
-          </h4>
-          {/* Photo cards that fold back as they leave the list's top and unfold as they come up from its bottom
-              (rounds-setup.css, a scroll-driven animation on the compositor; still with reduced motion or Animations off). */}
-          <div className="ch-cpk-list">
-            {g.courses.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className="ch-cpk"
-                onPointerEnter={() => onReach(c.id)}
-                onPointerDown={() => onReach(c.id)}
-                onFocus={() => onReach(c.id)}
-                onClick={() => {
-                  haptic('select');
-                  onCourse(c);
-                }}
-              >
-                <span className="ch-cpk__card">
-                  <img className="ch-cpk__img" src={c.image || resolveDefaultCourseImage(c.name)} alt="" loading="lazy" decoding="async" />
-                  <span className="ch-cpk__b">
-                    <b>{c.name}</b>
-                    {c.place && <span>{c.place}</span>}
+      {groups.map((g) => {
+        const photos = coursePhotos(g.courses);
+        return (
+          <section key={g.key} className="ch-rsu-psec" aria-label={g.label}>
+            <h4>
+              {g.label}
+              <span>{g.courses.length}</span>
+            </h4>
+            {/* Photo cards that fold back as they leave the list's top and unfold as they come up from its bottom
+                (rounds-setup.css, a scroll-driven animation on the compositor; still with reduced motion or Animations off). */}
+            <div className="ch-cpk-list">
+              {g.courses.map((c, i) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="ch-cpk"
+                  onPointerEnter={() => onReach(c.id)}
+                  onPointerDown={() => onReach(c.id)}
+                  onFocus={() => onReach(c.id)}
+                  onClick={() => {
+                    haptic('select');
+                    onCourse(c);
+                  }}
+                >
+                  <span className="ch-cpk__card">
+                    <span className="ch-cpk__media">
+                      <img src={photos[i]} alt="" loading="lazy" decoding="async" />
+                    </span>
+                    <span className="ch-cpk__row">
+                      <span className="ch-cpk__b">
+                        <b>{c.name}</b>
+                        {c.place && <span>{c.place}</span>}
+                      </span>
+                      <span className="ch-cpk__meta ch-num">
+                        {[c.lastPlayed, c.par ? `Par ${c.par}` : null, c.teeCount ? `${c.teeCount} tee${c.teeCount === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
                   </span>
-                  <span className="ch-cpk__meta">
-                    {c.lastPlayed && <em>{c.lastPlayed}</em>}
-                    {c.par ? <span className="ch-num">Par {c.par}</span> : null}
-                    {c.teeCount ? <span className="ch-num">{`${c.teeCount} tee${c.teeCount === 1 ? '' : 's'}`}</span> : null}
-                    <Icon icon={ChevronRight} size={16} className="ch-cpk__go" />
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ))}
+                </button>
+              ))}
+            </div>
+          </section>
+        );
+      })}
       {load.state === 'ok' && !groups.length && (
         // CH-11310: nothing matches (or the library is empty).
         <p className="ch-rsu-none" data-ch-code="CH-11310">
