@@ -3580,3 +3580,72 @@ html[data-fw-theme='dark'] .ch-offline {
     color: var(--ch-on-green-ink-soft);
   }
 }
+
+/* The script wordmark (owner, 2026-10-16): "Golfhelm" in Great Vibes, helm in the mint the green boards use. Opening from
+   the welcome, the dashboard draws first, then the word writes itself in left to right, then the wheel turns into place. */
+.ch-brand__line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.ch-brand .ch-brand__mark {
+  width: 24px;
+  height: 24px;
+}
+.ch-brand__word.is-script {
+  display: inline-block;
+  /* Room for the script's swashes, which overhang the box the write mask clips to. */
+  margin: -4px 0 -3px -2px;
+  padding: 4px 6px 3px 2px;
+  font: 400 31px/1 var(--ch-font-script);
+  letter-spacing: 0;
+  font-variation-settings: normal;
+  color: var(--ch-on-green-bright);
+}
+.ch-brand__word.is-script b {
+  font-weight: 400;
+  color: var(--ch-hero-mint);
+}
+.ch-brand__word.is-write {
+  -webkit-mask-image: linear-gradient(90deg, #000 44%, transparent 56%);
+  mask-image: linear-gradient(90deg, #000 44%, transparent 56%);
+  -webkit-mask-size: 230% 100%;
+  mask-size: 230% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  /* Hold a beat for the dashboard (about 0.6s), then write over about 1.3s. */
+  animation: ch-brand-write calc(var(--ch-dur-reveal) * 2.5) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.15) both;
+}
+.ch-brand__mark.is-write {
+  /* The wheel once the word is written (about 1.85s in). */
+  animation: ch-brand-wheel calc(var(--ch-dur-reveal) * 1.2) var(--ch-ease-spring) calc(var(--ch-dur-reveal) * 3.55) both;
+}
+@keyframes ch-brand-write {
+  from {
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+  }
+}
+@keyframes ch-brand-wheel {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-brand__word.is-write,
+  .ch-brand__mark.is-write {
+    animation: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}

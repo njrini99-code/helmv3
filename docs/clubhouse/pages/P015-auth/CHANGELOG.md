@@ -1,5 +1,11 @@
 # P015 — Auth: changelog
 
+## 2026-10-16 — Continue hands the wordmark's write to the sidebar
+
+The welcome's own wordmark is back to its original sans lockup; the script
+"Golfhelm" moved to the sidebar's brand (P001), which Continue now asks to
+write itself in once the dashboard is drawn (`markBrandWrite`).
+
 ## 2026-10-16 — Typing, opening and signing in move once, without waiting
 
 Owner, on the phone: "a slight delay with the animation right when you enter

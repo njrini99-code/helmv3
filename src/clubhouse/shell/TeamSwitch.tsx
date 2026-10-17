@@ -9,6 +9,7 @@ import { haptic } from '../lib/haptics';
 import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useTeamSwitch, type ChTeamSwitch } from './team-switch';
+import { BrandLine } from './BrandWord';
 
 const OPTION = '[role="option"]';
 
@@ -17,7 +18,7 @@ const OPTION = '[role="option"]';
  * teams. A listbox in a portal, so the sidebar's scroll never clips it: arrows, Home and End move, Enter or Space
  * picks, Esc closes and focus goes back to the button.
  */
-export function BrandTeamSwitch({ model, teamName }: { model: ChTeamSwitch; teamName: string | null }) {
+export function BrandTeamSwitch({ model, teamName, write = false }: { model: ChTeamSwitch; teamName: string | null; write?: boolean }) {
   const sw = useTeamSwitch(model);
   const reduced = useChReducedMotion();
   const id = useId();
@@ -116,9 +117,8 @@ export function BrandTeamSwitch({ model, teamName }: { model: ChTeamSwitch; team
           }
         }}
       >
-        <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={32} height={32} />
         <span className="ch-brand__txt">
-          <span className="ch-brand__word">GolfHelm</span>
+          <BrandLine write={write} />
           {/* The board's team line: the name, then the up-down chevrons that say it opens. */}
           <span className="ch-brand__team ch-brand__team--switch">
             <span>{current ?? 'Choose a team'}</span>

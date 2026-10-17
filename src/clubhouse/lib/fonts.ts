@@ -30,13 +30,12 @@ export const jetbrainsMono = JetBrains_Mono({
   variable: '--ch-font-jetbrains',
 });
 
-/** The welcome's handwritten wordmark (owner, 2026-10-16: "a cursive thing of script" after the sign in). That one place
- *  only; not preloaded, so no other page pays for it. */
+/** The sidebar's script wordmark, "Golfhelm" (owner, 2026-10-16: "a cursive thing of script" after the sign in). The
+ *  brand is on every page, so it is preloaded and the word never swaps in from a fallback. */
 export const greatVibes = Great_Vibes({
   subsets: ['latin'],
   weight: '400',
   display: 'swap',
-  preload: false,
   variable: '--ch-font-script',
 });
 
