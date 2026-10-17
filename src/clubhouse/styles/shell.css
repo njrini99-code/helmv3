@@ -3550,21 +3550,15 @@ html[data-fw-theme='dark'] .ch-offline {
   }
 }
 
-/* The sidebar, sorted and clearer (owner, 2026-10-16: "sort the side bar and make it look better"): each titled group
-   sits in a soft well on the green with its name in mint over it, the rows a touch taller with brighter ink, so the
-   app's places read as four groups rather than one long list. Desktop only; the phone's strip is its own. */
+/* The sidebar, sorted and clearer (owner, 2026-10-16: "sort the side bar and make it look better", then no shade over
+   the groups): each group's name in mint over its rows, the rows a touch taller with brighter ink. Desktop only; the
+   phone's strip is its own. */
 @media (min-width: 821px) {
   .ch-sidebar .ch-nav {
     gap: 10px;
   }
   .ch-sidebar .ch-nav__group {
     gap: 2px;
-  }
-  .ch-sidebar .ch-nav__group:has(.ch-nav__section) {
-    padding: 4px 4px 6px;
-    border-radius: 14px;
-    background: rgb(250 248 241 / 0.045);
-    box-shadow: inset 0 0 0 1px rgb(250 248 241 / 0.06);
   }
   .ch-sidebar .ch-nav__section {
     padding: 10px 10px 6px;
