@@ -147,7 +147,7 @@
 }
 .ch-ms-row.is-sel {
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-key-raised-shadow), inset 3px 0 0 var(--ch-field-green);
+  box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-ms-grp {
   display: grid;
