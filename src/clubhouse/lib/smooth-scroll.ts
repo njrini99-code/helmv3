@@ -71,6 +71,15 @@ export function chTrackpadGesture(): (event: WheelEvent) => boolean {
   };
 }
 
+/**
+ * Whether a wheel over `node` belongs to a scroller inside the canvas rather than to the canvas: one that scrolls up and
+ * down. A box that only scrolls sideways (a wide table) is not one, though its computed overflow-y is `auto` too: the
+ * tables on Stats and Rounds covered most of those pages, so a wheel over them scrolled the canvas with no easing.
+ */
+export function chScrollsVertically(node: HTMLElement): boolean {
+  return /(auto|scroll)/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight;
+}
+
 /** Mount once, in the Clubhouse frame. */
 export function useCanvasSmoothScroll(): void {
   const reduced = useChReducedMotion();
@@ -96,15 +105,16 @@ export function useCanvasSmoothScroll(): void {
         // A trackpad scrolls natively (CH-1621): Lenis lets the event through untouched, and a glide a wheel started
         // stops where it is, so the fingers take over from the page's place rather than fight the easing.
         virtualScroll: ({ event }) => {
-          if (!(event instanceof WheelEvent) || !fromTrackpad(event)) return true;
+          if (!(event instanceof WheelEvent)) return true;
+          // A sideways wheel (shift and a wheel) is a wide table's: native, as the canvas never scrolls sideways.
+          if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return false;
+          if (!fromTrackpad(event)) return true;
           if (lenis?.isScrolling === 'smooth') lenis.scrollTo(lenis.actualScroll, { immediate: true, force: true });
           return false;
         },
         prevent: (node) => {
           if (node.closest('[data-lenis-prevent], dialog, [role="dialog"], [role="menu"], [role="listbox"]')) return true;
-          if (node === wrapper) return false;
-          const s = getComputedStyle(node);
-          return /(auto|scroll)/.test(s.overflowY + s.overflowX) && (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth);
+          return node !== wrapper && chScrollsVertically(node);
         },
       });
       current = lenis;
