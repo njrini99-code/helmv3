@@ -15,7 +15,7 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { moveOrder, orderToPriorities, PRIORITY_LABEL, priorityOrder, type ChCoachHelmSettings, type ChSettingsData, type ChSettingsWrites, type PriorityKey } from './model';
 import { useCoachHelmPower } from './hooks';
-import { Card, ReadFailed, Row, SettingSwitch } from './parts';
+import { Card, ReadFailed, Row, saveFailureBody, SettingSwitch } from './parts';
 
 export type Phil = CoachPhilosophy & { id: string | null };
 
@@ -96,7 +96,7 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
       setStatus('failed');
       haptic('error');
       if (error) chReport(new Error(error), { surface: 'settings.coachhelm', action: 'savePhilosophy', severity: 'low' });
-      toast({ tone: 'error', title: "Couldn’t save that CoachHelm setting", body: "It’s back where it was. Check your connection and try again.", code: 'CH-8022' });
+      toast({ tone: 'error', title: "Couldn’t save that CoachHelm setting", body: `It’s back where it was. ${saveFailureBody(error)}`, code: 'CH-8022' });
     });
   };
 

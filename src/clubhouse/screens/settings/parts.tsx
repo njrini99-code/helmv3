@@ -11,7 +11,8 @@ import { Switch } from '../../ui/Switch';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chReport, chTrail } from '../../lib/track';
-import { CH_SLOW_SAVE_AFTER, isOffline, useAction, type ActionCopy } from '../../lib/use-action';
+import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline, useAction, type ActionCopy, type ActionResult } from '../../lib/use-action';
+import { isRawBrowserFailure } from '../../lib/friendly-reason';
 import { haptic } from '../../lib/haptics';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import type { ChProblem, ChResult } from './model';
@@ -292,6 +293,31 @@ export function useUnsavedGuard(dirty: boolean) {
   return modal;
 }
 
+/** A refusal the server gave no plain reason for (a constraint, a PostgREST code): still not the connection. */
+export const REFUSED_BODY = 'The server didn’t accept the change. The error has been reported.';
+const CONNECTION_BODY = 'Check your connection and try again.';
+
+/**
+ * What the toast under a failed settings save says (VERIFY 2026-10-02, fixed 2026-10-17). Only a save that never got an
+ * answer (a throw, no reason at all, or the browser's own network wording) is told to check the connection. A save the
+ * server refused says why in plain words: a policy or a missing grant ("violates row-level security", "permission
+ * denied", 42501, which friendlyReason drops as technical) is the access line friendlyReason already gives "permission";
+ * an expired token is the session line; a short server sentence passes through; anything else technical is
+ * REFUSED_BODY. `hint` is the card's own next step, which a refusal with no plain reason keeps.
+ */
+export function saveFailureBody(error: string | undefined, hint?: string): string {
+  const e = error?.trim();
+  if (!e || e === 'failed' || isRawBrowserFailure(e)) return hint ?? CONNECTION_BODY;
+  if (/row[- ]level security|permission denied|insufficient privilege|\b42501\b/i.test(e)) return 'Your account doesn’t have access to do this.';
+  if (/\bJWT\b|PGRST30[13]/i.test(e)) return 'Your session ended. Sign in again, then retry.';
+  return friendlyReason(e) ?? hint ?? REFUSED_BODY;
+}
+
+/** useAction's `refine` for a settings save: the failure body by cause (saveFailureBody), shown as written. */
+export function refineSaveFailure<T>(result: ActionResult<T>, copy: ActionCopy): ActionCopy {
+  return result.success ? copy : { ...copy, hint: saveFailureBody(result.error, copy.hint) };
+}
+
 /**
  * useAction for a save whose landing finishes the card: commit the draft, clear
  * the fields, close the dialog, ask for a fresh read. That work runs inside the
@@ -312,6 +338,7 @@ export function useSaveAction<A extends unknown[], T>(
       return r;
     },
     copy,
+    refineSaveFailure,
   );
 }
 
@@ -403,7 +430,8 @@ export function useInstantSave(surface: string) {
     toast({
       tone: 'error',
       title: op.failed,
-      body: 'It is back where it was. Check your connection and try again.',
+      // A refusal says why; only a save that got no answer is told to check the connection.
+      body: `It is back where it was. ${saveFailureBody(r.error)}`,
       action: { label: 'Retry', run: () => void run(op) },
       code: op.code,
     });

@@ -85,7 +85,7 @@ First-run states only; the page has no filter or search, so no filtered empty. A
 | 80403 | CH-8303 | `A_PLAYER_HAS_ASKED_TO_JOIN_AND` | A player has asked to join and is waiting |
 | 80404 | CH-8304 | `NO_PROFILE_PHOTO` | No profile photo |
 | 80405 | — | `SETTINGS_OPEN_WITHOUT_A_TEAM` | A coach or player with no team still gets Settings, never a no-team page: Account, Notifications and Preferences work, a coach's Team section says why it is empty (CH-8301) and a player's Golf profile offers Join a team (CH-8302). |
-| 80406 | CH-8320 | `THE_TEAMS_COURSE_LOCATION` | The team's course location (Team; held migration 20261008150000) |
+| 80406 | CH-8320 | `THE_TEAMS_COURSE_LOCATION` | The team's course location (Team; migration 20261008150000, applied 2026-10-11) |
 
 ## 05 — Validation
 
@@ -241,7 +241,7 @@ Five confirms: Delete account (the person types delete), Leave team, Make a new 
 | 81103 | CH-8503 | `MAKE_A_NEW_INVITE_CODE` | Make a new invite code |
 | 81104 | CH-8504 | `RESET_COACHHELM_UPDATES` | Reset CoachHelm updates (player) |
 | 81105 | CH-8505 | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | Turn off CoachHelm on your dashboards |
-| 81106 | CH-8509 | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes |
+| 81106 | CH-8509 | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes |
 | 81107 | CH-8510 | `PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS` | Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet |
 
 ## 12 — State preservation

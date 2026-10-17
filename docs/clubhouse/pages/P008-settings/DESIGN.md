@@ -249,13 +249,12 @@ D-18 (one page with a rail; both notification stores stay; only preferences
 Clubhouse honours; Coaching intelligence is the CoachHelm section; the typed
 delete, the confirm before a new code, blank organization fields can be
 cleared), D-41 (Settings in the More sheet on the phone), D-64 (motion), D-70
-(haptics). Open: approval of the phone design, and review of the built desktop
-screen.
+(haptics). The phone design was approved by the owner on 2026-09-30
+(`docs/clubhouse/phone/settings.md`). Open: review of the built desktop screen.
 
 ## Explicit non-goals
 
-Theme and display formats, comparison weights, a phone-native Settings (until
-approved), and any new server behaviour.
+Theme and display formats, comparison weights, and any new server behaviour.
 
 ## Fresh-build confirmation
 

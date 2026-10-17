@@ -6788,7 +6788,7 @@
     "item": 6,
     "name": "THE_TEAMS_COURSE_LOCATION",
     "chCode": "CH-8320",
-    "meaning": "The team's course location (Team; held migration 20261008150000)",
+    "meaning": "The team's course location (Team; migration 20261008150000, applied 2026-10-11)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7677,7 +7677,7 @@
     "item": 6,
     "name": "PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED",
     "chCode": "CH-8509",
-    "meaning": "Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes",
+    "meaning": "Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },

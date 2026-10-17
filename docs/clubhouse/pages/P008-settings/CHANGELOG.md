@@ -1,5 +1,39 @@
 # P008 — Settings: changelog
 
+## 2026-10-17 — A refused save says why; Back over an edit sheet asks first
+
+Owner request: "fix whatever needs it". Two bugs from VERIFY (2026-10-02,
+"Found and not fixed"), and two stale doc lines.
+
+- **A refused save says why** (`saveFailureBody` and `refineSaveFailure` in
+  `parts.tsx`; `useInstantSave`, `useSaveAction`, the CoachHelm autosave queue,
+  the course location). The second line of the error toast is chosen by cause:
+  only a save that got no answer (a throw, no reason, the browser's network
+  wording) says "Check your connection and try again." A policy refusal,
+  including one the database words as "violates row-level security", says
+  "Your account doesn’t have access to do this."; an expired sign-in says the
+  session ended; a short server sentence shows as written; any other technical
+  refusal says "The server didn’t accept the change. The error has been
+  reported." Same codes (CH-8005 to CH-8022); the catalog says how the line is
+  chosen.
+- **Back over an edit sheet asks first** (CH-8509; `SettingsPhone`,
+  `HeldSheetsContext` in `phone/sheets.tsx`). On the phone, the browser's Back
+  or the iOS edge swipe while an edit sheet holds edits over a section popped
+  the section and dropped the edits without asking. Now the section stays and
+  the sheet asks its discard question, as Cancel does; while a save is in
+  flight Back does nothing. A clean sheet still goes with its section.
+- **Docs**: DESIGN no longer lists the phone design as open (approved
+  2026-09-30); CH-8320 no longer calls migration 20261008150000 held (applied
+  2026-10-11, `supabase/migrations/HELD.md`).
+
+Screenshots were not taken (the toast's second line and the question on Back
+are the visible changes). Verification: `settings.test.tsx`, jsdom only. The
+refusal cases and the held-Back cases fail without the fix; the network-path
+cases ("Load failed", a throw, "Failed to fetch") and the clean-sheet Back case
+guard behaviour that did not change. Not yet seen in Safari, the Simulator or on
+an iPhone. Still open: a Back while Profile, Change email or Password holds
+edits over the list itself leaves Settings without asking (VERIFY).
+
 ## 2026-10-14 — Sign out ends in one request
 
 Found on the local stack (Playwright WebKit, coach and player): Sign out cleared
