@@ -52,7 +52,37 @@ export function BrandLine({ write }: { write: boolean }) {
       <span className={'ch-brand__word is-script' + (write ? ' is-write' : '')}>
         Golf<b>helm</b>
       </span>
-      <img className={'ch-brand__mark' + (write ? ' is-write' : '')} src="/clubhouse/auth/helm-golf-mark.png" alt="" width={24} height={24} />
+      <HelmMark write={write} />
     </span>
+  );
+}
+
+const SPOKES = [0, 45, 90, 135, 180, 225, 270, 315];
+const DIMPLES: [number, number][] = [
+  [-2.6, -2.2], [0, -2.9], [2.6, -2.2], [-3.3, 0.4], [-1.1, -0.3], [1.1, -0.3], [3.3, 0.4], [-2.2, 2.4], [0, 1.9], [2.2, 2.4], [0, 4],
+];
+
+/**
+ * The wheel, drawn rather than the bright PNG (owner, 2026-10-16: "an ivory border around the logo so it stands out a
+ * little more, and make it matte and matching the greens"): an ivory ring round a deep-green disc, the helm in the
+ * mint "helm" is set in, the ball ivory with green dimples. Flat fills, so it sits on the frosted panel without a glow.
+ */
+function HelmMark({ write }: { write: boolean }) {
+  return (
+    <svg className={'ch-brand__mark' + (write ? ' is-write' : '')} viewBox="0 0 32 32" width={30} height={30} aria-hidden="true" focusable="false">
+      <circle className="ch-brand__mark-disc" cx="16" cy="16" r="15" />
+      <g className="ch-brand__mark-helm">
+        {SPOKES.map((a) => (
+          <line key={a} x1="16" y1="7.4" x2="16" y2="4.6" transform={`rotate(${a} 16 16)`} />
+        ))}
+        <circle cx="16" cy="16" r="7.6" fill="none" />
+      </g>
+      <circle className="ch-brand__mark-ball" cx="16" cy="16" r="5.7" />
+      <g className="ch-brand__mark-dimples">
+        {DIMPLES.map(([x, y]) => (
+          <circle key={`${x},${y}`} cx={16 + x} cy={16 + y} r="0.62" />
+        ))}
+      </g>
+    </svg>
   );
 }
