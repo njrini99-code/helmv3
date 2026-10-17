@@ -11,7 +11,7 @@ write itself in once the dashboard is drawn (`markBrandWrite`).
 Owner, 2026-10-16, after sign in: "a cursive thing of script". The Welcome's mark was first drawn as "Golfhelm" in
 Great Vibes written on by a mask wipe, with the wheel turning into place. That version is superseded: the Welcome is
 back to its sans lockup and the script wordmark lives in the sidebar's brand (entry above, and P001). What stays from the
-first attempt is the font (`lib/fonts.ts`, `Great_Vibes` as `--ch-font-script`) and the shared test setup mocking it
+first attempt is the script font's mechanism (`lib/fonts.ts`, `--ch-font-script`, now Norican and preloaded) and the shared test setup mocking it
 (`src/test/setup.tsx`). The script face is an owner-requested exception to the doctrine of Instrument Sans for
 display, body and data (`.claude/rules/clubhouse.md`), for the wordmark only.
 
