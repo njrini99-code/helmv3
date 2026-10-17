@@ -95,8 +95,15 @@ async function loginActionImpl(
   const country = headersList.get('x-vercel-ip-country') ?? undefined;
   const city = headersList.get('x-vercel-ip-city') ?? undefined;
 
-  // Check account lockout
-  const lockoutStatus = await checkAccountLockout(normalizedEmail);
+  // The lockout and both rate limits are independent reads, so they go out together: one round trip before the
+  // sign-in instead of three (owner, 2026-10-16: the sign-in "stalls for a second" before anything moves). The
+  // refusals below keep their order. Running them together counts an attempt against both limits even when an earlier
+  // check refuses it, which only ever counts more, never less.
+  const [lockoutStatus, emailRateLimit, ipRateLimit] = await Promise.all([
+    checkAccountLockout(normalizedEmail),
+    checkRateLimit(`login:email:${normalizedEmail}`, RATE_LIMITS.LOGIN),
+    checkRateLimit(`login:ip:${ip}`, RATE_LIMITS.LOGIN),
+  ]);
   if (lockoutStatus.locked && lockoutStatus.lockedUntil) {
     // Security: Account is locked due to too many failed attempts
     recordLoginOutcome('account_locked');
@@ -106,12 +113,6 @@ async function loginActionImpl(
     };
   }
 
-  // Check rate limits
-  const emailRateLimit = await checkRateLimit(
-    `login:email:${normalizedEmail}`,
-    RATE_LIMITS.LOGIN
-  );
-
   if (!emailRateLimit.allowed) {
     const remaining = formatTimeRemaining(emailRateLimit.resetAt - Date.now());
     recordLoginOutcome('rate_limited_email');
@@ -120,8 +121,6 @@ async function loginActionImpl(
       error: `Too many login attempts. Please try again in ${remaining}.`,
     };
   }
-
-  const ipRateLimit = await checkRateLimit(`login:ip:${ip}`, RATE_LIMITS.LOGIN);
 
   if (!ipRateLimit.allowed) {
     const remaining = formatTimeRemaining(ipRateLimit.resetAt - Date.now());
@@ -195,7 +194,8 @@ async function loginActionImpl(
   // counter is left to expire naturally).
   resetRateLimit(`login:email:${normalizedEmail}`);
   resetRateLimit(`login:ip:${ip}`);
-  await resetLoginAttempts(normalizedEmail).catch(() => {});
+  // Awaited with the profile reads below rather than on its own, so it costs no round trip of its own.
+  const attemptsReset = resetLoginAttempts(normalizedEmail).catch(() => {});
 
   // Log successful login event (fire-and-forget)
   // Capture demo-login tracing metadata server-side (is_demo is never trusted from client)
@@ -224,6 +224,7 @@ async function loginActionImpl(
   // wins over this default — the client only falls back to `redirectTo` when
   // no returnTo is present (see golf-sign-in-form.tsx).
   if (isSuperAdminUserId(data.user.id, process.env.SUPER_ADMIN_USER_IDS)) {
+    await attemptsReset;
     recordLoginOutcome('success');
     return {
       success: true,
@@ -231,14 +232,13 @@ async function loginActionImpl(
     };
   }
 
-  // Get user role and profile status to determine redirect
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', data.user.id)
-    .maybeSingle();
-
-  const [coachResult, playerResult] = await Promise.all([
+  // Get user role and profile status to determine redirect: the three reads and the attempts reset go out together.
+  const [{ data: userData }, coachResult, playerResult] = await Promise.all([
+    supabase
+      .from('users')
+      .select('role')
+      .eq('id', data.user.id)
+      .maybeSingle(),
     supabase
       .from('golf_coaches')
       .select('id, onboarding_completed')
@@ -249,6 +249,7 @@ async function loginActionImpl(
       .select('id, onboarding_completed')
       .eq('user_id', data.user.id)
       .maybeSingle(),
+    attemptsReset,
   ]);
 
   const coachProfile = coachResult.data;
