@@ -929,6 +929,40 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   height: 10px;
 }
 
+/* The phone: a list to scan with a thumb, as Maps and Photos list places: a small photo (or the flag tile) on the left,
+   the name, place and par beside it, rows on hairlines. Full-width photo cards were a screen each. */
+@media (max-width: 820px) {
+  .ch-cpk-list {
+    gap: 0;
+  }
+  .ch-cpk__card,
+  .ch-cpk.is-skel {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgb(16 18 14 / 0.07);
+  }
+  .ch-cpk__media {
+    flex: none;
+    width: 76px;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+  }
+  .ch-cpk__row {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+  }
+  .ch-cpk.is-skel .ch-cpk__b {
+    flex: 1;
+  }
+  html[data-fw-theme='dark'] .ch-cpk__card,
+  html[data-fw-theme='dark'] .ch-cpk.is-skel {
+    border-bottom-color: rgb(255 255 255 / 0.08);
+  }
+}
+
 /* The fold: a card coming up from the list's bottom edge unfolds from tilted back; one leaving the top edge folds away
    over its foot. Scroll-driven, so it is exactly where the scroll is and costs nothing between scrolls. */
 @supports (animation-timeline: view()) {
@@ -1271,12 +1305,24 @@ html[data-fw-theme='dark'] .ch-acs-sum > div,
 html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
   border-color: rgb(255 255 255 / 0.08);
 }
+/* The phone: one column. The card (with its photo slot) follows the form where the course is named and where it is
+   checked over, so a phone can add its photo too; the tee step keeps the sheet to the form. */
 @media (max-width: 820px) {
   .ch-acs {
     grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
   }
   .ch-acs__preview {
+    position: static;
+  }
+  .ch-acs.is-step-1 .ch-acs__preview {
     display: none;
+  }
+  /* The card keeps its full-width photo; the picker's phone list draws its photos as thumbnails. */
+  .ch-acs__preview .ch-cpk__media {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
   }
 }
 

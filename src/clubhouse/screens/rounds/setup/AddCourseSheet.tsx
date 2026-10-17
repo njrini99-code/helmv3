@@ -146,7 +146,7 @@ export function AddCourseSheet({
         </>
       }
     >
-      <div className={'ch-acs' + (step === 2 ? ' is-wide' : '')}>
+      <div className={`ch-acs is-step-${step}` + (step === 2 ? ' is-wide' : '')}>
         <div className="ch-acs__main">
           <ol className="ch-rsu-spine ch-rsu-spine--sm" aria-label="Steps">
             {STEPS.map((s, i) => (
