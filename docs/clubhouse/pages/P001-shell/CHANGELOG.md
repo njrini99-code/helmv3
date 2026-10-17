@@ -1,12 +1,12 @@
 # P001 — Shell: changelog
 
-## 2026-10-16 — The wordmark in Norican, on the open green
+## 2026-10-16 — The wordmark in Norican, in its frosted panel
 
 Owner: "fix the script font it looks trash" and "fix the layout". Great Vibes
 was too thin to read at sidebar size; the owner picked Norican from twelve
-scripts compared side by side on the sidebar green. The brand leaves its boxed
-panel for the open green with a hairline under it; the word is 34px and the
-wheel 28px, 9px after it.
+scripts compared side by side on the sidebar green. The word is 34px and the
+wheel 28px, 9px after it, in the brand's frosted panel (the open green was
+tried and the owner asked for the panel back).
 
 ## 2026-10-16 — The team names its own group; the brand stands alone
 
