@@ -77,7 +77,7 @@ its reason, remove a pick, confirm the squad.
 
 1. The list: the live qualifier and its leaders. One qualifier: the leaderboard with its cut lines
    (top-score line, travel cut).
-2. The facts: dates, deadline, entrants, rounds in, course, spots.
+2. The facts: dates, entrants, rounds in, course, spots.
 3. Beside the leaderboard: selections or the confirmed squad, the course per round, the scoring rules.
 
 ### User should notice first

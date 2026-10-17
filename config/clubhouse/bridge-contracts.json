@@ -8177,7 +8177,7 @@
     "category": 1,
     "item": 2,
     "name": "DETAIL_READY",
-    "meaning": "A qualifier opens with its status pill and name, six facts (dates, entry deadline, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen.",
+    "meaning": "A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
     "tests": [
@@ -9535,7 +9535,7 @@
     "category": 19,
     "item": 1,
     "name": "PHONE_DETAIL",
-    "meaning": "At 820px and below a qualifier is one column: three facts (rounds in, spots, deadline), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop.",
+    "meaning": "At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx#QualifierDetailPhone",
     "tests": [

@@ -4,9 +4,10 @@
 
 Desktop My stats (`stats.css`). The section bar (`.ch-gd__nav`) is no longer sticky: the owner said a bar riding over
 the sections "looks bad". Its glass and its opaque fallbacks (P005-D5, below) are gone with it. A section's summary
-(`.ch-gm__id`) used to stick at 24px, behind the top bar; it now sticks at the top bar's height plus 24px. Checked in
-Chrome only: with the bar still sticky, the summary's top was 136px and the bar's bottom 118px; the final state
-(bar not sticky) was not measured here.
+(`.ch-gm__id`) used to stick at 24px, behind the top bar; it now sticks at the top bar's height plus 24px. Measured by
+the main session in Chrome at 1567px: the top bar's bottom at 64px, and the summaries of Strokes gained, Scoring and
+Approach stick at 88px, 24px below it; a short section (Off the tee, Short game, Putting) pushes its summary up as the
+section ends; the section bar is `position: static`. Not checked in Safari.
 
 ## 2026-10-16 — Shared change in StatsTeamPhone
 

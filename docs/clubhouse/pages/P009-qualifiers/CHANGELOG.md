@@ -19,6 +19,19 @@ recorded for any of them.
   qualifier's own desktop page the facts, the leaderboard and the side sections sit on bright sheets. Dark mode is
   unchanged.
 
+## 2026-10-16 — Thru as dots; qualifiers have no entry deadline
+
+Owner, 2026-10-16.
+
+- **Thru is a row of dots** (`ThruDots` in `parts.tsx`, desktop and phone leaderboards): one per scheduled round, green
+  for each one played, centred, labelled "2 of 3 rounds" for VoiceOver. A qualifier of more than eight rounds keeps the
+  figure ("2/9"), since a longer row of dots is not countable at a glance.
+- **No entry deadline.** The owner says qualifiers have none. The fact is gone from the desktop facts (five left) and the
+  phone's facts (two, now a two-column grid), and the field and its skeleton from the create and edit form. A stored
+  deadline is left as it is, the database is untouched, and the CH-09104 check ("The entry deadline has to be on or
+  before the start date.") and its catalog row stay, though the form can no longer set a value for it to refuse.
+  CONTRACT 90102 and 91901 and the phone notes now count the remaining facts.
+
 ## 2026-10-14 — A round with no tees says so
 
 Course per round showed a blank beside a round whose tees and par were not set.
