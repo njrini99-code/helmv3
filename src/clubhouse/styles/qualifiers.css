@@ -3202,3 +3202,59 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     font-size: 15px;
   }
 }
+
+/* Qualifiers at full contrast (owner, 2026-10-16: "way more contrast on this page"): the page takes the Increase
+   Contrast rules and steps its ink up a grade (secondary copy reads as body, tertiary as secondary), and the facts,
+   labels and heads carry more weight. Light appearance only; dark keeps its own ramp. */
+html:not([data-fw-theme='dark']) .ch-qf {
+  --ch-text-primary: var(--ch-ink-950);
+  --ch-text-secondary: var(--ch-ink-900);
+  --ch-text-tertiary: var(--ch-ink-700);
+  --ch-border-hairline: rgb(28 25 18 / 0.16);
+  --ch-border-subtle: rgb(28 25 18 / 0.22);
+  --ch-border-control: rgb(28 25 18 / 0.34);
+  --ch-border-strong: rgb(28 25 18 / 0.5);
+  --ch-ledger-rule: rgb(28 25 18 / 0.26);
+  --ch-ledger-rule-soft: rgb(28 25 18 / 0.16);
+  --ch-ledger-rule-double: 3px double rgb(28 25 18 / 0.36);
+  --ch-ledger-ink: var(--ch-green-900);
+  --ch-ledger-eyebrow: var(--ch-text-secondary);
+  --ch-champagne-rule: rgb(28 25 18 / 0.2);
+}
+.ch-qf .ch-qf-facts dt {
+  font-weight: 600;
+}
+.ch-qf .ch-qf-facts dt + dd {
+  font-weight: 650;
+}
+/* A qualifier on desktop: the facts and each section sit on bright sheets over the parchment, so the copy reads on a
+   white ground, not on the tinted page (same owner note). */
+@media (min-width: 821px) {
+  .ch-qf[data-canopy] .ch-qf-facts {
+    padding: 20px 0;
+    border-radius: 18px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px var(--ch-border-subtle),
+      0 1px 2px rgb(28 25 18 / 0.05),
+      0 10px 24px -16px rgb(28 25 18 / 0.3);
+  }
+  .ch-qf[data-canopy] .ch-qf-facts > div:first-child {
+    padding-left: 24px;
+  }
+  .ch-qf[data-canopy] .ch-qf-panel,
+  .ch-qf[data-canopy] .ch-qf-side,
+  .ch-qf[data-canopy] .ch-qf-board {
+    padding: 24px 28px;
+    border-top: 0;
+    border-radius: 18px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px var(--ch-border-subtle),
+      0 1px 2px rgb(28 25 18 / 0.05),
+      0 10px 24px -16px rgb(28 25 18 / 0.3);
+  }
+  .ch-qf[data-canopy] .ch-qf-board .ch-qf-row--head {
+    color: var(--ch-text-secondary);
+  }
+}
