@@ -3577,20 +3577,17 @@ html[data-fw-theme='dark'] .ch-offline {
   display: grid;
   flex: none;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  /* The logo on a matte green disc inside an ivory ring, so it holds its own on the frosted panel. */
-  background: var(--ch-green-700);
-  box-shadow:
-    0 0 0 1.5px var(--ch-on-green-ink),
-    0 2px 6px -2px rgb(2 18 10 / 0.5);
+  width: 30px;
+  height: 30px;
 }
 .ch-brand .ch-brand__mark img {
-  width: 26px;
-  height: 26px;
-  /* Matte: the PNG's bright green is toned to the sidebar's greens. */
-  filter: saturate(0.62) brightness(0.98) contrast(0.95);
+  width: 28px;
+  height: 28px;
+  /* Matte, in the sidebar's greens, with a fine ivory line traced round the wheel's own shape (rim and spokes) so it
+     stands out on the frosted panel; no disc or ring behind it. */
+  filter: saturate(0.62) brightness(0.98) contrast(0.95) drop-shadow(0.75px 0 0 var(--ch-on-green-ink))
+    drop-shadow(-0.75px 0 0 var(--ch-on-green-ink)) drop-shadow(0 0.75px 0 var(--ch-on-green-ink))
+    drop-shadow(0 -0.75px 0 var(--ch-on-green-ink));
 }
 .ch-brand__word.is-script {
   display: inline-block;

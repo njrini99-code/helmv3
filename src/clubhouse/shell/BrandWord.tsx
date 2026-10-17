@@ -59,8 +59,8 @@ export function BrandLine({ write }: { write: boolean }) {
 
 /**
  * The wheel, the real logo (owner, 2026-10-16: "an ivory border around the logo so it stands out a little more, and
- * make it matte and matching the greens"; "use the actual logo"): the PNG on a deep-green disc inside an ivory ring,
- * its green toned down to the sidebar's matte greens.
+ * make it matte and matching the greens"; "use the actual logo"; "outline the spokes"): the PNG, toned to the
+ * sidebar's matte greens, with an ivory line traced round its own shape.
  */
 function HelmMark({ write }: { write: boolean }) {
   return (

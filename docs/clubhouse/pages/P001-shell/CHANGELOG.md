@@ -1,13 +1,14 @@
 # P001 — Shell: changelog
 
-## 2026-10-16 — The brand's logo, matte in an ivory ring
+## 2026-10-16 — The brand's logo, matte with its spokes outlined in ivory
 
 Owner: "put a ivory border around the logo so it stands out a little more, and
-make it matte and matching the greens", then "use the actual logo" (a redrawn
-wheel was tried first). The real wheel PNG sits on a 32px deep-green disc
-(`--ch-green-700`) inside a 1.5px ivory ring (`--ch-on-green-ink`), its green
-toned down with a filter (saturate 0.62) to the sidebar's matte greens
-(`HelmMark` in `shell/BrandWord.tsx`).
+make it matte and matching the greens", then "use the actual logo" and "not a
+wheel around like outlining it all … outline the spokes" (a redrawn wheel, then
+a disc in an ivory ring, were tried first). The real wheel PNG, 28px, toned to
+the sidebar's matte greens (saturate 0.62), with a 0.75px ivory line
+(`--ch-on-green-ink`) traced round its own shape, rim and spokes, by four
+`drop-shadow`s; nothing behind it (`HelmMark` in `shell/BrandWord.tsx`).
 
 ## 2026-10-16 — The wordmark in Norican, in its frosted panel
 
