@@ -9037,6 +9037,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90634,
+    "page": "P009",
+    "category": 6,
+    "item": 34,
+    "name": "THE_PLAYERS_ROUNDS_PANEL_CRASHES",
+    "chCode": "CH-09223",
+    "meaning": "The player's rounds panel crashes (desktop, beside the leaderboard)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,

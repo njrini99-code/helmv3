@@ -31,6 +31,14 @@ Owner, 2026-10-16.
   deadline is left as it is, the database is untouched, and the CH-09104 check ("The entry deadline has to be on or
   before the start date.") and its catalog row stay, though the form can no longer set a value for it to refuse.
   CONTRACT 90102 and 91901 and the phone notes now count the remaining facts.
+- **A player's rounds beside the leaderboard** (desktop only, `QualifierDetail.tsx`, `PlayerRounds`): a side panel on the
+  scoreboard green, "Your rounds" or "<name>’s rounds", with the total to par large and one tile per round (course,
+  date, score and plate). The best round is marked and an unplayed round is dashed. It follows the leaderboard row a
+  coach opens, otherwise the viewer's own; a player sees only their own. It reads `board.rows[].rounds`, so there is no
+  new read and no migration. The open row now lives in a small `useSyncExternalStore` store: lifting it into the page's
+  state re-rendered the page and stalled the streamed sections (CH-09410). Its boundary is **CH-09223** (the commit
+  named it CH-09216, which is already the qualifier form's boundary, so it was renumbered; the existing crash test now
+  names it). Qualifiers vitest passed in the main session; no visual check is recorded.
 
 ## 2026-10-14 — A round with no tees says so
 

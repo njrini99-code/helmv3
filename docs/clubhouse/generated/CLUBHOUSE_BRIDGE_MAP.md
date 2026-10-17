@@ -112,7 +112,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P006 | 4 | 5 | 3 | 9 | 4 | 28 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 95 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 3 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 97 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 41 | 2 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 131 |
-| P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 133 |
+| P009 | 7 | 7 | 4 | 13 | 14 | 34 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 134 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 15 | 12 |  | 17 | 11 | 39 | 14 | 5 | 2 |  | 21 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 178 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
@@ -953,6 +953,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90631 | CH-09221 | 06 Server / system error | `THE_COACHS_PICK_NOTES_DONT_LOAD` | implemented | The coach's pick notes don't load (detail, coach, confirmed squad) |
 | 90632 | CH-09222 | 06 Server / system error | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | implemented | A player's entries don't load on /my-qualifiers |
 | 90633 | CH-09220 | 06 Server / system error | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | implemented | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
+| 90634 | CH-09223 | 06 Server / system error | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | implemented | The player's rounds panel crashes (desktop, beside the leaderboard) |
 | 90701 | CH-09903 | 07 Network / offline | `THE_SQUAD_IS_CONFIRMED` | implemented | The squad is confirmed (Manage selections) |
 | 90702 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, none of the eight writes (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) is sent: the shell's offline toast (CH-1903) names what did not happen, the error haptic fires, and the page does not move on. |
 | 90703 | CH-09904 | 07 Network / offline | `THE_LISTS_FILTER_AND_SEARCH` | reserved | The list's filter and search |

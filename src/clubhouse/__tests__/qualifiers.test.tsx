@@ -773,7 +773,7 @@ describe('Qualifiers · one qualifier', () => {
     expect(screen.queryByText(/Two top-10s last spring/)).toBeNull();
   });
 
-  it('CH-09212 CH-09213 CH-09214 CH-09215 a crash stays inside its section', () => {
+  it('CH-09212 CH-09213 CH-09214 CH-09215 CH-09223 a crash stays inside its section', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const d = detail();
     const broken = { ...d, roundCourses: d.roundCourses.map((c) => ({ ...c, course: {} as never })), board: { ...d.board!, rows: d.board!.rows.map((r, i) => (i === 0 ? { ...r, name: null as never, rounds: null as never } : r)) } };
@@ -782,6 +782,8 @@ describe('Qualifiers · one qualifier', () => {
     expect(code('CH-09213')!.textContent).toMatch(/Round-by-round scores couldn’t be shown/);
     expect(code('CH-09214')!.textContent).toMatch(/Selections couldn’t be shown/);
     expect(code('CH-09215')!.textContent).toMatch(/Course per round couldn’t be shown/);
+    // The coach's panel falls back to the first row, the one broken above.
+    expect(code('CH-09223')!.textContent).toMatch(/A player’s rounds couldn’t be shown/);
     expect(screen.getByRole('heading', { name: 'Pinehurst qualifier' })).toBeTruthy();
     quiet.mockRestore();
   });

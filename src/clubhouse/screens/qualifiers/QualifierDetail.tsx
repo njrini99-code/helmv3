@@ -261,7 +261,7 @@ export function QualifierDetail({
             <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
               <Courses data={data} />
             </SectionBoundary>
-            <SectionBoundary surface="qualifiers.player-rounds" label="A player’s rounds" code="CH-09216">
+            <SectionBoundary surface="qualifiers.player-rounds" label="A player’s rounds" code="CH-09223">
               <PlayerRounds data={data} openRow={openRow} />
             </SectionBoundary>
             {data.rules && (
