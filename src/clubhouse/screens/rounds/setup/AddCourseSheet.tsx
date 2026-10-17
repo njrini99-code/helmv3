@@ -339,7 +339,7 @@ function CoursePreview({
         )}
       </label>
       {photoIssue && (
-        <span className="ch-acs__photo-issue" role="alert">
+        <span className="ch-acs__photo-error" role="alert">
           {photoIssue}
         </span>
       )}
