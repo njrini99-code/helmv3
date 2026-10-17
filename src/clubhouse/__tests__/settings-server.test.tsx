@@ -193,6 +193,21 @@ describe('Settings · the server loader', () => {
     expect(logServer).not.toHaveBeenCalled();
   });
 
+  it('82101 a coach: the team row and the CoachHelm philosophy row are each read once (they were read twice)', async () => {
+    const base = coachTables();
+    const calls: Record<string, number> = { golf_teams: 0, golf_coach_philosophy: 0 };
+    const counted = (name: 'golf_teams' | 'golf_coach_philosophy') => (f: Array<[string, unknown[]]>) => {
+      calls[name] = (calls[name] ?? 0) + 1;
+      const v = base[name] as unknown;
+      return typeof v === 'function' ? (v as (f: Array<[string, unknown[]]>) => unknown)(f) : v;
+    };
+    tables.current = { ...base, golf_teams: counted('golf_teams'), golf_coach_philosophy: counted('golf_coach_philosophy') } as ChFakeTables;
+    const data = await loadSettings(coachSession, 't1');
+    expect(calls).toEqual({ golf_teams: 1, golf_coach_philosophy: 1 });
+    expect(data.teamName).toBe('Varsity');
+    expect(data.digest).toEqual({ value: true, error: false });
+  });
+
   it('82101 CH-8901 the loader says email is paused unless the outbound gate is exactly on', async () => {
     tables.current = coachTables();
     try {
@@ -220,13 +235,13 @@ describe('Settings · the server loader', () => {
     expect(actions.getTeamCoachHelmAccess).not.toHaveBeenCalled();
   });
 
-  const digestFails = (f: Array<[string, unknown[]]>) => (selects(f, 'email_digest_enabled') ? { error: { message: 'boom' } } : { data: null });
   const boom = { error: { message: 'boom' } };
 
   it.each([
     ['profile read fails', () => (tables.current = coachTables({ golf_coaches: boom })), 'profile', 'settings', (d: Loaded) => d.profile.error],
     ['profile row missing', () => (tables.current = coachTables({ golf_coaches: { data: null } })), 'profile', 'settings', (d: Loaded) => d.profile.error],
-    ['weekly email read fails', () => (tables.current = coachTables({ golf_coach_philosophy: digestFails })), 'digest', 'notifications', (d: Loaded) => d.digest!.error],
+    // One read of the philosophy row serves both the weekly email and CoachHelm (2026-10-17), so its failure flags both.
+    ['weekly email read fails', () => (tables.current = coachTables({ golf_coach_philosophy: boom })), 'digest', 'notifications', (d: Loaded) => d.digest!.error && d.coachhelm!.error],
     ['team settings read fails', () => (tables.current = coachTables({ golf_team_settings: boom })), 'teamSettings', 'teams', (d: Loaded) => d.scoring!.error && d.reminders!.error],
     [
       'team row read fails',

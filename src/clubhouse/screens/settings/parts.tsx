@@ -447,3 +447,14 @@ export function useInstantSave(surface: string) {
 export function SettingSwitch(props: React.ComponentProps<typeof Switch>) {
   return <Switch {...props} busyCode="CH-8403" />;
 }
+
+/**
+ * The warning tick as a confirm for something that cannot be taken back opens (D-70: warning before Remove, Delete,
+ * Discard): Leave team, Make a new code, Reset CoachHelm updates and Turn off CoachHelm on the desktop; the phone's
+ * action sheets already give it (readiness audit, 2026-10-17).
+ */
+export function useWarnOnOpen(open: boolean): void {
+  useEffect(() => {
+    if (open) haptic('warning');
+  }, [open]);
+}

@@ -10,7 +10,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { channelsFor, DEFAULT_CHANNELS, ROUTING_GROUPS, ROUTING_LABEL, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from './model';
 import { useDelivery, usePushToggle, useRouting, useTestPush } from './hooks';
-import { Card, EmailPaused, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch } from './parts';
+import { Card, EmailPaused, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch, useWarnOnOpen } from './parts';
 
 /** Recruiting and profile-view emails don't apply to GolfHelm coaches or players (as in the current app). */
 export const DELIVERY_GROUPS = DELIVERY_NOTIFICATION_GROUPS.filter((g) => g.id !== 'pipeline' && g.id !== 'profile_views');
@@ -159,6 +159,7 @@ const CHANNELS: Array<{ key: keyof ChannelPref; label: string }> = [
 function RoutingCard({ initial, writes, emailPaused }: { initial: { prefs: PrefsByCategory; quiet: boolean }; writes: ChSettingsWrites; emailPaused: boolean }) {
   const { prefs, quiet, pending, bulkBusy, cellBusy, all, setCell, bulk, flipQuiet } = useRouting(initial, writes);
   const [confirmReset, setConfirmReset] = useState(false);
+  useWarnOnOpen(confirmReset);
   const muted = (ch: 'push' | 'email') => Object.fromEntries(all.map((c) => [c, { ...channelsFor(prefs, c), [ch]: false }])) as PrefsByCategory;
 
   return (

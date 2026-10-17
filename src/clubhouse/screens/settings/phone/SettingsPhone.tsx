@@ -140,9 +140,17 @@ export function SettingsPhone({
   useEffect(() => {
     sectionOpen.current = section != null;
   }, [section]);
+  // Profile, Email and Password also open over the list itself (the identity row). There a Back would leave Settings
+  // before anything could ask, so a sheet over the list is a history entry of its own, like a section (owner,
+  // 2026-10-17: "fix it"): Back closes it, or asks first when it holds edits.
+  const sheetOverList = section == null && (profileOpen || emailOpen || passwordOpen);
+  const overList = useRef(sheetOverList);
+  useEffect(() => {
+    overList.current = sheetOverList;
+  }, [sheetOverList]);
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
-      if (!sectionOpen.current) return;
+      if (!sectionOpen.current && !overList.current) return;
       const state = window.history.state as { chPhone?: unknown } | null;
       if (typeof state?.chPhone === 'number' && state.chPhone >= 1) return;
       const top = [...heldSheets.current].reverse().find((x) => x.held());
@@ -156,13 +164,20 @@ export function SettingsPhone({
     return () => window.removeEventListener('popstate', onPop, true);
   }, []);
 
-  // A section is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906).
+  // A section is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906); so is a sheet over
+  // the list, which the same Back closes.
   const popTo = useCallback((level: number) => {
     if (level >= 1) return;
+    if (!sectionOpen.current) {
+      setProfileOpen(false);
+      setEmailOpen(false);
+      setPasswordOpen(false);
+      return;
+    }
     setDir(poppedByUA() ? 0 : -1);
     setSection(null);
   }, []);
-  usePhoneStackHistory(section ? 1 : 0, popTo);
+  usePhoneStackHistory(section || sheetOverList ? 1 : 0, popTo);
 
   const open = (id: ChSettingsSection) => {
     chTrail(`settings section ${id}`);

@@ -40,7 +40,9 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
   const coachId = role === 'coach' ? (session.coach?.id ?? null) : null;
   const playerId = session.player?.id ?? null;
 
-  const [userRes, deliveryRes, profileRes, teamNameRes] = await Promise.all([
+  // The team's name comes from the team row each role reads below, and the digest from the CoachHelm philosophy row: each
+  // table is read once (the loader read golf_teams and golf_coach_philosophy twice each; readiness audit, 2026-10-17).
+  const [userRes, deliveryRes, profileRes] = await Promise.all([
     supabase.auth.getUser(),
     getNotificationPreferences().catch((e: unknown) => ({ data: null, error: String(e) })),
     role === 'coach'
@@ -50,13 +52,11 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
           .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
           .eq('id', playerId!)
           .maybeSingle(),
-    teamId ? supabase.from('golf_teams').select('name').eq('id', teamId).maybeSingle() : Promise.resolve({ data: null, error: null }),
   ]);
   if (userRes.error) log('user', userRes.error, 'auth');
   if (deliveryRes.error || !deliveryRes.data) log('deliveryPrefs', deliveryRes.error ?? 'no data', 'notifications');
   if (profileRes.error) log('profile', profileRes.error);
   else if (!profileRes.data) log('profile', 'no profile row');
-  if (teamNameRes.error) log('teamName', teamNameRes.error, 'teams');
 
   const p = profileRes.error ? null : (profileRes.data as Record<string, unknown> | null);
   const profile =
@@ -76,7 +76,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
     coachId,
     playerId,
     teamId,
-    teamName: teamNameRes.data?.name ?? null,
+    teamName: null,
     profile,
     delivery: deliveryRes.error || !deliveryRes.data ? failed : ok(deliveryRes.data as Record<string, boolean>),
     playerRouting: null,
@@ -118,6 +118,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
     if (!requestsRes.success) log('joinRequests', requestsRes.error, 'teams');
     if (teamRes.error) log('membershipTeam', teamRes.error, 'teams');
     const t = teamRes.data as { id: string; name: string; organization: { name: string } | null } | null;
+    base.teamName = t?.name ?? null;
     base.membership =
       !requestsRes.success || teamRes.error
         ? failed
@@ -131,8 +132,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
   }
 
   // ── Coach ──
-  const [digestRes, settingsRes, teamRes, chCoachRes, philosophyRes] = await Promise.all([
-    supabase.from('golf_coach_philosophy').select('email_digest_enabled').eq('coach_id', coachId!).maybeSingle(),
+  const [settingsRes, teamRes, chCoachRes, philosophyRes] = await Promise.all([
     teamId
       ? supabase
           .from('golf_team_settings')
@@ -151,9 +151,10 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
     supabase.from('golf_coach_philosophy').select('*').eq('coach_id', coachId!).maybeSingle(),
   ]);
 
-  if (digestRes.error) log('digest', digestRes.error, 'notifications');
-  // A missing row or null means the digest is on, as the current app reads it.
-  base.digest = digestRes.error ? failed : ok(digestRes.data?.email_digest_enabled !== false);
+  // The digest is a column of the philosophy row. A missing row or null means the digest is on, as the current app reads it.
+  if (philosophyRes.error) log('digest', philosophyRes.error, 'notifications');
+  base.digest = philosophyRes.error ? failed : ok((philosophyRes.data as { email_digest_enabled?: boolean | null } | null)?.email_digest_enabled !== false);
+  base.teamName = (teamRes.data as { name?: string } | null)?.name ?? null;
 
   if (teamId) {
     if (settingsRes.error) log('teamSettings', settingsRes.error, 'teams');
