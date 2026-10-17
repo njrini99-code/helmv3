@@ -3287,3 +3287,137 @@ html:not([data-fw-theme='dark']) .ch-qf {
 html[data-fw-theme='dark'] .ch-qf-dots i {
   box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.35);
 }
+
+/* A player's rounds beside the leaderboard: the side column runs the body's height so the panel can hold in view while
+   the board scrolls; each round's to par sits at the line's end. */
+@media (min-width: 821px) {
+  .ch-qf-body > .ch-qf-col:last-child {
+    align-self: stretch;
+  }
+  .ch-qf[data-canopy] .ch-qf-prounds {
+    position: sticky;
+    top: calc(var(--ch-topbar-h) + 24px);
+  }
+}
+/* The rounds as a showcase on the team board's green: the total to par large, a raised tile a round with its score and
+   plate, the best round lit with a mint rule, the rounds still to play a dashed tile. */
+.ch-qf-prounds {
+  display: grid;
+  gap: 16px;
+  padding: 20px 20px 18px;
+  border-radius: 20px;
+}
+.ch-qf-prounds__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ch-qf .ch-qf-prounds .ch-qf-prounds__head h2 {
+  margin: 0;
+  font: 600 15px/1.2 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+}
+.ch-qf-prounds__pos {
+  display: inline-grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(159 224 182 / 0.35);
+  font: 700 14px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-qf-prounds__big {
+  display: grid;
+  gap: 6px;
+}
+.ch-qf-prounds__big b {
+  font: 700 52px/0.95 var(--ch-font-sans);
+  letter-spacing: -0.03em;
+  color: var(--ch-text-primary);
+}
+.ch-qf-prounds__big b.is-under {
+  color: #ff8b7d;
+}
+.ch-qf-prounds__big span {
+  font: 500 13px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-qf-prounds__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-qf-prounds__r {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 10px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.ch-qf-prounds__r.is-best {
+  background: rgb(159 224 182 / 0.14);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 0 0 1px rgb(159 224 182 / 0.5);
+}
+.ch-qf-prounds__r.is-todo {
+  grid-template-columns: auto minmax(0, 1fr);
+  background: none;
+  box-shadow: none;
+  outline: 1.5px dashed rgb(237 231 216 / 0.28);
+  outline-offset: -1.5px;
+}
+.ch-qf-prounds__n {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.22);
+  font: 700 12px/1 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+}
+.ch-qf-prounds__m {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-qf-prounds__m b {
+  overflow: hidden;
+  font: 600 14px/1.2 var(--ch-font-sans);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ch-text-primary);
+}
+.ch-qf-prounds__m small {
+  font: 500 12px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-qf-prounds__r.is-best .ch-qf-prounds__m small {
+  color: var(--ch-hero-mint);
+}
+.ch-qf-prounds__r.is-todo .ch-qf-prounds__m b {
+  font-weight: 500;
+  color: var(--ch-text-secondary);
+}
+.ch-qf-prounds__s {
+  font: 700 24px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-qf-prounds__hint {
+  margin: 0;
+  font: 500 12.5px/1.35 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
