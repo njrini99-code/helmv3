@@ -18,7 +18,7 @@ import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { bubbleNote, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ToParPlate } from './parts';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
@@ -325,7 +325,7 @@ function Board({
               </span>
               <ToParPlate value={r.toPar} />
               <span className="ch-qfm-lb__thru ch-num">
-                {r.played}/{data.numRounds}
+                <ThruDots played={r.played} total={data.numRounds} />
               </span>
             </>
           );

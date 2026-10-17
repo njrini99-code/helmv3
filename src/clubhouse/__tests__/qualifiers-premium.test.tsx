@@ -235,7 +235,10 @@ describe('P009-A1 standings on hand-hung plates', () => {
     expect(row('Jonah').querySelector('.ch-qf-plate')!.className).not.toMatch(/is-under/);
     expect(row('Jonah').querySelector('.ch-qf-move.is-gain')!.textContent).toBe('▲2, up 2 since the last round');
     expect(row('Priya').querySelector('.ch-qf-move.is-loss')!.textContent).toBe('▼3, down 3 since the last round');
-    expect(row('Jonah').textContent).toMatch(/2\/3.*74\.0.*148/);
+    // Thru is dots, one per scheduled round, the played ones filled (owner, 2026-10-16), read as words.
+    expect(row('Jonah').querySelector('.ch-qf-dots')!.getAttribute('aria-label')).toBe('2 of 3 rounds');
+    expect(row('Jonah').querySelectorAll('.ch-qf-dots i.is-on')).toHaveLength(2);
+    expect(row('Jonah').textContent).toMatch(/74\.0.*148/);
   });
 
   it('a tie is "T3" with its T set small and raised', () => {

@@ -3258,3 +3258,31 @@ html:not([data-fw-theme='dark']) .ch-qf {
     color: var(--ch-text-secondary);
   }
 }
+
+/* Thru as dots: one per scheduled round, a played round filled green with a little lift, an unplayed one an empty ring. */
+.ch-qf-dots {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  vertical-align: middle;
+}
+.ch-qf-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
+}
+.ch-qf-dots i.is-on {
+  background: var(--ch-green-500);
+  box-shadow: inset 0 0 0 1.5px var(--ch-green-500);
+}
+/* Even: the dots sit centred under their head, a played and an unplayed dot the same size on the same line. */
+.ch-qf-table [role='row'] > :nth-child(3) {
+  display: flex;
+  justify-content: center;
+  justify-self: center;
+  text-align: center;
+}
+html[data-fw-theme='dark'] .ch-qf-dots i {
+  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.35);
+}
