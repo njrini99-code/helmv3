@@ -5945,7 +5945,8 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__id {
   display: grid;
   position: sticky;
-  top: 24px;
+  /* Sticks under the section bar (.ch-gd__nav: its own top, its 46px height, then an 18px gap), never behind it. */
+  top: calc(var(--ch-topbar-h) + 8px + 46px + 18px);
   align-content: start;
   align-self: start;
   gap: 18px;
