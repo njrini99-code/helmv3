@@ -17,9 +17,10 @@ Owner: "right after you click sign in, the animation still stalls for a
 second". Nothing moves until the sign-in answers, and the answer waited on
 seven network round trips one after another. The server's sign-in
 (`loginAction`, `src/app/golf/actions/auth.ts`) now sends the lockout check and
-both rate limits together (one round trip, not three; refusals keep their
-order, and an attempt now counts against both limits even when an earlier check
-refuses it, which only counts more), and after a successful sign-in reads the
+the email's rate limit together (two round trips before the sign-in, not three;
+refusals keep their order; the IP's limit is still counted only once both pass,
+so on a shared network one person retrying a locked account does not use up
+everyone else's allowance, as review pointed out), and after a successful sign-in reads the
 role and both profiles together with the failed-attempts reset (one round trip,
 not two plus a serial reset). On the client the form starts leaving the moment
 the sign-in lands; the 100ms cookie beat now sits inside the opening's own
