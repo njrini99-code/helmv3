@@ -138,6 +138,13 @@ export interface ChTeamForm {
   putts: { avg: number | null; delta: number | null };
 }
 
+/** The team's zone and its date when the page was read. */
+export interface ChHomeClock {
+  tz: string;
+  /** YYYY-MM-DD in `tz`. */
+  day: string;
+}
+
 export interface ChCoachHome {
   greeting: string;
   /** The team chat to open from "Message team"; null opens Messages. */
@@ -145,6 +152,11 @@ export interface ChCoachHome {
   /** Who needs a look and what's next, from the leaderboard and the week. Null when that read failed. */
   subline: string | null;
   todayLabel: string;
+  /**
+   * The team clock this page was read on: its zone and its date then (YYYY-MM-DD). The client compares the team-local
+   * date now against `day` and reads the page again when it has rolled over (useHomeDayRollover). Optional for fixtures.
+   */
+  clock?: ChHomeClock;
   week: { days: ChHomeDay[]; agenda: ChAgendaRow[]; error: boolean };
   /** holesError: the rounds loaded but their hole-by-hole detail didn't. */
   latestRounds: { rounds: ChLatestRound[]; error: boolean; holesError: boolean };
@@ -244,7 +256,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       return p ? nameOf(p) : 'Former player';
     }),
   );
-  const [{ greeting, todayLabel }, rosterRes, chatRes, wk, seasonRead, latest] = await Promise.all([clockRead, rosterRead, chatRead, weekRead, roundsRead, latestRead]);
+  const [{ greeting, todayLabel, tz, day }, rosterRes, chatRes, wk, seasonRead, latest] = await Promise.all([clockRead, rosterRead, chatRead, weekRead, roundsRead, latestRead]);
   // CH-2208: without the team chat, Message team opens Messages instead.
   if (chatRes.error) log('team chat', chatRes.error);
 
@@ -297,6 +309,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
     teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
     subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),
     todayLabel,
+    clock: { tz, day },
     week: wk.week,
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },
     leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
@@ -306,14 +319,14 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
 
 /**
  * The team's timezone (CH-2210: Eastern, the product default, when it doesn't
- * load or isn't a real zone), the time-of-day greeting in it, and today's long
- * date.
+ * load or isn't a real zone), the time-of-day greeting in it, today's long
+ * date, and today's date (YYYY-MM-DD) in it.
  */
 export async function homeClock(
   supabase: Awaited<ReturnType<typeof createClient>>,
   teamId: string,
   now: Date,
-): Promise<{ tz: string; greeting: string; todayLabel: string }> {
+): Promise<{ tz: string; greeting: string; todayLabel: string; day: string }> {
   const { data: settings, error: settingsError } = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
   if (settingsError) log('timezone', settingsError);
   // A stored value that isn't a real IANA zone would throw in every Intl call below; read it as missing instead.
@@ -326,7 +339,7 @@ export async function homeClock(
     /* unknown zone: the time-neutral phrase is never wrong */
   }
   const todayLabel = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' }).format(now);
-  return { tz, greeting, todayLabel };
+  return { tz, greeting, todayLabel, day: ymd(now, tz) };
 }
 
 /**

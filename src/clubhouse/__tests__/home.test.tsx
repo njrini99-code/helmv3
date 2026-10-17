@@ -249,6 +249,13 @@ describe('Home · reads that fail', () => {
     const et = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/New_York', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
     expect(data.todayLabel).toBe(et);
   });
+
+  it('20301 the page carries the team clock it was read on: the team’s zone and its date in that zone, for the midnight rollover', async () => {
+    tables.current = { golf_team_settings: { data: { timezone: 'Pacific/Auckland' } } };
+    const data = await load();
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Pacific/Auckland', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    expect(data.clock).toEqual({ tz: 'Pacific/Auckland', day });
+  });
 });
 
 describe('Home · empty', () => {

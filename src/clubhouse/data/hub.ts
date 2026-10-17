@@ -416,7 +416,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     },
     trips: {
       rows: trips.map((t) => {
-        const ids = t.event_id && !attendance.error ? (attendance.byEvent.get(t.event_id) ?? []).map((r) => r.player).filter((id) => names.has(id)) : null;
+        // Travelers are named from the roster: without it they are unknown (null), never "0 travelers" (CH-10208).
+        const ids = t.event_id && !attendance.error && !rosterRes.error ? (attendance.byEvent.get(t.event_id) ?? []).map((r) => r.player).filter((id) => names.has(id)) : null;
         const who = ids ? ids.map((id) => names.get(id)!) : null;
         return trip(t, f, today, { travelers: who, ids, count: who ? who.length : null, mine: null });
       }),
