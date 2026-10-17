@@ -24,7 +24,7 @@ import {
   type ChTeamInfo,
 } from './model';
 import { SAVE_COPY, useInvite } from './hooks';
-import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction } from './parts';
+import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 import { StaffCards } from './Staff';
 
 /** Team's reads that failed, for its one section notice (shared with TeamPhone). */
@@ -109,6 +109,7 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
 function InviteCard({ code: initial, writes }: { code: string; writes: ChSettingsWrites }) {
   const { code, canShare, regen, copy, share } = useInvite(initial, writes);
   const [confirm, setConfirm] = useState(false);
+  useWarnOnOpen(confirm);
   return (
     <Card id="set-invite" title="Invite players" description="Players join with this code, then you approve them from Roster.">
       <Row label="Invite code" help="Share it, or send the join link.">

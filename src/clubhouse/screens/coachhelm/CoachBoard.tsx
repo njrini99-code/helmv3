@@ -67,7 +67,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   const [assigned, setAssigned] = useState<Record<string, ChHelmAssigned>>({});
   const [dismissed, setDismissed] = useState<Record<string, true>>({});
   // A switch to Ask moves the strip at once and dims the board (aria-busy) until Ask is ready.
-  const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v]);
+  const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
 
   // The follow-ups (marking assigned, hiding a dismissed card, restoring it) live inside the action, so a toast's Retry completes them too.
   // CH-13702: Assign is a primary Button, so its tap is the light press; the write's success and error haptics come from useAction.

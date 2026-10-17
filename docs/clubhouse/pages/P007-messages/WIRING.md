@@ -143,7 +143,7 @@ Write path: createEnrichedAnnouncement (coach), acknowledgeAnnouncement and comp
 ## Held dependencies
 
 - `docs/clubhouse/held/features/conversation-files.md` (built, held behind the Clubhouse gate)
-- `docs/clubhouse/held/data/message-attachments-hardening.md` (SQL not written; after Clubhouse)
+- `docs/clubhouse/held/data/message-attachments-hardening.md` (applied 2026-10-03, `20261001130000`; HELD.md)
 
 ## Impact notes
 

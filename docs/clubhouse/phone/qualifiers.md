@@ -74,12 +74,13 @@ Reopen (Q-20).
 - A 24px name.
 - "8 entrants · course".
 - An action row: "Manage selections" (secondary, full width) and "Edit" (ghost).
-- Three facts: Rounds in "13/24", Spots "4+1", Deadline.
+- Two facts, side by side: Rounds in "13/24" and Spots "4+1" (there is no entry deadline, 2026-10-16).
+- A player's own rounds, shown above the leaderboard (2026-10-16): a green panel with the total to par and a tile per round that opens to its field rank and hole-by-hole shape. A coach has no panel; a row opens the sheet below.
 - Leaderboard (changed by P009-A1, owner 2026-10-08). The column header Pos, Player, To par, Thru is drawn once; then one 56pt row a player:
   - the position (a tie as "T3", its T small and raised) with the movement since the previous round under it ("▲2" gain green, "▼1" loss amber);
   - the name, with the state badge (compact) or the sample-size note ("1 of 3 rounds", P009-C2) on its second line;
   - to par on a fixed-aspect ivory plate (52 × 30, the condensed cell numeral; red only under par);
-  - Thru ("2/3").
+  - Thru: one dot per scheduled round, green for each played, centred ("2 of 3 rounds" for VoiceOver); a qualifier of more than eight rounds keeps the figure ("2/9").
   - The average moved to the player's sheet; there is no avatar and no per-row Rounds/Avg/Total labels.
 - The Live chip in the leaderboard head: "Live · updated 4:12 PM" only while the feed is subscribed, "Paused · standings from 4:12 PM" and Refresh when it is not (P009-B2); past the end date the status pill says "Ended · n rounds outstanding" and the board claims no feed (D3).
 - The cut lines, the unscored entrants, and a caption.
@@ -99,7 +100,7 @@ Reopen (Q-20).
 
 **04 Create**
 
-- Sections: Basics; Schedule (start and end side by side, then the deadline); Course and rules (rounds and course side by side, then the one-round acknowledgement); Travel squad (squad and picks side by side, with the readout); Players (56px rows with a checkbox, avatar, name and year).
+- Sections: Basics; Schedule (start and end side by side); Course and rules (rounds and course side by side, then the one-round acknowledgement); Travel squad (squad and picks side by side, with the readout); Players (56px rows with a checkbox, avatar, name and year).
 - Cancel and Create sit in the top bar, so the keyboard never covers the submit.
 - The board's caption says "Same fields as the web form". The phone form has no scoring rules field, no help text and no error states (Q-20).
 

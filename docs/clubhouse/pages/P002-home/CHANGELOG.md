@@ -1,5 +1,89 @@
 # P002 — Home: changelog
 
+## 2026-10-17 — A player's Home reads reply counts, not teammates' replies
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner-flagged attendance RLS, docs/clubhouse/STATUS.md)
+Contract IDs:   none new (D2-8 and the agenda lines unchanged)
+Actions:        ACT-P002-OPEN-PLAYER-HOME
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000)
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Changed
+
+- `loadHomeWeek` (`data/home.ts`) takes `viewer: 'player'` from player Home
+  (`data/player-home.ts`): the week's "N players", "N of M confirmed" and the
+  phone cards come from `golf_event_attendance_counts` instead of every
+  invitee's row, so no teammate's id or reply reaches the player's page (the
+  rows' path carried every invitee's id in `inviteeIds` until player-home
+  stripped it). The lines render exactly as before. Coach Home keeps the rows.
+- `ChHomeEvent.invitedCount` (new, optional): how many are invited. Player
+  Home's D2-8 rule (a meeting with no invitees is the coach's own) reads it, so
+  a meeting that invites only teammates still shows.
+- `inviteDetail` and `confirmedLine` (`screens/home/model.ts`) also take a
+  count; a count reads like a list the player is given no names for.
+- Until the migration is applied the function answers PGRST202 / 42883 and the
+  rows are read as before. Any other failure drops the counts (never
+  "0 players"), logged as `attendance`, and never hides a meeting.
+
+### Why
+
+- Migration 20261017102000 narrows `golf_event_attendance` so a player reads
+  only their own row. This closes the VERIFY note that players can read
+  teammates' replies through the API once the migration is applied.
+
+### Verification
+
+- `npm run test:file -- src/clubhouse/__tests__/attendance-counts.test.ts`
+  (same agenda as the rows' path, no attendance read, no teammate id in the
+  payload, D2-8 with counts, fallback, failure, coach) plus the existing Home
+  suites. No screenshots: nothing visible changed.
+
+## 2026-10-17 — "Today" turns at the team's midnight
+
+```text
+Design package: none (no visible change to the design)
+PR/commit:      uncommitted (owner request "fix whatever needs it")
+Contract IDs:   none new (20301's prose in CONTRACT 03)
+Actions:        ACT-P002-OPEN-COACH-HOME, ACT-P002-OPEN-PLAYER-HOME
+Data impact:    none (the loaders return the team clock they already read)
+Held items:     none
+```
+
+### Changed
+
+- Both Homes carry the team clock they were read on (`clock: { tz, day }`, from
+  `homeClock`). `useHomeDayRollover` compares the team-local date now with that
+  day, in the team's zone (the device's only when a page has no clock), and
+  reads the page again when it has turned: at the team's next midnight, and
+  when the page comes back into view (visibilitychange, focus, pageshow), at
+  most three times for one new day if the server still answers with the old
+  one. The date line, greeting, week strip, Today and the day card no longer
+  keep yesterday on a page left open overnight. A frozen preview clock never
+  rolls.
+- "Today", "Tomorrow" and the weekday already compared both dates on the
+  team's clock (2026-10-02); now covered by a test across zones.
+- VERIFY: the `golf_event_attendance` read question answered (players can read
+  teammates' replies through the API; Home shows counts only), and the
+  skeleton gap corrected (the phone skeleton is phone-shaped and role-aware
+  since 2026-10-08; the desktop one is still the coach's shape). CONTRACT 02
+  and 20301 follow.
+
+### Verification
+
+- `npm run test:file -- src/clubhouse/__tests__/home-day-rollover.test.tsx
+  src/clubhouse/__tests__/home.test.tsx src/clubhouse/__tests__/player-home.test.tsx`;
+  the rollover file also under `TZ=Pacific/Auckland` and
+  `TZ=America/Los_Angeles`. No screenshots: nothing visible changed and the dev
+  server was not run.
+
+## 2026-10-16 — The phone's game switch takes the shared green chip
+
+The chosen segment of the phone's game switch (`.ch-ph-game`) is the lit green chip every switcher draws now, on this
+switch's tighter corner, instead of a quiet raised ivory one (`home.css`). Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-14 — The desktop head stacks on a narrow canvas
 
 - **A narrow canvas stacks the head** (home.css, `@container (max-width: 640px)`):

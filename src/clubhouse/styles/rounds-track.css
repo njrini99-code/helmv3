@@ -721,11 +721,9 @@ button.ch-rt-strip__h {
 }
 .ch-rt-seg button[aria-checked='true'] {
   font-weight: 600;
-  background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-600));
-  color: var(--ch-on-fill-100);
-  box-shadow:
-    0 1px 2px rgb(11 58 37 / 0.35),
-    inset 0 1px 0 rgb(255 255 255 / 0.14);
+  background: var(--ch-seg-on-bg);
+  color: var(--ch-seg-on-ink);
+  box-shadow: var(--ch-seg-on-shadow);
 }
 .ch-rt-seg button[aria-checked='true'] em {
   color: rgb(244 241 232 / 0.8);

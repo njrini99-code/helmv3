@@ -52,14 +52,8 @@
 .ch-ms-rail__head .ch-seg__b {
   flex: 1;
 }
-/* All, Unread, Groups (owner, 2026-10-08: never ivory on ivory): the chosen filter is a green chip with ivory ink. */
-.ch-ms-rail__head .ch-seg__pill {
-  background: var(--ch-green-fill-700);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
-}
-.ch-ms-rail__head .ch-seg__b.is-on {
-  color: var(--ch-on-fill-50);
-}
+/* All, Unread, Groups: the chosen filter is the green chip every switcher now draws (controls.css; owner, 2026-10-08
+   and 2026-10-16). */
 .ch-ms-rail__title {
   display: flex;
   align-items: center;
@@ -153,7 +147,7 @@
 }
 .ch-ms-row.is-sel {
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-key-raised-shadow), inset 3px 0 0 var(--ch-field-green);
+  box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-ms-grp {
   display: grid;
@@ -2605,7 +2599,7 @@ html[data-fw-theme='dark'] .ch-ms-row:active {
 }
 html[data-fw-theme='dark'] .ch-ms-row.is-sel {
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-key-raised-shadow), inset 3px 0 0 var(--ch-green-600);
+  box-shadow: var(--ch-key-raised-shadow);
 }
 html[data-fw-theme='dark'] .ch-ms-msg.is-mine .ch-ms-bub {
   color: var(--ch-on-green-ink);
@@ -2691,4 +2685,91 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
 }
 .ch-msp-thread .ch-ms-msg.is-failed .ch-ms-bub::after {
   display: none;
+}
+
+/* Announcements fold under the conversations (owner, 2026-10-16: "messages should be first", announcements "folded"):
+   one raised row on its own tinted card, a gap above it, opening in place to the newest three. */
+.ch-ms-sec.is-ann {
+  margin: 10px -4px 4px;
+  padding: 4px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--ch-green-100) 55%, var(--ch-bg-surface));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 22%, transparent),
+    0 1px 2px rgb(11 58 37 / 0.08),
+    0 6px 16px -10px rgb(11 58 37 / 0.28);
+}
+.ch-ms-sec.is-ann > .ch-ms-sec__l {
+  padding: 8px 12px;
+}
+.ch-ms-fold {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  gap: 13px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  text-align: left;
+  color: var(--ch-text-primary);
+  cursor: pointer;
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ms-fold:hover {
+  background: color-mix(in srgb, var(--ch-green-fill-600) 7%, transparent);
+}
+.ch-ms-fold:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: -2px;
+}
+.ch-ms-fold .ch-ms-grp {
+  width: 44px;
+  height: 44px;
+}
+.ch-ms-fold__b {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-ms-fold__b b {
+  font: 600 14.5px/1.2 var(--ch-font-sans);
+}
+.ch-ms-fold__b b .ch-num {
+  margin-left: 4px;
+  font-weight: 500;
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-fold__b > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 400 13px/1.25 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-ms-fold__chev {
+  color: var(--ch-text-tertiary);
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-ms-sec.is-ann.is-open .ch-ms-fold__chev {
+  transform: rotate(180deg);
+}
+.ch-ms-fold__body {
+  padding: 2px 0 6px;
+  border-top: 1px solid color-mix(in srgb, var(--ch-green-fill-600) 16%, transparent);
+  animation: ch-ms-fold-in var(--ch-dur-base) var(--ch-ease);
+}
+.ch-ms-fold__body .ch-ms-more {
+  margin-inline: 12px;
+}
+@keyframes ch-ms-fold-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
+  background: color-mix(in srgb, var(--ch-green-fill-600) 12%, var(--ch-bg-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-500) 22%, transparent);
 }

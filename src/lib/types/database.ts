@@ -21582,6 +21582,16 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
+      golf_event_attendance_counts: {
+        Args: { p_event_ids: string[] }
+        Returns: {
+          accepted: number
+          declined: number
+          event_id: string
+          invited: number
+          pending: number
+        }[]
+      }
       golf_join_team_with_code: {
         Args: { p_code: string }
         Returns: {
@@ -21603,6 +21613,10 @@ export type Database = {
       }
       golf_normalize_name: { Args: { p: string }; Returns: string }
       golf_readable_round_ids: { Args: never; Returns: string[] }
+      golf_set_course_image: {
+        Args: { p_course_id: string; p_image_url: string }
+        Returns: undefined
+      }
       golf_team_by_join_code: {
         Args: { p_code: string }
         Returns: {

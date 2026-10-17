@@ -26,6 +26,19 @@ function Count({ ahead, of }: { ahead: number; of: number }) {
   );
 }
 
+/** A section's tally against the Tour: how many of its stats are ahead and how many behind, so the group reads at a glance. */
+function Tally({ rows }: { rows: ChStandRow[] }) {
+  const ahead = rows.filter((r) => senseOf(r) === 'ahead').length;
+  const behind = rows.filter((r) => senseOf(r) === 'behind').length;
+  if (!ahead && !behind) return null;
+  return (
+    <span className="ch-hs-tally ch-num">
+      {ahead > 0 && <span className="is-ahead">{ahead} ahead</span>}
+      {behind > 0 && <span className="is-behind">{behind} behind</span>}
+    </span>
+  );
+}
+
 function Row({ r }: { r: ChStandRow }) {
   const sense = senseOf(r);
   return (
@@ -39,6 +52,10 @@ function Row({ r }: { r: ChStandRow }) {
         </p>
       </div>
       <div className="ch-hs-tr" aria-hidden="true">
+        {/* The gap to the Tour, filled in the row's colour so how far you sit from it reads at a glance (owner, 2026-10-16). */}
+        {r.tour && (
+          <i className="ch-hs-tr__gap" style={{ left: `${Math.min(r.tour.pct, r.youPct)}%`, width: `${Math.abs(r.youPct - r.tour.pct)}%` }} />
+        )}
         {r.team && <i className="ch-hs-tr__team" style={{ left: `${r.team.pct}%` }} />}
         {r.tour && <i className="ch-hs-tr__tour" style={{ left: `${r.tour.pct}%` }} />}
         <i className="ch-hs-tr__you" style={{ left: `${r.youPct}%` }} />
@@ -87,7 +104,8 @@ function Hero({ s }: { s: ChStanding }) {
   const top = s.gaps[0];
   const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
   return (
-    <section className={'ch-hs-hero' + (s.gaps.length > 0 ? '' : ' is-solo')} aria-labelledby="ch-hs-hero-t">
+    // On the team board's green (owner, 2026-10-16: "same with standing"): the headline and what is most to gain.
+    <section className={'ch-hs-hero ch-scoreboard' + (s.gaps.length > 0 ? '' : ' is-solo')} aria-labelledby="ch-hs-hero-t">
       <div className="ch-hs-hero__main">
         <div className="ch-hs-hero__k">
           <span>Where you stand</span>
@@ -200,7 +218,10 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
           {s.groups.map((g) => (
             <section key={g.id} className="ch-hs-g" aria-labelledby={`ch-hs-g-${g.id}`}>
               <div className="ch-hs-g__h">
-                <h2 id={`ch-hs-g-${g.id}`}>{g.label}</h2>
+                <div className="ch-hs-g__t">
+                  <h2 id={`ch-hs-g-${g.id}`}>{g.label}</h2>
+                  <Tally rows={g.rows} />
+                </div>
                 <p>{g.description}</p>
               </div>
               <ol className="ch-hs-rows">

@@ -1,5 +1,76 @@
 # P006 — Calendar: changelog
 
+## 2026-10-17 — A player's meeting rule reads invite counts
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner-flagged attendance RLS, docs/clubhouse/STATUS.md)
+Contract IDs:   none new (D2-8 unchanged)
+Actions:        none
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000)
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Changed
+
+- `loadCalendar` (`data/calendar.ts`), player only: D2-8 (a meeting with no
+  invitees is the coach's own) asks `golf_event_attendance_counts` how many
+  each meeting in the window invites, beside the attendance read (no extra
+  round trip). The player's own place and reply still come from their own row.
+  Until the migration is applied the rows decide, as before; a failed count is
+  logged (`meetingInvites`) and never hides a meeting.
+
+### Why
+
+- Migration 20261017102000 narrows `golf_event_attendance` so a player reads
+  only their own row. Without the count, every meeting that invites teammates
+  but not this player would have read as having no invitees and disappeared.
+
+### Verification
+
+- `npm run test:file -- src/clubhouse/__tests__/attendance-counts.test.ts
+  src/clubhouse/__tests__/calendar.test.tsx`. No screenshots: nothing visible
+  changed.
+
+## 2026-10-17 — Retry cannot add the same busy time twice; stale VERIFY rows corrected
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner request "fix whatever needs it")
+Contract IDs:   60606 (CH-6006), 60409 (CH-6309)
+Actions:        addCoachBlockedTime takes an optional requestId
+Data impact:    none (no migration; the id becomes the busy-time row's primary key)
+Held items:     none
+```
+
+### Fixed
+
+- VERIFY's open bug "Retry can create the same event twice when a create's
+  answer is lost" was already fixed for events: New event and a repeating
+  series have sent a request id that becomes the row's key since C-17. Busy
+  time was the last create the toast can retry without one. The sheet now
+  makes one id per set of contents and keeps it across Retry, Add again and a
+  reopened sheet until an add lands; `addCoachBlockedTime` stores the block
+  under it, and a repeat that hits the key answers with the block that landed
+  once it reads back as the coach's own with the same title and start (anything
+  else keeps the existing failure). Messages are unchanged. Without an id
+  (Fairway's availability screen) the add behaves as before.
+- VERIFY said the D-71 first-run page was not built; it is (CH-6309,
+  2026-09-30). Both rows now name only what is still unverified.
+
+### Verification
+
+- Unit tests: `blocked-time-idempotency.test.ts` (server: no second row, a
+  mismatched or another coach's id refused) and `calendar.test.tsx` CH-6006
+  (client: the same id across Retry and a reopened sheet, a new one for new
+  contents or after a landed add). Not run against a database or in a browser.
+
+## 2026-10-16 — The attendance switch takes the shared green chip
+
+The chosen attendance choice is ivory on the shared green chip, whatever it is: amber ink on green was unreadable, so
+Late no longer draws its own colour, and Absent keeps its strike in a lighter line (`calendar.css`, `.ch-in__att`).
+Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-14 — Keyboard and focus (runtime audit A-09, A-14, A-23, A-24, A-25)
 
 WebKit audit of the desktop calendar, coach and player:

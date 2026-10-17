@@ -496,7 +496,10 @@ describe('Team Hub · coach', () => {
     // No "Whole team · 0": the count is unknown, not zero.
     expect(within(dialog).getByRole('radio', { name: 'Whole team' })).toBeInTheDocument();
     await user.click(within(dialog).getByRole('radio', { name: 'Choose players' }));
-    await expectCode('CH-10208', /roster didn’t load/);
+    // The page's own notice (CH-10208) is outside the sheet: this is the picker's, inside it.
+    await waitFor(() => expect(dialog.querySelector('[data-ch-code="CH-10208"]')).not.toBeNull());
+    expect(dialog.querySelector('[data-ch-code="CH-10208"]')!.textContent).toMatch(/team list didn’t load/);
+    expect(within(dialog).queryByRole('group', { name: 'Players who get it' })).toBeNull();
     expect(code('CH-10310')).toBeNull();
     await user.click(within(dialog).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
@@ -513,7 +516,8 @@ describe('Team Hub · coach', () => {
     show({ ...PREVIEW_HUB_COACH, players: [], playersError: true }, writes({ assignTask: assign }), 'tasks');
     await user.click(screen.getByRole('button', { name: 'Assign a task' }));
     let dialog = await screen.findByRole('dialog', { name: 'Assign a task' });
-    await expectCode('CH-10208');
+    await waitFor(() => expect(dialog.querySelector('[data-ch-code="CH-10208"]')).not.toBeNull());
+    expect(within(dialog).queryByRole('group', { name: 'Players the task is for' })).toBeNull();
     expect(dialog.textContent).not.toMatch(/For \d+ of \d+/);
     await user.type(within(dialog).getByRole('textbox', { name: 'Task' }), 'Book physicals');
     await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
@@ -527,6 +531,43 @@ describe('Team Hub · coach', () => {
     await expectCode('CH-10310', /No players on the roster yet/);
     expect(dialog.textContent).not.toMatch(/For \d+ of \d+/);
     expect(code('CH-10208')).toBeNull();
+  });
+
+  it('CH-10208 101402 a roster that didn’t load is told on the page, not first inside an empty picker: one notice with Try again', async () => {
+    const user = userEvent.setup();
+    show({ ...PREVIEW_HUB_COACH, players: [], playersError: true });
+    const notice = code('CH-10208') as HTMLElement;
+    expect(notice).not.toBeNull();
+    expect(notice.closest('dialog')).toBeNull();
+    expect(notice.getAttribute('role')).toBe('alert');
+    expect(notice.textContent).toMatch(/The team list didn’t load/);
+    expect(notice.textContent).toMatch(/Players can’t be chosen for a post, a trip or a task/);
+    // One failure keeps its own notice: no page-level summary.
+    expect(code('CH-1209')).toBeNull();
+    await user.click(within(notice).getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(router.refresh).toHaveBeenCalled());
+  });
+
+  it('CH-10208 CH-1209 the team list beside another failed read: the page notice names both and no second notice is drawn', () => {
+    show({ ...PREVIEW_HUB_COACH, players: [], playersError: true, updates: { rows: [], error: true } });
+    expect(code('CH-1209')!.textContent).toMatch(/Updates and the team list didn’t load/);
+    expect(code('CH-10208')).toBeNull();
+  });
+
+  it('CH-10208 a player never gets the team-list notice, and a coach whose roster loaded does not either', () => {
+    show({ ...PREVIEW_HUB_PLAYER, players: [], playersError: true });
+    expect(code('CH-10208')).toBeNull();
+    cleanup();
+    show(PREVIEW_HUB_COACH);
+    expect(code('CH-10208')).toBeNull();
+  });
+
+  it('CH-10208 Plan a trip with no roster says who is traveling without "0 of 0"', async () => {
+    const user = userEvent.setup();
+    show({ ...PREVIEW_HUB_COACH, players: [], playersError: true }, writes(), 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Plan a trip' });
+    expect(dialog.textContent).not.toMatch(/0 of 0/);
   });
 
   it('CH-10208 a roster that arrives after Try again starts fully chosen, like the first one', async () => {
@@ -965,6 +1006,16 @@ describe('Team Hub · the loader', () => {
     const coach = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
     expect([coach.players, coach.playersError]).toEqual([[], true]);
     expect(logServer).toHaveBeenCalledWith('hub', 'roster', expect.anything());
+    // Without the roster a trip's travelers are unknown (null), never "0 travelers".
+    const inAWeek = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
+    tables.current = {
+      golf_teams: team,
+      golf_team_members: { error: { message: 'roster down' } },
+      golf_travel_itineraries: { data: [{ id: 'tr1', event_id: 'e2', event_name: 'Seahawk', destination: 'Wilmington', departure_date: inAWeek, return_date: inAWeek, transportation_type: 'bus' }] },
+      golf_event_attendance: { data: [{ event_id: 'e2', player_id: 'p2', status: 'accepted' }] },
+    };
+    const trip = (await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null })).trips.rows[0]!;
+    expect([trip.travelers, trip.travelerIds, trip.travelerCount]).toEqual([null, null, null]);
     tables.current = { golf_teams: team, golf_team_members: { data: [] } };
     expect((await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null })).playersError).toBe(false);
   });
@@ -1589,7 +1640,7 @@ describe('Team Hub · roles, states and layout', () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH_FAILED);
     const page = code('CH-1209') as HTMLElement;
-    expect(page.textContent).toMatch(/This week’s replies, announcements, travel, updates, tasks and documents didn’t load/);
+    expect(page.textContent).toMatch(/This week’s replies, announcements, travel, updates, tasks, documents and the team list didn’t load/);
     expect(within(page).getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
     for (const c of ['CH-10201', 'CH-10202', 'CH-10206', 'CH-10207']) {
       expect(code(c)).not.toBeNull();

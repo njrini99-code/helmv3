@@ -569,7 +569,7 @@ describe('Qualifiers · list', () => {
     const hero = document.querySelector('.ch-qf-hero') as HTMLAnchorElement;
     expect(hero.getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${data.items[0]!.id}`);
     expect(hero.textContent).toMatch(/Pinehurst qualifier.*View leaderboard/);
-    expect(within(hero).getByText('Leaders')).toBeTruthy();
+    expect(within(hero).getByText(/^Standings · top \d+$/)).toBeTruthy();
     const titles = (heading: string) =>
       [...(screen.getByRole('heading', { level: 2, name: heading }).closest('section') as HTMLElement).querySelectorAll('h3')].map((h) => h.textContent);
     expect(titles('Upcoming and live')).toEqual(['Conference qualifier']);
@@ -628,7 +628,7 @@ describe('Qualifiers · one qualifier', () => {
     const d = detail();
     wrap(<QualifierDetail data={d} writes={fakeWrites()} live={false} />);
     const fact = (k: string) => [...document.querySelectorAll('.ch-qf-facts > div')].find((f) => f.querySelector('dt')!.textContent === k)!.textContent;
-    expect([...document.querySelectorAll('.ch-qf-facts dt')].map((t) => t.textContent)).toEqual(['Dates', 'Entry deadline', 'Entrants', 'Rounds submitted', 'Course', 'Spots']);
+    expect([...document.querySelectorAll('.ch-qf-facts dt')].map((t) => t.textContent)).toEqual(['Dates', 'Entrants', 'Rounds submitted', 'Course', 'Spots']);
     expect(fact('Dates')).toMatch(/2026 · 3 rounds$/);
     expect(fact('Entrants')).toBe('Entrants8players');
     expect(fact('Rounds submitted')).toBe('Rounds submitted13of 24');
@@ -773,7 +773,7 @@ describe('Qualifiers · one qualifier', () => {
     expect(screen.queryByText(/Two top-10s last spring/)).toBeNull();
   });
 
-  it('CH-09212 CH-09213 CH-09214 CH-09215 a crash stays inside its section', () => {
+  it('CH-09212 CH-09213 CH-09214 CH-09215 CH-09223 a crash stays inside its section', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const d = detail();
     const broken = { ...d, roundCourses: d.roundCourses.map((c) => ({ ...c, course: {} as never })), board: { ...d.board!, rows: d.board!.rows.map((r, i) => (i === 0 ? { ...r, name: null as never, rounds: null as never } : r)) } };
@@ -782,6 +782,8 @@ describe('Qualifiers · one qualifier', () => {
     expect(code('CH-09213')!.textContent).toMatch(/Round-by-round scores couldn’t be shown/);
     expect(code('CH-09214')!.textContent).toMatch(/Selections couldn’t be shown/);
     expect(code('CH-09215')!.textContent).toMatch(/Course per round couldn’t be shown/);
+    // The coach's panel falls back to the first row, the one broken above.
+    expect(code('CH-09223')!.textContent).toMatch(/A player’s rounds couldn’t be shown/);
     expect(screen.getByRole('heading', { name: 'Pinehurst qualifier' })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -2397,7 +2399,7 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
   it('91901 board 02: facts, the leaderboard as cards, and Manage selections for the coach', () => {
     wrap(<QualifierDetail data={detail('live')} writes={fakeWrites()} live={false} />);
     const facts = document.querySelector('.ch-qfm-facts')!;
-    expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots', 'Deadline']);
+    expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots']);
     expect(facts.textContent).toMatch(/4\+1/);
     // Drawn, decoratively: the rounds posted along the rounds due, and the squad's seats (four won on score, one pick).
     expect(facts.querySelector('.ch-qf-bar i')).not.toBeNull();

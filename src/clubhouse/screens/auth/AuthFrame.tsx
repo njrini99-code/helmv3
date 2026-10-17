@@ -6,6 +6,7 @@ import { loadFeatures } from '@/lib/motion/load-features';
 import { clubhouseFontVariables } from '../../lib/fonts';
 import { useChPress } from '../../lib/press';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useSmoothWheelEverywhere } from '../../lib/smooth-scroll';
 import { useAfterPaint } from '../../lib/use-painted';
 import '../../styles/tokens.css';
 import '../../styles/base.css';
@@ -25,6 +26,7 @@ export type AuthPhase = 'login' | 'opening' | 'welcome' | 'leaving';
 export function AuthFrame({ screen, phase, children }: { screen: 'signin' | 'welcome' | 'signup'; phase: AuthPhase; children: ReactNode }) {
   const reduced = useChReducedMotion();
   useChPress(!reduced);
+  useSmoothWheelEverywhere();
   // The phase's look (auth.css keys every move on `data-phase`) changes a painted frame after the phase does: the commit
   // that changes it is a heavy one (the sign in landing, the welcome leaving), and a transition started inside it had
   // spent its first 100ms before the first frame was seen, so the sheet jumped 238px and then slid (WebKit video,

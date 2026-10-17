@@ -411,6 +411,14 @@ before, after, baseline or evidence.
 | `P011__premium-audit__coach__390__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
 | `P011__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P011__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P011__add-a-course__player__1440x900__step-one__after__0db5a9b.png` | after | 0db5a9b | add-a-course (player), 1440x900px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__add-a-course__player__1440x900__step-one__before__22e5426.png` | before | 22e5426 | add-a-course (player), 1440x900px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__add-a-course__player__390x844__step-one__after__0db5a9b.png` | after | 0db5a9b | add-a-course (player), 390x844px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__add-a-course__player__390x844__step-one__before__22e5426.png` | before | 22e5426 | add-a-course (player), 390x844px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__1440x900__browse__after__0db5a9b.png` | after | 0db5a9b | course-picker (player), 1440x900px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__1440x900__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 1440x900px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__390x844__browse__after__0db5a9b.png` | after | 0db5a9b | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__390x844__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 
@@ -467,16 +475,16 @@ Further browser checks paused when the shared dev server ran out of disk.
 - `/rounds/recover` had no Clubhouse screen when this page was verified; it has
   one now (swap audit F-02, no board;
   see the row above). It was not run on a phone or against a real failed submit.
-  The entry routes' `error.tsx` files
-  are still Fairway's.
+  The entry routes' `error.tsx` files use the shared boundary, which draws
+  Clubhouse's error view inside the shell (corrected 2026-10-17).
 - Offline (110702), Esc (112001), the read order (112101), a failed Start
   keeping the setup (111201) and a failed hole save
-  keeping the shots (111202) have no test; the review's skeleton (110206) is not
-  built.
+  keeping the shots (111202) have no test. The review's skeleton (110206) is built
+  (`RoundReviewSkeleton`; corrected 2026-10-17).
 - Found and not fixed (see the report to the parent):
-  - `rounds/[id]/loading.tsx` is Fairway's, so a Clubhouse review loads under
-    the Fairway skeleton (110206); both
-    `error.tsx` files are the shared Fairway boundary.
+  - Fixed since (corrected 2026-10-17): `rounds/[id]/loading.tsx` draws
+    `RoundReviewSkeleton` through `ClubhouseSwitch` (110206), and both
+    `error.tsx` files draw Clubhouse's view inside the shell.
   - A failed team-membership read fails the whole library although only "today"
     depends on the team.
   - The checklist `screens/rounds.md` covers only the library, and its desktop,

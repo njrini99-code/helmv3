@@ -1,5 +1,85 @@
 # Clubhouse changelog
 
+## 2026-10-17 — Player RSVP counts come from a narrow function
+
+`data/attendance-counts.ts` (new) calls `golf_event_attendance_counts(p_event_ids)`
+(held migration 20261017102000) and returns `ok` with invited, accepted,
+declined and pending per event, `missing` when the function is not there yet
+(PGRST202 / 42883, so the caller keeps its direct read), or `error`. The player
+paths of the shell (P001), Home (P002) and Calendar (P006) use it, so once the
+migration narrows `golf_event_attendance` to a player's own row their counts
+still hold and no teammate's reply reaches a player's page. Team Hub (P010)
+needs no change: its player path reads only the player's own invites
+(`invitedTo`), and `attendanceFor` runs on the coach path only. The same batch
+writes two other held migrations with no Clubhouse code change:
+20261017100000 (Settings P008: the six later notification switches stop being
+dropped by the `users` trigger) and 20261017101000 (Announcements P010: the
+recipient and task coach policies are scoped to the announcement's team).
+Tests: `src/clubhouse/__tests__/attendance-counts.test.ts` and the pgTAP suites
+under `supabase/tests/rls/`.
+
+## 2026-10-16 — The hand-off curtain holds first-sight motion
+
+`lib/handoff.ts` sets `data-ch-handoff` on `<html>` while its curtain is up and
+removes it with the curtain, so motion meant for the dashboard's first sight
+(the sidebar brand's entrance, P001) holds until it can be seen.
+
+## 2026-10-16 — A script face for the wordmark only
+
+`lib/fonts.ts` adds Norican as `--ch-font-script`, preloaded, for the
+sidebar's "Golfhelm" wordmark (P001) and nothing else: an owner-requested
+exception to the sans-only type rule. It replaces Great Vibes, which was tried
+first and was too thin at sidebar size.
+
+## 2026-10-16 — No card or row has a green side bar
+
+The owner's standing rule: never a card with a green side. Every remaining green left-edge bar
+(`inset Npx 0 0 var(--ch-green...)` or the field green) is removed, in three commits: the open read in Deep dive
+(`coachhelm-dive.css`), the selected row in Messages in light and dark (`messages.css`), the CoachHelm well
+(`coachhelm.css`), and the plaque hero's title (`hero-tones.css`, whose title also loses the 14px of left padding that
+made room for the bar). The selected rows keep their fill and raised shadow. CSS only; no visual check is recorded.
+
+## 2026-10-16 — Zone and game-detail summaries stick below the top bar
+
+A zone summary (`.ch-zn__id`, `ui.css`) and a game-detail summary (`.ch-gm__id`, `stats.css`) stuck at 24px, behind
+the sticky top bar. They now stick at the top bar's height plus 24px. Desktop only; the zones are drawn on Round review (P011)
+and Stats, and game detail is P005's.
+
+## 2026-10-16 — The chosen segment of every switcher is a lit green chip
+
+Owner, 2026-10-16: green, with more depth. Every segmented switcher now draws its chosen segment the same way: a green
+chip lifted off its well, with the light on its top edge, a contact shadow and a soft one under it, and ivory ink with
+a hairline of shadow under the letters (`controls.css` `.ch-seg`, from the new `--ch-seg-on-bg`, `--ch-seg-on-shadow`
+and `--ch-seg-on-ink` in `tokens.css`, with a dark-mode shadow). Home, Roster, Calendar, Messages and Rounds had
+their own greens or an ivory raised chip; those rules are gone and the pages use the shared one. Phone and desktop
+alike. Checked in Chrome (Stats, Roster, Messages, light and dark); not in Safari, and not on an iPhone.
+
+## 2026-10-16 — One material for every desktop window; smooth wheel and no scrollbars everywhere
+
+Owner, 2026-10-16 ("more premium and add same blur"; the course picker "still looks vibe coded"; "get rid of the shimmer").
+
+- **Desktop windows (`.ch-modal`, `styles/controls.css`).** Every window now takes one material, measured against the
+  Claude and ChatGPT dialogs and Apple's sheets: the page behind dimmed with a light 8px blur, a solid panel with one hairline and one
+  soft shadow on 20px corners, a 20px title, and the footer on the panel's surface over a hairline instead of a
+  tinted bar; dark mode to match. It is a plain desktop query (above 820px): Safari matched nothing for a `not` of
+  `prefers-reduced-transparency`. Phone sheets are unchanged.
+- **A control in the window's head (`ui/Modal.tsx`).** `Modal` takes an `action`, drawn beside Close (the course
+  picker's Add a course). Nothing else passes one yet.
+- **Smooth wheel scrolling everywhere (`lib/smooth-scroll.ts`).** The canvas eased a wheel, but a list, a pane, a
+  modal's body, a sheet and the sign-in screens scrolled in raw steps. One wheel listener,
+  `useSmoothWheelEverywhere` (mounted in `ClubhouseFrame` and `AuthFrame`), eases whatever box the wheel is over,
+  hands on to the box around it when one runs out of room, and never goes past a dialog or a box that contains its
+  overscroll. Only a box that scrolls up and down keeps the wheel (`chScrollsVertically`), so a wide table in a
+  sideways scroller no longer turns easing off under the pointer, and a sideways wheel stays native. The same rules
+  as before: desktop, a notched wheel (a trackpad stays native), never with reduced motion or Animations off.
+- **No scrollbars inside the app (`styles/base.css`).** With "always show scroll bars" (or a mouse) a long page took
+  the bar's width and a short one gave it back, so switching between them moved the shell sideways (desktop
+  Safari). Every scroller still scrolls by trackpad, wheel, touch and keyboard; forced colours bring the bars back.
+  The themed thin scrollbar and its tokens' use here are gone.
+- Verification: `smooth-scroll.test.ts` covers which box keeps the wheel, the hand-on to the box around it, the
+  contained overscroll and the dialog edge. Not checked with a real wheel in Safari, or on an iPhone (the easing is
+  desktop only).
+
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
 Owner, testing the preview: on Stats the switcher at the top seemed to be gone.

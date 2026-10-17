@@ -12,8 +12,9 @@ import { NavPlate } from "./NavPlate";
 import { NextEventCard } from "./NextEventCard";
 import { ResumeRoundCard } from "./Dock";
 import { badgeCount } from "./badge-count";
-import { BrandTeamSwitch } from "./TeamSwitch";
+import { TeamSwitch } from "./TeamSwitch";
 import type { ChTeamSwitch } from "./team-switch";
+import { BrandLine, useBrandWrite } from './BrandWord';
 
 export { badgeCount };
 
@@ -34,28 +35,13 @@ export function Sidebar({
   const current = activeNavItem(pathname, userData.role)?.id;
   const sections = CH_NAV_SECTIONS;
 
+  const brandWrite = useBrandWrite();
   return (
     <aside className="ch-sidebar" aria-label="Sidebar">
-      {teamSwitch ? (
-        <BrandTeamSwitch model={teamSwitch} teamName={userData.teamName ?? null} />
-      ) : (
-        <div className="ch-brand">
-          <img
-            src="/clubhouse/auth/helm-golf-mark.png"
-            alt=""
-            width={32}
-            height={32}
-          />
-          <div className="ch-brand__txt">
-            <span className="ch-brand__word">GolfHelm</span>
-            {userData.teamName && (
-              <span className="ch-brand__team" data-ch-code="CH-1305">
-                {userData.teamName}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
+      {/* The brand alone (owner, 2026-10-16: "put the team name somewhere else"): the team heads its own group below. */}
+      <div className="ch-brand">
+        <BrandLine write={brandWrite} />
+      </div>
 
       <nav className="ch-nav" aria-label="Main">
         <NavPlate />
@@ -64,13 +50,28 @@ export function Sidebar({
           if (!items.length) return null;
           return (
             <div key={section ?? "main"} className="ch-nav__group">
-              {section && <div className="ch-nav__section">{section}</div>}
+              {section === "Team" ? (
+                // The Team group is headed by the team itself; a head coach on more than one team switches here.
+                teamSwitch ? (
+                  <TeamSwitch model={teamSwitch} teamName={userData.teamName ?? null} />
+                ) : userData.teamName ? (
+                  <div className="ch-nav__section ch-nav__team">
+                    <span data-ch-code="CH-1305">{userData.teamName}</span>
+                  </div>
+                ) : (
+                  <div className="ch-nav__section">{section}</div>
+                )
+              ) : (
+                section && <div className="ch-nav__section">{section}</div>
+              )}
               {items.map((i) => {
                 const count = badgeCount(i, badges, shell);
                 return (
                   <Link
                     key={i.id}
                     href={i.href}
+                    // RouteFrame restores the scroll (SectionStrip says why Next's is off).
+                    scroll={false}
                     className="ch-navitem"
                     aria-current={current === i.id ? "page" : undefined}
                   >

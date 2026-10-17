@@ -1118,7 +1118,7 @@ Built counterpart: src/clubhouse/shell/Sidebar.tsx, NextEventCard.tsx, TopBar.ts
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
-| Varsity · Fall 2026 (chevrons-up-down team chip) | Sidebar, brand block | Menu button for a head coach on two or more teams (a listbox of the teams, `setActiveTeam` then `router.refresh()`), plain label otherwise, src/clubhouse/shell/TeamSwitch.tsx (`BrandTeamSwitch`), Sidebar.tsx | `works` | No handler on the board. Built 2026-10-01 on the owner's answer to Q-130; gate `canSwitchTeams` and two or more teams, catalog CH-1813, CH-1305 |
+| Varsity · Fall 2026 (chevrons-up-down team chip) | Sidebar, brand block | Menu button for a head coach on two or more teams (a listbox of the teams, `setActiveTeam` then `router.refresh()`), plain label otherwise, src/clubhouse/shell/TeamSwitch.tsx (`TeamSwitch`), Sidebar.tsx | `works` | No handler on the board. Built 2026-10-01 on the owner's answer to Q-130; gate `canSwitchTeams` and two or more teams, catalog CH-1813, CH-1305 |
 | Home | Sidebar, main group | Link to /golf/dashboard, src/clubhouse/shell/Sidebar.tsx:65 (href from nav.ts:35) | `works` | Board GH.go (gh-nav.js:29) |
 | CoachHelm | Sidebar, main group | Link to /golf/dashboard/coachhelm, src/clubhouse/shell/Sidebar.tsx:65 (nav.ts:36), rebuilt for coach nav.ts:113 | `works` | nav.ts:30 comment calling it not rebuilt is stale (D-66) |
 | Calendar | Sidebar, main group | Link to /golf/dashboard/calendar, src/clubhouse/shell/Sidebar.tsx:65 (nav.ts:37) | `works` | |

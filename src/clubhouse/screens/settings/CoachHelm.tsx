@@ -15,7 +15,7 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { moveOrder, orderToPriorities, PRIORITY_LABEL, priorityOrder, type ChCoachHelmSettings, type ChSettingsData, type ChSettingsWrites, type PriorityKey } from './model';
 import { useCoachHelmPower } from './hooks';
-import { Card, ReadFailed, Row, SettingSwitch } from './parts';
+import { Card, ReadFailed, Row, saveFailureBody, SettingSwitch, useWarnOnOpen } from './parts';
 
 export type Phil = CoachPhilosophy & { id: string | null };
 
@@ -45,6 +45,10 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
   const snapshots = useRef(new Map<string, Partial<CoachPhilosophy>>());
   const current = useRef(p);
   current.current = p;
+  // Each field's edit count. A failed save puts back only the fields nothing has changed since it was sent: two quick
+  // priority moves where the first fails and the second lands (the second carries the whole order) kept the screen on
+  // the order before the first move while the server had both (readiness audit, 2026-10-17).
+  const edits = useRef(new Map<string, number>());
   const initialOrCurrent = (k: string) => (current.current as unknown as Record<string, unknown>)[k];
   const toast = useToast();
   const delayedToast = useDelayedToast();
@@ -62,9 +66,11 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
   }, []);
 
   const send = (patch: Partial<CoachPhilosophy>, before: Partial<CoachPhilosophy>) => {
+    const sentAt = new Map(Object.keys(patch).map((k) => [k, edits.current.get(k) ?? 0]));
+    const restore = () => Object.fromEntries(Object.entries(before).filter(([k]) => (edits.current.get(k) ?? 0) === sentAt.get(k))) as Partial<CoachPhilosophy>;
     if (isOffline()) {
       // CH-1903: nothing is sent while offline; put the control back and say so.
-      setP((x) => ({ ...x, ...before }));
+      setP((x) => ({ ...x, ...restore() }));
       haptic('error');
       toast({ tone: 'error', title: "Couldn’t save that CoachHelm setting: you’re offline", body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
       return;
@@ -92,16 +98,17 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
         if (inflight.current === 0) setStatus('saved');
         return;
       }
-      setP((x) => ({ ...x, ...before }));
+      setP((x) => ({ ...x, ...restore() }));
       setStatus('failed');
       haptic('error');
       if (error) chReport(new Error(error), { surface: 'settings.coachhelm', action: 'savePhilosophy', severity: 'low' });
-      toast({ tone: 'error', title: "Couldn’t save that CoachHelm setting", body: "It’s back where it was. Check your connection and try again.", code: 'CH-8022' });
+      toast({ tone: 'error', title: "Couldn’t save that CoachHelm setting", body: `It’s back where it was. ${saveFailureBody(error)}`, code: 'CH-8022' });
     });
   };
 
   const change = (patch: Partial<CoachPhilosophy>, opts: { debounce?: string } = {}) => {
     const before = Object.fromEntries(Object.keys(patch).map((k) => [k, initialOrCurrent(k)])) as Partial<CoachPhilosophy>;
+    for (const k of Object.keys(patch)) edits.current.set(k, (edits.current.get(k) ?? 0) + 1);
     setP((x) => ({ ...x, ...patch }));
     if (!opts.debounce) return send(patch, before);
     const t = timers.current;
@@ -324,6 +331,7 @@ function Priorities({ p, onChange }: { p: Phil; onChange: (order: PriorityKey[])
 function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: ChSettingsWrites }) {
   const { coach, team, pending, setC, setTeamOn } = useCoachHelmPower(initial, writes);
   const [confirmOff, setConfirmOff] = useState(false);
+  useWarnOnOpen(confirmOff);
   return (
     <Card id="set-power" title="CoachHelm" description="The AI coaching assistant on your dashboards." aside={<Icon icon={Sparkles} size={17} />}>
       {team && (

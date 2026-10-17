@@ -7,7 +7,8 @@ import { submitGolfRoundComprehensive } from '@/app/golf/actions/round-submit';
 import { savePartialRound, deleteInProgressRound, type PartialRoundData } from '@/app/golf/actions/round-partial';
 import { getPlayerQualifiers, getNextQualifierRoundNumber, type PlayerQualifierInfo } from '@/app/golf/actions/qualifier-actions';
 import { getPlayerSavedCourses, getRecentCoursesForPlayer, savePlayerCourse, touchSavedCourse, type SavedCourse, type SavedCourseHoleConfig, type RecentPlayedCourse } from '@/app/golf/actions/saved-courses';
-import { contributeCourseFromRound, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
+import { contributeCourseFromRound, getCourseDetail, setCourseImageUrl, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
+import { discardCourseImageUpload, uploadCourseImage } from '@/lib/golf/upload-course-image';
 import { checkRoundStaleness, type TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
@@ -116,6 +117,24 @@ export interface NewRoundSessionOptions {
  */
 function forgetQueuedRound(roundId: string): void {
   void Promise.resolve().then(() => deleteOfflineRound(roundId)).catch(() => {});
+}
+
+/**
+ * Upload a typed course's photo and set it on the library course, when that course has none. Best-effort.
+ * When the save is refused (`success: false`) the uploaded object is removed, so a refused save never leaves an
+ * orphan in the public bucket. A thrown or lost response keeps it: the save may have landed.
+ */
+export async function attachCourseImage(courseId: string, file: File): Promise<void> {
+  try {
+    const detail = await getCourseDetail(courseId);
+    if (!detail || detail.course.image_url) return;
+    const up = await uploadCourseImage(courseId, file);
+    if (!up.ok) return;
+    const res = await setCourseImageUrl(courseId, up.url);
+    if (!res.success) await discardCourseImageUpload(up.path);
+  } catch {
+    /* best-effort: a course photo never affects the round */
+  }
 }
 
 export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRoundClientProps & NewRoundSessionOptions) {
@@ -1812,6 +1831,9 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
           if (contrib.success) {
             resolvedCourseIdRef.current = contrib.data.courseId;
             if (contrib.data.teeId) selectedTeeIdRef.current = contrib.data.teeId;
+            // The photo chosen for the typed course (Clubhouse's Add a course), on a course that has none yet: a library
+            // course already found by name keeps its own. Not awaited: the round is tracking by the time it lands.
+            if (form.courseImage) void attachCourseImage(contrib.data.courseId, form.courseImage);
           }
         } catch { /* best-effort: catalog growth must never block the round */ }
       }

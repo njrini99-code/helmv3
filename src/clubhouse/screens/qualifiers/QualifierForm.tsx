@@ -327,13 +327,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   {fieldHelp('endDate', FORM_HELP.endDate)}
                 </div>
               </div>
-              <div className="ch-field">
-                <label htmlFor="qf-deadline" className="ch-field__label ch-qf-label">
-                  Entry deadline <span className="ch-qf-optional">Optional</span>
-                </label>
-                <input {...inputProps('entryDeadline', FORM_HELP.entryDeadline)} type="date" value={v.entryDeadline} onChange={(e) => set('entryDeadline', e.target.value)} />
-                {fieldHelp('entryDeadline', FORM_HELP.entryDeadline)}
-              </div>
+              {/* No entry deadline field: qualifiers don't have one (owner, 2026-10-16). A stored deadline is kept as it is. */}
             </fieldset>
 
             <fieldset className="ch-qf-fs">

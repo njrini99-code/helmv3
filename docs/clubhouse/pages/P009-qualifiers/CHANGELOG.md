@@ -1,5 +1,64 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-17 — A coach on /my-qualifiers goes to Qualifiers
+
+Readiness audit (2026-10-17): "My qualifiers" is a player's screen, and a coach
+on `/golf/dashboard/my-qualifiers` stood on "not rebuilt". The page now sends a
+coach to Qualifiers (`redirectToClubhouse`) and the address is on the frame's
+aliased list. A player's My qualifiers is unchanged (checked in Chrome). Test:
+`alias-frame.test.ts`.
+
+## 2026-10-16 — Qualifiers: separate sheets, the active one in focus, full contrast
+
+Owner, 2026-10-16: "better separation between qualifiers listed", "more contrast on this page", "more focal on active
+qualifiers", "way more contrast on this page". Three commits, all in `qualifiers.css` unless noted. No visual check is
+recorded for any of them.
+
+- **The desktop list** (above 820px): each qualifier is its own raised sheet on the parchment with a gap between, in
+  place of the ruled ledger seams. Titles, the lines under them, the facts and the intro step up to full ink (the
+  facts' icons are green), and the filter pills take ink when idle and the shared green chip when chosen
+  (docs/clubhouse/CHANGELOG.md). The phone's list is unchanged.
+- **The active qualifier is the list's focus** (`QualifiersList.tsx`): it sits under its own "Active" heading on a raised
+  sheet with a green edge; concluded qualifiers are quieter (secondary heading, lighter sheets). The board in the active
+  qualifier read "Leaders", which did not say it belonged to that qualifier; it reads "Standings · top N" now
+  (`qualifiers.test.tsx` follows).
+- **Full contrast in light mode**: the page takes a page-scoped step up. Text is one grade darker, and rules and borders
+  use the Increase Contrast values (`.ch-qf` re-points `--ch-text-*`, `--ch-border-*` and the ledger rules). On a
+  qualifier's own desktop page the facts, the leaderboard and the side sections sit on bright sheets. Dark mode is
+  unchanged.
+
+## 2026-10-16 — Thru as dots; qualifiers have no entry deadline
+
+Owner, 2026-10-16.
+
+- **Thru is a row of dots** (`ThruDots` in `parts.tsx`, desktop and phone leaderboards): one per scheduled round, green
+  for each one played, centred, labelled "2 of 3 rounds" for VoiceOver. A qualifier of more than eight rounds keeps the
+  figure ("2/9"), since a longer row of dots is not countable at a glance.
+- **No entry deadline.** The owner says qualifiers have none. The fact is gone from the desktop facts (five left) and the
+  phone's facts (two, now a two-column grid), and the field and its skeleton from the create and edit form. A stored
+  deadline is left as it is, the database is untouched, and the CH-09104 check ("The entry deadline has to be on or
+  before the start date.") and its catalog row stay, though the form can no longer set a value for it to refuse.
+  CONTRACT 90102 and 91901 and the phone notes now count the remaining facts.
+- **A player's rounds beside the leaderboard** (desktop only, `QualifierDetail.tsx`, `PlayerRounds`): a side panel on the
+  scoreboard green, "Your rounds" or "<name>’s rounds", with the total to par large and one tile per round (course,
+  date, score and plate). The best round is marked and an unplayed round is dashed. It follows the leaderboard row a
+  coach opens, otherwise the viewer's own; a player sees only their own. It reads `board.rows[].rounds`, so there is no
+  new read and no migration. The open row now lives in a small `useSyncExternalStore` store: lifting it into the page's
+  state re-rendered the page and stalled the streamed sections (CH-09410). Its boundary is **CH-09223** (the commit
+  named it CH-09216, which is already the qualifier form's boundary, so it was renumbered, on the phone too; the
+  existing crash test now names it). Qualifiers vitest passed in the main session; no visual check is recorded for this panel.
+- **A round opens in place** (`RoundsShowcase.tsx`, which now holds `PlayerRounds`, `RoundVisual`, `FieldStrip` and the
+  open-row store): a round tile is a button that opens its detail under it. The round's rank in the field comes first,
+  with every score as an anonymous dot on one line, this round lit and the average a tick. When the round has holes, a
+  hole-by-hole shape against par is drawn as SVG, with the nines as score marks and counts by kind. A link goes to the
+  whole round, `/golf/dashboard/rounds/<id>`. No new read.
+- **The phone**: a player's own rounds are shown above the board, between the facts and the leaderboard (a coach opens
+  anyone's from their row, which opens a sheet as before), inside the same boundary, CH-09223. The phone list takes
+  the separate sheets and the green filter chip too. Checked by the main session in Chrome at 1567 and 420px wide;
+  Qualifiers vitest passed; not checked on a device.
+- **The ink ramp** in the page's contrast block is darker too, 700 down to 300 (the same step CoachHelm and Ask took,
+  see P013), so copy that names a mid ink directly reads darker.
+
 ## 2026-10-14 — A round with no tees says so
 
 Course per round showed a blank beside a round whose tees and par were not set.

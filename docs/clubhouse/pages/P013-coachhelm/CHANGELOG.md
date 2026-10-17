@@ -1,5 +1,59 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-16 — The Game profile reads what CoachHelm says; Standing is greener and organized
+
+Owner, 2026-10-16: base the profile on actual CoachHelm output ("make it based on actual CoachHelm output"). The genome
+alone read 3 rounds (the last 90 days, countable rounds only) while the Board's insights read 23.
+
+- **The profile leads with CoachHelm's insights** (`Profile.tsx`, `coachhelm-profile.ts`). `loadPlayerProfile` now also
+  calls `loadPlayerCoachHelm`, the Board's own ranked read for the player, and carries it as `ChProfile.sees`. On the
+  green board the top insight is the headline with its lede, sample, window and date, then **Costing you** and
+  **Working** (up to four each), every row opening its evidence in Deep dive. Insights that are out of date are left
+  off, and the text is the engine's, nothing written for the page. The genome follows as a quieter section, "The shape
+  of your game". The intro line now reads "What CoachHelm reads in your rounds, and the shape of your game."
+- **The insights not loading** is its own notice, CH-13261 ("What CoachHelm sees didn’t load", with Try again), never
+  "nothing to say"; the measures stay. A new screen test and a loader test cover it, and CH-13261 is in the catalog.
+- **The genome's section is organized and greener** (`coachhelm-profile.css`): how many measures are read is a row of
+  dots, the measures split into "With a read" and "Still filling in" (green-tinted tiles that each say what they still
+  need), and a measure with no stance draws on green. Inside a green board the ledger heading ink resets to the board's.
+- **Standing is greener and organized** (`Standing.tsx`, `coachhelm-standing.css`): the headline and Most to gain sit on
+  the green board; each group's head carries its tally against the Tour ("n ahead, n behind") over a green rule; a stat
+  ahead of the Tour sits on a faint green wash. The data is unchanged (`golf_player_standing`, the nightly read).
+
+- **Standing's bars show the gap** (`Standing.tsx`, `coachhelm-standing.css`): a new `.ch-hs-tr__gap` fills the space from
+  the Tour's mark to the player's, green when ahead and amber when behind. The track is green-tinted and the marker
+  solid. The Game profile's scales get the same track, a full-strength fill and a solid marker
+  (`coachhelm-profile.css`).
+- **Deep dive at more contrast** (`DeepDive.tsx`, `coachhelm-dive.css`): the hero is a green board (`ch-scoreboard`), the
+  rail a bright panel with the open read lit green, the heads field green, and the gauge track green-tinted. The open
+  read no longer has a green side bar (see the shared entry).
+
+Checked: the vitest above; the Standing and profile tests (64) and the CoachHelm tests passed in the main session. No
+visual check is recorded for these commits, and no migration is involved.
+
+## 2026-10-16 — CoachHelm and Ask at full contrast; CoachHelm on a bright sheet
+
+Owner, 2026-10-16: "more contrast on this and the other ones", "coachhelm contrast is the same". In light mode only
+(`coachhelm.css` `.ch-hl`, `coachhelm-ask.css` `.ch-ask`; dark mode is unchanged):
+
+- Both screens take the page-scoped contrast step the Qualifiers page took: text one grade darker (secondary copy reads
+  as primary, tertiary as secondary), and the Increase Contrast rules and borders.
+- The whole ink ramp is darker, 700 down to 300, so copy that names a mid ink directly (a locked measure, a quiet
+  caption) is darker as well. The same ramp change is in Qualifiers' block (P009).
+- On the desktop (above 820px), CoachHelm sits on one bright surface sheet over the parchment, on 24px corners, so its
+  copy reads on a white ground. The phone is unchanged.
+
+Checked by the main session in Chrome on Board, Game profile, Standing and Deep dive; Ask and the phone were not
+reported as checked, and nothing was checked in Safari.
+
+## 2026-10-16 — The other views are fetched whole once the page is idle
+
+The view strip never prefetched, so on the desktop every switch between Board, Ask and the rest waited on the
+server for the whole page (owner, desktop Safari). `useViewSwitch` takes the list of views (`CoachBoard`,
+`PlayerBoard` and `views/Frame.tsx` pass theirs; the player's is `PLAYER_HELM_VIEWS`) and fetches the others whole
+once the page is idle, as the phone's tabs are (`use-prefetch-tabs`). Data Saver and offline skip it. No visible
+change.
+
 ## 2026-10-16 — The phone Evidence sheet slides out; ivory ink holds at night
 
 - **Evidence on the phone (audit A-18):** the sheet stays mounted after its

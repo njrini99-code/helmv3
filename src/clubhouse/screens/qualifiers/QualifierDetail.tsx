@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, ViewTransition, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, ViewTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
@@ -21,12 +21,13 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
 import { bubbleNote, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ToPar, ToParPlate } from './parts';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
 import { StandingsSpread } from './StandingsSpread';
+import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
 import { LIST_HREF, noteIfSelectionLink, useStepBack } from './return-state';
 import { CardBodySkeleton, ParLineSkeleton, SecondaryProvider, Streamed, fulfilled, secondaryOf, settled, type ChQDetailView } from './streamed';
@@ -68,6 +69,10 @@ export function QualifierDetail({
   const { value: shown, stale } = useLastGood(fresh.id, whole, (w) => w.data.board !== null);
   const data = shown.data;
   const coach = data.role === 'coach';
+  // The leaderboard row that is open (its scorecards), shared with the side column's rounds (owner, 2026-10-16). A small
+  // store rather than state here: opening a row re-renders the board and the side panel, not the page (whose streamed
+  // sections would otherwise start over).
+  const [openRow] = useState(createOpenRow);
   const [status, setStatus] = useState<ChQStatus>(data.status);
   const [confirmClose, setConfirmClose] = useState(false);
   useEffect(() => setStatus(data.status), [data.status]);
@@ -242,7 +247,7 @@ export function QualifierDetail({
         <div className="ch-qf-body">
           <div className="ch-qf-col">
             <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
-              <Leaderboard data={data} status={status} stale={stale} feed={feed} />
+              <Leaderboard data={data} status={status} stale={stale} feed={feed} openRow={openRow} />
             </SectionBoundary>
             {coach && b && b.rows.length > 0 && (
               <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
@@ -256,6 +261,9 @@ export function QualifierDetail({
             </SectionBoundary>
             <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
               <Courses data={data} />
+            </SectionBoundary>
+            <SectionBoundary surface="qualifiers.player-rounds" label="A player’s rounds" code="CH-09223">
+              <PlayerRounds data={data} openRow={openRow} />
             </SectionBoundary>
             {data.rules && (
               <section className="ch-qf-side" aria-labelledby="ch-qf-rules">
@@ -289,7 +297,7 @@ function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
   const facts: Array<[string, string, ReactNode, ReactNode?]> = [
     // A date never splits from its day; the range wraps at the dash (D-33: the fact wraps, never truncates).
     ['Dates', shortRange(data.startDate, data.endDate).replace(/ (?=\d)/g, '\u00a0'), `${yearOf(data.startDate)} · ${plural(data.numRounds, 'round')}`],
-    ['Entry deadline', data.deadline ? dayLabel(data.deadline) : '—', data.deadline ? yearOf(data.deadline) : 'Not set'],
+    // No entry deadline: qualifiers don't have one (owner, 2026-10-16).
     ['Entrants', data.entriesError ? '—' : String(data.entrants), 'players'],
     [
       'Rounds submitted',
@@ -336,9 +344,23 @@ function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
 /** Pos, Player, Thru, Avg, Total, To par (the plate), Status, the scorecards' chevron (P009-A1, C2). */
 const LB_COLS = '56px minmax(0, 1fr) 48px 52px 52px 64px 108px 28px';
 
-function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; status: ChQStatus; stale: boolean; feed: LiveFeedView }) {
+function Leaderboard({
+  data,
+  status,
+  stale,
+  feed,
+  openRow,
+}: {
+  data: ChQDetailCore;
+  status: ChQStatus;
+  stale: boolean;
+  feed: LiveFeedView;
+  /** The row whose scorecards are open, shared with the side column so it can show that player's rounds. */
+  openRow: OpenRow;
+}) {
   const { refresh, refreshing } = useRefresh();
-  const [open, setOpen] = useState<string | null>(null);
+  const open = useSyncExternalStore(openRow.subscribe, openRow.get, openRow.get);
+  const setOpen = openRow.set;
   const [announce, setAnnounce] = useState('');
   const b = data.board;
   const coach = data.role === 'coach';
@@ -491,7 +513,7 @@ function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; statu
                       </span>
                     </span>
                     <span role="cell" className="r ch-qf-num">
-                      {r.played}/{data.numRounds}
+                      <ThruDots played={r.played} total={data.numRounds} />
                     </span>
                     <span role="cell" className="r ch-qf-num">
                       {r.avg != null ? formatFixed(r.avg) : '—'}

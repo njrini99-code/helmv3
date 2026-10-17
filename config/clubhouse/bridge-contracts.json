@@ -917,7 +917,7 @@
     "item": 13,
     "name": "ON_A_DESKTOP_A_HEAD_COACH_ON",
     "chCode": "CH-1813",
-    "meaning": "On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team",
+    "meaning": "On a desktop a head coach on more than one team sees the sidebar's Team group heading (the team's name) as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -6788,7 +6788,7 @@
     "item": 6,
     "name": "THE_TEAMS_COURSE_LOCATION",
     "chCode": "CH-8320",
-    "meaning": "The team's course location (Team; held migration 20261008150000)",
+    "meaning": "The team's course location (Team; migration 20261008150000, applied 2026-10-11)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7677,7 +7677,7 @@
     "item": 6,
     "name": "PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED",
     "chCode": "CH-8509",
-    "meaning": "Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes",
+    "meaning": "Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -8177,7 +8177,7 @@
     "category": 1,
     "item": 2,
     "name": "DETAIL_READY",
-    "meaning": "A qualifier opens with its status pill and name, six facts (dates, entry deadline, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen.",
+    "meaning": "A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
     "tests": [
@@ -9037,6 +9037,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90634,
+    "page": "P009",
+    "category": 6,
+    "item": 34,
+    "name": "THE_PLAYERS_ROUNDS_PANEL_CRASHES",
+    "chCode": "CH-09223",
+    "meaning": "The player's rounds panel crashes (desktop, beside the leaderboard)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -9535,7 +9546,7 @@
     "category": 19,
     "item": 1,
     "name": "PHONE_DETAIL",
-    "meaning": "At 820px and below a qualifier is one column: three facts (rounds in, spots, deadline), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop.",
+    "meaning": "At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx#QualifierDetailPhone",
     "tests": [
@@ -14658,6 +14669,17 @@
     "name": "STANDING_THE_COHORT_LOOKUP_FAILED",
     "chCode": "CH-13272",
     "meaning": "Standing: the cohort lookup (their team's gender, which picks the Tour) failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130637,
+    "page": "P013",
+    "category": 6,
+    "item": 37,
+    "name": "PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD",
+    "chCode": "CH-13261",
+    "meaning": "Profile: what CoachHelm sees doesn't load (the player's insight read fails)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

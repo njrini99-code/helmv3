@@ -461,12 +461,12 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           setAdding(false);
           setPicker({ course: null });
         }}
-        onDone={(pick, holes: ChSetupHole[], count, saveCourse) => {
+        onDone={(pick, holes: ChSetupHole[], count, saveCourse, coursePhoto) => {
           setAdding(false);
           // The course typed in by hand is the latest choice: a tee read still on its way no longer applies.
           holesSeq.current++;
           setHolesLoad({ state: 'idle' });
-          set({ pick, holes, baseline: null, count, nine: 'front', saveCourse });
+          set({ pick, holes, baseline: null, count, nine: 'front', saveCourse, coursePhoto });
         }}
       />
     </div>

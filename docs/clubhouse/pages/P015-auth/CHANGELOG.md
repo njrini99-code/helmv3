@@ -1,5 +1,57 @@
 # P015 — Auth: changelog
 
+## 2026-10-16 — The welcome reads the dashboard in full before Continue
+
+Owner: "look through the login and animation mechanics and fix it". The
+welcome prefetched the dashboard with the default kind, which for a dynamic
+page stops at its loading boundary, so the dashboard was only asked for when
+the fold had landed and the empty frame waited a server render (measured in dev
+Chrome: fold done at 1.0s, frame empty until 1.7s warm and over 2s cold). It now
+prefetches in full (`PrefetchKind.FULL`, as the shell's tab prefetch does)
+while the greeting plays. Next does not prefetch on the dev server, so the gain
+shows in production only; not measured there (no build, owner's call).
+
+## 2026-10-16 — Sign in starts moving sooner
+
+Owner: "right after you click sign in, the animation still stalls for a
+second". Nothing moves until the sign-in answers, and the answer waited on
+seven network round trips one after another. The server's sign-in
+(`loginAction`, `src/app/golf/actions/auth.ts`) now sends the lockout check and
+the email's rate limit together (two round trips before the sign-in, not three;
+refusals keep their order; the IP's limit is still counted only once both pass,
+so on a shared network one person retrying a locked account does not use up
+everyone else's allowance, as review pointed out), and after a successful sign-in reads the
+role and both profiles together with the failed-attempts reset (one round trip,
+not two plus a serial reset). On the client the form starts leaving the moment
+the sign-in lands; the 100ms cookie beat now sits inside the opening's own
+430ms wait instead of before it. Auth tests pass; not measured end to end here
+(signing in sends real credentials to production, so it was left to the
+owner).
+
+## 2026-10-16 — Continue hands the wordmark's write to the sidebar
+
+The welcome's own wordmark is back to its original sans lockup; the script
+"Golfhelm" moved to the sidebar's brand (P001), which Continue now asks to
+write itself in once the dashboard is drawn (`markBrandWrite`).
+
+## 2026-10-16 — The welcome tried "Golfhelm" in script, then handed it to the sidebar
+
+Owner, 2026-10-16, after sign in: "a cursive thing of script". The Welcome's mark was first drawn as "Golfhelm" in
+Great Vibes written on by a mask wipe, with the wheel turning into place. That version is superseded: the Welcome is
+back to its sans lockup and the script wordmark lives in the sidebar's brand (entry above, and P001). What stays from the
+first attempt is the script font's mechanism (`lib/fonts.ts`, `--ch-font-script`, now Norican and preloaded) and the shared test setup mocking it
+(`src/test/setup.tsx`). The script face is an owner-requested exception to the doctrine of Instrument Sans for
+display, body and data (`.claude/rules/clubhouse.md`), for the wordmark only.
+
+## 2026-10-16 — Keychain AutoFill keeps the dark field; the sign-in scrolls smoothly
+
+- **AutoFill in dark mode** (`auth.css`, `.ch-au-input`): WebKit paints an autofilled input a light fill with dark
+  ink (a user-agent style), a white bar inside the dark field. An inset shadow of the field's own surface now
+  covers the fill, the ink is ours again, and the fill's colour change is held off where the shadow cannot reach.
+  Not captured: AutoFill cannot be driven in a headless browser, so this is untested against a real Keychain fill.
+- **Smooth wheel** (`AuthFrame` mounts `useSmoothWheelEverywhere`): the sign-in screens scrolled in raw steps.
+  Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — Typing, opening and signing in move once, without waiting
 
 Owner, on the phone: "a slight delay with the animation right when you enter

@@ -6,6 +6,7 @@ import { classIdFromDescription, isClassEvent, stripClassTag } from '@/lib/calen
 import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurrence';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
+import { loadAttendanceCounts } from './attendance-counts';
 import {
   addDays,
   expandBusyDates,
@@ -229,8 +230,16 @@ export async function loadCalendar(input: {
   const invited = new Map<string, string[]>();
   let rsvpError = false;
   const shown = new Set(ids);
+  // A player's attendance read returns only their own rows once migration 20261017102000 is applied, so whether a
+  // meeting invites anyone at all (D2-8, below) comes from the counts, read beside the rows. Until that function exists
+  // (`missing`) the rows still answer it, as before.
+  const meetingIds = input.role === 'player' ? rows.filter((r) => !isClassEvent(r) && r.event_type === 'meeting').map((r) => r.id) : [];
   // Paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's 1,000-row cap.
-  const { data: attendance, error: attendanceError } = await attendanceRead;
+  const [{ data: attendance, error: attendanceError }, meetingCounts] = await Promise.all([
+    attendanceRead,
+    meetingIds.length ? loadAttendanceCounts(supabase, meetingIds) : null,
+  ]);
+  if (meetingCounts?.kind === 'error') chLogServer('calendar', 'meetingInvites', meetingCounts.error, 'calendar');
   if (attendanceError) {
     chLogServer('calendar', 'attendance', attendanceError, 'calendar');
     rsvpError = true;
@@ -243,6 +252,13 @@ export async function loadCalendar(input: {
       invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
     }
   }
+
+  /** How many a meeting invites, for D2-8; null when that couldn't be read (never hides a meeting). */
+  const invitedCount = (id: string): number | null => {
+    if (meetingCounts?.kind === 'ok') return meetingCounts.byEvent.get(id)?.invited ?? 0;
+    if (meetingCounts?.kind === 'error' || rsvpError) return null;
+    return invited.get(id)?.length ?? 0;
+  };
 
   const events: ChCalEvent[] = [];
   for (const r of rows) {
@@ -274,7 +290,7 @@ export async function loadCalendar(input: {
     const me = input.role === 'player' ? input.viewerPlayerId : null;
     // D2-8 (owner, 2026-10-08): a meeting with no invitees is the coach's own (a parent call, a staff meeting); players
     // never see it. Only once the invite list has loaded: a failed read must not hide the team's meetings.
-    if (input.role === 'player' && !rsvpError && r.event_type === 'meeting' && !invitees.length) continue;
+    if (input.role === 'player' && r.event_type === 'meeting' && invitedCount(r.id) === 0) continue;
     const base = {
       id: r.id,
       type,

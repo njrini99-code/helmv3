@@ -204,20 +204,22 @@ export function SignInForm({
       haptic('success');
       // No router.refresh() here: refreshing /golf/login with the new session makes the proxy redirect the signed-in
       // user to /golf/dashboard, which painted the dashboard skeleton and a blank Home before the welcome (swap audit
-      // F-29). The push below is a fresh dynamic request, so it carries the new cookies; give them a beat to settle.
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
+      // F-29). The push below is a fresh dynamic request, so it carries the new cookies; give them a beat to settle
+      // (100ms, inside the opening's own wait on the way to the welcome, so it adds nothing there).
       const storedReturnTo = sessionStorage.getItem('golf_login_returnTo');
       // The ref has been forwarded to the server; a returnTo is spent whichever branch used it or dropped it.
       sessionStorage.removeItem('golf_login_ref');
       const href = resolveSignInHref(result.redirectTo, storedReturnTo);
       if (storedReturnTo) sessionStorage.removeItem('golf_login_returnTo');
 
-      // The form leaves and the course takes the frame before the welcome route draws itself; onboarding has no
-      // name to greet yet, so it goes straight there.
+      // The form leaves and the course takes the frame the moment the sign-in lands (owner, 2026-10-16: it "stalls for
+      // a second" after Sign in), before the welcome route draws itself; onboarding has no name to greet yet, so it
+      // goes straight there.
       if (href.startsWith('/golf/welcome')) {
         onOpening();
-        if (!reduced) await new Promise((resolve) => setTimeout(resolve, OPENING_PUSH_MS));
+        await new Promise((resolve) => setTimeout(resolve, reduced ? 100 : Math.max(100, OPENING_PUSH_MS)));
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
       if (navigate) navigate(href);
       else router.push(href);

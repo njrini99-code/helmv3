@@ -30,7 +30,7 @@ Server loader:           src/clubhouse/data/rounds.ts loadRoundsLibrary (pure st
                          read logs through chLogServer('rounds', …) and never throws)
 Screen:                  src/clubhouse/screens/rounds/RoundsLibrary.tsx -> parts.tsx (UnfinishedCard, SeasonCard, Ribbon, RoundRow)
 Skeleton:                src/clubhouse/screens/rounds/RoundsSkeleton.tsx (CH-11401), from rounds/loading.tsx through ClubhouseSwitch
-Route error:             rounds/error.tsx (the shared Fairway RouteErrorBoundary; there is no Clubhouse error view yet)
+Route error:             rounds/error.tsx (the shared RouteErrorBoundary, which draws Clubhouse's RouteErrorView inside the Clubhouse shell; corrected 2026-10-17)
 
 REVIEW (routed)
 Route:                   /golf/dashboard/rounds/[id]
@@ -42,8 +42,8 @@ Clubhouse route adapter: src/clubhouse/routes/round-review.tsx ClubhouseRoundRev
 Server loader:           src/clubhouse/data/round-review.ts loadRoundReview (pure steps in data/round-review-shape.ts; logs
                          through chLogServer('rounds.review', …))
 Screen:                  src/clubhouse/screens/rounds/RoundReview.tsx (ReviewNine, HoleCard) and ReviewLoadFailed.tsx (CH-11206)
-Skeleton:                none of its own: rounds/[id]/loading.tsx is Fairway's (110206)
-Route error:             rounds/[id]/error.tsx (the shared Fairway RouteErrorBoundary)
+Skeleton:                RoundReviewSkeleton from rounds/[id]/loading.tsx through ClubhouseSwitch (110206; corrected 2026-10-17)
+Route error:             rounds/[id]/error.tsx (the shared RouteErrorBoundary; Clubhouse's view inside the shell)
 
 NEW ROUND (routed, player)
 Route:                   /golf/dashboard/rounds/new
@@ -62,7 +62,7 @@ Page:                    src/app/golf/(dashboard)/dashboard/rounds/continue/[id]
 Clubhouse route adapter: src/clubhouse/routes/round-continue.tsx ClubhouseContinueRoundRoute(props)
 Round screen:            src/clubhouse/screens/rounds/entry/ContinueRound.tsx (useContinueRoundSession, then RoundRuntime)
 Skeleton:                RoundEntrySkeleton (CH-11407) from rounds/continue/[id]/loading.tsx
-Route error:             both routes' error.tsx are the shared Fairway RouteErrorBoundary
+Route error:             both routes' error.tsx are the shared RouteErrorBoundary (Clubhouse's view inside the shell)
 
 SETUP (inside NewRound)
 Screen:                  src/clubhouse/screens/rounds/setup/RoundSetup.tsx -> CoursePicker.tsx, AddCourseSheet.tsx, HoleConfig.tsx
@@ -197,9 +197,9 @@ the preview; the round screen now supplies the ports.
 
 | Control | Component | Handler -> what it calls | Contracts |
 | --- | --- | --- | --- |
-| Browse courses, a course, a tee | `CoursePicker` | `useRead` -> `ports.listCourses()`, `ports.listTees(courseId)` (setup-reads: recent, team, then the library; `listCoursesStrict`); only the latest answer of a read is kept | library CH-11510 · loading CH-11403, CH-11404 · didn't load CH-11209, CH-11208 · no tees CH-11311 · empty CH-11310 · stale read 111503 |
+| Browse courses, a course, a tee | `CoursePicker` | `useRead` -> `ports.listCourses()`, `ports.listTees(courseId)` (setup-reads: recent, team, then the library; `listCoursesStrict`; each course's `image` is its `image_url`, else `resolveRealCourseImage`); a course's tees are asked for once on hover, focus or press of its card (`teesFor`, cleared when the picker opens), and only the latest answer of a read is kept | library CH-11510 · loading CH-11403, CH-11404 · didn't load CH-11209, CH-11208 · no tees CH-11311 · empty CH-11310 · stale read 111503 |
 | Picking tees (the scorecard) | `RoundSetup` | `loadHoles` -> `ports.teeHoles(teeId)`, then `HoleConfig` edits stay in the form | loading CH-11405 · didn't load CH-11210 · edits counted 110103 · the nine 110111 |
-| Add a course | `AddCourseSheet` | local until Start: `onDone(pick, holes, count, saveCourse)`; the course is the round's own (Q-72h) | CH-11511 · checks CH-11108 · start form 110110 |
+| Add a course | `AddCourseSheet` | local until Start: `onDone(pick, holes, count, saveCourse, coursePhoto)`; the course is the round's own (Q-72h). Start (`toStartForm` -> `courseImage`) hands the photo of a saved, hand-typed course to `useNewRoundSession`, which after `contributeCourseFromRound` uploads it (`uploadCourseImage`, straight to the `course-images` bucket) and sets it with `setCourseImageUrl` only when the course has no image, not awaited and best-effort. `setCourseImageUrl` calls the `golf_set_course_image` RPC (migration `20261016220000`, apply after merge), so any golf team member, coach or player, may set it; until the migration is applied it falls back to `updateCourse` (PGRST202 or 42883), so coaches keep uploading and a player gets the coach-only refusal; it pins the storage host and the course's folder and writes only `image_url`, the last-edited columns and one edit-history row | CH-11511 · checks CH-11108 · start form 110110 |
 | Play an open qualifier | `RoundSetup` | `playQualifier` sets the type, the course, the tees and the round; `preselectQualifierId` does the same when the engine names a qualifier round in progress | 110113 · none open CH-11312 · didn't load CH-11211 · closed 110805 |
 | Recovery | `RecoveryHost` (`RecoveryDialog`) | Restore (guarded by an in-flight ref), or Discard shots after a question, through the engine's recovery state | CH-11512 · CH-11513 |
 | A round already in progress | `InProgressConflictDialog` (new round only) | Continue that round, or Start a new round after a discard question (`handleConflictResume`, `handleConfirmDiscard`, `handleStartNewRound`) | CH-11514 · CH-11007 (a failed Start a new round) |

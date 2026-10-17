@@ -1688,7 +1688,8 @@
   /* The figures between two hairlines, divided by soft rules (the kit's FigureRow), each with its drawing. */
   .ch-qfm-facts {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* Rounds in and Spots (no deadline since 2026-10-16). */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 12px 0;
     border-top: 1px solid var(--ch-ledger-rule);
     border-bottom: 1px solid var(--ch-ledger-rule);
@@ -3067,4 +3068,643 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 }
 .ch-qfm .ch-qf-board .ch-qfm-lb__sub .ch-badge {
   font-size: 12.5px;
+}
+
+/* The desktop list, separated and stronger (owner, 2026-10-16: "better separation between qualifiers listed", "more
+   contrast on this page"): each qualifier is its own raised sheet on the parchment with a gap between, the ruled ledger
+   seams give way to that gap, and the copy, facts and filters step up to full ink. */
+@media (min-width: 821px) {
+  .ch-qf--list[data-canopy] .ch-qf-sec > h2 {
+    padding: 0 0 4px;
+    box-shadow: none;
+    color: var(--ch-text-primary);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger {
+    gap: 12px;
+    margin: 12px 0 0;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card {
+    padding: 20px 24px;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px var(--ch-border-subtle),
+      0 1px 2px rgb(28 25 18 / 0.06),
+      0 8px 20px -14px rgb(28 25 18 / 0.3);
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
+    box-shadow:
+      inset 0 0 0 1px var(--ch-border-subtle),
+      0 1px 2px rgb(28 25 18 / 0.06),
+      0 8px 20px -14px rgb(28 25 18 / 0.3);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card::before {
+    display: none;
+  }
+  @media (hover: hover) {
+    .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:hover {
+      background: var(--ch-bg-surface);
+      box-shadow:
+        inset 0 0 0 1px var(--ch-border-strong),
+        0 2px 4px rgb(28 25 18 / 0.06),
+        0 12px 26px -14px rgb(28 25 18 / 0.36);
+    }
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-mine {
+    margin-top: -6px;
+  }
+  .ch-qf--list .ch-qf-card h3,
+  .ch-qf--list[data-canopy] .ch-qf-card h3 {
+    font-weight: 600;
+    color: var(--ch-text-primary);
+  }
+  .ch-qf--list .ch-qf-card__h p,
+  .ch-qf--list .ch-qf-hero__main p,
+  .ch-qf--list .ch-qf-meta {
+    color: var(--ch-text-primary);
+  }
+  .ch-qf--list .ch-qf-meta svg {
+    color: var(--ch-green-700);
+  }
+  .ch-qf--list .ch-qf-head p {
+    color: var(--ch-text-primary);
+  }
+  /* The filters read as the app's other switchers: ink on the idle pills, the green chip on the chosen one. */
+  .ch-qf-pill {
+    color: var(--ch-text-primary);
+    box-shadow: inset 0 0 0 1px var(--ch-border-control);
+  }
+  .ch-qf-pill span {
+    color: var(--ch-text-secondary);
+  }
+  .ch-qf-pill[aria-pressed='true'] {
+    background: var(--ch-seg-on-bg);
+    color: var(--ch-seg-on-ink);
+    box-shadow: var(--ch-seg-on-shadow);
+  }
+  .ch-qf-pill[aria-pressed='true'] span {
+    color: var(--ch-seg-on-ink);
+    opacity: 0.8;
+  }
+}
+
+/* The active qualifier is the focus (owner, 2026-10-16: "more focal on active qualifiers"): a raised sheet with a green
+   edge, the board beside it named for what it is; concluded qualifiers step back to quiet bordered rows. */
+@media (min-width: 821px) {
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-focus {
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-focus > h2 {
+    color: var(--ch-green-700);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-hero {
+    margin-top: 0;
+    padding: 30px 32px;
+    border-radius: 20px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 30%, transparent),
+      0 2px 4px rgb(11 58 37 / 0.06),
+      0 18px 40px -22px rgb(11 58 37 / 0.45);
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-qf--list[data-canopy] .ch-qf-hero:hover {
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 45%, transparent),
+        0 2px 4px rgb(11 58 37 / 0.08),
+        0 22px 46px -22px rgb(11 58 37 / 0.5);
+    }
+  }
+  .ch-qf--list .ch-qf-lead__h > span:first-child {
+    font-weight: 600;
+    color: var(--ch-on-fill-50);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done {
+    margin-top: 28px;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done > h2 {
+    font-size: 16px;
+    color: var(--ch-text-secondary);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-grid.is-ledger {
+    gap: 8px;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-grid.is-ledger .ch-qf-card,
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
+    padding: 14px 22px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--ch-bg-surface) 70%, transparent);
+    box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-card h3 {
+    font-size: 15px;
+  }
+}
+
+/* Qualifiers at full contrast (owner, 2026-10-16: "way more contrast on this page"): the page takes the Increase
+   Contrast rules and steps its ink up a grade (secondary copy reads as body, tertiary as secondary), and the facts,
+   labels and heads carry more weight. Light appearance only; dark keeps its own ramp. */
+html:not([data-fw-theme='dark']) .ch-qf {
+  /* The mid inks a grade darker too, for the copy that names them directly (a locked measure, a quiet caption). */
+  --ch-ink-700: #1c1b18;
+  --ch-ink-600: #2b2a26;
+  --ch-ink-500: #3a3833;
+  --ch-ink-400: #55524b;
+  --ch-ink-300: #7c786f;
+  --ch-text-primary: var(--ch-ink-950);
+  --ch-text-secondary: var(--ch-ink-900);
+  --ch-text-tertiary: var(--ch-ink-700);
+  --ch-border-hairline: rgb(28 25 18 / 0.16);
+  --ch-border-subtle: rgb(28 25 18 / 0.22);
+  --ch-border-control: rgb(28 25 18 / 0.34);
+  --ch-border-strong: rgb(28 25 18 / 0.5);
+  --ch-ledger-rule: rgb(28 25 18 / 0.26);
+  --ch-ledger-rule-soft: rgb(28 25 18 / 0.16);
+  --ch-ledger-rule-double: 3px double rgb(28 25 18 / 0.36);
+  --ch-ledger-ink: var(--ch-green-900);
+  --ch-ledger-eyebrow: var(--ch-text-secondary);
+  --ch-champagne-rule: rgb(28 25 18 / 0.2);
+}
+.ch-qf .ch-qf-facts dt {
+  font-weight: 600;
+}
+.ch-qf .ch-qf-facts dt + dd {
+  font-weight: 650;
+}
+/* A qualifier on desktop: the facts and each section sit on bright sheets over the parchment, so the copy reads on a
+   white ground, not on the tinted page (same owner note). */
+@media (min-width: 821px) {
+  .ch-qf[data-canopy] .ch-qf-facts {
+    padding: 20px 0;
+    border-radius: 18px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px var(--ch-border-subtle),
+      0 1px 2px rgb(28 25 18 / 0.05),
+      0 10px 24px -16px rgb(28 25 18 / 0.3);
+  }
+  .ch-qf[data-canopy] .ch-qf-facts > div:first-child {
+    padding-left: 24px;
+  }
+  .ch-qf[data-canopy] .ch-qf-panel,
+  .ch-qf[data-canopy] .ch-qf-side,
+  .ch-qf[data-canopy] .ch-qf-board {
+    padding: 24px 28px;
+    border-top: 0;
+    border-radius: 18px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px var(--ch-border-subtle),
+      0 1px 2px rgb(28 25 18 / 0.05),
+      0 10px 24px -16px rgb(28 25 18 / 0.3);
+  }
+  .ch-qf[data-canopy] .ch-qf-board .ch-qf-row--head {
+    color: var(--ch-text-secondary);
+  }
+}
+
+/* Thru as dots: one per scheduled round, a played round filled green with a little lift, an unplayed one an empty ring. */
+.ch-qf-dots {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  vertical-align: middle;
+}
+.ch-qf-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
+}
+.ch-qf-dots i.is-on {
+  background: var(--ch-green-500);
+  box-shadow: inset 0 0 0 1.5px var(--ch-green-500);
+}
+/* Even: the dots sit centred under their head, a played and an unplayed dot the same size on the same line. */
+.ch-qf-table [role='row'] > :nth-child(3) {
+  display: flex;
+  justify-content: center;
+  justify-self: center;
+  text-align: center;
+}
+html[data-fw-theme='dark'] .ch-qf-dots i {
+  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.35);
+}
+
+/* A player's rounds beside the leaderboard: the side column runs the body's height so the panel can hold in view while
+   the board scrolls; each round's to par sits at the line's end. */
+@media (min-width: 821px) {
+  .ch-qf-body > .ch-qf-col:last-child {
+    align-self: stretch;
+  }
+  .ch-qf[data-canopy] .ch-qf-prounds {
+    position: sticky;
+    top: calc(var(--ch-topbar-h) + 24px);
+  }
+}
+/* The rounds as a showcase on the team board's green: the total to par large, a raised tile a round with its score and
+   plate, the best round lit with a mint rule, the rounds still to play a dashed tile. */
+.ch-qf-prounds {
+  display: grid;
+  gap: 16px;
+  padding: 20px 20px 18px;
+  border-radius: 20px;
+}
+.ch-qf-prounds__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ch-qf .ch-qf-prounds .ch-qf-prounds__head h2,
+.ch-qfm .ch-qf-prounds .ch-qf-prounds__head h2 {
+  margin: 0;
+  font: 600 15px/1.2 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+}
+.ch-qf-prounds__pos {
+  display: inline-grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(159 224 182 / 0.35);
+  font: 700 14px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-qf-prounds__big {
+  display: grid;
+  gap: 6px;
+}
+.ch-qf-prounds__big b {
+  font: 700 52px/0.95 var(--ch-font-sans);
+  letter-spacing: -0.03em;
+  color: var(--ch-text-primary);
+}
+.ch-qf-prounds__big b.is-under {
+  color: #ff8b7d;
+}
+.ch-qf-prounds__big span {
+  font: 500 13px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-qf-prounds__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-qf-prounds__r {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 10px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.ch-qf-prounds__r.is-best {
+  background: rgb(159 224 182 / 0.14);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 0 0 1px rgb(159 224 182 / 0.5);
+}
+.ch-qf-prounds__r.is-todo {
+  grid-template-columns: auto minmax(0, 1fr);
+  background: none;
+  box-shadow: none;
+  outline: 1.5px dashed rgb(237 231 216 / 0.28);
+  outline-offset: -1.5px;
+}
+.ch-qf-prounds__n {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.22);
+  font: 700 12px/1 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+}
+.ch-qf-prounds__m {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-qf-prounds__m b {
+  overflow: hidden;
+  font: 600 14px/1.2 var(--ch-font-sans);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ch-text-primary);
+}
+.ch-qf-prounds__m small {
+  font: 500 12px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-qf-prounds__r.is-best .ch-qf-prounds__m small {
+  color: var(--ch-hero-mint);
+}
+.ch-qf-prounds__r.is-todo .ch-qf-prounds__m b {
+  font-weight: 500;
+  color: var(--ch-text-secondary);
+}
+.ch-qf-prounds__s {
+  font: 700 24px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-qf-prounds__hint {
+  margin: 0;
+  font: 500 12.5px/1.35 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+
+/* A round's tile is a button that opens its visuals in place. */
+.ch-qf-prounds__list > li {
+  display: grid;
+  gap: 8px;
+}
+button.ch-qf-prounds__r {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  button.ch-qf-prounds__r:hover {
+    background: rgb(255 255 255 / 0.12);
+  }
+}
+button.ch-qf-prounds__r:active {
+  background: rgb(255 255 255 / 0.16);
+  transition-duration: var(--ch-dur-press);
+}
+button.ch-qf-prounds__r:focus-visible {
+  outline: 2px solid var(--ch-hero-mint);
+  outline-offset: 2px;
+}
+button.ch-qf-prounds__r.is-open {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 0 0 1.5px rgb(159 224 182 / 0.7);
+}
+
+/* The round's visuals: its shape against par, the nines as marks, the counts, the way to the whole round. Under par
+   is the coral the board uses for it, over par the board's amber. */
+.ch-qf-rv {
+  display: grid;
+  gap: 14px;
+  padding: 14px 12px 12px;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.2);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.25);
+  animation: ch-qf-tray-in var(--ch-dur-base) var(--ch-ease);
+}
+.ch-qf-rv__wait {
+  height: 168px;
+}
+.ch-qf-rv__shape {
+  display: block;
+  width: 100%;
+  height: 64px;
+  overflow: visible;
+}
+.ch-qf-rv__shape .is-par {
+  stroke: rgb(237 231 216 / 0.32);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.ch-qf-rv__shape .is-turn {
+  stroke: rgb(237 231 216 / 0.2);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+.ch-qf-rv__shape .is-under {
+  fill: #ff8b7d;
+}
+.ch-qf-rv__shape .is-over {
+  fill: #e3b45c;
+}
+.ch-qf-rv__shape .is-even {
+  fill: rgb(237 231 216 / 0.6);
+}
+.ch-qf-rv__nines {
+  display: grid;
+  gap: 10px;
+}
+.ch-qf-rv__nine {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+.ch-qf-rv__holes {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 2px;
+}
+.ch-qf-rv__hole {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.ch-qf-rv__hole small {
+  font: 500 10px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-qf-rv__sum {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  min-width: 34px;
+  font: 700 17px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-qf-rv__sum small {
+  font: 500 10.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-qf-rv__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-qf-rv__counts li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-qf-rv__counts li b {
+  font: 700 13px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-qf-rv__counts li.is-eagle,
+.ch-qf-rv__counts li.is-birdie {
+  background: rgb(255 139 125 / 0.18);
+}
+.ch-qf-rv__counts li.is-bogey,
+.ch-qf-rv__counts li.is-double {
+  background: rgb(227 180 92 / 0.16);
+}
+.ch-qf-rv__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  font: 600 13px/1 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .ch-qf-rv__link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+.ch-qf-rv__note {
+  margin: 0;
+  font: 500 13px/1.35 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+/* The round against the field: its rank large, the field's scores as dots on one line, the average a tick, this one lit. */
+.ch-qf-rv__field {
+  display: grid;
+  gap: 10px;
+}
+.ch-qf-rv__fieldhead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.ch-qf-rv__fieldhead b {
+  font: 700 22px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-qf-rv__fieldhead span {
+  font: 500 12.5px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-qf-rv__strip {
+  position: relative;
+  height: 22px;
+  margin: 0 7px;
+}
+.ch-qf-rv__strip::before {
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  left: -7px;
+  height: 2px;
+  border-radius: 1px;
+  background: rgb(237 231 216 / 0.18);
+  transform: translateY(-50%);
+  content: '';
+}
+.ch-qf-rv__dot,
+.ch-qf-rv__avg {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.ch-qf-rv__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgb(237 231 216 / 0.38);
+}
+.ch-qf-rv__dot.is-me {
+  z-index: 1;
+  width: 16px;
+  height: 16px;
+  background: var(--ch-hero-mint);
+  box-shadow:
+    0 0 0 3px rgb(11 58 37 / 0.9),
+    0 0 0 4.5px rgb(159 224 182 / 0.5);
+}
+.ch-qf-rv__avg {
+  width: 2px;
+  height: 20px;
+  border-radius: 1px;
+  background: rgb(237 231 216 / 0.55);
+}
+.ch-qf-rv__scale {
+  display: flex;
+  justify-content: space-between;
+  font: 500 11px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+/* On the phone the showcase runs the page's width between the facts and the board. */
+@media (max-width: 820px) {
+  .ch-qfm .ch-qf-prounds {
+    margin: 4px 0 8px;
+    padding: 18px 16px 16px;
+    border-radius: 22px;
+  }
+  .ch-qfm .ch-qf-prounds__big b {
+    font-size: 56px;
+  }
+  .ch-qfm button.ch-qf-prounds__r {
+    min-height: 60px;
+  }
+}
+/* The phone list takes the same separation and the green filter chip (owner, 2026-10-16: "make everything look good
+   for phone"): each qualifier its own sheet with a gap between, no seams. */
+@media (max-width: 820px) {
+  .ch-qf-pill[aria-pressed='true'] {
+    background: var(--ch-seg-on-bg);
+    color: var(--ch-seg-on-ink);
+    box-shadow: var(--ch-seg-on-shadow);
+  }
+  .ch-qf-pill[aria-pressed='true'] span {
+    color: var(--ch-seg-on-ink);
+    opacity: 0.8;
+  }
+  .ch-qf--list .ch-qf-grid.is-ledger {
+    gap: 10px;
+    margin: 8px 0 0;
+  }
+  .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-card,
+  .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px var(--ch-border-subtle),
+      0 1px 2px rgb(28 25 18 / 0.05),
+      0 8px 18px -14px rgb(28 25 18 / 0.3);
+  }
+  .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card::before {
+    display: none;
+  }
+  .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-mine {
+    margin-top: -4px;
+  }
+}
+/* Inside a green board the ledger's heading ink is the board's own, not the page's darker step. */
+.ch-qf .ch-scoreboard,
+.ch-qfm .ch-scoreboard {
+  --ch-ledger-ink: var(--ch-text-primary);
 }

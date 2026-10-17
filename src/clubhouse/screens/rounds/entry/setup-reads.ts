@@ -1,6 +1,7 @@
 import { getNextQualifierRoundNumber, getPlayerQualifiers } from '@/app/golf/actions/qualifier-actions';
 import { getCourseDetail, getRecentlyPlayedCourses, getTeamSavedCourses, getTeeWithHoles, listCoursesStrict } from '@/app/golf/actions/course-library';
 import type { GolfCourse, GolfCourseTee } from '@/lib/types/golf-course';
+import { resolveRealCourseImage } from '@/lib/golf/course-image-assets';
 import type { NewRoundStartForm, NewRoundStartResult } from '@/lib/golf/round-session/start-form';
 import { teeColorFor } from '../../../data/rounds-shape';
 import { chReport } from '../../../lib/track';
@@ -36,6 +37,7 @@ const course = (c: GolfCourse, group: ChSetupCourse['group']): ChSetupCourse => 
   group,
   // The recent list is ordered, not dated, so there is no day to print (nothing is invented).
   lastPlayed: null,
+  image: c.image_url || resolveRealCourseImage(c.name, c.normalized_name),
 });
 
 /**
@@ -179,6 +181,8 @@ export function toStartForm(f: ChSetupForm): NewRoundStartForm {
     teeId: pick?.teeId ?? null,
     holes: holesForRound(f.holes, f.count, f.nine).map((h, i) => ({ holeNumber: i + 1, par: h.par, yardage: parseInt(h.yards, 10) })),
     saveCourse: f.saveCourse,
+    // Only a course typed by hand is saved by the start, so only it carries a photo.
+    courseImage: pick && !pick.courseId && f.saveCourse ? (f.coursePhoto ?? null) : null,
   };
 }
 

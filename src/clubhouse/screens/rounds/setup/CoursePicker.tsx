@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, MapPin, Plus, Search } from 'lucide-react';
+import { ChevronLeft, Flag, Plus, Search } from 'lucide-react';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
@@ -54,19 +54,65 @@ export function CoursePicker({
   useEffect(() => {
     if (open) setCourse(initialCourse);
   }, [open, initialCourse]);
+  // A course's tees are asked for as a hand reaches its card (hover, focus, press), so they are usually there by the
+  // click, and the tee list opens on them instead of on a wait (owner, 2026-10-16: no shimmer after picking a course).
+  // Kept while the picker is open; a fresh open asks again.
+  const tees = useRef(new Map<string, Promise<ChResult<ChSetupTee[]>>>());
+  useEffect(() => {
+    if (open) tees.current.clear();
+  }, [open]);
+  const listTees = ports.listTees;
+  const teesFor = useCallback(
+    (id: string) => {
+      let p = tees.current.get(id);
+      if (!p) {
+        p = listTees(id);
+        // A failed read is not kept: Try again asks the server again.
+        p.then((r) => !r.ok && tees.current.delete(id)).catch(() => tees.current.delete(id));
+        tees.current.set(id, p);
+      }
+      return p;
+    },
+    [listTees],
+  );
   return (
-    <Modal open={open} onClose={onClose} title={course ? course.name : 'Where are you playing?'} description={course ? (course.place ?? undefined) : undefined} width={560} code="CH-11510">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={course ? course.name : 'Where are you playing?'}
+      description={course ? (course.place ?? undefined) : undefined}
+      width={880}
+      code="CH-11510"
+      // Typing a course in is in the head's corner, always in reach (owner, 2026-10-16), not under the whole library.
+      action={
+        course ? undefined : (
+          <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" onClick={onAddCourse}>
+            <Icon icon={Plus} size={14} />
+            <span>Add a course</span>
+          </button>
+        )
+      }
+    >
       {open &&
         (course ? (
-          <TeeList course={course} ports={ports} onBack={() => setCourse(null)} onPick={(t) => onPick(course, t)} />
+          <TeeList course={course} listTees={teesFor} onBack={() => setCourse(null)} onPick={(t) => onPick(course, t)} />
         ) : (
-          <CourseList ports={ports} onCourse={setCourse} onAddCourse={onAddCourse} />
+          <CourseList ports={ports} onCourse={setCourse} onReach={teesFor} />
         ))}
     </Modal>
   );
 }
 
-function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts, 'listCourses'>; onCourse: (c: ChSetupCourse) => void; onAddCourse: () => void }) {
+function CourseList({
+  ports,
+  onCourse,
+  onReach,
+}: {
+  ports: Pick<ChSetupPorts, 'listCourses'>;
+  onCourse: (c: ChSetupCourse) => void;
+  /** A hand is on its way to this course's card: its tees are fetched ahead. */
+  onReach: (courseId: string) => unknown;
+}) {
   const [q, setQ] = useState('');
   const [load, retry] = useRead(ports.listCourses);
   const groups = load.state === 'ok' ? groupCourses(load.data, q) : [];
@@ -77,66 +123,78 @@ function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search courses" aria-label="Search courses" type="search" autoComplete="off" />
       </label>
       {load.state === 'loading' && (
-        // CH-11403: the list is on its way, in the shape of its rows.
-        <div className="ch-rsu-plist" role="status" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-11403">
-          {[0, 1, 2, 3].map((i) => (
-            <span key={i} className="ch-rsu-crs is-skel ch-skel" />
+        // CH-11403: the list is on its way, in the shape of its cards.
+        <div className="ch-cpk-list" role="status" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-11403">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <span key={i} className="ch-cpk is-skel">
+              <span className="ch-cpk__media" />
+              <span className="ch-cpk__b">
+                <i />
+                <i />
+              </span>
+            </span>
           ))}
         </div>
       )}
       {load.state === 'failed' && (
         <InlineNotice code="CH-11209" title="The course library didn’t load" body="Your round isn’t started yet, so nothing is lost. Try again, or add the course by hand." onRetry={retry} />
       )}
-      {groups.map((g) => (
-        <section key={g.key} className="ch-rsu-psec" aria-label={g.label}>
-          <h4>
-            {g.label}
-            <span>{g.courses.length}</span>
-          </h4>
-          <div className="ch-rsu-plist">
-            {g.courses.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className="ch-rsu-crs"
-                onClick={() => {
-                  haptic('select');
-                  onCourse(c);
-                }}
-              >
-                <span className="ch-rsu-crs__ic" aria-hidden="true">
-                  <Icon icon={MapPin} size={16} />
-                </span>
-                <span className="ch-rsu-crs__b">
-                  <b>{c.name}</b>
-                  <span>{[c.place, c.par ? `Par ${c.par}` : null, c.teeCount ? `${c.teeCount} tee${c.teeCount === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ')}</span>
-                </span>
-                {c.lastPlayed && <span className="ch-rsu-crs__r">{c.lastPlayed}</span>}
-                <Icon icon={ChevronRight} size={16} className="ch-rsu-chev" />
-              </button>
-            ))}
-          </div>
-        </section>
-      ))}
+      {groups.map((g) => {
+        return (
+          <section key={g.key} className="ch-rsu-psec" aria-label={g.label}>
+            <h4>
+              {g.label}
+              <span>{g.courses.length}</span>
+            </h4>
+            {/* Photo cards that fold back as they leave the list's top and unfold as they come up from its bottom
+                (rounds-setup.css, a scroll-driven animation on the compositor; still with reduced motion or Animations off). */}
+            <div className="ch-cpk-list">
+              {g.courses.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="ch-cpk"
+                  onPointerEnter={() => onReach(c.id)}
+                  onPointerDown={() => onReach(c.id)}
+                  onFocus={() => onReach(c.id)}
+                  onClick={() => {
+                    haptic('select');
+                    onCourse(c);
+                  }}
+                >
+                  <span className="ch-cpk__card">
+                    {/* The course's own photo (one its team uploaded, or the real course's), never a stand-in scene: a
+                        course without one is a quiet tile with the flag (owner, 2026-10-16). */}
+                    <span className={'ch-cpk__media' + (c.image ? '' : ' is-blank')}>
+                      {c.image ? <img src={c.image} alt="" loading="lazy" decoding="async" /> : <Icon icon={Flag} size={20} />}
+                    </span>
+                    <span className="ch-cpk__row">
+                      <span className="ch-cpk__b">
+                        <b>{c.name}</b>
+                        {c.place && <span>{c.place}</span>}
+                      </span>
+                      <span className="ch-cpk__meta ch-num">
+                        {[c.lastPlayed, c.par ? `Par ${c.par}` : null, c.teeCount ? `${c.teeCount} tee${c.teeCount === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        );
+      })}
       {load.state === 'ok' && !groups.length && (
         // CH-11310: nothing matches (or the library is empty).
         <p className="ch-rsu-none" data-ch-code="CH-11310">
-          {q.trim() ? `No courses match “${q.trim()}”. Check the spelling, or add it by hand.` : 'No courses yet. Add the one you’re playing.'}
+          {q.trim() ? `No courses match “${q.trim()}”. Check the spelling, or use Add a course.` : 'No courses yet. Use Add a course for the one you’re playing.'}
         </p>
       )}
-      <button type="button" className="ch-rsu-add" onClick={onAddCourse}>
-        <span aria-hidden="true">
-          <Icon icon={Plus} size={16} />
-        </span>
-        <b>Add a course</b>
-        <em>Enter its pars and yardages yourself</em>
-      </button>
     </div>
   );
 }
 
-function TeeList({ course, ports, onBack, onPick }: { course: ChSetupCourse; ports: Pick<ChSetupPorts, 'listTees'>; onBack: () => void; onPick: (t: ChSetupTee) => void }) {
-  const listTees = ports.listTees;
+function TeeList({ course, listTees, onBack, onPick }: { course: ChSetupCourse; listTees: (courseId: string) => Promise<ChResult<ChSetupTee[]>>; onBack: () => void; onPick: (t: ChSetupTee) => void }) {
   const read = useCallback(() => listTees(course.id), [listTees, course.id]);
   const [load, retry] = useRead(read);
   const tees = load.state === 'ok' ? load.data : [];
@@ -149,10 +207,10 @@ function TeeList({ course, ports, onBack, onPick }: { course: ChSetupCourse; por
       </button>
       <h4 className="ch-rsu-teek">Choose your tees</h4>
       {load.state === 'loading' && (
+        // The tees on their way: a quiet space the height of a tee, no shimmer (owner, 2026-10-16). Usually never seen,
+        // as the tees were asked for when the hand reached the course's card.
         <div className="ch-rsu-tees" role="status" aria-busy="true" aria-label="Loading tees" data-ch-code="CH-11404">
-          {[0, 1, 2].map((i) => (
-            <span key={i} className="ch-rsu-tee is-skel ch-skel" />
-          ))}
+          <span className="ch-rsu-tee-wait" />
         </div>
       )}
       {load.state === 'failed' && <InlineNotice code="CH-11208" title={`The tees at ${course.name} didn’t load`} body="Try again, or add the course by hand." onRetry={retry} />}

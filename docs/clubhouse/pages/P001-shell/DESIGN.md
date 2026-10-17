@@ -71,7 +71,7 @@ link), then the tab bar.
 `TopBar`, `Bell`, `TabBar` with the More sheet, `OfflineBanner`, `RouteFrame`
 (the navigation crossfade and the press), `NotRebuilt`, `NextEventCard`,
 `PhoneScreen` and `phone-chrome` (pushed screens, the page top), `crumbs`,
-`ClubhouseSwitch`, `TeamSwitch` (the team switcher: `BrandTeamSwitch` in the
+`ClubhouseSwitch`, `TeamSwitch` (the team switcher: `TeamSwitch` in the
 sidebar, `MoreTeamSwitch` in the More sheet) with `team-switch` (the gate and
 the action).
 

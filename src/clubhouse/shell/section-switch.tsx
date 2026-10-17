@@ -188,7 +188,8 @@ export function SectionSwitchProvider({
       setDir(delta);
       setPending(next);
       if (openRef.current) setOpen(false);
-      router.push(next.href);
+      // RouteFrame restores the scroll (SectionStrip says why Next's is off).
+      router.push(next.href, { scroll: false });
       return true;
     },
     [indexOf, router, sections, setOpen],

@@ -40,6 +40,8 @@ export interface ChSetupCourse {
   group: 'recent' | 'team' | 'library';
   /** "Oct 2", when the player last played it (recent only). */
   lastPlayed: string | null;
+  /** Its photo: one uploaded to the library, else a bundled photo of the real course; none means the picker's default scene. */
+  image?: string | null;
 }
 
 /** An open qualifier the player can play a round of now. */
@@ -84,6 +86,8 @@ export interface ChSetupForm {
   qualifierRound: number | null;
   /** A course typed by hand: save it for next time and offer it to the library (the legacy "save course" opt-in). */
   saveCourse: boolean;
+  /** A course typed by hand: the photo chosen for it, uploaded to the library course once the round's start saves it. */
+  coursePhoto?: File | null;
   /**
    * Shotgun start: the card's number of the hole the round starts on (15 on a back nine). Omitted, null or not one of
    * the holes played, the first hole played. Only the play order changes; every hole is still played once.

@@ -35,7 +35,7 @@ Every screen opens final on first paint, read on the server in one pass. The lis
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 90101 | — | `LIST_READY` | The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets Create qualifier. |
-| 90102 | — | `DETAIL_READY` | A qualifier opens with its status pill and name, six facts (dates, entry deadline, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
+| 90102 | — | `DETAIL_READY` | A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
 | 90103 | — | `FORM_READY` | Create opens with the whole active roster ticked, three rounds, a five-player squad and one coach's pick; Edit opens with the qualifier's own values, round courses and entrants. |
 | 90104 | — | `SELECTION_READY` | Manage selections opens with the qualifier's name and squad line, the three steps (Standings, Coach's picks, Squad confirmed) with the current one marked, the places on score now, the rest of the field, the coach's picks with their open slots, and the one primary action for the next step. |
 | 90105 | — | `ADDRESSES_RENDER_IN_PLACE` | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers and /my-qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. |
@@ -101,7 +101,7 @@ First-run and filtered are distinct, and a failed read is never drawn as empty. 
 
 Status: DEFINED
 
-Checked in the form before anything is sent. Each problem sits under its field (name, start date, end date, entry deadline, rounds, the one-round confirmation, players, squad size, coach's picks: 90501 to 90509), the top of the form says how many (90510), and focus moves to the first one (92001). Enter submits the form and shows the same problems (92002). The pick dialog needs a player (90512) and a reason (90511). Editing adds two rules the server also holds: a player with a round or a squad place stays entered (90513), and once the squad is confirmed its size is fixed (90514). Problems are alerts tied to their fields (91804).
+Checked in the form before anything is sent. Each problem sits under its field (name, start date, end date, rounds, the one-round confirmation, players, squad size, coach's picks: 90501 to 90509), the top of the form says how many (90510), and focus moves to the first one (92001). Enter submits the form and shows the same problems (92002). The pick dialog needs a player (90512) and a reason (90511). Editing adds two rules the server also holds: a player with a round or a squad place stays entered (90513), and once the squad is confirmed its size is fixed (90514). Problems are alerts tied to their fields (91804).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -173,6 +173,7 @@ page again (91402), and Retry runs the write again (91401).
 | 90631 | CH-09221 | `THE_COACHS_PICK_NOTES_DONT_LOAD` | The coach's pick notes don't load (detail, coach, confirmed squad) |
 | 90632 | CH-09222 | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | A player's entries don't load on /my-qualifiers |
 | 90633 | CH-09220 | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
+| 90634 | CH-09223 | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | The player's rounds panel crashes (desktop, beside the leaderboard) |
 
 ## 07 — Network / offline
 
@@ -375,7 +376,7 @@ At 820px and below a qualifier is one column with a rounds sheet (91901), the fo
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 91901 | — | `PHONE_DETAIL` | At 820px and below a qualifier is one column: three facts (rounds in, spots, deadline), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop. |
+| 91901 | — | `PHONE_DETAIL` | At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop. |
 | 91902 | — | `PHONE_FORM` | On the phone the form's Cancel and Create (Save when editing) sit in the top bar and the tab bar steps aside; Create runs the same checks as the page's button, and Cancel asks before discarding changes. |
 | 91903 | — | `PHONE_SELECTION` | On the phone Manage selections has its own top bar (Selections, with a way back to the qualifier) and the one primary action in a foot at the bottom of the page. |
 | 91904 | — | `PHONE_LIST` | On the phone the list's top bar reads ‹ More and the title (Qualifiers, or My qualifiers on a player's own list); the list itself is the desktop list with phone CSS. |

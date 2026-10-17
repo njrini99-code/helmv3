@@ -71,7 +71,7 @@ group you created, leave a group, open shared files.
 ### Information hierarchy
 
 1. The open thread: who said what and when, newest at the bottom, the composer ready.
-2. The rail: conversations by recency, unread counts, announcements above today.
+2. The rail: conversations by recency, unread counts, announcements folded under them in one row.
 3. Details: members, mute, files, and the group actions.
 
 ### User should notice first

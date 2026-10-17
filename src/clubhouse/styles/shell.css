@@ -79,63 +79,66 @@
 .ch-brand {
   display: flex;
   align-items: center;
-  gap: 11px;
   min-width: 0;
-  margin: 0 -2px 14px;
-  padding: 10px 10px 12px;
+  /* Its own frosted panel (owner, 2026-10-16: "put those in a frost bar like it was before"), as wide as the nav's
+     rows, with the word and wheel centred in it ("fix the layout so its even"). */
+  justify-content: center;
+  margin: 0 0 14px;
+  padding: 12px;
   border-radius: var(--ch-radius-lg);
-  background: rgb(250 248 241 / 0.06);
-  box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.16);
+  background: rgb(250 248 241 / 0.14);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    inset 0 0 0 1px rgb(220 205 166 / 0.26);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
 }
 .ch-brand img {
   flex: none;
   width: 32px;
   height: 32px;
 }
-.ch-brand__txt {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-.ch-brand__word {
-  font: 600 18px/1 var(--ch-font-sans);
-  letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 92;
-  color: var(--ch-on-green-bright);
-}
-.ch-brand__team {
+/* The Team group's heading is the team (owner, 2026-10-16: the name left the brand). A head coach on more than one
+   team gets it as a menu button, with the boards' up-down chevrons. */
+.ch-nav__team {
   overflow: hidden;
-  font: 500 12.5px/1.2 var(--ch-font-sans);
-  color: var(--ch-on-green-glyph);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* Team switcher (a head coach on more than one team): the brand block is the button, as the boards' team chip is. */
-.ch-brand--switch {
-  width: calc(100% + 4px);
+.ch-nav__team--switch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
   border: 0;
-  color: inherit;
-  font: inherit;
+  border-radius: var(--ch-radius-sm);
+  background: none;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-brand--switch[aria-expanded='true'] {
+.ch-nav__team--switch > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ch-nav__team--switch svg {
+  flex: none;
+  color: var(--ch-on-green-glyph);
+}
+.ch-nav__team--switch[aria-expanded='true'] {
   background: rgb(250 248 241 / 0.1);
-  box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.28);
 }
 @media (hover: hover) {
-  .ch-brand--switch:hover {
+  .ch-nav__team--switch:hover {
     background: rgb(250 248 241 / 0.1);
-    box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.28);
   }
 }
-.ch-brand--switch:focus-visible {
+.ch-nav__team--switch:focus-visible {
   outline: 2px solid var(--ch-champagne-300);
   outline-offset: 1px;
 }
-.ch-brand--switch[aria-busy='true'] {
+.ch-nav__team--switch[aria-busy='true'] {
   cursor: progress;
 }
 /* A team switch in flight: the old team's page fades out and takes no taps until the new team's page commits
@@ -153,21 +156,7 @@
     transition: none;
   }
 }
-.ch-brand__team--switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.ch-brand__team--switch > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ch-brand__team--switch svg {
-  flex: none;
-  color: var(--ch-on-green-glyph);
-}
-/* The coach's teams, under the brand block: a popover panel (.ch-popover) of two or three rows. */
+/* The coach's teams, under the Team heading: a popover panel (.ch-popover) of two or three rows. */
 .ch-tsw {
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -2094,11 +2083,6 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 /* The Frame (owner, 2026-10-07, matching the Coach Home handoff): the sidebar is the frame's green with the brand in
    its own panel (the base .ch-brand), ivory type on the green, and an ivory plate for the selected row; the
    next-event card stays a light sheet. */
-.ch-brand__team,
-.ch-brand__team--switch svg {
-  color: var(--ch-on-green-ink-muted);
-}
-.ch-brand--switch:focus-visible,
 .ch-navitem:focus-visible {
   outline-color: var(--ch-champagne-300);
 }
@@ -3547,5 +3531,179 @@ html[data-fw-theme='dark'] .ch-offline {
     margin: 4px 0;
     border-radius: 6px;
     background: color-mix(in oklab, var(--ch-text-primary) 9%, transparent);
+  }
+}
+
+/* The sidebar, sorted and clearer (owner, 2026-10-16: "sort the side bar and make it look better", then no shade over
+   the groups): each group's name in mint over its rows, the rows a touch taller with brighter ink. Desktop only; the
+   phone's strip is its own. */
+@media (min-width: 821px) {
+  .ch-sidebar .ch-nav {
+    gap: 10px;
+  }
+  .ch-sidebar .ch-nav__group {
+    gap: 2px;
+  }
+  .ch-sidebar .ch-nav__section {
+    padding: 10px 10px 6px;
+    font: 600 11.5px/1 var(--ch-font-sans);
+    letter-spacing: 0.01em;
+    color: var(--ch-hero-mint);
+    opacity: 0.9;
+  }
+  .ch-sidebar .ch-navitem {
+    height: 36px;
+    gap: 11px;
+    font-size: 14px;
+  }
+  /* Brighter ink on the rows that are not chosen; the chosen row keeps the plate's own green ink. */
+  .ch-sidebar .ch-navitem:not([aria-current='page']):not(:has(.ch-lp)) {
+    color: var(--ch-on-green-ink);
+  }
+  .ch-sidebar .ch-navitem:not([aria-current='page']):not(:has(.ch-lp)) svg {
+    color: var(--ch-on-green-ink-soft);
+  }
+}
+
+/* The script wordmark (owner, 2026-10-16): "Golfhelm" in Norican, helm in the mint the green boards use. Opening from
+   the welcome, the dashboard draws first, then the word writes itself in left to right, then the wheel turns into place. */
+.ch-brand__line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.ch-brand .ch-brand__mark {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+/* The logo's colours on the green: the helm and the ball's shade in the mint "helm" is set in, the face and its
+   highlights ivory, the dimples green. Flat fills, no outline or glow. */
+.ch-brand__mark-helm {
+  stroke: var(--ch-hero-mint-strong);
+}
+.ch-brand__mark-ball {
+  fill: var(--ch-hero-mint-strong);
+}
+.ch-brand__mark-face {
+  fill: var(--ch-brand-ivory);
+}
+.ch-brand__mark-dimples {
+  fill: var(--ch-green-500);
+}
+.ch-brand__word.is-script {
+  display: inline-block;
+  /* Room for the script's swashes, which overhang the box the write mask clips to. */
+  margin: 0 -6px -4px -2px;
+  padding: 2px 6px 4px 2px;
+  /* The script's ink sits low in its box (long descenders): lift it so word, wheel and panel share one centre. */
+  position: relative;
+  top: -3px;
+  font: 400 34px/1 var(--ch-font-script);
+  letter-spacing: 0.005em;
+  /* Ivory, the same as the logo's ball face (owner, 2026-10-16: "golf should be ivory", "darker ivory"). */
+  color: var(--ch-brand-ivory);
+}
+.ch-brand__word.is-script b {
+  font-weight: 400;
+  color: var(--ch-hero-mint);
+}
+/* The entrance after sign in (owner, 2026-10-16: "more premium. i do like the wheel turning"), about 3.5s in all:
+   the dashboard settles for about 0.55s; the word writes in left to right behind a wide feathered edge while it comes
+   into focus (blur and a 3px rise settling out), over about 1.5s; the wheel spins in three quarters of a turn from
+   small and slows to a stop with a slight settle, overlapping the last of the word; then one glint of light crosses
+   the frosted panel. */
+.ch-brand__word.is-write {
+  -webkit-mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
+  mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
+  -webkit-mask-size: 260% 100%;
+  mask-size: 260% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation:
+    ch-brand-write calc(var(--ch-dur-reveal) * 2.9) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both,
+    ch-brand-focus calc(var(--ch-dur-reveal) * 3.1) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both;
+}
+.ch-brand__mark.is-write {
+  animation: ch-brand-wheel calc(var(--ch-dur-reveal) * 2.5) var(--ch-ease-spring-smooth) calc(var(--ch-dur-reveal) * 3) both;
+}
+.ch-brand:has(.ch-brand__line.is-write) {
+  position: relative;
+  overflow: hidden;
+}
+.ch-brand:has(.ch-brand__line.is-write)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 250 235 / 0.28) 50%, transparent 65%) no-repeat;
+  background-size: 250% 100%;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  animation: ch-brand-glint calc(var(--ch-dur-reveal) * 2.2) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 4.6) both;
+}
+/* Arriving from the welcome, the entrance holds on its first frame while the hand-off's curtain is up (lib/handoff.ts),
+   so the dashboard is seen first and the word starts writing after it. */
+html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand__word.is-write,
+html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand__mark.is-write,
+html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-write)::after {
+  animation-play-state: paused;
+}
+@keyframes ch-brand-write {
+  from {
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+  }
+}
+@keyframes ch-brand-focus {
+  from {
+    filter: blur(3px);
+    transform: translateY(3px);
+  }
+  to {
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes ch-brand-wheel {
+  0% {
+    opacity: 0;
+    transform: rotate(-270deg) scale(0.55);
+  }
+  30% {
+    opacity: 1;
+  }
+  82% {
+    transform: rotate(5deg) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ch-brand-glint {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -30% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-brand__word.is-write,
+  .ch-brand__mark.is-write,
+  .ch-brand:has(.ch-brand__line.is-write)::after {
+    animation: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .ch-brand:has(.ch-brand__line.is-write)::after {
+    content: none;
   }
 }

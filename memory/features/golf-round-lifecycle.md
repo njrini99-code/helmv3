@@ -615,6 +615,19 @@ reload (`lieFromShotResult`) restore position from.
   remounted an empty form and auto-opened the picker — "it loaded, then reset
   to the course screen" with no message (UNCW, Oviinbyrd GC). Rounds with
   shots are still owned by the emergency-save / recovery path, not this cache.
+- Any golf team member, coach or player, can set the photo of any course from
+  round setup (owner decision 2026-10-16). `attachCourseImage` uploads to the
+  public `course-images` bucket, then `setCourseImageUrl` calls the
+  `golf_set_course_image` RPC (SECURITY DEFINER; it checks active team
+  membership, coach or super admin, that the URL is in this course's folder,
+  and that the course is not soft-deleted, then writes only `image_url`, the
+  last-edited columns and a `golf_course_edit_history` row). Players are
+  still refused every other `golf_courses` write: the UPDATE policy was not
+  widened. If the RPC is missing (PGRST202 or 42883, code deployed before the
+  migration), `setCourseImageUrl` logs a warning and falls back to the old
+  coach-only `updateCourse` path. `removeCourseImage` stays coach-only. Before this, a player's photo
+  went through `updateCourse` and its coach gate, so the upload succeeded and
+  the photo silently never landed.
 - A round-start failure is shown beside the control that started the round.
   On the confirmed-course path that control is `FairwayHoleConfig`'s own
   "Start round" dock, so the parent's error travels down as `submitError`

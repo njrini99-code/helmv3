@@ -85,7 +85,7 @@ They reuse:
 | Row: unread count, a 20px green-600 pill | `PhoneInbox` | `ChConv.unread` from `useGolfConversations` |
 | Tap a row | Pushes the thread, with a `select` haptic (CH-7703) | `api.select(id)` |
 | Tab bar with More active and a badge on More | Foundation | The notification badge bundle (`badges.messages`) rolls up into More (D-40) |
-| Not drawn: the announcements section above Today (desktop, D-16) | `AnnouncementsSection` | `getAnnouncementsWithMeta` (D-44) |
+| The announcements, as one folded row under the conversations (2026-10-16; before: a section above Today, D-16) | `AnnouncementsSection` | `getAnnouncementsWithMeta` (D-44) |
 | Not drawn: pull to refresh | — | Waits (D-43). Realtime already keeps the list current |
 
 States keep their numbers:
