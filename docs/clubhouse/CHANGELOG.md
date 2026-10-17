@@ -1,5 +1,23 @@
 # Clubhouse changelog
 
+## 2026-10-17 — Player RSVP counts come from a narrow function
+
+`data/attendance-counts.ts` (new) calls `golf_event_attendance_counts(p_event_ids)`
+(held migration 20261017102000) and returns `ok` with invited, accepted,
+declined and pending per event, `missing` when the function is not there yet
+(PGRST202 / 42883, so the caller keeps its direct read), or `error`. The player
+paths of the shell (P001), Home (P002) and Calendar (P006) use it, so once the
+migration narrows `golf_event_attendance` to a player's own row their counts
+still hold and no teammate's reply reaches a player's page. Team Hub (P010)
+needs no change: its player path reads only the player's own invites
+(`invitedTo`), and `attendanceFor` runs on the coach path only. The same batch
+writes two other held migrations with no Clubhouse code change:
+20261017100000 (Settings P008: the six later notification switches stop being
+dropped by the `users` trigger) and 20261017101000 (Announcements P010: the
+recipient and task coach policies are scoped to the announcement's team).
+Tests: `src/clubhouse/__tests__/attendance-counts.test.ts` and the pgTAP suites
+under `supabase/tests/rls/`.
+
 ## 2026-10-16 — The hand-off curtain holds first-sight motion
 
 `lib/handoff.ts` sets `data-ch-handoff` on `<html>` while its curtain is up and

@@ -242,10 +242,20 @@ export async function removeCoachPick(
  * expected to already exist (gated by canConfirmSelection).
  *
  * After commit, pushes a travel brief into the primary coach's chat (W32).
+ *
+ * `opts.briefClient` is the client that brief is written with (default: the
+ * caller's). The primary coach's CoachHelm chat is theirs alone
+ * (chat_conversations_coach_only / chat_messages_coach_only: coach_id =
+ * current_coach_id()), so when an ASSISTANT confirms, their session is
+ * refused and the brief was lost (P009). The server action passes the
+ * service-role client, having already verified the caller staffs the
+ * qualifier's team. It is a factory so a missing service key fails inside the
+ * best-effort block below, never the confirmation.
  */
 export async function confirmSelection(
   supabase: Sb,
   args: { qualifier_id: string; user_id: string },
+  opts: { briefClient?: () => Sb } = {},
 ): Promise<ServiceResult<{ notified: boolean }>> {
   const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id);
   if (!workspace) return { ok: false, error: 'workspace not loadable' };
@@ -329,15 +339,20 @@ export async function confirmSelection(
   // W32: push travel brief to coach chat (best-effort — never blocks selection).
   try {
     const brief = composeTravelBrief(committed);
-    const { data: staff } = await supabase
+    // The primary-coach lookup uses the same client as the write: an
+    // assistant's session may not see the primary's staff row, and a null
+    // there skipped the brief without a word.
+    const briefClient = opts.briefClient ? opts.briefClient() : supabase;
+    const { data: staff, error: staffErr } = await briefClient
       .from('golf_team_coach_staff')
       .select('coach_id')
       .eq('team_id', workspace.team_id)
       .eq('is_primary', true)
       .limit(1)
       .maybeSingle();
+    if (staffErr) throw new Error(`primary coach lookup: ${describeError(staffErr)}`);
     if (staff) {
-      await pushTravelBriefToChat(supabase, staff.coach_id, brief);
+      await pushTravelBriefToChat(briefClient, staff.coach_id, brief);
     }
   } catch (err) {
     await logServerError(

@@ -1282,11 +1282,29 @@ async function acceptJoinRequestImpl(
   // thrown away. And a guard that cannot run must not be treated as a guard
   // that passed: the safe answer is to decline the approval and let the coach
   // retry, not to approve on the strength of a read that did not happen.
-  const { data: existingMembership, error: existingMembershipError } = await supabase
-    .from('golf_team_members')
-    .select('team_id')
-    .eq('player_id', request.player_id)
-    .maybeSingle();
+  //
+  // ADMIN client, scoped to the request's player_id (read server-side above,
+  // never from the caller). Under the coach's session RLS only shows the
+  // coach their OWN team's golf_team_members rows, so a player rostered on
+  // ANOTHER team read as "not on any team" and was approved onto a second
+  // one (P003). `.limit(1)` rather than `.maybeSingle()`: one row is enough to
+  // refuse, and a player with two rows elsewhere must get the same refusal,
+  // not a multiple-rows error.
+  let existingMemberships: Array<{ team_id: string }> | null = null;
+  let existingMembershipError: unknown;
+  try {
+    const res = await createAdminClient()
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', request.player_id)
+      .limit(1);
+    existingMemberships = res.data;
+    existingMembershipError = res.error;
+  } catch (err) {
+    // No service-role client (missing key) is a guard that cannot run.
+    existingMembershipError = err;
+  }
+  const existingMembership = existingMemberships?.[0] ?? null;
 
   if (existingMembershipError) {
     await logServerError(

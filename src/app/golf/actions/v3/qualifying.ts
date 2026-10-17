@@ -9,6 +9,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -192,10 +193,19 @@ async function confirmQualifierSelectionImpl(
     const ctx = await getAuthedCoachContext(qualifier_id);
     if (!ctx.ok) return ctx;
 
-    const r = await confirmSelection(ctx.supabase, {
-      qualifier_id,
-      user_id: ctx.user.id,
-    });
+    // The travel brief goes into the PRIMARY coach's CoachHelm chat (W32),
+    // which only that coach's session may write. An assistant confirming
+    // lost it (P009), so the brief is written with the service role. That is
+    // safe here because getAuthedCoachContext has already verified, via
+    // verifyTeamAccess → coach_id_for_team, that the caller is on
+    // golf_team_coach_staff for this qualifier's team (team_id read
+    // server-side from the qualifier). Everything else in the confirm still
+    // runs under the caller's session and RLS.
+    const r = await confirmSelection(
+      ctx.supabase,
+      { qualifier_id, user_id: ctx.user.id },
+      { briefClient: () => createAdminClient() },
+    );
     if (!r.ok) return r;
 
     pathsToRevalidate(qualifier_id).forEach((p) => revalidatePath(p));

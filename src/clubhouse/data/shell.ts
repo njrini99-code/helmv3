@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
+import { loadAttendanceCounts } from './attendance-counts';
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 
@@ -118,10 +119,19 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   let ready: ChNextEvent['ready'] = null;
   // Only an event that asks for replies has a confirmed count; null (older rows) reads as off.
   if (e && e.requires_rsvp === true) {
-    // One event's invitees: at most a roster, well under the row cap.
-    const { data, error } = await supabase.from('golf_event_attendance').select('status').eq('event_id', e.id).limit(1000);
-    if (error) chLogServer('shell', 'nextEventAttendance', error, 'calendar');
-    else if (data.length > 0) ready = { accepted: data.filter((a) => rsvpOf(a.status) === 'accepted').length, invited: data.length };
+    // A player reads the counts, never teammates' rows (migration 20261017102000); until that function exists, and for
+    // a coach, the rows are read directly as before.
+    const counts = playerId && !coachId ? await loadAttendanceCounts(supabase, [e.id]) : null;
+    if (counts?.kind === 'error') chLogServer('shell', 'nextEventAttendance', counts.error, 'calendar');
+    else if (counts?.kind === 'ok') {
+      const c = counts.byEvent.get(e.id);
+      if (c && c.invited > 0) ready = { accepted: c.accepted, invited: c.invited };
+    } else {
+      // One event's invitees: at most a roster, well under the row cap.
+      const { data, error } = await supabase.from('golf_event_attendance').select('status').eq('event_id', e.id).limit(1000);
+      if (error) chLogServer('shell', 'nextEventAttendance', error, 'calendar');
+      else if (data.length > 0) ready = { accepted: data.filter((a) => rsvpOf(a.status) === 'accepted').length, invited: data.length };
+    }
   }
   // CH-1304: nothing upcoming, so the sidebar shows no card.
   return {

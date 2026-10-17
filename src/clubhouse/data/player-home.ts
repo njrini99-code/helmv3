@@ -108,7 +108,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // rounds, the Tour's averages and the coach follow the team (they used to wait for the week's events and replies too).
   const clockRead = homeClock(supabase, input.teamId, now);
   // No names: a player's Home never lists who else is invited.
-  const weekRead = loadHomeWeek(supabase, { teamId: input.teamId, tz: clockRead.then((c) => c.tz), now, names: new Map() });
+  // A player's week reads reply counts, never teammates' rows (migration 20261017102000).
+  const weekRead = loadHomeWeek(supabase, { teamId: input.teamId, tz: clockRead.then((c) => c.tz), now, names: new Map(), viewer: 'player' });
   // The scoring card's Last 5 / 10 / 20, the leg figures and the brief are the player's newest rounds in any season, as Stats' Last 10 is (Q-122); the season's own figures are cut below.
   const roundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: lastTenFloor() });
   const playerRead = Promise.resolve(supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle());
@@ -175,8 +176,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   };
 }
 
-/** D2-8: a meeting with no invitees is the coach's own; a failed invite read (null ids) never hides one. */
-const coachPrivate = (e: ChHomeEvent) => e.type === 'meeting' && e.inviteeIds != null && e.inviteeIds.length === 0;
+/** D2-8: a meeting with no invitees is the coach's own; a failed invite read (a null count) never hides one. */
+const coachPrivate = (e: ChHomeEvent) => e.type === 'meeting' && (e.invitedCount ?? e.inviteeIds?.length ?? null) === 0;
 const coachOnlyOut = ({ awaiting: _a, inviteeIds: _i, ...e }: ChHomeEvent): ChHomeEvent => e;
 
 /**

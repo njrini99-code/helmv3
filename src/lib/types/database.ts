@@ -21582,6 +21582,16 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
+      golf_event_attendance_counts: {
+        Args: { p_event_ids: string[] }
+        Returns: {
+          accepted: number
+          declined: number
+          event_id: string
+          invited: number
+          pending: number
+        }[]
+      }
       golf_join_team_with_code: {
         Args: { p_code: string }
         Returns: {

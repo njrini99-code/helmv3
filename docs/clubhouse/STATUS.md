@@ -26,10 +26,21 @@ history (gates, decisions, questions, data gaps, verification log).
   trips (`loginAction`) and the welcome-to-dashboard hand-off. Its gates pass
   with no build (owner, 2026-10-17: no builds); CI aggregate and Review Gate
   are red only because it is a draft.
-- **Database:** nothing Clubhouse needs is waiting. One new migration rides on
-  #2201, `20261016220000_golf_set_course_image.sql` (any team member may set a
-  course photo); the app falls back to the coach-only write without it. Apply
-  after #2201 merges, with the owner's OK, and give it a `HELD.md` row.
+- **Database (wiring audit 2026-10-17, every page P001–P015 against the live
+  catalog):** every table, view, bucket and RPC Clubhouse calls exists in
+  production except five, each held with a fallback: `hidden_at` (P007 delete
+  hidden), `golf_qualifier_selection_reasons` (P009 reads the column instead),
+  `golf_set_course_image` (P011: coaches fall back, a player's photo is refused
+  and the upload is now discarded), the batch trace writer (falls back per
+  step), and recruit film (P014: Storage refuses video, CH-14107/8 says so).
+  `database.ts` matches production apart from the two functions this branch
+  adds. The audit's write fixes are in code (group-chat reuse, second-team
+  approval, task status sync, assistant travel brief, tee rollback, document
+  re-attach, orphaned photos). Three new held migrations cover the rest:
+  `20261017100000` (Settings switches the users trigger drops),
+  `20261017101000` (announcement recipient/task policies), `20261017102000`
+  (players read only their own RSVP rows; counts come from a definer function,
+  with a fallback until applied). Coach organization repointing is PR #2200.
 - **Production data check:** zero rounds completed with zero holes in the last
   seven days (read-only SQL, 2026-10-17).
 
@@ -86,13 +97,14 @@ VoiceOver, dark-mode scan or real-account write pass.
   turning the flag on releases them. Their plans
   (`docs/clubhouse/held/features/`) say they wait for the owner's explicit
   release.
-- **Held migrations:** none is required by the app. `20261001000000` (Q-120,
-  server version check on submit; the app checks on its side), `20260929200000`
-  (D-35), `20261008160000` (Messages delete; fallback in place, but preview
-  Sentry -1A0 logs the missing `hidden_at`, 89 events), `20260929120000`
-  (availability), `20260930140000` (recruit film), `20260930150000` and the
-  OD-01 stats chain (data quality), `20261007106000` (batch trace writer;
-  Sentry -196, 105 events, its noise fix is in the undeployed #2197).
+- **Held migrations Clubhouse needs (apply order):** `20261016220000` (after
+  #2201), `20261008160000` then `db:types`, `20260929200000` then
+  `20261007100000` (that order), `20261017100000`–`20261017102000` (with the
+  app change), `20261001000000` (Q-120), `20260930140000` (check the project
+  Storage limit is at least 100 MB first), `20260930150000`, then the OD-01
+  chain in one session (`20260924120000` → `140000` → `20260925120000` →
+  `20260928120000` → `20260928150000`). `20260929120000` waits for a writer;
+  `20261007102000` goes last with a fresh rollback snapshot.
   `20260928160000` is OBSOLETE and must never be applied.
 - **Sentry (last seven days):** production has nothing from Clubhouse (flag
   off). Preview: -1A0 above, -158 (fixed in #2197), N+1 queries on Stats, Home,

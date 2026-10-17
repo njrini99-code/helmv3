@@ -3717,6 +3717,10 @@
         "definedIn": "supabase/migrations/20260613190000_course_library_normalize_unique.sql"
       },
       {
+        "id": "golf_event_attendance_counts",
+        "definedIn": "supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql"
+      },
+      {
         "id": "golf_join_team_with_code",
         "definedIn": "supabase/migrations/20260807030600_golf_join_one_team_rule_ignores_status.sql"
       },
@@ -4139,6 +4143,10 @@
       {
         "id": "user_is_coach_of_golf_player",
         "definedIn": "supabase/migrations/20260612130000_team_toggle_rls_staff_scope.sql"
+      },
+      {
+        "id": "validate_notification_preferences",
+        "definedIn": "supabase/migrations/20261017100000_notification_preferences_keep_all_keys.sql"
       }
     ],
     "jobs": [
@@ -12540,6 +12548,18 @@
     },
     {
       "source": "clubhouse",
+      "target": "golf_event_attendance_counts",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/data/attendance-counts.ts",
+          "anchor": "golf_event_attendance_counts"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
       "target": "tests:src/clubhouse/__tests__/**",
       "kind": "feature_test",
       "evidence": [
@@ -16191,6 +16211,11 @@
       "target": "admin_platform",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/course-library.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/course-library.ts",
@@ -20292,6 +20317,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/tasks.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tasks.ts",
           "anchor": "src/lib/admin/observed-action"
         },
         {
@@ -20646,6 +20676,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/qualifier-setup.ts",
           "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/v3/qualifying.ts",
+          "anchor": "src/lib/supabase/admin"
         },
         {
           "kind": "import_graph",

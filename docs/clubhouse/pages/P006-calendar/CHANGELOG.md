@@ -1,5 +1,37 @@
 # P006 — Calendar: changelog
 
+## 2026-10-17 — A player's meeting rule reads invite counts
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner-flagged attendance RLS, docs/clubhouse/STATUS.md)
+Contract IDs:   none new (D2-8 unchanged)
+Actions:        none
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000)
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Changed
+
+- `loadCalendar` (`data/calendar.ts`), player only: D2-8 (a meeting with no
+  invitees is the coach's own) asks `golf_event_attendance_counts` how many
+  each meeting in the window invites, beside the attendance read (no extra
+  round trip). The player's own place and reply still come from their own row.
+  Until the migration is applied the rows decide, as before; a failed count is
+  logged (`meetingInvites`) and never hides a meeting.
+
+### Why
+
+- Migration 20261017102000 narrows `golf_event_attendance` so a player reads
+  only their own row. Without the count, every meeting that invites teammates
+  but not this player would have read as having no invitees and disappeared.
+
+### Verification
+
+- `npm run test:file -- src/clubhouse/__tests__/attendance-counts.test.ts
+  src/clubhouse/__tests__/calendar.test.tsx`. No screenshots: nothing visible
+  changed.
+
 ## 2026-10-17 — Retry cannot add the same busy time twice; stale VERIFY rows corrected
 
 ```text

@@ -22,6 +22,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
@@ -1560,8 +1561,7 @@ async function createTeeImpl(
         action: 'createTee', featureArea: 'course-library', extra: { teeId: tee.id },
       });
       // Soft-delete the just-created tee so we don't leave a holeless ghost.
-      await supabase.from('golf_course_tees')
-        .update({ deleted_at: new Date().toISOString() }).eq('id', tee.id as string);
+      await rollBackCreatedTee(tee.id as string, actor.userId, courseId);
       return { success: false, error: 'Failed to save tee holes' };
     }
   }
@@ -1574,6 +1574,40 @@ async function createTeeImpl(
   return getTeeWithHoles(tee.id as string).then((t) =>
     t ? { success: true as const, data: t } : { success: false as const, error: 'Tee created but could not be reloaded' },
   );
+}
+
+/**
+ * Soft-delete a tee that THIS createTee call inserted a moment ago, after its
+ * holes insert failed. Uses the service-role client: golf_course_tees_update
+ * requires is_golf_coach() OR is_super_admin(), so a player contributing a tee
+ * from a saved round (skipCoachGate) had the rollback silently filtered to zero
+ * rows and the holeless tee stayed live (P011). Scoped to the id this call just
+ * received from its own insert (never a client-supplied id), to the caller as
+ * its creator, and to a still-live row. Soft delete frees the name: the
+ * (course_id, normalized_tee_name) unique index is partial on deleted_at IS NULL.
+ * Never throws; a failed rollback is logged.
+ */
+async function rollBackCreatedTee(teeId: string, userId: string, courseId: string): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('golf_course_tees')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', teeId)
+      .eq('created_by_user_id', userId)
+      .is('deleted_at', null)
+      .select('id');
+    if (error || !data || data.length === 0) {
+      await logServerError(
+        `createTee rollback failed; a holeless tee may remain: ${error ? describeError(error) : 'no row updated'}`,
+        { action: 'createTee', featureArea: 'course-library', extra: { teeId, courseId, code: error?.code } },
+      );
+    }
+  } catch (err) {
+    await logServerError(`createTee rollback threw; a holeless tee may remain: ${describeError(err)}`, {
+      action: 'createTee', featureArea: 'course-library', extra: { teeId, courseId },
+    });
+  }
 }
 
 const observedCreateTee = withAdminObserved(

@@ -1,5 +1,37 @@
 # P001 — Shell: changelog
 
+## 2026-10-17 — A player's next-event count reads counts, not teammates' replies
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner-flagged attendance RLS, docs/clubhouse/STATUS.md)
+Contract IDs:   none new (CH-1304's "N of M confirmed" unchanged)
+Actions:        none
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000)
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Changed
+
+- `loadClubhouseShell` (`data/shell.ts`): for a player, the sidebar next-event
+  card's "N of M confirmed" comes from `golf_event_attendance_counts` (numbers
+  only, the caller's own teams) instead of reading every invitee's row. A coach
+  keeps the direct read. Until the migration is applied the function answers
+  PGRST202 / 42883 and the player path reads the rows exactly as before; any
+  other failure hides the count and is logged (`nextEventAttendance`), as a
+  failed row read did.
+
+### Why
+
+- Migration 20261017102000 narrows `golf_event_attendance` so a player reads
+  only their own row; without this the player's count would read "1 of 1".
+
+### Verification
+
+- `npm run test:file -- src/clubhouse/__tests__/attendance-counts.test.ts
+  src/clubhouse/__tests__/shell.test.tsx` (function path, fallback, failure,
+  coach). No screenshots: nothing visible changed.
+
 ## 2026-10-16 — The brand's entrance waits until the dashboard is seen
 
 The entrance counted from the sidebar's mount, but after the welcome the

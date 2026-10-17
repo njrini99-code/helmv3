@@ -8,7 +8,7 @@ import { savePartialRound, deleteInProgressRound, type PartialRoundData } from '
 import { getPlayerQualifiers, getNextQualifierRoundNumber, type PlayerQualifierInfo } from '@/app/golf/actions/qualifier-actions';
 import { getPlayerSavedCourses, getRecentCoursesForPlayer, savePlayerCourse, touchSavedCourse, type SavedCourse, type SavedCourseHoleConfig, type RecentPlayedCourse } from '@/app/golf/actions/saved-courses';
 import { contributeCourseFromRound, getCourseDetail, setCourseImageUrl, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
-import { uploadCourseImage } from '@/lib/golf/upload-course-image';
+import { discardCourseImageUpload, uploadCourseImage } from '@/lib/golf/upload-course-image';
 import { checkRoundStaleness, type TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
@@ -119,13 +119,19 @@ function forgetQueuedRound(roundId: string): void {
   void Promise.resolve().then(() => deleteOfflineRound(roundId)).catch(() => {});
 }
 
-/** Upload a typed course's photo and set it on the library course, when that course has none. Best-effort. */
-async function attachCourseImage(courseId: string, file: File): Promise<void> {
+/**
+ * Upload a typed course's photo and set it on the library course, when that course has none. Best-effort.
+ * When the save is refused (`success: false`) the uploaded object is removed, so a refused save never leaves an
+ * orphan in the public bucket. A thrown or lost response keeps it: the save may have landed.
+ */
+export async function attachCourseImage(courseId: string, file: File): Promise<void> {
   try {
     const detail = await getCourseDetail(courseId);
     if (!detail || detail.course.image_url) return;
     const up = await uploadCourseImage(courseId, file);
-    if (up.ok) await setCourseImageUrl(courseId, up.url);
+    if (!up.ok) return;
+    const res = await setCourseImageUrl(courseId, up.url);
+    if (!res.success) await discardCourseImageUpload(up.path);
   } catch {
     /* best-effort: a course photo never affects the round */
   }

@@ -1,5 +1,46 @@
 # P002 — Home: changelog
 
+## 2026-10-17 — A player's Home reads reply counts, not teammates' replies
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner-flagged attendance RLS, docs/clubhouse/STATUS.md)
+Contract IDs:   none new (D2-8 and the agenda lines unchanged)
+Actions:        ACT-P002-OPEN-PLAYER-HOME
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000)
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Changed
+
+- `loadHomeWeek` (`data/home.ts`) takes `viewer: 'player'` from player Home
+  (`data/player-home.ts`): the week's "N players", "N of M confirmed" and the
+  phone cards come from `golf_event_attendance_counts` instead of every
+  invitee's row, so no teammate's id or reply reaches the player's page (the
+  rows' path carried every invitee's id in `inviteeIds` until player-home
+  stripped it). The lines render exactly as before. Coach Home keeps the rows.
+- `ChHomeEvent.invitedCount` (new, optional): how many are invited. Player
+  Home's D2-8 rule (a meeting with no invitees is the coach's own) reads it, so
+  a meeting that invites only teammates still shows.
+- `inviteDetail` and `confirmedLine` (`screens/home/model.ts`) also take a
+  count; a count reads like a list the player is given no names for.
+- Until the migration is applied the function answers PGRST202 / 42883 and the
+  rows are read as before. Any other failure drops the counts (never
+  "0 players"), logged as `attendance`, and never hides a meeting.
+
+### Why
+
+- Migration 20261017102000 narrows `golf_event_attendance` so a player reads
+  only their own row. This closes the VERIFY note that players can read
+  teammates' replies through the API once the migration is applied.
+
+### Verification
+
+- `npm run test:file -- src/clubhouse/__tests__/attendance-counts.test.ts`
+  (same agenda as the rows' path, no attendance read, no teammate id in the
+  payload, D2-8 with counts, fallback, failure, coach) plus the existing Home
+  suites. No screenshots: nothing visible changed.
+
 ## 2026-10-17 — "Today" turns at the team's midnight
 
 ```text
