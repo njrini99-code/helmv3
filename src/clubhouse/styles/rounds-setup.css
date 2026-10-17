@@ -780,9 +780,8 @@
 .ch-rsu-chev {
   color: var(--ch-text-tertiary);
 }
-/* The course picker on the desktop is a pane of frosted glass (owner, 2026-10-16): the page behind it is softened and
-   the panel lets it through, blurred, so the photos sit on light rather than on a sheet of paper. Not where the system
-   asks for less transparency (below; Safari doesn't know that query, and a `not` of it matched nothing there). */
+/* The course picker on the desktop (owner, 2026-10-16): landscape, a solid panel in the one window material (controls.css),
+   the photo cards three to a row. */
 @media (min-width: 821px) {
   /* The material is every window's (controls.css); the picker's title is a size up, as Claude's search dialog's. */
   .ch-modal[data-ch-code='CH-11510'] .ch-modal__titles h2 {

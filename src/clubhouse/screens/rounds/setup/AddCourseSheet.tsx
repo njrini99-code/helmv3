@@ -334,7 +334,7 @@ function CoursePreview({
           <span className="ch-acs__photo-add">
             <Icon icon={ImagePlus} size={20} />
             <b>Add a photo</b>
-            <span>JPG, PNG or WebP, up to 5 MB</span>
+            <span>JPG, PNG, WebP or AVIF, up to 5 MB</span>
           </span>
         )}
       </label>

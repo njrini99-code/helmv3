@@ -48,6 +48,7 @@ Held items:     none
   `useNewRoundSession`): only a course typed by hand and saved carries it. After `contributeCourseFromRound`
   resolves the library course, the start uploads the photo and sets it as the course's image only when the course
   has none, not awaited and best-effort: a photo never blocks or undoes a started round.
+- The photo slot's hint now names AVIF, which the code already accepted.
 - The photo's refusal message is `.ch-acs__photo-error`, in warning amber (see the segmented-switcher entry above).
 
 ### Why

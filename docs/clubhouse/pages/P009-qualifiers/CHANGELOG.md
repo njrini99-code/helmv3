@@ -1,5 +1,13 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-16 — The desktop list: each qualifier on its own sheet, stronger ink, green filter chip
+
+Owner, 2026-10-16: "better separation between qualifiers listed", "more contrast on this page". Above 820px
+(`qualifiers.css`), each qualifier is its own raised sheet on the parchment with a gap between, in place of the ruled
+ledger seams. The titles, the lines under them, the facts and the page's intro step up to full ink (the facts' icons
+are green), and the filter pills take ink on the idle ones and the shared green chip on the chosen one
+(docs/clubhouse/CHANGELOG.md). No visual check is recorded for it; the phone's list is unchanged.
+
 ## 2026-10-14 — A round with no tees says so
 
 Course per round showed a blank beside a round whose tees and par were not set.

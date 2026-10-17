@@ -1,5 +1,11 @@
 # Clubhouse changelog
 
+## 2026-10-16 — Zone and game-detail summaries stick below the top bar
+
+A zone summary (`.ch-zn__id`, `ui.css`) and a game-detail summary (`.ch-gm__id`, `stats.css`) stuck at 24px, behind
+the sticky top bar. They now stick at the top bar's height plus 24px. Desktop only; the zones are drawn on Round review (P011)
+and Stats, and game detail is P005's.
+
 ## 2026-10-16 — The chosen segment of every switcher is a lit green chip
 
 Owner, 2026-10-16: green, with more depth. Every segmented switcher now draws its chosen segment the same way: a green

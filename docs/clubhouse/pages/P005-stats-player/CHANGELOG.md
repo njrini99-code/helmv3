@@ -1,5 +1,13 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-16 — Game detail: the section bar scrolls with the page; the summary sticks below the top bar
+
+Desktop My stats (`stats.css`). The section bar (`.ch-gd__nav`) is no longer sticky: the owner said a bar riding over
+the sections "looks bad". Its glass and its opaque fallbacks (P005-D5, below) are gone with it. A section's summary
+(`.ch-gm__id`) used to stick at 24px, behind the top bar; it now sticks at the top bar's height plus 24px. Checked in
+Chrome only: with the bar still sticky, the summary's top was 136px and the bar's bottom 118px; the final state
+(bar not sticky) was not measured here.
+
 ## 2026-10-16 — Shared change in StatsTeamPhone
 
 `StatsTeamPhone.tsx` is named by this page too; the player's page is unchanged. See P004's entry (rolling figures
