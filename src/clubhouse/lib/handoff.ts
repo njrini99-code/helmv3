@@ -20,6 +20,8 @@ import { CH_DUR, CH_EASE } from './motion';
  */
 
 const ID = 'ch-handoff-curtain';
+/** On <html> while the curtain is up. */
+const HOLD = 'data-ch-handoff';
 const SAFETY_MS = 4000;
 const PHONE = '(max-width: 820px)';
 
@@ -83,7 +85,16 @@ export function dropHandoffCurtain(): void {
     curtain.appendChild(canvas);
   }
   document.body.appendChild(curtain);
+  // While the curtain is up, anything waiting to play on the dashboard's first sight holds (the sidebar brand's entrance,
+  // shell.css): it starts once the dashboard can be seen, not under the curtain.
+  document.documentElement.setAttribute(HOLD, '');
   safety = window.setTimeout(() => liftHandoffCurtain(), SAFETY_MS);
+}
+
+/** Takes the curtain away and lets what was held start. */
+function removeCurtain(curtain: HTMLElement): void {
+  curtain.remove();
+  document.documentElement.removeAttribute(HOLD);
 }
 
 /**
@@ -128,15 +139,15 @@ export function liftHandoffCurtain(): void {
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         if (reduced || typeof curtain.animate !== 'function') {
-          curtain.remove();
+          removeCurtain(curtain);
           return;
         }
         const phone = window.matchMedia(PHONE).matches;
         // The reference's beats (design/handoff/auth): the phone's dashboard fades in over 380ms, the desktop's over the
         // reveal beat; then, on this hand-off only, the dashboard's content rises into place (gh-core's GH.reveal).
         const a = curtain.animate([{ opacity: 1 }, { opacity: 0 }], { duration: phone ? 380 : CH_DUR.reveal * 1000, easing: ease, fill: 'forwards' });
-        a.onfinish = () => curtain.remove();
-        a.oncancel = () => curtain.remove();
+        a.onfinish = () => removeCurtain(curtain);
+        a.oncancel = () => removeCurtain(curtain);
         riseIn();
       }),
     );

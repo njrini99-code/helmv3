@@ -1,5 +1,11 @@
 # Clubhouse changelog
 
+## 2026-10-16 — The hand-off curtain holds first-sight motion
+
+`lib/handoff.ts` sets `data-ch-handoff` on `<html>` while its curtain is up and
+removes it with the curtain, so motion meant for the dashboard's first sight
+(the sidebar brand's entrance, P001) holds until it can be seen.
+
 ## 2026-10-16 — A script face for the wordmark only
 
 `lib/fonts.ts` adds Norican as `--ch-font-script`, preloaded, for the
