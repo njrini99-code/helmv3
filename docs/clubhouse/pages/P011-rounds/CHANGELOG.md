@@ -71,8 +71,9 @@ Held items:     none
   decided any golf team member may set a course's photo. `setCourseImageUrl` now calls a narrow `SECURITY DEFINER` RPC,
   `golf_set_course_image` (migration `20261016220000_golf_set_course_image.sql`; tests: pgTAP
   `supabase/tests/rls/golf_set_course_image.sql`, vitest `set-course-image-url.test.ts`). The migration is NOT applied
-  to production: it needs applying after merge, and until then the write fails for everyone (the upload still lands
-  in the bucket). A real round's photo end to end was not run.
+  to production: it needs applying after merge. Until then `setCourseImageUrl` falls back to `updateCourse` when the
+  function is missing, so coaches keep uploading and a player's photo is still refused (the upload lands in the
+  bucket either way), and the deploy order is safe whichever comes first. A real round's photo end to end was not run.
 
 ## 2026-10-14 — The course map hydrates without a mismatch
 

@@ -164,7 +164,7 @@ export function QualifierDetailPhone({
 
       {/* A player's own rounds, shown off above the board (owner, 2026-10-16); a coach opens anyone's from their row. */}
       {data.role !== 'coach' && (
-        <SectionBoundary surface="qualifiers.player-rounds" label="Your rounds" code="CH-09216">
+        <SectionBoundary surface="qualifiers.player-rounds" label="Your rounds" code="CH-09223">
           <ShowcaseRounds data={data} openRow={NO_OPEN_ROW} ownOnly />
         </SectionBoundary>
       )}

@@ -37,8 +37,17 @@ Owner, 2026-10-16.
   coach opens, otherwise the viewer's own; a player sees only their own. It reads `board.rows[].rounds`, so there is no
   new read and no migration. The open row now lives in a small `useSyncExternalStore` store: lifting it into the page's
   state re-rendered the page and stalled the streamed sections (CH-09410). Its boundary is **CH-09223** (the commit
-  named it CH-09216, which is already the qualifier form's boundary, so it was renumbered; the existing crash test now
-  names it). Qualifiers vitest passed in the main session; no visual check is recorded.
+  named it CH-09216, which is already the qualifier form's boundary, so it was renumbered, on the phone too; the
+  existing crash test now names it). Qualifiers vitest passed in the main session; no visual check is recorded for this panel.
+- **A round opens in place** (`RoundsShowcase.tsx`, which now holds `PlayerRounds`, `RoundVisual`, `FieldStrip` and the
+  open-row store): a round tile is a button that opens its detail under it. The round's rank in the field comes first,
+  with every score as an anonymous dot on one line, this round lit and the average a tick. When the round has holes, a
+  hole-by-hole shape against par is drawn as SVG, with the nines as score marks and counts by kind. A link goes to the
+  whole round, `/golf/dashboard/rounds/<id>`. No new read.
+- **The phone**: a player's own rounds are shown above the board, between the facts and the leaderboard (a coach opens
+  anyone's from their row, which opens a sheet as before), inside the same boundary, CH-09223. The phone list takes
+  the separate sheets and the green filter chip too. Checked by the main session in Chrome at 1567 and 420px wide;
+  Qualifiers vitest passed; not checked on a device.
 
 ## 2026-10-14 — A round with no tees says so
 

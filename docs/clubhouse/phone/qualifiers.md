@@ -75,6 +75,7 @@ Reopen (Q-20).
 - "8 entrants · course".
 - An action row: "Manage selections" (secondary, full width) and "Edit" (ghost).
 - Two facts, side by side: Rounds in "13/24" and Spots "4+1" (there is no entry deadline, 2026-10-16).
+- A player's own rounds, shown above the leaderboard (2026-10-16): a green panel with the total to par and a tile per round that opens to its field rank and hole-by-hole shape. A coach has no panel; a row opens the sheet below.
 - Leaderboard (changed by P009-A1, owner 2026-10-08). The column header Pos, Player, To par, Thru is drawn once; then one 56pt row a player:
   - the position (a tie as "T3", its T small and raised) with the movement since the previous round under it ("▲2" gain green, "▼1" loss amber);
   - the name, with the state badge (compact) or the sample-size note ("1 of 3 rounds", P009-C2) on its second line;
