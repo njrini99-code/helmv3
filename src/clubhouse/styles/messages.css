@@ -2599,7 +2599,7 @@ html[data-fw-theme='dark'] .ch-ms-row:active {
 }
 html[data-fw-theme='dark'] .ch-ms-row.is-sel {
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-key-raised-shadow), inset 3px 0 0 var(--ch-green-600);
+  box-shadow: var(--ch-key-raised-shadow);
 }
 html[data-fw-theme='dark'] .ch-ms-msg.is-mine .ch-ms-bub {
   color: var(--ch-on-green-ink);
