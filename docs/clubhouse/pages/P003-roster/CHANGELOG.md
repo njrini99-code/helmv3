@@ -1,5 +1,54 @@
 # P003 — Roster: changelog
 
+## 2026-10-17 — Wiring checked against production
+
+Every Roster control and read was checked end to end against Fairway's roster
+and the server actions (`removePlayerFromTeam`, `updatePlayerStatus`,
+`acceptJoinRequest`, `rejectJoinRequest`, `setIntent`, `getTeamJoinRequests`):
+arguments, role and team guards (all resolve the coach's cookie-aware active
+team, as `resolveClubhouseTeam` does), revalidation, and every link target for
+the role that sees it. Four differences fixed:
+
+- **The screen follows the resolved role** (`routes/roster.tsx`). The route
+  took the coach branch whenever a coach row existed, so a user whose player
+  profile is the onboarded one (the dashboard draws them as a player) got the
+  coach's "You aren’t on a team yet" instead of their team's roster. It now
+  branches on the team `resolveClubhouseTeam` returns, and the no-team page
+  speaks to the dashboard role. No production user is in that state today
+  (read-only count, 2026-10-17).
+- **The bell's join-request link opens the requests** (`RosterPhone.tsx`).
+  `createTeamJoinRequest` writes `/golf/dashboard/roster?tab=requests`; the
+  phone now opens the requests sheet once when a request is waiting and drops
+  the param (desktop already shows the card at the top). Fairway ignores the
+  param.
+- **Open focus areas count `in_progress` too** (`data/roster.ts`), as Fairway's
+  roster does; the column has no CHECK on status. No production row is
+  `in_progress` today, so nothing on screen changes yet.
+
+- **Home's first-run Invite players opens the invite sheet** (`Roster.tsx`).
+  Roster reads `?invite=1` once, on desktop and the phone, opens the invite
+  sheet and drops the param; closing the sheet spends it (a module flag holds
+  it across the remount that dropping the param can cause, as `?player=` does).
+  A player's roster and the no-team page are other screens and ignore it.
+
+Checked and unchanged: approve, decline and Approve all pass the request id
+only (Fairway's shape; no decline reason, which Fairway does not send either);
+remove and Mark active/inactive pass the player id; the note sends trimmed
+text or null to `setIntent` (Fairway's trimming); the server's refusals reach
+the toast through `friendlyReason`; the writes' `revalidatePath` brings the new
+player in (Fairway calls `router.refresh()` for the same effect). Links:
+View insights (`coachhelm?player=`), View stats and the face (`stats?player=`),
+Message (`messages?player=`), Plan (`calendar?new=1&with=`), All rounds
+(`stats?player=&window=season&tab=rounds`), Open team settings
+(`settings?section=team`) and the invite link (`/golf/join/<code>`) all
+resolve for a coach and carry params the target reads. No realtime: Fairway
+has none on the roster either.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/wiring-p003-roster.test.tsx` and the
+  existing Roster tests (see the report for exit codes).
+
 ## 2026-10-17 — A link to a player opens their profile on the phone every time
 
 Found by the first dark-mode accessibility scan (2026-10-17). On the phone a

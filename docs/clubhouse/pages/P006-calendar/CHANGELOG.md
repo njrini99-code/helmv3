@@ -1,5 +1,121 @@
 # P006 — Calendar: changelog
 
+## 2026-10-17 — Production's event actions, live updates, linked trips, team replies, the whole window
+
+```text
+Design package: none (new menu items and a dialog in the existing patterns; one facts row)
+PR/commit:      uncommitted (Calendar and Classes production-parity audit, coordinator follow-up)
+Contract IDs:   CH-6016 (60629), CH-6017 (60630), CH-6506 (61105) new; 60104, 60807 wording
+Actions:        ACT-P006-RESTORE-EVENT, ACT-P006-DELETE-EVENT, ACT-P006-OPEN-TRIP (new); ACT-P006-REPLY widened
+Data impact:    reads golf_travel_itineraries (getItineraryForEvent); realtime on golf_events by team; the window
+                read and the replies read are by overlap; the replies read adds notified_at
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md), for the
+                open-reply count (below)
+```
+
+### Added
+
+- Restore event and Delete permanently on a cancelled event's menu (coach), as
+  Fairway's event menu offers them. Restore sends `updateGolfEvent` with
+  `status: 'confirmed'` (no question: it destroys nothing; CH-6016 when it
+  fails). Delete permanently asks first (CH-6506, the warning haptic on the
+  red button, D-70), calls `deleteGolfEventPermanently` (the server allows it
+  only for a cancelled event or one with no attendance), closes the panel and
+  reads again (CH-6017 when it fails). A live event and a player get neither.
+- Live updates: one realtime channel on `golf_events` for the team
+  (`useCalendarLive`, live.ts), as Fairway's range hook. A change, or a
+  reconnect after the feed dropped, re-reads the page (`router.refresh`, one
+  read per burst, 800 ms); a dropped feed is reported. Replies are not on the
+  feed, as in production.
+- The trip linked to an event: "View itinerary" and the destination in the facts,
+  to Travel with that trip open (`getItineraryForEvent`, every viewer, as
+  Fairway's drawer). Nothing is drawn with no trip or on a failed read
+  (reported).
+- An event that asks for replies and invites no one is the team's: any player
+  may reply ("Open to the whole team"), and Needs your reply asks them, as
+  production allows (`golf_event_attendance_insert_self`). The invite list is
+  read from the rows the coach's invitation wrote (`notified_at`), so a
+  teammate's own reply keeps it open. A meeting with no invitees stays the
+  coach's own (D2-8 wins).
+
+### Fixed
+
+- The window read events by their start only, so an event that began before
+  the window and ran into it (a ten-day camp, a tournament that began the
+  Friday before) was missing from the window's first days. The loader now reads
+  every event that overlaps the window (`end_time` on or after its start, or a
+  start inside it) and fills each day it covers; the replies read follows the
+  same rule. Fairway's read (`page.tsx`) still has the gap; flagged, not
+  changed.
+
+### Open question
+
+- Once migration 20261017102000 is applied, the count function cannot tell a
+  coach's invitation from a player's own reply, so the first reply to a team
+  event closes it to the other players. Recommended default: add an
+  `invited_by_coach` count (rows with `notified_at`) to
+  `golf_event_attendance_counts` before the migration is applied.
+
+### Verification
+
+- `calendar.test.tsx` (CH-6016, CH-6017, CH-6506, a live event and a player get
+  neither) and `calendar-parity.test.tsx` (the feed: channel, filter, one read
+  per burst, reconnect, removal, off by default; the linked trip for coach and
+  player, none and a failed read; team replies on screen and in the loader; the
+  overlap read and the days it fills). No screenshots: not captured.
+
+## 2026-10-17 — Parity with production: events over several days, reply locks
+
+```text
+Design package: none (copy only: "From 7:00 AM", "Until 4:30 PM", "Starts … · ends …", "Ends Sun 18 Oct",
+                "Replies closed at the deadline the coach set.")
+PR/commit:      uncommitted (Calendar and Classes production-parity audit)
+Contract IDs:   60104, 60807 (wording)
+Actions:        none new; the editor's payload for a timed run over several days
+Data impact:    the loader also reads golf_events.rsvp_deadline
+Held items:     none
+```
+
+### Fixed
+
+- A timed event that runs past midnight (a tournament from Friday 7 AM to
+  Sunday 4:30 PM, an overnight trip) was drawn on its first day only, ending at
+  midnight. Production's calendar puts it on every day it covers
+  (`eventDaySpan`), and now so does `loadCalendar`: its start to midnight,
+  whole days, then midnight to its end, each entry carrying the run in `span`.
+  Each day says its part (From, All day, Until); the panel says when the run
+  starts and ends. Production has eight such rows; all eight now land on the
+  same days in both (spot check, below).
+- Editing such an event from any of its days opens on the run (its first day,
+  start, last day and end), where it had opened on the clicked day's part (a
+  later day started at 12:00 AM). A save that leaves its days and times alone
+  sends no end, so the stored end is kept; one that changes them sends the end
+  moved by any clock change between the two days (the server builds the end
+  with the start's offset: a run from Saturday 31 October to Monday 2 November
+  would otherwise end an hour early). Duplicate publishes the same days and
+  times, at the right instants, instead of a "24:00" end the server refuses.
+  It never drags (`movable`), its invitees are busy on every day it covers, and
+  a week that holds only a later day of it opens on a real start, not midnight
+  (`focusHour`).
+- A player's reply locks when the server locks it (`lib/calendar/rsvp.ts`, the
+  same rule Fairway's drawer shows): an all-day event stays open through its
+  day (it had closed at the start of the day, while the server takes replies
+  for 24 hours from its UTC midnight), every day of a run locks with the run,
+  and a reply deadline (Fairway's editor can set one) closes it and says so.
+  One rule (`replyLock`, model.ts) serves the event and Needs your reply, which
+  no longer asks a player for a reply the server would refuse.
+
+### Verification
+
+- `src/clubhouse/__tests__/calendar-parity.test.tsx` (loader, labels, the
+  editor's payload from a later day, Duplicate, the reply locks), and the
+  updated 60104 case in `calendar.test.tsx`.
+- Read-only spot check of production rows (scratch script, not committed):
+  three teams, next 30 days, coach and one player each: identical event-days in
+  Clubhouse and Fairway. The eight timed multi-day rows: 8 of 8 on the same
+  days (Clubhouse showed one day each before).
+- No screenshots: not captured in this pass (VERIFY has no new rows).
+
 ## 2026-10-17 — A player's meeting rule reads invite counts
 
 ```text

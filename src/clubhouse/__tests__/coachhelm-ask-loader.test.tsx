@@ -152,11 +152,17 @@ describe('loadAskCoachHelm', () => {
     expect(res.data.suggestions.map((s) => s.id)).toEqual(['week']);
   });
 
-  it('a finding whose screen is not rebuilt keeps its text and loses its link', async () => {
-    ctxState.pulse = pulse({ items: [{ id: 'tasks-overdue', headline: '2 tasks are overdue', evidence: 'e', tone: 'attention', weight: 1, action: { label: 'Open tasks', href: '/golf/dashboard/tasks' } }] });
+  it('a finding whose screen moved opens it in Clubhouse (Tasks is Team Hub’s tab); one with no Clubhouse screen keeps its text and loses its link', async () => {
+    ctxState.pulse = pulse({
+      items: [
+        { id: 'tasks-overdue', headline: '2 tasks are overdue', evidence: 'e', tone: 'attention', weight: 1, action: { label: 'Open tasks', href: '/golf/dashboard/tasks' } },
+        { id: 'prep-1', headline: 'Scouting is due', evidence: 'e', tone: 'neutral', weight: 1, action: { label: 'Open scouting', href: '/golf/dashboard/scouting' } },
+      ],
+    });
     const res = await load();
     if (res.status !== 'ready') throw new Error('not ready');
-    expect(res.data.pulse?.findings[0]).toMatchObject({ headline: '2 tasks are overdue', link: null });
+    expect(res.data.pulse?.findings[0]).toMatchObject({ headline: '2 tasks are overdue', link: { label: 'Open tasks', href: '/golf/dashboard/team-hub?tab=tasks' } });
+    expect(res.data.pulse?.findings[1]).toMatchObject({ headline: 'Scouting is due', link: null });
   });
 
   it('CH-13222 a chat list that does not read is its own flag with an empty list, logged, and never "no chats yet"', async () => {

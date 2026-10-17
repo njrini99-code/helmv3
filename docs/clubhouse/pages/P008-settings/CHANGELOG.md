@@ -1,5 +1,39 @@
 # P008 — Settings: changelog
 
+## 2026-10-17 — Wiring checked against production: reminders off out of order, the request after Ask to join
+
+```text
+Design package: none (no new design; the two times stay on screen while out of order)
+PR/commit:      uncommitted (Clubhouse wiring pass, P001–P015)
+Contract IDs:   80511 and 80403 (behaviour clarified in CONTRACT.md)
+Actions:        ACT-P008-SAVE-REMINDERS, ACT-P008-REQUEST-JOIN
+Data impact:    none (same writes; one write that would fail is no longer sent)
+Held items:     none
+```
+
+### Changed
+
+- **Event reminders** (`Team.tsx` `RemindersCard`): the order of the two times is checked whether or not reminders
+  are on, as the database CHECK and Fairway's panel do. Times left out of order and then switched off used to send
+  and fail with a database error; now Save stays off with CH-8111, and the two times stay on screen so they can be
+  fixed.
+- **Join a team** (`hooks.ts` `useMembership`): after Ask to join, the page's fresh read replaces the form with the
+  waiting request (CH-8303) at once, on desktop and the phone. The card held the requests it opened with, so the form
+  stayed until the section was reopened.
+
+### Why
+
+- Wiring pass against production (`FairwaySettingsGeneral`, `FairwaySettingsCoachingIntelligence`,
+  `JoinTeamSection`) and the live RLS policies (read-only). Every other control matched production's table, columns,
+  filters, action and role check; WIRING.md "Production parity" lists what was checked.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/wiring-p008-settings.test.tsx` (4 tests; the two fix tests fail without
+  their fix) and the existing Settings suites (settings, settings-server, settings-staff, settings-philosophy-save,
+  settings-distance-units, course-location, logic): 323 passed. jsdom only; not seen in Safari or on an iPhone. No
+  screenshots: the visible change is a Save that stays off and two sliders that stay drawn.
+
 ## 2026-10-17 — Back over the list, the priority order after a failed save, one read per table, warning ticks
 
 Owner: "fix it don't tell me it's not fixed". The rest of the Settings list:

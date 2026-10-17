@@ -44,7 +44,8 @@ Server actions: src/app/golf/actions/golf.ts, recurring-events.ts, attendance.ts
 Data: golf_events, golf_event_attendance, golf_player_classes, golf_coach_blocked_time, golf_event_documents, golf_documents,
       golf_calendar_feeds, golf_team_settings
 ↓
-Read-back: router.refresh() re-runs the loader; there is no realtime subscription
+Read-back: router.refresh() re-runs the loader, after a write of the viewer's own and on every change the realtime feed
+           reports (useCalendarLive in screens/calendar/live.ts: golf_events by team, as Fairway's range hook)
 ↓
 Contract outcomes: CONTRACT.md (Bridge IDs 6ccii, catalog CH-6xxx)
 ↓
@@ -65,6 +66,9 @@ marks an action a player cannot use (60801): the control is not drawn, and the s
 | ACT-P006-PUBLISH-EVENT* | New event › Publish event (Enter in the form) | `submit` › `save` (`calendar.saveEvent`) | `createGolfEvent`, or `createRecurringEvent` when it repeats | golf_events, golf_event_attendance | no title 60501 · time 60502 · clash 61001 · fails 60601 · lands 60901 · retry 61401 · kept 61202 |
 | ACT-P006-EDIT-EVENT* | Edit event / Review new time › Save changes or Move event | `submit` › `save` | `updateGolfEvent`, or `editRecurringEvent` for a series scope | golf_events, golf_event_attendance | as above · discard 61201 · overlap 61002 |
 | ACT-P006-CANCEL-EVENT* | Event actions › Cancel event › Cancel event | `cancel` (`calendar.cancelEvent`) | `deleteGolfEvent` (a soft cancel), or `deleteRecurringEvent` for a series scope (it deletes the events; the question says so) | golf_events | confirm 61101 · fails 60602 · lands 60901 · retry 61401 |
+| ACT-P006-RESTORE-EVENT* | Event actions › Restore event (a cancelled event) | `restore` (`calendar.restoreEvent`) in `Calendar` | `updateGolfEvent` with `status: 'confirmed'` (clears the cancellation, notifies no one) | golf_events | fails 60629 · lands 60901 · retry 61401 |
+| ACT-P006-DELETE-EVENT* | Event actions › Delete permanently (a cancelled event) › Delete permanently | `remove` (`calendar.deleteEvent`) in `DeleteEvent` | `deleteGolfEventPermanently` (the server allows it only for a cancelled event or one with no attendance rows) | golf_events, golf_event_attendance (cascade) | confirm 61105 · fails 60630 · lands 60901 · retry 61401 |
+| ACT-P006-OPEN-TRIP | View itinerary, on an open event with a linked trip | effect on `LinkedTrip` (extras.tsx), then a link to `/golf/dashboard/travel?trip=<id>` | `getItineraryForEvent` | golf_travel_itineraries | nothing drawn while it reads, with no trip, or on a failed read (reported, `calendar.trip`) |
 | ACT-P006-REPLY | Your reply: Going, Maybe, Can't make it (player) | `pick` › `reply` (`calendar.rsvp`) | `respondToEvent` | golf_event_attendance | invited only 60807 · at once 61301 · fails or locked 60610 · retry 61401 |
 | ACT-P006-LOAD-ATTENDANCE* | Attendance | effect on `Attendance` | `getAttendanceReport` | golf_event_attendance | loading 60205 · fails 60621 |
 | ACT-P006-SAVE-ATTENDANCE* | Mark all present, the marks, Save attendance | `save` (`calendar.attendance`) | `markAttendance` for each changed mark | golf_event_attendance | fails 60611 · partial 61203 · lands 60901 |
@@ -115,7 +119,8 @@ marks an action a player cannot use (60801): the control is not drawn, and the s
 
 | Name | Path | Existing/New/Held | Purpose |
 | --- | --- | --- | --- |
-| createGolfEvent, updateGolfEvent, deleteGolfEvent (a soft cancel), respondToEvent | actions/golf.ts | Existing | events and replies |
+| createGolfEvent, updateGolfEvent (also Restore: status confirmed), deleteGolfEvent (a soft cancel), deleteGolfEventPermanently, respondToEvent | actions/calendar-events.ts | Existing | events and replies |
+| getItineraryForEvent | actions/travel.ts | Existing | the trip linked to an event |
 | addCoachBlockedTime, deleteCoachBlockedTime | actions/golf.ts | Existing | the coach's busy time |
 | createRecurringEvent, editRecurringEvent, deleteRecurringEvent (the last two act only on events the caller created, CONTRACT.md 08) | actions/recurring-events.ts | Existing | series |
 | getAttendanceReport, markAttendance | actions/attendance.ts | Existing | attendance |
@@ -131,12 +136,21 @@ marks an action a player cannot use (60801): the control is not drawn, and the s
 Tables:   golf_events, golf_event_attendance, golf_player_classes, golf_coach_blocked_time, golf_team_settings,
           golf_teams, golf_team_members
 RPCs:     none from this page
-Realtime: none
+Realtime: golf_events, filter team_id (useCalendarLive; the route passes live, tests and the preview don't); a change
+          or a reconnect re-reads the page (800 ms debounce); CHANNEL_ERROR is reported (calendar.live)
 Cache:    none; router.refresh() re-runs the loader
 RLS:      the loader reads through the request's RLS client (no service role); a coach reads every rostered player's classes,
           a player only their own, and busy time is read by coach_id
 Read path:  loadCalendar, on the server, in three rounds: the team (zone, name, roster); events, classes and busy time; replies
 Write path: the server actions above
+```
+
+### DATA-EVENT-TRIP
+
+```text
+Tables:   golf_travel_itineraries (id, event_name, destination, by event_id)
+Read path:  getItineraryForEvent, when an event opens, for every viewer (RLS scopes it to the team)
+Write path: none from this page (Travel owns trips)
 ```
 
 ### DATA-EVENT-FILES
@@ -171,4 +185,7 @@ None. Data is existing and no held plan is listed.
   the loader, not on the screen.
 - The `Calendar` container serves the phone as well: a change to a dialog or a write changes both layouts.
 - `ChCalendarData.today` and `nowHour` are the server's reading of the team's zone; the browser's clock only moves the
-  now line (61501).
+  now line (61501) and decides when a player's reply locks (`ChNow.ms`, against the stored start and the deadline).
+- A timed event over several days is one `ChCalEvent` per day, each with the run in `span` (`start` and `end` hours as
+  well as the dates). Anything that edits, duplicates or moves an event works from the run, never from one day's entry
+  (`runOf` in editor.tsx); `movable` refuses it.

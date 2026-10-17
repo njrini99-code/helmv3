@@ -115,13 +115,20 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   }
   const round = roundRes && !roundRes.error ? roundRes.data : null;
 
-  const e = eventRes.error ? null : ((eventRes.data ?? []).find((row) => !isClassEvent(row)) ?? null);
+  const upcoming = eventRes.error ? [] : (eventRes.data ?? []).filter((row) => !isClassEvent(row));
+  const forPlayer = !!playerId && !coachId;
+  // D2-8 (owner, 2026-10-08), as the player's Calendar has it: a meeting nobody is invited to is the coach's own, so it
+  // is never a player's next event (the card would open a calendar that doesn't show it). A failed invite read never
+  // hides one.
+  const meetingIds = forPlayer ? upcoming.filter((row) => row.event_type === 'meeting').map((row) => row.id) : [];
+  const invited = meetingIds.length ? await loadMeetingInvites(supabase, meetingIds) : null;
+  const e = upcoming.find((row) => !invited || invited.get(row.id) !== 0) ?? null;
   let ready: ChNextEvent['ready'] = null;
   // Only an event that asks for replies has a confirmed count; null (older rows) reads as off.
   if (e && e.requires_rsvp === true) {
     // A player reads the counts, never teammates' rows (migration 20261017102000); until that function exists, and for
     // a coach, the rows are read directly as before.
-    const counts = playerId && !coachId ? await loadAttendanceCounts(supabase, [e.id]) : null;
+    const counts = forPlayer ? await loadAttendanceCounts(supabase, [e.id]) : null;
     if (counts?.kind === 'error') chLogServer('shell', 'nextEventAttendance', counts.error, 'calendar');
     else if (counts?.kind === 'ok') {
       const c = counts.byEvent.get(e.id);
@@ -142,6 +149,28 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     course: courseOf(courseRes),
     roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null } : null,
   };
+}
+
+/**
+ * How many each meeting invites, for a player (D2-8): from the counts function, or, until migration 20261017102000 is
+ * applied, from the invite rows themselves. Null when neither could be read, so no meeting is hidden.
+ */
+async function loadMeetingInvites(supabase: Awaited<ReturnType<typeof createClient>>, ids: string[]): Promise<Map<string, number> | null> {
+  const counts = await loadAttendanceCounts(supabase, ids);
+  if (counts.kind === 'ok') return new Map(ids.map((id) => [id, counts.byEvent.get(id)?.invited ?? 0]));
+  if (counts.kind === 'error') {
+    chLogServer('shell', 'nextEventInvites', counts.error, 'calendar');
+    return null;
+  }
+  // At most five meetings' invitees: well under the row cap.
+  const { data, error } = await supabase.from('golf_event_attendance').select('event_id').in('event_id', ids).limit(1000);
+  if (error) {
+    chLogServer('shell', 'nextEventInvites', error, 'calendar');
+    return null;
+  }
+  const byEvent = new Map(ids.map((id) => [id, 0]));
+  for (const row of data ?? []) byEvent.set(row.event_id, (byEvent.get(row.event_id) ?? 0) + 1);
+  return byEvent;
 }
 
 function dayNumber(d: Date, timezone: string): number {

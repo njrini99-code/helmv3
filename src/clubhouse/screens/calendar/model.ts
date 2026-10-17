@@ -38,6 +38,13 @@ export interface ChCalEvent {
    * an event without it shows no reply controls, counts or "no reply" nudges. Invitees still make up who is on it.
    */
   rsvpRequired: boolean;
+  /** `golf_events.rsvp_deadline`: replies lock after it, as the server enforces (Fairway's editor can set one). */
+  rsvpDeadline?: string | null;
+  /**
+   * A player's data only: the event asks for replies and the coach invited no one, so it is the team's and any player
+   * may reply (as production allows, golf_event_attendance_insert_self). Their reply puts them on it.
+   */
+  openReply?: boolean;
   /** Class blocks: the player whose schedule this is. */
   owner: string | null;
   /** Classes a viewer may only see as Busy carry no title or room. */
@@ -51,8 +58,12 @@ export interface ChCalEvent {
   seriesId: string | null;
   /** The stored start instant (series edits and cancels key on it). */
   startIso: string;
-  /** Multi-day all-day events: the whole span, repeated on each day's entry. */
-  span: { from: string; to: string } | null;
+  /**
+   * Multi-day events: the whole span, repeated on each day's entry. A timed one (a tournament from Friday 7 AM to Sunday
+   * 4:30 PM, an overnight trip) also carries its first day's start and its last day's end, in decimal hours: each day's
+   * entry draws only its part of the run (the start to midnight, the whole day, midnight to the end).
+   */
+  span: { from: string; to: string; start?: number; end?: number } | null;
 }
 
 export interface ChCalOverlap {
@@ -92,12 +103,32 @@ export function daylightOn(date: string, place: LatLng, timeZone: string): ChDay
  * The hour the Week and Day grids open on (P006-B1): now, when today is on show; else the first event still ahead on
  * the days shown; else the first timed event shown; else null (the grid stays at its top).
  */
-export function focusHour(dates: string[], events: Array<{ date: string; allDay?: boolean; start: number | null }>, now: { date: string; hour: number }): number | null {
+export function focusHour(dates: string[], events: Array<{ date: string; allDay?: boolean; start: number | null; span?: ChCalEvent['span'] }>, now: { date: string; hour: number }): number | null {
   // Now only leads inside the day's working hours: at 10 PM or 5 AM it would park the grid on its empty bottom or top.
   if (dates.includes(now.date) && now.hour >= CAL_START && now.hour < CAL_END) return now.hour;
-  const timed = events.filter((e) => !e.allDay && e.start != null && dates.includes(e.date)).sort((a, b) => a.date.localeCompare(b.date) || a.start! - b.start!);
+  // A later day of a timed run starts at midnight only because the run began the day before: it is not a start to open on.
+  const timed = events.filter((e) => !e.allDay && e.start != null && dates.includes(e.date) && !(e.span?.start != null && e.date !== e.span.from)).sort((a, b) => a.date.localeCompare(b.date) || a.start! - b.start!);
   const ahead = timed.find((e) => e.date > now.date || (e.date === now.date && e.start! >= now.hour));
   return (ahead ?? timed[0])?.start ?? null;
+}
+
+/**
+ * Why a player can no longer reply, or null: the server's locks (lib/calendar/rsvp.ts, as Fairway's drawer reads them).
+ * A timed event locks at its stored start, an all-day one 24 hours after its stored UTC midnight, every day of a run
+ * with the run, and any event past its reply deadline. Without the browser's clock (`ms`: the server's first render, a
+ * frozen preview) it reads the team's day and hour instead.
+ */
+export function replyLock(
+  e: Pick<ChCalEvent, 'startIso' | 'allDay' | 'date' | 'start' | 'span' | 'rsvpDeadline'>,
+  now: { date: string; hour: number; ms?: number },
+): 'started' | 'deadline' | null {
+  const lockAt = Date.parse(e.startIso) + (e.allDay ? 86_400_000 : 0);
+  const first = e.span?.from ?? e.date;
+  const started =
+    now.ms != null && Number.isFinite(lockAt) ? lockAt <= now.ms : first < now.date || (first === now.date && !e.allDay && (e.span?.start ?? e.start ?? 0) <= now.hour);
+  if (started) return 'started';
+  const deadline = e.rsvpDeadline ? Date.parse(e.rsvpDeadline) : NaN;
+  return now.ms != null && Number.isFinite(deadline) && deadline < now.ms ? 'deadline' : null;
 }
 
 export const TYPE_LABEL: Record<ChCalType, string> = {
@@ -170,10 +201,24 @@ export function fmtHour(h: number, meridiem = true): string {
   return `${h12}:${String(mm).padStart(2, '0')}${meridiem ? (hh < 12 ? ' AM' : ' PM') : ''}`;
 }
 
-export function rangeLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end'>): string {
+export function rangeLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end'> & { date?: string; span?: ChCalEvent['span'] }): string {
+  // One day of a timed run over several days says which part of it this day holds.
+  const s = e.span;
+  if (!e.allDay && s?.start != null && s.end != null && e.date) {
+    if (e.date === s.from) return `From ${fmtHour(s.start)}`;
+    if (e.date === s.to) return `Until ${fmtHour(s.end)}`;
+    return 'All day';
+  }
   if (e.allDay || e.start == null || e.end == null) return 'All day';
   const sameHalf = e.start < 12 === e.end < 12;
   return `${fmtHour(e.start, !sameHalf)} – ${fmtHour(e.end)}`;
+}
+
+/** A list row's time: the start, or, on a later day of a timed run over several days, "All day" or "Until 4:30 PM". */
+export function startLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end' | 'date' | 'span'>, meridiem = true): string {
+  if (e.allDay || e.start == null) return 'All day';
+  if (e.span?.start != null && e.date !== e.span.from) return rangeLabel(e);
+  return fmtHour(e.start, meridiem);
 }
 
 export function dayLabel(date: string, today: string): string {

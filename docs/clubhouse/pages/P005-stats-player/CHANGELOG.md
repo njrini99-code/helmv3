@@ -1,5 +1,33 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-17 — Figures checked against production on the same rounds; putts with none recorded fixed
+
+The profile's figures were run beside production's on the same round ids: `getDetailedStats` (the Fairway player
+page's calculator), the Fairway Team stats page's row for the player, and the Standing strip
+(`stats-production-parity.test.ts`; fixtures always, every production player's rows in the opt-in read-only pass,
+187 player windows, 2026-10-17).
+
+- **Putts and 3-putts per round leave out a round with no putt recorded** (`stats-player.ts`, `perPutts`, with
+  `cachedPutts` in `stats-common.ts`), for the player and the team column, and the Rounds tab shows no putts figure
+  for it instead of 0. Production writes 0 putts for such a round and its calculator counts only holes with a putt.
+  No production round is like that today, so no number moved.
+- **Matched with no change (0 differences at the shown precision):** fairways, greens, putts, 3-putts, scrambling,
+  sand saves, penalties, par 3/4/5 scoring, birdies, pars and bogeys a round, putts per green, rounds counted, and
+  strokes gained and its legs against the Team stats page's stored values.
+- **Differ on purpose (unchanged):** a round posted as a total only counts in the scoring average, to par and best
+  round (Q-123: 15, 15 and 2 of 187 pairs, 7 players, up to 1.03 strokes); strokes gained waits for three whole
+  rounds (25 pairs where production shows a value).
+- **Production's Standing strip is a different basis, not a window of this page:** it reads every completed round,
+  test rounds included, and the pressure gap and opening hole only the last 90 days; strokes gained averages nine-
+  and eighteen-hole rounds per round; its 175+ yd proximity drops every par-5 approach that misses the green as a
+  lay-up, where production's own leak map (and this page, which uses its aggregator and read) drops only long
+  leaves. Against the profile over the whole career: 20 of 49 strokes gained, 6 of 11 pressure gap, 4 of 33 opening
+  hole and 50 of 57 proximity 175+ pairs differ. The HELD OD-01 chain adds the test-round filter; none of it changes
+  the 90-day window or the lay-up rule.
+- **Production rounds twice:** the calculator rounds rates to 0.1 and the Fairway page then shows a whole percent, so
+  61.46% shows as 62% there and 61% here (fairways 14, greens 5, scrambling 11, sand saves 2 of about 187 pairs).
+  Clubhouse rounds once; left as it is.
+
 ## 2026-10-16 — Game detail: the section bar scrolls with the page; the summary sticks below the top bar
 
 Desktop My stats (`stats.css`). The section bar (`.ch-gd__nav`) is no longer sticky: the owner said a bar riding over

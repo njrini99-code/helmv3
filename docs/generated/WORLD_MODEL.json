@@ -12424,6 +12424,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/calendar/__tests__/zoned-wall-clock-dst.test.ts",
+          "anchor": "src/lib/golf/timezone"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/calendar/availability.ts",
           "anchor": "src/lib/golf/semester"
         },

@@ -78,7 +78,8 @@ export function isFirstRun(data: ChCoachHome): boolean {
  * head as the loaded page on desktop (states audit, 2026-10-08) and the Ledger's page intro on the phone (`--first`).
  */
 function HomeFirstRun({ data }: { data: ChCoachHome }) {
-  const roster = rebuiltHref('/golf/dashboard/roster');
+  // Opens Roster's invite sheet, not only the page (Roster reads `?invite=1` once).
+  const roster = rebuiltHref('/golf/dashboard/roster?invite=1');
   return (
     <main className="ch-h-main ch-h-main--first" data-canopy="">
       <header className="ch-h-head" data-canopy-head="">

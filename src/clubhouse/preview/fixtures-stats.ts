@@ -80,7 +80,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     { key: 'gir', series: [56, 57, 59, 60, 60, 62, 63], label: 'Greens in regulation', value: 61, unit: '%', digits: 0, delta: 3, lowerIsBetter: false, context: 'Tour averages 66%', gauge: { kind: 'rate', ref: 66 } },
     { key: 'putts', series: [31.2, 30.9, 30.8, 30.5, 30.4, 30.1, 30.4], label: 'Putts per round', value: 30.4, unit: '', digits: 1, delta: 0.3, lowerIsBetter: true, context: 'vs. previous 10', gauge: { kind: 'putts' } },
     { key: 'scramble', series: [44, 46, 49, 50, 52, 54, 53], label: 'Scrambling', value: 52, unit: '%', digits: 0, delta: 4, lowerIsBetter: false, context: 'vs. previous 10', gauge: { kind: 'rate' } },
-    { key: 'birdies', series: [2.1, 2.3, 2.3, 2.5, 2.6, 2.8, 2.7], label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, lowerIsBetter: false, context: 'Birdies and eagles', gauge: { kind: 'holes' } },
+    { key: 'birdies', series: [2.1, 2.3, 2.3, 2.5, 2.6, 2.8, 2.7], label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, lowerIsBetter: false, context: 'Eagles not counted', gauge: { kind: 'holes' } },
   ],
   weeks: WEEKS,
   days: ['Aug 30', 'Sep 3', 'Sep 9', 'Sep 14', 'Sep 20', 'Sep 25', 'Sep 29', 'Oct 4', 'Oct 8', 'Oct 12'].map((label, i) => ({ label, score: [74.8, 74.6, 74.2, 74.4, 73.9, 73.8, 73.1, 73.5, 73.6, 73.4][i]! })),

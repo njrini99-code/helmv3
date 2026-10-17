@@ -1,5 +1,136 @@
 # P011 — Rounds: changelog
 
+## 2026-10-17 — Shot entry checked against production: a shot changes mid-hole, and distances are numbers
+
+Parity pass on the in-round hole and shot entry (`track/`: ShotEntry, the penalty and change sheets, the shot log,
+the hole review) against Fairway's shot screen (`FairwayShotTracking` and its entry, pills, penalty and edit modals),
+the shared `useShotTracking` engine, and what reaches `golf_shots`, `golf_holes`, `putt_details` and
+`approach_miss_details`.
+
+```text
+Design package: none (no board); the open shot log's rows take the hole review's row grammar and its pencil
+PR/commit:      agent/course-picker-premium-pr (see the PR)
+Contract IDs:   111105 (CH-11505, a second way in); 110504 (CH-11104, now blocks); 110505 (CH-11105, a typo refused)
+Actions:        none new (handleEditShot, handleSaveEditedShot, handleDeleteShot as before)
+Data impact:    none to the schema; a meters player's comma decimal is no longer stored short
+Held items:     none
+```
+
+### Changed
+
+- **A recorded shot opens to change or delete before the hole is holed** (CH-11505, `parts.tsx` `ShotLog`,
+  `RoundTracking.tsx`). Fairway's shot pills open any recorded shot mid-hole; Clubhouse only opened one from the hole
+  review after hole-out, so a wrong tee shot on shot 3 could only be undone back to. The open shot log's rows are now
+  buttons into the same change sheet (held while an undo, an edit or the hole's save runs).
+- **The distance boxes hand the engine a number** (`labels.ts` `cleanDistance`, `isDistanceText`; `ShotEntry.tsx`,
+  `sheets.tsx`). They are text fields and the engine reads them with `parseFloat`, so "1,5" from a comma-locale
+  decimal pad (the meters pad) was recorded as 1 (3 ft instead of 5 ft), and "150y" as 150, with the error line
+  showing but Next shot on. A comma is now the decimal point, and anything else that isn't a plain number blocks Next
+  shot ("Enter a valid distance", CH-11104) or the change sheet's Save (CH-11105), as Fairway's number inputs do.
+
+Unchanged after the check (every renderer write is the shared engine's): results offered per shot, the locked unit
+(feet on the green, yards elsewhere), meters converted to stored yards and feet, driver only off a par 4 or 5 tee, a par
+3's tee shot stored as an approach, tee miss left or right, the approach miss grid and its derived lie, putt break,
+slope and paired miss tags (stored in tap order), penalties and which stroke went for out of bounds and lost ball,
+tap in, undo, delete and renumbering, a finished hole changed after going back, and the 15-stroke limit. Neither screen
+has a score-only mode or a GPS distance. Left as it is: Fairway's change modal also offers short and long for a tee
+miss (0 such rows in production in 120 days; its live entry offers only left and right), and its quick distance picks
+in the change modal (input help only).
+
+### Verification
+
+`src/hooks/golf/__tests__/shot-entry-parity.test.tsx` (new) plays eleven holes through both screens' own controls (par 3
+two putts, par 4 bunker up and down, par 5 out of bounds and water, a lost ball from here, holed from off the green,
+three putts, a 9-hole round's last hole with a tap in, a meters player, a mid-hole change, a mid-hole delete and undo,
+a finished hole changed) and requires every recorded row, hole checkpoint, stats update and autosave to be equal, and
+every recorded row's stored columns inside the live CHECK constraints; a twelfth, Clubhouse only, types "1,5" m; and
+`round-tracking-shot-parity.test.tsx` (new) covers the two fixes. Read-only production sample (rounds of the last 120
+days): 480 rounds and 8,379 holes with shots, 0 holes whose score, putts or penalties differ from their shots, no lie,
+result, unit, break, slope, penalty, miss direction, putt tag or approach lie the Clubhouse screens can't write
+(`deep_rough` and `recovery` are allowed by the constraint and in 0 rows), and the rows only the change sheet makes, on
+both screens: 24 off-target tee shots and 15 approach misses with no miss direction, 4 fairway tee shots with one, and 5
+putts measured in yards.
+Not checked in a browser or on a device; no screenshots.
+
+## 2026-10-17 — Round lifecycle checked against production: the start's city and state, and the recap
+
+Parity pass on the round lifecycle (start, autosave, checkpoints, offline replay, resume, discard, submit, recap,
+review, library), against Fairway's NewRound, Continue and round pages and the shared engine
+(`src/lib/golf/round-session/`). Both UIs drive the same engine, so a payload can differ only in what each setup feeds
+it; `round-lifecycle-parity.test.tsx` drives both setups through the real engine to the same round and compares every
+server write field by field (112402).
+
+```text
+Design package: none (layout unchanged; the existing recap section now appears on a round that had no recap stored)
+PR/commit:      agent/course-picker-premium-pr (see the PR)
+Contract IDs:   110116 (new), 111504 (new), 112402 (new)
+Actions:        none new; the review calls the existing generateRoundRecap, and setup the existing getPlayerSavedCourses,
+                touchSavedCourse and contributeCourseFromRound, as Fairway does
+Data impact:    golf_rounds.course_city / course_state now saved as the library has them; ai_recap written on first review
+Held items:     none (20261001000000, the submit's optimistic lock, stays held; the app already sends the key)
+```
+
+### Fixed
+
+- **A course's city and state reach the round as the library has them** (`setup-reads.ts` `toStartForm`, `shape.ts`,
+  `RoundSetup.tsx`, `AddCourseSheet.tsx`). The start split the printed place ("Chapel Hill, NC") back into a city and
+  a state, so a course with a state and no city was saved with the state as its city (`course_city = 'NC'`). The pick
+  now carries the course's own `city` and `state`; Fairway's tee pick passes them straight through the same way.
+- **A completed round with no recap gets one when its review opens** (111504, `use-round-recap.ts`, `RoundReview.tsx`,
+  `round-review-shape.ts` `recapPending`). Fairway's round page asks `generateRoundRecap` once after mount when a
+  completed round has none stored (`useDeferredRoundRecap`), and that is the only writer of `golf_rounds.ai_recap`;
+  Clubhouse only read it, so a round posted and reviewed in Clubhouse never got a recap. The recap still passes the
+  figure check before it is drawn (D13's "no new AI call" was about that check, not about writing the recap). A
+  failure is quiet, as on Fairway, and the next visit asks again. This spends one LLM call per round on its first
+  review, as Fairway does (owner: keep, as production, unless told otherwise). Before and after captures not taken.
+
+### Added
+
+- **"Your courses" in the course picker** (110116, `setup-reads.ts` `listCoursesRead`, `listTeesRead`, `teeHolesRead`,
+  `afterSavedCourseStart`; `shape.ts` group `saved`; `RoundSetup.tsx` `pickTee`). Fairway's setup offers the player's
+  own saved courses (`golf_player_courses`, `getPlayerSavedCourses`); Clubhouse offered only library courses, and 52 of
+  the 54 saved rows have no library course behind them (26 with no library course of the same name either), so those
+  players had to type a course they had saved again. Each saved course is listed after Recently played with its one
+  tee set (White when none was named, as on Fairway) and the card it was saved with, and is left out when the library
+  already lists it (its link, or the same name). Starting from one sends what Fairway's saved-course start sends (the
+  parity test drives both). A saved course with no library course behind it is offered to the library with Fairway's
+  input and the round is linked to the course and tee that finds or creates, so its later checkpoints and its submit
+  carry them, as Fairway's do (the engine's new opt-in `libraryOffer`, below); the course is touched, best-effort. One
+  difference kept: the touch happens when a round starts, not when the course is picked, so a course looked at and
+  left is not moved. Fairway lists saved courses beside the library without removing names the library has; Clubhouse
+  lists each course once. Before and after captures not taken (the preview has no saved courses).
+- **Yardages follow Fairway's rule for the course** (`shape.ts` `yardageRule`, `setupBlocker`; `toStartForm` `yardage`).
+  A library tee's card starts on its pars, a blank yardage at 0 yards (Fairway's preloaded start gates a library tee on
+  its pars); a saved course needs a yardage on at least one hole ("Add a yardage for at least one hole"), the rest at
+  0; a course typed in by hand still needs every yardage, as Fairway's hole editor does. Before, every hole of every
+  card needed a yardage. A yardage over 999 still stops Start.
+
+### Changed in the shared engine (opt-in; Fairway unchanged)
+
+- `src/lib/golf/round-session/start-form.ts`: `NewRoundStartForm` takes two optional fields, `yardage`
+  ('every' | 'any' | 'none', default 'every') and `libraryOffer` (holes, under the card's numbers);
+  `validateStartHoles(holes, yardage = 'every')`.
+- `src/lib/golf/round-session/use-new-round-session.ts`: `start(form)` passes `form.yardage` to `validateStartHoles`,
+  and `handleHolesSave` runs the legacy saved-course catalog offer (`contributeCourseFromRound`, then the course and tee
+  refs) when the form carries `libraryOffer`, there is no "save course" opt-in and no library link yet. Only
+  Clubhouse's `start(form)` passes either field; Fairway's screens never call `start(form)`, so their path, payloads and
+  every round-session and Fairway round test are unchanged (32 files, 242 tests).
+
+### Checked, unchanged (same as production)
+
+- The start, each hole's checkpoint, autosave (every 15 s, in both) and the submit: the same engine handlers and the
+  same payloads, with `expectedUpdatedAt` on the submit of an existing round (112402).
+- The back nine: Fairway's quick start sends its hole configs under the card's numbers (10 to 18), Clubhouse's under 1
+  to 9; the holes themselves, and every write after the start, are numbered by position in both, and no 9-hole round in
+  production has a hole numbered past 9 (read-only check, 2026-10-17).
+- Offline replay: the Clubhouse shell starts the sync engine (`shell/OfflineSync.tsx`) as Fairway's `OfflineProvider`
+  does, and the offline banner shows what is waiting. Discard (library and round) marks the round discarded and drops
+  its queued copy, as the engines do.
+- After a submit, the review opens (`/rounds/[id]`, as Fairway's overlay pushes); Home, Rounds, Stats, Qualifiers and
+  the stats cache are revalidated by the shared server action. A recap is now written on that first review.
+- Review totals: of 427 completed rounds with holes in the last 60 days, none has a stored total, nine, to par or
+  putts that differs from its holes, so the review's nines (from the holes) and its totals (from the round) agree.
+
 ## 2026-10-17 — Change a submitted round's type from its review; qualifier rounds checked against production
 
 Parity pass on how a round becomes a qualifier round, against Fairway's new-round setup, its continue editor and its

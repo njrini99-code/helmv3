@@ -201,9 +201,12 @@ RPCs:     golf_my_join_requests and golf_team_by_join_code, inside getPlayerJoin
 Storage:  avatars (public URL; the path starts with the user's folder)
 Realtime: none
 Cache:    none on the server; the page keeps its own copy of the data (81204) and a fresh read replaces it
-RLS:      own rows for profile and golf details; any staff coach for the team and its settings; any coach of the
-          organization for the organization; a player can delete their own team membership; the head coach only for
-          the team CoachHelm row (the action checks). Read from the repo's migrations, not checked against the live database.
+RLS:      own rows for profile and golf details; any staff coach for the team settings (golf_team_settings, via
+          golf_team_coach_staff); any staff coach of the team whose own organization is the team's for the team row
+          (golf_teams_update_coach); any coach of the organization for the organization; a player can delete their own
+          team membership; the head coach only for the team CoachHelm row (is_golf_team_head_coach; the action checks
+          too); own rows for golf_coachhelm_settings and golf_coach_philosophy. Checked against the live policies
+          (pg_policies, read-only) on 2026-10-17.
 Read path:  the server loader (RLS-scoped client, no service role)
 Write path: the writes above; forms save on Save changes, switches save on change
 ```
@@ -219,5 +222,34 @@ None. `status.data` is existing and the manifest lists no held plan.
   changes a value a card shows needs a patch in `keepSaved`, or the section shows the old value on return (81204).
 - `golf_coach_philosophy` has one row per coach (unique on coach_id): the first CoachHelm save creates it and its id
   must be kept (81204), or the next save fails.
-- The loader reads `golf_coach_philosophy` twice and `golf_teams` twice; the reads run in parallel and are not merged.
+- The loader reads `golf_coach_philosophy` and `golf_teams` once each (merged 2026-10-17); the digest comes from the
+  philosophy row and the team name from the team row each role reads.
 - Unsaved edits are guarded by `DirtyContext`: a card that holds edits must call `useReportDirty`.
+
+## Production parity (2026-10-17)
+
+Every control above was checked against what production's Settings sends (`FairwaySettingsGeneral`,
+`FairwaySettingsCoachingIntelligence`, `JoinTeamSection`, `useCoachPhilosophy`, `useCoachHelmSettings`) and against
+the server's role check (the action's guard and the live RLS policies). Same tables, columns, filters and actions
+throughout: profile by `user_id`, golf details by player id, team settings upserted on `team_id`, organization then
+team, the join code through `regenerateJoinCode` (cookie-aware active team, as Fairway), join requests through
+`createTeamJoinRequest` with the code trimmed and upper-cased, leave as the player's own membership delete, the digest
+through `saveCoachingPhilosophy`, delivery keys from `DELIVERY_NOTIFICATION_GROUPS` without `pipeline` and
+`profile_views` (as Fairway), the player matrix through `setCategoryChannel` / `setAllChannels` / `setQuietMode`, the
+team CoachHelm switch only for the head coach (an assistant sees it off-limits, as Fairway's P084), the staff invite
+hidden from a known assistant (`createStaffInvite` is head-coach only). Scoring choices and time zones are Fairway's
+lists; every stored team value is one of them (production, 5 rows). The legacy `/settings/notifications` and
+`/settings/coaching-intelligence` links open Notifications and (coach) CoachHelm.
+
+Two differences, fixed:
+
+- **Reminders off with the times out of order.** `remindersProblem` passes a schedule that is switched off, but the
+  database's `golf_team_settings_event_reminder_ordering` CHECK applies either way, and Fairway checks the order
+  unconditionally. On desktop, times left out of order and then switched off sent and came back as a database error.
+  The card now checks the order whatever the switch says and keeps the two times on screen while they are out of order
+  (`Team.tsx` `RemindersCard`). The phone could not reach this: its switch saves the last saved times.
+- **Ask to join, then the fresh read.** `useMembership` held the requests it mounted with, so the refresh after a
+  request landed brought the waiting request to the page's data but the card kept the form, until the section was
+  reopened (Fairway re-reads its requests at once). It now follows a new read (`hooks.ts`), on desktop and the phone.
+
+Tests: `src/clubhouse/__tests__/wiring-p008-settings.test.tsx` (each fails without its fix).

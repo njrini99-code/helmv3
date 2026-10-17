@@ -99,6 +99,12 @@ Status: DEFINED
 
 Checked before anything is sent, with the message under the field and the warning haptic (focus does not move to the first invalid field: the checklist's rule is not met): a headline of at least three characters and at least one player when the audience is chosen (CH-10101, CH-10102); a trip's name, place, leaving day and a return that is not before it, on Plan a trip and on Edit trip (CH-10103 to CH-10106); a task's name and at least one player (CH-10107, CH-10108). The drop zone has no client-side check on a file: one the server refuses says so by name (CH-10008).
 
+Uploads (a coach's Documents): the picker offers the `documents` bucket's types, the same list as Fairway's Documents
+(`HUB_UPLOAD_ACCEPT`); a dropped or picked file of another type, or over the bucket's 25 MB, is refused by name before
+anything is sent ("<name> can’t be shared" with the types it takes, "<name> is too large" with "Files can be up to 25
+MB."), with the error haptic, and the other files go on. No Bridge ID is minted for the refusal yet; it carries
+CH-10008's code.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 100501 | CH-10101 | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | Posting or saving an edit with a headline under three characters |
@@ -259,6 +265,15 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 Status: DEFINED
 
 Nothing refreshes in the background: the page is as fresh as its last read. After a coach's change lands, the page reads again (101501); every date and time is resolved on the server in the team's zone.
+
+Team Hub's badge (a player's posts, open tasks and new trips; the shell's polled count) is read again at once when a
+player's Got it, task tick or untick lands, as production's hub does; a refused write leaves it alone. A player's Travel
+tab, and no other tab or opening of the page, marks travel seen once a visit (`markTravelSeen`, what production's Travel page does on a visit, now that
+`/golf/dashboard/travel` opens that tab), and the badge is read again. Opening an update marks that notification read in
+its own feed (`markNotificationRead`), as the bell does, and the row stops counting as new. A post's attachment count
+lists its files on request (`getAnnouncementDetail`, read the first time it opens; a failed read says so with Try
+again) and each opens as a Documents file does (100604 on a refusal). Bridge IDs for these are not minted yet (no new
+rows in `bridge-contracts.json`).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

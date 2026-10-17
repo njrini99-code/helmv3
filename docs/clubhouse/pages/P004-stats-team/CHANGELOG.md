@@ -1,5 +1,24 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-17 — Figures checked against production on the same rounds; birdies and putts fixed
+
+Every Team stats figure was run beside the Fairway Team stats page over the same rounds: its own code (the page
+rendered as a server component, its board's pooling), on fixtures (`stats-production-parity.test.ts`) and on every
+production team's rows (9 teams with active players, read-only dump, 2026-10-17; the opt-in pass in the same file).
+
+- **Birdies per round no longer counts eagles** (`stats-team.ts`, `birdiesOf`). Production counts holes one under
+  par; Clubhouse added eagles, so 11 of 20 team-window pairs showed up to 0.13 a round more. Now 0 of 20 differ. The
+  card's line reads "Eagles not counted"; Season bests' Most birdies counts the same holes.
+- **A round with no putt recorded has no putts figure** (`stats-common.ts`, `cachedPutts`). Production's round
+  totals write 0 putts for such a round and the Fairway pages leave it out; Clubhouse averaged it in as a 0-putt
+  round. No production round is like that today (0 of 769), so no number moved; the fixture test fails without it.
+- **Matched with no change:** greens, scrambling, putts, rounds with their holes (0 differences in 20, 19, 20 and 27
+  pairs), and each player's scoring average and strokes gained once the rules below are set aside.
+- **Differ on purpose (unchanged):** a round posted as a total only counts in scoring (Q-123: 3 team and 21 player
+  pairs, one team, 7 players); strokes gained needs three whole rounds (24 player pairs where production shows a
+  value from 1 or 2 rounds); with both lengths in, a nine-hole round counts half (5 team and 18 player pairs, up to
+  0.39 and 1.60 strokes, all in the Both-lengths pass).
+
 ## 2026-10-17 — A player on Team stats goes to their own Stats
 
 Readiness audit (2026-10-17): Team stats is coach-only, and whoever the

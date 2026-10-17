@@ -349,13 +349,13 @@ describe('CH-13951 the action card', () => {
 });
 
 describe('the receipt', () => {
-  it('CH-13953 a created action says what was created, links only to a screen that is rebuilt, and Confirmed is stated once', () => {
+  it('CH-13953 a created action says what was created, links where its screen opens in Clubhouse, and Confirmed is stated once', () => {
     show({ messages: ASK_MSGS_RECEIPT });
     expect(code('CH-13953')).not.toBeNull();
     expect(screen.getByText('Created a focus area for Jonah Okafor on downhill putts.')).toBeTruthy();
-    // Focus areas live in Intelligence, which is not rebuilt: the chip is text, not a dead link.
-    expect(screen.queryByRole('link', { name: /1 focus area/ })).toBeNull();
-    expect(screen.getByText('1 focus area')).toBeTruthy();
+    // The engine links focus areas to Fairway's Intelligence Players view; in Clubhouse that address opens the CoachHelm board
+    // (its alias redirect), so the chip goes there, as production's chip links (P013 wiring pass, 2026-10-17).
+    expect(screen.getByRole('link', { name: /1 focus area/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm');
     expect(screen.getByText('Confirmed.')).toBeTruthy();
   });
   it('a failed action that is not safe to ask again offers no Ask again', () => {

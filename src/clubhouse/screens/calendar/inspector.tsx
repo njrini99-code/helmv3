@@ -16,7 +16,9 @@ import {
   MapPin,
   Pencil,
   Repeat,
+  RotateCcw,
   Text,
+  Trash2,
   TriangleAlert,
   UserRound,
   Users,
@@ -49,6 +51,7 @@ import {
   isMajor,
   openTimes,
   rangeLabel,
+  replyLock,
   rsvpCounts,
   type ChCalEvent,
   type ChCalOverlap,
@@ -57,7 +60,7 @@ import {
   type ChRsvp,
 } from './model';
 import type { ChNow } from './views';
-import { BusyDetail, EventFiles } from './extras';
+import { BusyDetail, EventFiles, LinkedTrip } from './extras';
 import { courseParts } from './class-group';
 
 export type ChInsp =
@@ -85,6 +88,9 @@ export interface InspCtx {
   go: (next: ChInsp) => void;
   onEdit: (e: ChCalEvent, proposal?: [number, number]) => void;
   onCancel: (e: ChCalEvent) => void;
+  /** A cancelled event, coach: Restore event (back to confirmed) and Delete permanently, as Fairway's event menu offers. */
+  onRestore?: (e: ChCalEvent) => void;
+  onDelete?: (e: ChCalEvent) => void;
   /** Duplicate: New event seeded from this one (coach). Absent where the editor isn't offered. */
   onDuplicate?: (e: ChCalEvent) => void;
   /** Compare schedules (a class, coach): New event on that day with the class's player invited, so Find a time shows them side by side. */
@@ -143,8 +149,10 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
     .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
     // Only events that ask for replies have replies waiting (owner, 2026-10-08).
     .filter((e) => e.rsvpRequired)
-    .map((e) => ({ e, pending: e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') }))
-    .filter((r) => (role === 'coach' ? r.pending.length > 0 : ctx.viewerPlayerId != null && r.pending.includes(ctx.viewerPlayerId)))
+    // An event open to the team (the coach invited no one) waits on a player who hasn't replied yet, as one they are invited to does.
+    .map((e) => ({ e, pending: [...e.people, ...(role === 'player' && e.openReply && ctx.viewerPlayerId && !e.people.includes(ctx.viewerPlayerId) ? [ctx.viewerPlayerId] : [])].filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') }))
+    // A player is asked only for a reply the server would still take (`replyLock`, as on the event itself).
+    .filter((r) => (role === 'coach' ? r.pending.length > 0 : ctx.viewerPlayerId != null && r.pending.includes(ctx.viewerPlayerId) && !replyLock(r.e, now)))
     .sort((a, b) => (a.e.date + String(a.e.start ?? 0).padStart(5, '0')).localeCompare(b.e.date + String(b.e.start ?? 0).padStart(5, '0')));
   const weekOverlaps = overlaps.filter((o) => {
     const e = find(events, o.eventId);
@@ -338,16 +346,18 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
     if (v === 'pending' || v === value) return;
     void reply.run(v === 'accepted' ? 'accepted' : v === 'maybe' ? 'tentative' : 'declined');
   };
-  const started = e.date < now.date || (e.date === now.date && (e.allDay || (e.start ?? 0) <= now.hour));
+  // Locked when the server locks it (`replyLock`): at the start, a day after an all-day event's, or past the deadline.
+  const lock = replyLock(e, now);
+  const closed = lock === 'deadline';
   if (e.cancelled) return null;
-  if (started) {
+  if (lock) {
     return (
       <div className="ch-in__sec">
         <div className="ch-in__sechead">
           <b>Your reply</b>
           <span>{current === 'pending' ? 'No reply sent' : RSVP_LABEL[current][0]}</span>
         </div>
-        <p className="ch-in__quiet">Replies close once an event starts.</p>
+        <p className="ch-in__quiet">{closed ? 'Replies closed at the deadline the coach set.' : 'Replies close once an event starts.'}</p>
       </div>
     );
   }
@@ -355,7 +365,7 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
     <div className="ch-in__sec">
       <div className="ch-in__sechead">
         <b>Your reply</b>
-        <span>{current === 'pending' ? 'Coach is waiting on you' : 'You can change it'}</span>
+        <span>{current === 'pending' ? (e.openReply && !e.people.includes(playerId) ? 'Open to the whole team' : 'Coach is waiting on you') : 'You can change it'}</span>
       </div>
       <Segmented<ChRsvp>
         label="Your reply"
@@ -416,6 +426,10 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
             ...(coach && e.canEdit && !e.cancelled
               ? ([{ kind: 'separator' }, { label: 'Cancel event', icon: CircleX, danger: true, onSelect: () => ctx.onCancel(e) }] as const)
               : []),
+            ...(coach && e.canEdit && e.cancelled && ctx.onRestore ? [{ label: 'Restore event', icon: RotateCcw, onSelect: () => ctx.onRestore!(e) }] : []),
+            ...(coach && e.canEdit && e.cancelled && ctx.onDelete
+              ? ([{ kind: 'separator' }, { label: 'Delete permanently', icon: Trash2, danger: true, onSelect: () => ctx.onDelete!(e) }] as const)
+              : []),
           ]}
           trigger={(p) => (
             <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="More actions" {...p}>
@@ -432,10 +446,12 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         <Fact icon={Clock}>
           {e.span ? `${dowOf(e.span.from)} ${dayNum(e.span.from)} – ${dowOf(e.span.to)} ${dayNum(e.span.to)}` : dayLabel(e.date, ctx.now.date)}
           <br />
-          <span className="ch-num">{rangeLabel(e)}</span>
+          {/* A timed run over several days: when it starts on its first day and ends on its last, not this day's part of it. */}
+          <span className="ch-num">{!e.allDay && e.span?.start != null && e.span.end != null ? `Starts ${fmtHour(e.span.start)} · ends ${fmtHour(e.span.end)}` : rangeLabel(e)}</span>
           {!e.allDay && ` · ${ctx.zoneLabel}`}
         </Fact>
         {e.location && <Fact icon={MapPin}>{e.location}</Fact>}
+        <LinkedTrip eventId={e.id} preview={ctx.preview} />
         {e.recurring && <Fact icon={Repeat}>{e.recurring}</Fact>}
         {e.notes && <Fact icon={Text}>{e.notes}</Fact>}
       </div>
@@ -452,7 +468,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         </Warn>
       )}
       {/* Owner, 2026-10-08: a player answers only an event that asks for replies; any other shows no reply control. */}
-      {!coach && e.rsvpRequired && ctx.viewerPlayerId && e.people.includes(ctx.viewerPlayerId) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} now={ctx.now} onDone={ctx.refresh} />}
+      {!coach && e.rsvpRequired && ctx.viewerPlayerId && (e.people.includes(ctx.viewerPlayerId) || e.openReply) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} now={ctx.now} onDone={ctx.refresh} />}
       {coach && e.people.length > 0 && (
         <div className="ch-in__sec">
           <div className="ch-in__sechead">

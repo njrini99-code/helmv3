@@ -913,7 +913,9 @@ describe('Classes live writes', () => {
     expect(screenFile({ name: 'a.pdf', type: 'application/pdf', size: 1000 })).toEqual({ ok: true, kind: 'pdf' });
     expect(screenFile({ name: 'a.txt', type: 'text/plain', size: 1000 })).toEqual({ ok: true, kind: 'text' });
     expect(screenFile({ name: 'a.docx', type: 'application/msword', size: 1000 })).toEqual({ ok: false, kind: 'unsupported' });
-    expect(screenFile({ name: 'a.png', type: 'image/png', size: 13 * 1024 * 1024 })).toEqual({ ok: false, kind: 'tooLarge' });
+    // A photo is downscaled before it is sent, so its size on disk is not refused (the current importer takes it); a PDF or TXT is.
+    expect(screenFile({ name: 'a.png', type: 'image/png', size: 13 * 1024 * 1024 })).toEqual({ ok: true, kind: 'image' });
+    expect(screenFile({ name: 'a.pdf', type: 'application/pdf', size: 13 * 1024 * 1024 })).toEqual({ ok: false, kind: 'tooLarge' });
     expect(classifyReadError("This doesn't look like a class schedule (it reads as: receipt).")).toBe('notSchedule');
     expect(classifyReadError('That image is too large to process. Please upload an image under 12MB.')).toBe('tooLarge');
     expect(classifyReadError('Unsupported image type. Please upload a PNG, JPG, or WebP screenshot.')).toBe('unsupported');
@@ -2012,7 +2014,7 @@ describe('Classes, import', () => {
     const user = userEvent.setup();
     const w = show();
     await openImport(user);
-    chooseFile('big.png', 'image/png', 13 * 1024 * 1024);
+    chooseFile('big.pdf', 'application/pdf', 13 * 1024 * 1024);
     await expectCode('CH-12111', /That file is too large.*Use a file under 12 MB\. A screenshot of the schedule page is usually under 2 MB\./);
     expect(code('CH-12111')!.getAttribute('role')).toBe('alert');
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -2543,8 +2545,23 @@ describe('Classes reader', () => {
     expect(await readScheduleLive({ kind: 'file', file: txt })).toMatchObject({ ok: true });
     const bad = new File(['x'], 'week.docx', { type: 'application/msword' });
     expect(await readScheduleLive({ kind: 'file', file: bad })).toMatchObject({ ok: false, kind: 'unsupported' });
-    const big = new File(['x'], 'week.png', { type: 'image/png' });
+    const big = new File(['x'], 'week.pdf', { type: 'application/pdf' });
     Object.defineProperty(big, 'size', { value: 13 * 1024 * 1024 });
     expect(await readScheduleLive({ kind: 'file', file: big })).toMatchObject({ ok: false, kind: 'tooLarge' });
+  });
+
+  it('a large photo is not refused for its size on disk: what is sent is measured, against the vision action’s own ceiling', async () => {
+    // jsdom has no image decoder, so each photo is sent as it is: the path a browser takes for a format it cannot open.
+    actions.extract.mockReset();
+    actions.extract.mockResolvedValue({ success: true, classes: [{ id: 'r1', course_code: 'STAT 201', course_name: 'Statistics', instructor: '', days: ['M'], start_time: '09:00', end_time: '09:50', location: '', building: '', room: '', credits: 3, semester: 'Fall 2026' }], warnings: [] });
+    const photo = new File(['x'], 'IMG_2041.png', { type: 'image/png' });
+    Object.defineProperty(photo, 'size', { value: 13 * 1024 * 1024 });
+    expect(await readScheduleLive({ kind: 'file', file: photo })).toMatchObject({ ok: true });
+    expect(actions.extract).toHaveBeenCalledTimes(1);
+    // One that is still past the ceiling once it is ready to send is refused, and nothing is sent.
+    actions.extract.mockClear();
+    const huge = new File([new Uint8Array(12.5 * 1024 * 1024)], 'IMG_2042.png', { type: 'image/png' });
+    expect(await readScheduleLive({ kind: 'file', file: huge })).toMatchObject({ ok: false, kind: 'tooLarge' });
+    expect(actions.extract).not.toHaveBeenCalled();
   });
 });

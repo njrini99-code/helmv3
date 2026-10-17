@@ -31,6 +31,7 @@ import { useChPhone } from '../lib/use-phone';
 import { useSectionSwitch } from './section-switch';
 import { BellStacks, CH_NOTIFICATION_KIND } from './BellStacks';
 import { ago, markLocallyRead, notificationKey } from './notification-stacks';
+import { armRelink } from './relink';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
 
@@ -371,8 +372,12 @@ export function Bell() {
       void api.markRead(item).catch((err: unknown) => chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' }));
     }
     close(false);
-    // Stored links are only followed inside GolfHelm: a notification can never send someone off-site.
-    if (isSafeInternalPath(item.action_url)) router.push(item.action_url);
+    // Stored links are only followed inside GolfHelm: a notification can never send someone off-site. One to the screen
+    // already open, naming another item, mounts that screen again so the item opens (relink.ts).
+    if (isSafeInternalPath(item.action_url)) {
+      armRelink(item.action_url);
+      router.push(item.action_url);
+    }
   };
 
   const unread = api.unread;

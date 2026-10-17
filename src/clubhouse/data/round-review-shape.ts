@@ -86,6 +86,11 @@ export interface ChRoundReview {
   tour: ChSgTour;
   /** The AI recap stored on the round; null when none was written. */
   recap: string | null;
+  /**
+   * A completed round with no stored recap: the review asks for one once it opens (`useRoundRecap`), as the Fairway
+   * round page does (`recapPending`). Absent in a fixture: nothing is asked for.
+   */
+  recapPending?: boolean;
   /** What the player wrote about the round when posting it. */
   notes: string | null;
   holes: ChReviewHole[];
@@ -243,6 +248,8 @@ export type ChReviewRoundRow = {
   team_id?: string | null;
   qualifier_id?: string | null;
   qualifier_round_number?: number | null;
+  /** golf_rounds.status; absent in older fixtures. Only a completed round asks for its recap. */
+  status?: string | null;
 };
 
 /** The round's strokes gained; null when none of the five values is there. */
@@ -294,6 +301,7 @@ export function toReview(
     strokesGained: sgOf(r),
     tour: input.tour ?? null,
     recap: r.ai_recap?.trim() || null,
+    ...(r.status === 'completed' && !r.ai_recap?.trim() ? { recapPending: true } : {}),
     notes: r.notes?.trim() || null,
     holes: input.holes,
     holesError: input.holesError,

@@ -94,6 +94,8 @@ export function AddCourseSheet({
         courseId: null,
         courseName: f.name.trim(),
         place,
+        city: f.city.trim() || null,
+        state: f.state.trim().toUpperCase() || null,
         teeId: null,
         teeName: f.teeName.trim(),
         teeColor: f.color,

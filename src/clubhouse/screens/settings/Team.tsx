@@ -218,7 +218,9 @@ function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: 
   const f = useDraft(reminders);
   useReportDirty('reminders', f.dirty);
   const save = useSaveAction('settings.saveReminders', writes.saveReminders, SAVE_COPY.reminders, (_r, saved) => f.commit(saved));
-  const invalid = remindersProblem(f.draft);
+  // The database checks the order whether or not reminders are on (golf_team_settings_event_reminder_ordering), as
+  // Fairway's panel does: times left out of order and then switched off would otherwise send and fail.
+  const invalid = remindersProblem({ ...f.draft, enabled: true });
   return (
     <Card
       id="set-reminders"
@@ -238,7 +240,8 @@ function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: 
       <Row label="Send reminders">
         <SettingSwitch label="Send reminders" hideLabel checked={f.draft.enabled} onChange={(v) => f.setDraft((d) => ({ ...d, enabled: v }))} />
       </Row>
-      {f.draft.enabled && (
+      {/* Out of order with reminders off, the two times stay on screen so the problem can be fixed. */}
+      {(f.draft.enabled || !!invalid) && (
         <div className="ch-set-sliders">
           <Slider
             label="First reminder"

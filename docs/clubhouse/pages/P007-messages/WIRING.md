@@ -67,17 +67,42 @@ anything is sent (the shell's 10703, CH-1903).
 | ACT-P007-REACT | Reaction bar | `api.react` | `useMessageReactions.setReaction` (direct insert/delete under RLS) | golf_message_reactions | 70607 |
 | ACT-P007-COPY-MESSAGE | Copy (phone long-press sheet) | `copy` | clipboard | — | 70615 |
 | ACT-P007-START-DIRECT | New message → a person | `api.startDirect` | `createGolfConversation` (reuses an existing direct thread) | golf_conversations, participants | 70601 · not on team 70801 |
-| ACT-P007-CREATE-GROUP | New message → a group | `api.createGroup` | `createGolfTeamBroadcast`, then `addGolfGroupMember` for chosen coaches (D-45) | golf_conversations, participants | name and members 70502–70504 · 70902 · 70602 · coach not added 71001 |
+| ACT-P007-CREATE-GROUP | New message → a group | `api.createGroup` | `createGolfTeamBroadcast` with the chosen players (at least one: with none it adds the whole team, `groupLacksPlayer`), then `addGolfGroupMember` for chosen coaches (D-45) | golf_conversations, participants | name and members 70502–70505 · 70902 · 70602 · coach not added 71001 |
+| ACT-P007-REMOVE-MEMBER | Details › a member's Remove (the group's creator, never their own row; desktop and phone) | `api.removeMember` (after `RemoveMemberModal`) | `removeGolfGroupMember(conversationId, userId)`, then the rail and the members read again | participants | confirm 71104 · optimistic 71301 · 70902 · failed 70636 |
 | ACT-P007-ADD-MEMBER | Details › Add (the group's creator) | `api.addMember` | `addGolfGroupMember` | participants | 70902 · 70614 · nobody left 70407 |
 | ACT-P007-LEAVE-GROUP | Details › Leave group | `api.leave` | `leaveGolfGroup` | participants | confirm 71102 · 70902 · 70608 |
 | ACT-P007-MUTE | Details › Mute | `api.setMute` | `setGolfConversationMute` | participants | 70902 · 70609 · setting didn't load 70624 |
-| ACT-P007-SEARCH | Rail search | `api.searchMessages` | `searchGolfMessages` | golf_messages | running 70204 · no hits 70403 · failed 70619 |
+| ACT-P007-SEARCH | Rail search; a hit opens its thread at the message (`api.openHit` → `useFocusMessage`, the end-anchor paused, the message ringed for `FOUND_FOR_MS`) | `api.searchMessages` | `searchGolfMessages` | golf_messages | running 70204 · no hits 70403 · failed 70619 |
 | ACT-P007-OPEN-FILE | A file in a bubble or Files | `open` | `getGolfMessageAttachments` (signed URL per message) | golf_message_attachments, storage | 70616 |
+| ACT-P007-OPEN-ANNOUNCEMENT-FILE | A file under an announcement | `openDoc` (`announcements.tsx`) → `api.openAnnouncementDocument` | `getPreviewUrl` (signed URL per tap; never the stored `file_url`) | golf_documents, storage documents | 70616 |
 | ACT-P007-LIST-FILES | Details › Files (phone and desktop) | `api.files` (`useConversationFiles`) | `getGolfConversationFiles` (HELD, D-61) | golf_message_attachments, golf_messages | loading 70209 · none 70406 · failed 70630 · held gate 72302 |
-| ACT-P007-SCHEDULE | Schedule (coach; the desktop thread header, the phone Details tile) | a link to `/golf/dashboard/calendar?new=1`, plus `&with=<golf_players.id>` on a direct thread with a player (desktop; D-47, D-52) | none (Calendar opens its editor) | none | Calendar 60103 |
+| ACT-P007-SCHEDULE | Schedule (coach; the desktop thread header, the phone Details tile) | a link to `/golf/dashboard/calendar?new=1`, plus `&with=<golf_players.id>` on a direct thread with a player (desktop and phone; D-47, D-52) | none (Calendar opens its editor) | none | Calendar 60103 |
 | ACT-P007-ACKNOWLEDGE | Got it on an announcement (player) | `api.acknowledge` | `acknowledgeAnnouncement` | golf_announcement_acknowledgements | 70902 · 70610 |
 | ACT-P007-COMPLETE-TASK | Mark done on an announcement task (player) | `api.completeTask` | `completeAnnouncementTask` | golf_task_assignments | 70902 · 70611 |
 | ACT-P007-POST-ANNOUNCEMENT | New message → Announcement (coach) | `api.createAnnouncement` | `createEnrichedAnnouncement` | golf_announcements | fields 70505 · 70902 · 70612 |
+
+## Production parity (2026-10-17)
+
+Each control against Fairway's call for the same write (`src/components/fairway/pages/messages/**`,
+`FairwayPlayerAnnouncementCard`) and the server action's guard. Fixed: a coach's group needs a player (a broadcast
+with none adds the whole team; `groupLacksPlayer`); an announcement's file opens through `getPreviewUrl`
+(`api.openAnnouncementDocument`), never the stored `file_url`; a deep link that arrives while the page is open is
+taken (keyed on the address, `linkKey` in `Messages.tsx`), and a `?conversation=` thread missing from the list is
+refetched once before it opens; message fields cap at 5,000 (`MESSAGE_MAX`).
+
+Differences kept:
+
+| Where | Production (Fairway) | Clubhouse | Why |
+| --- | --- | --- | --- |
+| New message, who can be picked | Coach: the team's players only. Player: the program's coaches and teammates | Both roles: the program's coaches and the team's players | D-45 (coaches join a coach's group); same audience `createGolfConversation` validates |
+| Roster rows read | every `golf_team_members` row | `status = 'active'` only (4 inactive rows in production) | an inactive member is off the team everywhere else in Clubhouse |
+| `?conversation=` to a thread the viewer isn't in | silently falls through to the newest thread | says so (CH-7015) | tells the viewer why nothing opened |
+| Creator leaving their group | Leave group shown to everyone | hidden for the creator | D-47 |
+| Schedule (coach) | none in Messages | desktop header and phone tile invite a direct thread's player (`&with=`) | D-47, D-52 |
+
+Built to match production the same day: the creator removes members (`removeGolfGroupMember`, after CH-7504), a
+search hit goes to its message (`use-focus-message.ts`, with `useThreadAnchor` paused), and the phone's Schedule tile
+invites the direct thread's player.
 
 ## Components
 
@@ -107,7 +132,7 @@ anything is sent (the shell's 10703, CH-1903).
 | --- | --- | --- | --- |
 | sendGolfMessage, updateGolfMessage, deleteGolfMessage, markGolfMessagesAsRead | actions/messages.ts | Existing | the thread |
 | createGolfConversation, createGolfTeamBroadcast | actions/messages.ts | Existing | new threads and groups |
-| addGolfGroupMember, getGolfGroupAddCandidates, leaveGolfGroup | actions/messages.ts | Existing (D-47) | group membership |
+| addGolfGroupMember, getGolfGroupAddCandidates, removeGolfGroupMember, leaveGolfGroup | actions/messages.ts | Existing (D-47) | group membership |
 | searchGolfMessages | actions/messages.ts | Existing | team-wide search |
 | getGolfConversationParticipantIdentities | actions/messages.ts | Existing | Details › members |
 | getGolfConversationMute, setGolfConversationMute | actions/message-mute.ts | Existing | mute |

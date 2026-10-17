@@ -862,10 +862,11 @@ describe('Team Hub · the loader', () => {
   it('C-19 a player’s failed invite read leaves a trip unknown (—), never “Not traveling”', async () => {
     base();
     const soon = new Date(Date.now() + 2 * 86400000).toISOString();
-    tables.current = { golf_teams: team, golf_team_members: { data: [] }, golf_events: { data: [] }, golf_event_attendance: { error: { message: 'attendance down' } } };
+    // The aggregate's trips carry no event_id (its select leaves it out); the itinerary read supplies it.
+    tables.current = { golf_teams: team, golf_team_members: { data: [] }, golf_events: { data: [] }, golf_travel_itineraries: { data: [{ id: 'tr1', event_id: 'e2' }] }, golf_event_attendance: { error: { message: 'attendance down' } } };
     actions.summary.mockResolvedValue({
       events: [],
-      trips: [{ id: 'tr1', event_id: 'e2', event_name: 'Seahawk', destination: 'Wilmington', departure_date: soon.slice(0, 10), return_date: soon.slice(0, 10), transportation_type: 'bus' }],
+      trips: [{ id: 'tr1', event_name: 'Seahawk', destination: 'Wilmington', departure_date: soon.slice(0, 10), return_date: soon.slice(0, 10), transportation_type: 'bus' }],
       tasks: [],
       announcements: [],
       announcementsLoadError: false,
@@ -1503,10 +1504,11 @@ describe('Team Hub · what is sent to a player', () => {
       golf_coaches: { data: [{ user_id: 'c1', full_name: 'Maya Reyes', title: 'Head coach' }] },
       golf_events: { data: [{ id: 'e1', status: null, cancelled_at: null, all_day: false, start_time: soon, rsvp_deadline: null, requires_rsvp: true }] },
       golf_event_attendance: { data: [{ event_id: 'e2', player_id: 'p1', status: 'accepted' }] },
+      golf_travel_itineraries: { data: [{ id: 'tr1', event_id: 'e2' }] },
     };
     actions.summary.mockResolvedValue({
       events: [{ id: 'e1', event_id: 'e1', title: 'Team dinner', event_type: 'meeting', start_time: soon, end_time: null, location: 'Carolina Inn', is_mandatory: false, rsvp_status: 'pending', going_count: 4, maybe_count: 1 }],
-      trips: [{ id: 'tr1', event_id: 'e2', event_name: 'Seahawk', destination: 'Wilmington', departure_date: soon.slice(0, 10), return_date: soon.slice(0, 10), transportation_type: 'bus' }],
+      trips: [{ id: 'tr1', event_name: 'Seahawk', destination: 'Wilmington', departure_date: soon.slice(0, 10), return_date: soon.slice(0, 10), transportation_type: 'bus' }],
       tasks: [{ id: 'k1', title: 'Waiver', description: null, due_date: null, category: null, status: 'pending' }],
       announcements: [post],
       announcementsLoadError: false,

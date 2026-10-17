@@ -76,7 +76,7 @@ There is no polling, realtime or pull to refresh. What runs in the background is
 
 Status: DEFINED
 
-First-run states only; the page has no filter or search, so no filtered empty. A coach with no team sees why Team is empty (80401); a player with no team can join one (80402) and sees a request that is waiting (80403); no photo shows the monogram (80404). Settings never replaces the whole page with a no-team state (80405, so D-71 does not apply): Account, Notifications and Preferences work without a team. A failed read is never drawn as empty; it is a notice with Try again (category 06).
+First-run states only; the page has no filter or search, so no filtered empty. A coach with no team sees why Team is empty (80401); a player with no team can join one (80402) and sees a request that is waiting (80403), in place of the form as soon as the page reads again after Ask to join (fixed 2026-10-17: the form stayed until the section was reopened); no photo shows the monogram (80404). Settings never replaces the whole page with a no-team state (80405, so D-71 does not apply): Account, Notifications and Preferences work without a team. A failed read is never drawn as empty; it is a notice with Try again (category 06).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -91,7 +91,7 @@ First-run states only; the page has no filter or search, so no filtered empty. A
 
 Status: DEFINED
 
-Each card checks its fields before anything is sent and keeps Save disabled while a value is invalid or unchanged (80501 to 80515). The message shows in the card's footer or under the field. The password card shows its message after the first press of Update password, with the warning haptic. A photo of the wrong type or over 2 MB is refused before it uploads (80602, in the write).
+Each card checks its fields before anything is sent and keeps Save disabled while a value is invalid or unchanged (80501 to 80515). The message shows in the card's footer or under the field. The password card shows its message after the first press of Update password, with the warning haptic. A photo of the wrong type or over 2 MB is refused before it uploads (80602, in the write). The reminder times are checked in order whether or not reminders are on, because the database checks them either way; out of order with reminders off, the two times stay on screen so they can be fixed (80511; fixed 2026-10-17: switching reminders off let an out-of-order schedule send and fail).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

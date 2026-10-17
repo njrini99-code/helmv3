@@ -320,9 +320,10 @@ describe('Round entry: setup over the course library and the engine (ChSetupPort
     expect(r).toEqual({
       ok: true,
       data: [
-        { id: 'b', name: 'Beta', place: 'Chapel Hill, NC', par: 72, teeCount: null, group: 'recent', lastPlayed: null, image: null },
-        { id: 'a', name: 'Alpha', place: 'Chapel Hill, NC', par: 72, teeCount: null, group: 'team', lastPlayed: null, image: null },
-        { id: 'c', name: 'Gamma', place: 'Durham', par: 72, teeCount: null, group: 'library', lastPlayed: null, image: null },
+        { id: 'b', name: 'Beta', place: 'Chapel Hill, NC', city: 'Chapel Hill', state: 'NC', par: 72, teeCount: null, group: 'recent', lastPlayed: null, image: null },
+        { id: 'a', name: 'Alpha', place: 'Chapel Hill, NC', city: 'Chapel Hill', state: 'NC', par: 72, teeCount: null, group: 'team', lastPlayed: null, image: null },
+        // A course with no state keeps its city as the city, and no state (the start saves these two, 112402).
+        { id: 'c', name: 'Gamma', place: 'Durham', city: 'Durham', state: null, par: 72, teeCount: null, group: 'library', lastPlayed: null, image: null },
       ],
     });
   });

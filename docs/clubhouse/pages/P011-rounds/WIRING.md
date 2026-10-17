@@ -43,6 +43,8 @@ Server loader:           src/clubhouse/data/round-review.ts loadRoundReview (pur
                          through chLogServer('rounds.review', …)); the round-type options beside it
                          (data/rounds-type-options.ts readRoundTypeOptions, CH-11522)
 Screen:                  src/clubhouse/screens/rounds/RoundReview.tsx (ReviewNine, HoleCard) and ReviewLoadFailed.tsx (CH-11206)
+Recap:                   screens/rounds/use-round-recap.ts useRoundRecap: a completed round with no stored recap (`recapPending`)
+                         asks generateRoundRecap once after mount, as Fairway's useDeferredRoundRecap does (111504)
 Skeleton:                RoundReviewSkeleton from rounds/[id]/loading.tsx through ClubhouseSwitch (110206; corrected 2026-10-17)
 Route error:             rounds/[id]/error.tsx (the shared RouteErrorBoundary; Clubhouse's view inside the shell)
 
@@ -69,7 +71,11 @@ SETUP (inside NewRound)
 Screen:                  src/clubhouse/screens/rounds/setup/RoundSetup.tsx -> CoursePicker.tsx, AddCourseSheet.tsx, HoleConfig.tsx
 Contract:                setup/shape.ts ChSetupPorts { listCourses, listTees, teeHoles, start } and ChSetupForm; start returns
                          ChStartResult (ok, or a failure with kind 'handled' | 'final', a code, a retry label)
-Reads:                   entry/setup-reads.ts (listCoursesRead: recent, then team, then the library, deduped; listTeesRead;
+Reads:                   entry/setup-reads.ts (listCoursesRead: recent, then the player's saved courses ("Your courses",
+                         getPlayerSavedCourses, `saved:<row>` stand-in ids, left out when the library has the course), then
+                         team, then the library, deduped; listTeesRead and teeHolesRead answer a saved course from its row;
+                         afterSavedCourseStart touches it; toStartForm's `libraryOffer` has the engine offer an unlinked
+                         one to the library and link the round, and its `yardage` is Fairway's rule (shape.ts yardageRule);
                          teeHolesRead; loadSetupQualifiers, 6 s cap) and toStartForm (the engine's NewRoundStartForm)
 Refusals:                entry/setup-reads.ts startRefusal maps every NewRoundStartResult failure to a state
 
@@ -209,7 +215,7 @@ the preview; the round screen now supplies the ports.
 | Next shot, Hole out | `ShotEntry` | `onNextShot` -> `useShotTracking.handleNextShot`; a holed-out hole calls `onHoleComplete(holeIndex, stats)`, which must resolve true only once the hole is durably saved | hint CH-11101 · warning and block CH-11102, CH-11103 · limit CH-11106 · saving CH-11402 · didn't save CH-11003 · Try again 111403 |
 | Undo last shot | `UndoConfirm` (in `ShotEntry`, `HoleReview`) | `dispatch(SHOW_UNDO_CONFIRM)` -> `handleUndoLastShot` (`useUndoManager`) -> `deleteShot` | CH-11502 · failed CH-11002 |
 | Penalty | `PenaltySheet` | `handleAddPenalty` -> `confirmPenalty` (`usePenaltyHandler`) | CH-11503 |
-| Change or delete a shot | `EditShotSheet` | `handleEditShot` -> `handleSaveEditedShot` (`updateShot`), `handleDeleteShot` (`deleteShot`) | CH-11505 · failed CH-11004 · rules CH-11105 |
+| Change or delete a shot | `EditShotSheet`, opened from `HoleReview` (holed) or the open `ShotLog` (mid-hole, as Fairway's shot pills) | `handleEditShot` -> `handleSaveEditedShot` (`updateShot`), `handleDeleteShot` (`deleteShot`); a distance that isn't a plain number is refused first | CH-11505 · failed CH-11004 · rules CH-11105 |
 | Go to another hole | `TrackStrip`, `HoleReview` | `handleNavigateToHole`; a picked-but-unrecorded result asks first (`UnsavedSheet`) | CH-11504 · CH-11805 |
 | Exit | `ExitSheet` (round's own) | Keep playing closes it; Save for later and Discard round are the registered actions above | CH-11506 |
 | Scorecard | `ScorecardSheet` (round's own) | opens from the top bar (`onOpenScorecard`) | CH-11509 · region 111810 |
@@ -258,10 +264,12 @@ There are no realtime hooks: the library and the review are read once on the ser
 | deleteInProgressRound | actions/golf.ts | Existing (the legacy library's and continue-round's Discard) | Discard: deletes by round, player and in-progress status |
 | clearEmergencySave | src/lib/utils/emergency-save.ts | Existing | drops the device's copy after a discard that worked |
 | updateShot, deleteShot | actions/golf.ts | Existing (through `useShotTracking`) | change, delete and undo a shot |
+| getPlayerSavedCourses, touchSavedCourse | actions/saved-courses.ts | Existing (Fairway's setup reads and touches the same) | "Your courses" in the picker, and noting a saved course's use when a round starts from it |
 | listCoursesStrict, getRecentlyPlayedCourses, getTeamSavedCourses, getCourseDetail, getTeeWithHoles | actions/course-library.ts | Existing (supplied to setup as ports by `setup-reads.ts`) | the course picker |
 | getNextQualifierRoundNumber and the qualifier reads | actions/ (the ones the legacy setup used) | Existing | the setup's open qualifiers (`loadSetupQualifiers`) and Continue's round-number question |
 | savePartialRound, updateRoundType, submitGolfRoundComprehensive | actions/golf.ts, actions/round-type.ts | Existing | Save for later, Change to practice and Submit, through the engine |
 | the round's start, checkpoints, autosave, discard-from-Exit and submit | src/lib/golf/round-session/ (`useNewRoundSession`, `useContinueRoundSession`) | Existing (moved from the legacy clients in #2104) | reach the screens as `ChSetupPorts.start` and the round screen's session |
+| generateRoundRecap | actions/round-recap.ts | Existing (Fairway's round page calls it the same way) | writes `golf_rounds.ai_recap` once, from the review of a completed round that has none (useRoundRecap) |
 | isCountableRound, withCanonicalRoundTotal | src/lib/golf/round-countable.ts, src/lib/golf/round-total.ts | Existing (shared with Home and Stats) | what counts and the one total |
 
 ## Data resources
@@ -293,6 +301,12 @@ approved (Q-72f).
 - `useShotTracking` and `shot-entry-rules` are shared with the Fairway shot screen (the parity tests
   `FairwayShotTracking.ready-state-parity.test.ts` and `.stale-checkpoint.test.ts` guard the move): a change
   to either changes both screens.
+- Engine change, opt-in (2026-10-17): `NewRoundStartForm.yardage` ('every' by default; Clubhouse passes 'none' for a
+  library tee and 'any' for a saved course, Fairway's preloaded-start rules) and `NewRoundStartForm.libraryOffer`
+  (Clubhouse's saved course with no library link: `handleHolesSave` runs `contributeCourseFromRound` with those holes and
+  sets the engine's course and tee refs, as `startWithPreloadedConfigs` does, so later writes link the round). Only
+  `start(form)` reads them and only Clubhouse calls it; Fairway's path and payloads are unchanged (the round-session and
+  Fairway round tests, and `round-lifecycle-parity.test.tsx`).
 - The round engine (`src/lib/golf/round-session/`, #2104) is shared with the Fairway clients and pinned by source-text
   tests (`new-round-client.*.test.ts`, `continue-round-client.*.test.ts`): Clubhouse reads its returned state and
   calls its handlers, and never edits it. A change to an engine handler's contract (what it throws, what it toasts,
@@ -323,6 +337,10 @@ approved (Q-72f).
   holes (`readRoundTypeOptions`): its entries (and, for a coach, the team's qualifiers) ride in the holes' wave, and
   only the taken-slot read follows, when there is a qualifier to offer (`rounds-reads.test.ts`).
 - The entry routes' `error.tsx` files are still the shared Fairway `RouteErrorBoundary`.
+- The start's city and state (2026-10-17): a setup pick carries the course's own `city` and `state` (`ChSetupPick`), and
+  `toStartForm` saves those; `place` is display only. A pick without them (an older fixture) still splits `place`.
+- The recap (2026-10-17): `generateRoundRecap` is the only writer of `ai_recap`, and only a review calls it, in both UIs
+  (Fairway's round page and, now, Clubhouse's). It is idempotent and single-flight on the server.
 - Strokes gained on the review (2026-09-30): `loadRoundReview` also selects the round's five
   `strokes_gained_*` columns and reads `golf_teams.gender` for the viewer's team (a player viewer carries an
   optional `teamId` from the route); `toReview` shapes `strokesGained` and `tour`. No new table or column.

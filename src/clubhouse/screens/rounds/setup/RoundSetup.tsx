@@ -104,12 +104,26 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
   );
 
   const pickTee = (
-    course: { id: string | null; name: string; place: string | null },
+    course: { id: string | null; name: string; place: string | null; city?: string | null; state?: string | null; saved?: ChSetupCourse['saved'] },
     tee: { id: string; name: string; color: ChSetupPick['teeColor']; rating: number | null; slope: number | null; yards: number | null },
   ) => {
     setPicker(null);
     set({
-      pick: { courseId: course.id, courseName: course.name, place: course.place, teeId: tee.id, teeName: tee.name, teeColor: tee.color, rating: tee.rating, slope: tee.slope, yards: tee.yards },
+      // A saved course ("Your courses") starts as Fairway's saved-course start does: its library link, if any, and no tee.
+      pick: {
+        courseId: course.saved ? course.saved.courseId : course.id,
+        courseName: course.name,
+        place: course.place,
+        city: course.city,
+        state: course.state,
+        savedId: course.saved?.id ?? null,
+        teeId: course.saved ? null : tee.id,
+        teeName: tee.name,
+        teeColor: tee.color,
+        rating: tee.rating,
+        slope: tee.slope,
+        yards: tee.yards,
+      },
       holes: [],
       baseline: null,
       saveCourse: false,

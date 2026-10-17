@@ -39,7 +39,7 @@ function serve(answers: import('./supabase-fake').ChFakeTables) {
   return asked;
 }
 
-const counts = (rows: Array<{ event_id: string; invited: number; accepted: number; declined?: number; pending?: number }>) => ({
+const counts = (rows: Array<{ event_id: string; invited: number; accepted: number; declined?: number; pending?: number; coach_invited?: number }>) => ({
   data: rows.map((r) => ({ declined: 0, pending: 0, ...r })),
 });
 
@@ -55,9 +55,9 @@ afterEach(() => {
 
 describe('loadAttendanceCounts', () => {
   it('maps the function rows by event, and asks for each id once', async () => {
-    const asked = serve({ 'rpc:golf_event_attendance_counts': counts([{ event_id: 'e1', invited: 4, accepted: 1, declined: 1, pending: 1 }]) });
+    const asked = serve({ 'rpc:golf_event_attendance_counts': counts([{ event_id: 'e1', invited: 4, accepted: 1, declined: 1, pending: 1, coach_invited: 3 }]) });
     const res = await loadAttendanceCounts(await createClient(), ['e1', 'e1', 'e2']);
-    expect(res).toEqual({ kind: 'ok', byEvent: new Map([['e1', { invited: 4, accepted: 1, declined: 1, pending: 1 }]]) });
+    expect(res).toEqual({ kind: 'ok', byEvent: new Map([['e1', { invited: 4, accepted: 1, declined: 1, pending: 1, coachInvited: 3 }]]) });
     expect(asked['rpc:golf_event_attendance_counts']![0]).toEqual([['args', [{ p_event_ids: ['e1', 'e2'] }]]]);
   });
 
@@ -253,14 +253,18 @@ describe('Player Calendar: D2-8 meetings', () => {
       golf_event_attendance: ownRows,
       'rpc:golf_event_attendance_counts': counts([
         { event_id: 'm-private', invited: 0, accepted: 0 },
-        { event_id: 'm-others', invited: 2, accepted: 1, pending: 1 },
-        { event_id: 'm-mine', invited: 1, accepted: 1 },
+        // The coach invited these (coach_invited); m-others is not open to the rest of the team.
+        { event_id: 'm-others', invited: 2, accepted: 1, pending: 1, coach_invited: 2 },
+        { event_id: 'm-mine', invited: 1, accepted: 1, coach_invited: 1 },
       ]),
     });
     const res = await load();
     expect(res.events.map((e) => e.id).sort()).toEqual(['e1', 'm-mine', 'm-others']);
-    // Only meetings are counted, and the player's own place and reply still come from their row.
-    expect(asked['rpc:golf_event_attendance_counts']![0]).toEqual([['args', [{ p_event_ids: ['m-private', 'm-others', 'm-mine'] }]]]);
+    // Meetings are counted, and so is an event that asks for replies (e1: invited by no one, so open to the team); the
+    // player's own place and reply still come from their row.
+    expect(asked['rpc:golf_event_attendance_counts']![0]).toEqual([['args', [{ p_event_ids: ['m-private', 'm-others', 'm-mine', 'e1'] }]]]);
+    expect(res.events.find((e) => e.id === 'e1')!.openReply).toBe(true);
+    expect(res.events.find((e) => e.id === 'm-others')!.openReply).toBe(false);
     const mine = res.events.find((e) => e.id === 'm-mine')!;
     expect([mine.people, mine.rsvp]).toEqual([['p1'], { p1: 'accepted' }]);
   });

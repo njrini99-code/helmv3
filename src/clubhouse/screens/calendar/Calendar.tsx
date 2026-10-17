@@ -24,9 +24,9 @@ import { AgendaView, MonthView, TimeGrid, type ChMoveTarget, type ChNow } from '
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { useToast } from '../../ui/Toast';
-import { friendlyReason, isOffline } from '../../lib/use-action';
+import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
-import { CancelEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
+import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
@@ -37,12 +37,13 @@ import { useLightPlace } from '../../shell/light';
 import { canvasLenis, canvasScrollNow, usePanelSmoothScroll } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
+import { useCalendarLive } from './live';
 import { chFocusQuietly } from '../../lib/focus-quietly';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
   for (const x of new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(d)) p[x.type] = x.value;
-  return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60 };
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60, ms: d.getTime() };
 }
 
 /**
@@ -393,6 +394,7 @@ export function Calendar({
   initialWith,
   initialType,
   frozen = false,
+  live = false,
 }: {
   data: ChCalendarData;
   initialEvent?: string;
@@ -402,9 +404,12 @@ export function Calendar({
   /** With `initialNew`: the new event's type (the phone Home's quick chips). */
   initialType?: ChCalType;
   frozen?: boolean;
+  /** Follow the team's events as they change (realtime, `useCalendarLive`). The route turns it on; tests and the preview leave it off. */
+  live?: boolean;
 }) {
   const preview = frozen;
   const router = useRouter();
+  useCalendarLive(data.teamId, live && !frozen);
   const [pending, start] = useTransition();
   const coach = data.role === 'coach';
   const [view, setView] = useState<ChCalView>(data.view);
@@ -429,6 +434,7 @@ export function Calendar({
     window.history.replaceState(null, '', url.pathname + url.search);
   }, [initialNew, frozen]);
   const [cancelling, setCancelling] = useState<ChCalEvent | null>(null);
+  const [deleting, setDeleting] = useState<ChCalEvent | null>(null);
   const [subs, setSubs] = useState(false);
   const [busyOpen, setBusyOpen] = useState(false);
   const [jump, setJump] = useState(false);
@@ -498,6 +504,18 @@ export function Calendar({
   }, [go, view, now.date]);
 
   const refresh = useCallback(() => start(() => router.refresh()), [router]);
+  // Restore event (a cancelled event, coach): back to confirmed, as Fairway's event menu does (updateGolfEvent with
+  // status 'confirmed', which clears the cancellation and notifies no one). Not destructive, so not asked first; the
+  // re-read that follows a landed restore is part of the action, so the toast's Retry does it too.
+  const restore = useAction(
+    'calendar.restoreEvent',
+    async (e: ChCalEvent) => {
+      const res = await updateGolfEvent(e.id, { status: 'confirmed' } as never);
+      if (normalise(res).success) refresh();
+      return res;
+    },
+    (e) => ({ done: `Restored · ${e.title}`, failed: `Couldn’t restore ${e.title}`, code: 'CH-6016' }),
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -505,7 +523,7 @@ export function Calendar({
       const t = e.target instanceof Element ? e.target : null;
       // A key a control already used (the View radios' arrows, a popover's Esc) is not also a calendar shortcut (A-09).
       if (e.defaultPrevented) return;
-      if (t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') || e.metaKey || e.ctrlKey || e.altKey || editor || cancelling || subs || busyOpen) return;
+      if (t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') || e.metaKey || e.ctrlKey || e.altKey || editor || cancelling || deleting || subs || busyOpen) return;
       // Arrows inside a widget that moves its own selection, or inside a popover, belong to it; N and T still work there.
       if (e.key.startsWith('Arrow') && t?.closest(COMPOSITE)) return;
       if (e.key === 'n' && coach) {
@@ -518,7 +536,7 @@ export function Calendar({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [coach, editor, cancelling, subs, busyOpen, view, anchor, insp, goToday, step]);
+  }, [coach, editor, cancelling, deleting, subs, busyOpen, view, anchor, insp, goToday, step]);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
   // P006-A1: the global light's sun at the team's place, on the team's clock; one read per day shown.
@@ -622,6 +640,8 @@ export function Calendar({
     },
     onEdit: (e, proposal) => setEditor({ event: e, proposal }),
     onCancel: (e) => setCancelling(e),
+    onRestore: (e) => void restore.run(e),
+    onDelete: (e) => setDeleting(e),
     onDuplicate: (e) => setEditor({ event: null, copyOf: e }),
     onFind: (date, invite) => setEditor({ event: null, date, invite }),
     refresh,
@@ -686,6 +706,17 @@ export function Calendar({
           timezone={data.timezone}
           today={now.date}
           nowHour={now.hour}
+        />
+      )}
+      {coach && (
+        <DeleteEvent
+          event={deleting}
+          onClose={() => setDeleting(null)}
+          onDone={() => {
+            setDeleting(null);
+            setInsp(null);
+            refresh();
+          }}
         />
       )}
       {coach && (

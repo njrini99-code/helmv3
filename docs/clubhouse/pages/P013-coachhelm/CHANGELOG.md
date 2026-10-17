@@ -1,5 +1,57 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-17 — Wiring checked against production; moved links open their Clubhouse screen
+
+```text
+Design package: none (links only; no visual change)
+PR/commit:      uncommitted (Clubhouse wiring pass, P001-P015 remaining screens)
+Contract IDs:   none new
+Actions:        none changed (ACT-P013-* checked)
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- **Ask's receipt chips and pulse findings link where production's do** (`data/coachhelm-chat-links.ts`
+  `askLinkHref`, used by `chat/ActionCard.tsx` `AskReceiptCard` and by `loadAskCoachHelm`'s findings). The chat engine
+  (`lib/coachhelm/v3/chat`) writes Fairway addresses: `/golf/dashboard/tasks` ("1 task"), `/announcements`,
+  `/intelligence?view=players|signals` ("Open development"). Those screens moved in Clubhouse, so `rebuiltHref`
+  answered null and the chip or link was drawn as plain text, where production links it. They now open the screen the
+  address's own alias redirect opens for a coach, in one step: Team Hub's Tasks (`?task=` carried), Team Hub's
+  Announcements, the CoachHelm board (`?player=` carried, `?view=chat` to Ask). Anything else is still a link only
+  when it is rebuilt for a coach.
+- **The Game profile's "What CoachHelm sees" rows are a client link** (`views/Profile.tsx`). They were a plain `<a>`, so
+  opening a read in Deep dive reloaded the whole app (shell, session, fonts); every other link between the views is a
+  `next/link`.
+- **The route follows the dashboard role, not "has a coach row"** (`routes/coachhelm.tsx`, `ClubhouseCoachHelmRoute`).
+  A user whose onboarded profile is the player one, with an unfinished coach profile beside it, is drawn as a player by
+  the layout, but took the coach branch here and got the coach's "You aren't on a team yet" (CH-13308) instead of their
+  own CoachHelm. The coach branch now runs only when `pickGolfDashboardRole` (the role `resolveClubhouseTeam` and the
+  layout use) is the coach; the player branch needs no team, as before. Same rule as `routes/roster.tsx`.
+
+### Checked, no change
+
+- Assign as focus, Dismiss and Undo call `createFocusAreaFromInsightV2`, `dismissInsight` and `reactivateInsight`
+  (`actions/insights-feed.ts`, the same module Fairway's Game fingerprint imports) with the insight's own title,
+  description, area type, metric and current value; `verifyPlayerAccess` / `verifyInsightAccess` admit a coach of the
+  player's team. Accept and Decline call `acceptFocusArea` / `declineFocusArea` on the player's own proposed row, as Stats
+  Development does.
+- Ask uses production's own `useCoachHelmChat` (the same `POST /api/coachhelm/v3/chat/stream` body: messages,
+  conversation id, turn key; approvals resubmit through the hook). The conversation list and a thread read the same
+  columns and order as `listConversations` / `listMessages` (RLS: `coach_id = current_coach_id()`).
+- The loaders' filters match production's: the coach's roster is the team's `status = 'active'` members (as
+  `getCoachChatContext`); round reads are `is_test = false`, `status = 'completed'`.
+- `?view=development` (77 of production's 228 `dev_plan_assigned` notifications, every one to a player) redirects to
+  Stats' Development tab (`/golf/dashboard/stats?tab=dev`), which `StatsPlayer` opens; the other 151 open the player's
+  board. No realtime on this page.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/wiring-p013-links.test.tsx`, `wiring-p013-route.test.tsx` and the existing CoachHelm tests touching the
+  changed files (results in the session report). The engine guard reads every `href:` the chat engine writes and
+  asserts each opens a Clubhouse screen.
+
 ## 2026-10-16 — The Game profile reads what CoachHelm says; Standing is greener and organized
 
 Owner, 2026-10-16: base the profile on actual CoachHelm output ("make it based on actual CoachHelm output"). The genome

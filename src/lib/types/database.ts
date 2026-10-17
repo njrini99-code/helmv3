@@ -21586,6 +21586,7 @@ export type Database = {
         Args: { p_event_ids: string[] }
         Returns: {
           accepted: number
+          coach_invited: number
           declined: number
           event_id: string
           invited: number

@@ -52,7 +52,23 @@ export interface NewRoundStartForm extends NewRoundSetup {
    * as its photo only when that course has none, best-effort: a photo never blocks or undoes a started round.
    */
   courseImage?: File | null;
+  /**
+   * Which holes must carry a yardage (`validateStartHoles`). Omitted, every hole, as before. A renderer whose start
+   * stands for the legacy preloaded start passes that start's rule: 'none' for a library tee (its pars are enough),
+   * 'any' for a player's saved course (at least one hole with a yardage, the rest start at 0).
+   */
+  yardage?: StartYardageRule;
+  /**
+   * Opt-in (Clubhouse's "Your courses"): a course with no library link, started without the "save course" opt-in, is
+   * offered to the library after the start with these holes (under the card's numbers), and the round is linked to the
+   * library course and tee the offer finds or creates, so the next write carries them. This is what the legacy
+   * saved-course start does (`startWithPreloadedConfigs`). Omitted, nothing is offered: the default start is unchanged.
+   */
+  libraryOffer?: HoleConfig[];
 }
+
+/** Which holes of a start must carry a yardage: all of them, at least one, or none. */
+export type StartYardageRule = 'every' | 'any' | 'none';
 
 export type NewRoundStartFailureReason =
   /** The form failed the start gate: course, qualifier, rating, slope, date or holes. */
@@ -135,20 +151,24 @@ export const MAX_START_HOLE_YARDS = 999;
 /**
  * The hole rules `start(form)` enforces, the same the legacy confirm-screen hole editor enforces before it hands its
  * holes over: 9 or 18 holes, each par 3 to 6 (the server allows no other) and yardage 1 to 999. The legacy preloaded
- * start path also accepts yardage 0 for a cloud tee entered with pars only; `start` does not, because its holes come
- * from a hole editor that has already asked for every yardage. Not part of `validateStartForm`, so the screen's own
- * gate is unchanged.
+ * start path also accepts yardage 0 for a cloud tee entered with pars only, and for a saved course with at least one
+ * yardage; `start` does not by default, because its holes come from a hole editor that has already asked for every
+ * yardage. A form that stands for the preloaded start names that rule (`yardage`). Not part of `validateStartForm`, so
+ * the screen's own gate is unchanged.
  */
-export function validateStartHoles(holes: readonly HoleConfig[]): string | null {
+export function validateStartHoles(holes: readonly HoleConfig[], yardage: StartYardageRule = 'every'): string | null {
   if (holes.length !== 9 && holes.length !== 18) return 'A round has 9 or 18 holes';
   for (let i = 0; i < holes.length; i++) {
     const hole = holes[i]!;
     const label = `Hole ${i + 1}`;
     if (!Number.isInteger(hole.par) || hole.par < 3 || hole.par > 6) return `${label}: par must be 3 to 6`;
+    // Under 'any' and 'none' a hole may start at 0 yards, as the legacy preloaded start lets it; never below 0.
+    if (yardage !== 'every' && hole.yardage === 0) continue;
     if (!Number.isFinite(hole.yardage) || hole.yardage < 1) return `${label} needs a yardage`;
     if (hole.yardage > MAX_START_HOLE_YARDS) {
       return `${label}: ${hole.yardage} yards is too long (${MAX_START_HOLE_YARDS} at most)`;
     }
   }
+  if (yardage === 'any' && !holes.some((h) => h.yardage > 0)) return 'Add a yardage for at least one hole';
   return null;
 }

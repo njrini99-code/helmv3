@@ -35,6 +35,8 @@ vi.mock('@/app/golf/actions/calendar-feeds', () => ({ getCalendarFeeds: a.getCal
 vi.mock('@/app/golf/actions/event-documents', () => ({ getEventDocuments: a.getEventDocuments, attachDocumentToEvent: a.ok, detachDocumentFromEvent: a.ok }));
 vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: a.getDocuments }));
 vi.mock('@/app/golf/actions/attendance', () => ({ getAttendanceReport: a.getAttendanceReport, markAttendance: a.ok }));
+// The linked trip on an open event (LinkedTrip): none, unless a case says otherwise.
+vi.mock('@/app/golf/actions/travel', () => ({ getItineraryForEvent: () => Promise.resolve({ success: true, data: null }) }));
 
 import type { ChCalendarData } from '../data/calendar';
 import { Calendar } from '../screens/calendar/Calendar';

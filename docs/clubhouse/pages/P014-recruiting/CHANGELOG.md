@@ -1,5 +1,28 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-17 — Wiring checked against production (no change)
+
+```text
+Design package: none
+PR/commit:      uncommitted (Clubhouse wiring pass, remaining screens)
+Contract IDs:   none
+Actions:        ACT-P014-* checked, none changed
+Data impact:    none
+Held items:     none
+```
+
+### Checked, no change
+
+- Add, Save, the stage move and Delete call `createRecruit`, `updateRecruit` (`{ status }` for a move, the whole form
+  for a save, as `FairwayRecruitFormSheet`) and `deleteRecruit`; documents call `getRecruitDocuments`,
+  `prepareRecruitDocumentUpload` / `completeRecruitDocumentUpload` (the same two-step signed upload as
+  `recruit-document-upload.ts`, the same five categories), `deleteRecruitDocument` and `getRecruitDocumentUrl`. Every
+  action scopes to the team `resolveCoachTeamIdWithCookie` picks, and the loader reads through `getRecruits` and the
+  same resolver, so what is drawn and what is written are one team. RLS on both tables is `is_golf_team_coach(team_id)`.
+- The move is optimistic and put back on a refusal or a throw, inside the action, so Retry repeats both; Add, Save and
+  Delete change the list only once the server answers. No realtime. Email and Call are `mailto:` / `tel:`; the no-team
+  page's Open team settings opens Settings' Team section, which is rebuilt for a coach.
+
 ## 2026-10-15 — Ink that holds at night
 
 Dark mode: the offered chip and stage dot and the prospect avatar's initials now take `--ch-on-fill-*` / `--ch-forest-*` ink, which

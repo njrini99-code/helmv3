@@ -412,7 +412,8 @@ describe('the profile’s extra figures', () => {
 
   it('the standing rows: the Tour’s value beside each, a band graded only with 10 putts, big numbers from the round cache; a coach’s team figures pooled, a player’s never', async () => {
     const puttRows = [...Array.from({ length: 10 }, (_, i) => ({ round_id: 'r1', putt_distance_feet: 4, putt_made: i < 7 })), ...Array.from({ length: 9 }, () => ({ round_id: 'r1', putt_distance_feet: 8, putt_made: true }))];
-    const cache = ['r1', 'r2'].map((round_id) => ({ round_id, double_bogeys: 1, triple_plus: 1, penalty_strokes: 1, three_putts: 1, sand_attempts: 2, sand_saves: 1, greens_hit: 9, greens_total: 18 }));
+    // A three-putt count stands on a round with its putts recorded (cachedPutts): the cache always writes both.
+    const cache = ['r1', 'r2'].map((round_id) => ({ round_id, double_bogeys: 1, triple_plus: 1, penalty_strokes: 1, total_putts: 32, three_putts: 1, sand_attempts: 2, sand_saves: 1, greens_hit: 9, greens_total: 18 }));
     tables.current = loaderTables(ten, { golf_shots: (f) => (f.some(([k, a]) => k === 'eq' && a[0] === 'shot_type') ? { data: [] } : { data: puttRows }), golf_round_stats_cache: { data: cache } });
     const coach = (await load('coach'))!;
     const row = (p: ChPlayerProfile, l: string) => p.comparisons.find((c) => c.label === l)!;

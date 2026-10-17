@@ -14,8 +14,9 @@
  *     `data.coachhelm_category` (see src/lib/coachhelm/v3/notifications/
  *     dispatch.ts) carries the TRUE semantic category; `type` alone collapses
  *     every CoachHelm category to the single `dev_plan_assigned` enum value.
- *   • `golf_calendar_notifications` — event/RSVP lifecycle rows (golf.ts).
- *     Always categorized 'events'.
+ *   • `golf_calendar_notifications` — event/RSVP lifecycle rows (golf.ts),
+ *     categorized 'events', plus chat message rows (golf-message-fanout.ts,
+ *     `notification_type = 'message'`), categorized 'messages'.
  *
  * `category` is one of the DELIVERY_NOTIFICATION_GROUPS ids
  * (src/lib/coachhelm/v3/notifications/types.ts) — the SAME taxonomy the
@@ -137,11 +138,15 @@ export function categorizeNotificationRow(row: Pick<RawNotificationRow, 'type' |
   }
 }
 
-/** `golf_calendar_notifications` rows are always event/RSVP lifecycle items. */
+/**
+ * `golf_calendar_notifications` rows are event/RSVP lifecycle items, except the
+ * chat message rows golf-message-fanout.ts writes there (`message`), which
+ * belong under Messages.
+ */
 export function categorizeCalendarNotificationRow(
-  _row: Pick<RawCalendarNotificationRow, 'notification_type'>,
+  row: Pick<RawCalendarNotificationRow, 'notification_type'>,
 ): NotificationCategoryId {
-  return 'events';
+  return row.notification_type === 'message' ? 'messages' : 'events';
 }
 
 export function normalizeNotificationRow(row: RawNotificationRow): UnifiedNotificationItem {

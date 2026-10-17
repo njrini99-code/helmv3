@@ -1,5 +1,69 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-17 — Wiring checked against production, and fixed
+
+```text
+Design package: none (an attachment list in the existing card idiom; no owner board draws it)
+PR/commit:      uncommitted (Clubhouse wiring audit, remaining screens)
+Contract IDs:   none new (prose in CONTRACT §15; Bridge IDs not minted)
+Actions:        ACT-P010-OPEN-ATTACHMENT, ACT-P010-OPEN-UPDATE, ACT-P010-MARK-TRAVEL-SEEN (new), ACT-P010-UPLOAD-FILE;
+                ACT-P010-ACKNOWLEDGE, ACT-P010-COMPLETE-TASK, ACT-P010-UPLOAD-FILE
+Data impact:    reads golf_travel_itineraries (id, event_id) for a player's trips; writes golf_player_notification_state
+                (markTravelSeen) and notifications / golf_calendar_notifications read_at (markNotificationRead)
+Held items:     none
+```
+
+Every Team Hub control was checked against production's callers of the same server action (Fairway's Team Hub, player
+hub, Announcements, Tasks, Travel and Documents): arguments, the action's role check for the role that sees the
+control, what the screen does with the result, and where its links go.
+
+### Fixed
+
+- **A player's trip never said whether they travel.** `getPlayerHubSummaryData` selects no `event_id`, so the loader's
+  invite check had nothing to look up and every pass read "You —". The loader now reads each trip's event
+  (`tripEventIds`); production has 2 of 9 recent trips linked to an event. A failed read leaves it unknown and is
+  logged (`tripLinks`).
+- **Team Hub's badge stayed stale after a player's write.** Got it and a task's tick (and untick) now read the badge
+  again once they land, as production's hub does after the same actions; it waited up to 45s.
+- **The travel part of the badge never cleared.** Production's Travel page marks travel seen on a visit;
+  `/golf/dashboard/travel` now opens Team Hub's Travel tab, which did not. A player's Travel tab now does, once a visit.
+- **A post's attachments could not be opened.** The card said "N attachments" and nothing more; production's card
+  lists them and opens each. The count is now a disclosure: the list is read the first time it opens
+  (`getAnnouncementDetail`, which keeps a targeted post to its recipients), each file opens as a Documents file does,
+  and a failed list says so with Try again.
+- **Updates.** Opening an update marks it read in its own feed, as the bell does (it stayed unread in the bell), and a
+  link off GolfHelm is no longer followed (the bell's `isSafeInternalPath` rule, applied in the loader).
+- **A Clubhouse upload stored its extension as the file type** (`pdf`, where every production row reads
+  `application/pdf`, and the version row's `mime_type` copies it). It now stores the MIME type (`resolveMimeType`, as
+  the storage upload already did), and the file label reads either (a Word file uploaded from Fairway read "VND.").
+
+- **Documents took any file and blamed its size.** The picker had no type list, a drop sent anything, and a refused
+  file came back as "Check the file is under 50 MB" when the `documents` bucket's limit is 25 MB (production
+  `file_size_limit` 26214400). The picker now offers Fairway Documents' exact types (`HUB_UPLOAD_ACCEPT`, which are the
+  bucket's `allowed_mime_types`); a file of another type or over 25 MB is refused by name before anything is sent
+  ("setup.exe can’t be shared" / "Film.mov is too large", error haptic) and the rest of the drop goes on. Fairway has no
+  client-side refusal (its drop sends anything and the server refuses), so the wording is Clubhouse's. The failure
+  hint says 25 MB.
+- **Travel seen is the Travel tab's alone.** Opening Team Hub on Home, Announcements or Documents, or moving between
+  them, marks nothing; the Travel tab marks it once a visit, and a later visit marks it again (tests pin all of it).
+
+### Checked, no change
+
+Reply, Got it, task tick and untick, post, edit, delete, assign, plan and edit a trip, travelers, upload and open a file
+call the same actions with the same arguments as production; each action's check admits the role that sees the control
+(a coach staffed on the team, assistants included; a player with an assignment, an invite or team membership). The old
+`/announcements`, `/tasks` (with `?task=`), `/travel` and `/documents` addresses open the matching tab for both roles.
+Calendar links (`?new=1`, `?date=&event=`) open rebuilt routes. The player badge sums the same three counts as
+production's nav.
+
+### Verification
+
+- `npx vitest run` on `wiring-p010-hub.test.tsx` (new, 20 cases) with `hub.test.tsx`, `hub-focus-task.test.tsx`,
+  `hub-paged-reads.test.ts`, `hub-trip-manage.test.tsx`: 198 passed. `hub.test.tsx`'s two player-trip fixtures no
+  longer hand the aggregate an `event_id` it never returns (they read it from the itinerary instead).
+- No screenshots: the dev server was not run in this pass (the attachment list is a visible change; capture before
+  and after when it is next run).
+
 ## 2026-10-17 — A team list that didn't load is told on the page
 
 ```text

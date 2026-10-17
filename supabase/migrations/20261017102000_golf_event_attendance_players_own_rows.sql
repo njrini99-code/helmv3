@@ -58,9 +58,14 @@
 --     Calendar meeting rule) switch to (a) in the same change.
 -- KNOWN EFFECT ON OTHER CODE: getEventRSVP / getEventRSVPStats
 -- (calendar-events.ts, lib/calendar/rsvp.ts) has no role gate; a player who
--- called it would now get a summary of their own row only. Its live callers
--- are coach-only (Fairway FairwayCalendar drawer is gated on isCoach; the
--- legacy EventDetailModal is mounted only by the baseball PremiumCalendarClient).
+-- called it would now get a summary of their own row only. CORRECTED
+-- 2026-10-17: Fairway's live event drawer (FairwayEventDetailDrawer.tsx,
+-- EventPeopleSection -> getEventRSVP) shows the People list to EVERY viewer,
+-- players included, so after this migration a Fairway player's People list
+-- shows only themselves instead of teammates' names and replies. That is the
+-- intended privacy change, but it is a visible change on live Fairway: the
+-- owner decides it with the apply. (The legacy EventDetailModal is mounted
+-- only by the baseball PremiumCalendarClient.)
 --
 -- ROLLBACK:
 --   DROP POLICY IF EXISTS golf_event_attendance_select_team ON public.golf_event_attendance;
@@ -95,7 +100,8 @@ RETURNS TABLE (
   invited  integer,
   accepted integer,
   declined integer,
-  pending  integer
+  pending  integer,
+  coach_invited integer
 )
 LANGUAGE sql
 STABLE
@@ -111,7 +117,10 @@ AS $function$
       WHERE a.status IS NULL
          OR a.status NOT IN ('accepted', 'attending', 'tentative', 'maybe',
                              'declined', 'not_attending', 'excused', 'unexcused')
-    ))::integer AS pending
+    ))::integer AS pending,
+    -- Rows the coach's invitation wrote (sendEventInvitations stamps notified_at); a player's own reply to an event
+    -- open to the whole team has none, so it doesn't turn the event into an invite list (P006 CONTRACT 60807).
+    (count(a.id) FILTER (WHERE a.notified_at IS NOT NULL))::integer AS coach_invited
   FROM public.golf_events e
   LEFT JOIN public.golf_event_attendance a ON a.event_id = e.id
   WHERE e.id = ANY (p_event_ids)
@@ -120,7 +129,7 @@ AS $function$
 $function$;
 
 COMMENT ON FUNCTION public.golf_event_attendance_counts(uuid[]) IS
-  'RSVP counts (invited, accepted, declined, pending) per event for the events of teams the caller coaches or plays on; other ids are omitted. Mirrors rsvpOf() in src/clubhouse/data/calendar.ts. Lets players see counts without reading teammates'' golf_event_attendance rows (20261017102000).';
+  'RSVP counts (invited, accepted, declined, pending, and coach_invited: rows the coach''s invitation wrote) per event for the events of teams the caller coaches or plays on; other ids are omitted. Mirrors rsvpOf() in src/clubhouse/data/calendar.ts. Lets players see counts without reading teammates'' golf_event_attendance rows (20261017102000).';
 
 -- Supabase's default privileges grant EXECUTE on new public functions to anon,
 -- so revoke it explicitly.

@@ -14,7 +14,7 @@ import { Swap } from '../../ui/Swap';
 import { haptic } from '../../lib/haptics';
 import { EventPeek } from './peek';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { addDays, dayNum, dowOf, fmtHour, monthName, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
+import { addDays, dayNum, dowOf, fmtHour, monthName, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 import { MonthGrid } from './month';
 
@@ -282,14 +282,14 @@ function DayPage({
                   <button
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
-                    aria-label={`${eventTitle(e, people)}, ${e.allDay ? 'all day' : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}`}
+                    aria-label={`${eventTitle(e, people)}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e) : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}`}
                     onClick={() => {
                       haptic('select');
                       onOpen(e.id, e.date);
                     }}
                   >
                     <span className="ch-calm-ev__t ch-num">
-                      {e.allDay ? 'All day' : fmtHour(e.start!, false)}
+                      {startLabel(e, false)}
                       {!e.allDay && <em>{fmtHour(e.end!, false)}</em>}
                     </span>
                     {/* The day's rail, as on Home's Today: a dot in the event's colour, a ring for time that isn't free. */}

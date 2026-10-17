@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ChevronDown, ChevronRight, Dna, Lock, Play } from 'lucide-react';
 import { useId } from 'react';
 import type { ChMeasure, ChProfile } from '../../../data/coachhelm-profile-shape';
@@ -127,14 +128,15 @@ function Sees({ sees }: { sees: NonNullable<ChProfile['sees']> }) {
             <ul>
               {g.rows.map((i) => (
                 <li key={i.id}>
-                  <a href={diveHref(i.id)} className="ch-hg-sees__r">
+                  {/* A client navigation, as every other link between the views: a plain anchor reloaded the whole app. */}
+                  <Link href={diveHref(i.id)} className="ch-hg-sees__r">
                     <span className="ch-hg-sees__b">
                       <small>{i.category}</small>
                       <b>{i.title}</b>
                     </span>
                     {i.value && <span className="ch-hg-sees__v ch-num">{i.value}</span>}
                     <Icon icon={ChevronRight} size={15} />
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

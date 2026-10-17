@@ -1,5 +1,6 @@
 import 'server-only';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { loadRoster } from '../data/roster';
 import { loadPlayerRoster } from '../data/roster-player';
 import { Roster } from '../screens/roster/Roster';
@@ -17,16 +18,12 @@ import { resolveClubhouseTeam } from './team';
  */
 export async function ClubhouseRosterRoute() {
   const session = await getGolfSessionProfile();
-  if (!session) return null;
-  if (session.coach) {
-    const team = await resolveClubhouseTeam(session);
-    if (!team || team.role !== 'coach') return <RosterNoTeam />;
-    return <Roster data={await loadRoster({ teamId: team.teamId, coachId: team.coachId })} />;
-  }
-  if (session.player) {
-    const team = await resolveClubhouseTeam(session);
-    if (!team || team.role !== 'player') return <RosterNoTeam viewer="player" />;
-    return <TeamRoster data={await loadPlayerRoster({ teamId: team.teamId, playerId: team.playerId })} />;
-  }
-  return null;
+  if (!session || (!session.coach && !session.player)) return null;
+  // The screen follows the team the dashboard role resolves to, not "has a coach row": a user whose player profile is
+  // the onboarded one (an unfinished coach profile beside it) is a player here, as the layout and the page's gate have
+  // it, and gets their team's roster rather than the coach's no-team page (wiring audit, 2026-10-17).
+  const team = await resolveClubhouseTeam(session);
+  if (team?.role === 'coach') return <Roster data={await loadRoster({ teamId: team.teamId, coachId: team.coachId })} />;
+  if (team?.role === 'player') return <TeamRoster data={await loadPlayerRoster({ teamId: team.teamId, playerId: team.playerId })} />;
+  return <RosterNoTeam viewer={pickGolfDashboardRole(session) === 'player' ? 'player' : 'coach'} />;
 }

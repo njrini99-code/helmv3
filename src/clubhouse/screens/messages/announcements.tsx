@@ -8,6 +8,7 @@ import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { Skeleton } from '../../ui/States';
+import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { clock, dayLabel, needsMyAck, railTime, type ChAnnouncement, type ChAnnouncementDetail } from './model';
@@ -121,7 +122,40 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const toast = useToast();
   const load = api.announcementDetail;
+  /**
+   * An attached document opens through a signed link asked for at the tap (getPreviewUrl), as Fairway's announcement
+   * card and the Team Hub open one: the stored file_url points at the private bucket and never opens (#1259). The tab
+   * opens inside the tap, or Safari blocks it, and the link fills it in.
+   */
+  const openDoc = async (d: ChAnnouncementDetail['documents'][number]) => {
+    const sign = api.openAnnouncementDocument;
+    if (!sign) {
+      if (d.url) window.open(d.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    const win = window.open('', '_blank');
+    setBusy(`doc:${d.id}`);
+    const res = await sign(d.id)
+      .catch(() => ({ url: null, noContent: false }))
+      .finally(() => setBusy(null));
+    const { url } = res;
+    const noContent = !!res.noContent;
+    if (url) {
+      if (win) win.location.href = url;
+      else window.location.assign(url);
+      return;
+    }
+    win?.close();
+    haptic('error');
+    toast({
+      tone: 'error',
+      title: `Couldn’t open ${d.title}`,
+      body: noContent ? 'That file has no stored copy to open.' : 'Try again in a moment.',
+      code: 'CH-7021',
+    });
+  };
   useEffect(() => {
     let live = true;
     setFailed(false);
@@ -257,14 +291,21 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
                     <span>Files</span>
                   </div>
                   {detail.documents.map((d) => (
-                    <a key={d.id} className="ch-ms-bub ch-ms-bub--file" href={d.url} target="_blank" rel="noreferrer">
+                    <button
+                      key={d.id}
+                      type="button"
+                      className="ch-ms-bub ch-ms-bub--file"
+                      disabled={busy === `doc:${d.id}`}
+                      aria-label={`Open ${d.title}`}
+                      onClick={() => void openDoc(d)}
+                    >
                       <span className="ch-ms-file__ic">
                         <Icon icon={FileText} size={16} />
                       </span>
                       <span style={{ minWidth: 0 }}>
                         <b>{d.title}</b>
                       </span>
-                    </a>
+                    </button>
                   ))}
                 </div>
               )}

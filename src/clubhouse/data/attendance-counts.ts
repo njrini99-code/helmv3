@@ -16,6 +16,8 @@ export interface ChAttendanceCounts {
   accepted: number;
   declined: number;
   pending: number;
+  /** Rows the coach's invitation wrote (`notified_at`): zero means the event is open to the whole team. */
+  coachInvited: number;
 }
 
 export type ChAttendanceCountsResult =
@@ -39,7 +41,7 @@ export async function loadAttendanceCounts(supabase: Client, eventIds: string[])
   }
   const byEvent = new Map<string, ChAttendanceCounts>();
   for (const r of data ?? []) {
-    byEvent.set(r.event_id, { invited: r.invited ?? 0, accepted: r.accepted ?? 0, declined: r.declined ?? 0, pending: r.pending ?? 0 });
+    byEvent.set(r.event_id, { invited: r.invited ?? 0, accepted: r.accepted ?? 0, declined: r.declined ?? 0, pending: r.pending ?? 0, coachInvited: r.coach_invited ?? 0 });
   }
   return { kind: 'ok', byEvent };
 }

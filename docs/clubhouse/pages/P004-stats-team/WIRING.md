@@ -113,7 +113,8 @@ No server action is called from this page.
 ```text
 Tables:   golf_teams (name, gender), golf_team_members (status active, joined to golf_players),
           golf_players (id, first_name, last_name), golf_rounds (completed, not test, countable, this
-          season), golf_round_stats_cache, golf_shots (putt_distance_feet, putt_made), golf_pga_standards
+          season), golf_round_stats_cache (birdies: holes one under par, eagles apart; total_putts 0 is
+          none recorded), golf_shots (putt_distance_feet, putt_made), golf_pga_standards
 RPCs:     none
 Storage:  none
 Realtime: none

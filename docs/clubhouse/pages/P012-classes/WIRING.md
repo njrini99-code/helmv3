@@ -123,16 +123,18 @@ There are no realtime hooks: the page is read once on the server.
 Tables:   golf_player_classes (id, class_name stored as "CODE - Name", instructor, days, start_time, end_time,
           building, room, credits, color, notes, semester, created_at; player_id and team_id on insert),
           golf_events (the team's non-class events for the week, read, cancelled ones dropped in the shape step;
-          the class events the sync writes), golf_team_settings (timezone); the server actions also read
-          golf_players and golf_team_members
-RPCs:     none
+          the class events the sync writes), golf_team_settings (timezone), golf_event_attendance (only when the
+          week has a meeting and the count function is not deployed: which meetings invite anyone, D2-8); the
+          server actions also read golf_players and golf_team_members
+RPCs:     golf_event_attendance_counts (held migration 20261017102000), only when the week has a meeting
 Storage:  none by this page (a screenshot goes to the vision action in slices)
 Realtime: none
 Cache:    none; the page is force-dynamic, and a change that lands updates the list in place without reading again
 RLS:      the RLS-scoped client for the reads and the three direct writes: the baseline policies let only the owning
           player insert, update or delete a class, and let its player and an active coach of the team read it; the
           server actions check the caller first (120803)
-Read path:  the loader, on the server, in one pass (122101); both lists are limited to 500
+Read path:  the loader, on the server, in one pass (122101); both lists are limited to 500. A week with a meeting
+            adds one read after the events: its invite count (D2-8), and a failed count hides nothing
 Write path: the browser client to golf_player_classes, and the server actions above, through writes.ts
 ```
 

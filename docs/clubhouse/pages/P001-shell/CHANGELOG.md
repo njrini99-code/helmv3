@@ -1,5 +1,58 @@
 # P001 — Shell: changelog
 
+## 2026-10-17 — Wiring checked end to end: a link to the open screen opens its item; a player's next event follows D2-8
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (wiring audit, agent/course-picker-premium-pr)
+Contract IDs:   10301 and 10404 prose (no new IDs)
+Actions:        ACT-P001-OPEN-NOTIFICATION (arms the relink before the push)
+Data impact:    reads golf_event_attendance_counts (or the invite rows) for a player's upcoming meetings
+Held items:     none
+```
+
+### Changed
+
+- A bell row, universal link or tapped push to the screen already open, naming
+  another item (`/messages?conversation=` on Messages, `/calendar?event=` on
+  Calendar), opened nothing: the route is keyed by its pathname and those
+  screens read their item on mount. `shell/relink.ts` arms the link before the
+  push and the frame mounts the screen again when that address arrives
+  (`ClubhouseFrame` RouteFrame key, `Bell.openItem`, `DeepLinks`, and
+  `helm:push-navigate`). A screen's own address changes keep their state.
+- A player's sidebar next event skips a meeting nobody is invited to (D2-8, as
+  their Calendar does), so the card no longer names the coach's own meeting
+  and opens a Calendar that doesn't draw it (`data/shell.ts`
+  `loadMeetingInvites`). A failed invite read hides nothing and is logged
+  (`nextEventInvites`).
+- The bell's Messages filter now holds chat message notifications. Message
+  fan-out writes them to `golf_calendar_notifications` (`notification_type =
+  'message'`, about 2,400 production rows), and the shared feed model filed
+  every row of that table under Events, in Fairway's bell too. Shared
+  production change, minimal: `categorizeCalendarNotificationRow`
+  (`src/app/golf/actions/unified-notifications-model.ts`) returns `messages`
+  for that type; event rows, the dedupe-keyed `event_updated:…` and
+  `rsvp_response:…` included, stay Events.
+
+### Checked, no change
+
+- Every notification address in production and in every writer, for each
+  role that receives it, lands on a rebuilt screen or an alias, and the query
+  naming the item is read there (WIRING.md "Notification links").
+- Bell open, filter, mark one and mark all read call the same actions with the
+  same arguments as Fairway's bell; the unread count is the same sum.
+- Team switch: `setActiveTeam` with the same gate the switcher shows
+  (`canSwitchTeams`, head coach on two or more teams); sign out tears down the
+  push token, then ends the session; the Ask sheet follows CoachHelm's gate
+  and is the coach's alone; every sidebar, strip and More target is rebuilt
+  for the role that sees it.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/wiring-p001-*.test.ts*` plus
+  shell, attendance-counts, deep-link, team-switch, native, route-frame and
+  alias-frame tests. No screenshots: nothing visible changed.
+
 ## 2026-10-17 — A player's next-event count reads counts, not teammates' replies
 
 ```text

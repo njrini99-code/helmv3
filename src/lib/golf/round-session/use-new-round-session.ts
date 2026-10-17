@@ -1838,6 +1838,30 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
         } catch { /* best-effort: catalog growth must never block the round */ }
       }
     };
+    // Opt-in (`libraryOffer`, Clubhouse's saved courses): the legacy saved-course start's catalog growth, run here so the
+    // round is linked to the course and tee it resolves, as `startWithPreloadedConfigs` links it. Best-effort and not
+    // awaited; the legacy screens never pass it.
+    const offer = form.libraryOffer;
+    if (offer && offer.length > 0 && !form.saveCourse && setup.courseName && resolvedCourseIdRef.current == null && selectedTeeIdRef.current == null) {
+      void (async () => {
+        try {
+          const contrib = await contributeCourseFromRound({
+            courseName: setup.courseName,
+            city: setup.courseCity || null,
+            state: setup.courseState || null,
+            teeName: setup.teesPlayed || null,
+            courseRating: setup.courseRating ? parseFloat(setup.courseRating) : null,
+            slopeRating: setup.courseSlope ? parseInt(setup.courseSlope) : null,
+            holes: offer.map(h => ({ holeNumber: h.holeNumber, par: h.par, yardage: h.yardage })),
+          });
+          if (contrib.success) {
+            resolvedCourseIdRef.current = contrib.data.courseId;
+            if (contrib.data.teeId) selectedTeeIdRef.current = contrib.data.teeId;
+          }
+        } catch { /* best-effort: catalog growth must never block the round */ }
+      })();
+    }
+
     if (form.saveCourse && setup.courseName) {
       if (fromStart) {
         // The round exists by now. A library save that throws (a dropped connection) must not leave a caller's Start
@@ -1905,7 +1929,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       return { ok: false, reason: 'already_started', error: 'A round is already in progress on this screen.' };
     }
     const form = { ...startForm, holes: startForm.holes.map((h, i) => ({ ...h, holeNumber: i + 1 })) };
-    const invalid = validateStartForm(form) ?? validateStartHoles(form.holes);
+    const invalid = validateStartForm(form) ?? validateStartHoles(form.holes, form.yardage);
     if (invalid) {
       reportRoundStartValidationBlocked({
         validationError: invalid,

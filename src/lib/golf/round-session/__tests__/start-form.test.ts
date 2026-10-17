@@ -57,6 +57,28 @@ describe('validateStartHoles', () => {
     expect(validateStartHoles(backNine)).toBe('Hole 3 needs a yardage');
   });
 });
+describe('validateStartHoles: the preloaded start\'s yardage rules, opt-in (2026-10-17)', () => {
+  const card = (count: number) => Array.from({ length: count }, (_, i) => ({ holeNumber: i + 1, par: 4, yardage: 400 }));
+  const blank = (count: number) => card(count).map((h) => ({ ...h, yardage: 0 }));
+
+  it('the default is unchanged: every hole needs a yardage', () => {
+    expect(validateStartHoles([...card(8), { holeNumber: 9, par: 4, yardage: 0 }])).toBe('Hole 9 needs a yardage');
+    expect(validateStartHoles([...card(8), { holeNumber: 9, par: 4, yardage: 0 }], 'every')).toBe('Hole 9 needs a yardage');
+  });
+
+  it("'none' (a library tee) starts on pars alone, at 0 yards", () => {
+    expect(validateStartHoles(blank(18), 'none')).toBeNull();
+    expect(validateStartHoles([...card(8), { holeNumber: 9, par: 4, yardage: 1000 }], 'none')).toBe('Hole 9: 1000 yards is too long (999 at most)');
+    expect(validateStartHoles([...card(8), { holeNumber: 9, par: 4, yardage: -1 }], 'none')).toBe('Hole 9 needs a yardage');
+    expect(validateStartHoles([...blank(8), { holeNumber: 9, par: 2, yardage: 0 }], 'none')).toBe('Hole 9: par must be 3 to 6');
+  });
+
+  it("'any' (a saved course) needs a yardage on at least one hole", () => {
+    expect(validateStartHoles([...blank(8), { holeNumber: 9, par: 4, yardage: 350 }], 'any')).toBeNull();
+    expect(validateStartHoles(blank(9), 'any')).toBe('Add a yardage for at least one hole');
+  });
+});
+
 
 describe('the module boundary', () => {
   const dir = new URL('..', import.meta.url);

@@ -1,5 +1,38 @@
 # P012 — Classes: changelog
 
+## 2026-10-17 — Parity with production: large photos, coach-only meetings
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (Calendar and Classes production-parity audit)
+Contract IDs:   120511 (CH-12111) wording, 120516 wording
+Actions:        none
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000) or, until then,
+                golf_event_attendance, only when the week has a meeting
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Fixed
+
+- Import refused any photo over 12 MB on disk before it was downscaled. The
+  current importer takes it (it downscales first, and the vision action's
+  ceiling is on what is sent). `screenFile` now refuses only a PDF or TXT over
+  12 MB; a photo is measured once it is ready to send, and only one still past
+  the action's ceiling (a format the browser cannot downscale) is refused
+  (CH-12111, same copy).
+- The week's team events a class is checked against included a meeting that
+  invites no one, which the player's Calendar never shows (D2-8): a class could
+  be said to meet over a coach's parent call, by its title. The loader now
+  leaves such meetings out, by the invite count (`golf_event_attendance_counts`,
+  or the attendance rows until that function is deployed); a failed read
+  leaves every event in and is logged (`meetingInvites`).
+
+### Verification
+
+- `src/clubhouse/__tests__/classes-parity.test.ts` (D2-8 with and without the
+  function, and a failed read) and the updated reader and import cases in
+  `classes.test.tsx`. No screenshots: nothing visible changed.
+
 ## 2026-10-15 — Ink that holds at night
 
 Dark mode: the day picker, the add and review marks and the ready icon now take `--ch-on-fill-*` / `--ch-forest-*` ink, which

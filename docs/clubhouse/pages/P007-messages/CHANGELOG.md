@@ -1,5 +1,59 @@
 # P007 — Messages: changelog
 
+## 2026-10-17 — Remove a member, search goes to its message, the phone's Schedule invites
+
+Three gaps against Fairway's Messages, built on the same actions:
+
+- **The group's creator removes members.** Desktop Details has a Remove beside each member and the phone a remove icon
+  on the member's row, for the creator only and never on their own row (theirs is Leave group, which D-47 keeps from
+  the creator). It asks first (CH-7504, "Remove Eli from Varsity team?"; Remove carries the warning haptic, D-70),
+  then calls `removeGolfGroupMember(conversationId, userId)` as Fairway does. The row leaves at once; a refusal puts
+  it back and says so (CH-7024, "Couldn’t remove Eli", with the server's reason where it is a readable one). Landed:
+  the success haptic, "Removed Eli from Varsity team", and the rail and the members read again (the list stays on
+  screen while it does) (`RemoveMemberModal`, `api.removeMember`).
+- **A search hit goes to its message.** Opening a hit opens its thread and scrolls the matched message to the middle
+  of the view (at once with reduced motion), then rings it in green for 2.4 s (`FOUND_FOR_MS`; the ring fades on
+  `--ch-dur-base`). While it does, the end-anchor is paused (`useThreadAnchor` `paused`): its 700 ms settle hold
+  stops, and neither the messages loading under the jump nor a resize pull the thread to its end. A hit outside the
+  loaded history gives the thread back its end (`use-focus-message.ts`).
+- **The phone's Schedule invites the direct thread's player** (`&with=<golf_players.id>`), as the desktop header
+  does; a group or a coach's thread invites nobody (D-52).
+
+Tests: `__tests__/wiring-p007-messages.test.tsx`. Source and jsdom only; not checked in a browser, and the scroll
+itself is not measured (jsdom has no layout).
+
+## 2026-10-17 — Every control checked against the write Fairway makes for it
+
+Wiring audit: every Messages control (CLICKABLES, the P007 manifest's 19 actions, and a grep of the screens) traced
+to its server action, compared with Fairway's call (`FairwayMessages`, `FairwayTeamBroadcastSheet`,
+`FairwayNewMessageSheet`, `MessageComposer`, `FairwayPlayerAnnouncementCard`) and the action's own guard. Four
+differences fixed:
+
+- **A coach's group of coaches alone reached the whole team.** A coach's group is `createGolfTeamBroadcast`, and a
+  broadcast given no players adds every player on the team; the coaches picked join after (D-45). Picking only
+  coaches (desktop Group, or two coaches on the phone) therefore created a whole-team chat. New message now asks for
+  at least one player first, as Fairway's group sheet does (CH-7105, "Choose at least one player. Coaches join the
+  group once it exists."), and `createGroup` refuses such a call itself (`groupLacksPlayer`, `model.ts`).
+- **An announcement's file never opened.** Its Files rows linked the stored `file_url`, which points at the private
+  documents bucket (Fairway #1259: a dead `/object/public/` link). A file now opens through a signed link asked for
+  at the tap (`getPreviewUrl`, `api.openAnnouncementDocument`), as Fairway's announcement card and the Team Hub open
+  one: the tab opens inside the tap (Safari) and the link fills it; a link that can't be had closes it and says so
+  (CH-7021, "That file has no stored copy to open." for a document with no stored file).
+- **A deep link arriving while Messages was open was dropped.** `?conversation=` (a bell notification tapped on this
+  page, which keeps it mounted), `?player=`, `?user=` and `?prefill=` were taken once per mount. Each new address is
+  now taken. A thread the list doesn't hold yet is looked for once more (the rail's refetch) before it opens; one
+  still missing says so (CH-7015), as before.
+- **Message fields stop at the server's limit.** The composer, Edit and the phone's first message take at most 5,000
+  characters (`MESSAGE_MAX`, sendMessageSchema's `content.max(5000)`), as Fairway's field does; past it a send was
+  refused and its Retry could never land.
+
+Checked and matching production: send, retry, attachments, edit, delete, reactions, mute, search, leave, Add (the
+group's creator; the server's `loadGolfGroupIOwn` rule), delete conversation, acknowledge, task done, posting an
+announcement (the coach's active team, cookie-resolved in both), the realtime channels (shared hooks, unchanged), and
+the Schedule and View stats targets (rebuilt for a coach). Differences kept, with reasons, are in WIRING.md
+"Production parity (2026-10-17)". Tests: `__tests__/wiring-p007-messages.test.tsx`. Source and jsdom only; not
+checked in a browser.
+
 ## 2026-10-16 — Conversations first, announcements folded under them
 
 Owner, 2026-10-16: messages first. The inbox lists conversations, then the team's announcements as one raised row:

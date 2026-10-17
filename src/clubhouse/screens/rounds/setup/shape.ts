@@ -35,9 +35,21 @@ export interface ChSetupCourse {
   name: string;
   /** "Pittsboro, NC", or null. */
   place: string | null;
+  /**
+   * The course's own city and state, as the library stores them. The round saves these two (Fairway's tee pick passes
+   * them straight through); `place` is only how the picker prints them, and a place of one part can't say which it is.
+   */
+  city?: string | null;
+  state?: string | null;
   par: number | null;
   teeCount: number | null;
-  group: 'recent' | 'team' | 'library';
+  /** `saved`: one of the player's own saved courses (golf_player_courses, "Your courses"), as Fairway's setup lists them. */
+  group: 'recent' | 'saved' | 'team' | 'library';
+  /**
+   * A saved course: its golf_player_courses row and the library course it is linked to (often none). Its id in the
+   * picker is a stand-in (`saved:<row>`); the round starts with `courseId` and no tee, as Fairway's saved-course start does.
+   */
+  saved?: { id: string; courseId: string | null };
   /** "Oct 2", when the player last played it (recent only). */
   lastPlayed: string | null;
   /** Its photo: one uploaded to the library, else a bundled photo of the real course; none means the picker's default scene. */
@@ -64,6 +76,11 @@ export interface ChSetupPick {
   courseId: string | null;
   courseName: string;
   place: string | null;
+  /** The course's city and state, kept apart (see `ChSetupCourse`); absent, the start splits `place`. */
+  city?: string | null;
+  state?: string | null;
+  /** The golf_player_courses row this pick came from ("Your courses"); its use is noted once the round starts. */
+  savedId?: string | null;
   teeId: string | null;
   teeName: string;
   teeColor: ChTeeColor | null;
@@ -162,6 +179,17 @@ export function holeIssue(h: ChSetupHole): string | null {
 }
 
 /**
+ * Which holes need a yardage before a round can start, as Fairway decides it for the same course (its preloaded start,
+ * `handleSetupSubmit`): a library tee's card starts on its pars alone, a saved course's needs a yardage on at least one
+ * hole, and a course typed in by hand needs every one (Fairway's hole editor). A hole left blank starts at 0 yards.
+ */
+export function yardageRule(pick: ChSetupPick | null): 'every' | 'any' | 'none' {
+  if (pick?.teeId) return 'none';
+  if (pick?.savedId) return 'any';
+  return 'every';
+}
+
+/**
  * The one thing that stops Start, in words, or null. CH-11107 (a hole),
  * CH-11109 (a date after today), in the order a player fixes them.
  */
@@ -172,10 +200,14 @@ export function setupBlocker(form: ChSetupForm, today: string): string | null {
   if (form.type === 'qualifier' && (!form.qualifierId || !form.qualifierRound)) return 'Choose the qualifier round';
   const holes = holesForRound(form.holes, form.count, form.nine);
   if (holes.length < form.count) return `This card has ${holes.length} holes; play 9`;
+  const rule = yardageRule(form.pick);
   for (const h of holes) {
+    // A blank yardage is allowed where Fairway allows it (`yardageRule`); one over the limit never is.
+    if (rule !== 'every' && !(parseInt(h.yards, 10) > 0)) continue;
     const issue = holeIssue(h);
     if (issue) return issue;
   }
+  if (rule === 'any' && !holes.some((h) => parseInt(h.yards, 10) > 0)) return 'Add a yardage for at least one hole';
   return null;
 }
 
@@ -188,6 +220,7 @@ export function groupCourses(list: ChSetupCourse[], q: string): Array<{ key: str
   }
   const groups: Array<[ChSetupCourse['group'], string]> = [
     ['recent', 'Recently played'],
+    ['saved', 'Your courses'],
     ['team', 'Team courses'],
     ['library', 'Course library'],
   ];

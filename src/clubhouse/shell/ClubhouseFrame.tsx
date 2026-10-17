@@ -24,6 +24,7 @@ import { RouteFrame } from './RouteFrame';
 import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
 import { NotRebuilt } from './NotRebuilt';
+import { useRelinkEpoch } from './relink';
 import { ClubhouseMarker } from './context';
 import { LightProvider } from './light';
 import { DockProvider, PhoneDock } from './Dock';
@@ -125,6 +126,9 @@ export function ClubhouseFrame({
   // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
   useEffect(() => liftHandoffCurtain(), []);
   useReloadFromBackForwardCache();
+  // A stored link to the screen already open, naming another item (the bell's `?conversation=` on Messages): the screen
+  // mounts again for it, as it would arriving from elsewhere (relink.ts).
+  const relink = useRelinkEpoch(pathname, search);
 
   // The live shell renders the animation features above the frame (ChMotionFeatures, below); a preview renders the frame alone.
   const scoped = useContext(ChMotionScope);
@@ -149,7 +153,7 @@ export function ClubhouseFrame({
                           <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
                           <OfflineBanner />
                           {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
-                          <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
+                          <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}${relink ? `\u0000${relink}` : ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
                             {rebuilt ? (
                               children
                             ) : (

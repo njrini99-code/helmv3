@@ -145,8 +145,9 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
   // Rounds, focus areas, goals and this coach's notes, in parallel.
   const [season, focus, goals, notes] = await Promise.all([
     ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster' }) : Promise.resolve({ rounds: [], error: false }),
+    // Open focus areas are `active` or `in_progress`, as Fairway's roster counts them (wiring audit, 2026-10-17).
     countBy('golf_player_focus_areas', ids, (chunk) =>
-      supabase.from('golf_player_focus_areas').select('player_id').in('player_id', chunk).eq('status', 'active'),
+      supabase.from('golf_player_focus_areas').select('player_id').in('player_id', chunk).in('status', ['active', 'in_progress']),
     ),
     countBy('golf_goals', ids, (chunk) => supabase.from('golf_goals').select('player_id').in('player_id', chunk).eq('state', 'active')),
     loadNotes(supabase, input.coachId, ids),

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ArrowRight, CircleAlert, ClipboardCheck, Info } from 'lucide-react';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import { focusForProposal, type AskProposalView, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
-import { rebuiltHref } from '../../../shell/nav';
+import { askLinkHref } from '../../../data/coachhelm-chat-links';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { playerStatsHref } from './Prose';
@@ -164,8 +164,8 @@ export function AskReceiptCard({ receipt, onAskAgain }: { receipt: ActionReceipt
         <ul className="ch-th-receipt__chips">
           {receipt.created.map((c, i) => {
             const text = `${c.count} ${c.kind}${c.count === 1 ? '' : 's'}`;
-            // A chip is a link only when the screen it opens is rebuilt.
-            const href = c.href ? rebuiltHref(c.href) : null;
+            // A chip is a link only when the screen it opens is rebuilt; a moved Fairway address opens its Clubhouse screen.
+            const href = c.href ? askLinkHref(c.href) : null;
             return (
               <li key={i}>
                 {href ? (

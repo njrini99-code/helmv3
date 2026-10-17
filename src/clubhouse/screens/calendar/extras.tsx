@@ -1,7 +1,9 @@
 'use client';
 
-import { ChevronLeft, Clock, FileText, Lock, Paperclip, Repeat, Text, Trash2, X } from 'lucide-react';
+import { ArrowRight, ChevronLeft, Clock, FileText, Lock, Paperclip, Plane, Repeat, Text, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getItineraryForEvent } from '@/app/golf/actions/travel';
 import { addCoachBlockedTime, deleteCoachBlockedTime } from '@/app/golf/actions/calendar-blocked-time';
 import { attachDocumentToEvent, detachDocumentFromEvent, getEventDocuments } from '@/app/golf/actions/event-documents';
 import { getDocuments } from '@/app/golf/actions/documents';
@@ -124,6 +126,44 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
           </>
         }
       />
+    </div>
+  );
+}
+
+/**
+ * The trip linked to an event (golf_travel_itineraries.event_id), as Fairway's event drawer shows it: "View itinerary"
+ * with the destination, to Travel with that trip open. Read when the event opens, for every viewer (RLS scopes it to the
+ * team). Nothing is drawn while it reads, when there is no trip, or when the read fails (reported, never shown as a trip).
+ */
+export function LinkedTrip({ eventId, preview }: { eventId: string; preview?: boolean }) {
+  const [trip, setTrip] = useState<{ id: string; event_name: string; destination: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    setTrip(null);
+    if (preview) return;
+    getItineraryForEvent(eventId)
+      .then((res) => {
+        if (!live) return;
+        if (!res.success) chReport(new Error(res.error || 'linked trip read failed'), { surface: 'calendar.trip', severity: 'low' });
+        setTrip(res.success ? (res.data ?? null) : null);
+      })
+      .catch((err) => {
+        if (live) chReport(err, { surface: 'calendar.trip', severity: 'low' });
+      });
+    return () => {
+      live = false;
+    };
+  }, [eventId, preview]);
+  if (!trip) return null;
+  return (
+    <div className="ch-in__fact">
+      <Icon icon={Plane} size={15} />
+      <div>
+        <Link className="ch-in__trip" href={`/golf/dashboard/travel?trip=${trip.id}`}>
+          View itinerary · <b>{trip.destination || trip.event_name || 'the trip'}</b>
+          <Icon icon={ArrowRight} size={13} />
+        </Link>
+      </div>
     </div>
   );
 }

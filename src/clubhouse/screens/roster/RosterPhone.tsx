@@ -49,6 +49,9 @@ const ROLL_HOLD_MS = CH_DUR.base * 1000 + 50;
  * and the player profile as a pushed screen with its ⋯ action sheet. Same
  * data, actions and catalog as desktop.
  */
+/** A `?tab=requests` arrival not yet shown (see RosterPhone). */
+let linkedRequests = false;
+
 export function RosterPhone({
   data,
   players,
@@ -81,6 +84,25 @@ export function RosterPhone({
   const copy = useCopyText();
   const [sort, setSort] = useChSessionState<PhoneSort>('phoneSort', 'avg');
   const [requestsOpen, setRequestsOpen] = useState(false);
+  // The bell's join-request notice links here with `?tab=requests` (createTeamJoinRequest): it opens the requests
+  // sheet once, and the param is dropped so a reload shows the list. The flag outlives a remount that dropping the
+  // param can cause (as the linked player does in Roster) and lapses when the sheet closes.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('tab') === 'requests') {
+      linkedRequests = true;
+      url.searchParams.delete('tab');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+    if (!linkedRequests) return;
+    if (jr.reqs.length) setRequestsOpen(true);
+    else linkedRequests = false;
+    // Once, on arrival: the list it reads is the one the page arrived with.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeRequests = useCallback(() => {
+    linkedRequests = false;
+    setRequestsOpen(false);
+  }, []);
   const [acting, setActing] = useState(false);
   const open = openId ? players.find((p) => p.id === openId) : undefined;
   const activeCount = players.filter((p) => p.status === 'active').length;
@@ -267,7 +289,7 @@ export function RosterPhone({
           onStatus(p);
         }}
       />
-      <RequestsSheet open={requestsOpen} onClose={() => setRequestsOpen(false)} data={data} jr={jr} />
+      <RequestsSheet open={requestsOpen} onClose={closeRequests} data={data} jr={jr} />
       {children}
     </main>
   );

@@ -1060,8 +1060,8 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     expect(fig('Greens in regulation')).toBeCloseTo((36 / 54) * 100, 10);
     expect(fig('Scrambling')).toBe(50);
     expect(fig('Putts per round')).toBeCloseTo((30 + 34 + 28) / 3, 10);
-    // Birdies and eagles together.
-    expect(fig('Birdies per round')).toBeCloseTo((2 + 0 + 4) / 3, 10);
+    // Birdies only: r3's eagle is not a birdie, as on production's Team stats page (stats-production-parity.test.ts).
+    expect(fig('Birdies per round')).toBeCloseTo((2 + 0 + 3) / 3, 10);
     expect(fig('Team SG per round')).toBeCloseTo((1.0 - 2.0 + 2.5) / 3, 10);
   });
 

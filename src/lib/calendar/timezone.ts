@@ -137,6 +137,28 @@ export function getZonedDateParts(
 }
 
 /**
+ * The wall-clock date (`yyyy-MM-dd`) and time (`HH:mm`) of an ISO instant AS SEEN in `timezone`. For prefilling an
+ * editor that shows and saves times in the team's zone: the device's own zone (Date getters) is wrong for a coach
+ * whose device is in another zone, and its offset is wrong across a daylight-saving change.
+ */
+export function zonedWallClock(iso: string, timezone: string | null | undefined): { date: string; time: string } | null {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: getValidTimezone(timezone),
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  const hour = get('hour') === '24' ? '00' : get('hour');
+  return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${hour}:${get('minute')}` };
+}
+
+/**
  * The calendar-day "midnight" of an ISO instant, anchored to `timezone`, as a
  * plain local `Date` (constructed via `new Date(year, month - 1, day)`).
  *

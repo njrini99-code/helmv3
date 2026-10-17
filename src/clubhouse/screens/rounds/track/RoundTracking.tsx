@@ -203,7 +203,8 @@ export function RoundTracking(props: RoundTrackingProps) {
                 )}
               </div>
             </div>
-            <ShotLog shots={t.shotHistory} pref={distancePref} />
+            {/* Mid-hole a recorded shot opens from the log (Fairway's shot pills); once holed, the hole review is the one way in. */}
+            <ShotLog shots={t.shotHistory} pref={distancePref} onEdit={holedOut ? undefined : t.handleEditShot} editDisabled={t.undoSaving || t.editSaving} />
           </section>
 
           {holedOut ? (

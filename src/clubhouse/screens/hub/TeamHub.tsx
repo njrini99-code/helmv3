@@ -2,8 +2,9 @@
 
 import { ClipboardList, Megaphone, Plane, Plus, User, UsersRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
+import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -22,7 +23,9 @@ import { PhoneTop } from '../../shell/phone-chrome';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
 import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet, type ChAnnouncementEdit } from './sheets';
 import { TripEditSheet } from './trip-edit';
+import { uploadRefusal } from './upload-rules';
 import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
+import { useToast } from '../../ui/Toast';
 import '../../styles/hub.css';
 
 // The tabs and their `?tab=` parser live in a plain module so the server route can call the parser.
@@ -155,6 +158,10 @@ export function TeamHub({
   const [uploading, setUploading] = useState(false);
 
   const refresh = () => router.refresh();
+  // Team Hub's badge (a player's unread posts, open tasks and new trips) is a polled feed: a write that changes it reads
+  // it again at once, as production's hub does after Got it and a task's tick, instead of up to 45s later.
+  const badges = useNotificationBadges();
+  const recount = () => void badges.refetch().catch(() => {});
 
   // Every follow-up to a write (the optimistic tick and its undo, the tab that opens, the refresh, the row that leaves,
   // the dialog that closes) lives inside the action. The error toast's Retry re-runs the action and nothing else, so
@@ -202,7 +209,10 @@ export function TeamHub({
     () => setAcked(confirmedAck.current.has(a.id) ? withId(a.id) : withoutId(a.id)),
     async () => {
       const res = await writes.acknowledge(a.id);
-      if (normalise(res).success) confirmedAck.current.add(a.id);
+      if (normalise(res).success) {
+        confirmedAck.current.add(a.id);
+        recount();
+      }
       return res;
     },
   ));
@@ -220,7 +230,10 @@ export function TeamHub({
     },
     async () => {
       const res = await (nextDone ? writes.completeTask(t.id) : writes.uncompleteTask(t.id));
-      if (normalise(res).success) confirmedTask.current.set(t.id, nextDone);
+      if (normalise(res).success) {
+        confirmedTask.current.set(t.id, nextDone);
+        recount();
+      }
       return res;
     },
   ));
@@ -264,7 +277,7 @@ export function TeamHub({
       if (normalise(res).success) refresh();
       return res;
     },
-    (f) => ({ done: `${f.name} shared with the team`, failed: `Couldn’t upload ${f.name}`, hint: 'Check the file is under 50 MB and try again.', code: 'CH-10008' }),
+    (f) => ({ done: `${f.name} shared with the team`, failed: `Couldn’t upload ${f.name}`, hint: 'Check the file is under 25 MB and try again.', code: 'CH-10008' }),
   );
   const remove = useAction(
     'hub.delete',
@@ -289,14 +302,55 @@ export function TeamHub({
     },
   );
 
+  // An update opened from the feed is read, here and in the bell (markNotificationRead, as the bell's own open does).
+  const [readUpdates, setReadUpdates] = useState(() => new Set<string>());
+  const onOpenUpdate = (n: ChHubUpdate) => {
+    if (!n.unread || readUpdates.has(n.id) || !n.source || !writes.markUpdateRead) return;
+    setReadUpdates(withId(n.id));
+    void writes
+      .markUpdateRead(n.id, n.source)
+      .then(recount)
+      .catch(() => {});
+  };
+
+  // A player's Travel tab clears the travel part of the badge, once a visit: production's Travel page does this on
+  // mount (markTravelSeen), and /golf/dashboard/travel now opens this tab. A failed mark leaves the badge as it was.
+  const travelSeen = useRef(false);
+  useEffect(() => {
+    if (coach || shownTab !== 'travel' || travelSeen.current || !writes.markTravelSeen) return;
+    travelSeen.current = true;
+    void writes
+      .markTravelSeen()
+      .then((res) => {
+        if (normalise(res).success) recount();
+      })
+      .catch(() => {});
+    // recount reads the badge context of this render; it is stable enough for a one-off.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coach, shownTab, writes]);
+
   const onReply = reply;
   const onAck = ack;
   const onToggle = toggle;
   const onOpen = (f: ChHubFile) => void open.run(f);
+  // A post's attachments: listed on request, each opened like a file in Documents (production's announcement card).
+  const attachments = writes.announcementFiles ? { load: writes.announcementFiles, open: onOpen, opening } : undefined;
+  const toast = useToast();
   const onUpload = async (files: File[]) => {
+    // A file the documents bucket would refuse (its type or its 25 MB limit) is refused here, before it is sent, and
+    // the rest go on (upload-rules.ts; the types are Fairway Documents' picker list).
+    const sendable = files.filter((f) => {
+      const no = uploadRefusal(f);
+      if (no) {
+        haptic('error');
+        toast({ tone: 'error', title: no.title, body: no.body, code: 'CH-10008' });
+      }
+      return !no;
+    });
+    if (!sendable.length) return;
     setUploading(true);
     try {
-      for (const f of files) await upload.run(f);
+      for (const f of sendable) await upload.run(f);
     } finally {
       setUploading(false);
     }
@@ -480,7 +534,7 @@ export function TeamHub({
                         <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
                       </div>
                     ) : featured ? (
-                      <Announcement key={featured.id} a={featured} role={data.role} featured acked={isAcked(featured)} pending={ackPending(featured)} onAck={onAck} onEdit={setEditing} onDelete={(a) => askDelete({ kind: 'ann', a })} />
+                      <Announcement key={featured.id} a={featured} role={data.role} featured acked={isAcked(featured)} pending={ackPending(featured)} onAck={onAck} onEdit={setEditing} onDelete={(a) => askDelete({ kind: 'ann', a })} files={attachments} />
                     ) : null}
                   </SectionBoundary>
                   <SectionBoundary surface="hub.trip" label="The next trip" code="CH-10205">
@@ -495,7 +549,7 @@ export function TeamHub({
                 </div>
                 <div className="ch-hb-col">
                   <SectionBoundary surface="hub.updates" label="Updates" code="CH-10205">
-                    <Updates data={data.updates} covered={covered} />
+                    <Updates data={data.updates} covered={covered} read={readUpdates} onOpen={onOpenUpdate} />
                   </SectionBoundary>
                   {!coach && (
                     <SectionBoundary surface="hub.tasks" label="Your tasks" code="CH-10205">
@@ -515,7 +569,7 @@ export function TeamHub({
                 ) : !anns.length ? (
                   <EmptyState compact code="CH-10307" icon={Megaphone} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
-                  anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} />)
+                  anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)
                 )}
                 {coach && !phone && anns.length > 0 && !data.announcements.error && <ReadMargin anns={anns} />}
               </div>

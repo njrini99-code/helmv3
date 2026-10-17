@@ -35,6 +35,7 @@ const a = vi.hoisted(() => ({
   createGolfEvent: vi.fn(),
   updateGolfEvent: vi.fn(),
   deleteGolfEvent: vi.fn(),
+  deleteGolfEventPermanently: vi.fn(),
   respondToEvent: vi.fn(),
   addCoachBlockedTime: vi.fn(),
   deleteCoachBlockedTime: vi.fn(),
@@ -56,6 +57,7 @@ vi.mock('@/app/golf/actions/calendar-events', () => ({
   createGolfEvent: a.createGolfEvent,
   updateGolfEvent: a.updateGolfEvent,
   deleteGolfEvent: a.deleteGolfEvent,
+  deleteGolfEventPermanently: a.deleteGolfEventPermanently,
   respondToEvent: a.respondToEvent,
 }));
 vi.mock('@/app/golf/actions/calendar-blocked-time', () => ({
@@ -67,6 +69,8 @@ vi.mock('@/app/golf/actions/calendar-feeds', () => ({ getCalendarFeeds: a.getCal
 vi.mock('@/app/golf/actions/event-documents', () => ({ getEventDocuments: a.getEventDocuments, attachDocumentToEvent: a.attachDocumentToEvent, detachDocumentFromEvent: a.detachDocumentFromEvent }));
 vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: a.getDocuments }));
 vi.mock('@/app/golf/actions/attendance', () => ({ getAttendanceReport: a.getAttendanceReport, markAttendance: a.markAttendance }));
+// The linked trip on an open event (LinkedTrip): none, unless a case says otherwise.
+vi.mock('@/app/golf/actions/travel', () => ({ getItineraryForEvent: () => Promise.resolve({ success: true, data: null }) }));
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import GolfCalendarPage from '@/app/golf/(dashboard)/dashboard/calendar/page';
@@ -1454,8 +1458,12 @@ describe('Calendar · the loader', () => {
     const at = (id: string) => d.events.filter((e) => e.id === id).map((e) => [e.date, e.start, e.end, e.allDay]);
     // 10:00 to 11:30 PM on the 14th in New York is the 15th in UTC: it is filed under the 14th.
     expect(at('late')).toEqual([['2026-10-14', 22, 23.5, false]]);
-    // A run that crosses midnight ends at 24 on its own day.
-    expect(at('cross')).toEqual([['2026-10-14', 22.5, 24, false]]);
+    // A run that crosses midnight is on both days, as production's calendar places it: its start to midnight, then
+    // midnight to its end.
+    expect(at('cross')).toEqual([
+      ['2026-10-14', 22.5, 24, false],
+      ['2026-10-15', 0, 1, false],
+    ]);
     // An all-day row keeps its stored dates, one entry per day, each naming the whole span.
     expect(at('span')).toEqual([
       ['2026-10-16', null, null, true],
@@ -1992,6 +2000,55 @@ describe('Calendar · changes that show at once, and changes that are kept', () 
     expect(screen.getAllByText('Saved')).toHaveLength(5);
     expect(screen.getAllByText('Unsaved')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Save attendance · 1' })).toBeTruthy();
+  });
+});
+
+describe('Calendar · a cancelled event can be restored or deleted, as in production (Fairway EventActionsMenu)', () => {
+  const cancelled = () => cal({ events: PREVIEW_CALENDAR.events.map((e) => (e.id === 'e9' ? { ...e, cancelled: true } : e)) });
+
+  it('CH-6016 Restore event sends the event back to confirmed (updateGolfEvent, status only) and re-reads; a failed restore says so', async () => {
+    const user = userEvent.setup();
+    a.updateGolfEvent.mockResolvedValueOnce({ success: true });
+    wrap(cancelled(), { initialEvent: 'e9' });
+    await eventMenu(user, 'Restore event');
+    await waitFor(() => expect(a.updateGolfEvent).toHaveBeenCalledWith('e9', { status: 'confirmed' }));
+    await screen.findByText('Restored · Travel briefing');
+    expect(router.refresh).toHaveBeenCalled();
+    a.updateGolfEvent.mockImplementation(fail);
+    await eventMenu(user, 'Restore event');
+    await expectCode('CH-6016', /Couldn’t restore Travel briefing/);
+  });
+
+  it('CH-6506 CH-6017 Delete permanently asks first, with the warning haptic on the red button; it deletes, closes the panel and re-reads; a failed delete says so', async () => {
+    const user = userEvent.setup();
+    a.deleteGolfEventPermanently.mockImplementationOnce(fail);
+    wrap(cancelled(), { initialEvent: 'e9' });
+    await eventMenu(user, 'Delete permanently');
+    await expectCode('CH-6506', /Delete Travel briefing permanently\?.*Every reply and attendance record for it is erased\. This can’t be undone\./);
+    expect(a.deleteGolfEventPermanently).not.toHaveBeenCalled();
+    hapticSpy.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    await expectCode('CH-6017', /Couldn’t delete Travel briefing/);
+    expect(a.deleteGolfEventPermanently).toHaveBeenCalledWith('e9');
+    a.deleteGolfEventPermanently.mockResolvedValue({ success: true });
+    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    await screen.findByText('Deleted · Travel briefing');
+    expect(router.refresh).toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Travel briefing' })).toBeNull());
+  });
+
+  it('a live event offers neither, and a player never gets them (the server refuses a player too)', async () => {
+    const user = userEvent.setup();
+    wrap(cal(), { initialEvent: 'e9' });
+    await user.click(await screen.findByRole('button', { name: 'More actions' }));
+    expect(screen.queryByRole('menuitem', { name: 'Restore event' })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: 'Delete permanently' })).toBeNull();
+    cleanup();
+    wrap(cal({ ...cancelled(), role: 'player', viewerPlayerId: PREVIEW_CALENDAR.people[0]!.id }), { initialEvent: 'e9' });
+    await user.click(await screen.findByRole('button', { name: 'More actions' }));
+    expect(screen.queryByRole('menuitem', { name: 'Restore event' })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: 'Delete permanently' })).toBeNull();
   });
 });
 

@@ -1,5 +1,26 @@
 # P002 — Home: changelog
 
+## 2026-10-17 — Wiring checked against production
+
+One change: the coach first run's Invite players (desktop and phone) links
+`/golf/dashboard/roster?invite=1`, so it opens Roster's invite sheet instead of
+only the Roster page (`CoachHome.tsx`, `HomeFirstRun`; P003 reads the param).
+
+Home has no write, so the pass checked every link and both loaders. Every link
+resolves for the role that sees it and carries params its target reads:
+Calendar `?new=1` (with `&type=` from the phone's quick chips), `?date=&event=`
+and `?view=day&date=` (`parseView`, `parseNewType`, `parseDate`); Messages
+`?conversation=` (the team chat), `?player=`, `?user=` (Message coach, a coach
+in the Messages directory) and the prefill key (Nudge, Message invitees);
+Stats `?player=`; the round review `/rounds/<id>` (coach and player patterns
+in `nav.ts`); `/rounds/new`, Classes and Roster through `rebuiltHref` for the
+right role. Loaders against Fairway's `dashboard-data.ts`: rounds are
+`is_test = false`, `status = completed` with a total (same); events are team
+events without classes (same) and also drop cancelled events, which Fairway's
+Home (both roles, `dashboard-data.ts`) still shows (Clubhouse is right; left as a Fairway question); the
+roster is active members (same); a meeting with no invitees stays off a
+player's Home, as on the player's Calendar. No realtime on either side.
+
 ## 2026-10-17 — A player's Home reads reply counts, not teammates' replies
 
 ```text

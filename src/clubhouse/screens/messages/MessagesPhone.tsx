@@ -20,6 +20,7 @@ import {
   SquarePen,
   Trash2,
   UserRound,
+  UserMinus,
   Users,
   X,
 } from "lucide-react";
@@ -43,6 +44,7 @@ import { Swap } from "../../ui/Swap";
 import { Switch } from "../../ui/Switch";
 import { useToast } from "../../ui/Toast";
 import { haptic } from "../../lib/haptics";
+import { useChReducedMotion } from "../../lib/reduced-motion";
 import { chTrail } from "../../lib/track";
 import { rebuiltHref } from "../../shell/nav";
 import { PhoneScreen } from "../../shell/PhoneScreen";
@@ -52,10 +54,13 @@ import {
   dayLabel,
   filterConvs,
   firstName,
+  groupLacksPlayer,
+  MESSAGE_MAX,
   sectionOf,
   threadItems,
   type ChConv,
   type ChConvFilter,
+  type ChMember,
   type ChMsg,
 } from "./model";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
@@ -74,11 +79,13 @@ import {
   DeleteConversationModal,
   MessageHits,
   REACTIONS,
+  RemoveMemberModal,
   addAttachments,
   personOf,
   type ChMessagesApi,
 } from "./MessagesView";
 import { useThreadAnchor } from "./use-thread-anchor";
+import { useFocusMessage } from "./use-focus-message";
 
 /** What New message hands the thread that opens next: the text and any files picked with it. */
 type FirstMessage = { text: string; files: File[] };
@@ -357,8 +364,12 @@ function PhoneThread({
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(() => threadItems(api.msgs, api.now, api.timeZone), [api.msgs, api.now, api.timeZone]);
-  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor.
-  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing });
+  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor. A search hit holds it
+  // (useFocusMessage) until the thread has come to the message and its mark has faded.
+  const focusing = !!api.focusMessageId || (!!api.foundMessageId && api.msgs.some((m) => m.id === api.foundMessageId));
+  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
+  const reducedMotion = useChReducedMotion();
+  useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
   useEffect(() => {
     if (firstMessage) onFirstSent();
     // The composer has taken the first message; nothing else to hand over.
@@ -565,12 +576,18 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
   const [leaving, setLeaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [removing, setRemoving] = useState<ChMember | null>(null);
   const [muteBusy, setMuteBusy] = useState(false);
   const titleId = `ch-msp-details-${conv.id}`;
   const mine = conv.creatorId === api.viewer.userId;
   const other = !conv.group ? personOf(api, conv.memberIds[0] ?? "") : undefined;
   const creator = conv.creatorId ? personOf(api, conv.creatorId) : undefined;
-  const calendarHref = coach ? rebuiltHref("/golf/dashboard/calendar?new=1", api.viewer.role) : null;
+  // Schedule opens Calendar's New event, as the desktop thread header does: a direct thread with a player invites that
+  // player alone (`with=`, D-52); a group or a coach's thread invites nobody.
+  const scheduleWith = other?.role === "player" ? other.playerId : null;
+  const calendarHref = coach
+    ? rebuiltHref(`/golf/dashboard/calendar?new=1${scheduleWith ? `&with=${encodeURIComponent(scheduleWith)}` : ""}`, api.viewer.role)
+    : null;
   const statsHref = coach && other?.role === "player" && other.playerId ? rebuiltHref("/golf/dashboard/stats", api.viewer.role) : null;
   const muted = !!api.mute?.muted;
   // Mute lasts until it is turned off (D-47).
@@ -647,6 +664,8 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                       you={mb.userId === api.viewer.userId}
                       sub={[mb.subtitle, mb.userId === conv.creatorId ? "Admin" : null].filter(Boolean).join(" · ")}
                       onMessage={mb.userId === api.viewer.userId ? undefined : () => void message(mb.userId)}
+                      // The creator removes anyone but themselves (removeGolfGroupMember), after a confirm (CH-7504).
+                      onRemove={mine && api.removeMember && mb.userId !== api.viewer.userId ? () => setRemoving(mb) : undefined}
                     />
                   ))
                 )}
@@ -705,11 +724,12 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={() => {}} />
       <DeleteConversationModal api={api} conv={conv} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => {}} />
       {mine && conv.group && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
+      {mine && conv.group && api.removeMember && <RemoveMemberModal api={api} conv={conv} member={removing} onClose={() => setRemoving(null)} />}
     </PhoneScreen>
   );
 }
 
-function PersonRow({ name, sub, you = false, onMessage }: { name: string; sub: string; you?: boolean; onMessage?: () => void }) {
+function PersonRow({ name, sub, you = false, onMessage, onRemove }: { name: string; sub: string; you?: boolean; onMessage?: () => void; onRemove?: () => void }) {
   return (
     <div className="ch-msp-row">
       <Avatar name={name} size={36} />
@@ -720,6 +740,11 @@ function PersonRow({ name, sub, you = false, onMessage }: { name: string; sub: s
         </b>
         {sub && <span>{sub}</span>}
       </span>
+      {onRemove && (
+        <button type="button" className="ch-msp-icon is-remove" aria-label={`Remove ${name}`} onClick={onRemove}>
+          <Icon icon={UserMinus} size={17} />
+        </button>
+      )}
       {onMessage && (
         <button type="button" className="ch-msp-icon" aria-label={`Message ${name}`} onClick={onMessage}>
           <Icon icon={MessageSquare} size={17} />
@@ -796,6 +821,8 @@ function PhoneNewMessage({
   const nameInput = useRef<HTMLInputElement | null>(null);
   const group = coach && to.length > 1;
   const needsName = group && !name.trim();
+  // A coach's group is a team broadcast: with no player in it, it would reach the whole team (groupLacksPlayer).
+  const needsPlayer = group && groupLacksPlayer(api.viewer.role, to, api.directory);
   const people = api.directory.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()));
   const players = api.directory.filter((p) => p.role === "player");
   const coaches = api.directory.filter((p) => p.role === "coach");
@@ -813,10 +840,10 @@ function PhoneNewMessage({
   };
   const go = async () => {
     if (!to.length || busy) return;
-    if (needsName) {
+    if (needsName || needsPlayer) {
       setTouched(true);
       haptic("warning");
-      nameInput.current?.focus();
+      if (needsName) nameInput.current?.focus();
       return;
     }
     setBusy(true);
@@ -905,6 +932,11 @@ function PhoneNewMessage({
               Name the group so players know what it’s for.
             </p>
           )}
+          {touched && needsPlayer && (
+            <p className="ch-field__help is-error" data-ch-code="CH-7105" role="alert">
+              Choose at least one player. Coaches join the group once it exists.
+            </p>
+          )}
           {coach && !q && (
             <>
               <h2 className="ch-ms-sec__l">Quick groups</h2>
@@ -988,6 +1020,7 @@ function PhoneNewMessage({
             placeholder={to.length ? `Message ${who}` : "Choose who to message"}
             value={draft}
             disabled={!to.length}
+            maxLength={MESSAGE_MAX}
             onChange={(e) => setDraft(e.target.value)}
             enterKeyHint="send"
           />

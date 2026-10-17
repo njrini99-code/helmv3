@@ -5,6 +5,7 @@ import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { fullName, groupByPlayer, loadSeasonRounds, mean, MIN_SG_ROUNDS, shortDate, type ChRound } from './season';
 import {
   bandPutts,
+  cachedPutts,
   earlierInFilter,
   filterOptions,
   loadLongestPutt,
@@ -189,17 +190,18 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     const v = cache.byRound.get(r.id)?.[key];
     return typeof v === 'number' ? v : null;
   };
-  const birdiesOf = (r: ChRound): number | null => {
-    const c = cache.byRound.get(r.id);
-    return c && c.birdies != null ? c.birdies + (c.eagles ?? 0) : null;
-  };
+  // Birdies are holes one under par, eagles not folded in: production's definition (the Fairway Team stats page counts
+  // `score === par - 1`, and the round cache's `birdies` is the same holes), so a round with an eagle reads the same here.
+  const birdiesOf = (r: ChRound): number | null => cacheNum(r, 'birdies');
+  // A round with no putt recorded has no putts figure (cachedPutts), as on the Fairway pages.
+  const puttsOf = (r: ChRound): number | null => cachedPutts(cache.byRound.get(r.id));
   // Scoring counts every round (a total-only one included); greens, putts, scrambling, birdies and strokes gained the rounds with their holes.
   const scoring = weightedMean(windowRounds, (r) => r.total_score);
   // Per 18 holes, as the scoring average is: what the gauge draws from par.
   const toPar = weightedMean(windowRounds, (r) => r.score_to_par);
   const prevScoring = hasPrev ? weightedMean(prevRounds, (r) => r.total_score) : null;
   const gir = rate(cur, 'greens_hit', 'greens_total');
-  const puttsPer = weightedMean(holeWindow, (r) => cacheNum(r, 'total_putts'));
+  const puttsPer = weightedMean(holeWindow, puttsOf);
   const scramble = rate(cur, 'scrambles_converted', 'scramble_attempts');
   const birdies = weightedMean(holeWindow, birdiesOf);
   const d = (a: number | null, b: number | null) => (hasPrev && a != null && b != null ? a - b : null);
@@ -245,7 +247,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     { key: 'score', series: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)), label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample, gauge: { kind: 'par', toPar } },
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
     { key: 'gir', series: weekKeys.map((wk) => rate(weekRows(wk), 'greens_hit', 'greens_total')), label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage, gauge: { kind: 'rate', ref: benchGir ?? null } },
-    { key: 'putts', series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), (r) => cacheNum(r, 'total_putts'))), label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, (r) => cacheNum(r, 'total_putts')), weightedMean(holePrev, (r) => cacheNum(r, 'total_putts'))), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage, gauge: { kind: 'putts' } },
+    { key: 'putts', series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), puttsOf)), label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, puttsOf), weightedMean(holePrev, puttsOf)), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage, gauge: { kind: 'putts' } },
     { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage, gauge: { kind: 'rate' } },
     {
       key: 'birdies',
@@ -256,7 +258,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       digits: 1,
       delta: d(weightedMean(holePaired, birdiesOf), weightedMean(holePrev, birdiesOf)),
       lowerIsBetter: false,
-      context: 'Birdies and eagles',
+      context: 'Eagles not counted',
       note: coverage,
       gauge: { kind: 'holes' },
     },
@@ -368,7 +370,8 @@ function seasonBests(
     });
   }
   const birdie = valid
-    .map((r) => ({ r, n: (cache.get(r.id)?.birdies ?? 0) + (cache.get(r.id)?.eagles ?? 0), known: cache.has(r.id) }))
+    // Birdies only, as the Birdies per round card counts them.
+    .map((r) => ({ r, n: cache.get(r.id)?.birdies ?? 0, known: cache.get(r.id)?.birdies != null }))
     .filter((x) => x.known)
     .sort((a, b) => b.n - a.n)[0];
   if (birdie && birdie.n > 0) {

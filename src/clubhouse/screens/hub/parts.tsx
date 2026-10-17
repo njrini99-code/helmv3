@@ -11,11 +11,13 @@ import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
-import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
+import { normalise, useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { SerifText } from '../../ui/SerifText';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { radioKeys, rovingRadios } from './radio';
+import { HUB_UPLOAD_ACCEPT } from './upload-rules';
+import type { ChHubWrites } from './writes';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -185,6 +187,7 @@ export function Announcement({
   onAck,
   onEdit,
   onDelete,
+  files,
 }: {
   a: ChHubAnnouncement;
   role: ChTeamHub['role'];
@@ -199,6 +202,8 @@ export function Announcement({
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
   onEdit: (a: ChHubAnnouncement) => void;
   onDelete: (a: ChHubAnnouncement) => void;
+  /** Lists and opens the post's attachments; without it the count is plain text (a preview set with no read). */
+  files?: ChHubAttachments;
 }) {
   const coach = role === 'coach';
   const pct = a.recipients ? Math.round((a.ackCount / a.recipients) * 100) : 0;
@@ -257,10 +262,99 @@ export function Announcement({
         ) : a.needAck ? (
           <Acknowledgement a={a} acked={acked} pending={pending} onAck={onAck} />
         ) : null}
-        {a.documentCount > 0 && <span className="ch-hb-muted ch-num">{a.documentCount === 1 ? '1 attachment' : `${a.documentCount} attachments`}</span>}
+        {a.documentCount > 0 && !files && <span className="ch-hb-muted ch-num">{attachmentCount(a.documentCount)}</span>}
       </div>
+      {a.documentCount > 0 && files && <Attachments a={a} files={files} />}
     </article>
   );
+}
+
+const attachmentCount = (n: number) => (n === 1 ? '1 attachment' : `${n} attachments`);
+
+/** What a post's attachment list needs from the Hub: the read, and Documents' own open (one tab, one signed link). */
+export interface ChHubAttachments {
+  load: NonNullable<ChHubWrites['announcementFiles']>;
+  open: (f: ChHubFile) => void;
+  /** The file being opened, from Documents' open action. */
+  opening: string | null;
+}
+
+type AttachmentsState = { status: 'idle' } | { status: 'loading' } | { status: 'failed' } | { status: 'ready'; rows: ChHubFile[] };
+
+/**
+ * A post's attachments (production's FairwayPlayerAnnouncementCard lists them with the post and opens each through
+ * getPreviewUrl). The count is a disclosure; the list is read the first time it opens, and a failed read says so with a
+ * Try again in place.
+ */
+function Attachments({ a, files }: { a: ChHubAnnouncement; files: ChHubAttachments }) {
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<AttachmentsState>({ status: 'idle' });
+  const load = async () => {
+    setState({ status: 'loading' });
+    try {
+      const res = normalise(await files.load(a.id));
+      if (res.success && res.data) {
+        setState({ status: 'ready', rows: res.data.files.map((f) => ({ id: f.id, title: f.title, type: kindLabel(f.type), size: null, date: null, isPublic: true })) });
+      } else setState({ status: 'failed' });
+    } catch {
+      setState({ status: 'failed' });
+    }
+  };
+  const toggle = () => {
+    haptic('select');
+    const next = !open;
+    setOpen(next);
+    if (next && state.status === 'idle') void load();
+  };
+  const listId = `ch-hb-ann-files-${a.id}`;
+  return (
+    <div className="ch-hb-ann__files">
+      <button type="button" className="ch-hb-ann__files-t ch-num" aria-expanded={open} aria-controls={listId} onClick={toggle}>
+        <Icon icon={FileText} size={13} />
+        {attachmentCount(a.documentCount)}
+      </button>
+      {open && (
+        <div id={listId}>
+          {state.status === 'loading' || state.status === 'idle' ? (
+            <span className="ch-hb-muted" role="status">
+              Loading attachments…
+            </span>
+          ) : state.status === 'failed' ? (
+            <span className="ch-hb-ann__files-err" role="alert">
+              The attachments didn’t load.{' '}
+              <button type="button" className="ch-hb-ann__files-retry" onClick={() => void load()}>
+                Try again
+              </button>
+            </span>
+          ) : !state.rows.length ? (
+            <span className="ch-hb-muted">These files are no longer shared.</span>
+          ) : (
+            <ul>
+              {state.rows.map((f) => (
+                <li key={f.id}>
+                  <button type="button" className="ch-hb-ann__file" onClick={() => files.open(f)} disabled={files.opening === f.id} aria-label={`Open ${f.title}, ${f.type}`}>
+                    <span>{f.title}</span>
+                    <em className="ch-num">{files.opening === f.id ? 'Opening…' : f.type}</em>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A stored file type (MIME or extension) as the short label Documents shows. */
+function kindLabel(t: string | null): string {
+  const v = (t ?? '').toLowerCase();
+  if (v.includes('pdf')) return 'PDF';
+  if (v.startsWith('image/') || /^(png|jpe?g|gif|webp|heic)$/.test(v)) return 'IMG';
+  if (v.includes('word') || /^docx?$/.test(v)) return 'DOC';
+  if (v.includes('sheet') || v.includes('excel') || v.includes('csv') || /^(xlsx?|csv)$/.test(v)) return 'XLS';
+  if (v.startsWith('text/') || /^(txt|md)$/.test(v)) return 'TXT';
+  return 'FILE';
 }
 
 const TRANSPORT: Record<string, string> = { bus: 'Bus', van: 'Van', flight: 'Flight', carpool: 'Carpool' };
@@ -376,8 +470,15 @@ export function TripPass({
   );
 }
 
-export function Updates({ data, covered = false }: { data: ChTeamHub['updates']; covered?: boolean }) {
-  const unread = data.rows.filter((n) => n.unread).length;
+export function Updates({ data, covered = false, read, onOpen }: {
+  data: ChTeamHub['updates'];
+  covered?: boolean;
+  /** Updates opened this visit: read now, whatever the page loaded. */
+  read?: ReadonlySet<string>;
+  onOpen?: (n: ChHubUpdate) => void;
+}) {
+  const isNew = (n: ChHubUpdate) => n.unread && !read?.has(n.id);
+  const unread = data.rows.filter(isNew).length;
   return (
     <section className="ch-hb-card ch-hb-feed" aria-labelledby="ch-hb-updates">
       <div className="ch-hb-card__h">
@@ -391,14 +492,14 @@ export function Updates({ data, covered = false }: { data: ChTeamHub['updates'];
       ) : (
         <ol>
           {data.rows.map((n: ChHubUpdate) => (
-            <li key={n.id} className={n.unread ? 'is-new' : undefined}>
+            <li key={n.id} className={isNew(n) ? 'is-new' : undefined}>
               {n.href ? (
-                <Link href={n.href}>
-                  <UpdateBody n={n} />
+                <Link href={n.href} onClick={() => onOpen?.(n)}>
+                  <UpdateBody n={{ ...n, unread: isNew(n) }} />
                 </Link>
               ) : (
                 <div className="ch-hb-feed__row">
-                  <UpdateBody n={n} />
+                  <UpdateBody n={{ ...n, unread: isNew(n) }} />
                 </div>
               )}
             </li>
@@ -618,6 +719,7 @@ export function Documents({
             ref={input}
             type="file"
             multiple
+            accept={HUB_UPLOAD_ACCEPT}
             hidden
             aria-hidden="true"
             tabIndex={-1}

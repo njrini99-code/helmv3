@@ -492,7 +492,7 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
     };
     wrap(<CoachHome data={empty} />);
     expect(code('CH-2308')!.textContent).toMatch(/Your season starts here/);
-    expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster');
+    expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
     expect(screen.getByRole('link', { name: 'Add an event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
     expect(screen.queryByRole('link', { name: /New event/ })).toBeNull();
   });

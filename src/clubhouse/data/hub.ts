@@ -9,6 +9,7 @@ import { getPlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { getUnifiedNotifications } from '@/app/golf/actions/unified-notifications';
 import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
+import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
@@ -144,9 +145,12 @@ export interface ChHubUpdate {
   id: string;
   title: string;
   body: string | null;
+  /** Only a link inside GolfHelm, as the bell follows it (isSafeInternalPath); anything else shows as plain text. */
   href: string | null;
   when: string;
   unread: boolean;
+  /** Which feed the row came from, so opening it marks that row read (markNotificationRead), as the bell does. */
+  source?: 'notifications' | 'golf_calendar_notifications';
 }
 
 export interface ChTeamHub {
@@ -245,7 +249,15 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     documents: { folders: docsRes.error ? [] : folders(docsRes.data ?? [], f), error: !!docsRes.error },
     updates: {
       rows: updatesRes.success && updatesRes.data
-        ? updatesRes.data.items.slice(0, 6).map((n) => ({ id: n.id, title: n.title, body: n.body, href: n.action_url, when: f.ago(n.created_at), unread: !n.read_at }))
+        ? updatesRes.data.items.slice(0, 6).map((n) => ({
+            id: n.id,
+            title: n.title,
+            body: n.body,
+            href: isSafeInternalPath(n.action_url) ? n.action_url : null,
+            when: f.ago(n.created_at),
+            unread: !n.read_at,
+            source: n.source,
+          }))
         : [],
       error: !updatesRes.success,
     },
@@ -264,15 +276,17 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     const annsFallback = summary ? null : await getPlayerHubAnnouncements(input.teamId, playerId).catch(() => null);
     const annList = anns ?? (annsFallback?.success ? (annsFallback.data ?? []) : null);
     if (!annList) log('announcements', 'player announcements did not load');
-    // A trip is the player's when they're invited to its event.
-    const tripEvents = (summary?.trips ?? []).map((t) => (t as { event_id?: string | null }).event_id).filter((id): id is string => !!id);
+    // A trip is the player's when they're invited to its event. The aggregate's trips carry no event_id (its select
+    // leaves it out), so the link is read here, for those trips only; a failed read leaves every trip unknown (C-19).
+    const tripLinks = await tripEventIds(supabase, (summary?.trips ?? []).map((t) => t.id));
+    const tripEvents = tripLinks ? [...new Set(tripLinks.values())] : [];
     // The aggregate lists every team event, with the player's own reply or null when they have no place on its invite
     // list (an attendance row is what invites someone, as in Calendar). Only their own are theirs to answer: a reply to
     // any other would add them to that event's list.
     const replyable = (summary?.events ?? []).filter((e) => e.event_type !== CLASS_EVENT_TYPE && e.rsvp_status != null);
     const [authors, invited, closed] = await Promise.all([
       authorNames(supabase, annList ?? []),
-      invitedTo(supabase, tripEvents, playerId),
+      tripLinks ? invitedTo(supabase, tripEvents, playerId) : Promise.resolve(null),
       closedReplies(supabase, replyable.map((e) => e.event_id), now.getTime()),
     ]);
     return {
@@ -299,7 +313,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       trips: {
         rows: summary
           ? summary.trips.map((t) => {
-              const eventId = (t as { event_id?: string | null }).event_id ?? null;
+              const eventId = tripLinks?.get(t.id) ?? null;
+              // No event: nobody is invited to anything, so whether the player travels is unknown, not "Not traveling".
               return trip({ ...(t as unknown as TripRow), event_id: eventId }, f, today, { travelers: null, count: null, mine: eventId && invited ? invited.has(eventId) : null });
             })
           : [],
@@ -458,6 +473,23 @@ export async function attendanceFor(supabase: Awaited<ReturnType<typeof createCl
   return { byEvent, error: false };
 }
 
+/**
+ * Each trip's calendar event, by trip id (trips with none are left out), or null when the read failed. The player hub
+ * aggregate (getPlayerHubSummaryData) selects no event_id, so without this a player's pass always read "—".
+ */
+export async function tripEventIds(supabase: Awaited<ReturnType<typeof createClient>>, tripIds: string[]): Promise<Map<string, string> | null> {
+  const out = new Map<string, string>();
+  for (const ids of chunkIds([...new Set(tripIds)])) {
+    const { data, error } = await supabase.from('golf_travel_itineraries').select('id, event_id').in('id', ids);
+    if (error) {
+      log('tripLinks', error);
+      return null;
+    }
+    for (const r of data ?? []) if (r.event_id) out.set(r.id, r.event_id);
+  }
+  return out;
+}
+
 /** The trips' events the player is invited to, or null when the read failed: unknown, never "Not traveling" (C-19). */
 async function invitedTo(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], playerId: string): Promise<Set<string> | null> {
   if (!eventIds.length) return new Set();
@@ -595,13 +627,41 @@ export function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string
 
 const TYPE_OF: Record<string, string> = { pdf: 'PDF', doc: 'DOC', docx: 'DOC', xls: 'XLS', xlsx: 'XLS', csv: 'XLS', png: 'IMG', jpg: 'IMG', jpeg: 'IMG', gif: 'IMG', webp: 'IMG', heic: 'IMG', txt: 'TXT', md: 'TXT' };
 
+/** A stored MIME type's short name, for the types a team shares (production stores the MIME; older rows an extension). */
+const KIND_OF_MIME: Record<string, string> = {
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'text/plain': 'txt',
+  'text/markdown': 'md',
+  'text/csv': 'csv',
+};
+
+/**
+ * The file's kind as TYPE_OF reads it: from a MIME type (`application/pdf` -> `pdf`, an image -> `png`), from an
+ * extension stored in its place, else from the file's address. A Word file's `application/vnd.openxml…` read "VND."
+ */
+export function fileKind(fileType: string | null, fileUrl: string): string {
+  const t = (fileType ?? '').trim().toLowerCase();
+  if (t.includes('/')) {
+    if (KIND_OF_MIME[t]) return KIND_OF_MIME[t];
+    const sub = t.split('/')[1]!.split(/[;+]/)[0]!;
+    if (TYPE_OF[sub] || t.startsWith('image/')) return TYPE_OF[sub] ? sub : 'png';
+  } else if (t) return t;
+  const fromUrl = fileUrl.split('?')[0]!.split('/').pop() ?? '';
+  return fromUrl.includes('.') ? fromUrl.split('.').pop()!.toLowerCase() : '';
+}
+
 /** Folders in first-seen order ("Team" for none), files newest first. */
 export function folders(docs: Array<{ id: string; title: string; folder: string | null; file_type: string | null; file_url: string; file_size: number | null; updated_at: string | null; created_at: string | null; is_public?: boolean | null }>, f: ReturnType<typeof formatters>) {
   const out = new Map<string, ChHubFile[]>();
   const sorted = [...docs].sort((a, b) => (b.updated_at ?? b.created_at ?? '').localeCompare(a.updated_at ?? a.created_at ?? ''));
   for (const d of sorted) {
     const name = d.folder?.trim() || 'Team';
-    const ext = (d.file_type ?? d.file_url.split('?')[0]!.split('.').pop() ?? '').toLowerCase().replace(/^.*\//, '');
+    const ext = fileKind(d.file_type, d.file_url);
     out.set(name, [
       ...(out.get(name) ?? []),
       {

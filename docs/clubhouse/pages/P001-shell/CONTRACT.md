@@ -76,7 +76,11 @@ Status: DEFINED
 
 The bell reads its list again on every open, and a list already shown stays
 while it does (10301). The sidebar's next event and Roster badge are read on the
-server with each page load.
+server with each page load. A stored link (a bell row, a universal link, a
+tapped push) to the screen already open that names another item through its
+query (`?conversation=`, `?event=`) mounts that screen again once the new
+address arrives, so the item opens as it does from any other screen; the
+screen's own address changes (a week, a tab) keep its state (`shell/relink.ts`).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -88,7 +92,9 @@ Status: DEFINED
 
 A page not rebuilt yet (10401), an empty bell (10402), a bell filter with
 nothing (10403), no next event (10404, the card is left out), and a team that is
-a plain label because there is nothing to switch to (10405). Each page's own
+a plain label because there is nothing to switch to (10405). For a player the
+next event is the next one their Calendar shows: a meeting nobody is invited to
+is the coach's own and is skipped (D2-8); a failed invite read hides nothing. Each page's own
 first-run and filtered empties are in its contract.
 
 | Bridge ID | Code | Name | Meaning |

@@ -65,9 +65,20 @@ describe('Round setup: rules', () => {
     expect(setupBlocker({ ...form, date: '2026-10-15' }, PREVIEW_SETUP_TODAY)).toBe("The round’s date can’t be after today");
     expect(setupBlocker({ ...form, type: 'qualifier' }, PREVIEW_SETUP_TODAY)).toBe('Choose the qualifier round');
     expect(setupBlocker({ ...form, holes: holes.slice(0, 9) }, PREVIEW_SETUP_TODAY)).toBe('This card has 9 holes; play 9');
-    expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4 needs a yardage');
+    // Yardages follow Fairway's rule for the same course (yardageRule, 2026-10-17). A course typed in by hand needs every one.
+    const typed = { ...form.pick!, courseId: null, teeId: null };
+    expect(setupBlocker({ ...form, pick: typed, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4 needs a yardage');
     // A blank hole on the unplayed nine doesn't stop a 9-hole round.
-    expect(setupBlocker({ ...form, count: 9, holes: holes.map((h) => (h.n === 14 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, pick: typed, count: 9, holes: holes.map((h) => (h.n === 14 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    // A library tee's card starts on its pars: a blank yardage starts at 0, as Fairway's preloaded start allows; one over
+    // the limit still stops it.
+    expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, holes: holes.map((h) => ({ ...h, yards: '' })) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '1200' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4: 1200 yards is too long (999 at most)');
+    // A saved course needs a yardage on at least one hole.
+    const saved = { ...form.pick!, teeId: null, savedId: 'sc1' };
+    expect(setupBlocker({ ...form, pick: saved, holes: holes.map((h) => (h.n === 4 ? h : { ...h, yards: '' })) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, pick: saved, holes: holes.map((h) => ({ ...h, yards: '' })) }, PREVIEW_SETUP_TODAY)).toBe('Add a yardage for at least one hole');
     expect(setupBlocker(form, PREVIEW_SETUP_TODAY)).toBeNull();
     expect(holeIssue({ n: 2, par: 4, yards: '0' })).toBe('Hole 2 needs a yardage');
   });

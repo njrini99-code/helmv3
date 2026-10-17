@@ -127,7 +127,7 @@ Tables:   golf_teams (gender), golf_players (id, names, graduation_year, hometow
           golf_team_members (the roster check: this team, this player, active or inactive; for a coach also
           the active team), golf_rounds (the player's season, and for a coach the active team's),
           golf_round_stats_cache (the window's rounds: greens, fairways, putts, scrambles, sand saves, three-putts,
-          penalty strokes, doubles and triples), golf_pga_standards, golf_shots (putt distance and result, for
+          penalty strokes, doubles and triples; a round with 0 putts has none recorded and no putts figure), golf_pga_standards, golf_shots (putt distance and result, for
           the make-rate bands; every approach with a distance before and after, for proximity against the Tour),
           golf_holes (hole, par and score of the window's rounds, for the toughest holes and the opening hole),
           golf_player_focus_areas (active and proposed, 20),

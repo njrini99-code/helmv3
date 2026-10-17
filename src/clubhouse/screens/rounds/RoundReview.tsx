@@ -29,6 +29,7 @@ import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from 
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
 import { checkedRecap } from './recap-check';
+import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
@@ -363,8 +364,10 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const coach = isCoachView(r);
   const hole = r.holes.find((h) => h.n === sel) ?? r.holes[0] ?? null;
   const dist = useMemo(() => distribution(r.holes), [r.holes]);
-  // D13: the stored recap, less any sentence its own figures contradict (recap-check.ts).
-  const recap = useMemo(() => checkedRecap(r), [r]);
+  // The stored recap, or the one written now for a completed round that has none (useRoundRecap, as the Fairway page
+  // does); then D13: less any sentence its own figures contradict (recap-check.ts).
+  const recapText = useRoundRecap(r.id, r.recap, r.recapPending === true);
+  const recap = useMemo(() => checkedRecap({ ...r, recap: recapText }), [r, recapText]);
   const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
   const back = reviewBack(r);

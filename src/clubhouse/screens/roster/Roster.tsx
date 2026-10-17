@@ -50,6 +50,8 @@ const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
 /** A `?player=` link's player, held across a remount until the profile opens (see the effect in Roster). */
 let linkedPlayer: string | null = null;
+/** A `?invite=1` arrival (Home's first-run Invite players) not yet shown, held across a remount like the linked player. */
+let linkedInvite = false;
 
 export function Roster({ data }: { data: ChRoster }) {
   const copy = useCopyText();
@@ -73,6 +75,22 @@ export function Roster({ data }: { data: ChRoster }) {
   const [viewTurn, setViewTurn] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
+  // `?invite=1` (Home's first-run Invite players) opens the invite sheet once, on desktop and the phone, and the param is
+  // dropped so a reload or Back shows the roster. Only the coach's roster reads it: a player's roster and the no-team page
+  // are other screens and ignore it (wiring audit, 2026-10-17).
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('invite') === '1') {
+      linkedInvite = true;
+      url.searchParams.delete('invite');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+    if (linkedInvite) setInvite(true);
+  }, []);
+  const closeInvite = useCallback(() => {
+    linkedInvite = false;
+    setInvite(false);
+  }, []);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
   // The player whose Active/Inactive status the coach is changing (CH-3502).
   const [restatus, setRestatus] = useState<ChRosterPlayer | null>(null);
@@ -267,7 +285,7 @@ export function Roster({ data }: { data: ChRoster }) {
     <>
       <InviteModal
         open={invite}
-        onClose={() => setInvite(false)}
+        onClose={closeInvite}
         teamName={teamRef}
         code={data.joinCode}
         codeFailed={data.teamError}

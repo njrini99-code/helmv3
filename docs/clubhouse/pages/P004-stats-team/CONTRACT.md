@@ -39,6 +39,19 @@ Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
   birdies, strokes gained, the legs, putting). A hole-level card whose round
   count is fewer than the window's says "Hole stats from X of Y rounds".
 
+Parity with production (2026-10-17, `stats-production-parity.test.ts`): on the
+same rounds, every figure is the Fairway Team stats page's (scoring average of
+18-hole rounds, greens, scrambling, putts and birdies pooled over the holes,
+strokes gained per round, rounds counted), checked against that page's own
+code and against every production team's rows (read-only). Birdies are holes
+one under par: an eagle is not a birdie (the card says "Eagles not counted",
+and Season bests' Most birdies counts the same holes). A round with no putt
+recorded has no putts figure (production writes 0 putts for it). The rules
+that differ on purpose: a round posted as a total only counts in scoring
+(Q-123; production counts it nowhere), strokes gained waits for three whole
+rounds (production shows any), and with both lengths in a nine-hole round
+counts half (production averages per round of either length).
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 40101 | — | `TEAM_STATS_READY` | Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data. |
