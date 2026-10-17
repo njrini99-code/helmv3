@@ -2,7 +2,7 @@
 
 import { Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { PLAYER_HELM_HREF, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { PLAYER_HELM_HREF, PLAYER_HELM_VIEWS, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { EmptyState } from '../../../ui/States';
@@ -23,7 +23,7 @@ import { PlayerHelmTabs } from './PlayerHelmTabs';
 export function PlayerHelmFrame({ view, line, off = false, covered = false, after, children }: { view: PlayerHelmView; line: ReactNode; off?: boolean; covered?: boolean; after?: ReactNode; children: ReactNode }) {
   const phone = useChPhone();
   // A switch of view moves the strip at once and dims the page (aria-busy) until the next view is ready.
-  const sw = useViewSwitch(view, (v) => PLAYER_HELM_HREF[v]);
+  const sw = useViewSwitch(view, (v) => PLAYER_HELM_HREF[v], PLAYER_HELM_VIEWS);
   const tabs = off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
     <>
