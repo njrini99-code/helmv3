@@ -311,7 +311,7 @@
   padding: 18px 20px 18px 22px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-soft-bg);
-  box-shadow: var(--ch-well-soft-shadow), inset 3px 0 0 var(--ch-field-green);
+  box-shadow: var(--ch-well-soft-shadow);
   color: var(--ch-text-primary);
 }
 .ch-hl-drill__k {
