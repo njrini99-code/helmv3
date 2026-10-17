@@ -478,7 +478,6 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           />
         ) : (
           <>
-            {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
             {sections.map(([k, l]) => {
               const rows = list.filter(
                 (c) => sectionOf(c.lastAt, api.now, api.timeZone) === k,
@@ -502,6 +501,8 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                   : "Nothing unread. You’re caught up."}
               </div>
             )}
+            {/* Messages first; the team's announcements fold under them (owner, 2026-10-16). */}
+            {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
             <MessageHits api={api} q={q} />
           </>
         )}
