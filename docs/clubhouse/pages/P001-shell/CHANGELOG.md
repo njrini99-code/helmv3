@@ -1,5 +1,20 @@
 # P001 — Shell: changelog
 
+## 2026-10-16 — Section switches skip Next's scroll; the sidebar's sections are fetched ahead
+
+Owner, desktop Safari: every switch waited on the server for the whole page.
+
+- **RouteFrame owns the scroll** (`SectionStrip`, `Sidebar`, `section-switch`): the strip's and the sidebar's links
+  and the swipe's `router.push` pass `scroll: false`. Next's own scroll-to-top read the arriving page's layout
+  inside the navigation commit on every switch (`getClientRects`, 22ms at 4x CPU, Chromium); RouteFrame already
+  opens a new page at the top and restores Back and Forward positions.
+- **The section prefetch runs at every width** (`use-prefetch-tabs.ts`, `SectionStrip`). It was phone only, so on
+  the desktop a sidebar link fetched only down to the route's loading boundary. `fetchAhead` and `whenIdle` are
+  exported for CoachHelm's views to reuse. Still skipped with Data Saver on or offline, and Next prefetches only in
+  production builds.
+- The 22ms is the owner-session measurement from the commit; nothing was re-measured for this entry. Shared pieces:
+  docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
 Owner, testing the preview: on Stats the switcher seemed gone. The bar's

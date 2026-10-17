@@ -411,6 +411,14 @@ before, after, baseline or evidence.
 | `P011__premium-audit__coach__390__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
 | `P011__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P011__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P011__add-a-course__player__1440x900__step-one__after__0db5a9b.png` | after | 0db5a9b | add-a-course (player), 1440x900px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__add-a-course__player__1440x900__step-one__before__22e5426.png` | before | 22e5426 | add-a-course (player), 1440x900px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__add-a-course__player__390x844__step-one__after__0db5a9b.png` | after | 0db5a9b | add-a-course (player), 390x844px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__add-a-course__player__390x844__step-one__before__22e5426.png` | before | 22e5426 | add-a-course (player), 390x844px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__1440x900__browse__after__0db5a9b.png` | after | 0db5a9b | course-picker (player), 1440x900px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__1440x900__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 1440x900px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__390x844__browse__after__0db5a9b.png` | after | 0db5a9b | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__390x844__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 

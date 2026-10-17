@@ -1,5 +1,13 @@
 # P003 — Roster: changelog
 
+## 2026-10-16 — Roster's figures are text until a hand is on the sort (phone)
+
+Replaces the earlier entry that made them text for the first frame only: a frame after the paint the numerals still
+mounted inside the switch. The figures in `RosterPhoneList` are now the same text Number Flow draws until
+pointerdown or focus lands on the sort, the only control that rolls them (`RosterPhone`); pointerdown comes before
+the click, so the first sort still rolls. The text and Number Flow match to the pixel, so nothing moves when they
+swap. `useArrivalPainted` is no longer used here.
+
 ## 2026-10-16 — A switch to Roster on the phone draws its figures as text first
 
 Each row's figure is a Number Flow numeral (it rolls when the coach picks a

@@ -1,5 +1,10 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-16 — Shared change in StatsTeamPhone
+
+`StatsTeamPhone.tsx` is named by this page too; the player's page is unchanged. See P004's entry (rolling figures
+are text until a hand is on the legs).
+
 ## 2026-10-16 — A switch to My stats on the phone renders the first screen, then the rest
 
 Game detail and everything under it (the trend, the rounds, development) start

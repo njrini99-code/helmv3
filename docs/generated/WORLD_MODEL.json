@@ -22249,6 +22249,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/lib/golf/upload-course-image"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
           "anchor": "src/lib/golf/round-missing-recovery"
         },
         {

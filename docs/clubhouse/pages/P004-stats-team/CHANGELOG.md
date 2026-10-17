@@ -1,5 +1,13 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-16 — The rolling figures are text until a hand is on the legs (phone)
+
+Nine Number Flow elements (each its own shadow root, measuring itself) mounted with the page, in or right after a
+switch's long frame. In `StatsTeamPhone` they are the same text until pointerdown or focus lands on the leg rows,
+the only control that changes them (`FlowLive`); pointerdown comes before the click, so the first pick still rolls.
+No visible change, so no before and after captures; the phone team page was not captured and not measured on a
+device.
+
 ## 2026-10-16 — A switch to Stats on the phone renders the first screen, then the rest
 
 A switch to coach Stats was the slowest section switch: a 74–76ms frame

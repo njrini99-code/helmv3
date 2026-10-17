@@ -1,5 +1,14 @@
 # P015 — Auth: changelog
 
+## 2026-10-16 — Keychain AutoFill keeps the dark field; the sign-in scrolls smoothly
+
+- **AutoFill in dark mode** (`auth.css`, `.ch-au-input`): WebKit paints an autofilled input a light fill with dark
+  ink (a user-agent style), a white bar inside the dark field. An inset shadow of the field's own surface now
+  covers the fill, the ink is ours again, and the fill's colour change is held off where the shadow cannot reach.
+  Not captured: AutoFill cannot be driven in a headless browser, so this is untested against a real Keychain fill.
+- **Smooth wheel** (`AuthFrame` mounts `useSmoothWheelEverywhere`): the sign-in screens scrolled in raw steps.
+  Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — Typing, opening and signing in move once, without waiting
 
 Owner, on the phone: "a slight delay with the animation right when you enter

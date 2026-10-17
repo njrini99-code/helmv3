@@ -1,5 +1,31 @@
 # Clubhouse changelog
 
+## 2026-10-16 — One material for every desktop window; smooth wheel and no scrollbars everywhere
+
+Owner, 2026-10-16 ("more premium and add same blur"; the course picker "still looks vibe coded"; "get rid of the shimmer").
+
+- **Desktop windows (`.ch-modal`, `styles/controls.css`).** Every window now takes one material, measured against the
+  Claude and ChatGPT dialogs and Apple's sheets: the page behind dimmed with a light 8px blur, a solid panel with one hairline and one
+  soft shadow on 20px corners, a 20px title, and the footer on the panel's surface over a hairline instead of a
+  tinted bar; dark mode to match. It is a plain desktop query (above 820px): Safari matched nothing for a `not` of
+  `prefers-reduced-transparency`. Phone sheets are unchanged.
+- **A control in the window's head (`ui/Modal.tsx`).** `Modal` takes an `action`, drawn beside Close (the course
+  picker's Add a course). Nothing else passes one yet.
+- **Smooth wheel scrolling everywhere (`lib/smooth-scroll.ts`).** The canvas eased a wheel, but a list, a pane, a
+  modal's body, a sheet and the sign-in screens scrolled in raw steps. One wheel listener,
+  `useSmoothWheelEverywhere` (mounted in `ClubhouseFrame` and `AuthFrame`), eases whatever box the wheel is over,
+  hands on to the box around it when one runs out of room, and never goes past a dialog or a box that contains its
+  overscroll. Only a box that scrolls up and down keeps the wheel (`chScrollsVertically`), so a wide table in a
+  sideways scroller no longer turns easing off under the pointer, and a sideways wheel stays native. The same rules
+  as before: desktop, a notched wheel (a trackpad stays native), never with reduced motion or Animations off.
+- **No scrollbars inside the app (`styles/base.css`).** With "always show scroll bars" (or a mouse) a long page took
+  the bar's width and a short one gave it back, so switching between them moved the shell sideways (desktop
+  Safari). Every scroller still scrolls by trackpad, wheel, touch and keyboard; forced colours bring the bars back.
+  The themed thin scrollbar and its tokens' use here are gone.
+- Verification: `smooth-scroll.test.ts` covers which box keeps the wheel, the hand-on to the box around it, the
+  contained overscroll and the dialog edge. Not checked with a real wheel in Safari, or on an iPhone (the easing is
+  desktop only).
+
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
 Owner, testing the preview: on Stats the switcher at the top seemed to be gone.

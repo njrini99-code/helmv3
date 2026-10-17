@@ -42,7 +42,7 @@ The route is `/golf/dashboard/rounds`, for players. It is the player's third pho
 
 ## Gaps (Q-72), none built as a mock
 
-- **Course photos.** None of the courses has `image_url`, and the handoff says there is no photography. The library's photo tile is a green date tile.
+- **Course photos.** The handoff says there is no photography, and the library's photo tile is a green date tile. The course picker and Add a course (setup) are the exception, by the owner's direction of 2026-10-16: the picker's phone list shows a small photo beside each course (its uploaded photo, else a bundled photo of the real course, else a flag tile), and Add a course shows its course card and a photo slot after the form.
 - **The tee swatch** shows the tee's own colour when its name spells one out ("Men's Blue" is blue). "Championship" and "Qualifying Tees" draw no swatch. A red tee's swatch is the tee's colour, not a status colour.
 - **"Show example"** on the idle card is a board device and is left out.
 

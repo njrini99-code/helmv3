@@ -1,5 +1,66 @@
 # P011 — Rounds: changelog
 
+## 2026-10-16 — The course picker and Add a course, rebuilt
+
+Owner, 2026-10-16, across the day: "wider than tall", "Claude and ChatGPT and Apple level", "it still looks vibe
+coded", no shimmer after picking a course, and Add a course in the picker's corner with the team's own photo.
+
+```text
+Design package: design/handoff/ v2 (rounds-flow.jsx Picker, rounds-course.jsx AddCourse) is the base; the photo cards,
+                the phone list and the two-column Add a course are the owner's direction of 2026-10-16 and depart
+                from the boards
+PR/commit:      agent/course-picker-premium-pr (see the PR)
+Contract IDs:   CH-11510, CH-11511, CH-11403, CH-11404, 111503 (unchanged); no new contract row
+Actions:        round start now also uploads a typed course's photo (best-effort); no new server action
+Data impact:    may write golf_courses.image_url and one object in the course-images bucket per typed course
+Held items:     none
+```
+
+### Changed
+
+- **Desktop picker** (`CoursePicker`, `rounds-setup.css`): the window is landscape, 880px wide and at most 680 tall,
+  and the courses are photo cards, the photo on its own corners with the name, place, par and tee count under it in
+  the page's type, three to a row (880px is the Add a course window's width too). No text over a photo and no scrim. Loading cards are still shapes (no shimmer),
+  six in waiting. The cards fold back as they leave the list's top and unfold coming up from its bottom (a
+  scroll-driven animation; still with reduced motion or Animations off).
+- **Photos are real or absent.** A course shows its uploaded photo (`image_url`), else a bundled photo of the real
+  course (`resolveRealCourseImage`), else a quiet tile with the flag. No stand-in scene and no repeated photo.
+  `ChSetupCourse.image` carries it (`setup-reads`).
+- **Phone picker**: a list to scan with a thumb, a small photo or the flag tile beside the name, place and par, on
+  hairlines; full-width photo cards were a screen each.
+- **No shimmer after the pick**: a course's tees are asked for on hover, focus or press of its card (once while the
+  picker is open; a failed read is asked again), so the tee list usually opens on them. When they are still on the
+  way the list holds a quiet space the height of a tee. The stale-read rule (111503) is unchanged.
+- **Add a course** moved into the picker's head, beside Close (`Modal` `action`), always in reach. On the desktop it
+  is two columns: the form, and the course as the picker will show it, filling in as it is typed, with a photo slot
+  (choose or drop; JPG, PNG, WebP or AVIF, up to 5 MB). The review step is a plain summary, the name field takes
+  focus, one focus ring per field, and the footer reads the note on the left with Cancel and Next together on the
+  right. On the phone the card and its photo slot follow the form, so a phone can add a photo too.
+- **The photo's path** (`AddCourseSheet` -> `ChSetupForm.coursePhoto` -> `toStartForm` `courseImage` ->
+  `useNewRoundSession`): only a course typed by hand and saved carries it. After `contributeCourseFromRound`
+  resolves the library course, the start uploads the photo and sets it as the course's image only when the course
+  has none, not awaited and best-effort: a photo never blocks or undoes a started round.
+- The photo's refusal message is `.ch-acs__photo-error` (it was `-issue`, which the red-token gate could not read as
+  an error); no visible change.
+
+### Why
+
+- The list of rows read as generated UI beside the dialogs the owner compared it with; booking-style photo cards
+  with the text under them, one material and one shadow are the researched answer (see the shared entry for the
+  material).
+- Course photos were left out in Q-72 because no course had `image_url`. A course's own photo, or a real one of it,
+  is now shown when there is one (DESIGN.md Data assumptions, phone/rounds.md).
+
+### Verification
+
+- Before and after captures, Playwright WebKit headless, `/clubhouse-preview/setup` (synthetic fixture, no auth): the
+  picker and Add a course at 1440x900 and 390x844, filed under `.helm/screenshots/clubhouse/P011-rounds/`
+  and listed in VERIFY.md. The fixture's courses carry no photo, so the captures show the flag tiles: a photo card
+  with a real photo was not captured.
+- Not verified: a real iPhone Safari pass; the photo upload end to end against a real round. Note for review: the
+  image write goes through `setCourseImageUrl` -> `updateCourse`, which is gated to coaches, so for a player the
+  write may be refused and swallowed; confirm before relying on the player's photo.
+
 ## 2026-10-14 — The course map hydrates without a mismatch
 
 Every shot-tracking screen logged "A tree hydrated but some attributes of the

@@ -1,5 +1,13 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-16 — The other views are fetched whole once the page is idle
+
+The view strip never prefetched, so on the desktop every switch between Board, Ask and the rest waited on the
+server for the whole page (owner, desktop Safari). `useViewSwitch` takes the list of views (`CoachBoard`,
+`PlayerBoard` and `views/Frame.tsx` pass theirs; the player's is `PLAYER_HELM_VIEWS`) and fetches the others whole
+once the page is idle, as the phone's tabs are (`use-prefetch-tabs`). Data Saver and offline skip it. No visible
+change.
+
 ## 2026-10-16 — The phone Evidence sheet slides out; ivory ink holds at night
 
 - **Evidence on the phone (audit A-18):** the sheet stays mounted after its
