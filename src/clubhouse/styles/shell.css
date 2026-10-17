@@ -3589,7 +3589,7 @@ html[data-fw-theme='dark'] .ch-offline {
   fill: var(--ch-hero-mint-strong);
 }
 .ch-brand__mark-face {
-  fill: var(--ch-on-green-ink);
+  fill: var(--ch-brand-ivory);
 }
 .ch-brand__mark-dimples {
   fill: var(--ch-green-500);
@@ -3604,8 +3604,8 @@ html[data-fw-theme='dark'] .ch-offline {
   top: -3px;
   font: 400 34px/1 var(--ch-font-script);
   letter-spacing: 0.005em;
-  /* Ivory, the same as the logo's ball face (owner, 2026-10-16: "golf should be ivory"). */
-  color: var(--ch-on-green-ink);
+  /* Ivory, the same as the logo's ball face (owner, 2026-10-16: "golf should be ivory", "darker ivory"). */
+  color: var(--ch-brand-ivory);
 }
 .ch-brand__word.is-script b {
   font-weight: 400;

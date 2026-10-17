@@ -16,9 +16,10 @@ ball (radius 71.6) whose face is the overlap of two circles (the crescent below
 is its shade), the 13 dimples and the 6 highlights along the shade, each at its
 place in the master. Checked side by side with the master at 280px. Colours on
 the green: helm and shade in the mint "helm" is set in
-(`--ch-hero-mint-strong`), face and highlights ivory (`--ch-on-green-ink`),
-dimples green (`--ch-green-500`), the gap open to the panel. "Golf" is ivory
-(`--ch-on-green-ink`) to match the face ("golf should be ivory"). 34px, centred with
+(`--ch-hero-mint-strong`), face and highlights ivory,
+dimples green (`--ch-green-500`), the gap open to the panel. "Golf" and the face
+share a darker, warmer ivory, `--ch-brand-ivory` #ebe1c8 ("golf should be
+ivory", "darker ivory"; picked from four shades on the panel). 34px, centred with
 the word in the panel (28px and 30px at the sides). Sharp at any size.
 
 ## 2026-10-16 — The wordmark in Norican, in its frosted panel
