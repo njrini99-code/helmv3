@@ -623,7 +623,9 @@ reload (`lieFromShotResult`) restore position from.
   and that the course is not soft-deleted, then writes only `image_url`, the
   last-edited columns and a `golf_course_edit_history` row). Players are
   still refused every other `golf_courses` write: the UPDATE policy was not
-  widened. `removeCourseImage` stays coach-only. Before this, a player's photo
+  widened. If the RPC is missing (PGRST202 or 42883, code deployed before the
+  migration), `setCourseImageUrl` logs a warning and falls back to the old
+  coach-only `updateCourse` path. `removeCourseImage` stays coach-only. Before this, a player's photo
   went through `updateCourse` and its coach gate, so the upload succeeded and
   the photo silently never landed.
 - A round-start failure is shown beside the control that started the round.
