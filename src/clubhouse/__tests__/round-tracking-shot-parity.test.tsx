@@ -102,7 +102,7 @@ describe('P011 CH-11505 a recorded shot opens before the hole is holed', () => {
     const onAutoSave = vi.fn(async () => {});
     const { user } = setup({ onAutoSave });
     await user.click(screen.getByRole('button', { name: /1 stroke/ }));
-    await user.click(screen.getByRole('button', { name: 'Change shot 1: Tee · Driver, 400 yds → fairway · 150 yds left' }));
+    await user.click(screen.getByRole('button', { name: 'Change shot 1: Tee · Driver, 400\u00a0yds → fairway · 150\u00a0yds left' }));
     const sheet = document.querySelector('[data-ch-code="CH-11505"]') as HTMLElement;
     expect(within(sheet).getByRole('heading', { name: 'Change shot 1' })).toBeInTheDocument();
     const after = within(sheet).getByLabelText('Distance after');

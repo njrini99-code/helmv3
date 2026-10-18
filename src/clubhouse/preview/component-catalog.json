@@ -10533,163 +10533,163 @@
           "name": "--ch-rd-under-a",
           "value": "#ff9d8e",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3693
+          "line": 3711
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#d0574a",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3694
+          "line": 3712
         },
         {
           "name": "--ch-rd-over-a",
           "value": "rgb(244 238 221 / 0.36)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3695
+          "line": 3713
         },
         {
           "name": "--ch-rd-over-b",
           "value": "rgb(244 238 221 / 0.9)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3696
+          "line": 3714
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-stage-ink)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3697
+          "line": 3715
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-stage-ink-soft)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3698
+          "line": 3716
         },
         {
           "name": "--ch-rd-rule",
           "value": "var(--ch-stage-rule)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3699
+          "line": 3717
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(244 238 221 / 0.58)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3700
+          "line": 3718
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3701
+          "line": 3719
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3702
+          "line": 3720
         },
         {
           "name": "--ch-rd-chip",
           "value": "rgb(231 184 102 / 0.16)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3703
+          "line": 3721
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(231 184 102 / 0.5)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3704
+          "line": 3722
         },
         {
           "name": "--ch-rd-under-ink",
           "value": "var(--ch-stage-red)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3705
+          "line": 3723
         },
         {
           "name": "--ch-rd-delay",
           "value": "min(calc(var(--ch-i, 0) * var(--ch-dur-press) / 3), var(--ch-dur-reveal))",
           "scope": ".ch-rd .ch-rd-rib__bar",
-          "line": 3838
+          "line": 3856
         },
         {
           "name": "--ch-rd-under-a",
           "value": "#d9665a",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3918
+          "line": 3936
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#a8372b",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3919
+          "line": 3937
         },
         {
           "name": "--ch-rd-over-a",
           "value": "var(--ch-ink-400)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3920
+          "line": 3938
         },
         {
           "name": "--ch-rd-over-b",
           "value": "var(--ch-ink-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3921
+          "line": 3939
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3922
+          "line": 3940
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-text-secondary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3923
+          "line": 3941
         },
         {
           "name": "--ch-rd-rule",
           "value": "rgb(110 98 62 / 0.14)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3924
+          "line": 3942
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(28 27 24 / 0.5)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3925
+          "line": 3943
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-champagne-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3926
+          "line": 3944
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-green-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3927
+          "line": 3945
         },
         {
           "name": "--ch-rd-chip",
           "value": "var(--ch-green-50)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3928
+          "line": 3946
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(21 90 57 / 0.25)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3929
+          "line": 3947
         },
         {
           "name": "--ch-rd-delay",
           "value": "0s",
           "scope": "@media (prefers-reduced-motion: reduce) → .ch-rd .ch-rd-rib__bar",
-          "line": 4161
+          "line": 4179
         }
       ]
     },

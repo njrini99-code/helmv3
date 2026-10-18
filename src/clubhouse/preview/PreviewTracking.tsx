@@ -98,6 +98,7 @@ export function PreviewTracking({ state }: { state?: string }) {
         onExit={() => setSheet('exit')}
         onOpenScorecard={() => setSheet('card')}
         holeShots={(i) => shotsByHole[i] ?? null}
+        onReviewRound={holes.every((h) => h.score !== null) ? () => setSheet('summary') : undefined}
       />
       <ExitSheet
         open={sheet === 'exit'}

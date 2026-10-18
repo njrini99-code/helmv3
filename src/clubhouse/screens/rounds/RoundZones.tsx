@@ -187,7 +187,7 @@ export function ScoreFlow({
         <div className="ch-rzstage__tipx" style={{ '--ch-rz-x': (x(shown.n) / W) * 100 } as CSSProperties} role="presentation" aria-hidden={cur ? undefined : true}>
           <div className={'ch-rzstage__tip' + (cur ? ' is-on' : '')}>
             <b>
-              Hole {shown.n} · par {shown.par}
+              Hole {shown.n} · Par {shown.par}
             </b>
             <span>
               <i style={{ background: COLOR[shown.result] }} />

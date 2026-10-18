@@ -19,6 +19,7 @@ import { heroDistance, scoreName, shotKind } from './labels';
 import { HoleMap, ShotLog, TrackStrip } from './parts';
 import { EditShotSheet, PenaltySheet, UnsavedSheet } from './sheets';
 import { ShotEntry } from './ShotEntry';
+import { useWakeLock } from './use-wake-lock';
 import '../../../styles/rounds-track.css';
 
 /** The round this screen is scoring, for its top bar. */
@@ -35,6 +36,8 @@ export type RoundTrackingProps = ShotTrackingProps & {
   onOpenScorecard?: () => void;
   /** A finished hole's shots, for the course view's ‹ › (the round screen already holds them). Without it other holes show no shots. */
   holeShots?: (index: number) => ShotRecord[] | null;
+  /** Opens the finished round to post it, once every hole is in (CH-11910). Drawn as the shot review's footer action. */
+  onReviewRound?: () => void;
 };
 
 // CH-11706: going to another hole is a selection tick. Module-level, so the
@@ -62,7 +65,7 @@ const SAVE_WORDS = {
  * scorecard and submitting (see `round-sheets.tsx`).
  */
 export function RoundTracking(props: RoundTrackingProps) {
-  const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, startHole = 1 } = props;
+  const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, onReviewRound, startHole = 1 } = props;
   const t = useShotTracking(props, PORTS);
   const editOpen = !!(t.showEditModal && t.editingShot && t.editFormData);
   const [lastEdit, setLastEdit] = useState<{ shot: NonNullable<typeof t.editingShot>; form: NonNullable<typeof t.editFormData> } | null>(null);
@@ -71,6 +74,8 @@ export function RoundTracking(props: RoundTrackingProps) {
   // bar and bell go (rounds-track.css hides them while this is up) and the tab bar goes.
   usePhoneTabsHidden(true);
   usePhoneImmersive(true);
+  // On the course the screen stays on between shots (wave 9, owner decision A); a no-op where it isn't supported.
+  useWakeLock();
   const { distancePref } = useDistanceUnits();
   const [courseOpen, setCourseOpen] = useState(false);
   const hole = t.currentHole;
@@ -251,6 +256,7 @@ export function RoundTracking(props: RoundTrackingProps) {
               pref={distancePref}
               checkpointStatus={t.holeCheckpointStatus}
               backTo={backTo}
+              onReviewRound={frontier < 0 ? onReviewRound : undefined}
               showUndoConfirm={t.showUndoConfirm}
               undoSaving={t.undoSaving}
               undoError={t.state.undoError}

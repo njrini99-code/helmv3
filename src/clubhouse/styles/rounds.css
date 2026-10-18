@@ -2183,6 +2183,11 @@ html[data-fw-theme='dark'] .ch-rd-sc__date {
 html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   background: var(--ch-green-fill-600);
 }
+/* A fairway or green hit on the review's card: the deep fill measured 2.5:1 on the dark cell; the lighter green
+   keeps the dot at 3:1 or more on the cell, a hovered cell and the picked one. */
+html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
+  background: var(--ch-green-400);
+}
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
@@ -3249,6 +3254,19 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   }
   .ch-rv .ch-rzplate {
     padding: 14px 12px 6px;
+  }
+}
+/* Each row of fairway or green marks is its own size container: where eighteen in a line would sit under the 22px mark
+   apart (a phone's are about 14px), the holes fold into nines, Out above In as the card reads, so every mark and
+   number keeps its own column. A desktop row (about 550px) keeps one line. */
+.ch-rv .ch-rzhit {
+  container: chrh / inline-size;
+}
+@container chrh (max-width: 520px) {
+  .ch-rv .ch-rzhit > div {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    row-gap: 10px;
   }
 }
 .ch-rv .ch-rzstage .ch-rzsvg,

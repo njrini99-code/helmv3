@@ -10,6 +10,7 @@ import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
 import { RoundTypeSheet } from './entry/RoundTypeSheet';
+import { scoreName } from './track/labels';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
@@ -474,7 +475,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           title="The round"
           def={
             <>
-              The score hole by hole against par. The line rises when {coach ? 'the player gains' : 'you gain'} on par and falls when strokes go back. <b>Lower is better.</b>
+              The score hole by hole against par. The line rises when {coach ? 'the player gains' : 'you gain'} on par and falls when strokes go back. <b>A lower score is better.</b>
             </>
           }
           read={
@@ -578,8 +579,8 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                     >
                       <span className="ch-rzcost__n ch-num">{c.n}</span>
                       <span className="ch-rzcost__t">
-                        Hole {c.n} · par {c.par}
-                        <small>{r.holes.find((h) => h.n === c.n)?.shots.length ? `${r.holes.find((h) => h.n === c.n)!.shots.length} shots` : 'Scored as a total'}</small>
+                        Hole {c.n} · Par {c.par}
+                        <small>{r.holes.find((h) => h.n === c.n)?.shots.length ? scoreName(c.score, c.par) : `${scoreName(c.score, c.par)} · scored as a total`}</small>
                       </span>
                       <b className="ch-num">{c.score}</b>
                       <em className="ch-num">{formatSigned(c.delta, 0)}</em>
@@ -702,7 +703,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                     <div className="ch-znlines">
                       <span>
                         <b>Hole {hole.n}</b>
-                        {hole.par != null ? ` · par ${hole.par}` : ''}
+                        {hole.par != null ? ` · Par ${hole.par}` : ''}
                         {hole.yards ? ` · ${hole.yards} yds` : ''}
                       </span>
                       {hole.putts != null && (
@@ -744,7 +745,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                 n={6}
                 alt
                 title="In words"
-                def={<>What CoachHelm read in the round, and what the player wrote when posting it.</>}
+                def={<>What CoachHelm read in the round, and {coach ? 'what the player wrote' : 'what you wrote'} when posting it.</>}
               >
                 {recap && (
                   // C2: a passage under a rule, labelled in words for who wrote it (no sparkle, D14).

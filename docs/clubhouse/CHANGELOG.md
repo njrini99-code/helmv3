@@ -1,5 +1,18 @@
 # Clubhouse changelog
 
+## 2026-10-18 — On the course: tracking and the round review
+
+Tracking: the Undo-shot and Discard-round confirms keep their button ink and
+sit on their own row; the save line stays on one line; a missed putt offers
+2–12 ft quick picks and 44px miss chips; once every hole is in, "Review and
+post" is the shot review's footer primary (the top note's button is
+secondary); short phones compact the hole hero so the putt result is on the
+first screen; the screen stays awake while tracking (`track/use-wake-lock.ts`,
+silent where unsupported). Round review: Fairway and GIR marks fold into Out
+and In rows on narrow widths, the dark GIR dot reads at 5:1, distances never
+break from their unit, one "Par" casing, score names instead of shot counts,
+and the player reads "what you wrote" about their own notes.
+
 ## 2026-10-18 — Premium details: edges, presses, figures and fallbacks
 
 `ui.css`: buttons carry their inline padding as `--ch-btn-pad-x` (14, sm 11,

@@ -69,8 +69,8 @@ afterEach(() => {
 describe('112401 Round tracking: words', () => {
   it('names shots, lines, scores and the round so far', () => {
     expect(shotTitle(TEE)).toBe('Tee · Driver');
-    expect(shotLine(TEE, 'yards')).toBe('420 yds → fairway · 150 yds left');
-    expect(shotLine(TEE, 'meters')).toBe('384 m → fairway · 137 m left');
+    expect(shotLine(TEE, 'yards')).toBe('420\u00a0yds → fairway · 150\u00a0yds left');
+    expect(shotLine(TEE, 'meters')).toBe('384\u00a0m → fairway · 137\u00a0m left');
     const putt = shot({
       shotNumber: 3,
       shotType: 'putting',
@@ -82,7 +82,7 @@ describe('112401 Round tracking: words', () => {
       puttSlope: 'uphill',
     });
     expect(shotTitle(putt)).toBe('Putt');
-    expect(shotLine(putt, 'yards')).toBe('12 ft → holed · L → R, uphill');
+    expect(shotLine(putt, 'yards')).toBe('12\u00a0ft → holed · L → R, uphill');
     expect(shotLine(shot({ shotNumber: 2, shotType: 'penalty', result: 'penalty', isPenalty: true, penaltyType: 'water' }), 'yards')).toBe('+1 stroke');
     expect([scoreName(3, 4), scoreName(4, 4), scoreName(6, 4), scoreName(9, 4), scoreName(1, 3)]).toEqual(['Birdie', 'Par', 'Double bogey', '+5', 'Hole in one']);
     expect(roundSoFar([{ ...HOLES[0]!, score: 3 }, { ...HOLES[1]!, score: 6 }, HOLES[2]!])).toEqual({ thru: 2, strokes: 9, toPar: 0 });
@@ -93,6 +93,11 @@ describe('112401 Round tracking: words', () => {
       [5, 10, 15, 20, 30, 40],
       [1, 2, 3, 5, 9, 12],
       [120, 140, 160, 180],
+    ]);
+    // A missed putt's leave: the short ones (wave 9).
+    expect([quickPicks('putt', 'yards'), quickPicks('putt', 'meters')]).toEqual([
+      [2, 3, 4, 6, 8, 12],
+      [0.5, 1, 1.5, 2, 3, 4],
     ]);
   });
 });
@@ -498,6 +503,8 @@ describe('Round tracking: the round sheets', () => {
     expect(within(score!).getAllByRole('cell').at(-1)).toHaveTextContent('9');
     expect(within(putts!).getAllByRole('cell').at(-1)).toHaveTextContent('3');
     expect(within(out).getByRole('columnheader', { name: '3' })).toHaveAttribute('aria-current', 'step');
+    // Where the player stands, as the Exit sheet says it (wave 9).
+    expect(screen.getByText('Finley GC · Blue · thru 2 · E')).toBeInTheDocument();
   });
 
   it('CH-11509 a nine with nothing scored totals only its par', () => {
@@ -506,6 +513,7 @@ describe('Round tracking: the round sheets', () => {
     expect(within(par!).getAllByRole('cell').at(-1)).toHaveTextContent('12');
     expect(within(score!).getAllByRole('cell').at(-1)).toHaveTextContent('—');
     expect(within(putts!).getAllByRole('cell').at(-1)).toHaveTextContent('—');
+    expect(screen.getByText('Finley GC · thru 0')).toBeInTheDocument();
   });
 
   it('CH-11508 the finished round: figures, and Submit', async () => {
@@ -599,5 +607,23 @@ describe('P011 board 3b: the drawn hole and the course view', () => {
     expect(within(view).getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
     expect(within(view).getByText('Tee · Driver')).toBeInTheDocument();
     expect(props.onNavigateToHole).not.toHaveBeenCalled();
+  });
+});
+
+describe('CH-11910 every hole in: Review and post in the shot review footer', () => {
+  const ACE = shot({ shotNumber: 1, shotType: 'tee', lieBefore: 'tee', distanceToHoleBefore: 170, result: 'hole' });
+  const done = HOLES.map((h, i) => ({ ...h, score: [4, 5, 1][i]! }));
+
+  it('opens the finished round from the thumb zone once the last hole is in', async () => {
+    const onReviewRound = vi.fn();
+    const { user } = setup({ holes: done, currentHoleIndex: 2, initialShots: [ACE], initialShotNumber: 2, onReviewRound });
+    await user.click(screen.getByRole('button', { name: 'Review and post' }));
+    expect(onReviewRound).toHaveBeenCalledTimes(1);
+  });
+
+  it('is not drawn while a hole is still to play', () => {
+    setup({ holes: done.map((h, i) => (i === 0 ? { ...h, score: null } : h)), currentHoleIndex: 2, initialShots: [ACE], initialShotNumber: 2, onReviewRound: vi.fn() });
+    expect(screen.queryByRole('button', { name: 'Review and post' })).toBeNull();
+    expect(screen.getByRole('button', { name: /Back to hole 1/ })).toBeInTheDocument();
   });
 });

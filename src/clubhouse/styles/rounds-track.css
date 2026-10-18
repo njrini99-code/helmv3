@@ -820,10 +820,10 @@ button.ch-rt-strip__h {
 .ch-rt-tags button {
   all: unset;
   cursor: pointer;
-  height: 40px;
+  height: 44px;
   padding: 0 14px;
   border-radius: 999px;
-  font: 500 calc(13 * var(--ch-type-k))/40px var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/44px var(--ch-font-sans);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
 }
@@ -965,10 +965,12 @@ button.ch-rt-strip__h {
 .ch-rt-note.is-saving {
   animation: ch-rt-saving-in var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-base) backwards;
 }
+/* The question on its own row, then Keep it and the danger button together under it, at the right (wave 9). */
 .ch-rt-confirm {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   margin: 12px 18px 0;
   padding: 12px;
@@ -978,7 +980,7 @@ button.ch-rt-strip__h {
   scroll-margin-bottom: 140px;
 }
 .ch-rt-confirm > div {
-  flex: 1 1 200px;
+  flex: 1 1 100%;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -986,7 +988,8 @@ button.ch-rt-strip__h {
 .ch-rt-confirm b {
   font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
-.ch-rt-confirm span {
+/* The question's own lines only: a button's label keeps its button's ink. */
+.ch-rt-confirm > div > span {
   font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-ink-600);
 }
@@ -2124,13 +2127,15 @@ button.ch-rt-strip__h {
   .ch-rt-top__c span {
     color: var(--ch-on-green-ink-soft);
   }
-  /* The save line (CH-11901), set quietly beside the readout (board 3: "Saved on this phone"). It wraps inside its own
-     column rather than crowd the distance, and holds its place at the foot's baseline. */
+  /* The save line (CH-11901), set quietly beside the readout (board 3: "Saved on this phone"). It stays one line, its
+     icon next to its words; when the readout leaves no room it drops under it, at the right (wave 9: shrunk to its
+     longest word it wrapped to three lines on the drawn hole, its icon 60px from the words). */
   .ch-rt-hero__foot {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 12px;
+    gap: 4px 12px;
     min-width: 0;
   }
   .ch-rt-hero__foot > .ch-rt-hero__dist {
@@ -2142,18 +2147,23 @@ button.ch-rt-strip__h {
     flex: 0 0 auto;
   }
   .ch-rt-sync {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     align-self: flex-end;
     align-items: flex-start;
+    justify-content: flex-end;
     gap: 5px;
-    max-width: 46%;
     margin: 0 0 3px;
+    white-space: nowrap;
     padding: 0;
     border-radius: 0;
     font: 500 calc(12 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     text-align: right;
     background: none;
     color: var(--ch-on-green-ink-soft);
+  }
+  /* Past base.css's `.ch-root p` margin reset, which otherwise leaves a dropped line at the left. */
+  .ch-rt-hero__foot > .ch-rt-sync {
+    margin-left: auto;
   }
   .ch-rt-sync > svg,
   .ch-rt-sync > .ch-rt-spin {
@@ -2723,6 +2733,59 @@ button.ch-rt-strip__h {
   }
   :where(html[data-fw-theme='dark']) .ch-rt-review__f {
     background: rgb(36 42 37 / 0.96);
+  }
+}
+
+/* Short phones (wave 9, owner decision E; 375 x 667, an iPhone SE): the field order stays (rounds.md, "Tap in on the
+   phone"), so the hole hero gives the height back instead. A smaller numeral and readout, and the drawn hole at the
+   right at a smaller scale (its whole shape still shows), bring a putt's Putt result onto the first screen. Taller
+   phones and the desktop are untouched. */
+@media (max-height: 700px) {
+  @container chrt (max-width: 640px) {
+    .ch-rt-body {
+      padding-top: 4px;
+    }
+    .ch-rt-hero__map {
+      justify-self: end;
+      width: 54%;
+    }
+    /* Its left edge dissolves into the field too, as its top and bottom do. */
+    .ch-rt-hero__map::after {
+      background:
+        linear-gradient(90deg, var(--ch-green-900), transparent 24%),
+        linear-gradient(180deg, var(--ch-green-900), transparent 26%, transparent 66%, var(--ch-green-900));
+    }
+    .ch-rt-panel {
+      margin-top: 6px;
+    }
+    .ch-rt-hero__main {
+      gap: 6px;
+      padding: 2px 20px 4px;
+    }
+    .ch-rt-hero__k {
+      gap: 4px;
+    }
+    .ch-rt-hno {
+      font-size: 40px;
+    }
+    .ch-rt-hero__dist b {
+      font-size: 38px;
+    }
+    .ch-rt-hero__done b {
+      font-size: 22px;
+    }
+  }
+}
+
+/* The page is what scrolls the shot screen on a phone, under the sticky action bar (96px tall with its hint): whatever
+   is brought into view (Tap in, a focused box, the undo question) lands clear of the bar, not under it (wave 9, E). The
+   undo question's own margin then only needs a breath. */
+@media (max-width: 820px) {
+  html:has(.ch-rt-q) {
+    scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  .ch-rt-panel .ch-rt-confirm {
+    scroll-margin-bottom: 12px;
   }
 }
 

@@ -88,9 +88,12 @@ export function Scorecard({ holes, current }: { holes: ChCardHole[]; current: nu
 
 /** CH-11509: the scorecard, from the top bar. */
 export function ScorecardSheet({ open, onClose, course, tee, holes, current }: { open: boolean; onClose: () => void; course: string; tee: string | null; holes: ChCardHole[]; current: number }) {
-  const thru = holes.filter((h) => h.score != null).length;
+  const done = holes.filter((h) => h.score != null);
+  // Where the player stands, as the Exit sheet says it ("thru 3 · +1"): Tot counts the whole nine's par.
+  const toPar = done.reduce((s, h) => s + (h.score ?? 0) - h.par, 0);
+  const thru = `thru ${done.length}${done.length ? ` · ${formatToPar(toPar)}` : ''}`;
   return (
-    <Modal open={open} onClose={onClose} title="Scorecard" description={[course, tee, `thru ${thru}`].filter(Boolean).join(' · ')} icon={Table2} width={760} code="CH-11509">
+    <Modal open={open} onClose={onClose} title="Scorecard" description={[course, tee, thru].filter(Boolean).join(' · ')} icon={Table2} width={760} code="CH-11509">
       <Scorecard holes={holes} current={current} />
     </Modal>
   );
@@ -168,12 +171,12 @@ export function ExitSheet({
               </span>
             )}
           </div>
-          <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" disabled={discarding} onClick={() => setConfirm(false)}>
+          <button type="button" className="ch-btn ch-btn--ghost" disabled={discarding} onClick={() => setConfirm(false)}>
             <span>Keep it</span>
           </button>
           <button
             type="button"
-            className="ch-btn ch-btn--danger ch-btn--sm"
+            className="ch-btn ch-btn--danger"
             disabled={discarding}
             onClick={() => {
               haptic('warning');
@@ -373,7 +376,7 @@ export function SubmitOverlay({
               Round posted
             </h2>
             <span className="ch-rt-subm__m">
-              Your {score ? `${score.strokes} (${formatToPar(score.toPar)})` : 'round'} at {course} is posted.{coach ? ` ${coach} can see it now.` : ''}
+              Your {score ? `${score.strokes} (${formatToPar(score.toPar)})` : 'round'} at {course} is posted.{coach ? ` ${coach.replace(/ /g, '\u00a0')} can see it now.` : ''}
             </span>
             {reviewHref && (
               <a className="ch-btn ch-btn--primary ch-btn--lg" href={reviewHref}>

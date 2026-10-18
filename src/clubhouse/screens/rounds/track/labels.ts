@@ -74,9 +74,9 @@ export const PENALTY_LABEL: Record<NonNullable<ShotRecord['penaltyType']>, strin
   lost: 'Lost ball',
 };
 
-/** "150 yds", "12 ft", or "137 m" in meters. */
+/** "150 yds", "12 ft", or "137 m" in meters, with a no-break space so a line never wraps between number and unit. */
 export function distanceText(value: number, unit: 'yards' | 'feet', pref: DistancePreference): string {
-  return unit === 'feet' ? `${feetToDisplay(value, pref)} ${feetLabel(pref)}` : `${yardsToDisplay(value, pref)} ${yardsLabel(pref)}`;
+  return unit === 'feet' ? `${feetToDisplay(value, pref)}\u00a0${feetLabel(pref)}` : `${yardsToDisplay(value, pref)}\u00a0${yardsLabel(pref)}`;
 }
 
 /** The big number in the hole hero and the words under it. */
@@ -156,12 +156,14 @@ export function isDistanceText(text: string): boolean {
 }
 
 /**
- * The quick picks under the distance box. Putts and on-green proximity use the
- * Fairway entry's values (feet, or meters); off the green the board's yard
- * picks, and their nearest round meters in meters.
+ * The quick picks under the distance box. On-green proximity uses the Fairway
+ * entry's values (feet, or meters); a missed putt's leave the short ones most
+ * misses leave (wave 9); off the green the board's yard picks, and their
+ * nearest round meters in meters.
  */
-export function quickPicks(context: 'feet' | 'tee' | 'approach', pref: DistancePreference): number[] {
+export function quickPicks(context: 'feet' | 'putt' | 'tee' | 'approach', pref: DistancePreference): number[] {
   if (context === 'feet') return pref === 'meters' ? [1, 2, 3, 5, 9, 12] : [5, 10, 15, 20, 30, 40];
+  if (context === 'putt') return pref === 'meters' ? [0.5, 1, 1.5, 2, 3, 4] : [2, 3, 4, 6, 8, 12];
   if (context === 'tee') return pref === 'meters' ? [110, 130, 145, 165] : [120, 140, 160, 180];
   return pref === 'meters' ? [10, 20, 35, 75] : [10, 20, 40, 80];
 }

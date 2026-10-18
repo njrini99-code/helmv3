@@ -277,7 +277,7 @@ export function ShotEntry(p: ShotEntryProps) {
               />
               <em>{unitWord}</em>
               <div className="ch-rt-quick" role="group" aria-label="Quick distances">
-                {quickPicks(afterUnit === 'feet' ? 'feet' : p.isTeeShot ? 'tee' : 'approach', p.pref).map((q) => (
+                {quickPicks(afterUnit === 'feet' ? (p.isPutting ? 'putt' : 'feet') : p.isTeeShot ? 'tee' : 'approach', p.pref).map((q) => (
                   <button
                     key={q}
                     type="button"
@@ -412,12 +412,12 @@ export function UndoConfirm({ shots, saving, error, dispatch, onUndo }: { shots:
           </span>
         )}
       </div>
-      <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>
+      <button type="button" className="ch-btn ch-btn--ghost" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>
         <span>Keep it</span>
       </button>
       <button
         type="button"
-        className="ch-btn ch-btn--danger ch-btn--sm"
+        className="ch-btn ch-btn--danger"
         disabled={saving}
         onClick={() => {
           // CH-11707: removing a shot is a warning.

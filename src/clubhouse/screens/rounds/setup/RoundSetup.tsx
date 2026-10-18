@@ -468,10 +468,11 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
         <span className="ch-rsu-dock__s" id="ch-rsu-dock-s" role="status" aria-live="polite">
           {p && !blocker ? (
             <>
-              {/* No-break spaces keep "Par 72" and "18 holes" whole when the phone dock wraps. */}
+              {/* No-break spaces keep "Par 72" and "18 holes" whole when the phone dock wraps, and bind each "·" to the
+                  segment after it, so a wrapped line starts "· Par 72" instead of ending on a dangling dot (wave 9). */}
               {/* Nine of an 18-hole card says which nine. */}
-              <b>{p.courseName}</b> · {p.teeName} · {form.count === 9 && form.holes.length === 18 ? (form.nine === 'back' ? 'Back nine' : 'Front nine') : <>{played.length}&nbsp;holes</>} · Par&nbsp;{parOf(played)}
-              {startAt > 1 && startHole != null ? ` · Starts on hole\u00a0${startHole}` : ''}
+              <b>{p.courseName}</b> ·&nbsp;{p.teeName} ·&nbsp;{form.count === 9 && form.holes.length === 18 ? (form.nine === 'back' ? 'Back nine' : 'Front nine') : <>{played.length}&nbsp;holes</>} ·&nbsp;Par&nbsp;{parOf(played)}
+              {startAt > 1 && startHole != null ? ` ·\u00a0Starts on hole\u00a0${startHole}` : ''}
             </>
           ) : (
             blocker

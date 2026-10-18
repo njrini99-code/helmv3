@@ -1,7 +1,7 @@
 'use client';
 
 import type { Dispatch } from 'react';
-import { ArrowRight, Pencil, TriangleAlert, Undo2 } from 'lucide-react';
+import { ArrowRight, Pencil, Send, TriangleAlert, Undo2 } from 'lucide-react';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
@@ -17,6 +17,8 @@ import { UndoConfirm } from './ShotEntry';
  * The round screen moves on by itself once the hole is saved, so this shows
  * while the hole saves (CH-11402), when the save failed (CH-11003, with Retry)
  * and when the player goes back to a finished hole (then "Back to hole N").
+ * Once every hole is in, its footer action is "Review and post" (CH-11910), in
+ * the thumb zone rather than only under the top bar.
  */
 export function HoleReview({
   hole,
@@ -24,6 +26,7 @@ export function HoleReview({
   pref,
   checkpointStatus,
   backTo,
+  onReviewRound,
   showUndoConfirm,
   undoSaving,
   undoError,
@@ -39,6 +42,8 @@ export function HoleReview({
   checkpointStatus: 'idle' | 'saving' | 'failed';
   /** The next unplayed hole, when the player is looking back at a finished one. */
   backTo: { index: number; number: number } | null;
+  /** Every hole is in: opens the finished round to post it. */
+  onReviewRound?: () => void;
   showUndoConfirm: boolean;
   undoSaving: boolean;
   undoError: string | null;
@@ -109,6 +114,12 @@ export function HoleReview({
           <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" disabled={saving} onClick={() => onNavigateToHole(backTo.index)}>
             <span>Back to hole {backTo.number}</span>
             <Icon icon={ArrowRight} size={16} />
+          </button>
+        )}
+        {onReviewRound && (
+          <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" disabled={saving || undoSaving} onClick={onReviewRound}>
+            <span>Review and post</span>
+            <Icon icon={Send} size={16} />
           </button>
         )}
       </div>

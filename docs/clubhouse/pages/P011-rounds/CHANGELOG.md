@@ -1,5 +1,57 @@
 # P011 — Rounds: changelog
 
+## 2026-10-18 — Wave 9: on the course
+
+```text
+Design package: none (wave-9 on-course review, rows 1-8, 9 part, 10-16; E, A)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-11910 (copy), CH-11502, CH-11507, CH-11509, CH-11901
+Actions:        none
+Data impact:    none
+Held items:     owner decisions B, C, D, F not taken
+```
+
+### Changed (2026-10-18, wave-9 on course)
+
+- Undo and Discard confirms: the button labels keep their own ink (the
+  question's grey no longer reaches them), and Keep it and the danger button
+  sit together on their own row under the question, at the right, at 36px.
+- Save line (CH-11901): one line with its icon beside the words; when the
+  readout leaves no room it drops under it at the right.
+- A missed putt's leave has its own quick picks: 2, 3, 4, 6, 8, 12 ft
+  (0.5 to 4 m). Its "What happened" chips are 44px tall.
+- Every hole in (CH-11910): "All holes are in. Review the round, then post
+  it." with Review and post, and the same action is the shot review's footer
+  button, in the thumb zone. The preview can finish again after Back to
+  hole 18.
+- The shot screen's distances keep number and unit together (no-break
+  space). The posted overlay keeps the coach's name on one line.
+- Scorecard sheet subtitle says where the player stands: "thru 3 · +1".
+- Setup dock: each "·" travels with the segment after it, so a wrapped line
+  starts "· Par 72".
+- Short phones (height 700px or less): a smaller hole numeral, readout and
+  drawn hole, so a putt's Putt result is on the first screen at 375 x 667.
+  On a phone the page's scroll padding clears the action bar, so Tap in or a
+  focused box brought into view lands above it.
+- The screen stays on while the shot screen is up (Screen Wake Lock, asked
+  again when the page comes back; nothing happens where it isn't supported).
+
+### Changed (2026-10-18, wave-9 round review)
+
+- Fairway and Green in regulation marks: each row is its own size container,
+  and where eighteen 22px marks in a line would touch (any phone), the holes
+  fold into nines, Out above In, so marks and hole numbers never collide. A
+  desktop row keeps one line.
+- Dark scorecard: a hit FIR or GIR dot is the lighter green, 5.2:1 on its
+  cell (the deep fill was 2.5:1). Scoped to the review; the token is unchanged.
+- The hole's step header reads "Hole 2 · Par 5", as its title does.
+- Where the strokes were lost: each row names the score ("Bogey", "Double
+  bogey") instead of repeating the shot count beside it.
+- In words: the player reads "what you wrote"; a coach "what the player
+  wrote".
+- The round: "... falls when strokes go back. A lower score is better." The
+  chart's orientation is unchanged (owner decision C).
+
 ## 2026-10-18 — Wave 8: premium details
 
 ```text

@@ -265,10 +265,10 @@ export function RoundRuntime({
       <div className="ch-rt-note" data-ch-code="CH-11910">
         <Icon icon={Send} size={15} />
         <span>
-          <b>All holes are in.</b> Review the round, then submit it.
+          <b>All holes are in.</b> Review the round, then post it.
         </span>
-        <Button variant="primary" size="sm" onClick={() => s.current.setShowFinishConfirm(true)}>
-          Review and submit
+        <Button variant="secondary" size="sm" onClick={() => s.current.setShowFinishConfirm(true)}>
+          Review and post
         </Button>
       </div>
     ) : null;
@@ -294,6 +294,7 @@ export function RoundRuntime({
         onNavigateToHole={session.setCurrentHoleIndex}
         onOpenScorecard={() => setSheet('card')}
         holeShots={(i) => session.completedHoleStats[i]?.shots ?? null}
+        onReviewRound={session.pendingFinalStats && !session.submitting ? () => s.current.setShowFinishConfirm(true) : undefined}
         onAutoSave={session.onAutoSave}
         autoSaveInterval={15000}
         autoSaveDisabled={session.autoSaveDisabled}
