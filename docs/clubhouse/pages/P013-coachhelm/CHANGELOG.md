@@ -1,5 +1,66 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-18 — Wave 4: the Ask box fits again under Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Ask box fit)
+
+- The Ask composer's text box (`Composer.tsx`) measures again when its text
+  wraps differently with no new text: when the iPhone's Text Size lands on
+  `<html>` after the box first measured (the shell writes it in a later
+  layout effect), and when the box's width changes. At XXL the two-line hint
+  was cut in half; it now shows whole. Nothing changes at the default size.
+
+### Verification (2026-10-18, Ask box fit)
+
+- `composer-autosize.test.tsx` (new): a Text Size write re-measures, other
+  style writes on `<html>` don't, a new width re-measures and the height it
+  set does not, and the observers stop on unmount.
+- WebKit 390 (`coachhelm-ask`): scale-1 screenshot identical to before; at
+  XXL the hint shows on three lines in a 104px box.
+
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `coachhelm.css`, `coachhelm-ask.css`, `coachhelm-thread.css`,
+  `coachhelm-views.css`, `coachhelm-profile.css`, `coachhelm-standing.css`,
+  `coachhelm-dive.css`: the phone's text (board, pulse, focus cards, Ask,
+  the thread, history, the view chips, Game profile, Standing, Deep dive) is
+  set in `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size
+  up to XXL. The composer stays 16px on the phone: `globals.css`'s iOS zoom
+  floor outranks its rule (which keeps a 16px `max()` floor of its own).
+- Left fixed on purpose: figures and values (the measure figures, standing
+  values, dive values), chart axis text and the thread's data table.
+- At XXL (390 wide) the unscaled text drops from 46 to 14 (board), 40 to 7
+  (player), 11 to 2 (Ask), 112 to 11 (Game profile), 278 to 68 (Standing),
+  41 to 9 (Deep dive). The rest is the shared shell and the figures. At the
+  default size every value is the same pixel.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): scale 1 screenshots of the board,
+  player, Ask and the three views are pixel-identical to before; at XXL no
+  overflow or visible overlap, also in an answered thread, an action, a
+  receipt, the evidence sheet and the history drawer.
+
 ## 2026-10-18 — Wave 3 accessibility: Ask accents, view chips
 
 ```text

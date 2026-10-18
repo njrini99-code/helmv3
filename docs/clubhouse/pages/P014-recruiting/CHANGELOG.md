@@ -1,5 +1,38 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-18 — Wave 4: phone text follows Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type pass)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- Phone text in `recruiting.css` (list, pipeline, prospect, documents, the
+  stage sheet and the prospect form) moves from fixed px to
+  `calc(N * var(--ch-type-k))`. The phone fields' own sizes become
+  `max(16px, …)`; they are redundant today, since the app's 16px zoom guard
+  and the shared field rule (controls.css) size every field. The pipeline's
+  count discs and the initials stay fixed.
+- Phone, for a large Text Size: the form's label column grows with the type
+  (`calc(96 * k)`), the Add form's stage options move the last one to a
+  second row when four no longer fit, and document rows take 6px above and
+  below for a wrapped title. None of it moves at the default size.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): every Recruiting preview state is
+  pixel-identical to before at the default size. At XXL this sheet's change
+  takes unscaled text from 39 to 14 on `recruiting` (count discs, initials
+  and the shared search); "Hometown" no longer runs into its field and the
+  stage options no longer run off the well. At 1280 the stage options keep
+  four columns.
+
 ## 2026-10-18 — Wave 3 accessibility: sheets, section heading levels
 
 ```text

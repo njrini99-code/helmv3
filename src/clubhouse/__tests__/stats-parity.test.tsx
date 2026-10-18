@@ -931,11 +931,11 @@ describe('Game detail on the phone · the approach section', () => {
     expect([...section('putting').querySelectorAll('.ch-gm__figs dd')].some((d) => d.textContent === '—')).toBe(false);
   });
 
-  it('the type contract in the stylesheet: the value is 28px and 600, its label and scope are 13 to 14px in secondary ink, and nothing floors them back to 12px', () => {
+  it('the type contract in the stylesheet: the value is 28px and 600, its label and scope are 13 to 14px (Dynamic Type steps) in secondary ink, and nothing floors them back to 12px', () => {
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../styles/stats.css'), 'utf8');
     expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd:not\(\.ch-gm__sub\) \{\s*font: 600 28px\/32px/);
-    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dt \{\s*font: 500 13\.5px\/19px var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
-    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd\.ch-gm__sub \{\s*font: 400 13px\/18px var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dt \{\s*font: 500 calc\(13\.5 \* var\(--ch-type-k\)\)\/calc\(19 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd\.ch-gm__sub \{\s*font: 400 calc\(13 \* var\(--ch-type-k\)\)\/calc\(18 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
     const floor = css.slice(css.indexOf('Phone text floor'));
     expect(floor).not.toMatch(/\.ch-gd\.is-phone \.ch-gm__figs d[td]/);
   });

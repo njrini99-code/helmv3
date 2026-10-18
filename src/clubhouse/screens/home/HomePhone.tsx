@@ -488,7 +488,7 @@ function RoundMeta({ meta }: { meta: string }) {
   return (
     <span className="ch-hm-rd__m">
       <span>{lead}</span>
-      {rest.length > 0 && <span>{` · ${rest.join(' · ')}`}</span>}
+      {rest.length > 0 && <span className="ch-hm-rd__when">{rest.join(' · ')}</span>}
     </span>
   );
 }

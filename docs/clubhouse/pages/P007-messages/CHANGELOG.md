@@ -1,5 +1,33 @@
 # P007 — Messages: changelog
 
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `messages.css`: the phone's text (rows, bubbles, thread head, composer,
+  details, recipients, announcement, reactions, quotes) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The phone text floor follows from 12px up. At the default size every
+  value is the same pixel. Fixed `line-height` px on the To row and the "new
+  below" pill stay: the text still fits their height at XXL.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit 390 (Playwright, dev preview, `--ch-type-scale` 1.353): unscaled
+  text 46 to 8 on `messages` and 46 to 7 on `messages-player`; the rest are
+  the shell's tab label and `ui.css` avatars. Thread, details and new
+  message: 71 to 13, 98 to 22, 69 to 18. Scale-1 screenshots are pixel
+  identical to before on every state; no horizontal overflow at XXL.
+
 ## 2026-10-18 — Wave 3: the empty page's head on the shared line
 
 ```text

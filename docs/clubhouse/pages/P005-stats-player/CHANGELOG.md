@@ -1,5 +1,37 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `stats.css`: the player page's phone text (the profile head, the game
+  sections' heads, notes, labels and captions, the round list) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The game section's label and scope keep 13.5/19 and 13/18 at the
+  default size.
+- Left fixed on purpose: the figures (`28px/32px` value), the comparison
+  table, the chart text and the rank numerals.
+- At XXL (390 wide) the unscaled text drops from 177 to 103; the rest is
+  the shared shell and the figures. At the default size every value is the
+  same pixel.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): the scale 1 screenshot is
+  pixel-identical to before; at XXL no overflow and no visible overlap (the
+  detector's new pairs sit in panels that are not shown).
+- `npm run test:file` on `stats-parity.test.tsx` (the type contract now reads
+  the Dynamic Type steps).
+
 ## 2026-10-18 — Wave 3 accessibility: tab targets, birdie digits
 
 ```text

@@ -1,5 +1,38 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `stats.css`: the team page's phone text (head, the figures' labels and
+  captions, panel heads, notes, rows, legs, putting bands, the round filter)
+  is set in `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text
+  Size up to XXL. The round's three rows keep their 60px at the default size
+  and grow when a label wraps (`min-height`, `padding-block` 8px), so
+  "Greens in regulation" no longer runs into the putts row at XXL.
+- Left fixed on purpose: the figures (scoring average, strokes gained, the
+  row and leg values), the chart's axis text, and the desktop canvas's rules
+  (not drawn on the phone).
+- At XXL (390 wide) the unscaled text drops from 104 to 45; the rest is the
+  shared shell (`ch-strip`, `ch-seg`, `ch-avatar`) and the figures. At the
+  default size every value is the same pixel.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): the scale 1 screenshot is
+  pixel-identical to before; at XXL no overflow or overlap.
+- `npm run test:file` on `stats-geometry.test.tsx` (asserts the row's
+  `min-height: 60px`) and `stats-parity.test.tsx`.
+
 ## 2026-10-18 — Wave 3: a champagne ring on the strokes-gained card
 
 ```text

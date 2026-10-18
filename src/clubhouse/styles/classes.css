@@ -44,7 +44,7 @@
   gap: 12px;
 }
 .ch-cl-k {
-  font: 500 13px/1 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-cl-h {
@@ -56,7 +56,7 @@
 }
 .ch-cl-h h1 {
   margin: 8px 0 0;
-  font: 400 52px/1.02 var(--ch-font-serif);
+  font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
   letter-spacing: -0.01em;
 }
 .ch-cl-h__a {
@@ -73,7 +73,7 @@
   gap: 5px;
   padding: 4px 8px;
   border-radius: 999px;
-  font: 600 11.5px/1.2 var(--ch-font-sans);
+  font: 600 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
 }
@@ -88,7 +88,7 @@
   border-radius: 12px;
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
-  font: 400 13px/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
 }
 .ch-cl-clash > span {
   flex: 1;
@@ -221,7 +221,7 @@
 }
 .ch-cl-tb__over span {
   max-width: 96px;
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.8);
 }
 .ch-cl-tb__line {
@@ -352,31 +352,31 @@
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font: 500 30px/1 var(--ch-font-sans);
+  font: 500 calc(30 * var(--ch-type-k))/1 var(--ch-font-sans);
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   color: var(--ch-ink-950);
 }
 .ch-cl-card__code b {
-  font: 700 13px/1 var(--ch-font-sans);
+  font: 700 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-cl-tf);
 }
 .ch-cl-card__cr {
   padding: 4px 8px;
   border-radius: 999px;
-  font: 600 11px/1 var(--ch-font-sans);
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   background: rgb(255 255 255 / 0.55);
   color: var(--ch-cl-tf);
 }
 .ch-cl-card__name {
   margin-top: 6px;
-  font: 600 17px/1.2 var(--ch-font-sans);
+  font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   letter-spacing: -0.015em;
   color: var(--ch-ink-950);
   text-wrap: balance;
 }
 .ch-cl-card__prof {
-  font: italic 400 13px/1.2 var(--ch-font-sans);
+  font: italic 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cl-card__week {
   display: grid;
@@ -395,7 +395,7 @@
   background: rgb(255 255 255 / 0.35);
 }
 .ch-cl-card__week em {
-  font: 600 10.5px/1 var(--ch-font-sans);
+  font: 600 calc(10.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   opacity: 0.55;
 }
@@ -414,7 +414,7 @@
     0 1px 2px rgb(28 25 18 / 0.12);
 }
 .ch-cl-card__week b {
-  font: 600 11px/1 var(--ch-font-sans);
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-ink-950);
 }
@@ -423,7 +423,7 @@
   padding: 14px 12px;
   border-radius: 8px;
   background: rgb(255 255 255 / 0.35);
-  font: 500 12.5px/1.3 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   text-align: center;
 }
 .ch-cl-card__f {
@@ -433,7 +433,7 @@
   gap: 6px 8px;
   padding-top: 10px;
   border-top: 1px dashed var(--ch-cl-tb);
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cl-card__f:empty {
   display: none;
@@ -449,7 +449,7 @@
   border-radius: 999px;
   background: rgb(255 255 255 / 0.6);
   color: var(--ch-cl-tf);
-  font: 600 11.5px/1.2 var(--ch-font-sans);
+  font: 600 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cl-add {
   display: flex;
@@ -493,11 +493,11 @@
   box-shadow: 0 10px 20px -10px rgb(11 58 37 / 0.8);
 }
 .ch-cl-add b {
-  font: 600 16px/1 var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-ink-950);
 }
 .ch-cl-add em {
-  font: 400 12.5px/1 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -524,11 +524,11 @@
   gap: 4px;
 }
 .ch-cl-note b {
-  font: 600 14px/1.2 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-cl-note span {
-  font: 400 13px/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-cl-over {
@@ -548,7 +548,7 @@
 }
 .ch-cl-over__h h2 {
   margin: 0;
-  font: 600 16px/1.2 var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cl-over__h span:not(.ch-cl-over__ic) {
   font: var(--ch-type-caption);
@@ -579,10 +579,10 @@
   margin-bottom: 6px;
 }
 .ch-cl-over__e b {
-  font: 600 14px/1.2 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cl-over__e em {
-  font: 400 12px/1.3 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -612,10 +612,10 @@
   min-width: 0;
 }
 .ch-cl-over__r b {
-  font: 600 13.5px/1.1 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.1 var(--ch-font-sans);
 }
 .ch-cl-over__r em {
-  font: 400 12px/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -626,7 +626,7 @@
   align-self: center;
   padding: 4px 6px 3px;
   border-radius: var(--ch-radius-xs);
-  font: 700 11px/1 var(--ch-font-sans);
+  font: 700 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-cl-tf);
   background: var(--ch-cl-t);
   box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
@@ -658,7 +658,7 @@
   align-items: center;
   gap: 7px;
   padding-right: 8px;
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   white-space: nowrap;
 }
 .ch-cl-sync__sp {
@@ -705,7 +705,7 @@
   border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-ink-600);
-  font: 500 13.5px/1 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
@@ -741,17 +741,17 @@
 }
 .ch-cl-facts dt {
   margin-bottom: 5px;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-cl-facts dd {
   margin: 0;
-  font: 500 13.5px/1.35 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   overflow-wrap: anywhere;
 }
 .ch-cl-meet h3 {
   margin: 0 0 8px;
-  font: 600 14px/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 .ch-cl-meet ol {
   display: flex;
@@ -766,7 +766,7 @@
   align-items: center;
   gap: 12px;
   height: 38px;
-  font: 500 13.5px/1 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 .ch-cl-meet li::before {
   content: '';
@@ -804,7 +804,7 @@
   flex: 1;
 }
 .ch-cl-meet em {
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -903,10 +903,10 @@
     0 0 0 4px var(--ch-ivory-25);
 }
 .ch-cl-drop b {
-  font: 600 17px/1.2 var(--ch-font-sans);
+  font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cl-drop > em {
-  font: 400 12.5px/1.4 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -919,7 +919,7 @@
   border-radius: 999px;
   background: #fff;
   box-shadow: var(--ch-elevation-reading);
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-ink-600);
 }
 .ch-cl-drop__tip svg {
@@ -933,7 +933,7 @@
 }
 .ch-cl-paste textarea {
   font-family: var(--ch-font-mono);
-  font-size: 13px;
+  font-size: calc(13 * var(--ch-type-k));
 }
 .ch-cl-read {
   display: flex;
@@ -944,7 +944,7 @@
   text-align: center;
 }
 .ch-cl-read > b {
-  font: 600 17px/1.2 var(--ch-font-sans);
+  font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cl-read > span {
   font: var(--ch-type-caption);
@@ -1024,7 +1024,7 @@
   box-shadow: 0 0 0 6px var(--ch-bg-subtle);
 }
 .ch-cl-err > b {
-  font: 600 18px/1.2 var(--ch-font-sans);
+  font: 600 calc(18 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cl-err > p {
   margin: 0;
@@ -1059,7 +1059,7 @@
   border-left: 1px solid rgb(255 255 255 / 0.12);
 }
 .ch-cl-rv__sum dt {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.62);
 }
 .ch-cl-rv__sum dd {
@@ -1122,17 +1122,17 @@
   gap: 3px;
 }
 .ch-cl-rv__b > b {
-  font: 600 14px/1.2 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cl-rv__b > span {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-cl-rv__b em {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font: 500 12px/1.3 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-warning-600);
 }
@@ -1178,7 +1178,7 @@
   box-shadow: 0 0 0 8px #edf4ef;
 }
 .ch-cl-ok > b {
-  font: 600 22px/1.1 var(--ch-font-sans);
+  font: 600 calc(22 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   letter-spacing: -0.02em;
 }
 .ch-cl-ok > p {
@@ -1199,7 +1199,7 @@
   background: var(--ch-cl-t);
   color: var(--ch-cl-tf);
   box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
-  font: 600 12px/1 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 .ch-cl-ok .ch-cl-clash {
   text-align: left;
@@ -1219,7 +1219,7 @@
 /* Phone (Player - Classes - Mobile.html) */
 @container chcl (max-width: 640px) {
   .ch-cl-h h1 {
-    font-size: 38px;
+    font-size: calc(38 * var(--ch-type-k));
   }
   .ch-cl-h__a {
     width: 100%;
@@ -1316,7 +1316,7 @@
 /* On the green card: ivory, never the page's secondary ink. */
 .ch-cl-tb__one {
   margin: 0;
-  font: 500 14px/20px var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-on-fill-100);
 }
@@ -1329,15 +1329,15 @@
 }
 .ch-cl-tb.is-compact .ch-cl-tb__over span {
   max-width: none;
-  font: 500 14px/20px var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
 }
 .ch-cl-tb.is-compact .ch-cl-tb__over b {
-  font-size: 14px;
-  line-height: 20px;
+  font-size: calc(14 * var(--ch-type-k));
+  line-height: calc(20 * var(--ch-type-k));
 }
 .ch-cl-today h2 {
   margin: 4px 0 8px;
-  font: 600 19px/25px var(--ch-font-sans);
+  font: 600 calc(19 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-cl-today ul {
@@ -1366,19 +1366,19 @@
 }
 .ch-cl-today__t {
   grid-row: span 2;
-  font: 600 14px/20px var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-cl-today__n {
   min-width: 0;
   color: var(--ch-cl-tf);
-  font: 600 16px/22px var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
   overflow-wrap: anywhere;
 }
 .ch-cl-today__m {
   min-width: 0;
-  font: 400 13px/18px var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 @container chcl (max-width: 640px) {
@@ -1391,7 +1391,7 @@
     order: -1;
   }
   .ch-cl-card__code {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
     letter-spacing: 0;
     color: var(--ch-text-secondary);
   }
@@ -1423,7 +1423,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-cl.is-phone .ch-cl-k {
-    font: 500 12px/1.3 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1445,7 +1445,7 @@
     box-shadow: var(--ch-elevation-feature);
   }
   .ch-cl.is-phone .ch-cl-tb__one {
-    font: 600 19px/1.3 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
     color: var(--ch-on-green-ink);
@@ -1463,7 +1463,7 @@
     margin: 0 0 4px;
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1512,7 +1512,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-cl.is-phone .ch-cl-over__h h2 {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1581,7 +1581,7 @@
   .ch-cl.is-phone .ch-cl-card__code b {
     padding: 4px 6px 3px;
     border-radius: var(--ch-radius-xs);
-    font: 700 12px/1 var(--ch-font-sans);
+    font: 700 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-cl-tf);
     background: var(--ch-cl-t);
     box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
@@ -1653,12 +1653,12 @@
   }
   .ch-cl.is-phone .ch-cl-add b {
     grid-area: b;
-    font: 600 15px/1.2 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-green-700);
   }
   .ch-cl.is-phone .ch-cl-add em {
     grid-area: em;
-    font: 400 13px/1.2 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   }
 
   /* A player on no team (ClassesNoTeam, drawn on the server without the phone's layout): the phone's edge, and the top
@@ -1927,7 +1927,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   display: none;
 }
 .ch-cl .ch-cl-card__week b {
-  font: 600 12px/1 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variation-settings: 'wdth' 88;
   font-variant-numeric: tabular-nums;
   color: var(--ch-ink-900);
@@ -1973,7 +1973,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
 }
 .ch-cl-tthead__lead {
-  font: 500 12.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-cl-tthead__days {
@@ -1989,7 +1989,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   padding: 6px 6px 4px;
 }
 .ch-cl-tthead__days em {
-  font: 600 12.5px/1 var(--ch-font-sans);
+  font: 600 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -2000,6 +2000,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   overflow: hidden;
   padding: 3px 5px;
   border-radius: var(--ch-radius-xs);
+  /* The event's chip sits in a fifth of the timetable's width: it keeps its size under Dynamic Type. */
   font: 600 11px/1.1 var(--ch-font-sans);
   font-style: normal;
   white-space: nowrap;
@@ -2081,7 +2082,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 }
 .ch-cl-rv__line {
   margin: 4px 0 0;
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -2090,7 +2091,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   margin-top: 2px;
   padding: 3px 7px;
   border-radius: 999px;
-  font: 600 11.5px/1 var(--ch-font-sans);
+  font: 600 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   background: var(--ch-green-50);
   color: var(--ch-green-700);
 }
@@ -2115,7 +2116,10 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   .ch-cl-card__week b,
   .ch-cl-card__term,
   .ch-cl-facts dt,
-  .ch-cl-rv__sum dt,
+  .ch-cl-rv__sum dt {
+    font-size: calc(12 * var(--ch-type-k));
+  }
+  /* The day tab is a fixed 52 by 46 tile: its letters keep their size under Dynamic Type. */
   .ch-cl-rv__tab {
     font-size: 12px;
   }

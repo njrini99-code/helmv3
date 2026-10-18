@@ -1,5 +1,36 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-18 — Wave 4: phone text follows Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type pass)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- Phone text in `qualifiers.css` (list, detail, form, selection, rounds)
+  moves from fixed px to `calc(N * var(--ch-type-k))`. Positions, to-par
+  plates, the facts figures, the numbered round and step discs and the round
+  scorecard stay fixed.
+- Phone, for a large Text Size: the form's course-per-round rows take 4px
+  above and below and a course name takes a second line before its ellipsis;
+  the selection steps wrap to a second row instead of running off the well.
+  None of it moves at the default size.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): every Qualifiers preview state is
+  pixel-identical to before at the default size. At XXL this sheet's change
+  takes unscaled text from 54 to 15 on `qualifiers`, 68 to 26 on `qualifier`,
+  51 to 12 on `my-qualifiers` and 56 to 28 on `qualifier-new` (the rest: the
+  fixed figures, and shared badges, buttons and field labels). At 1280 the
+  steps stay on one row and the course rows 48px.
+
 ## 2026-10-18 — Wave 3 accessibility: standings positions at body contrast
 
 ```text

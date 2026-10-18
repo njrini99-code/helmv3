@@ -21,7 +21,7 @@
   min-width: 0;
 }
 .ch-hd-hero__k {
-  font: 600 12px/1.2 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-green-600);
 }
 .ch-hd-hero h2 {
@@ -40,7 +40,7 @@
 }
 .ch-hd-hero__sub {
   max-width: 56ch;
-  font: 400 13.5px/1.55 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -61,7 +61,7 @@
   box-shadow: var(--ch-well-soft-shadow);
 }
 .ch-hd-hero__f dt {
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hd-hero__f dd {
@@ -112,16 +112,16 @@
   padding: 0 6px;
 }
 .ch-hd-grp h3 {
-  font: 600 15px/1.2 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   letter-spacing: -0.01em;
 }
 .ch-hd-grp__h span {
-  font: 600 12.5px/1 var(--ch-font-sans);
+  font: 600 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hd-grp > p {
   padding: 0 6px 6px;
-  font: 400 12.5px/1.45 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -196,7 +196,7 @@
   min-width: 0;
 }
 .ch-hd-it__b em {
-  font: 500 11.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -205,7 +205,7 @@
   color: var(--ch-hd-ink);
 }
 .ch-hd-it__b b {
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   text-wrap: pretty;
 }
 .ch-hd-it__v {
@@ -255,11 +255,11 @@
   gap: 12px;
 }
 .ch-hd-sec h3 {
-  font: 600 16px/1.2 var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   letter-spacing: -0.015em;
 }
 .ch-hd-sec__h > span {
-  font: 500 12.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 
@@ -289,7 +289,7 @@
 }
 .ch-hd-meas__v span {
   max-width: 40ch;
-  font: 500 14.5px/1.4 var(--ch-font-sans);
+  font: 500 calc(14.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-ink-700);
   text-wrap: pretty;
 }
@@ -297,11 +297,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px 18px;
-  font: 400 13px/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hd-meas__w {
-  font: 400 14px/1.5 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-ink-700);
 }
 .ch-hd-meas__w b {
@@ -338,11 +338,11 @@
   --ch-hd-fig: var(--ch-chart-loss-on-tint);
 }
 .ch-hd-tr__k {
-  font: 500 12.5px/1.4 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hd-tr li > b {
-  font: 600 15px/1.4 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-hd-fig);
 }
 .ch-hd-tr li > b span {
@@ -350,7 +350,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-hd-tr__t {
-  font: 400 13px/1.5 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -387,7 +387,7 @@
 }
 .ch-hd-strip__c em {
   margin-left: 6px;
-  font: 400 12px/1.4 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -430,7 +430,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hd-r__d {
-  font: 600 13px/1.2 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-hd-r__c {
@@ -439,10 +439,10 @@
   flex-wrap: wrap;
   gap: 2px 10px;
   min-width: 0;
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
 }
 .ch-hd-r__c em {
-  font: 400 12px/1.2 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -487,7 +487,7 @@
   align-self: flex-start;
   padding: 5px 10px;
   border-radius: 999px;
-  font: 600 11.5px/1 var(--ch-font-sans);
+  font: 600 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 .ch-hd-dx__lvl.is-observed {
   background: var(--ch-positive-100);
@@ -500,7 +500,7 @@
 }
 .ch-hd-dx__c {
   max-width: 60ch;
-  font: 400 16px/1.55 var(--ch-font-sans);
+  font: 400 calc(16 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-ink-700);
   text-wrap: pretty;
 }
@@ -516,7 +516,7 @@
   border-top: 1px solid rgb(28 25 18 / 0.07);
 }
 .ch-hd-dx__d dt {
-  font: 400 13px/1.35 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hd-dx__d dd {
@@ -526,12 +526,12 @@
   color: var(--ch-ink-700);
 }
 .ch-hd-dx__d dd em {
-  font: 400 12px/1.2 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-hd-dx__r {
-  font: 400 13px/1.5 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -541,12 +541,12 @@
   gap: 8px;
 }
 .ch-hd-full__k {
-  font: 500 12.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hd-why {
   max-width: 62ch;
-  font: 400 15px/1.6 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.6 var(--ch-font-sans);
   color: var(--ch-ink-700);
   text-wrap: pretty;
 }
@@ -608,23 +608,23 @@
   min-width: 0;
 }
 .ch-hd-plan__b em {
-  font: 500 11.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-hd-plan__b b {
-  font: 600 15px/1.3 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   text-wrap: pretty;
 }
 .ch-hd-plan__b span {
-  font: 400 13px/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hd-plan__w {
   padding: 5px 10px;
   border-radius: 999px;
   background: var(--ch-ivory-150);
-  font: 600 11.5px/1 var(--ch-font-sans);
+  font: 600 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   white-space: nowrap;
 }
@@ -643,7 +643,7 @@
   border-radius: 14px;
   background: var(--ch-ivory-50);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
-  font: 400 14px/1.55 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -730,7 +730,7 @@ p.ch-hd-none {
     border-radius: 18px;
   }
   .ch-hd-hero h2 {
-    font-size: 24px;
+    font-size: calc(24 * var(--ch-type-k));
   }
   /* The page's own line, just above, says the same. */
   .ch-hd-hero__sub {
@@ -757,7 +757,7 @@ p.ch-hd-none {
     border-radius: 18px;
   }
   .ch-hd-dos h2 {
-    font-size: 23px;
+    font-size: calc(23 * var(--ch-type-k));
   }
   .ch-hd-meas__v b {
     font-size: 36px;
@@ -1007,11 +1007,11 @@ p.ch-hd-none {
     gap: 10px;
   }
   .ch-hd-hero__k {
-    font: 500 12.5px/1.3 var(--ch-font-sans);
+    font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-hero-mint);
   }
   .ch-hd-hero h2 {
-    font: 600 23px/1.15 var(--ch-font-sans);
+    font: 600 calc(23 * var(--ch-type-k))/1.15 var(--ch-font-sans);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
   }
@@ -1068,7 +1068,7 @@ p.ch-hd-none {
     border-top: var(--ch-ledger-rule-double);
   }
   :is(.ch-hl.is-phone) .ch-hd-grp h3 {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1108,16 +1108,16 @@ p.ch-hd-none {
   }
   .ch-hd-dos__h .ch-hl-focus__k {
     margin-bottom: 4px;
-    font: 500 12.5px/1.2 var(--ch-font-sans);
+    font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-on-green-ink-muted);
   }
   .ch-hd-dos h2 {
-    font: 600 23px/1.15 var(--ch-font-sans);
+    font: 600 calc(23 * var(--ch-type-k))/1.15 var(--ch-font-sans);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
   }
   .ch-hd-dos__h .ch-hl-lede {
-    font: 400 14px/1.5 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
     color: var(--ch-on-green-ink-soft);
   }
   .ch-hd-dos__h .ch-hl-stale {
@@ -1150,7 +1150,7 @@ p.ch-hd-none {
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hd-sec h3 {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1246,7 +1246,7 @@ p.ch-hd-none {
   .ch-hd-dx__lvl,
   .ch-hd-plan__b em,
   .ch-hd-plan__w {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 

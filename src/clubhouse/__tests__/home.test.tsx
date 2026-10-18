@@ -422,8 +422,11 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
   it('P002 a latest round’s course and date are two parts, so a long course gives way and the date stays (2026-10-18)', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     const meta = document.querySelector('.ch-hm-list .ch-hm-rd__m')!;
-    expect(meta.textContent).toBe('Oakmont CC · Sun 12 Oct');
-    expect([...meta.children].map((c) => c.textContent)).toEqual(['Oakmont CC', ' · Sun 12 Oct']);
+    // The dot between them is drawn by the stylesheet (wave 4), so a large Text Size can drop it when the date moves under
+    // the course.
+    expect([...meta.children].map((c) => c.textContent)).toEqual(['Oakmont CC', 'Sun 12 Oct']);
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/home.css'), 'utf8');
+    expect(css).toMatch(/\.ch-hm-rd__when::before \{\s*content: ' · ';/);
   });
 
   it('CH-2303 a round posted as a total says so in its sheet', async () => {

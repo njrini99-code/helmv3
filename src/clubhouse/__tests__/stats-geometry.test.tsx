@@ -217,7 +217,7 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect(teamPhone.container.querySelectorAll('.ch-stm-hero > dd')).toHaveLength(2);
     expect(teamPhone.container.querySelectorAll('.ch-stm-figrow')).toHaveLength(3);
     expect(teamPhone.container.querySelectorAll('.ch-stm-sgfig + .ch-stm-legs > .ch-stm-leg')).toHaveLength(5);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-figrow\s*{[^}]*height: 60px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-figrow\s*{[^}]*min-height: 60px/);
     expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-sgfig\s*{[^}]*height: 64px/);
     expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-leg\s*{[^}]*height: 44px/);
     // The trend's hold is the plot's own box (the same bleed), and its reading holds the two lines it wraps to beside the mean's key.

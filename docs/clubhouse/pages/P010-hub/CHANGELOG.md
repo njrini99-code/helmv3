@@ -1,5 +1,42 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `hub.css`: the phone's text (head, tabs, RSVPs, announcements, passes,
+  itinerary, updates, tasks, documents, pickers) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The phone tabs' gap widens with the text once the row scrolls (4px at
+  the default size); the itinerary's label columns grow with it; a post's
+  footer wraps instead of squeezing "5 of 6 acknowledged".
+- Left fixed on purpose: the RSVP date tile, the task ring's numeral and the
+  file-type label in a document's icon. At the default size every value is
+  the same pixel.
+- Phone Tasks (coach): the title's 15px rule matched the completion ring's
+  numeral too (both are `<b>`), so "3/5" was drawn at 15px on a 24px face
+  and spilled past it. The rule now targets the title only, and the ring's
+  numeral is a fixed 10px on the phone, like the bell's count.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit 390 (Playwright, dev preview, `--ch-type-scale` 1.353): unscaled
+  text 57 to 11 on `hub`, 70 to 10 on `hub-player`; travel 42 to 4, docs
+  30 to 10, tasks 25 to 4 (the rest are the shell, buttons and the kept
+  tiles). Scale-1 screenshots are pixel identical to before; no horizontal
+  overflow at XXL.
+- The ring is the one scale-1 change: "3/5" now sits inside its face at
+  every text size.
+
 ## 2026-10-18 — Wave 3 accessibility: tabs point only at the shown panel
 
 ```text

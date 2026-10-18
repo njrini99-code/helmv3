@@ -1,5 +1,42 @@
 # P002 — Home: changelog
 
+## 2026-10-18 — Wave 4: phone text follows Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type pass)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- Phone text in `home.css` (coach and player Home: greeting, day card, Later
+  today, form labels, week strip, latest rounds, Your game) moves from fixed
+  px to `calc(N * var(--ch-type-k))`, so it grows with the iPhone's Text Size
+  (to XXL). The figures stay fixed on purpose: the form figure and its delta,
+  the form strip values, the score tiles (46px), the countdown digits, the
+  game figures, the chart's axis and value text. Desktop-only rules are
+  untouched.
+- Phone Latest rounds: the dot between course and date is drawn by the
+  stylesheet (`.ch-hm-rd__when::before`), not the date's text. Above the
+  default Text Size the course takes its own line in full and the date the
+  line under it, without the dot; at the default the row draws as before (one
+  line, the course gives way with an ellipsis).
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): every Home preview state is
+  pixel-identical to before at the default size. At `--ch-type-scale` 1.353
+  (XXL) this sheet's change takes unscaled text from 81 to 21 elements on
+  `home` and 196 to 113 on `home-player` (the rest: the fixed figures above,
+  the scorecard grid, and shared avatars, bell and buttons); no horizontal
+  overflow, no overlaps. Latest rounds at XXL: "Oakmont CC" in full, "Sun 12
+  Oct" under it (it was "Oakm… · Sun 12 Oct"); the default and 1.059 draw no
+  clipped course.
+
 ## 2026-10-18 — Wave 3 accessibility: day card focus rings
 
 ```text

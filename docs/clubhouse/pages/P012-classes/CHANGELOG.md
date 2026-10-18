@@ -1,5 +1,31 @@
 # P012 — Classes: changelog
 
+## 2026-10-18 — Wave 4: phone text follows Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type pass)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- Phone text in `classes.css` (term bar, Today, the class cards, overlaps,
+  the class, form and import sheets) moves from fixed px to
+  `calc(N * var(--ch-type-k))`, px line heights included. The import review's
+  day tabs (a fixed 52 by 46 tile), its summary figures and the timetable
+  header's event chip stay fixed.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): every Classes preview state is
+  pixel-identical to before at the default size. At XXL this sheet's change
+  takes unscaled text from 80 to 7 on `classes` (the event chip, and shared
+  buttons and the section title); no overflow or overlaps.
+
 ## 2026-10-18 — Wave 3: the head on the shared line, 44px phone actions
 
 ```text

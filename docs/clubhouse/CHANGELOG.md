@@ -1,5 +1,20 @@
 # Clubhouse changelog
 
+## 2026-10-18 — Dynamic Type reaches phone text
+
+Phone text in the page sheets (messages, calendar, hub, home, qualifiers,
+roster, classes, recruiting, rounds, setup, track, stats, CoachHelm) and the
+shared sheets (`controls.css`, `ui.css`, `shell.css`: buttons, segments,
+badges, field labels, sheet titles, page bar, top bar and section switch,
+section strip, intro, zone sections) is set in `calc(N * var(--ch-type-k))`, so
+it follows iOS Text Size up to XXL. Form fields keep the iOS 16px floor and
+grow above it (`max(16px, calc(16 * var(--ch-type-k)))`, outranking the
+`globals.css` guard). Figures, score marks, scorecards, chart text, avatars,
+the bell count and the desktop sidebar stay fixed. Rendering at the default
+size is pixel identical. The hub task ring's numeral no longer inherits the
+task title's 15px, and the desktop event peek's kind label takes
+`--ch-type-label-s`.
+
 ## 2026-10-18 — Focus rings that read; Animations off from the first frame
 
 `ui.css`, `controls.css`, `settings.css`, `calendar.css`: the button, segment,

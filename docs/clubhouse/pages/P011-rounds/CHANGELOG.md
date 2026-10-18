@@ -1,5 +1,58 @@
 # P011 — Rounds: changelog
 
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `rounds.css`, `rounds-setup.css`, `rounds-track.css`, `rounds-recover.css`:
+  the phone's text (heads, labels, row titles and subtitles, captions, pills,
+  buttons, the setup fields and sheets, the shot screen's labels, segments,
+  tags, sheets and bar) is set in `calc(N * var(--ch-type-k))`, so it follows
+  the iPhone's Text Size up to XXL. Line-heights in px move with it, except
+  where they centre text in a fixed-height control. The phone text floors
+  (12px) are split: the text members scale, the numerals stay 12px.
+- Left fixed on purpose: scorecards (the review's nines, the list's grid, the
+  shot screen's card), chart and map labels (the season ribbon, the range
+  ends, the zone plots, the hole map), and display numerals (scores, figures,
+  the hole number, the distance and its input, the quick distances, the
+  setup's par and yardage cells). The shot screen's controls keep their
+  heights and stay at least 44px; its hero result word stays fixed with the
+  hero.
+- At XXL (390 wide) the unscaled text drops from 150 to 87 (Rounds), 374 to
+  302 (a round), 36 to 10 (Setup), 50 to 24 (Track), 63 to 27 (a putt), 156
+  to 130 (the summary). What remains is the shared shell and primitives
+  (`ch-strip`, `ch-btn`, `ch-seg`, `ch-score--sm`, the zone sections in
+  `ui.css`) and the numerals above. At the default size every value is the
+  same pixel (WebKit screenshots identical).
+- The course picker's rows, phone: past the default size the name keeps a
+  readable width (`min-width` from `--ch-type-k`, none at the default) and the
+  date, par and tees wrap under it; at XXL they had squeezed "Finley GC" to
+  "Finley ...".
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): scale 1 screenshots of Rounds, a
+  round (player and coach), Setup and Track (bare, card, summary, putt, holed,
+  submit failed, exit) are pixel-identical to before; at
+  `--ch-type-scale: 1.353` no horizontal overflow, no new clipped text or
+  spilled controls; the shot screen's controls under 44px are unchanged from
+  before (summary and submit failed 13, holed 1). Also checked at XXL: the
+  course picker (identical at scale 1 with and without the wrap), the course
+  view and the change-shot sheet.
+- The setup fields stay 16px on the phone: `globals.css`'s iOS zoom floor
+  (`input:not(...)`, `font-size: 16px` under 768px) outranks them.
+- `npm run clubhouse:check`, `npm run clubhouse:css` (no findings in these
+  sheets), `npm run typecheck:fast`.
+
 ## 2026-10-18 — Wave 3 accessibility: landmarks, headings, rings
 
 ```text

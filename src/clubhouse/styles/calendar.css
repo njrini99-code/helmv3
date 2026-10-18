@@ -276,7 +276,7 @@
   text-align: left;
 }
 .ch-pp__txt b {
-  font: 600 13.5px/1.1 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-pp__trigger.is-on .ch-pp__txt b {
@@ -309,7 +309,7 @@
 }
 .ch-pp__label {
   padding: 10px 10px 4px;
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-pp__list {
@@ -730,10 +730,10 @@
   min-width: 0;
 }
 .ch-cg__title b {
-  font: 650 15px/1.2 var(--ch-font-sans);
+  font: 650 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cg__title span {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   opacity: 0.8;
 }
@@ -742,7 +742,7 @@
   padding: 4px 8px;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.16);
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -789,11 +789,11 @@
   min-width: 0;
 }
 .ch-cg__who b {
-  font: 600 13.5px/1.25 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
 }
 .ch-cg__who > span {
   overflow: hidden;
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -805,7 +805,7 @@
   color: var(--ch-info-600);
 }
 .ch-cg__time {
-  font: 400 12px/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1087,7 +1087,7 @@
   padding-top: 12px;
 }
 .ch-ag__when b {
-  font: 600 15px/1.2 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ag__when span {
@@ -1146,12 +1146,12 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font: 600 13px/1.2 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-forest-800);
 }
 .ch-ag__t span {
-  font: 400 12px/1.2 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-ag__dot {
@@ -1169,7 +1169,7 @@
 }
 .ch-ag__a {
   display: block;
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ag__b {
@@ -1203,7 +1203,7 @@
   padding: 3px 7px;
   border-radius: 4px;
   background: var(--ch-green-fill-600);
-  font: 600 10.5px/1 var(--ch-font-sans);
+  font: 600 calc(10.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
   transform: translateY(-1px);
@@ -1246,7 +1246,7 @@
 .ch-in__title {
   margin: 0;
   font: var(--ch-type-display-s);
-  font-size: 22px;
+  font-size: calc(22 * var(--ch-type-k));
   letter-spacing: -0.028em;
   font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
@@ -1309,7 +1309,7 @@
 }
 .ch-in__sechead b {
   font: var(--ch-type-title);
-  font-size: 14px;
+  font-size: calc(14 * var(--ch-type-k));
   color: var(--ch-text-primary);
 }
 .ch-in__resp {
@@ -1331,7 +1331,7 @@
 }
 .ch-in__resp dt {
   order: 2;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-in__resp dd {
@@ -1352,7 +1352,7 @@
 .ch-in__person > span:nth-child(2) {
   flex: 1;
   min-width: 0;
-  font: 500 13.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-in__foot {
@@ -1403,7 +1403,7 @@
 }
 .ch-in__need b {
   display: block;
-  font: 600 13.5px/1.3 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
@@ -1447,12 +1447,12 @@
   border-radius: 7px;
   background: rgb(255 255 255 / 0.14);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
 .ch-in__na {
   display: block;
-  font: 600 14px/1.25 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
 }
 .ch-in__nb {
   display: block;
@@ -1577,14 +1577,14 @@
   padding: 3px 9px;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.18);
-  font: 600 12px/1.2 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-stage-ink);
 }
 .ch-in__by {
   display: flex;
   align-items: center;
   gap: 9px;
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: rgb(255 255 255 / 0.84);
 }
 .ch-in__by b {
@@ -1620,7 +1620,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  font: 500 13.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-in__who small {
@@ -1631,7 +1631,7 @@
 .ch-in__att .ch-seg__b {
   height: 26px;
   padding: 0 9px;
-  font-size: 12px;
+  font-size: calc(12 * var(--ch-type-k));
 }
 /* On the green chip the chosen mark is ivory whatever it is (amber ink on green was unreadable); absent keeps its strike. */
 .ch-in__att .ch-seg__b.is-on.is-absent .ch-seg__l {
@@ -1762,7 +1762,7 @@
   border-bottom: 1px solid var(--ch-border-subtle);
   background: transparent;
   font: var(--ch-type-display-s);
-  font-size: 24px;
+  font-size: calc(24 * var(--ch-type-k));
   letter-spacing: -0.028em;
   font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
@@ -1830,7 +1830,7 @@
   gap: 10px;
   align-items: center;
   padding: 7px 0;
-  font: 500 13.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -1849,7 +1849,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font: 500 14px/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -1893,7 +1893,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-verify__ic {
@@ -1932,7 +1932,7 @@
 }
 .ch-rcpt dd {
   margin: 0;
-  font: 500 13px/1.35 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -1954,7 +1954,7 @@
 }
 .ch-feed b {
   display: block;
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-feed__t span {
@@ -2063,7 +2063,7 @@
 }
 .ch-cal-warn b {
   display: block;
-  font: 600 13.5px/1.3 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-cal-warn p {
@@ -2109,7 +2109,7 @@
 .ch-in__file b {
   display: block;
   overflow: hidden;
-  font: 500 13.5px/1.25 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2332,7 +2332,7 @@
   }
   .ch-calm-dayk h3 {
     margin: 0;
-    font: 600 19px/1.1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2457,12 +2457,12 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    font: 600 13.5px/1 var(--ch-font-sans);
+    font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
   }
   .ch-calm-ev__t em {
-    font: 400 12px/1 var(--ch-font-sans);
+    font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
     font-style: normal;
     color: var(--ch-text-tertiary);
   }
@@ -2521,7 +2521,7 @@
     overflow-wrap: anywhere;
   }
   .ch-calm-ev__b b {
-    font: 600 15px/1.25 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
     color: var(--ch-text-primary);
   }
@@ -2555,7 +2555,7 @@
     padding: 3px 7px;
     border-radius: 6px;
     background: var(--ch-green-fill-600);
-    font: 600 12px/1 var(--ch-font-sans);
+    font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-on-accent);
     animation: ch-now-pill var(--ch-dur-live) var(--ch-ease-io) infinite;
@@ -2712,7 +2712,7 @@
     box-shadow: none;
   }
   .ch-calm .ch-ag__when b {
-    font: 600 19px/1.1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2735,7 +2735,8 @@
   .ch-calm .ch-ag__row,
   .ch-calm .ch-ag__row:first-child {
     position: relative;
-    grid-template-columns: 62px 8px minmax(0, 1fr) auto;
+    /* The time column grows with Dynamic Type, so "10:15 AM" holds one line at the largest size. */
+    grid-template-columns: calc(62 * var(--ch-type-k)) 8px minmax(0, 1fr) auto;
     gap: 10px;
     width: calc(100% + 24px);
     min-height: 60px;
@@ -2772,7 +2773,7 @@
     text-overflow: ellipsis;
   }
   .ch-calm .ch-ag__a {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
     letter-spacing: -0.012em;
   }
   .ch-calm .ch-ag__now {
@@ -2797,7 +2798,8 @@
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
-   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. Labels follow
+   Dynamic Type from the floor up; the grids' cells (week, month, lanes, mini-month) keep a fixed 12px so they hold. */
 @media (max-width: 820px) {
   .ch-cal-jump__dow,
   .ch-pp__more,
@@ -2806,14 +2808,16 @@
   .ch-wk__nowlbl,
   .ch-ev__m,
   .ch-mo__more,
-  .ch-ag__now span,
-  .ch-in__resp dt,
   .ch-lanes__axis span,
   .ch-lane__b,
   .ch-calm-week__d em,
-  .ch-calm-now span,
   .ch-calm-month__h span {
     font-size: 12px;
+  }
+  .ch-ag__now span,
+  .ch-in__resp dt,
+  .ch-calm-now span {
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 
@@ -3242,7 +3246,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   align-items: center;
   gap: 6px;
   margin-bottom: 2px;
-  font: var(--ch-type-k);
+  font: var(--ch-type-label-s);
   color: var(--ch-text-tertiary);
 }
 .ch-evpeek__t {

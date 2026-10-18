@@ -171,12 +171,41 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   const opened = useRef<string | null>(null);
 
   // Grows with the text, up to the cap.
-  useLayoutEffect(() => {
+  const fit = useCallback(() => {
     const el = box.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT)}px`;
-  }, [value]);
+  }, []);
+  useLayoutEffect(() => fit(), [value, fit]);
+
+  // ...and again when its text wraps differently with no new text: the box gets narrower or wider, or the iPhone's Text
+  // Size lands (--ch-type-scale on <html>, written by the shell's layout effect after this one ran on mount).
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return undefined;
+    const root = document.documentElement;
+    const scaleOf = () => root.style.getPropertyValue('--ch-type-scale');
+    let scale = scaleOf();
+    const type = new MutationObserver(() => {
+      if (scaleOf() === scale) return;
+      scale = scaleOf();
+      fit();
+    });
+    type.observe(root, { attributes: true, attributeFilter: ['style'] });
+    let width = el.offsetWidth;
+    const size = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
+      // Only a new width re-wraps the text; the height is the one this sets.
+      if (el.offsetWidth === width) return;
+      width = el.offsetWidth;
+      fit();
+    });
+    size?.observe(el);
+    return () => {
+      type.disconnect();
+      size?.disconnect();
+    };
+  }, [fit]);
 
   useEffect(() => {
     if (autoFocus && finePointer) box.current?.focus();

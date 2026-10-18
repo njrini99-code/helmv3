@@ -1,5 +1,43 @@
 # P006 — Calendar: changelog
 
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `calendar.css`: the phone's text (day head, events, agenda, now pill,
+  event sheet, editor, busy sheet rows, people picker) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The phone agenda's time column grows with it (62px at the default
+  size), so "10:15 AM" holds one line. The phone text floor follows from 12px
+  for labels.
+- Left fixed on purpose: the week strip and month grid cells, the RSVP
+  count figures, the busy lanes chart and the desktop week, month and
+  mini-month grids. At the default size every value is the same pixel.
+
+- An event's peek card (the hover card) sets its kind label ("Tournament")
+  in `--ch-type-label-s`. It read `font: var(--ch-type-k)`, a bare length,
+  so the label fell back to the inherited 14px/21px, larger than the line
+  under it.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit 390 (Playwright, dev preview, `--ch-type-scale` 1.353): unscaled
+  text 67 to 21 on `calendar`, 54 to 20 on `calendar-player`, 89 to 10 in
+  the list, 127 to 66 in the editor (the rest are shared controls and the
+  kept grids). Scale-1 screenshots are pixel identical to before; no
+  horizontal overflow at XXL.
+- WebKit 1280: the peek label is 12.5px/1.3 weight 500 (was 14px/21px
+  weight 400).
+
 ## 2026-10-18 — Wave 3 accessibility: readable ended events, today
 
 ```text

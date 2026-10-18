@@ -1,5 +1,31 @@
 # P003 — Roster: changelog
 
+## 2026-10-18 — Wave 4: phone text follows Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type pass)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- Phone text in `roster.css` (list, join requests, invite code, the player
+  sheet, the teammate list) moves from fixed px to
+  `calc(N * var(--ch-type-k))`. Each row's figure, the sheet's figures and
+  rounds, the request count and the banner's count pill stay fixed.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): every Roster preview state is
+  pixel-identical to before at the default size. At XXL this sheet's change
+  takes unscaled text from 43 to 21 on `roster` and 37 to 19 on
+  `roster-player` (row figures, and shared avatars and segments); rows wrap
+  their meta lines, no overflow.
+
 ## 2026-10-18 — Wave 3: the shared gutter
 
 ```text

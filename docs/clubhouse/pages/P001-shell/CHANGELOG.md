@@ -1,5 +1,34 @@
 # P001 — Shell: changelog
 
+## 2026-10-18 — Wave 4: Dynamic Type for the shell's phone text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, shell Dynamic Type)
+
+- `shell.css`: the phone's shell text (top bar title and section switch,
+  page bar back, title and text keys, section strip, More sheet, bell
+  stacks, empty page, notices, hero, offline line, skip link, toasts) is set
+  in `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The strip's count pill scales its line height with it.
+- Left fixed on purpose: the bell's count numeral, the brand word and the
+  desktop sidebar (sections, items, counts, crumbs, identity, next event).
+  At the default size every value is the same pixel.
+
+### Verification (2026-10-18, shell Dynamic Type)
+
+- WebKit 390 (Playwright, dev preview, `--ch-type-scale` 1.353), 39 phone
+  states with `controls.css` and `ui.css` converted alongside: unscaled
+  text 1471 to 966 in total; no horizontal overflow at XXL. Scale-1
+  screenshots are pixel identical to before (the dev overlay aside).
+
 ## 2026-10-18 — Wave 3: focus rings that read; Animations off from the first frame
 
 ```text
