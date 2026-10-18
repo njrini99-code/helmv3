@@ -1,5 +1,5 @@
 -- pgTAP contracts for
--- 20261017002000_golf_announcement_child_policies_team_scope.sql
+-- 20261017101500_golf_announcement_child_policies_team_scope.sql
 -- (security review 2026-10-16, S5).
 --
 -- Six coach policies on golf_announcement_acknowledgements,

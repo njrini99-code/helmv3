@@ -1,6 +1,6 @@
 -- STATUS: WRITTEN — HOLD — NOT APPLIED. Awaits the owner's approval to apply
 -- (supabase/migrations/HELD.md). Apply: npm run db:apply --
--- supabase/migrations/20261017002000_golf_announcement_child_policies_team_scope.sql
+-- supabase/migrations/20261017101500_golf_announcement_child_policies_team_scope.sql
 --
 -- Security review 2026-10-16, item S5 (database half). The same self-reference
 -- bug 20260930160000 fixed for golf_announcement_documents on 2026-10-03, in

@@ -121,6 +121,7 @@ looks vibe coded"; "get rid of the shimmer").
   hand-on to the box around it, the contained overscroll and the dialog edge.
   Not checked with a real wheel in Safari, or on an iPhone (the easing is
   desktop only).
+
 ## 2026-10-16 — Security review fixes (S2 to S9)
 
 From the 2026-10-16 security review. No visible change unless a line says so.
