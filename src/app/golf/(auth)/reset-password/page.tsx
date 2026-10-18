@@ -14,7 +14,7 @@ import styles from './reset-password.module.css';
 /*
  * /golf/reset-password — redesigned 2026-10-18 to match the reset email.
  *
- *   checking  the link is verified (both formats Supabase can send)
+ *   checking  the link's token_hash is verified
  *   form      choose a password; the sign-up rules tick off as you type
  *   expired   the link is used or expired; ask for a new one right here
  *   sent      a new link is on its way
@@ -72,26 +72,20 @@ export default function ResetPasswordPage() {
     async function verifyLink() {
       try {
         const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
 
-        // Supabase sends either a PKCE `?code=` or a `?token_hash=`. There is
-        // deliberately no branch that skips verification: a link with neither
-        // goes to verifyOtp with an empty hash, which Supabase rejects, so a
-        // missing or tampered parameter can only ever land on "expired".
-        let email: string | undefined;
-        let ok: boolean;
-        if (code) {
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          ok = !error;
-          email = data?.session?.user?.email ?? data?.user?.email ?? undefined;
-        } else {
-          const { data, error } = await supabase.auth.verifyOtp({
-            type: 'recovery',
-            token_hash: url.searchParams.get('token_hash') ?? '',
-          });
-          ok = !error;
-          email = data?.user?.email ?? data?.session?.user?.email ?? undefined;
-        }
+        // Every GolfHelm reset link carries a `token_hash`: it is minted
+        // server-side and sent through Resend (src/lib/auth/send-password-reset.ts),
+        // and no golf surface calls resetPasswordForEmail, so there is never a
+        // PKCE `?code=` this browser could exchange (it would have no verifier).
+        // There is deliberately no branch that skips verification: a link
+        // without a hash goes to verifyOtp with an empty one, which Supabase
+        // rejects, so a missing or tampered parameter can only land on "expired".
+        const { data, error } = await supabase.auth.verifyOtp({
+          type: 'recovery',
+          token_hash: url.searchParams.get('token_hash') ?? '',
+        });
+        const ok = !error;
+        const email = data?.user?.email ?? data?.session?.user?.email ?? undefined;
 
         if (cancelled) return;
         if (ok) {

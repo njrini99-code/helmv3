@@ -132,9 +132,11 @@ Join code
   `AuthCanvas`: `reset-shell.tsx` draws the ivory canvas, lockup and ruled card,
   with Poppins loaded for this route only (`layout.tsx`). States: checking,
   form, expired (asks for a new link in place via `requestPasswordResetAction`),
-  sent, saved. The link is still the only authorization (`exchangeCodeForSession`
-  / `verifyOtp`, no `updateUser` before it succeeds) and the token is stripped
-  from the URL once verified. Supabase errors map to plain sentences
+  sent, saved. The link is still the only authorization: every load runs
+  `verifyOtp({ type: 'recovery', token_hash })` with no branch that skips it
+  (golf links are always server-minted token_hash links, never PKCE `?code=`),
+  no `updateUser` runs before it succeeds, and the token is stripped from the
+  URL once verified. Supabase errors map to plain sentences
   (`reset-errors.ts`). A successful save calls `signOut({ scope: 'others' })`
   (owner decision: a reset signs out every other device) and keeps this device
   signed in; Continue goes to `/golf/dashboard`, not back to sign-in.

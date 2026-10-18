@@ -4,13 +4,12 @@ import ResetPasswordPage from '../page';
 import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 
 const verifyOtp = vi.fn();
-const exchangeCodeForSession = vi.fn();
 const updateUser = vi.fn();
 const signOut = vi.fn();
 const push = vi.fn();
 
 vi.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({ auth: { verifyOtp, exchangeCodeForSession, updateUser, signOut } }),
+  createClient: () => ({ auth: { verifyOtp, updateUser, signOut } }),
 }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, replace: vi.fn(), prefetch: vi.fn() }),
@@ -33,7 +32,6 @@ beforeEach(() => {
       ? { data: { user: { email: 'coach@example.edu' }, session: {} }, error: null }
       : { data: {}, error: { message: 'Verify requires a token_hash', code: 'validation_failed', status: 400 } },
   );
-  exchangeCodeForSession.mockResolvedValue({ data: { session: { user: { email: 'coach@example.edu' } } }, error: null });
   updateUser.mockResolvedValue({ data: {}, error: null });
   signOut.mockResolvedValue({ error: null });
 });
@@ -57,11 +55,11 @@ describe('golf reset password page', () => {
     expect(window.location.search).toBe('');
   });
 
-  it('exchanges a PKCE code link', async () => {
+  it('never skips verification: a link without a token_hash is checked and lands on expired', async () => {
     openWith('?code=abc');
     render(<ResetPasswordPage />);
-    await screen.findByRole('heading', { name: 'Choose a new password' });
-    expect(exchangeCodeForSession).toHaveBeenCalledWith('abc');
+    expect(await screen.findByRole('heading', { name: 'This link has expired' })).toBeInTheDocument();
+    expect(verifyOtp).toHaveBeenCalledWith({ type: 'recovery', token_hash: '' });
   });
 
   it('shows the expired state for a link with no token, or one Supabase rejects', async () => {
