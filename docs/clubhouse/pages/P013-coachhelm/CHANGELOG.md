@@ -1,5 +1,89 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-18 — Wave 3 accessibility: Ask accents, view chips
+
+```text
+Design package: none (wave-3 accessibility review, items 8, 17)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- Ask: the accent words (the find cards' category and question, the history
+  and head accent buttons, the state link, a set chip) take `--ch-green-600`,
+  not the fill colour `--ch-accent`. Light is unchanged; dark reads 7.99:1
+  (was 3.06).
+- Player CoachHelm, phone: the view chips mark the shown view with
+  `aria-current` instead of a pressed toggle.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `coachhelm-views.test.tsx` (asserts `aria-current`).
+- WebKit (Playwright, dev preview, 1280): Ask's weakest accent word 7.99:1
+  dark, 6.66:1 light (unchanged).
+
+## 2026-10-18 — Wave 3: the head on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The role line is 4px shorter than the eyebrow,
+  so the top adds 4px; on the light sheet its 12px inset comes off the top.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: the pulse says replied
+
+```text
+Design package: none (wave-3 design review, items 3)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, RSVP pulse wording)
+
+- The program pulse's RSVP item reads "2 players haven’t replied to Team
+  dinner" over "4 of 6 replied", in the words Home and the calendar use for
+  replies, where it said "have not responded for" and "responded"
+  (`src/lib/coachhelm/v3/chat/program-pulse.ts`, shared with Fairway's
+  ProgramOpening; preview fixture and tests follow).
+
+### Verification (2026-10-18, RSVP pulse wording)
+
+- New `program-pulse-rsvp.test.ts` runs the pulse over events and replies
+  and checks both forms ("2 players haven’t", "1 player hasn’t") and "N of M
+  replied". `npm run test:file` on it, the CoachHelm tests and the other
+  `program-pulse-*` tests.
+
 ## 2026-10-18 — Polish: typeset insight text; Ask hovers; chip @ on Escape
 
 ```text

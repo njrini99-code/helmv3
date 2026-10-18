@@ -1,5 +1,32 @@
 # P007 — Messages: changelog
 
+## 2026-10-18 — Wave 3: the empty page's head on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- Desktop: the whole-page empties (CH-7309 nothing yet, CH-7308 no team) take
+  the shared page gutter and head top (`--ch-page-gutter`, `--ch-page-head-top`,
+  tokens.css); the head has no eyebrow, so the top adds its 24px. The title is
+  at x 284, y 156 at 1280, where every tab's is. The live two-pane page is
+  unchanged.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview, `?state=empty`, 1280 and 1440, light and
+  dark): the title at x 284, y 156.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
 ## 2026-10-18 — Polish: a way out of no team; messages are safe
 
 ```text

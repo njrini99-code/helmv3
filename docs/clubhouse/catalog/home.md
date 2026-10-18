@@ -42,7 +42,7 @@ events follow Calendar's date-span rules. Owner decision: Safari review,
 | CH-2206 | The latest round crashes while drawing | "The latest round couldn’t be shown." … | `SectionBoundary home.latestRound` | home.test › CH-2206 |
 | CH-2207 | The leaderboard crashes while drawing | "The leaderboard couldn’t be shown." … | `SectionBoundary home.leaderboard` | home.test › CH-2207 |
 | CH-2208 | The team chat doesn't load | Nothing looks broken: Message team opens Messages instead of the team chat | `loadCoachHome` → `teamChatId: null`; logged `clubhouse.home.team chat` | home.test › CH-2208 |
-| CH-2209 | Event replies don't load | Agenda rows keep their place and drop who is invited and "5 of 6 confirmed", never "0 players" | `loadCoachHome`; logged `clubhouse.home.attendance` | home.test › CH-2209 |
+| CH-2209 | Event replies don't load | Agenda rows keep their place and drop who is invited and "5 of 6 going", never "0 players" | `loadCoachHome`; logged `clubhouse.home.attendance` | home.test › CH-2209 |
 | CH-2210 | The team's timezone doesn't load | The date, greeting and week are read in Eastern time (the product default) | `loadCoachHome`; logged `clubhouse.home.timezone` | home.test › CH-2210 |
 | CH-2211 | The team's form doesn't load (phone) | "Team scoring didn’t load" + "Posted rounds are safe. Try again; the error has been reported." in place of the form card. With a second part failing, the page's notice (CH-1209) carries the one Try again and this keeps only its title (covered) | `HomePhone`, `RefreshNotice` | home.test › CH-2211 |
 | CH-2212 | The team's form crashes while drawing (phone) | "Team scoring couldn’t be shown." The rest of Home stays | `SectionBoundary home.form` | home.test › CH-2212 |

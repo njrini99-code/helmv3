@@ -4,7 +4,7 @@ import type { createClient } from '@/lib/supabase/server';
  * RSVP counts for a player's screens, without reading teammates' rows.
  *
  * Migration 20261017102000 narrows golf_event_attendance so a player reads only their own row; the counts a player
- * sees ("5 of 6 confirmed", "6 players", D2-8's "a meeting with no invitees is the coach's own") come from
+ * sees ("5 of 6 going", "6 players", D2-8's "a meeting with no invitees is the coach's own") come from
  * `golf_event_attendance_counts(p_event_ids)` instead, which returns numbers only, for the caller's own teams. The
  * buckets mirror `rsvpOf` (data/calendar.ts): maybe/tentative count in `invited` only.
  *

@@ -1,5 +1,37 @@
 # Clubhouse changelog
 
+## 2026-10-18 — Focus rings that read; Animations off from the first frame
+
+`ui.css`, `controls.css`, `settings.css`, `calendar.css`: the button, segment,
+switch, slider, settings rail and week-day focus rings draw solid
+`--ch-border-focus` where they drew 45 to 55% green, and their dark overrides
+are gone (the token turns light green itself): 2.0 to 3.2:1 before, 5.2:1 or
+more after, light and dark. `shell.css`, `stats.css`: on the green frame the
+next-event card, the phone push bar's keys and the strokes-gained end row take
+the champagne ring. `src/components/golf/theme/ThemeScript.tsx` (shared with
+Fairway, dashboard paths only) marks `<html data-motion="off">` from the stored
+Animations setting before hydration, `ClubhouseFrame` keeps it in step, and
+`tokens.css` zeroes `--ch-dur-shimmer`, `--ch-dur-live` and `--ch-dur-sweep`
+under motion off, so skeleton shimmer and live pulses hold still from the first
+frame. `--ch-warning-600` is `#8a5a0c` (was `#94600e`), 4.7:1 or more on page
+and inset.
+
+## 2026-10-18 — One page-head line, head-coach identity, wave-3 copy
+
+`tokens.css` adds `--ch-page-gutter` (the 40px `--ch-gutter`) and
+`--ch-page-head-top` (34px). Every desktop page main takes them as its side and
+top padding and keeps its own max width and centring; a head with no eyebrow
+line, or a shorter one, adds that room to its top. At 1280 every full-head tab
+title lands at the same place. `shell.css`: page-head buttons take the body's
+10px radius. `data/shell.ts`: `ChShellData.viewerIsHeadCoach`, read from the
+coach's own `golf_team_coach_staff` row in the shell's parallel batch (a failed
+read is logged and the label falls back to "Coach"); the sidebar footer,
+account sheet and desktop Settings say "Head coach" for a head coach.
+`shell/NextEventCard` says "N of M going"; `ui/Ledger`'s chevron draws through
+`Icon` (1.6 stroke); the CoachHelm program pulse
+(`src/lib/coachhelm/v3/chat/program-pulse.ts`, shared with Fairway) says
+"haven’t replied to" and "N of M replied".
+
 ## 2026-10-18 — Interaction review: focus, menus, phone fields, loading shapes
 
 `shell.css`: page-head secondary keys keep the shared focus ring (their

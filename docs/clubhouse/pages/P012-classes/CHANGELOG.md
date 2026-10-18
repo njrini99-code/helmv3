@@ -1,5 +1,70 @@
 # P012 — Classes: changelog
 
+## 2026-10-18 — Wave 3: the head on the shared line, 44px phone actions
+
+```text
+Design package: none (wave-3 design review, items 5, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The term line is 2px shorter than the eyebrow,
+  so the top adds 2px.
+- Phone: Import schedule and Add class are 44px tall where they were 36px; the
+  loading shape matches.
+
+### Verification (2026-10-18, page-head line)
+
+- `npm run test:file` on `classes.test.tsx`.
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: whole words in the week strip, one-line times
+
+```text
+Design package: none (wave-3 design review, items 10, 11)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, week chips and Today times)
+
+- A team event's chip in the week strip wraps between words only, where it
+  cut "Pinehurst" to "Pinehur / st". On the phone the chip's side inset is
+  3px and its face a narrower cut (wdth 92) at the same 11px, so the word
+  fits (`classes.css`).
+- Today's time column is 112px (was 104px), so "10:10–11:25 AM" keeps one
+  line where "10:10–" wrapped alone. A range across noon still wraps
+  (`classes.css`).
+
+### Verification (2026-10-18, week chips and Today times)
+
+- WebKit at 390: "Pinehurst" 50.5px at 11px set in a 49px box before the
+  narrower cut; the chip now reads "Pinehurst / qualifier". Today's time is
+  108px wide at 600 14px tabular. The 1280 chip is unchanged (147px, one
+  line). With the narrower title column "Intermediate Macroeconomics"
+  (229.5px) wraps in the 226px column, as a longer title does.
+- `npm run test:file` on `classes.test.tsx` and `classes-parity.test.ts`.
+
 ## 2026-10-18 — Polish: the desktop skeleton draws Your classes' head
 
 ```text

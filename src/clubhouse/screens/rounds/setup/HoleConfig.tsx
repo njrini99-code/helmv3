@@ -45,7 +45,7 @@ export function HoleConfig({
     <section className="ch-rsu-card ch-rsu-hc" aria-label="Scorecard">
       <div className="ch-rsu-card__h">
         <div>
-          <h3>Scorecard</h3>
+          <h2>Scorecard</h2>
           <span>
             {edited
               ? `${edited} hole${edited === 1 ? '' : 's'} edited for this round`

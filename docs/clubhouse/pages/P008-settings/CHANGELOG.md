@@ -1,5 +1,90 @@
 # P008 — Settings: changelog
 
+## 2026-10-18 — Wave 3 accessibility: card titles under the page title
+
+```text
+Design package: none (wave-3 accessibility review, items 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- Desktop: each settings card's title is an `h2` under the page's `h1`; it was
+  an `h3`, a skipped level. Its look keys on `.ch-surface__title` and is
+  unchanged.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on the settings tests (5 files).
+- WebKit (Playwright, dev preview, axe-core, 1280, light and dark): Settings
+  and Preferences heading-order findings 4 to 0.
+
+## 2026-10-18 — Wave 3: the section rail's focus ring reads at night
+
+```text
+Design package: none (wave-3 accessibility review, items 1)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, accessibility: rail ring)
+
+- The section rail's focus ring is solid `--ch-border-focus`; its night
+  override to the 45% green rule is gone: dark 2.57:1 to 7.8:1 (light already
+  drew the global ring, 7.23:1). The Preferences switches take the shared
+  solid ring (P001).
+
+### Verification (2026-10-18, accessibility: rail ring)
+
+- WebKit (Playwright, dev preview): rail row and Preferences switch rings
+  measured light and dark, close-ups checked.
+
+## 2026-10-18 — Wave 3: Head coach, list-style hints, the shared line
+
+```text
+Design package: none (wave-3 design review, items 2, 5, 15)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, identity and page-head line)
+
+- Desktop: the line under the title says "Head coach · Varsity" for a head
+  coach, as the phone list and the sidebar do, where it said "Coach"
+  (`viewerRoleLabel`, `model.ts`).
+- The section rail's hints are lists: "Email, push", "Priorities, alerts",
+  "Handicap, team", "Motion, haptics, units".
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The head has no eyebrow, so the top adds its
+  24px.
+
+### Verification (2026-10-18, identity and page-head line)
+
+- `npm run test:file` on `settings.test.tsx` (the line now expects "Head coach")
+  and `wiring-p008-settings.test.tsx`.
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
 ## 2026-10-18 — Polish: the phone list says when nothing loaded
 
 ```text

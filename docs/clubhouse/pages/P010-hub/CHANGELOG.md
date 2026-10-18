@@ -1,5 +1,60 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-18 — Wave 3 accessibility: tabs point only at the shown panel
+
+```text
+Design package: none (wave-3 accessibility review, items 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- The Hub's tabs set `aria-controls` only on the tab whose panel is drawn; the
+  others pointed at panels that were not in the page.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `hub.test.tsx` and `wiring-p010-hub.test.tsx`.
+
+## 2026-10-18 — Wave 3: the head on the shared line, a 44px phone action
+
+```text
+Design package: none (wave-3 design review, items 5, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs.
+- Phone: the head's full-width action (New announcement, Plan a trip, Assign a
+  task) is 44px tall, as Create qualifier is, where it was 36px; the loading
+  shape matches.
+
+### Verification (2026-10-18, page-head line)
+
+- `npm run test:file` on `hub.test.tsx`.
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
 ## 2026-10-18 — Polish: tab rings and hover
 
 ```text

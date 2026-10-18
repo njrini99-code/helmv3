@@ -35,7 +35,8 @@
   gap: 18px;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 36px 40px 80px;
+  /* The term line is 2px shorter than the page head's eyebrow (tokens.css), so the top adds it. */
+  padding: calc(var(--ch-page-head-top) + 2px) var(--ch-page-gutter) 80px;
   color: var(--ch-text-primary);
 }
 .ch-cl.is-phone {
@@ -1225,6 +1226,7 @@
   }
   .ch-cl-h__a > .ch-btn {
     flex: 1;
+    height: 44px;
   }
   /* A full-width row, 44px tall: a thumb finds it without a mis-tap on a class card above. */
   .ch-cl-delall {
@@ -1347,8 +1349,8 @@
 }
 .ch-cl-today__row {
   display: grid;
-  /* A fixed time column (a "9:00–10:15 AM" wide), so every row's title starts at the same x. */
-  grid-template-columns: 104px minmax(0, 1fr);
+  /* A fixed time column (a "10:10–11:25 AM" wide, 108px in WebKit), so every row's title starts at the same x. */
+  grid-template-columns: 112px minmax(0, 1fr);
   column-gap: 12px;
   row-gap: 2px;
   width: 100%;
@@ -2057,6 +2059,12 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   .ch-cl.is-phone .ch-cl-card__week {
     padding-top: 6px;
   }
+  /* A team event's chip in a phone day column has about 50px for its words: a tighter inset and the narrower cut
+     hold "Pinehurst" whole (it broke "Pinehur / st"), at the size it was. */
+  .ch-cl.is-phone .ch-cl-tthead__days i {
+    padding-inline: 3px;
+    font-variation-settings: 'wdth' 92;
+  }
 }
 /* D5: Animations off stills the sync spinner. D9: "This week" and "Today" no longer collide on the term line. */
 [data-ui='clubhouse'][data-motion='off'] .ch-cl-sync__sp {
@@ -2559,7 +2567,9 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   -webkit-line-clamp: 2;
   white-space: normal;
   line-height: 1.15;
-  word-break: break-word;
+  /* It wraps between words only: break-word cut "Pinehurst" to "Pinehur / st". */
+  word-break: normal;
+  overflow-wrap: normal;
 }
 .ch-cl-tt__bar {
   height: 8px;

@@ -179,10 +179,10 @@ function Detail({ p, c, picking, onPickStage }: { p: ChProspect; c: RecCtx; pick
         </div>
       )}
       {hasContact && <ContactHint hint={c.contactHint(p)} />}
-      {!hasContact && <ContactSection p={p} onAdd={() => c.startEdit(p, 'email')} />}
-      {c.nextStep && <NextStepSection p={p} now={c.now} tz={c.tz} onEdit={c.nextStepEditable ? () => c.startEdit(p, 'nextLabel') : undefined} />}
-      <NotesSection p={p} onAdd={() => c.startEdit(p, 'notes')} />
-      <Documents prospect={p} writes={c.writes} initialUpload={c.initialUpload} />
+      {!hasContact && <ContactSection p={p} onAdd={() => c.startEdit(p, 'email')} level={2} />}
+      {c.nextStep && <NextStepSection p={p} now={c.now} tz={c.tz} onEdit={c.nextStepEditable ? () => c.startEdit(p, 'nextLabel') : undefined} level={2} />}
+      <NotesSection p={p} onAdd={() => c.startEdit(p, 'notes')} level={2} />
+      <Documents prospect={p} writes={c.writes} initialUpload={c.initialUpload} level={2} />
       <MetaLine p={p} now={c.now} tz={c.tz} />
     </div>
   );

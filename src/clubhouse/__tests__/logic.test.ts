@@ -290,7 +290,7 @@ describe('home model', () => {
     // A failed attendance read passes null: location only.
     expect(H.inviteDetail({ location: null, title: 'Film', invitees: null, names })).toBeNull();
     expect(H.confirmedLine(null, 0)).toBeNull();
-    expect(H.confirmedLine(['a', 'b'], 1)).toBe('1 of 2 confirmed');
+    expect(H.confirmedLine(['a', 'b'], 1)).toBe('1 of 2 going');
   });
   it('writes the subline from real status, and nothing when rounds failed', () => {
     const rows: H.ChSublineRow[] = [

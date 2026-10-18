@@ -152,7 +152,7 @@ describe('Player Home week', () => {
     const after = await week();
     expect(asked.golf_event_attendance).toBeUndefined();
     expect(after.week.agenda).toEqual(before.week.agenda);
-    expect(after.week.agenda.map((r) => r.detail)).toEqual(['Range · 3 players', 'First tee 9:00 · 1 of 2 confirmed']);
+    expect(after.week.agenda.map((r) => r.detail)).toEqual(['Range · 3 players', 'First tee 9:00 · 1 of 2 going']);
     const phone = after.todayEvents[0]!;
     expect(phone).toMatchObject({ invitees: [], going: null, awaiting: [], inviteeIds: null, invitedCount: 3 });
     expect(JSON.stringify(after)).not.toMatch(/"p[23]"/);

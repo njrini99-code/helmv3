@@ -5,7 +5,8 @@
 .ch-set {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 48px var(--ch-gutter) 96px;
+  /* No eyebrow line over the title: its 24px is added to the head's top (tokens.css). */
+  padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 96px;
 }
 .ch-set-head {
   display: flex;
@@ -97,7 +98,7 @@
   color: var(--ch-forest-800);
 }
 .ch-set-rail__i:focus-visible {
-  outline: 2px solid rgb(21 90 57 / 0.45);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
 
@@ -1880,9 +1881,6 @@ html[data-fw-theme='dark'] .ch-set-rail__i.is-on {
 html[data-fw-theme='dark'] .ch-set-rail__i.is-on b,
 html[data-fw-theme='dark'] .ch-set-code {
   color: var(--ch-green-700);
-}
-html[data-fw-theme='dark'] .ch-set-rail__i:focus-visible {
-  outline-color: var(--ch-green-rule);
 }
 html[data-fw-theme='dark'] .ch-set-rank__n {
   background: var(--ch-green-100);

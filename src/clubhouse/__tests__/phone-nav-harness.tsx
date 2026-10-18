@@ -20,7 +20,7 @@ export function PhoneNav({
   pathname: string;
   shell: ChShellData;
   role: ChRole;
-  user?: { name: string; teamName?: string | null };
+  user?: { name: string; teamName?: string | null; headCoach?: boolean };
   teamSwitch?: ChTeamSwitch | null;
   title?: string;
 }) {

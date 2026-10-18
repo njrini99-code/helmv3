@@ -46,11 +46,11 @@ export function inviteDetail(input: { location: string | null; title: string; in
   return [location, who].filter(Boolean).join(' · ') || null;
 }
 
-/** "5 of 6 confirmed" from RSVP rows, or from an invitee count; null without invitees or when the read failed. */
+/** "5 of 6 going" from RSVP rows, or from an invitee count; null without invitees or when the read failed. */
 export function confirmedLine(invitees: string[] | number | null, accepted: number): string | null {
   const n = typeof invitees === 'number' ? invitees : (invitees?.length ?? 0);
   if (n === 0) return null;
-  return `${accepted} of ${n} confirmed`;
+  return `${accepted} of ${n} going`;
 }
 
 export interface ChSublineRow {

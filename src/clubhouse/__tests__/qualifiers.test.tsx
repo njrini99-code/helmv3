@@ -573,7 +573,7 @@ describe('Qualifiers · list', () => {
     expect(within(hero).getByText(/^Standings · top \d+$/)).toBeTruthy();
     const titles = (heading: string) =>
       [...(screen.getByRole('heading', { level: 2, name: heading }).closest('section') as HTMLElement).querySelectorAll('h3')].map((h) => h.textContent);
-    expect(titles('Upcoming and live')).toEqual(['Conference qualifier']);
+    expect(titles('Also active')).toEqual(['Conference qualifier']);
     expect(titles('Concluded')).toEqual(['Fall invitational qualifier', 'Preseason qualifier', 'Spring conference qualifier']);
   });
 
@@ -2874,7 +2874,7 @@ describe('Qualifiers · every write', () => {
       goes: null,
       reads: true,
       landed: () => {
-        expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Completed');
+        expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Concluded');
         expect(screen.queryByText('Close this qualifier?')).toBeNull();
       },
     },

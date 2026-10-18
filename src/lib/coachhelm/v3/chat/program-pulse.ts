@@ -418,8 +418,8 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     if (pending.length === 0) continue;
     items.push({
       id: `rsvp-${event.id}`,
-      headline: `${pending.length} player${pending.length === 1 ? ' has' : 's have'} not responded for ${event.title}`,
-      evidence: `${formatDateTime(event.start_time, ctx.timezone)} · ${forEvent.length - pending.length} of ${forEvent.length} responded`,
+      headline: `${pending.length} player${pending.length === 1 ? ' hasn’t' : 's haven’t'} replied to ${event.title}`,
+      evidence: `${formatDateTime(event.start_time, ctx.timezone)} · ${forEvent.length - pending.length} of ${forEvent.length} replied`,
       tone: 'attention',
       weight: 85,
       action: { label: 'Open calendar', href: '/golf/dashboard/calendar' },

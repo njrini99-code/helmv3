@@ -330,7 +330,7 @@ export const STATE_LABEL: Record<Exclude<ChQRowState, null>, { tone: 'positive' 
 export const STATUS_LABEL: Record<ChQStatus, { tone: 'accent' | 'warning' | 'neutral'; label: string }> = {
   in_progress: { tone: 'accent', label: 'Live' },
   upcoming: { tone: 'warning', label: 'Upcoming' },
-  completed: { tone: 'neutral', label: 'Completed' },
+  completed: { tone: 'neutral', label: 'Concluded' },
 };
 
 export function ctaLabel(status: ChQStatus): string {

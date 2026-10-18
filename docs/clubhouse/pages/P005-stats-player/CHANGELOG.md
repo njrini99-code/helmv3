@@ -1,5 +1,88 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-18 — Wave 3 accessibility: tab targets, birdie digits
+
+```text
+Design package: none (wave-3 accessibility review, items 16, 18)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- The profile's tabs set `aria-controls` only on the tab whose panel is drawn;
+  the others pointed at panels that were not in the page.
+- Dark: the score mix's birdie segment and key print their figures in the
+  page's near-black, not white, on the salmon flag (2.53:1 to 7.27:1).
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `stats-player.test.tsx`.
+- WebKit (Playwright, dev preview, 1280 dark): `.ch-zmix .is-birdie` 7.27:1;
+  light unchanged at 6.02:1.
+
+## 2026-10-18 — Wave 3: the shared gutter
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- The profile takes the Stats main's shared gutter and head top (`stats.css`,
+  design #5): the back link and hero start 40px in from the frame, the name at x
+  384 beside the photo.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: the actions keep one row, ranges typeset
+
+```text
+Design package: none (wave-3 design review, items 4, 6, 7)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, hero actions and zone ranges)
+
+- At 1280 and wider the hero's three actions (Message, Schedule 1:1, Add
+  focus area) sit on one row: the hero's column gap is 16px (was 22px) and
+  the action buttons take 12px side padding (was 14px). Add focus area
+  wrapped to a row of its own at 1280 (`stats.css`).
+- Approach ranges read "50–125 yds", "125–175 yds" and "175+ yds" on screen
+  (en dash, yds); the bucket labels stay the lookup keys in
+  `leak-map-buckets.ts` (`OverviewZones.tsx`).
+- The strokes gained track's note gives its range with true signs ("−3 to
+  +1"), where the low end had a hyphen-minus (`OverviewZones.tsx`).
+
+### Verification (2026-10-18, hero actions and zone ranges)
+
+- WebKit, the three actions' tops: 280, 280, 280 at 1280 (the row ends 10px
+  inside its 384px column) and at 1440; the name stays one line.
+- `npm run test:file` on `stats-parity.test.tsx` and `stats-player.test.tsx`.
+
 ## 2026-10-18 — Polish: the profile skeleton takes the wide layout
 
 ```text

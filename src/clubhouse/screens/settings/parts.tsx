@@ -45,9 +45,9 @@ export function Card({
     <section className="ch-surface" aria-labelledby={id ? `${id}-t` : undefined} data-ch-code={code}>
       <div className="ch-surface__head">
         <div style={{ minWidth: 0 }}>
-          <h3 id={id ? `${id}-t` : undefined} className="ch-surface__title">
+          <h2 id={id ? `${id}-t` : undefined} className="ch-surface__title">
             {title}
-          </h3>
+          </h2>
           {description && <div className="ch-surface__sub">{description}</div>}
         </div>
         {aside && <div className="ch-surface__actions">{aside}</div>}

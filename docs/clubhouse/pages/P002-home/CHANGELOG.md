@@ -1,5 +1,93 @@
 # P002 — Home: changelog
 
+## 2026-10-18 — Wave 3 accessibility: day card focus rings
+
+```text
+Design package: none (wave-3 accessibility review, items 2)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- Phone: the day card's open link and its two actions draw their own ivory
+  focus rings on the green. The shared `.ch-root :focus-visible` ring used to
+  win over them (same weight, loaded later) and drew a 2px green ring on green
+  (1.55:1); the rules now carry `.ch-root`, so the ivory rings (10.5–11:1)
+  show.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- WebKit (Playwright, dev preview, 390, light and dark): keyboard focus on the
+  day card's link draws the inset ivory ring and no outline; on an action an
+  ivory 2px outline, 11.0:1 light and 10.5:1 dark (was 1.55 and 5.28).
+
+## 2026-10-18 — Wave 3: the head on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. Home's date line is 4px shorter than the
+  eyebrow, so its top adds 4px (the loaded, loading and first-run heads alike).
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: a readable chosen window, one word for replies
+
+```text
+Design package: none (wave-3 design review, items 1, 3, 12)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, scoring switch and reply counts)
+
+- Player Home phone, Scoring: the chosen window ("Last 10") keeps the
+  switch's own ivory ink on the green chip; the quieter ink-600 now applies
+  only to the options off the chip (`home.css`).
+- An agenda row that asks for replies reads "5 of 6 going", as the day card
+  does, where it said "confirmed" (`model.ts` `confirmedLine`).
+- The latest round's flag (desktop and phone) is drawn at the Clubhouse
+  stroke through `Icon` (`LatestRound.tsx`, `PlayerHomePhone.tsx`).
+
+### Verification (2026-10-18, scoring switch and reply counts)
+
+- WebKit at 390, the chosen segment's ink against the chip's gradient where
+  the text sits (25 to 75% down): light 6.8:1 or more, dark 4.8:1 or more
+  (the chip's top edge is 4.4:1 in dark, above the text).
+- `npm run test:file` on the Home, Player Home, logic and attendance tests.
+- The catalog rows (CH-2209, CH-1304), the contract and Bridge 20804
+  (`config/clubhouse/bridge-contracts.json`, then `registry.mjs sync`) say
+  "going" too.
+
 ## 2026-10-18 — Polish: Home loads in the reader's shape, names on one line
 
 ```text

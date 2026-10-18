@@ -675,8 +675,8 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
       )}
       <Act phone={phone} label="Create account" busy={busy} busyLabel="Creating your account…" />
       <p className="ch-ox-legal">
-        By creating an account you agree to the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.
-        {player && d.grad != null && needsGuardianConsent(d.grad, now) ? ' If you’re under 18, a parent or guardian acknowledges and consents to the collection of information described in our Privacy Policy.' : ''}
+        By creating an account you agree to the <Link href="/terms">Terms of service</Link> and <Link href="/privacy">Privacy policy</Link>.
+        {player && d.grad != null && needsGuardianConsent(d.grad, now) ? ' If you’re under 18, a parent or guardian acknowledges and consents to the collection of information described in our privacy policy.' : ''}
       </p>
     </Q>
   );

@@ -763,7 +763,7 @@ function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number
           <p>Gross strokes · coach only</p>
         </div>
       </div>
-      <ScrollRegion label="Round-by-round scores" className="ch-qf-table">
+      <ScrollRegion label="Round-by-round scores, scrolls sideways" className="ch-qf-table">
         <div role="table" aria-labelledby="ch-qf-rbr" style={{ minWidth }}>
           <div role="rowgroup">
             <div className="ch-qf-row ch-qf-row--head" role="row" style={{ gridTemplateColumns: cols }}>

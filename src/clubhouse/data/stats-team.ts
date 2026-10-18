@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
+import { formatSigned } from '../lib/format';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { fullName, groupByPlayer, loadSeasonRounds, mean, MIN_SG_ROUNDS, shortDate, type ChRound } from './season';
 import {
@@ -383,7 +384,7 @@ function seasonBests(
   const sg = valid.filter((r) => r.strokes_gained_total != null).sort((a, b) => b.strokes_gained_total! - a.strokes_gained_total!)[0];
   if (sg) {
     const v = sg.strokes_gained_total!;
-    out.push({ label: 'Best SG round', playerId: sg.player_id, name: name.get(sg.player_id)!, value: `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`, meta: meta(sg) });
+    out.push({ label: 'Best SG round', playerId: sg.player_id, name: name.get(sg.player_id)!, value: formatSigned(v), meta: meta(sg) });
   }
   // Longest putt made, from shot-level putting data (any countable round this season).
   if (putts) {

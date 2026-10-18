@@ -245,7 +245,7 @@ describe('CH-13930 the player’s sub-navigation', () => {
     render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
     await userEvent.click(within(screen.getByRole('group', { name: 'CoachHelm view' })).getByRole('button', { name: 'Deep dive' }));
     await waitFor(() => expect(document.querySelector('main.ch-hl')!.getAttribute('aria-busy')).toBe('true'));
-    expect(screen.getByRole('button', { name: 'Deep dive' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Deep dive' }).getAttribute('aria-current')).toBe('true');
     router.push.mockReset();
   });
 
@@ -263,7 +263,7 @@ describe('CH-13930 the player’s sub-navigation', () => {
     const row = screen.getByRole('group', { name: 'CoachHelm view' });
     const chips = within(row).getAllByRole('button');
     expect(chips.map((c) => c.textContent)).toEqual(['Board', 'Game profile', 'Standing', 'Deep dive']);
-    expect(chips.map((c) => c.getAttribute('aria-pressed'))).toEqual(['true', 'false', 'false', 'false']);
+    expect(chips.map((c) => c.getAttribute('aria-current'))).toEqual(['true', null, null, null]);
     expect(within(row).getByRole('link', { name: /Development/ }).getAttribute('href')).toBe('/golf/dashboard/stats?tab=dev');
     await userEvent.click(chips[2]!);
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=standing');

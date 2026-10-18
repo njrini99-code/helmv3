@@ -16,7 +16,8 @@
   height: auto;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 34px 40px 80px;
+  /* No eyebrow line over the title: its 24px is added to the head's top (tokens.css). */
+  padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 80px;
 }
 .ch-ms-head {
   display: flex;

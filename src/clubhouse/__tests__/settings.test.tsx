@@ -739,7 +739,7 @@ describe('Settings · opening and permission', () => {
   it('80101 opens with the role, team and email, the rail and the first card, and needs no team', () => {
     setup({ data: { ...coachData(), teamId: null, teamName: null, team: null, joinCode: null, scoring: null, reminders: null } });
     expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeTruthy();
-    expect(document.querySelector('.ch-set-head p')?.textContent).toBe('Coach · maya.reyes@unc.edu');
+    expect(document.querySelector('.ch-set-head p')?.textContent).toBe('Head coach · maya.reyes@unc.edu');
     expect(within(nav()).getAllByRole('button')).toHaveLength(5);
     expect(card('Profile')).toBeTruthy();
   });

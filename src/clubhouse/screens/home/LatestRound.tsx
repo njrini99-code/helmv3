@@ -6,6 +6,7 @@ import { useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHoleScore } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
 import { rebuiltHref } from '../../shell/nav';
 import { firstName } from './model';
 import { MY_STATS, roundHref } from './player-links';
@@ -120,7 +121,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                 <div className="ch-h-round__who">
                   {mine ? (
                     <span className="ch-h-flag" aria-hidden="true">
-                      <Flag size={16} />
+                      <Icon icon={Flag} size={16} />
                     </span>
                   ) : (
                     <Avatar name={r.playerName} size={36} />

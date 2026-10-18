@@ -277,7 +277,7 @@ export const PREVIEW_HELM_PLAYER_OFF: ChPlayerHelm = { off: { reason: null }, pr
 export const PREVIEW_HELM_PLAYER_WORKING: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [chTour(bigNumber(jonah))], error: false }, rounds: null };
 
 const PULSE_ITEMS: PulseItem[] = [
-  { id: 'rsvp-e1', headline: '2 players have not responded for Team dinner', evidence: 'Thu, Oct 16, 6:30 PM · 4 of 6 responded', tone: 'attention', weight: 85 },
+  { id: 'rsvp-e1', headline: '2 players haven’t replied to Team dinner', evidence: 'Thu, Oct 16, 6:30 PM · 4 of 6 replied', tone: 'attention', weight: 85 },
   { id: 'movement-decline', headline: '2 players are scoring higher than their previous three rounds', evidence: 'Jonah Okafor +2.1 · Eli Brandt +0.8', tone: 'attention', weight: 80 },
   { id: 'signals-open', headline: '7 open signals across 4 players', evidence: 'Downhill putts inside 4-6 ft: a real penalty', tone: 'neutral', weight: 70 },
   { id: 'focus-stalled', headline: '1 active focus area has no recent progress', evidence: 'Priya Natarajan: Lag putting', tone: 'attention', weight: 65 },

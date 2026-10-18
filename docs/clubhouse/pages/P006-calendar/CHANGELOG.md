@@ -1,5 +1,123 @@
 # P006 — Calendar: changelog
 
+## 2026-10-18 — Wave 3 accessibility: readable ended events, today
+
+```text
+Design package: none (wave-3 accessibility review, items 10, 15)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- An ended event no longer fades as a whole (0.56, with its time at 0.82 on
+  top, measured 2.4–3.3:1). It keeps the desaturated fill; a tinted block's
+  words go to `--ch-ink-500`, and a filled competition keeps its ivory on the
+  green mixed a quarter toward the page (half at night). Hover, focus and
+  selection still bring an ended event back. The month's ended chips follow
+  the same rule instead of fading to 0.6.
+- Phone month: a day's label says "today" (for example "Wed 14 October,
+  today: 4 events").
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `calendar.test.tsx`.
+- WebKit (Playwright, dev preview, 1280): the weakest ended-event text is
+  4.95:1 light and 6.02:1 dark in the week (was 2.4 and 2.62), 4.95:1 and
+  7.0:1 in the month (was 3.39 and 3.39). Week and month screenshots, light
+  and dark, read the ended events as past.
+
+## 2026-10-18 — Wave 3: the week's day keys take a solid focus ring
+
+```text
+Design package: none (wave-3 accessibility review, items 1)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, accessibility: day ring)
+
+- A week day key's focus ring is solid `--ch-border-focus` where it was 45%
+  green, and its night override is gone: light 2.15:1 to 7.23:1, dark 2.57:1
+  to 7.8:1.
+
+### Verification (2026-10-18, accessibility: day ring)
+
+- WebKit (Playwright, dev preview, 1280 week and 390 month): ring contrast light
+  and dark, close-ups checked.
+
+## 2026-10-18 — Wave 3: the title on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The week's title has no eyebrow over it, so
+  the top adds its 24px; the gutter is 40px where it was 32px.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: a block's time is never cut
+
+```text
+Design package: none (wave-3 design review, items 8)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, block times)
+
+- Week and day grids: a block's time is set in whole parts ("8:00", " AM",
+  " – 9:30 AM", " · location") on one line, and a part that doesn't fit
+  drops with the parts after it, so a block shows the longest start of its
+  time that fits: the range, then "8:00 AM", then "8:00". Shared blocks
+  showed a bare "8:00" and narrow ones a cut "9:00 – 10:0…" (`views.tsx`,
+  `calendar.css`).
+- The start always carries AM or PM, so a range reads "8:00 AM – 9:30 AM";
+  the button's name, the peek and the inspector keep "8:00 – 9:30 AM". A
+  location shows whole or not at all, never as "· Le…".
+- A short block's time keeps its width and its title ellipsizes ("Travel
+  bri… 1:30 PM"); the meridiem drops only when the title would be left under
+  24px.
+
+### Verification (2026-10-18, block times)
+
+- WebKit at 1280 and 1440, every block in the preview week: no time part
+  ends past its block. At 1280 every full-width block shows its range, a
+  64px lane "3:30 PM", short blocks "5:30 PM"; at 1440 (95px columns)
+  blocks show "8:00 AM", 49px lanes the bare start, short blocks "5:30 PM".
+- `npm run test:file` on the eight calendar test files: 201 passed.
+
 ## 2026-10-18 — Polish: week bars lift on hover; inbox rows keep their ring
 
 ```text

@@ -17,7 +17,7 @@ export function HubSkeletonTop() {
           <Skeleton width={96} height={24} radius={12} />
           <Skeleton width={128} height={10} />
         </div>
-        {coach && <Skeleton width="100%" height={36} radius={10} />}
+        {coach && <Skeleton width="100%" height={44} radius={10} />}
       </div>
       <div className="ch-hb-tabs" aria-hidden="true">
         {(coach ? [40, 92, 44, 70, 38] : [40, 92, 44, 70]).map((w, i) => (

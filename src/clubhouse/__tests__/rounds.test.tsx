@@ -228,9 +228,9 @@ describe('112401 Rounds library, on screen', () => {
   it('110108 groups by month (newest first) or by course, each with its count and low', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_IDLE);
-    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['September 2026', 'August 2026']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['September 2026', 'August 2026']);
     await user.click(screen.getByRole('radio', { name: 'By course' }));
-    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Finley GC', 'Hope Valley CC', 'Old Chatham GC', 'Carolina GC']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Finley GC', 'Hope Valley CC', 'Old Chatham GC', 'Carolina GC']);
     const finley = screen.getByRole('region', { name: 'Finley GC' });
     expect(within(finley).getByText(/rounds$/).textContent).toBe('5 rounds');
     // P011-D2: the low is an 18-hole figure, like the average (Finley's nine-hole 38 is not its low).
@@ -283,7 +283,7 @@ describe('112401 Rounds library, on screen', () => {
     expect(within(season).getByText('avg · +1.9 to par')).toBeTruthy();
     expect(within(season).getByText('Best').nextSibling!.textContent).toBe('69');
     // P011-D16: the whole course name, not its first word.
-    expect(within(season).getByText('Carolina GC').parentElement!.textContent).toBe('Carolina GC · Aug 18');
+    expect(within(season).getByText('Carolina GC').parentElement!.textContent).toBe('Carolina GC\u00a0· Aug 18');
     expect(within(season).getByText('GIR').nextSibling!.textContent).toBe('62%');
   });
 });

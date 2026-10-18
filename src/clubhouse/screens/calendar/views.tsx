@@ -126,7 +126,13 @@ function EventBlock({
   const left = step * lane;
   const shared = lanes > 1;
   const title = eventTitle(e, people);
-  const meta = short || shared ? fmtHour(e.start!, false) : rangeLabel(e) + (h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : '');
+  // The time in parts, each kept whole: the block shows as many as fit on its one line (calendar.css, .ch-ev__m--fit),
+  // so a narrow block reads "8:00 AM" and a narrower one "8:00", never a cut "8:00 – 9:…" or a bare start where AM or PM
+  // fits. The start carries its half, so a range reads "8:00 AM – 9:30 AM". A short block gives only its start; a day
+  // of a run over several days keeps rangeLabel's one phrase ("From 8:00 AM").
+  const timed = !e.allDay && !(e.span?.start != null && e.span.end != null && e.date);
+  const when = timed ? [fmtHour(e.start!, false), e.start! < 12 ? ' AM' : ' PM', ...(short ? [] : [` – ${fmtHour(e.end!)}`])] : [rangeLabel(e)];
+  const where = !shared && h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : null;
   // P006 D2: a block on its own wraps its title to the lines its height leaves above the time (padding 12, gap 2, time 15;
   // a title line is 15.6), at most three, so "Bus to Pinehurst" isn't cut to "Bus to Pine…" in a block with room.
   // One line keeps the plain cut-off, which shows more of the title than a word-wrapped clamp.
@@ -160,7 +166,12 @@ function EventBlock({
       }}
     >
       <span className="ch-ev__t">{title}</span>
-      <span className="ch-ev__m">{meta}</span>
+      <span className="ch-ev__m ch-ev__m--fit">
+        {when.map((part, i) => (
+          <span key={i}>{part}</span>
+        ))}
+        {where && <span>{where}</span>}
+      </span>
       {flagged && !short && (
         <span className="ch-ev__warn" aria-hidden="true">
           <Icon icon={TriangleAlert} size={10} />

@@ -1,5 +1,82 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-18 — Wave 3: a champagne ring on the strokes-gained card
+
+```text
+Design package: none (wave-3 accessibility review, items 4)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, accessibility: card ring)
+
+- The strokes-gained card's end row takes a champagne focus ring on its green
+  (`.ch-root .ch-sgt__end`, so its 0 offset now applies too): 1.25:1 to 6.53:1
+  light, 4.46:1 to 6.53:1 dark.
+
+### Verification (2026-10-18, accessibility: card ring)
+
+- WebKit (Playwright, dev preview, 1280): ring contrast light and dark,
+  close-up checked.
+
+## 2026-10-18 — Wave 3: the head on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The eyebrow sits 2px lower than the shared
+  one, so the top gives 2px back.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: the phone trend says the window, a true minus
+
+```text
+Design package: none (wave-3 design review, items 18)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, trend wording and best SG)
+
+- Phone, scoring trend: a flat trend reads "Flat across the window.", as the
+  desktop's strokes gained trend says, where it said "these rounds"
+  (`StatsTeamPhone.tsx`).
+- Best SG round is written with `formatSigned`, so a zero round reads "0.0"
+  rather than "+0.0" (`data/stats-team.ts`).
+
+### Verification (2026-10-18, trend wording and best SG)
+
+- `npm run test:file` on `stats-team.test.tsx` and `stats-bestcard.test.tsx`.
+
 ## 2026-10-18 — Polish: putting distances keep their unit
 
 ```text

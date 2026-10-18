@@ -6,7 +6,8 @@
   gap: 28px;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 40px 36px 80px;
+  /* The eyebrow line sits 2px lower than the page head's (tokens.css), so the top gives it back. */
+  padding: calc(var(--ch-page-head-top) - 2px) var(--ch-page-gutter) 80px;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-st-panel {
@@ -545,7 +546,9 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-sgt__end:focus-visible {
+/* On the green card: a champagne ring, as the sidebar's (the global green one is 1.25:1 here). */
+.ch-root .ch-sgt__end:focus-visible {
+  outline-color: var(--ch-champagne-300);
   outline-offset: 0;
 }
 @media (hover: hover) {
@@ -5329,12 +5332,17 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
    ("that's up very large": the page head had grown to over 500px). The route skeleton (aria-busy, no is-desk) takes
    the same layout, so the tabs land where its bars were. */
 @media (min-width: 1280px) {
+  /* The name column holds the three actions on one row at 1280 (Add focus area wrapped alone at 22px gaps and 14px
+     button padding): 16px gaps and 12px padding leave it about 9px to spare (WebKit, 2026-10-18). */
   .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero {
     grid-template-columns: auto minmax(0, 1fr) auto;
-    column-gap: 22px;
+    column-gap: 16px;
     row-gap: 0;
     align-items: end;
     padding-top: 14px;
+  }
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__act .ch-btn {
+    padding-inline: 12px;
   }
   .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs {
     grid-row: 1;
@@ -5768,6 +5776,10 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-zmixkey i.is-birdie {
   background: var(--ch-chart-flag);
   color: #fff;
+}
+/* At night the flag is a salmon that white reads 2.5:1 on; the page's near-black holds 7.3:1. */
+html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmixkey i.is-birdie) {
+  color: var(--ch-bg-page);
 }
 .ch-st[data-canopy] .ch-zmix .is-par,
 .ch-st[data-canopy] .ch-zmixkey i.is-par {

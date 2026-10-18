@@ -13,16 +13,16 @@ export type ChSettingsSection = 'account' | 'notifications' | 'preferences' | 't
 export const SECTIONS: Record<'coach' | 'player', ReadonlyArray<{ id: ChSettingsSection; label: string; hint: string }>> = {
   coach: [
     { id: 'account', label: 'Account', hint: 'Profile, email, password' },
-    { id: 'notifications', label: 'Notifications', hint: 'Email and push' },
+    { id: 'notifications', label: 'Notifications', hint: 'Email, push' },
     { id: 'team', label: 'Team', hint: 'Scoring, reminders, invites' },
-    { id: 'coachhelm', label: 'CoachHelm', hint: 'Priorities and alerts' },
-    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics and units' },
+    { id: 'coachhelm', label: 'CoachHelm', hint: 'Priorities, alerts' },
+    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics, units' },
   ],
   player: [
     { id: 'account', label: 'Account', hint: 'Profile, email, password' },
-    { id: 'golf', label: 'Golf profile', hint: 'Handicap and team' },
+    { id: 'golf', label: 'Golf profile', hint: 'Handicap, team' },
     { id: 'notifications', label: 'Notifications', hint: 'Email, push, CoachHelm' },
-    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics and units' },
+    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics, units' },
   ],
 };
 
@@ -334,6 +334,12 @@ export function staffInviteNote(i: ChStaffInvite): string {
 
 export function staffRoleLabel(role: string): string {
   return role === 'head_coach' ? 'Head coach' : 'Assistant coach';
+}
+
+/** The signed-in person's role on their identity line: a head coach is "Head coach", as the shell and the phone list say. */
+export function viewerRoleLabel(data: Pick<ChSettingsData, 'role' | 'coachhelm'>): string {
+  if (data.role !== 'coach') return 'Player';
+  return data.coachhelm && !data.coachhelm.error && data.coachhelm.value.team?.isHeadCoach ? staffRoleLabel('head_coach') : 'Coach';
 }
 
 const sameWords = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();

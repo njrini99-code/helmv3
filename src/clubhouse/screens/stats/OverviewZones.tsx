@@ -98,6 +98,8 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
   const proxHi = Math.max(1, ...prox.flatMap((b) => [b.value ?? 0, b.bench ?? 0])) * 1.25;
   // A range under its sample floor says what it needs (CH-5318), as the standing table did.
   const floorOf = (label: string) => cmp(`Proximity ${label.replace('-', '–')}`)?.floor;
+  // The bucket's label is its lookup key (leak-map-buckets.ts); on screen a range takes an en dash and yards are "yds".
+  const rangeOf = (label: string) => label.replace('-', '–').replace(/ yd$/, ' yds');
 
   // 5 · short game
   const scrAtt = s?.scrambleAttempts ?? 0;
@@ -146,7 +148,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
           <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} />
         </Vis>
         {sg != null && (
-          <Vis title={coach ? 'Against the team and the Tour' : 'Against the Tour'} note={`Total strokes gained a round, ${sgLo} to +${sgHi}.`}>
+          <Vis title={coach ? 'Against the team and the Tour' : 'Against the Tour'} note={`Total strokes gained a round, ${formatSigned(sgLo, 0)} to ${formatSigned(sgHi, 0)}.`}>
             <div className="ch-zpin">
               <span style={{ left: `${pos(sg, sgLo, sgHi)}%` }}>You {formatSigned(sg)}</span>
             </div>
@@ -351,7 +353,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                   return (
                     <div key={b.label} className="ch-zrow">
                       <span className="l">
-                        {b.label}
+                        {rangeOf(b.label)}
                         <small>{b.shots} shots</small>
                       </span>
                       <em className="ch-zfloor" data-ch-code="CH-5318">
@@ -364,7 +366,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                 return (
                   <div key={b.label} className="ch-zrow">
                     <span className="l">
-                      {b.label}
+                      {rangeOf(b.label)}
                       <small>{b.shots} shots</small>
                     </span>
                     <Track value={b.value} lo={0} hi={proxHi} bad={b.bench != null && b.value > b.bench} tour={b.bench} />

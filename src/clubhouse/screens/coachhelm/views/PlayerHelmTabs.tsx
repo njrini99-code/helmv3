@@ -33,7 +33,7 @@ export function PlayerHelmTabs({ active, onGo }: { active: PlayerHelmView; onGo:
   // The chip row is wider than the screen: start with the current chip in view, without moving the page.
   useEffect(() => {
     const box = row.current;
-    const on = box?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    const on = box?.querySelector<HTMLElement>('[aria-current="true"]');
     if (box && on) box.scrollLeft = Math.max(0, on.offsetLeft - (box.clientWidth - on.offsetWidth) / 2);
   }, [phone, active]);
 
@@ -46,7 +46,7 @@ export function PlayerHelmTabs({ active, onGo }: { active: PlayerHelmView; onGo:
               key={v}
               type="button"
               className="ch-hv-chip"
-              aria-pressed={v === active}
+              aria-current={v === active ? 'true' : undefined}
               onClick={() => {
                 if (v === active) return;
                 haptic('select');

@@ -61,8 +61,8 @@ export function ClassesSkeleton() {
             <Skeleton width={190} height={11} />
           </span>
           <span className="ch-cl-sk-acts">
-            <Skeleton width="100%" height={36} radius={11} />
-            <Skeleton width="100%" height={36} radius={11} />
+            <Skeleton width="100%" height={44} radius={11} />
+            <Skeleton width="100%" height={44} radius={11} />
           </span>
         </header>
         <Skeleton width="100%" height={116.7} radius={14} shape="solid" />

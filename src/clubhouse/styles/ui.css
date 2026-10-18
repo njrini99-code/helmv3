@@ -23,7 +23,7 @@
 }
 .ch-root .ch-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 4px rgb(21 90 57 / 0.45);
+  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 4px var(--ch-border-focus);
 }
 .ch-btn:disabled {
   cursor: not-allowed;
@@ -976,10 +976,7 @@ button.ch-feat {
    finishes drawn as literals turn to night ones: the secondary key a lit charcoal with the same sliding hover face,
    the toast and popover a raised surface above the page (the toast's ink ramp flips, so it can't stay ink-900), the
    tonal coins and badges deep tints with light inks, and the scorecard marks keep their shapes in night finishes, the
-   double's solid tile turning ivory. White lit tops drop to a whisper; green focus rings take the light green. */
-html[data-fw-theme='dark'] .ch-root .ch-btn:focus-visible {
-  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 4px rgb(107 187 140 / 0.55);
-}
+   double's solid tile turning ivory. White lit tops drop to a whisper; the focus ring's token turns light green itself. */
 html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.4);
 }

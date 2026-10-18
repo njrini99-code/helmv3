@@ -1,5 +1,87 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-18 — Wave 3 accessibility: standings positions at body contrast
+
+```text
+Design package: none (wave-3 accessibility review, items 7)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- The live board's position numbers take `--ch-ink-500` instead of
+  `--ch-ink-400`: the phone rows measured 2.99:1 in light.
+- Round-by-round's sideways scroll region is named "Round-by-round scores,
+  scrolls sideways", so it no longer shares its section's landmark name.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- WebKit (Playwright, dev preview, `qualifier?q=live`): the weakest position
+  number 5.87:1 at 390 light (was 2.99), 7.0:1 dark (was 4.38); at 1280 6.44:1
+  dark (was 4.03).
+- axe-core on `qualifier?q=live`, 390 and 1280, light and dark:
+  landmark-unique 2 to 0. `npm run test:file` on `qualifiers.test.tsx`.
+
+## 2026-10-18 — Wave 3: the head on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The detail page takes the same gutter and top;
+  its title sits under the back link.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: Concluded throughout, Also active under the hero
+
+```text
+Design package: none (wave-3 design review, items 9)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, status word and section head)
+
+- A finished qualifier's status reads "Concluded", the list's filter and
+  section word, where its badge said "Completed" (`model.ts`).
+- Under the Active hero, the section of the other active qualifiers is
+  headed "Also active"; with no hero it stays "Upcoming and live"
+  (`QualifiersList.tsx`).
+
+### Verification (2026-10-18, status word and section head)
+
+- `npm run test:file` on `qualifiers.test.tsx` and
+  `qualifiers-premium.test.tsx`.
+
 ## 2026-10-18 — Polish: your place reads as the Hub says it
 
 ```text

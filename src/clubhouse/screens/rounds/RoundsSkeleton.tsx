@@ -63,7 +63,7 @@ function PhoneRoundsSkeleton() {
           <SkelLine h={33.5} w={168} sh={28} r={8} />
         </span>
         <span className="ch-rd-sk-new">
-          <Skeleton width={117} height={36} radius={11} />
+          <Skeleton width={117} height={44} radius={11} />
         </span>
       </header>
       <div className="ch-rd-sk-hero">

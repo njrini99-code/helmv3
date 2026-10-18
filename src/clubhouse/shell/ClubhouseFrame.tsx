@@ -177,7 +177,7 @@ export function ClubhouseFrame({
                       </div>
                       <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
                       <SectionStrip pathname={pathname} role={role} user={{ name: userData.name }} />
-                      <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
+                      <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null, headCoach: shell.viewerIsHeadCoach ?? false }} teamSwitch={teamSwitch} />
                       {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
                       <PullToRefresh pathname={pathname} />
                     </DockProvider>
@@ -205,6 +205,14 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
   const hero = pageHero || (!hydrated && phone && homeRoot);
   usePhoneEdges(hero);
   useChDynamicType();
+  // Animations off on <html> too: ThemeScript sets it before hydration from the stored setting (the first render here has
+  // the default, so it never clears it), and it comes off when the setting turns on or the frame goes.
+  useEffect(() => {
+    if (!motionOff) return;
+    const html = document.documentElement;
+    html.setAttribute('data-motion', 'off');
+    return () => html.removeAttribute('data-motion');
+  }, [motionOff]);
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => (rootRef.current ? chKeepFocusThroughDisable(rootRef.current) : undefined), []);
   return (

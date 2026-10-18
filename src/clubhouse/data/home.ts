@@ -549,7 +549,7 @@ export async function loadHomeWeek(
       timeLabel: WEEKDAYS[weekdayIndexMonFirst(e.localDate)] ?? '',
       title: e.title,
       detail:
-        // "5 of 6 confirmed" only for an event that asks for replies (owner, 2026-10-08); otherwise where it is.
+        // "5 of 6 going" only for an event that asks for replies (owner, 2026-10-08); otherwise where it is.
         [e.all_day ? null : `First tee ${clock(e.start_time)}`, (e.requires_rsvp === true ? confirmedLine(invitedOf(e.id), accepted.get(e.id) ?? 0) : null) ?? e.location].filter(Boolean).join(' · ') ||
         null,
       isNext: false,

@@ -230,7 +230,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                   return (
                     <section key={g.key} className="ch-rd-grp" aria-label={g.key}>
                       <div className="ch-rd-grp__h">
-                        <h3>{g.key}</h3>
+                        <h2>{g.key}</h2>
                         <span className="ch-rd-grp__rule" />
                         <MonthSpark rounds={g.rounds} />
                         <span className="ch-num">

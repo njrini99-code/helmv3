@@ -343,9 +343,10 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
           </dd>
         )}
         <dd className="ch-rd-fig__m">{season.best ? (
-            // D16: the whole course name, cut by the column's ellipsis rather than at its first word.
+            // D16: the whole course name, cut by the column's ellipsis rather than at its first word. It keeps its words
+            // on one line (rounds.css) and the separator ends that line, so a wrapped date never starts with "·".
             <>
-              <span className="ch-rd-fig__course">{season.best.course}</span> · {shortDay(season.best.date)}
+              <span className="ch-rd-fig__course">{season.best.course}</span>&nbsp;· {shortDay(season.best.date)}
             </>
           ) : (
             ''

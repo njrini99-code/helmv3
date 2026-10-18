@@ -6,7 +6,8 @@
   gap: 18px;
   max-width: 1360px;
   margin: 0 auto;
-  padding: 28px 32px 64px;
+  /* No eyebrow line over the week's title: its 24px is added to the head's top (tokens.css). */
+  padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 64px;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-cal[aria-busy='true'] {
@@ -394,7 +395,7 @@
   transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-wk__day:focus-visible {
-  outline: 2px solid rgb(21 90 57 / 0.45);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 1px;
 }
 .ch-wk__d {
@@ -486,18 +487,33 @@
   right: 0;
   pointer-events: none;
 }
+/* The fill steps back, never the words: faded to 0.56 an ended event's text measured 2.4–3.3:1 (a11y wave 3). A tinted
+   block's ink goes to ink-500; a filled one keeps ivory on its fill mixed a quarter toward the page. */
 .ch-ev.is-past {
-  opacity: 0.56;
   filter: saturate(0.55);
+}
+.ch-ev.is-past:is(.ch-ev--practice, .ch-ev--workout, .ch-ev--meeting, .ch-ev--other, .ch-ev--busy, .ch-ev--travel, .ch-ev--class:not(.ch-ev--fill-3)):not(:hover):not(:focus-visible):not(.is-sel) {
+  color: var(--ch-ink-500);
+}
+.ch-ev.is-past:is(.ch-ev--tournament, .ch-ev--qualifier):not(:hover):not(:focus-visible):not(.is-sel) {
+  background-color: color-mix(in srgb, var(--ch-green-fill-700) 75%, var(--ch-bg-page));
+}
+.ch-ev.is-past .ch-ev__m {
+  opacity: 1;
 }
 .ch-ev.is-past:hover,
 .ch-ev.is-past:focus-visible,
 .ch-ev.is-past.is-sel {
-  opacity: 1;
   filter: none;
 }
 .ch-mo__cell.is-past .ch-mo__ev {
-  opacity: 0.6;
+  filter: saturate(0.55);
+}
+.ch-mo__cell.is-past .ch-mo__ev:not(.is-major) {
+  color: var(--ch-ink-500);
+}
+.ch-mo__cell.is-past .ch-mo__ev.is-major {
+  background-color: color-mix(in srgb, var(--ch-green-fill-700) 75%, var(--ch-bg-page));
 }
 .ch-wk__now {
   position: absolute;
@@ -632,6 +648,24 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   opacity: 0.82;
+}
+/* An event block's time in whole parts (views.tsx): "8:00", " AM", " – 9:30 AM", " · Finley GC". One line shows; a part
+   that doesn't fit wraps out of sight with every part after it, so the block keeps the longest start of its time that
+   fits and never a cut figure. */
+.ch-ev__m--fit {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  height: 1lh;
+}
+.ch-ev__m--fit > span {
+  white-space: pre;
+}
+/* A short block's title gives way to its time ("Travel bri… 1:30 PM"); the meridiem drops only when the title would
+   be left under 24px. */
+.ch-ev--short .ch-ev__m--fit {
+  flex-shrink: 0;
+  max-width: calc(100% - 30px);
 }
 /* Faded to 0.82 the time on a class or busy block measured 3.6:1 and 4.0:1; its own color holds 5.2:1 and 6.0:1.
    Aesthetic audit X-3. */
@@ -2996,9 +3030,6 @@ html[data-fw-theme='dark'] .ch-dot-qualifier {
 html[data-fw-theme='dark'] .ch-pp__trigger.is-on {
   box-shadow: 0 0 0 1px rgb(107 187 140 / 0.32);
 }
-html[data-fw-theme='dark'] .ch-wk__day:focus-visible {
-  outline-color: var(--ch-green-rule);
-}
 html[data-fw-theme='dark'] .ch-wk__col.is-today {
   background-color: rgb(107 187 140 / 0.04);
 }
@@ -3025,6 +3056,11 @@ html[data-fw-theme='dark'] .ch-ev--travel {
 }
 html[data-fw-theme='dark'] .ch-ev--class {
   box-shadow: inset 0 0 0 1px rgb(134 182 212 / 0.2);
+}
+/* At night ivory holds 10:1 on the filled green halfway to the page, so an ended competition can step further back. */
+html[data-fw-theme='dark'] .ch-ev.is-past:is(.ch-ev--tournament, .ch-ev--qualifier):not(:hover):not(:focus-visible):not(.is-sel),
+html[data-fw-theme='dark'] .ch-mo__cell.is-past .ch-mo__ev.is-major {
+  background-color: color-mix(in srgb, var(--ch-green-fill-700) 50%, var(--ch-bg-page));
 }
 html[data-fw-theme='dark'] .ch-ev.is-sel {
   box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-floating);

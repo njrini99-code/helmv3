@@ -50,7 +50,7 @@ function ScorecardHead() {
   return (
     <div className="ch-rsu-card__h ch-rsu-ph">
       <div>
-        <h3>Scorecard</h3>
+        <h2>Scorecard</h2>
       </div>
     </div>
   );
@@ -184,7 +184,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
   const p = form.pick;
 
   return (
-    <div className="ch-rsu" data-ui="clubhouse">
+    <main className="ch-rsu" data-ui="clubhouse">
       <div className="ch-rsu-band">
         <Link className="ch-rsu-band__back" href={backHref}>
           <Icon icon={ChevronLeft} size={16} />
@@ -271,7 +271,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           <section className="ch-rsu-card" aria-label="Round details">
             <div className="ch-rsu-card__h">
               <div>
-                <h3>Round details</h3>
+                <h2>Round details</h2>
               </div>
             </div>
             <div className="ch-rsu-form">
@@ -490,6 +490,6 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           set({ pick, holes, baseline: null, count, nine: 'front', saveCourse, coursePhoto });
         }}
       />
-    </div>
+    </main>
   );
 }

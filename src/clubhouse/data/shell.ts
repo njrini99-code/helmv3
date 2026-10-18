@@ -32,6 +32,8 @@ export interface ChShellData {
   askAvailable?: boolean;
   /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
   roundInProgress?: ChRoundInProgress | null;
+  /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
+  viewerIsHeadCoach?: boolean;
 }
 
 export interface ChRoundInProgress {
@@ -52,7 +54,7 @@ export const ROUND_IN_PROGRESS_FRESH_MS = 12 * 60 * 60_000;
 export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
   if (!teamId) return { nextEvent: null, pendingJoinRequests: null };
   const supabase = await createClient();
-  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes] = await Promise.all([
+  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes, staffRes] = await Promise.all([
     supabase
       .from('golf_events')
       .select('id, title, start_time, all_day, location, event_type, description, requires_rsvp')
@@ -99,6 +101,10 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
       .select('course_latitude, course_longitude')
       .eq('team_id', teamId)
       .maybeSingle(),
+    // The coach's own staff row on this team (RLS: a coach on the team reads its staff rows), for the identity line.
+    coachId
+      ? supabase.from('golf_team_coach_staff').select('role').eq('team_id', teamId).eq('coach_id', coachId).limit(5)
+      : Promise.resolve(null),
   ]);
   // A failed timezone read falls back to the product default, same as dashboard-data.
   const timezone = (!tzRes.error && tzRes.data?.timezone) || 'America/New_York';
@@ -112,6 +118,10 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   }
   if (roundRes?.error) {
     chLogServer('shell', 'roundInProgress', roundRes.error, 'rounds');
+  }
+  // A failed read leaves the plain "Coach": the label only ever falls back to the lesser title.
+  if (staffRes?.error) {
+    chLogServer('shell', 'staffRole', staffRes.error, 'teams');
   }
   const round = roundRes && !roundRes.error ? roundRes.data : null;
 
@@ -148,6 +158,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     askAvailable: askOn,
     course: courseOf(courseRes),
     roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null } : null,
+    viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),
   };
 }
 

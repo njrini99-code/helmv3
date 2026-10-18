@@ -73,14 +73,21 @@ export function NextStepPlate({ p, now, tz }: { p: ChProspect; now: Date; tz?: s
   );
 }
 
+/** A prospect section's heading level: h3 under the desktop panel's h2 name; h2 on the phone, whose screen title is the h1. */
+export type RecSecLevel = 2 | 3;
+
+export function SecHeading({ level = 3, children }: { level?: RecSecLevel; children: ReactNode }) {
+  return level === 2 ? <h2>{children}</h2> : <h3>{children}</h3>;
+}
+
 /** C1: the panel's and the detail's next-step field, with the way to set it (`onEdit`), or read-only without one. */
-export function NextStepSection({ p, now, tz, onEdit }: { p: ChProspect; now: Date; tz?: string; onEdit?: () => void }) {
+export function NextStepSection({ p, now, tz, onEdit, level }: { p: ChProspect; now: Date; tz?: string; onEdit?: () => void; level?: RecSecLevel }) {
   const line = nextStepLine(p, now, tz);
   if (!onEdit) {
     if (!line) return null;
     return (
       <section className="ch-rec-sec" aria-label="Next step">
-        <h3>Next step</h3>
+        <SecHeading level={level}>Next step</SecHeading>
         <div className="ch-rec-rows">
           <p className="ch-rec-next is-static">
             <Icon icon={CalendarClock} size={17} />
@@ -92,7 +99,7 @@ export function NextStepSection({ p, now, tz, onEdit }: { p: ChProspect; now: Da
   }
   return (
     <section className="ch-rec-sec" aria-label="Next step">
-      <h3>Next step</h3>
+      <SecHeading level={level}>Next step</SecHeading>
       {line ? (
         <div className="ch-rec-rows">
           <button type="button" className="ch-rec-row ch-rec-next" onClick={onEdit}>
@@ -175,10 +182,10 @@ export function ContactHint({ hint }: { hint?: string | null }) {
   );
 }
 
-export function ContactSection({ p, onAdd, hint }: { p: ChProspect; onAdd: () => void; hint?: string | null }) {
+export function ContactSection({ p, onAdd, hint, level }: { p: ChProspect; onAdd: () => void; hint?: string | null; level?: RecSecLevel }) {
   return (
     <section className="ch-rec-sec" aria-label="Contact">
-      <h3>Contact</h3>
+      <SecHeading level={level}>Contact</SecHeading>
       {p.email || p.phone ? (
         <ContactRows p={p} hint={hint} />
       ) : (
@@ -188,10 +195,10 @@ export function ContactSection({ p, onAdd, hint }: { p: ChProspect; onAdd: () =>
   );
 }
 
-export function NotesSection({ p, onAdd }: { p: ChProspect; onAdd: () => void }) {
+export function NotesSection({ p, onAdd, level }: { p: ChProspect; onAdd: () => void; level?: RecSecLevel }) {
   return (
     <section className="ch-rec-sec" aria-label="Notes">
-      <h3>Notes</h3>
+      <SecHeading level={level}>Notes</SecHeading>
       {p.notes ? (
         <p className="ch-rec-notes">{p.notes}</p>
       ) : (

@@ -850,11 +850,15 @@
   gap: 8px;
   min-width: 0;
 }
-/* Animations off in Settings: skeletons hold still (a Ledger block's lines too). */
+/* Animations off in Settings: skeletons hold still (a Ledger block's lines too), from the first frame (ThemeScript
+   marks <html> before hydration). */
+[data-motion='off'] .ch-root .ch-skel::before,
 .ch-root[data-motion='off'] .ch-skel::before {
   animation: none;
   display: none;
 }
+[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::before,
+[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::after,
 .ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::before,
 .ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::after {
   display: block;
@@ -2039,8 +2043,9 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     font: 400 16px/1.55 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
-  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn {
-    border-radius: 8px;
+  /* The head's buttons take the body's button radius; a small one keeps its own 8px (ui.css). */
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn:not(.ch-btn--sm) {
+    border-radius: var(--ch-radius-md);
   }
   /* The hairline steps aside for the focus ring, which this selector would otherwise outrank (ui.css). */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
@@ -2091,7 +2096,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 /* The Frame (owner, 2026-10-07, matching the Coach Home handoff): the sidebar is the frame's green with the brand in
    its own panel (the base .ch-brand), ivory type on the green, and an ivory plate for the selected row; the
    next-event card stays a light sheet. */
-.ch-navitem:focus-visible {
+.ch-navitem:focus-visible,
+.ch-root .ch-next:focus-visible {
   outline-color: var(--ch-champagne-300);
 }
 .ch-nav__section {
@@ -2337,6 +2343,10 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   [data-ui='clubhouse'] .ch-pbar__text[aria-disabled='true'] {
     color: var(--ch-on-green-ink-muted);
+  }
+  /* Keyboard focus on the green bar: the global green ring would vanish into it (1.7:1), so champagne, as the bell's. */
+  [data-ui='clubhouse'] .ch-pbar :is(.ch-pbar__back, .ch-pbar__icon, .ch-pbar__text):focus-visible {
+    outline-color: var(--ch-champagne-300);
   }
 }
 

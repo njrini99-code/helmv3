@@ -1623,7 +1623,7 @@
     "category": 8,
     "item": 4,
     "name": "PLAYER_WEEK_NAMES_NO_ONE",
-    "meaning": "A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 confirmed), and no teammate's name or id is in what the page receives.",
+    "meaning": "A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 going), and no teammate's name or id is in what the page receives.",
     "status": "implemented",
     "where": "src/clubhouse/data/player-home.ts#loadPlayerHome (names: new Map()); src/clubhouse/data/home.ts#loadHomeWeek",
     "tests": [

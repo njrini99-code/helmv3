@@ -776,7 +776,7 @@ describe('Overview · the zones', () => {
     expect(pars.getAttribute('aria-label')).toMatch(/Par 3 \+0\.\d+, Par 4 \+\d\.\d+, Par 5/);
     // The approach ranges: 50–125 yd reads 26 ft against the Tour's 18 ft, and amber because it is further.
     const rows = [...document.querySelectorAll('.ch-zrow')];
-    const near = rows.find((r) => r.textContent?.startsWith('50-125 yd'))!;
+    const near = rows.find((r) => r.textContent?.startsWith('50–125 yds'))!;
     expect(near.textContent).toContain('26 ft');
     expect(near.querySelector('.ch-ztrack__fill')!.className).toContain('is-bad');
     expect(near.querySelector('.ch-ztrack__tick.is-tour')).not.toBeNull();

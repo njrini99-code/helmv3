@@ -29,7 +29,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { PillGroup } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { EmptyRow } from './parts';
+import { EmptyRow, SecHeading, type RecSecLevel } from './parts';
 import type { RecInitialUpload } from './ctx';
 import type { ChRecruitingWrites } from './writes';
 
@@ -72,7 +72,7 @@ function stagedForPreview(u: RecInitialUpload): Staged {
  * of the panel still works. Every write goes through `useAction`, and what follows a write (the list, the open dialog)
  * happens inside the action, so a toast's Retry finishes the job as well.
  */
-export function Documents({ prospect, writes, initialUpload }: { prospect: ChProspect; writes: ChRecruitingWrites; initialUpload?: RecInitialUpload }) {
+export function Documents({ prospect, writes, initialUpload, level }: { prospect: ChProspect; writes: ChRecruitingWrites; initialUpload?: RecInitialUpload; level?: RecSecLevel }) {
   const toast = useToast();
   const phone = useChPhone();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -250,7 +250,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
   return (
     <section className={`ch-rec-sec${over ? ' is-drop' : ''}`} aria-label="Documents" data-ch-code={over ? 'CH-14917' : undefined} {...dropProps}>
       <div className="ch-rec-sec__head">
-        <h3>Documents</h3>
+        <SecHeading level={level}>Documents</SecHeading>
         {state.kind !== 'failed' && !(state.kind === 'ready' && docs.length === 0) && (
           <button type="button" className="ch-rec-link" onClick={choose}>
             <Icon icon={Upload} size={15} />

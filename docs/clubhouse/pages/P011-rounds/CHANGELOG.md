@@ -1,5 +1,102 @@
 # P011 — Rounds: changelog
 
+## 2026-10-18 — Wave 3 accessibility: landmarks, headings, rings
+
+```text
+Design package: none (wave-3 accessibility review, items 2, 11, 12, 14, 19)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- Setup and Track are each a `main` landmark; they had none.
+- Headings no longer skip a level: the library's month or course groups, and
+  Setup's Round details and Scorecard cards, are `h2` under the page's `h1`.
+- The on-green focus rings in Setup's band and Track's top bar, strip and hero
+  carry `.ch-root`, so the shared green ring no longer wins over them (Track's
+  Exit pill measured 1.86:1 on the green; now champagne 9.71:1).
+- Setup's upcoming step labels take `--ch-on-green-ink-muted` (4.0:1 to
+  6.19:1).
+- Round review: the off-fairway shot disc is `#75653f` in both themes, so its
+  ivory number reads 5.08:1 (was 3.68 in light).
+- Track, dark: the `.ch-rt-subm__bad` amber on its ivory disc follows the
+  darker light warning ink, `#8a5a0c` (5.11:1, was `#94600e` at 4.60). The
+  token itself would give the pale night amber there.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on the rounds, round setup, entry, tracking and review
+  tests (the library's group heading test now asks for level 2).
+- WebKit (Playwright, dev preview, axe-core, 390 and 1280, light and dark):
+  Setup and Track have one `main` each; on the library, Setup and Track the
+  findings go from 98 to 0 (heading-order 8, landmark-one-main 8, region 78,
+  now none). Group and card headings keep their font, margin and colour.
+- Focus rings measured by keyboard focus: Setup's back link mint 8.39:1 light
+  (was the green ring at 1.55), Track's Exit pill champagne 9.71:1 at 390
+  light (was 1.86); the strip's hole keys draw their champagne ring.
+
+## 2026-10-18 — Wave 3: the head on the shared line, a 44px New round
+
+```text
+Design package: none (wave-3 design review, items 5, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The round review takes the same gutter and
+  top; its title sits under the back link.
+- Phone: New round is 44px tall where it was 36px; the loading shape matches.
+
+### Verification (2026-10-18, page-head line)
+
+- `npm run test:file` on `rounds.test.tsx`.
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: Best's course name holds together
+
+```text
+Design package: none (wave-3 design review, items 17)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Best caption)
+
+- The season's Best caption keeps the course name on one line ("Carolina
+  GC", which broke to "Carolina / GC"); the separator ends that line and the
+  date takes the next. A long name ends in the column's ellipsis
+  (`parts.tsx`, `rounds.css`).
+
+### Verification (2026-10-18, Best caption)
+
+- WebKit at 390 and 1280: "Carolina GC ·" over "Aug 18"; an injected
+  "Pinehurst Resort No. 2 Championship Course" reads "Pinehurst Resort …".
+- `npm run test:file` on `rounds.test.tsx`.
+
 ## 2026-10-18 — Polish: setup focus, hover, dock wrap and shotgun start
 
 ```text

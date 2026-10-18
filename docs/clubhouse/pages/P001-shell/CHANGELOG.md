@@ -1,5 +1,117 @@
 # P001 — Shell: changelog
 
+## 2026-10-18 — Wave 3: focus rings that read; Animations off from the first frame
+
+```text
+Design package: none (wave-3 accessibility review, items 1, 3, 4, 6, 9)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, accessibility: rings and motion)
+
+- Keyboard focus rings are solid `--ch-border-focus` (green 600, light green at
+  night) where they were 45 to 55% green: the button ring (`ui.css`, still 2px
+  with a 2px page gap), segments, switches and sliders (`controls.css`). Their
+  dark overrides are gone; the token turns itself. Buttons 2.15:1 to 7.23:1
+  light, 3.22:1 to 7.8:1 dark; switches 2.15 to 7.23 light, 2.57 to 7.8 dark;
+  segments 1.96 to 5.24 light, 2.56 to 8.06 dark.
+- On the green frame the ring is champagne, as the sidebar's rows have it: the
+  next-event card (1.7:1 to 8.85:1) and the phone push bar's back, icon and text
+  keys (1.7:1 to 8.85:1, `shell.css`).
+- Animations off holds the loops still from the first frame on a hard load:
+  ThemeScript marks `<html data-motion="off">` on `/golf/dashboard` from the
+  stored setting; `FrameRoot` keeps it in step with the setting and clears it
+  when the frame goes. Under it `--ch-dur-shimmer`, `--ch-dur-live` and
+  `--ch-dur-sweep` are 0ms (`tokens.css`), and the skeleton fade and shimmer
+  rules also match the `<html>` form (`base.css`, `shell.css`).
+- `--ch-warning-600` is `#8a5a0c` (was `#94600e`): 4.79:1 on the page and
+  4.70:1 on an inset, where it was 4.32 and 4.24. `--ch-chart-loss` is
+  unchanged.
+
+### Verification (2026-10-18, accessibility: rings and motion)
+
+- WebKit (Playwright, dev preview, light and dark): focus ring contrast against
+  the colour beside it for a button, primary button, segment, switch, week day,
+  phone month day, settings rail row, sidebar row, next-event card, push bar
+  back key and the strokes-gained end row, every one 5.24:1 or more; close-ups
+  checked by eye (a 2px ring, not heavier than the global one).
+- Animations off with `<html>` marked as ThemeScript does: no running animation
+  at 150 or 400ms on Home and Stats loading, Calendar, the round or Recruiting
+  (unmarked: the shimmer, the live pulse and the round draw ran). Turning the
+  setting on clears `<html>`, off sets it again.
+- `ThemeScript.test.tsx`: marks the dashboard when animations are off; nothing
+  when absent, on, or on `/admin`, `/golf/login`, `/golf/welcome`; a malformed
+  preference still boots the theme.
+
+## 2026-10-18 — Wave 3: Head coach, the page-head line and its buttons
+
+```text
+Design package: none (wave-3 design review, items 2, 5, 13)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, identity and page-head line)
+
+- The identity line in the sidebar footer and the account sheet says "Head coach
+  · Varsity" for the team's head coach, as the boards and the phone Settings
+  list do; an assistant, a player or a staff read that fails keeps "Coach" or
+  "Player". The shell reads the coach's own `golf_team_coach_staff` row (`role`)
+  beside its other reads (`viewerIsHeadCoach`, `data/shell.ts`; a failure is
+  logged as `staffRole`).
+- Two layout tokens: `--ch-page-gutter` (the 40px `--ch-gutter`) and
+  `--ch-page-head-top` (34px). Every desktop page main takes them, so the title
+  lands 44px in from the frame and on one line across tabs; a head with no
+  eyebrow, or a shorter one, adds that room to its top (`tokens.css`).
+- A page-head button takes the body's 10px radius (`--ch-radius-md`) where the
+  head forced 8px; a small one keeps 8px (`shell.css`).
+
+### Verification (2026-10-18, identity and page-head line)
+
+- `npm run test:file` on `wiring-p001-identity.test.ts` (head coach, assistant,
+  failed read, player, read starts with the others) and `shell.test.tsx`
+  (sidebar and account sheet lines).
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: the next event counts who is going
+
+```text
+Design package: none (wave-3 design review, items 3, 12)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, next event and row chevrons)
+
+- The sidebar's next-event card reads "2 of 3 going", the word Home's day
+  card and the calendar peek use, where it said "confirmed"
+  (`NextEventCard.tsx`).
+- A Ledger row's chevron is drawn at the Clubhouse stroke (1.6) through
+  `Icon`, where it was Lucide's default 2 (`ui/Ledger.tsx`).
+
+### Verification (2026-10-18, next event and row chevrons)
+
+- `npm run test:file` on `shell.test.tsx` and `ledger-kit.test.tsx`.
+
 ## 2026-10-18 — Polish: focus rings on page-head keys and the switcher; 44px phone fields
 
 ```text

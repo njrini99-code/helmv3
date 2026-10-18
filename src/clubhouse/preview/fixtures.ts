@@ -31,6 +31,8 @@ export const PREVIEW_SHELL: ChShellData = {
   pendingJoinRequests: 2,
   timezone: 'America/New_York',
   askAvailable: true,
+  // Maya is the head coach (the boards' "Head coach · Varsity"); a player's line ignores it.
+  viewerIsHeadCoach: true,
 };
 
 /** A round on the course (P001-C1): the preview's &round=1. */
@@ -81,7 +83,7 @@ export const PREVIEW_HOME: ChCoachHome = {
       { id: 'a2', timeLabel: '4:45', title: '1:1 with Jonah', detail: 'Range bay 4', isNext: false, isCompetition: false, when: 'today' },
       { id: 'a3', timeLabel: '5:30', title: 'Putting ladder', detail: 'Green 2 · Priya, Ava', isNext: false, isCompetition: false, when: 'today' },
       { id: 'a4', timeLabel: '6:00', title: 'Parent call', detail: 'Natarajan family', isNext: false, isCompetition: false, when: 'today' },
-      { id: 'a5', timeLabel: 'Thu', title: 'Qualifier · Pinehurst No. 2', detail: 'First tee 8:42 · 5 of 6 confirmed', isNext: false, isCompetition: true, when: 'later' },
+      { id: 'a5', timeLabel: 'Thu', title: 'Qualifier · Pinehurst No. 2', detail: 'First tee 8:42 · 5 of 6 going', isNext: false, isCompetition: true, when: 'later' },
     ],
   },
   latestRounds: {

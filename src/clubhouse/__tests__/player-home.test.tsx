@@ -452,7 +452,7 @@ describe('Player Home · what the loader reads and whom it names', () => {
       golf_rounds: { data: [] },
     };
     const data = await loadPlayerHome(player);
-    expect(data.week.agenda.map((r) => r.detail)).toEqual(['Green 2 · 2 players', 'First tee 8:42 · 1 of 2 confirmed']);
+    expect(data.week.agenda.map((r) => r.detail)).toEqual(['Green 2 · 2 players', 'First tee 8:42 · 1 of 2 going']);
     expect(data.today[0]!.invitees).toEqual([]);
     expect(data.next!.invitees).toEqual([]);
     expect(JSON.stringify(data)).not.toMatch(/p-priya|p-ava|priya|natarajan/i);

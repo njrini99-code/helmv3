@@ -451,7 +451,7 @@ describe('Shell · sidebar data', () => {
     };
     const shell = await loadClubhouseShell('t1');
     wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
-    expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 confirmed/);
+    expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 going/);
   });
 
   it('CH-1304 an event that doesn’t require an RSVP shows when and where, with no confirmed count, and its replies are never read (owner, 2026-10-08)', async () => {
@@ -477,6 +477,14 @@ describe('Shell · sidebar data', () => {
     supabaseTables.current = { golf_events: { data: [klass, tagged, upcoming] }, golf_event_attendance: { data: [] } };
     const shell = await loadClubhouseShell('t1');
     expect(shell.nextEvent?.id).toBe('e1');
+  });
+
+  it('P001 the identity line: a head coach is "Head coach"; an assistant, or a staff role that did not load, is "Coach"', () => {
+    for (const [viewerIsHeadCoach, line] of [[true, 'Head coach · Varsity'], [false, 'Coach · Varsity']] as const) {
+      const { unmount } = wrap(<Sidebar userData={coach} shell={{ nextEvent: null, pendingJoinRequests: null, viewerIsHeadCoach }} pathname="/golf/dashboard" />);
+      expect(document.querySelector('.ch-identity__meta')?.textContent).toBe(line);
+      unmount();
+    }
   });
 
   it('D-66 10802 the sidebar follows v2 gh-nav.js for each role, sections in order', () => {
@@ -580,6 +588,18 @@ describe('Shell · navigation and accessibility', () => {
     signOutSpy.mockResolvedValueOnce(undefined);
     await user.click(within(sheet).getByRole('button', { name: 'Sign out' }));
     expect(signOutSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('P001 the account sheet names a head coach "Head coach" and an assistant "Coach"', async () => {
+    for (const [headCoach, line] of [[true, 'Head coach · Varsity'], [false, 'Coach · Varsity']] as const) {
+      const user = userEvent.setup();
+      // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
+      const { unmount } = wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" user={{ name: 'Maya Reyes', teamName: 'Varsity', headCoach }} />);
+      await user.click(screen.getByRole('button', { name: 'Account' }));
+      const sheet = (await screen.findByRole('dialog', { name: 'Account' })) as HTMLElement;
+      expect(within(sheet).getByRole('link', { name: new RegExp(`^Maya Reyes ${line}`) }).getAttribute('href')).toBe('/golf/dashboard/settings');
+      unmount();
+    }
   });
 
   it('CH-1002 a sign-out that fails says you are still signed in, with Retry', async () => {

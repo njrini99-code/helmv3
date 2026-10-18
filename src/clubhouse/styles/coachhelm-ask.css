@@ -94,7 +94,7 @@
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-head__btn.is-accent {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 @media (hover: hover) {
   .ch-ask-head__btn:hover {
@@ -223,7 +223,7 @@
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-hist__iconbtn.is-accent {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 @media (hover: hover) {
   .ch-ask-hist__iconbtn:hover {
@@ -246,7 +246,7 @@
   cursor: pointer;
 }
 .ch-ask-hist__new svg {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 @media (hover: hover) {
   /* The ledger's row tint over the key's own face, so it stays a key on the rail. */
@@ -339,7 +339,7 @@
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   font: 600 14px/1 var(--ch-font-sans);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   cursor: pointer;
 }
 
@@ -459,7 +459,7 @@
 }
 .ch-ask-find__cat {
   font: 600 12px/1.2 var(--ch-font-sans);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-ask-find__head {
   font: 500 15px/1.35 var(--ch-font-sans);
@@ -471,7 +471,7 @@
 .ch-ask-find__q {
   margin-top: auto;
   font: 500 13px/1.35 var(--ch-font-sans);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-ask-find__link {
   align-self: flex-start;
@@ -545,7 +545,7 @@
   border: 0;
   background: none;
   font: inherit;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -636,7 +636,7 @@
   cursor: pointer;
 }
 .ch-ask-cmp__chip.is-set {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   box-shadow: 0 0 0 1px var(--ch-green-ring);
 }
 @media (hover: hover) {

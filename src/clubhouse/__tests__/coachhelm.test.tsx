@@ -425,7 +425,7 @@ describe('Which insight leads, and who is most pressing', () => {
       { id: 'coverage-stale', headline: 'No rounds recorded in 9 days', evidence: 'Oct 5.', tone: 'attention' },
       { id: 'signals-open', headline: '7 open signals across 4 players', evidence: 'x', tone: 'neutral' },
       { id: 'movement-improve', headline: '2 players are scoring lower', evidence: 'Theo −1.4', tone: 'positive' },
-      { id: 'rsvp-9', headline: '1 player has not responded for Dinner', evidence: 'Thu', tone: 'attention' },
+      { id: 'rsvp-9', headline: '1 player hasn’t replied to Dinner', evidence: 'Thu', tone: 'attention' },
       { id: 'something-new', headline: 'A new kind of item', evidence: 'y', tone: 'neutral' },
     ]);
     expect(rows.map((r) => [r.id, r.tone, r.icon])).toEqual([
@@ -789,7 +789,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(screen.getByText('3 players have an open signal.')).toBeTruthy();
     const pulse = within(screen.getByRole('region', { name: 'Program pulse' }));
     expect(pulse.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      '2 players have not responded for Team dinnerThu, Oct 16, 6:30 PM · 4 of 6 responded',
+      '2 players haven’t replied to Team dinnerThu, Oct 16, 6:30 PM · 4 of 6 replied',
       '2 players are scoring higher than their previous three roundsJonah Okafor +2.1 · Eli Brandt +0.8',
       '1 active focus area has no recent progressPriya Natarajan: Lag putting',
       'No rounds recorded in 9 daysThe most recent round anywhere on the team was Oct 5.',

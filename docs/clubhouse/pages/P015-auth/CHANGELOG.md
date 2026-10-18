@@ -1,5 +1,27 @@
 # P015 — Auth: changelog
 
+## 2026-10-18 — Wave 3: the sign-up legal line names both pages
+
+```text
+Design package: none (wave-3 design review, items 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, legal line)
+
+- Sign-up's legal line links "Terms of service" and "Privacy policy", the names
+  and case Settings uses, where it said "Terms" and "Privacy Policy"
+  (`onboard/Steps.tsx`).
+
+### Verification (2026-10-18, legal line)
+
+- `npm run test:file` on `onboard.test.tsx`.
+- `clubhouse:check`, `typecheck:fast` and eslint pass.
+
 ## 2026-10-18 — Polish: Sign in pill hover
 
 ```text

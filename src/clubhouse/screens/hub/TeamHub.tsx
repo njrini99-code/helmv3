@@ -488,7 +488,7 @@ export function TeamHub({
             role="tab"
             id={`ch-hb-tab-${k}`}
             aria-selected={tab === k}
-            aria-controls={`ch-hb-panel-${k}`}
+            aria-controls={k === shownTab ? `ch-hb-panel-${k}` : undefined}
             tabIndex={tab === k ? 0 : -1}
             onClick={() => pick(k)}
             onKeyDown={tabKeys}

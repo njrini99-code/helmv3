@@ -154,7 +154,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
         <div className="ch-ph-card">
           <div className="ch-ph-rd">
             <span className="ch-h-flag" aria-hidden="true">
-              <Flag size={16} />
+              <Icon icon={Flag} size={16} />
             </span>
             <span className="ch-ph-rd__b">
               <b>{course}</b>

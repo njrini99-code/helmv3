@@ -200,8 +200,8 @@ export function QualifiersList({ data }: { data: ChQList }) {
                 )}
                 {rest.length > 0 && (
                   <section className="ch-qf-sec" aria-labelledby="ch-qf-active">
-                    {/* P009-D14: the section holds upcoming qualifiers as well as live ones. */}
-                    <h2 id="ch-qf-active">Upcoming and live</h2>
+                    {/* P009-D14: the section holds upcoming qualifiers as well as live ones; under the Active hero, the rest. */}
+                    <h2 id="ch-qf-active">{hero ? 'Also active' : 'Upcoming and live'}</h2>
                     <div className="ch-qf-grid is-ledger">
                       {rest.map((i) => (
                         <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} />

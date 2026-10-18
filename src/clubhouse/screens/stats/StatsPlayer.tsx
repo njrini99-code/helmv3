@@ -265,7 +265,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                 role="tab"
                 id={`tab-${t}`}
                 aria-selected={tab === t}
-                aria-controls={`panel-${t}`}
+                aria-controls={t === shownTab ? `panel-${t}` : undefined}
                 tabIndex={tab === t ? 0 : -1}
                 className="ch-tab-t"
                 onClick={() => pickTab(t)}

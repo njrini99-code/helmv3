@@ -105,7 +105,7 @@ export function RoundTracking(props: RoundTrackingProps) {
 
   return (
     <div className="ch-rt-q">
-      <div className="ch-rt" data-ui="clubhouse">
+      <main className="ch-rt" data-ui="clubhouse">
         <header className="ch-rt-top">
           {onExit ? (
             <button type="button" className="ch-rt-pill" onClick={onExit}>
@@ -302,7 +302,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             onDelete={t.handleDeleteShot}
           />
         )}
-      </div>
+      </main>
     </div>
   );
 }

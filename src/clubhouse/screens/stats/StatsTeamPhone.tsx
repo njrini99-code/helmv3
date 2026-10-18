@@ -269,7 +269,7 @@ function Trend({ data }: { data: ChTeamStats }) {
       </section>
     );
   const change = known[known.length - 1]!.score - known[0]!.score;
-  const reading = Math.abs(change) < 0.2 ? 'Flat across these rounds.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes since ${known[0]!.label}.`;
+  const reading = Math.abs(change) < 0.2 ? 'Flat across the window.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes since ${known[0]!.label}.`;
   const mean = known.reduce((a, d) => a + d.score, 0) / known.length;
   return (
     <section className="ch-stm-trend" aria-labelledby="ch-stm-trend">

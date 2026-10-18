@@ -52,7 +52,7 @@
   position: absolute;
   inset: -4px -2px;
 }
-.ch-hv-chip[aria-pressed='true'] {
+.ch-hv-chip[aria-current='true'] {
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
   font-weight: 600;
@@ -197,7 +197,7 @@
   .ch-hv-chip:active {
     background: var(--ch-ledger-row-press);
   }
-  .ch-hv-chip[aria-pressed='true'] {
+  .ch-hv-chip[aria-current='true'] {
     background: var(--ch-green-800);
     box-shadow: none;
   }
@@ -238,7 +238,7 @@
 }
 
 /* Dark (Clubhouse at night): the picked view keeps ivory ink on its deep green; rows rule in ivory ink. */
-:where(html[data-fw-theme='dark']) .ch-hv-chip[aria-pressed='true'] {
+:where(html[data-fw-theme='dark']) .ch-hv-chip[aria-current='true'] {
   color: var(--ch-text-on-accent);
 }
 :where(html[data-fw-theme='dark']) .ch-hv-link {

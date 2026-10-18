@@ -7,7 +7,7 @@
   gap: 28px;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 36px 40px 80px;
+  padding: 36px var(--ch-page-gutter) 80px;
   color: var(--ch-text-primary);
 }
 .ch-hl.is-phone {
@@ -41,8 +41,9 @@
   letter-spacing: 0.01em;
   color: var(--ch-green-600);
 }
+/* The role line is 4px shorter than the page head's eyebrow (tokens.css), so the top adds it. */
 .ch-hl[data-canopy] {
-  padding-top: 20px;
+  padding-top: calc(var(--ch-page-head-top) + 4px);
 }
 .ch-hl[data-canopy] > .ch-hl-h {
   padding-top: 6px;
@@ -1798,6 +1799,8 @@ html:not([data-fw-theme='dark']) .ch-hl {
   html:not([data-fw-theme='dark']) .ch-hl {
     margin-top: 12px;
     margin-bottom: 24px;
+    /* The sheet's 12px inset comes off the page's top, so the title lands where every page sets it. */
+    padding-top: calc(var(--ch-page-head-top) + 4px - 12px);
     border-radius: 24px;
     background: var(--ch-bg-surface);
     box-shadow:

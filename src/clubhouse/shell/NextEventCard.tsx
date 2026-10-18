@@ -17,7 +17,7 @@ export function NextEventCard({ event }: { event: ChNextEvent }) {
             <span style={{ width: `${Math.round((r.accepted / r.invited) * 100)}%` }} />
           </span>
           <span className="ch-next__m ch-num">
-            {r.accepted} of {r.invited} confirmed
+            {r.accepted} of {r.invited} going
           </span>
         </>
       ) : (

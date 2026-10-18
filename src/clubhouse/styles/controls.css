@@ -53,7 +53,7 @@
   transition-delay: var(--ch-dur-press-delay);
 }
 .ch-seg__b:focus-visible {
-  outline: 2px solid rgb(21 90 57 / 0.45);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 1px;
 }
 .ch-seg__pill {
@@ -677,7 +677,7 @@
   }
 }
 .ch-switch input:focus-visible + .ch-switch__track {
-  outline: 2px solid rgb(21 90 57 / 0.45);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
 .ch-switch.is-disabled {
@@ -791,7 +791,7 @@
   box-shadow: 0 1px 1px rgb(28 25 18 / 0.25), 0 2px 5px -1px rgb(28 25 18 / 0.35);
 }
 .ch-slider input:focus-visible {
-  outline: 2px solid rgb(21 90 57 / 0.45);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -884,11 +884,6 @@
    ground's own rule. */
 :where(html[data-fw-theme='dark']) .ch-seg__b {
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
-}
-html[data-fw-theme='dark'] .ch-seg__b:focus-visible,
-html[data-fw-theme='dark'] .ch-switch input:focus-visible + .ch-switch__track,
-html[data-fw-theme='dark'] .ch-slider input:focus-visible {
-  outline-color: var(--ch-green-rule);
 }
 html[data-fw-theme='dark'] .ch-pill[aria-pressed='true'] {
   background: var(--ch-green-100);
