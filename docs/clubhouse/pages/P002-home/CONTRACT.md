@@ -51,7 +51,8 @@ greeting, with no brief line under it (owner, 2026-10-06); Message coach; the
 week beside Up next with its countdown and My latest round; then Scoring and the
 four parts of the game. Both are read on the server, so the first paint has its
 data. A team with nothing yet gets the first-run page (20408 for a coach, 20412
-for a player, D-71). Every link Home hands out is 20103. Home reads no Clubhouse
+for a player, D-71); the coach first run's Invite players opens Roster with its
+invite sheet (`/golf/dashboard/roster?invite=1`, P003 30102). Every link Home hands out is 20103. Home reads no Clubhouse
 query parameter: the Fairway dashboard's `?range=` is ignored here, and there is
 no deep link into Home.
 
@@ -59,7 +60,7 @@ no deep link into Home.
 | --- | --- | --- | --- |
 | 20101 | — | `COACH_HOME_READY` | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
 | 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
-| 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, and Message coach the coach's thread (?user=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
+| 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), and the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
@@ -67,7 +68,7 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS
 
 Status: DEFINED
 
-One route skeleton (20201) in Coach Home's shape: the header, two panes and five leaderboard rows. `dashboard/loading.tsx` shows it for both roles and every width, so a player and a phone see the coach's desktop shape until the data arrives; Player Home's own skeleton and a phone-shaped one are not built (open gap, VERIFY.md). Nothing on either Home loads by itself after first paint, so there is no skeleton per section. v2 timing (nothing for 150ms, then a fade) is the shell's 11609.
+One route skeleton (20201), `HomeSkeleton`, for both roles. On a desktop width it is Coach Home's shape (the header, two panes and five leaderboard rows) for both roles: Player Home's own desktop skeleton is not built (open gap, VERIFY.md). On a phone it is the phone Home's shape in the reader's role (since 2026-10-08, `SkeletonPhoneHero` reads the shell's role): the coach's brief lines above Up next, or the player's two keys under it. Nothing on either Home loads by itself after first paint, so there is no skeleton per section. v2 timing (nothing for 150ms, then a fade) is the shell's 11609.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -77,7 +78,7 @@ One route skeleton (20201) in Coach Home's shape: the header, two panes and five
 
 Status: DEFINED
 
-Home does not poll, has no realtime and no pull to refresh: the page is `force-dynamic`, so a new visit reads afresh (going back or forward may show Next's client cache; not tested). What moves on its own is the clock (20301): the phone's Up next line (In 50 min, Happening now) is recomputed every minute, and the player's countdown every second, from the device's clock. The phone's Today marks (Now, past, and for a player Next) follow the same clock; the player's are tested (`player-home-phone.test`), the coach's are read from the code. The desktop agenda's Next badge is set on the server when the page loads and does not move. A page left open past midnight in the team's timezone keeps the day it loaded until the next visit or Try again.
+Home does not poll, has no realtime and no pull to refresh: the page is `force-dynamic`, so a new visit reads afresh (going back or forward may show Next's client cache; not tested). What moves on its own is the clock (20301): the phone's Up next line (In 50 min, Happening now) is recomputed every minute, and the player's countdown every second, from the device's clock. The phone's Today marks (Now, past, and for a player Next) follow the same clock; the player's are tested (`player-home-phone.test`), the coach's are read from the code. The desktop agenda's Next badge is set on the server when the page loads and does not move. "Today", "Tomorrow" and the weekday compare the event's team-local date with the team-local date now, both on the team's clock (`whenLabel`). A page left open past midnight in the team's timezone reads itself again (`router.refresh`) when the team-local date turns: at the team's next midnight, and when the page comes back into view (visibilitychange, focus, pageshow), at most three times for one new day if the server still answers with the old one (`useHomeDayRollover`, home-day-rollover.test).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -216,7 +217,7 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: N/A — Home has no cache, polling or realtime to keep in step.
 
-The page is `force-dynamic` and a new visit reads afresh (going back or forward may show Next's client cache; not tested); Try again (21402) reads it again, and the device clock keeps its own times moving (20301). Not handled: a page left open past midnight keeps the day it loaded.
+The page is `force-dynamic` and a new visit reads afresh (going back or forward may show Next's client cache; not tested); Try again (21402) reads it again, and the device clock keeps its own times moving (20301). A page left open past the team's midnight reads itself again when the date turns (20301).
 
 ## 16 — Micro animation
 
@@ -301,7 +302,7 @@ Each Home is read on the server in one request before its first paint, and no Ho
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 22101 | — | `LOADERS_NEVER_THROW` | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', <read>) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
+| 22101 | — | `LOADERS_NEVER_THROW` | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
 
 From the shell (P001): 12101 CH-1954.
 
@@ -321,7 +322,7 @@ A section that crashes is reported through `chReport` with surface `home.<sectio
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 22301 | — | `FAILURES_REPORTED` | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', <read>), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
+| 22301 | — | `FAILURES_REPORTED` | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
 
 ## 24 — CI / automated test
 

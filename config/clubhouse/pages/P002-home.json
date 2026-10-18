@@ -158,6 +158,22 @@
       ]
     },
     {
+      "id": "ACT-P002-FIRST-RUN-INVITE",
+      "label": "Invite players from the coach's first run (desktop and phone)",
+      "component": "src/clubhouse/screens/home/CoachHome.tsx#HomeFirstRun",
+      "handler": "the Invite players link (/golf/dashboard/roster?invite=1)",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "links": 20103,
+        "firstRun": 20408
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/wiring-p002-home.test.tsx"
+      ]
+    },
+    {
       "id": "ACT-P002-QUICK-ADD-EVENT",
       "label": "Plan or add the first event from an empty phone Home (coach)",
       "component": "src/clubhouse/screens/home/HomePhone.tsx#NoEvents",

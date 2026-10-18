@@ -28,12 +28,17 @@ Status: DEFINED
 
 The page opens on the rail and, on desktop, the newest thread beside it without
 marking it read (so an unread count never clears by itself). Deep links open or
-start a thread.
+start a thread, including one that arrives while the page is open (a bell
+notification tapped here); a `?conversation=` thread missing from the list is
+looked for once more before it opens. A search hit opens its thread and goes to
+the matched message: scrolled to the middle (at once with reduced motion) and
+ringed for a moment, with the end-anchor paused while it does (as Fairway's
+search does).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 70101 | — | `MESSAGES_READY` | Messages is open: the conversation rail, and on desktop the newest thread beside it, opened without marking it read; on the phone the inbox. |
-| 70102 | — | `DEEP_LINK_OPENS_CONVERSATION` | A link with ?conversation=<id> opens that thread, and ?player=<golf_players.id> opens or starts the direct thread with that player; the address is then cleaned. |
+| 70102 | — | `DEEP_LINK_OPENS_CONVERSATION` | A link with ?conversation=<id> opens that thread, and ?player=<golf_players.id> opens or starts the direct thread with that player; the address is then cleaned. A new link arriving while the page is open is taken too; a thread missing from the list is refetched once before it opens. A search hit opens its thread at the matched message, ringed for a moment; the end-anchor waits while it does. |
 
 ## 02 — Initial loading / skeleton
 
@@ -95,7 +100,9 @@ the rail version stays until this page's v2 pass.
 Status: DEFINED
 
 Checked before anything is sent: attachments (70501), group name and members
-(70502 to 70504), announcement fields (70505).
+(70502 to 70504), announcement fields (70505). A coach's group needs at least
+one player (70505, CH-7105): it is a team broadcast, which given no players adds
+the whole team. Message fields stop at 5,000 characters, the server's limit.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -103,13 +110,13 @@ Checked before anything is sent: attachments (70501), group name and members
 | 70502 | CH-7102 | `AN_ANNOUNCEMENT_WITH_NO_TITLE` | An announcement with no title |
 | 70503 | CH-7103 | `AN_ANNOUNCEMENT_WITH_NO_BODY` | An announcement with no body |
 | 70504 | CH-7104 | `A_GROUP_WITH_NO_NAME` | A group with no name |
-| 70505 | CH-7105 | `NOBODY_CHOSEN` | Nobody chosen |
+| 70505 | CH-7105 | `NOBODY_CHOSEN` | Nobody chosen, or a coach's group with no player |
 
 ## 06 — Server / system error
 
 Status: DEFINED
 
-Every change has its own toast (70601 to 70616) naming what failed and what to
+Every change has its own toast (70601 to 70616, 70636) naming what failed and what to
 do; every section that fails to load has its own notice with Try again (70617 to
 70631). A crash stays in its section (SectionBoundary).
 
@@ -130,7 +137,7 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70613 | CH-7016 | `A_MESSAGE_IS_REFUSED` | A message is refused |
 | 70614 | CH-7018 | `ADDING_SOMEONE_TO_A_GROUP_FAILS` | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) |
 | 70615 | CH-7020 | `COPYING_A_MESSAGE_FAILS` | Copying a message fails (phone, from the long-press sheet) |
-| 70616 | CH-7021 | `A_SHARED_FILE_WONT_OPEN` | A shared file won't open (Details › Files) |
+| 70616 | CH-7021 | `A_SHARED_FILE_WONT_OPEN` | A shared file won't open (Details › Files, or an announcement's Files) |
 | 70617 | CH-7201 | `CONVERSATIONS_DONT_LOAD` | Conversations don't load |
 | 70618 | CH-7202 | `A_CONVERSATIONS_MESSAGES_DONT_LOAD` | A conversation's messages don't load |
 | 70619 | CH-7203 | `MESSAGE_SEARCH_DOESNT_LOAD` | Message search doesn't load |
@@ -150,6 +157,7 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70633 | CH-7022 | `TEXT_DELIVERED_ATTACHMENT_METADATA_REFUSED` | Text delivered, attachment metadata refused |
 | 70634 | CH-7023 | `ATTACHMENT_SEND_CANNOT_BE_CONFIRMED` | Attachment send cannot be confirmed |
 | 70635 | CH-7217 | `PENDING_ATTACHMENT_RECOVERY_CANNOT_BE_CHECKED` | Pending attachment recovery cannot be checked |
+| 70636 | CH-7024 | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
 
 ## 07 — Network / offline
 
@@ -207,9 +215,10 @@ the coach is told how to finish.
 
 Status: DEFINED
 
-Delete a message, Leave a group and Delete a conversation ask first (71101,
-71102,
-71103) and fire the warning haptic. Delete a conversation (owner request,
+Delete a message, Leave a group, Delete a conversation and Remove a member ask
+first (71101, 71102, 71103, 71104) and fire the warning haptic. Remove a member
+is the group's creator's, on anyone but themselves (`removeGolfGroupMember`, as
+Fairway's group details allow); the creator still can't leave (D-47). Delete a conversation (owner request,
 2026-10-08, superseding D-48's "hidden") hides the thread from the person's own
 inbox only: the others keep theirs, a new message brings it back, and a team
 channel can't be deleted. It is offered only where the database has the
@@ -220,6 +229,7 @@ per-person hide (held migration 20261008160000).
 | 71101 | CH-7501 | `DELETE_A_MESSAGE` | Delete a message |
 | 71102 | CH-7502 | `LEAVE_A_GROUP` | Leave a group |
 | 71103 | CH-7503 | `DELETE_A_CONVERSATION` | Delete a conversation |
+| 71104 | CH-7504 | `REMOVE_A_MEMBER` | Remove a member (the group's creator, never their own row) |
 
 ## 12 — State preservation
 
@@ -241,7 +251,8 @@ it used to be lost).
 Status: DEFINED
 
 Sends are optimistic and reconciled in place by id; a refused one stays marked
-Not sent (71301). Reactions are not optimistic: picking one waits for the write.
+Not sent (71301). A removed member's row leaves at once and comes back if the
+server refuses (CH-7024). Reactions are not optimistic: picking one waits for the write.
 A click on a
 reaction chip opens who reacted, and adding or taking back your own from that
 card waits for the write too; a failure toasts (70607).

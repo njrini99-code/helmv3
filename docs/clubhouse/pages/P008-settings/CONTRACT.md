@@ -76,7 +76,7 @@ There is no polling, realtime or pull to refresh. What runs in the background is
 
 Status: DEFINED
 
-First-run states only; the page has no filter or search, so no filtered empty. A coach with no team sees why Team is empty (80401); a player with no team can join one (80402) and sees a request that is waiting (80403); no photo shows the monogram (80404). Settings never replaces the whole page with a no-team state (80405, so D-71 does not apply): Account, Notifications and Preferences work without a team. A failed read is never drawn as empty; it is a notice with Try again (category 06).
+First-run states only; the page has no filter or search, so no filtered empty. A coach with no team sees why Team is empty (80401); a player with no team can join one (80402) and sees a request that is waiting (80403), in place of the form as soon as the page reads again after Ask to join (fixed 2026-10-17: the form stayed until the section was reopened); no photo shows the monogram (80404). Settings never replaces the whole page with a no-team state (80405, so D-71 does not apply): Account, Notifications and Preferences work without a team. A failed read is never drawn as empty; it is a notice with Try again (category 06).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -85,13 +85,13 @@ First-run states only; the page has no filter or search, so no filtered empty. A
 | 80403 | CH-8303 | `A_PLAYER_HAS_ASKED_TO_JOIN_AND` | A player has asked to join and is waiting |
 | 80404 | CH-8304 | `NO_PROFILE_PHOTO` | No profile photo |
 | 80405 | — | `SETTINGS_OPEN_WITHOUT_A_TEAM` | A coach or player with no team still gets Settings, never a no-team page: Account, Notifications and Preferences work, a coach's Team section says why it is empty (CH-8301) and a player's Golf profile offers Join a team (CH-8302). |
-| 80406 | CH-8320 | `THE_TEAMS_COURSE_LOCATION` | The team's course location (Team; held migration 20261008150000) |
+| 80406 | CH-8320 | `THE_TEAMS_COURSE_LOCATION` | The team's course location (Team; migration 20261008150000, applied 2026-10-11) |
 
 ## 05 — Validation
 
 Status: DEFINED
 
-Each card checks its fields before anything is sent and keeps Save disabled while a value is invalid or unchanged (80501 to 80515). The message shows in the card's footer or under the field. The password card shows its message after the first press of Update password, with the warning haptic. A photo of the wrong type or over 2 MB is refused before it uploads (80602, in the write).
+Each card checks its fields before anything is sent and keeps Save disabled while a value is invalid or unchanged (80501 to 80515). The message shows in the card's footer or under the field. The password card shows its message after the first press of Update password, with the warning haptic. A photo of the wrong type or over 2 MB is refused before it uploads (80602, in the write). The reminder times are checked in order whether or not reminders are on, because the database checks them either way; out of order with reminders off, the two times stay on screen so they can be fixed (80511; fixed 2026-10-17: switching reminders off let an out-of-order schedule send and fail).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -241,7 +241,7 @@ Five confirms: Delete account (the person types delete), Leave team, Make a new 
 | 81103 | CH-8503 | `MAKE_A_NEW_INVITE_CODE` | Make a new invite code |
 | 81104 | CH-8504 | `RESET_COACHHELM_UPDATES` | Reset CoachHelm updates (player) |
 | 81105 | CH-8505 | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | Turn off CoachHelm on your dashboards |
-| 81106 | CH-8509 | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes |
+| 81106 | CH-8509 | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes |
 | 81107 | CH-8510 | `PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS` | Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet |
 
 ## 12 — State preservation

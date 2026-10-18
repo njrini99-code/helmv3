@@ -1,5 +1,90 @@
 # P008 — Settings: changelog
 
+## 2026-10-17 — Wiring checked against production: reminders off out of order, the request after Ask to join
+
+```text
+Design package: none (no new design; the two times stay on screen while out of order)
+PR/commit:      uncommitted (Clubhouse wiring pass, P001–P015)
+Contract IDs:   80511 and 80403 (behaviour clarified in CONTRACT.md)
+Actions:        ACT-P008-SAVE-REMINDERS, ACT-P008-REQUEST-JOIN
+Data impact:    none (same writes; one write that would fail is no longer sent)
+Held items:     none
+```
+
+### Changed
+
+- **Event reminders** (`Team.tsx` `RemindersCard`): the order of the two times
+  is checked whether or not reminders are on, as the database CHECK and
+  Fairway's panel do. Times left out of order and then switched off used to send
+  and fail with a database error; now Save stays off with CH-8111, and the two
+  times stay on screen so they can be fixed.
+- **Join a team** (`hooks.ts` `useMembership`): after Ask to join, the page's
+  fresh read replaces the form with the waiting request (CH-8303) at once, on
+  desktop and the phone. The card held the requests it opened with, so the form
+  stayed until the section was reopened.
+
+### Why
+
+- Wiring pass against production (`FairwaySettingsGeneral`,
+  `FairwaySettingsCoachingIntelligence`, `JoinTeamSection`) and the live RLS
+  policies (read-only). Every other control matched production's table, columns,
+  filters, action and role check; WIRING.md "Production parity" lists what was
+  checked.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/wiring-p008-settings.test.tsx` (4
+  tests; the two fix tests fail without their fix) and the existing Settings
+  suites (settings, settings-server, settings-staff, settings-philosophy-save,
+  settings-distance-units, course-location, logic): 323 passed. jsdom only; not
+  seen in Safari or on an iPhone. No screenshots: the visible change is a Save
+  that stays off and two sliders that stay drawn.
+
+## 2026-10-17 — Back over the list, the priority order after a failed save, one read per table, warning ticks
+
+Owner: "fix it don't tell me it's not fixed". The rest of the Settings list:
+a Profile, Change email or Password sheet over the Settings list is a history
+entry, so Back closes it, or asks first with edits, and Settings stays (checked
+in WebKit at 390px); a failed CoachHelm save puts back only the fields nothing
+has changed since, so a second priority move that lands is what the screen
+keeps; the loader reads the philosophy and team rows once each; the four
+desktop confirms for things that cannot be taken back give the warning tick.
+Each fix has a test that fails without it; Settings tests pass (271).
+
+## 2026-10-17 — A refused save says why; Back over an edit sheet asks first
+
+Owner request: "fix whatever needs it". Two bugs from VERIFY (2026-10-02,
+"Found and not fixed"), and two stale doc lines.
+
+- **A refused save says why** (`saveFailureBody` and `refineSaveFailure` in
+  `parts.tsx`; `useInstantSave`, `useSaveAction`, the CoachHelm autosave queue,
+  the course location). The second line of the error toast is chosen by cause:
+  only a save that got no answer (a throw, no reason, the browser's network
+  wording) says "Check your connection and try again." A policy refusal,
+  including one the database words as "violates row-level security", says
+  "Your account doesn’t have access to do this."; an expired sign-in says the
+  session ended; a short server sentence shows as written; any other technical
+  refusal says "The server didn’t accept the change. The error has been
+  reported." Same codes (CH-8005 to CH-8022); the catalog says how the line is
+  chosen.
+- **Back over an edit sheet asks first** (CH-8509; `SettingsPhone`,
+  `HeldSheetsContext` in `phone/sheets.tsx`). On the phone, the browser's Back
+  or the iOS edge swipe while an edit sheet holds edits over a section popped
+  the section and dropped the edits without asking. Now the section stays and
+  the sheet asks its discard question, as Cancel does; while a save is in
+  flight Back does nothing. A clean sheet still goes with its section.
+- **Docs**: DESIGN no longer lists the phone design as open (approved
+  2026-09-30); CH-8320 no longer calls migration 20261008150000 held (applied
+  2026-10-11, `supabase/migrations/HELD.md`).
+
+Screenshots were not taken (the toast's second line and the question on Back are
+the visible changes). Verification: `settings.test.tsx`, jsdom only. The refusal
+cases and the held-Back cases fail without the fix; the network-path cases
+("Load failed", a throw, "Failed to fetch") and the clean-sheet Back case guard
+behaviour that did not change. Not yet seen in Safari, the Simulator or on an
+iPhone. The Back over the list, the two-move priority order, the double reads
+and the desktop confirms' warning tick were fixed the same day (next entry).
+
 ## 2026-10-14 — Sign out ends in one request
 
 Found on the local stack (Playwright WebKit, coach and player): Sign out cleared
@@ -108,16 +193,31 @@ the page's scroll in WebKit, and the drop's settle.
 
 ## 2026-10-08 — premium pass: send a test push, feel it, text size (P008-C3, C1; findings #1, #2, #4)
 
-- C3: once push is on for this device, "Send a test" sits beside Push on this device (desktop) or as a row under it (phone). It calls `POST /api/push-subscriptions/test` (D1-6), which sends a fixed "Test from Clubhouse" to the caller's own subscriptions only and removes dead ones, limited to 3 a minute. Done: "Test sent"; failures say why (CH-8029).
-- C1, type: every Settings type size is in `--ch-type-k` steps, so Settings follows Dynamic Type and a larger root size (a 130% root measured 31px → 40.3px on the title). It is pixel-identical at the default size.
-- C1: Preferences gains "Feel it", which plays the haptic you chose, and a Text size row ("Automatic", native app only) saying that the phone's text size setting applies.
-- #1: on the phone, the weekly team email is in an Email group, not under This device.
+- C3: once push is on for this device, "Send a test" sits beside Push on this
+  device (desktop) or as a row under it (phone). It calls `POST
+  /api/push-subscriptions/test` (D1-6), which sends a fixed "Test from
+  Clubhouse" to the caller's own subscriptions only and removes dead ones,
+  limited to 3 a minute. Done: "Test sent"; failures say why (CH-8029).
+- C1, type: every Settings type size is in `--ch-type-k` steps, so Settings
+  follows Dynamic Type and a larger root size (a 130% root measured 31px →
+  40.3px on the title). It is pixel-identical at the default size.
+- C1: Preferences gains "Feel it", which plays the haptic you chose, and a Text
+  size row ("Automatic", native app only) saying that the phone's text size
+  setting applies.
+- #1: on the phone, the weekly team email is in an Email group, not under This
+  device.
 - #2: Quiet mode comes first on the phone, as on desktop.
-- #4: the desktop matrix's Push column carries "Off on this device" while push is off here; the phone notes it under Email and push.
+- #4: the desktop matrix's Push column carries "Off on this device" while push
+  is off here; the phone notes it under Email and push.
 
 ## 2026-10-08 — dark: Clubhouse at night
 
-Settings follows GolfHelm's dark theme ("Clubhouse at night"), including the new Appearance control. The rail's selection is a light-green wash with the light text green; the team code and rank numbers lift off the ground; the phone's portrait coin and pills keep a filled green with ivory type; the phone switch uses the switch tokens (ivory thumb, never the dark ivory ramp); the action sheet's card and scrim are dark. Light mode is unchanged.
+Settings follows GolfHelm's dark theme ("Clubhouse at night"), including the new
+Appearance control. The rail's selection is a light-green wash with the light
+text green; the team code and rank numbers lift off the ground; the phone's
+portrait coin and pills keep a filled green with ivory type; the phone switch
+uses the switch tokens (ivory thumb, never the dark ivory ramp); the action
+sheet's card and scrim are dark. Light mode is unchanged.
 
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
@@ -178,8 +278,8 @@ Held items:     none
 ```
 
 The screen's imports and test mocks now point at the files that own the server
-actions (team-management.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
-by domain. No behavior change.
+actions (team-management.ts) after `golf.ts`, `insights.ts` and `admin-data.ts`
+were split by domain. No behavior change.
 
 ## 2026-10-07 — Sections press with a tint
 
@@ -235,7 +335,8 @@ See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
 
 ## 2026-10-06 — Phone popup sizing corrections
 
-Form/list sheets initially focus their labelled heading. Reading destinations do not draw a green control box; buttons retain keyboard focus indicators.
+Form/list sheets initially focus their labelled heading. Reading destinations do
+not draw a green control box; buttons retain keyboard focus indicators.
 
 ```text
 PR/commit:      #2155, codex/clubhouse-smoothness-audit
@@ -270,7 +371,8 @@ audit](../../ALL_PAGE_AUDIT.md#p008-settings). Approved handoffs and contract
 IDs are preserved; runtime gaps stay explicit.
 <!-- clubhouse:release-audit:end -->
 
-Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
+log and decisions).
 
 ## 2026-10-06 — Motion import path moves to `motion/react`
 
@@ -371,39 +473,50 @@ Data impact:    none
 Held items:     none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
-- At 820px or less Settings is a different screen, not the page reflowed: a grouped list that pushes to each section
-  (a history entry, the tab bar stays), edit cards as full-height sheets, choices as bottom sheets, destructive choices
-  as iOS action sheets, the priorities with a hold-and-drag reorder handle, and a phone skeleton. `phone/` holds it;
-  `SettingsView` picks it with `useChPhone`. Same data, writes, loaders and `useAction` paths.
-- The behaviour a desktop card and a phone screen both need moved out of the cards into `hooks.ts` (`useDelivery`,
-  `useRouting`, `useCoachHelmPower`, `useInvite`, `useMembership`, `usePushToggle`, `useAvatarUpload`,
-  `useReportProblem`, `useSignOut`, `useDeleteAccount`, `useDevicePrefs`, and the `SAVE_COPY` toasts) and
-  `usePhilosophy` is exported, so a save has one set of copy, numbers and rollback on both. No desktop behaviour changed
-  (the 113 desktop tests pass unchanged).
-- New catalog rows: CH-8509 (the discard question when an edit sheet closes with changes) and CH-8510 (the typed follow-up
-  sheet for Delete account); the "How" cells of the rows that differ on the phone; the phone paragraph at the top.
-- Scoring choices on the phone save one at a time as they are picked. An edit sheet with changes reports as unsaved,
-  so the page's guard (closing the tab, a link off the page) covers the phone too. The old addresses
-  (`/settings/notifications`, `/settings/coaching-intelligence`) open their section pushed on the phone.
+- At 820px or less Settings is a different screen, not the page reflowed: a
+  grouped list that pushes to each section (a history entry, the tab bar stays),
+  edit cards as full-height sheets, choices as bottom sheets, destructive
+  choices as iOS action sheets, the priorities with a hold-and-drag reorder
+  handle, and a phone skeleton. `phone/` holds it; `SettingsView` picks it with
+  `useChPhone`. Same data, writes, loaders and `useAction` paths.
+- The behaviour a desktop card and a phone screen both need moved out of the
+  cards into `hooks.ts` (`useDelivery`, `useRouting`, `useCoachHelmPower`,
+  `useInvite`, `useMembership`, `usePushToggle`, `useAvatarUpload`,
+  `useReportProblem`, `useSignOut`, `useDeleteAccount`, `useDevicePrefs`, and
+  the `SAVE_COPY` toasts) and `usePhilosophy` is exported, so a save has one set
+  of copy, numbers and rollback on both. No desktop behaviour changed (the 113
+  desktop tests pass unchanged).
+- New catalog rows: CH-8509 (the discard question when an edit sheet closes with
+  changes) and CH-8510 (the typed follow-up sheet for Delete account); the "How"
+  cells of the rows that differ on the phone; the phone paragraph at the top.
+- Scoring choices on the phone save one at a time as they are picked. An edit
+  sheet with changes reports as unsaved, so the page's guard (closing the tab, a
+  link off the page) covers the phone too. The old addresses
+  (`/settings/notifications`, `/settings/coaching-intelligence`) open their
+  section pushed on the phone.
 
 ### Where it differs from the mockups
 
-Real values for the placeholders; a coach's single Full name field; an Account section that holds Email, Password and
-Delete; the quiet-mode footnote says what the router does; the desktop controls the mockups do not draw are rows in the
-same style; Mute push, Mute email, Reset and Copy code are not built. The full list is in DESIGN.md.
+Real values for the placeholders; a coach's single Full name field; an Account
+section that holds Email, Password and Delete; the quiet-mode footnote says what
+the router does; the desktop controls the mockups do not draw are rows in the
+same style; Mute push, Mute email, Reset and Copy code are not built. The full
+list is in DESIGN.md.
 
-### Why
+### Why (2026-09-30)
 
-The owner approved the phone design on 2026-09-30. The desktop page reflowed was never the phone design (81901 said
-so while the design was a draft).
+The owner approved the phone design on 2026-09-30. The desktop page reflowed was
+never the phone design (81901 said so while the design was a draft).
 
-### Verification
+### Verification (2026-09-30)
 
-- `settings.test.tsx` 169 cases (56 new, each titled 81901), with `settings-server.test.tsx` and `logic.test.ts`
-  251/251; typecheck:fast exit 0; eslint on the changed Settings files exit 0.
-- 67 mutations of the code the new tests guard, all killed. Not viewed in a browser or on a device (VERIFY.md).
+- `settings.test.tsx` 169 cases (56 new, each titled 81901), with
+  `settings-server.test.tsx` and `logic.test.ts` 251/251; typecheck:fast exit 0;
+  eslint on the changed Settings files exit 0.
+- 67 mutations of the code the new tests guard, all killed. Not viewed in a
+  browser or on a device (VERIFY.md).
 
 ## 2026-09-30 — V2 page docs; every contract answered; ten fixes
 
@@ -416,67 +529,88 @@ Data impact:    none
 Held items:     none
 ```
 
-### Changed
+### Changed (2026-09-30, 2)
 
-- The six page docs, the manifest's actions, and the behaviour contracts: the core view and deep links, no-team,
-  offline refusal of a switch, the permission gates (sections by role, the two old links, no profile, the head-coach
-  switch, the staff coach's team cards, writes scoped to the caller, the current password, an update the database hides
-  the row from), success (a save, an instant save, a deleted account), warnings (push blocked, quiet mode), state
-  preservation, rollback, retry, refresh, Discard, the phone layout, Enter, the loader, reporting and the tests.
-- A second test file, `settings-server.test.tsx`: the loader, the route, the three addresses, the loading files and
-  the live writes, which had no test. Four existing tests were retitled with a Bridge ID (CH-8005, CH-8020, CH-8022,
+- The six page docs, the manifest's actions, and the behaviour contracts: the
+  core view and deep links, no-team, offline refusal of a switch, the permission
+  gates (sections by role, the two old links, no profile, the head-coach switch,
+  the staff coach's team cards, writes scoped to the caller, the current
+  password, an update the database hides the row from), success (a save, an
+  instant save, a deleted account), warnings (push blocked, quiet mode), state
+  preservation, rollback, retry, refresh, Discard, the phone layout, Enter, the
+  loader, reporting and the tests.
+- A second test file, `settings-server.test.tsx`: the loader, the route, the
+  three addresses, the loading files and the live writes, which had no test.
+  Four existing tests were retitled with a Bridge ID (CH-8005, CH-8020, CH-8022,
   and CH-8701 to CH-8703, which also checks that no toast shows).
-- Catalog: the CH-8702 "How" cell (it still said `haptic('commit')`), the 86xx heading (it still carried the v1
-  timings), the CH-8401 row (also the old links' loading files) and the handicap messages (a true minus).
+- Catalog: the CH-8702 "How" cell (it still said `haptic('commit')`), the 86xx
+  heading (it still carried the v1 timings), the CH-8401 row (also the old
+  links' loading files) and the handicap messages (a true minus).
 
 ### Fixed
 
 Each has a test that fails without the fix.
 
-- A value saved in a section snapped back when the person left the section and returned, because a section remounts
-  from the data the server rendered. Now the page keeps a copy of that data with each landed write applied
-  (81204). The same bug made a coach's first CoachHelm save create its row a second time on the next save.
-- A failed CoachHelm dashboards switch put back a switch flipped in the meantime (81302).
-- Retry on a failed save's toast repeated the write but skipped what the button does after it lands: the card stayed
-  unsaved, a new invite code still showed the old one, Delete account did not hand over, Leave team did not close
-  or refresh (81402). That work now runs inside the action, and a card's draft is no longer reset on save: typing
-  after the sent values, or before a Retry lands, stays as an unsaved edit (81205).
-- A CoachHelm slider moved less than 600 ms before leaving the section was dropped (81206).
-- `/settings/notifications` and `/settings/coaching-intelligence` showed the Fairway skeleton inside the Clubhouse
-  frame (CH-8401).
-- The loader failed the whole page when the team CoachHelm action threw, and did not log a missing profile or team
-  row (82101).
-- Discard, Discard changes and Discard and leave were silent; D-70 gives Discard the warning haptic (81708).
+- A value saved in a section snapped back when the person left the section and
+  returned, because a section remounts from the data the server rendered. Now
+  the page keeps a copy of that data with each landed write applied (81204). The
+  same bug made a coach's first CoachHelm save create its row a second time on
+  the next save.
+- A failed CoachHelm dashboards switch put back a switch flipped in the meantime
+  (81302).
+- Retry on a failed save's toast repeated the write but skipped what the button
+  does after it lands: the card stayed unsaved, a new invite code still showed
+  the old one, Delete account did not hand over, Leave team did not close or
+  refresh (81402). That work now runs inside the action, and a card's draft is
+  no longer reset on save: typing after the sent values, or before a Retry
+  lands, stays as an unsaved edit (81205).
+- A CoachHelm slider moved less than 600 ms before leaving the section was
+  dropped (81206).
+- `/settings/notifications` and `/settings/coaching-intelligence` showed the
+  Fairway skeleton inside the Clubhouse frame (CH-8401).
+- The loader failed the whole page when the team CoachHelm action threw, and did
+  not log a missing profile or team row (82101).
+- Discard, Discard changes and Discard and leave were silent; D-70 gives Discard
+  the warning haptic (81708).
 - The handicap messages wrote a hyphen for the minus sign.
-- Profile, team details (school and team), golf details and the coaching settings said Saved when a policy hid the
-  row from the update, because such an update returns no error and no row. They now count the rows they change and
-  fail with "Your account doesn’t have access to do this", as leaving a team already did (80808). The database's
-  answer is read from how PostgREST works, not observed on the live project.
-- When the team CoachHelm head-coach check failed, the loader treated the coach as an assistant, so a head coach saw
-  the switch disabled with "Only the head coach can change this." The failure is now logged and the switch is left
-  out (80804).
+- Profile, team details (school and team), golf details and the coaching
+  settings said Saved when a policy hid the row from the update, because such an
+  update returns no error and no row. They now count the rows they change and
+  fail with "Your account doesn’t have access to do this", as leaving a team
+  already did (80808). The database's answer is read from how PostgREST works,
+  not observed on the live project.
+- When the team CoachHelm head-coach check failed, the loader treated the coach
+  as an assistant, so a head coach saw the switch disabled with "Only the head
+  coach can change this." The failure is now logged and the switch is left out
+  (80804).
 
-### Why
+### Why (2026-09-30, 2)
 
-D-62: Messages is the gold standard and the other pages copy it. D-69: every category answered, permission for
-real. Writing the contract from the code found the fixes above.
+D-62: Messages is the gold standard and the other pages copy it. D-69: every
+category answered, permission for real. Writing the contract from the code found
+the fixes above.
 
-### Verification
+### Verification (2026-09-30, 2)
 
-- `npx vitest run src/clubhouse` 553/553; `settings.test.tsx` and `settings-server.test.tsx` 157/157; typecheck:fast
-  exit 0; eslint on the changed files exit 0.
-- 107 mutations of the guarded code, one at a time, in an isolated copy: all 107 made a test fail.
+- `npx vitest run src/clubhouse` 553/553; `settings.test.tsx` and
+  `settings-server.test.tsx` 157/157; typecheck:fast exit 0; eslint on the
+  changed files exit 0.
+- 107 mutations of the guarded code, one at a time, in an isolated copy: all 107
+  made a test fail.
 
 ## 2026-09-29 — v2 foundation carried onto Settings
 
-- v2 motion (D-64) and haptics (D-70): a switch, segment or slider that saves on change, and the CoachHelm autosave,
-  are silent when they land; writes that land through `useAction` fire success.
+- v2 motion (D-64) and haptics (D-70): a switch, segment or slider that saves on
+  change, and the CoachHelm autosave, are silent when they land; writes that
+  land through `useAction` fire success.
 
 ## 2026-09-29 — Catalog and desktop build
 
-- 76 tests, each named by its catalog number; `clubhouse:check` enforces the catalog. Found and fixed on the way:
-  every Clubhouse toast rendered outside the Clubhouse root and had no background; the browser's own email bubble
+- 76 tests, each named by its catalog number; `clubhouse:check` enforces the
+  catalog. Found and fixed on the way: every Clubhouse toast rendered outside
+  the Clubhouse root and had no background; the browser's own email bubble
   covered ours; the photo coin lost its initials while the name was empty.
-- Desktop built at 1280px from the design system (D-18): coach (account, notifications, team, CoachHelm,
-  preferences), player (account, golf profile, notifications). Fixed a live bug found on the way: `push_announcements`
-  was stripped on save and read as off.
+- Desktop built at 1280px from the design system (D-18): coach (account,
+  notifications, team, CoachHelm, preferences), player (account, golf profile,
+  notifications). Fixed a live bug found on the way: `push_announcements` was
+  stripped on save and read as off.

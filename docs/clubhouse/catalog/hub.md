@@ -13,17 +13,29 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route: `/golf/dashboard/team-hub` (`?tab=home|ann|travel|docs|tasks`), for coaches and players. Spec: `docs/clubhouse/phone/team-hub.md`.
+Route: `/golf/dashboard/team-hub` (`?tab=home|ann|travel|docs|tasks`), for
+coaches and players. Spec: `docs/clubhouse/phone/team-hub.md`.
 
-A player replies to events, acknowledges posts, checks off tasks and opens files; a coach posts (with files from Documents), fixes the wording of a post, plans trips, assigns tasks, shares and deletes files, and sees who has replied, read and done each.
+A player replies to events, acknowledges posts, checks off tasks and opens
+files; a coach posts (with files from Documents), fixes the wording of a post,
+plans trips, assigns tasks, shares and deletes files, and sees who has replied,
+read and done each.
 
 Where things live:
-- Code: `src/clubhouse/screens/hub/` (`TeamHub`, `parts`, `sheets`, `TravelerClasses`, `writes`)
-- Loader: `src/clubhouse/data/hub.ts` (`loadTeamHub`); the trip's dates and the class lines, as plain functions, in `src/clubhouse/data/hub-shape.ts`; route `src/clubhouse/routes/hub.tsx`
+- Code: `src/clubhouse/screens/hub/` (`TeamHub`, `parts`, `sheets`,
+  `TravelerClasses`, `writes`)
+- Loader: `src/clubhouse/data/hub.ts` (`loadTeamHub`); the trip's dates and the
+  class lines, as plain functions, in `src/clubhouse/data/hub-shape.ts`; route
+  `src/clubhouse/routes/hub.tsx`
 - Tests: `src/clubhouse/__tests__/hub.test.tsx`
-- Preview: `/clubhouse-preview/hub` and `/clubhouse-preview/hub-player` (`?state=empty|failed|failwrites`, `&tab=`)
+- Preview: `/clubhouse-preview/hub` and `/clubhouse-preview/hub-player`
+  (`?state=empty|failed|failwrites`, `&tab=`)
 
-Every save goes through `useAction`, so these belong to the shell: offline refusal (CH-1903), slow saves (CH-1902), the success and error haptics (D-70). Everything a save does on the page (the tick and its undo, the open tab, closing and clearing a sheet, the page reading again, the row leaving) is inside that action, so a toast's Retry that lands does it too.
+Every save goes through `useAction`, so these belong to the shell: offline
+refusal (CH-1903), slow saves (CH-1902), the success and error haptics (D-70).
+Everything a save does on the page (the tick and its undo, the open tab, closing
+and clearing a sheet, the page reading again, the row leaving) is inside that
+action, so a toast's Retry that lands does it too.
 
 ## 100xx Error toasts
 
@@ -36,7 +48,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10005 | Posting an announcement fails | "Couldn’t post the announcement" + "Your text is still here. Try again in a moment." The sheet stays open with the text. Done: "Posted "Bus leaves at 6"" | `useAction('hub.postAnnouncement')` → `createEnrichedAnnouncement` | hub.test › CH-10005 |
 | CH-10006 | Saving a trip fails | "Couldn't save Seahawk" + "What you entered is still here." Done: "Seahawk is on Travel" | `useAction('hub.planTrip')` → `createGolfTravelItinerary` | hub.test › CH-10006 |
 | CH-10007 | Assigning a task fails | "Couldn't assign Book physicals" + "What you entered is still here." Done: "Book physicals assigned to the team" (or "to 3 players") | `useAction('hub.assignTask')` → `createTask` | hub.test › CH-10007 |
-| CH-10008 | Uploading a file fails | "Couldn't upload Local rules.pdf" + "Check the file is under 50 MB and try again." Each file says so on its own. Done: "Local rules.pdf shared with the team" | `useAction('hub.uploadDocument')` → `uploadGolfDocument`, `createGolfDocument` | hub.test › CH-10008 |
+| CH-10008 | Uploading a file fails | "Couldn't upload Local rules.pdf" + "Check the file is under 25 MB and try again." Each file says so on its own. A file of a type Fairway Documents doesn't take, or over 25 MB, is refused by name before sending ("setup.exe can’t be shared" / "Film.mov is too large"). Done: "Local rules.pdf shared with the team" | `useAction('hub.uploadDocument')` → `uploadGolfDocument`, `createGolfDocument`; `uploadRefusal` (`screens/hub/upload-rules.ts`) | hub.test › CH-10008, wiring-p010-hub.test |
 | CH-10009 | Deleting a post, task, file or trip fails | "Couldn't delete NCAA hours log" + Retry; it stays. Done: "Deleted NCAA hours log" | `useAction('hub.delete')` → `deleteAnnouncement`, `deleteTask`, `deleteGolfDocument`, `deleteGolfTravelItinerary` | hub.test › CH-10009, hub-trip-manage.test › CH-10009 |
 | CH-10011 | Unticking a done task fails | "Couldn't reopen Sign travel waiver" + Retry; it stays done. Done: "Sign travel waiver is open again" | `useAction('hub.uncompleteTask')` → `uncompleteTask` | hub.test › CH-10011 |
 | CH-10010 | Saving an edit to an announcement fails | "Couldn’t save the announcement" + "Your changes are still here. Try again in a moment." (the server's reason when it gave one, for example "Message is required.") The sheet stays open with the words; the card is unchanged. Done: "Saved "Bus leaves at 6"" | `useAction('hub.editAnnouncement')` → `updateAnnouncement` | hub.test › CH-10010 |
@@ -69,7 +81,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10205 | A section crashes while drawing | "RSVPs couldn't be shown." (or the section's name); the rest of the page stays | `SectionBoundary hub.*` | hub.test › CH-10205 |
 | CH-10206 | Announcements don't load | "Announcements didn’t load." | `TeamHub` | hub.test › CH-10206 |
 | CH-10207 | Travel doesn't load | "Travel didn’t load." + "Trips are safe." | `TeamHub` | hub.test › CH-10207 |
-| CH-10208 | The coach's roster doesn't load | In the announcement and task sheets, where players are chosen: "The roster didn’t load, so players can’t be chosen." + Try again (reads the page again; the roster that arrives starts fully chosen). "Whole team" loses its count and still posts; Assign stops with this line, never "For 0 of 0" | `PlayerPicks` (`playersError` from `loadTeamHub`) | hub.test › CH-10208 |
+| CH-10208 | The coach's roster doesn't load | On the page, under the head: "The team list didn’t load" (players can’t be chosen for a post, a trip or a task; a post to the whole team still goes out) + Try again; with another failed read, "the team list" is named in the page notice (CH-1209) instead. In the announcement, trip and task sheets, where players are chosen: the same notice ("Players can’t be chosen until it does.") + Try again (reads the page again; the roster that arrives starts fully chosen), never an empty picker; a trip's travelers are unknown, not 0. "Whole team" loses its count and still posts; Assign stops with this line, never "For 0 of 0" | `TeamHub`, `PlayerPicks` (`playersError` from `loadTeamHub`) | hub.test › CH-10208 |
 | CH-10209 | The team's documents don't load | In New announcement, where files are attached: "Documents didn’t load." + "Nothing was lost. Try again to attach files." + Try again (reads the page again; the files that arrive can be attached, and what was typed stays). The post still goes with none. Never "No documents yet" | `DocumentPicks`, `RefreshNotice` (`documents.error` from `loadTeamHub`) | hub.test › CH-10209 |
 | CH-10210 | Plan a trip: upcoming events didn't load | "Upcoming events didn’t load. You can still plan the trip without one, or close and try again." | `TripSheet` | hub.test › CH-10210 |
 | CH-10211 | Plan a trip: who is invited to the chosen event didn't load | "Who is invited to <event> didn't load, so travelers can't be chosen now. Publish keeps the event's invitees as they are." | `TripSheet` | hub.test › CH-10211 |

@@ -42,31 +42,25 @@ export function Field({ label, error, errorCode, children, id }: { label: string
   );
 }
 
-/** Players to include: the whole team, or chosen players. With none to show it says why: the roster didn't load (CH-10208), or the team has nobody on it yet (CH-10310). */
+/**
+ * Players to include: the whole team, or chosen players. With none to show it says why: the roster didn't load
+ * (CH-10208: the page's refresh notice, with Try again re-reading the page; never an empty picker), or the team has
+ * nobody on it yet (CH-10310).
+ */
 function PlayerPicks({
   players,
   error,
-  onRetry,
   picked,
   onChange,
   label,
 }: {
   players: ChTeamHub['players'];
   error: boolean;
-  onRetry: () => void;
   picked: string[];
   onChange: (ids: string[]) => void;
   label: string;
 }) {
-  if (players.length === 0 && error)
-    return (
-      <div className="ch-hb-roster" data-ch-code="CH-10208">
-        <span className="ch-field__help is-error">The roster didn’t load, so players can’t be chosen.</span>
-        <Button variant="ghost" size="sm" onClick={onRetry}>
-          Try again
-        </Button>
-      </div>
-    );
+  if (players.length === 0 && error) return <RefreshNotice code="CH-10208" title="The team list didn’t load." body="Players can’t be chosen until it does. Try again; the error has been reported." />;
   if (players.length === 0)
     return (
       <span className="ch-field__help" data-ch-code="CH-10310">
@@ -362,7 +356,7 @@ export function ComposeSheet({
                 </button>
               ))}
             </div>
-            {aud === 'pick' && <PlayerPicks players={players} error={playersError} onRetry={onDone} picked={picked} onChange={setPicked} label="Players who get it" />}
+            {aud === 'pick' && <PlayerPicks players={players} error={playersError} picked={picked} onChange={setPicked} label="Players who get it" />}
             {pickErr && players.length > 0 && (
               <span className="ch-field__help is-error" data-ch-code="CH-10102">
                 {pickErr}
@@ -610,9 +604,9 @@ export function TripSheet({
             ) : (
               <div className="ch-field">
                 <span className="ch-field__label">
-                  Who’s traveling · {travelers.length} of {players.length}
+                  {players.length > 0 ? `Who’s traveling · ${travelers.length} of ${players.length}` : 'Who’s traveling'}
                 </span>
-                <PlayerPicks players={players} error={playersError} onRetry={onDone} picked={travelers} onChange={setTravelers} label="Who’s traveling" />
+                <PlayerPicks players={players} error={playersError} picked={travelers} onChange={setTravelers} label="Who’s traveling" />
                 <span className="ch-field__help">They are invited to {event.title} in Calendar, and are this trip’s travelers.</span>
                 <ClassClashes check={classCheck.check} names={names} onRetry={classCheck.retry} />
               </div>
@@ -787,7 +781,7 @@ export function AssignSheet({
               'For'
             )}
           </span>
-          <PlayerPicks players={players} error={playersError} onRetry={onDone} picked={picked} onChange={setPicked} label="Players the task is for" />
+          <PlayerPicks players={players} error={playersError} picked={picked} onChange={setPicked} label="Players the task is for" />
           {pickErr && players.length > 0 && (
             <span className="ch-field__help is-error" data-ch-code="CH-10108">
               {pickErr}

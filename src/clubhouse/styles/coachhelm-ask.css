@@ -1124,3 +1124,27 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 :where(html[data-fw-theme='dark']) .ch-ask-cmp__send:disabled {
   color: var(--ch-ink-400);
 }
+
+/* Full contrast (owner, 2026-10-16: "more contrast on this and the other ones"): the screen steps its ink up a grade
+   (secondary copy reads as body, tertiary as secondary) and takes the Increase Contrast rules and borders. Light only. */
+html:not([data-fw-theme='dark']) .ch-ask {
+  /* The mid inks a grade darker too, for the copy that names them directly (a locked measure, a quiet caption). */
+  --ch-ink-700: #1c1b18;
+  --ch-ink-600: #2b2a26;
+  --ch-ink-500: #3a3833;
+  --ch-ink-400: #55524b;
+  --ch-ink-300: #7c786f;
+  --ch-text-primary: var(--ch-ink-950);
+  --ch-text-secondary: var(--ch-ink-900);
+  --ch-text-tertiary: var(--ch-ink-700);
+  --ch-border-hairline: rgb(28 25 18 / 0.16);
+  --ch-border-subtle: rgb(28 25 18 / 0.22);
+  --ch-border-control: rgb(28 25 18 / 0.34);
+  --ch-border-strong: rgb(28 25 18 / 0.5);
+  --ch-ledger-rule: rgb(28 25 18 / 0.26);
+  --ch-ledger-rule-soft: rgb(28 25 18 / 0.16);
+  --ch-ledger-rule-double: 3px double rgb(28 25 18 / 0.36);
+  --ch-ledger-ink: var(--ch-green-900);
+  --ch-ledger-eyebrow: var(--ch-text-secondary);
+  --ch-champagne-rule: rgb(28 25 18 / 0.2);
+}

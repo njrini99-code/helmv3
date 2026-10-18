@@ -311,7 +311,7 @@
   padding: 18px 20px 18px 22px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-soft-bg);
-  box-shadow: var(--ch-well-soft-shadow), inset 3px 0 0 var(--ch-field-green);
+  box-shadow: var(--ch-well-soft-shadow);
   color: var(--ch-text-primary);
 }
 .ch-hl-drill__k {
@@ -1765,4 +1765,50 @@
   :where(html[data-fw-theme='dark']) .ch-hl-pl.is-on b {
     color: var(--ch-on-green-ink);
   }
+}
+
+/* Full contrast (owner, 2026-10-16: "more contrast on this and the other ones"): the screen steps its ink up a grade
+   (secondary copy reads as body, tertiary as secondary) and takes the Increase Contrast rules and borders. Light only. */
+html:not([data-fw-theme='dark']) .ch-hl {
+  /* The mid inks a grade darker too, for the copy that names them directly (a locked measure, a quiet caption). */
+  --ch-ink-700: #1c1b18;
+  --ch-ink-600: #2b2a26;
+  --ch-ink-500: #3a3833;
+  --ch-ink-400: #55524b;
+  --ch-ink-300: #7c786f;
+  --ch-text-primary: var(--ch-ink-950);
+  --ch-text-secondary: var(--ch-ink-900);
+  --ch-text-tertiary: var(--ch-ink-700);
+  --ch-border-hairline: rgb(28 25 18 / 0.16);
+  --ch-border-subtle: rgb(28 25 18 / 0.22);
+  --ch-border-control: rgb(28 25 18 / 0.34);
+  --ch-border-strong: rgb(28 25 18 / 0.5);
+  --ch-ledger-rule: rgb(28 25 18 / 0.26);
+  --ch-ledger-rule-soft: rgb(28 25 18 / 0.16);
+  --ch-ledger-rule-double: 3px double rgb(28 25 18 / 0.36);
+  --ch-ledger-ink: var(--ch-green-900);
+  --ch-ledger-eyebrow: var(--ch-text-secondary);
+  --ch-champagne-rule: rgb(28 25 18 / 0.2);
+}
+/* On desktop the screen sits on one bright sheet over the parchment, so its copy reads on a white ground (same owner
+   note: "coachhelm contrast is the same"). */
+@media (min-width: 821px) {
+  html:not([data-fw-theme='dark']) .ch-hl {
+    margin-top: 12px;
+    margin-bottom: 24px;
+    border-radius: 24px;
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px rgb(28 25 18 / 0.12),
+      var(--ch-elevation-cast);
+  }
+}
+/* Inside a green board the ledger's heading ink is the board's own, not the page's darker step. */
+.ch-hl .ch-scoreboard {
+  --ch-ledger-ink: var(--ch-text-primary);
+}
+/* The measured gauge (Board and Deep dive): a green-tinted track you can see (owner, 2026-10-16). */
+.ch-hl .ch-hl-g__t {
+  background: color-mix(in srgb, var(--ch-green-fill-600) 14%, var(--ch-bg-surface));
+  box-shadow: inset 0 1px 2px rgb(11 58 37 / 0.12);
 }

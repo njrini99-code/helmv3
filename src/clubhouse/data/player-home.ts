@@ -2,7 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
-import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
+import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
 import { isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
 import { holeRounds } from './round-scope';
 import { loadRoundCache, loadTourBenchmarks, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
@@ -65,6 +65,8 @@ export interface ChPlayerHome {
   /** "Good afternoon, Theo." */
   greeting: string;
   todayLabel: string;
+  /** The team clock the page was read on (zone and date), for the day rollover (useHomeDayRollover). Optional for fixtures. */
+  clock?: ChHomeClock;
   /** One sentence from the player's own rounds; null before their first round or when rounds didn't load. */
   brief: string | null;
   /** The coach "Message coach" opens a thread with; null opens Messages. */
@@ -106,7 +108,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // rounds, the Tour's averages and the coach follow the team (they used to wait for the week's events and replies too).
   const clockRead = homeClock(supabase, input.teamId, now);
   // No names: a player's Home never lists who else is invited.
-  const weekRead = loadHomeWeek(supabase, { teamId: input.teamId, tz: clockRead.then((c) => c.tz), now, names: new Map() });
+  // A player's week reads reply counts, never teammates' rows (migration 20261017102000).
+  const weekRead = loadHomeWeek(supabase, { teamId: input.teamId, tz: clockRead.then((c) => c.tz), now, names: new Map(), viewer: 'player' });
   // The scoring card's Last 5 / 10 / 20, the leg figures and the brief are the player's newest rounds in any season, as Stats' Last 10 is (Q-122); the season's own figures are cut below.
   const roundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: lastTenFloor() });
   const playerRead = Promise.resolve(supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle());
@@ -122,7 +125,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
   const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, tourForGender(team.data.gender), 'home') : null));
   const coachRead = teamRead.then((team) => coachFor(supabase, team.data ?? null));
-  const [{ greeting, todayLabel }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId] = await Promise.all([
+  const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId] = await Promise.all([
     clockRead,
     weekRead,
     roundsRead,
@@ -156,6 +159,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   return {
     greeting: `${greeting}, ${input.firstName}.`,
     todayLabel,
+    clock: { tz, day },
     brief: roundsRes.error ? null : briefFor(full, legs?.rows ?? []),
     coachUserId,
     week: wk.week,
@@ -172,8 +176,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   };
 }
 
-/** D2-8: a meeting with no invitees is the coach's own; a failed invite read (null ids) never hides one. */
-const coachPrivate = (e: ChHomeEvent) => e.type === 'meeting' && e.inviteeIds != null && e.inviteeIds.length === 0;
+/** D2-8: a meeting with no invitees is the coach's own; a failed invite read (a null count) never hides one. */
+const coachPrivate = (e: ChHomeEvent) => e.type === 'meeting' && (e.invitedCount ?? e.inviteeIds?.length ?? null) === 0;
 const coachOnlyOut = ({ awaiting: _a, inviteeIds: _i, ...e }: ChHomeEvent): ChHomeEvent => e;
 
 /**

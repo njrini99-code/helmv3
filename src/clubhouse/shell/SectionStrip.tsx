@@ -6,7 +6,6 @@ import { useCallback, useLayoutEffect, useRef, useState, type MouseEvent } from 
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { haptic } from '../lib/haptics';
-import { useChPhone } from '../lib/use-phone';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useSlidePlate } from '../lib/slide-plate';
 import { LinkPending } from './LinkPending';
@@ -36,10 +35,10 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   const fade = useTransform(progress, [0, 0.4, 1], [0, 0.55, 1]);
 
   // The first sections are fetched whole ahead of the tap (P0-2), as the tab bar's were, and so are the last two others
-  // visited, for the way back. On the phone only: the frame mounts the strip at every width, and a desktop sidebar link
-  // is not a tab.
-  const phone = useChPhone();
-  const rebuiltSections = phone ? (sw?.sections ?? []).filter((s) => isRebuilt(s.href, role)) : [];
+  // visited, for the way back. At every width (the frame mounts the strip at every width): the desktop sidebar's first
+  // links are the same sections, and a switch there waited on the server for the whole page (owner, desktop Safari,
+  // 2026-10-16).
+  const rebuiltSections = (sw?.sections ?? []).filter((s) => isRebuilt(s.href, role));
   usePrefetchTabs(
     rebuiltSections.filter((s) => CH_PHONE_TABS[role].includes(s.id)).map((s) => s.href),
     pathname,
@@ -107,6 +106,9 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
               <Link
                 key={s.id}
                 href={s.href}
+                // RouteFrame puts the page's scroll back (or at the top) itself; Next's own handling read the arriving page's
+                // layout inside the commit on every switch (getClientRects, 22ms at 4x CPU, Chromium, 2026-10-16).
+                scroll={false}
                 className="ch-strip__pill"
                 aria-current={on ? 'page' : undefined}
                 onClick={(e) => (sw.current?.id === s.id ? retap(e, s.href) : sw.choose(s))}

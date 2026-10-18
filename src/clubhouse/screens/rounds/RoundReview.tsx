@@ -4,7 +4,12 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import { distribution, type ChReviewHole, type ChRoundReview } from '../../data/round-review-shape';
+import { updateRoundType } from '@/app/golf/actions/round-type';
+import { distribution, type ChReviewHole, type ChReviewTypeEdit, type ChRoundReview } from '../../data/round-review-shape';
+import { useAction } from '../../lib/use-action';
+import { Button } from '../../ui/Button';
+import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
+import { RoundTypeSheet } from './entry/RoundTypeSheet';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
@@ -24,6 +29,7 @@ import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from 
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
 import { checkedRecap } from './recap-check';
+import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
@@ -287,7 +293,59 @@ function HoleCard({
  * five figures, the card (tap a hole for its shots), the scoring
  * distribution, the recap and the player's notes.
  */
-export function RoundReview({ review }: { review: ChRoundReview }) {
+/**
+ * CH-11522: change what a submitted round counts toward, from its review (the Fairway round page's "Change round type",
+ * `RoundTypeEditor`; coach report 2026-08-19, players who tapped Practice for a qualifier round). The owning player
+ * and a coach of the player's team may; a coach is also offered the team's qualifiers the player isn't in yet, and
+ * the save enters them. The sheet is Continue's (`RoundTypeSheet`); Save calls `updateRoundType` and the page reads
+ * the round again. Scores never move.
+ */
+function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTypeEdit }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const change = useAction(
+    'rounds.review.changeType',
+    async (choice: ChRoundTypeChoice) => {
+      const res = await updateRoundType({ roundId, roundType: choice.type, qualifierId: choice.qualifierId, qualifierRoundNumber: choice.roundNumber });
+      if (res.success) {
+        setOpen(false);
+        router.refresh();
+      }
+      return res;
+    },
+    (choice: ChRoundTypeChoice) => ({
+      done: savedLine(
+        choice,
+        edit.options.qualifiers.find((q) => q.id === choice.qualifierId),
+      ),
+      failed: 'Couldn’t change the round type',
+      hint: 'The round and its scores are unchanged. Try again in a moment.',
+      code: 'CH-11020',
+    }),
+    (result, c) => (result.success ? c : { ...c, hint: roundTypeFailure(result.error, edit.viewer) ?? c.hint }),
+  );
+  return (
+    <>
+      <span className="ch-rv-type" data-ch-code="CH-11522">
+        <Button size="sm" variant="ghost" leftIcon={Flag} onClick={() => setOpen(true)}>
+          Change round type
+        </Button>
+      </span>
+      <RoundTypeSheet
+        open={open}
+        current={edit.current}
+        options={edit.options}
+        pending={change.pending}
+        viewer={edit.viewer}
+        live={false}
+        onClose={() => setOpen(false)}
+        onSave={(choice) => void change.run(choice)}
+      />
+    </>
+  );
+}
+
+export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null }) {
   const phone = useChPhone();
   const reduced = useChReducedMotion();
   const router = useRouter();
@@ -306,8 +364,10 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   const coach = isCoachView(r);
   const hole = r.holes.find((h) => h.n === sel) ?? r.holes[0] ?? null;
   const dist = useMemo(() => distribution(r.holes), [r.holes]);
-  // D13: the stored recap, less any sentence its own figures contradict (recap-check.ts).
-  const recap = useMemo(() => checkedRecap(r), [r]);
+  // The stored recap, or the one written now for a completed round that has none (useRoundRecap, as the Fairway page
+  // does); then D13: less any sentence its own figures contradict (recap-check.ts).
+  const recapText = useRoundRecap(r.id, r.recap, r.recapPending === true);
+  const recap = useMemo(() => checkedRecap({ ...r, recap: recapText }), [r, recapText]);
   const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
   const back = reviewBack(r);
@@ -395,6 +455,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           </div>
         ))}
       </dl>
+
+      {typeEdit && <ChangeRoundType roundId={r.id} edit={typeEdit} />}
 
       {(r.teeError || r.playerError) && (
         <InlineNotice

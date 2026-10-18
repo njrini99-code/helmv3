@@ -2167,6 +2167,26 @@ async function getEventRSVPImpl(eventId: string): Promise<ActionResult<RSVPStats
     const { getEventRSVPStats } = await import('@/lib/calendar/rsvp');
     const stats = await getEventRSVPStats(eventId, supabase);
 
+    // Once migration 20261017102000 limits a player to their own attendance row, the rows above are only theirs;
+    // the totals come from golf_event_attendance_counts, which returns numbers for the caller's own teams. Before the
+    // migration the function is missing (PGRST202 / 42883) and the row totals stand; for a coach both agree.
+    const row = await Promise.resolve()
+      .then(() => supabase.rpc('golf_event_attendance_counts', { p_event_ids: [eventId] }))
+      .then(({ data, error }) => (error ? undefined : data?.[0]))
+      .catch(() => undefined);
+    if (row && row.invited > stats.summary.total) {
+      const tentative = Math.max(0, row.invited - row.accepted - row.declined - row.pending);
+      const summary = { ...stats.summary, total: row.invited, accepted: row.accepted, declined: row.declined, pending: row.pending, tentative };
+      return {
+        success: true,
+        data: {
+          summary,
+          acceptanceRate: Math.round((row.accepted / row.invited) * 100),
+          responseRate: Math.round(((row.invited - row.pending) / row.invited) * 100),
+        },
+      };
+    }
+
     return { success: true, data: stats };
 
   } catch {

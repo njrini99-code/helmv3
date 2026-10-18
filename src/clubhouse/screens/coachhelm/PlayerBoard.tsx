@@ -3,7 +3,7 @@
 import { useMemo, useRef } from 'react';
 import { Play, Sparkles } from 'lucide-react';
 import { partitionInsights, type ChInsight, type ChPlayerHelm } from '../../data/coachhelm-shape';
-import { PLAYER_HELM_HREF, type PlayerHelmView } from '../../data/coachhelm-views-shape';
+import { PLAYER_HELM_HREF, PLAYER_HELM_VIEWS, type PlayerHelmView } from '../../data/coachhelm-views-shape';
 import { useChSessionState } from '../../lib/session-state';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -47,7 +47,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
   const picked = hydrated ? kept : null;
   const focusTop = useRef<HTMLDivElement>(null);
   // A switch of view moves the strip at once and dims the board (aria-busy) until the next view is ready.
-  const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v]);
+  const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v], PLAYER_HELM_VIEWS);
 
   const list = data.insights.list;
   const { focus, also, working } = useMemo(() => partitionInsights(list, picked?.id), [list, picked]);

@@ -810,12 +810,19 @@ async function createGolfTeamBroadcastImpl({
     // audience, discarding the freshly-selected selectedPlayerIds entirely.
     const desiredParticipantIds = [...new Set([user.id, ...playerUserIds])].sort();
 
+    // Only the CALLER's OWN same-titled chats are candidates (P007).
+    // golf_participants_insert_v2 lets a user add OTHER people only to a
+    // conversation they created (golf_conversation_created_by_me), so
+    // reconciling members into another coach's same-titled team chat was
+    // refused on every insert and the broadcast failed outright. A chat
+    // another coach created is left alone; this coach gets their own.
     const { data: existingConvs } = await supabase
       .from('golf_conversations')
       .select('id')
       .eq('team_id', teamId)
       .eq('is_team_chat', true)
       .eq('title', title)
+      .eq('created_by', user.id)
       .order('created_at', { ascending: true });
 
     if (existingConvs && existingConvs.length > 0) {
@@ -873,24 +880,29 @@ async function createGolfTeamBroadcastImpl({
         const existingIds = new Set((existingParticipants ?? []).map((p) => p.user_id));
         const missingIds = desiredParticipantIds.filter((id) => !existingIds.has(id));
 
-        if (missingIds.length > 0) {
-          const { error: syncError } = await supabase
-            .from('golf_conversation_participants')
-            .insert(
-              missingIds.map((userId) => ({
-                conversation_id: reuseTarget.id,
-                user_id: userId,
-                joined_at: new Date().toISOString(),
-              })),
-            );
+        // Reuse only a chat the caller is still IN. One they created but have
+        // since left falls through to a new conversation below, rather than
+        // the coach writing themselves back into it.
+        if (existingIds.has(user.id)) {
+          if (missingIds.length > 0) {
+            const { error: syncError } = await supabase
+              .from('golf_conversation_participants')
+              .insert(
+                missingIds.map((userId) => ({
+                  conversation_id: reuseTarget.id,
+                  user_id: userId,
+                  joined_at: new Date().toISOString(),
+                })),
+              );
 
-          if (syncError) {
-            await logServerError(`[Broadcast] Failed to sync participants on reuse: ${describeError(syncError)}`, { action: 'messages.createGolfTeamBroadcast' });
-            throw new Error(`Failed to update broadcast recipients: ${syncError.message}`);
+            if (syncError) {
+              await logServerError(`[Broadcast] Failed to sync participants on reuse: ${describeError(syncError)}`, { action: 'messages.createGolfTeamBroadcast' });
+              throw new Error(`Failed to update broadcast recipients: ${syncError.message}`);
+            }
           }
-        }
 
-        return { conversationId: reuseTarget.id, reused: true };
+          return { conversationId: reuseTarget.id, reused: true };
+        }
       }
     }
 

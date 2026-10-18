@@ -7,7 +7,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
 import { SAVE_COPY, useMembership } from './hooks';
-import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction } from './parts';
+import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 
 /** Golf profile's reads that failed, for its one section notice (shared with GolfPhone). */
 export const golfReadsFailed = (data: ChSettingsData) =>
@@ -65,6 +65,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
   const [code, setCode] = useState('');
   const [note, setNote] = useState('');
   const [leaving, setLeaving] = useState(false);
+  useWarnOnOpen(leaving);
   useReportDirty('join', code.trim() !== '');
   const { requests, leave, join, cancel } = useMembership(m, writes, {
     onLeft: () => setLeaving(false),

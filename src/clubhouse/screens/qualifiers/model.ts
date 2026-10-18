@@ -2,12 +2,19 @@
  * Qualifiers, pure logic shared by the loader, the screens, the preview and
  * the tests. Nothing here reads the database or the clock.
  *
+ * Which rounds count (P009 parity, 2026-10-17): a round linked to the
+ * qualifier by `qualifier_id` (never by date), completed, not a test, with a
+ * total and a to-par; a second round in one numbered slot counts once. The
+ * player must be entered. This is the round set production commits the squad
+ * from (`loadQualifyingWorkspace`), so the board shows what confirm writes.
+ *
  * Ranking (D-33): players with a scored round first, then the shared order
  * in src/lib/coachhelm/v3/qualifying/ranking.ts (to par, strokes, more
  * rounds, name), the same order the selection workspace and the squad
  * confirmation use. Two scored players tie only when to par and total
- * strokes both match; ties share a position shown with a T. The legacy
- * getQualifierLeaderboard RPC orders differently and is not this rule.
+ * strokes both match; ties share a position shown with a T. Fairway's live
+ * leaderboard numbers ties 1, T2 and counts test rounds; that is not this
+ * rule (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
  */
 
 import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
@@ -26,6 +33,46 @@ export interface ChQRound {
   date: string;
   course: string | null;
   holesPlayed: number | null;
+  /**
+   * False when the round has no stored qualifier_round_number: it is drawn as round 1 but is never taken for a second
+   * round in slot 1, so it still counts (as the selection workspace counts it). Left out, the number is the stored one.
+   */
+  numbered?: boolean;
+}
+
+/** The columns of a golf_rounds row the board reads. */
+export interface ChQRoundRow {
+  id: string;
+  player_id: string;
+  qualifier_round_number: number | null;
+  total_score: number | null;
+  score_to_par: number | null;
+  round_date: string;
+  course_name: string | null;
+  holes_played: number | null;
+  /** When read, a round counts only if completed and not a test (the loader also filters on both). */
+  status?: string | null;
+  is_test?: boolean | null;
+}
+
+/** Whether a read round row may count on the board: completed and not a test. The rounds read filters on the same two. */
+export function countsOnBoard(r: Pick<ChQRoundRow, 'status' | 'is_test'>): boolean {
+  return (r.status === undefined || r.status === 'completed') && r.is_test !== true;
+}
+
+/** A read round row as the board's round. */
+export function roundOfRow(r: ChQRoundRow): ChQRound {
+  return {
+    id: r.id,
+    playerId: r.player_id,
+    number: r.qualifier_round_number ?? 1,
+    total: r.total_score,
+    toPar: r.score_to_par,
+    date: r.round_date,
+    course: r.course_name,
+    holesPlayed: r.holes_played,
+    ...(r.qualifier_round_number == null ? { numbered: false } : {}),
+  };
 }
 
 export interface ChQHole {
@@ -103,10 +150,13 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[
     // A completed round without a total is unknown, not a free zero: it neither counts as played nor adds to the
     // sums, the same rule as the stored entry aggregate (updateQualifierEntryStats).
     // A total without a to-par is unknown too (it would otherwise count as even), and a second round in the same
-    // qualifier round counts once: the first listed stands (audit §11.2, §11.3).
+    // qualifier round counts once: the first listed stands (audit §11.2, §11.3). A round with no stored number is in
+    // no slot, so it is never the second one (the selection workspace counts it too).
     const seen = new Set<number>();
     const withScore = rounds.filter((r) => {
-      if (r.total == null || r.toPar == null || seen.has(r.number)) return false;
+      if (r.total == null || r.toPar == null) return false;
+      if (r.numbered === false) return true;
+      if (seen.has(r.number)) return false;
       seen.add(r.number);
       return true;
     });
@@ -207,7 +257,9 @@ export function buildBoard(input: {
     if (confirmed) row.state = confirmed.get(row.playerId) === 'coach_pick' ? 'pick' : confirmed.has(row.playerId) ? 'selected' : null;
     else if (tied(row)) row.state = 'tie';
     else if (input.status === 'completed') row.state = i < topScore ? 'qualified' : null;
-    else row.state = i < topScore ? 'qualifying' : i <= squad && row.played >= minBubble ? 'bubble' : null;
+    // The Bubble is inside the squad: the places below the line on score, down to the travel cut (production's tiers
+    // and DESIGN.md). The first player out was marked too until 2026-10-17, below the travel cut the board draws.
+    else row.state = i < topScore ? 'qualifying' : i < squad && row.played >= minBubble ? 'bubble' : null;
   });
 
   return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0) };

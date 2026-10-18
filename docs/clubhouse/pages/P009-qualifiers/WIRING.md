@@ -76,10 +76,12 @@ Tests: src/clubhouse/__tests__/qualifiers.test.tsx (104 cases), qualifying-coach
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P009-qualifiers.json` (`actions`), and the whole list is readable in
-`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is refused before anything is sent (the shell's
-10703, CH-1903), and none of the eight writes is optimistic (91301). A landed write re-reads the page (91501) and a
-failed one reports through `chReport` (92301).
+Each action's record is in `config/clubhouse/pages/P009-qualifiers.json`
+(`actions`), and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is
+refused before anything is sent (the shell's 10703, CH-1903), and none of the
+eight writes is optimistic (91301). A landed write re-reads the page (91501) and
+a failed one reports through `chReport` (92301).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -96,8 +98,9 @@ failed one reports through `chReport` (92301).
 | ACT-P009-OPEN-SCORECARDS | A leaderboard row | `toggle` (Leaderboard) | none: the holes arrived with the page; a player opens only their own | golf_holes | no card 90407 · fails 90609 · player scope 90806 · keyboard 92003 · kept 91204 |
 | ACT-P009-LIVE-STANDINGS | (automatic on a live qualifier) | `useLiveStandings` | `live.ts`: a realtime channel that ends in `router.refresh()` | golf_rounds | 90304 · announced 91803 |
 
-Retry (91401) re-runs the same action with the same arguments and finishes what the button would have done, for all
-eight writes. Until 2026-09-30 it re-sent only the write (CHANGELOG).
+Retry (91401) re-runs the same action with the same arguments and finishes what
+the button would have done, for all eight writes. Until 2026-09-30 it re-sent
+only the write (CHANGELOG).
 
 ## Components
 
@@ -170,28 +173,79 @@ Ownership:  the list reads `team_id = the viewer's team`; the detail, form and s
             qualifier's team_id with the viewer's and answer "not found" otherwise (90805)
 ```
 
+### Standings parity (2026-10-17)
+
+The board's rounds are `golf_rounds` linked by `qualifier_id` (never by date),
+`status = 'completed'`, `is_test = false`, with a total and a to-par, for
+entered players only; a second round in one numbered slot counts once (the first
+by id), a round with no number always counts. `model.ts` `countsOnBoard` and
+`roundOfRow` hold the rule; `readRounds` filters the query on it and again after
+it. Order is `ranking.ts` (to par, strokes, more rounds, name); ties on to par
+and strokes share a T position; players level across the last place on score are
+"Tie at cut" (Q-114); the Bubble is the places below the line on score down to
+the squad size, with at least ⌈rounds ÷ 2⌉ rounds in (P009-C2). Status is the
+stored column; only the first round moves upcoming to live, and only the coach
+closes.
+
+Against production
+(`src/components/fairway/pages/qualifiers/__tests__/standings-parity.test.tsx`
+runs all three):
+
+| Behaviour | Selection workspace (confirm) | Fairway live leaderboard | Clubhouse |
+| --- | --- | --- | --- |
+| Rounds counted | completed, not test, total and to-par | completed, any `is_test`, a null total as 0 strokes | as the workspace |
+| No completed round | unscored | the stored entry aggregate | unscored |
+| Same slot twice / no number | first by id / counts | both / counts | as the workspace |
+| Order | to par, strokes, rounds, name | to par, strokes, stored position | as the workspace |
+| Tie label | none (rank 1..n) | 1, T2; T on to par alone | T2, T2 on to par and strokes |
+| Level at the cut | tie, the coach gives the place | first by stored order is in | tie |
+| Bubble | none | below the line, inside the squad | below the line, inside the squad, ⌈rounds ÷ 2⌉ rounds in |
+| Average | none | every round | 18-hole rounds only |
+| A pick saved before confirm | the pick leaves the places on score; the next player takes one | not read until confirm | not read until confirm (a player cannot read selections before it) |
+
+`get_qualifier_leaderboard` and the `getQualifierLeaderboard` action have no
+caller in the app; the function orders by strokes, not to par, and counts test
+rounds.
+
 ## Held dependencies
 
-- `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` (built, held behind the Clubhouse gate, D-61)
-- `docs/clubhouse/held/data/qualifier-db-hardening.md` (written, not applied, D-35)
+- `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` (built, held
+  behind the Clubhouse gate, D-61)
+- `docs/clubhouse/held/data/qualifier-db-hardening.md` (written, not applied,
+  D-35)
 
 ## Impact notes
 
-- The five server actions in `golf.ts` and the four in `v3/qualifying.ts` are shared. Fairway's Qualifiers and the
-  CoachHelm qualifying workspace call them too, so a change to their wording or result shape changes both UIs;
-  `selectionReason` maps their refusal strings to sentences and falls back to the toast's own hint for a string it
-  does not know.
-- Manage selections reads through `loadQualifyingWorkspace`, the loader the confirm itself uses, so the squad
-  shown is the squad committed. It reads `golf_qualifiers` twice (ownership, then the workspace).
-- `createGolfQualifier` is not atomic: it inserts the qualifier, then the round courses, then the entries. If the
-  entries insert fails, the qualifier exists, the form's toast says "Nothing was created", and Retry creates a
-  second one. If the round-courses insert fails, the action still reports success and only logs it, so a coach can
-  land on a new qualifier with no courses and no message. It is a shared server action, so it is not changed here
-  (VERIFY.md, open).
-- The confirm toast's count (`Squad confirmed · N players told`) is the squad's size. The server
-  (`player-notify.ts`) tells each candidate one of three outcomes (selected, not selected, not scored) when
-  anyone is selected, respects notification preferences, and logs a failed notification without returning it.
-- The live channel listens to `golf_rounds` only (any change to a round of this qualifier). A change to an entry,
-  a pick or a hole does not refresh the page until a round changes or the coach acts.
-- The Retry on a failure toast re-runs the action, so any follow-up must live inside the action passed to
-  `useAction`, not in the button's handler. A new write added here has to follow that.
+- The five server actions in `golf.ts` and the four in `v3/qualifying.ts` are
+  shared. Fairway's Qualifiers and the CoachHelm qualifying workspace call them
+  too, so a change to their wording or result shape changes both UIs;
+  `selectionReason` maps their refusal strings to sentences and falls back to
+  the toast's own hint for a string it does not know. Its cases are written from
+  `lib/coachhelm/v3/qualifying/service.ts`'s exact sentences
+  (`qualifier-write-parity.test.tsx`), the specific ones before the general
+  "cannot confirm" and "could not verify"; a reworded service refusal falls back
+  to the hint until a case follows it.
+- Edit sends `entryDeadline` back from the stored value (`keptDeadline`):
+  unchanged while it is on or before the start date, null once a new start date
+  passes it (the form has no deadline field).
+- Manage selections reads through `loadQualifyingWorkspace`, the loader the
+  confirm itself uses, so the squad shown is the squad committed. It reads
+  `golf_qualifiers` twice (ownership, then the workspace).
+- `createGolfQualifier` is not atomic: it inserts the qualifier, then the round
+  courses, then the entries. If the entries insert fails, the qualifier exists,
+  the form's toast says "Nothing was created", and Retry creates a second one.
+  If the round-courses insert fails, the action still reports success and only
+  logs it, so a coach can land on a new qualifier with no courses and no
+  message. It is a shared server action, so it is not changed here (VERIFY.md,
+  open).
+- The confirm toast's count (`Squad confirmed · N players told`) is the squad's
+  size. The server (`player-notify.ts`) tells each candidate one of three
+  outcomes (selected, not selected, not scored) when anyone is selected,
+  respects notification preferences, and logs a failed notification without
+  returning it.
+- The live channel listens to `golf_rounds` only (any change to a round of this
+  qualifier). A change to an entry, a pick or a hole does not refresh the page
+  until a round changes or the coach acts.
+- The Retry on a failure toast re-runs the action, so any follow-up must live
+  inside the action passed to `useAction`, not in the button's handler. A new
+  write added here has to follow that.

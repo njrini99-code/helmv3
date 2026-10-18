@@ -1,10 +1,44 @@
 # P012 — Classes: changelog
 
+## 2026-10-17 — Parity with production: large photos, coach-only meetings
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (Calendar and Classes production-parity audit)
+Contract IDs:   120511 (CH-12111) wording, 120516 wording
+Actions:        none
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000) or, until then,
+                golf_event_attendance, only when the week has a meeting
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Fixed
+
+- Import refused any photo over 12 MB on disk before it was downscaled. The
+  current importer takes it (it downscales first, and the vision action's
+  ceiling is on what is sent). `screenFile` now refuses only a PDF or TXT over
+  12 MB; a photo is measured once it is ready to send, and only one still past
+  the action's ceiling (a format the browser cannot downscale) is refused
+  (CH-12111, same copy).
+- The week's team events a class is checked against included a meeting that
+  invites no one, which the player's Calendar never shows (D2-8): a class could
+  be said to meet over a coach's parent call, by its title. The loader now
+  leaves such meetings out, by the invite count (`golf_event_attendance_counts`,
+  or the attendance rows until that function is deployed); a failed read
+  leaves every event in and is logged (`meetingInvites`).
+
+### Verification
+
+- `src/clubhouse/__tests__/classes-parity.test.ts` (D2-8 with and without the
+  function, and a failed read) and the updated reader and import cases in
+  `classes.test.tsx`. No screenshots: nothing visible changed.
+
 ## 2026-10-15 — Ink that holds at night
 
-Dark mode: the day picker, the add and review marks and the ready icon now take `--ch-on-fill-*` / `--ch-forest-*` ink, which
-match the day's palette in light and stay light at night (they went dark on
-dark). Light is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+Dark mode: the day picker, the add and review marks and the ready icon now take
+`--ch-on-fill-*` / `--ch-forest-*` ink, which match the day's palette in light
+and stay light at night (they went dark on dark). Light is unchanged. Shared
+change: docs/clubhouse/CHANGELOG.md.
 
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
@@ -33,27 +67,27 @@ and it glides when the times change.
 ## 2026-10-08 — Premium pass (backlog)
 
 - **One timetable (A1):** "Your classes" takes one row of days (Mon to Fri; the
-  weekend only when a class meets then). Each class's days are cells under it: an
-  ink bar as long as the meeting, its start in the cell numeral; a day off is empty
-  paper. Today is one soft light band down the list. Replaces the 25 raised day
-  keys (D7). The header and cells stay drawing (aria-hidden); each class still
-  names when it meets (CH-12801).
+  weekend only when a class meets then). Each class's days are cells under it:
+  an ink bar as long as the meeting, its start in the cell numeral; a day off is
+  empty paper. Today is one soft light band down the list. Replaces the 25
+  raised day keys (D7). The header and cells stay drawing (aria-hidden); each
+  class still names when it meets (CH-12801).
 - **Overlaps where they happen (A2):** a day a team event meets a class is a
   field-green band down the list, named in the header; the overlapped meeting
   carries an amber notch. The side list names each class by its department key
   (D1, no checkbox-like square).
-- **A read that shows its work (B1):** no reading state for the first 150ms; once
-  shown it holds 450ms; the rows found arrive one a beat, each tagged "Read
-  clearly", "Check the time" or "Check the days", under "Reading N classes · M to
-  check". Reduced motion and Animations off show them at once. One success haptic
-  when the imported classes are on the calendar. The read is still one server
-  answer: true streaming needs a streamed server action (not built).
+- **A read that shows its work (B1):** no reading state for the first 150ms;
+  once shown it holds 450ms; the rows found arrive one a beat, each tagged "Read
+  clearly", "Check the time" or "Check the days", under "Reading N classes · M
+  to check". Reduced motion and Animations off show them at once. One success
+  haptic when the imported classes are on the calendar. The read is still one
+  server answer: true streaming needs a streamed server action (not built).
 - **Findings:** a one-credit class is tone only on the term bar (D4); the sync
-  spinner stills under Animations off (D5); the empty state says "we’ll read it so
-  you can check each class" (D6); "This week" no longer collides with "Today"
+  spinner stills under Animations off (D5); the empty state says "we’ll read it
+  so you can check each class" (D6); "This week" no longer collides with "Today"
   (D9); the eyebrow is not tracked.
-- Not here: 44pt phone buttons (D2) and the red failure titles (D3) are the shared
-  Button and notice (shell builder).
+- Not here: 44pt phone buttons (D2) and the red failure titles (D3) are the
+  shared Button and notice (shell builder).
 
 ## 2026-10-08 — States and native feel
 
@@ -75,11 +109,11 @@ in WebKit at 390x844 with touch.
   catalog row say so.
 - **Copy:** every string the page writes takes the curly apostrophe, as the
   shell's offline line now does: the no-team page (CH-12305, "You aren’t on a
-  team yet"), the import's offline state (CH-12901, "You’re offline"),
-  "Couldn’t update", "Your classes didn’t load", "This can’t be undone", the
-  import's states and results and the write wrappers' refusals. The catalog's
-  quotes match (CH-12002 and CH-12005 quote the shell's "you’re offline"), and
-  the copy-apostrophes guard covers Classes. The reader's own sentence (CH-12113,
+  team yet"), the import's offline state (CH-12901, "You’re offline"), "Couldn’t
+  update", "Your classes didn’t load", "This can’t be undone", the import's
+  states and results and the write wrappers' refusals. The catalog's quotes
+  match (CH-12002 and CH-12005 quote the shell's "you’re offline"), and the
+  copy-apostrophes guard covers Classes. The reader's own sentence (CH-12113,
   CH-12114) is shown as the server sent it.
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
@@ -173,7 +207,8 @@ audit](../../ALL_PAGE_AUDIT.md#p012-classes). Approved handoffs and contract
 IDs are preserved; runtime gaps stay explicit.
 <!-- clubhouse:release-audit:end -->
 
-Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
+log and decisions).
 
 ## 2026-10-06 — PDF import errors keep their cause
 
@@ -199,7 +234,8 @@ layout was inspected without horizontal overflow. Physical Safari is unverified.
 
 ## 2026-10-01 — Phone: today first, one heading, the term in a line (iPhone brief)
 
-From the owner's "GolfHelm iPhone Layout and Native Experience Repair" brief, §10.
+From the owner's "GolfHelm iPhone Layout and Native Experience Repair" brief,
+§10.
 
 ```text
 PR/commit:      agent/swap-audit (#2111)
@@ -233,23 +269,33 @@ Data impact:    none (the same table and server action as Remove; no migration)
 
 ### Delete all classes (Q-75a)
 
-- **Issue.** The current Fairway Classes page has "Delete all classes" and the Clubhouse page did not, so clearing a
-  semester's schedule was one removal at a time. The owner approved building it on 2026-09-30.
-- **Fix.** A quiet red "Delete all classes" button under the deck (a full-width, 44px row on the phone) with the warning
-  haptic first, behind a question that says how many classes go, that their calendar events go with them, and how many
-  are from another term (CH-12503). It is one write, `writes.removeAll`, in the current page's order: the calendar
-  first for every class, then one delete of the rows that came off it, scoped to the player; a class whose calendar
-  removal failed keeps its row. A failure says which part: nothing was deleted (CH-12005), or it stopped half-way, with
-  the classes that are gone dropped from the list, the ones kept and the ones off the calendar but still saved named,
-  and the latter flagged "Not on your calendar" (CH-12006). A row is reported deleted only when the delete returned it
-  or a read-back shows it gone, so a failed delete or a row a policy hid is never called deleted. Retry repeats the same
-  classes and finishes the job (a class already gone counts as removed). The button is off while a save, an import, a
-  remove, a calendar sync or a delete-all is running, and is not drawn with no classes or when they didn't load.
-  The question stays open after a failure, counts what is left, and cannot be closed while its delete runs.
-- **Checked.** `classes.test.tsx` 125/125 with 16 new cases (the control, the question and its counts, the silent confirm,
-  the two failure toasts and their Retry, the off states, and the live writes: order, scope, read-back, a thrown call);
-  each behaviour mutation-checked (15 mutations, each caught; see VERIFY.md); axe clean at 1280 and 390 on the question,
-  the half-way toast and the nothing-deleted toast, and the phone button measured 358 x 44. Not seen on an iPhone.
+- **Issue.** The current Fairway Classes page has "Delete all classes" and the
+  Clubhouse page did not, so clearing a semester's schedule was one removal at a
+  time. The owner approved building it on 2026-09-30.
+- **Fix.** A quiet red "Delete all classes" button under the deck (a full-width,
+  44px row on the phone) with the warning haptic first, behind a question that
+  says how many classes go, that their calendar events go with them, and how
+  many are from another term (CH-12503). It is one write, `writes.removeAll`, in
+  the current page's order: the calendar first for every class, then one delete
+  of the rows that came off it, scoped to the player; a class whose calendar
+  removal failed keeps its row. A failure says which part: nothing was deleted
+  (CH-12005), or it stopped half-way, with the classes that are gone dropped
+  from the list, the ones kept and the ones off the calendar but still saved
+  named, and the latter flagged "Not on your calendar" (CH-12006). A row is
+  reported deleted only when the delete returned it or a read-back shows it
+  gone, so a failed delete or a row a policy hid is never called deleted. Retry
+  repeats the same classes and finishes the job (a class already gone counts as
+  removed). The button is off while a save, an import, a remove, a calendar sync
+  or a delete-all is running, and is not drawn with no classes or when they
+  didn't load. The question stays open after a failure, counts what is left, and
+  cannot be closed while its delete runs.
+- **Checked.** `classes.test.tsx` 125/125 with 16 new cases (the control, the
+  question and its counts, the silent confirm, the two failure toasts and their
+  Retry, the off states, and the live writes: order, scope, read-back, a thrown
+  call); each behaviour mutation-checked (15 mutations, each caught; see
+  VERIFY.md); axe clean at 1280 and 390 on the question, the half-way toast and
+  the nothing-deleted toast, and the phone button measured 358 x 44. Not seen on
+  an iPhone.
 
 ## 2026-09-30 — Classes for players, the review fixes and the page docs
 
@@ -265,55 +311,70 @@ Held items:     none (Delete all and the board's grade, deadline and Share with 
 
 ### Added
 
-- Classes for players, desktop and phone: the term overview, a card for every class, this week's overlaps with
-  the team's events, and the sheets to add, edit, import (a screenshot, PDF, TXT file or pasted text, reviewed
-  before anything is saved) and remove a class. Coaches keep the current page at the same address
-  (`LegacyClassesPage.tsx`, unchanged).
-- The six page docs, the manifest's actions (`status.docs` current, `status.contract` complete) and the hand
-  contracts: the core view, a class's card and sheet, first run only on an answered read, the import's duplicate
-  check, term-scoped checks, a hidden update and an empty sync as failures, offline, the page's role, the
-  server actions as the gate (reserved: read, not run), success and the import result, forms kept, Retry, Try
-  again, the calendar (not waited on, from the class's own term, no-time classes taken off it, flags held for
-  the visit), axe, phone layout, keyboard, the loader, observability and tests.
+- Classes for players, desktop and phone: the term overview, a card for every
+  class, this week's overlaps with the team's events, and the sheets to add,
+  edit, import (a screenshot, PDF, TXT file or pasted text, reviewed before
+  anything is saved) and remove a class. Coaches keep the current page at the
+  same address (`LegacyClassesPage.tsx`, unchanged).
+- The six page docs, the manifest's actions (`status.docs` current,
+  `status.contract` complete) and the hand contracts: the core view, a class's
+  card and sheet, first run only on an answered read, the import's duplicate
+  check, term-scoped checks, a hidden update and an empty sync as failures,
+  offline, the page's role, the server actions as the gate (reserved: read, not
+  run), success and the import result, forms kept, Retry, Try again, the
+  calendar (not waited on, from the class's own term, no-time classes taken off
+  it, flags held for the visit), axe, phone layout, keyboard, the loader,
+  observability and tests.
 
 ### Fixed (each with a test that fails without the fix; mutation-checked, as reported in PROGRESS.md)
 
-- **An import sent next Monday as every class's start.** A class in next term, or one imported before its term
-  began, failed to sync ("Could not determine semester dates"), and its Retry repeated the same start. Each class's
-  start now comes from its own term (`syncStartFor`); a class with no start gets the term's whole window; every
-  Retry replays the stored start.
-- **The sheet stayed locked while the calendar sync ran.** A save is done when the row is stored: the sheet is
-  free, "Class added" shows, and the sync is its own action that the save starts without waiting for.
-- **The import said the classes were on the calendar when some had no days.** The result now counts only those
-  that can be, names the rest and why ("PHIL 150 (no meeting days)"), and says "Adding them to your calendar…"
-  while it runs.
-- **A class with days but no time got a phantom 08:00 to 09:00 block.** The server fills in that time, so such a
-  class is now taken off the calendar instead of synced, and its card, sheet and the import result say "no time
+- **An import sent next Monday as every class's start.** A class in next term,
+  or one imported before its term began, failed to sync ("Could not determine
+  semester dates"), and its Retry repeated the same start. Each class's start
+  now comes from its own term (`syncStartFor`); a class with no start gets the
+  term's whole window; every Retry replays the stored start.
+- **The sheet stayed locked while the calendar sync ran.** A save is done when
+  the row is stored: the sheet is free, "Class added" shows, and the sync is its
+  own action that the save starts without waiting for.
+- **The import said the classes were on the calendar when some had no days.**
+  The result now counts only those that can be, names the rest and why ("PHIL
+  150 (no meeting days)"), and says "Adding them to your calendar…" while it
+  runs.
+- **A class with days but no time got a phantom 08:00 to 09:00 block.** The
+  server fills in that time, so such a class is now taken off the calendar
+  instead of synced, and its card, sheet and the import result say "no time
   set".
-- **Importing a schedule again duplicated the classes that had no term.** The duplicate check now reads a class
-  with no term as the current term's, the way the page and the calendar sync do.
-- **The duplicate and overlap checks compared other terms.** They now count only the classes of the term in
-  question, and this week's team overlaps only the current term's.
-- **CH-12002's row promised a toast the busy case never shows.** A class saved while another sync is still
-  running is flagged with no toast, and the row now says so.
-- **A Retry after a lost answer could insert a second row.** A new class's row id is made when the sheet opens
-  and travels with every attempt; a duplicate-key answer on it means the row is already stored, so the save
+- **Importing a schedule again duplicated the classes that had no term.** The
+  duplicate check now reads a class with no term as the current term's, the way
+  the page and the calendar sync do.
+- **The duplicate and overlap checks compared other terms.** They now count only
+  the classes of the term in question, and this week's team overlaps only the
+  current term's.
+- **CH-12002's row promised a toast the busy case never shows.** A class saved
+  while another sync is still running is flagged with no toast, and the row now
+  says so.
+- **A Retry after a lost answer could insert a second row.** A new class's row
+  id is made when the sheet opens and travels with every attempt; a
+  duplicate-key answer on it means the row is already stored, so the save
   updates it.
-- Also fixed: a class in next term lists its next meetings from its term's first day; a weekend day an import
-  saved can be taken off in the form; a coach's loading skeleton is Fairway's, because a coach gets the
-  Fairway page.
+- Also fixed: a class in next term lists its next meetings from its term's first
+  day; a weekend day an import saved can be taken off in the form; a coach's
+  loading skeleton is Fairway's, because a coach gets the Fairway page.
 
 ### Owner questions
 
-- **Q-75** (open; the reversible choices are built): Delete all (recommended: build it behind the same confirm
-  and calendar-first order), Add class as a sheet rather than the board's inline card, coach-visibility copy that
-  follows the read policy, and the grade, next deadline and Share with coach that have no column.
+- **Q-75** (open; the reversible choices are built): Delete all (recommended:
+  build it behind the same confirm and calendar-first order), Add class as a
+  sheet rather than the board's inline card, coach-visibility copy that follows
+  the read policy, and the grade, next deadline and Share with coach that have
+  no column.
 
 ### Why
 
-- The contract pass (D-62, D-69): every category answered, every behaviour named, and every bug class the
-  earlier pages' passes found looked for here; and the review of the first build, whose fixes are above.
+- The contract pass (D-62, D-69): every category answered, every behaviour
+  named, and every bug class the earlier pages' passes found looked for here;
+  and the review of the first build, whose fixes are above.
 
-### Verification
+### Verification (2026-09-30)
 
 - See VERIFY.md.

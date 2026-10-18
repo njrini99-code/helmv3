@@ -192,7 +192,7 @@ export const CH_A11Y_PAGES = [
   ['recruiting', '/clubhouse-preview/recruiting?state=delete'],
   ['recruiting', '/clubhouse-preview/recruiting?state=docsfailed'],
   ['recruiting', '/clubhouse-preview/recruiting', { phone: '.ch-recm-sort' }],
-  ['recruiting', '/clubhouse-preview/recruiting?state=detail', { phone: '.ch-recm-tile.is-stage' }],
+  ['recruiting', '/clubhouse-preview/recruiting?state=detail', { phone: '.ch-recm-stagerow' }],
 ];
 
 /**

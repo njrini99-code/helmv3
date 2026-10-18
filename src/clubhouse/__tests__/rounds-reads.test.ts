@@ -113,7 +113,8 @@ describe('Round review reads', () => {
         return load;
       })(),
     );
-    expect(depth).toEqual([['golf_rounds'], ['golf_course_tees', 'golf_holes', 'golf_shots', 'golf_teams']]);
+    // The round-type options' first read (CH-11522) rides in the same wave; its taken-slot read follows only when the player has entries (none here).
+    expect(depth).toEqual([['golf_rounds'], ['golf_course_tees', 'golf_holes', 'golf_qualifier_entries', 'golf_shots', 'golf_teams']]);
     expect(result.kind).toBe('ok');
   });
 

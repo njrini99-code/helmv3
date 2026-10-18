@@ -13,8 +13,8 @@ verification and durable writes are still pending.
 
 ## Current implementation audit — 2026-10-06
 
-Check the single 260ms entrance without exit wait; verify instant reduced motion,
-drag/scroll conflicts and pending saves.
+Check the single 260ms entrance without exit wait; verify instant reduced
+motion, drag/scroll conflicts and pending saves.
 
 The approved boards and phone specification remain the design authority.
 [all-page audit](../../ALL_PAGE_AUDIT.md#p008-settings) records current
@@ -160,55 +160,71 @@ rail page: a different screen over the same data, writes and catalog numbers
   edge. An action or link row (Create invite, Report a problem, Privacy policy,
   Terms of service, Try again) has no value or chevron, so its label takes the
   green of a value that opens something.
-- **Notifications.** This device (push on this device, the weekly team email); Email and push (one row per kind, each
-  showing "Email, Push" and opening a sheet of Email and Push switches, then Quiet mode); for a player, CoachHelm
-  updates (Rounds and reviews, Goals, Insights, each opening a sheet of In app, Push and Email, then Quiet mode).
-  A kind spans several updates (Goals is four), so a switch in its sheet changes all of them in one write and is on
-  only when every update in the kind has it on; a channel that is on for some shows "(some)" on the row and says how
-  many in the sheet.
+- **Notifications.** This device (push on this device, the weekly team email);
+  Email and push (one row per kind, each showing "Email, Push" and opening a
+  sheet of Email and Push switches, then Quiet mode); for a player, CoachHelm
+  updates (Rounds and reviews, Goals, Insights, each opening a sheet of In app,
+  Push and Email, then Quiet mode). A kind spans several updates (Goals is
+  four), so a switch in its sheet changes all of them in one write and is on
+  only when every update in the kind has it on; a channel that is on for some
+  shows "(some)" on the row and says how many in the sheet.
 - **Team (coach).** The invite code is the screen's one green feature card (the
   kit's FeatureCard): "Invite players", the code as its title, the line on how
   players join, Share where the card's chip would be, and New code in its foot;
   then the coaching staff, Team details (Team name opens a sheet with the season
   and school; Team timezone is a picker), Scoring and format (three pickers) and
   Event reminders (a switch, and each time is a slider in a sheet).
-- **CoachHelm (coach).** The power switches (the team switch is locked for an assistant coach, with the reason), the
-  priorities with the native reorder handle (touch and hold a row, then drag; a selection tick at each step; saved
-  once, on drop), then every other desktop control as rows: sensitivity, thresholds, alerts, evidence, windows and
-  display.
-- **Edit sheets.** Profile, Team details and Golf details are full-height sheets with Cancel, a title and Save; Save is
-  off until something changes (and while it is invalid). Email, Password, Join a team, the reminder times and the
-  typed Delete are shorter ones. Cancel, a swipe down, Esc and tapping outside all ask first when there are changes
-  (CH-8509), and a swipe that is refused puts the sheet back.
-- **Destructive choices** (Delete account, Leave team, New invite code, Turn off CoachHelm, Discard) are iOS action
-  sheets: a card saying what will happen with the destructive choice in red, and Cancel in a card of its own. Each warns
-  as it opens (D-70). Delete account then asks for "delete" typed in a follow-up sheet (CH-8510).
-- **Haptics** (D-70): a selection tick on switches, pickers and each reorder step; success when a save lands; error
-  when one fails; warning before a destructive action.
+- **CoachHelm (coach).** The power switches (the team switch is locked for an
+  assistant coach, with the reason), the priorities with the native reorder
+  handle (touch and hold a row, then drag; a selection tick at each step; saved
+  once, on drop), then every other desktop control as rows: sensitivity,
+  thresholds, alerts, evidence, windows and display.
+- **Edit sheets.** Profile, Team details and Golf details are full-height sheets
+  with Cancel, a title and Save; Save is off until something changes (and while
+  it is invalid). Email, Password, Join a team, the reminder times and the typed
+  Delete are shorter ones. Cancel, a swipe down, Esc and tapping outside all ask
+  first when there are changes (CH-8509), and a swipe that is refused puts the
+  sheet back.
+- **Destructive choices** (Delete account, Leave team, New invite code, Turn off
+  CoachHelm, Discard) are iOS action sheets: a card saying what will happen with
+  the destructive choice in red, and Cancel in a card of its own. Each warns as
+  it opens (D-70). Delete account then asks for "delete" typed in a follow-up
+  sheet (CH-8510).
+- **Haptics** (D-70): a selection tick on switches, pickers and each reorder
+  step; success when a save lands; error when one fails; warning before a
+  destructive action.
 
 ### Where the built screen differs from the mockups
 
 The mockups are samples of the design, not an inventory: where the desktop has a
 control they do not draw, it is built as a row in the same style.
 
-- Real values stand where the mockups had placeholders: the role line reads "Head coach" or "Coach" (a head coach is
-  known from the CoachHelm read) and the team's name, not the school; "HCP" is the player's handicap and is left out
-  when there is none; the email, the invite code (eight characters, no hyphen), the reminder times ("1 day before",
-  "1 hour before") and the Minimum rounds value ("5 rounds") are the saved ones.
-- A coach has one Full name field, not First and Last: the coach's profile stores a single name.
-- The identity row opens the Profile sheet, as drawn. The Account row opens an Account section (Profile, Email,
-  Password, Delete account), because the mockup gives Email, Password and Delete no other home; the Profile sheet's Email
-  row opens Change email over it.
-- Notifications combine what the mockup shows for a coach and for a player: the coach gets This device and Email and
-  push (five kinds), the player gets those and CoachHelm updates. The weekly team email sits under This device, as drawn.
-- The quiet-mode footnote says what the router does: quiet mode pauses these updates, and round reviews and goals your
-  coach assigns are always delivered. The mockup's "keeps CoachHelm to in app only" is not what happens (quiet mode
+- Real values stand where the mockups had placeholders: the role line reads
+  "Head coach" or "Coach" (a head coach is known from the CoachHelm read) and
+  the team's name, not the school; "HCP" is the player's handicap and is left
+  out when there is none; the email, the invite code (eight characters, no
+  hyphen), the reminder times ("1 day before", "1 hour before") and the Minimum
+  rounds value ("5 rounds") are the saved ones.
+- A coach has one Full name field, not First and Last: the coach's profile
+  stores a single name.
+- The identity row opens the Profile sheet, as drawn. The Account row opens an
+  Account section (Profile, Email, Password, Delete account), because the mockup
+  gives Email, Password and Delete no other home; the Profile sheet's Email row
+  opens Change email over it.
+- Notifications combine what the mockup shows for a coach and for a player: the
+  coach gets This device and Email and push (five kinds), the player gets those
+  and CoachHelm updates. The weekly team email sits under This device, as drawn.
+- The quiet-mode footnote says what the router does: quiet mode pauses these
+  updates, and round reviews and goals your coach assigns are always delivered.
+  The mockup's "keeps CoachHelm to in app only" is not what happens (quiet mode
   blocks in app as well).
-- Added beyond the mockups so nothing on the desktop is lost: Scoring format, Final reminder, the season and school
-  fields, the power switches, sensitivity, thresholds, alerts, windows and display in CoachHelm, and the golf details
+- Added beyond the mockups so nothing on the desktop is lost: Scoring format,
+  Final reminder, the season and school fields, the power switches, sensitivity,
+  thresholds, alerts, windows and display in CoachHelm, and the golf details
   rows.
-- Not built: Mute push, Mute email and Reset on the CoachHelm updates (each kind's sheet changes the same switches),
-  and Copy code and Copy link (Share opens the share sheet, or copies the link where the device has none).
+- Not built: Mute push, Mute email and Reset on the CoachHelm updates (each
+  kind's sheet changes the same switches), and Copy code and Copy link (Share
+  opens the share sheet, or copies the link where the device has none).
 
 ## Accessibility
 
@@ -249,13 +265,12 @@ D-18 (one page with a rail; both notification stores stay; only preferences
 Clubhouse honours; Coaching intelligence is the CoachHelm section; the typed
 delete, the confirm before a new code, blank organization fields can be
 cleared), D-41 (Settings in the More sheet on the phone), D-64 (motion), D-70
-(haptics). Open: approval of the phone design, and review of the built desktop
-screen.
+(haptics). The phone design was approved by the owner on 2026-09-30
+(`docs/clubhouse/phone/settings.md`). Open: review of the built desktop screen.
 
 ## Explicit non-goals
 
-Theme and display formats, comparison weights, a phone-native Settings (until
-approved), and any new server behaviour.
+Theme and display formats, comparison weights, and any new server behaviour.
 
 ## Fresh-build confirmation
 

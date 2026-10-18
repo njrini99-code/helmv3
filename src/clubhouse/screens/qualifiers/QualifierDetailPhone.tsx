@@ -18,13 +18,14 @@ import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { bubbleNote, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ToParPlate } from './parts';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
 import { SerifText } from '../../ui/SerifText';
+import { createOpenRow, PlayerRounds as ShowcaseRounds } from './RoundsShowcase';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -36,6 +37,9 @@ const LIST = '/golf/dashboard/qualifiers';
  * confirmed squad sits above the leaderboard. Same data, writes and catalog
  * as desktop; the close confirm is the desktop's, passed in.
  */
+/** The phone has no open row to follow: its rows open a sheet instead. */
+const NO_OPEN_ROW = createOpenRow();
+
 export function QualifierDetailPhone({
   data,
   stale,
@@ -93,7 +97,6 @@ export function QualifierDetailPhone({
         </span>
       ) : null,
     ],
-    ['Deadline', data.deadline ? dayLabel(data.deadline) : '—'],
   ];
 
   return (
@@ -156,6 +159,13 @@ export function QualifierDetailPhone({
       {data.selectionState === 'selected' && (
         <SectionBoundary surface="qualifiers.selections" label="Squad" code="CH-09214">
           <Selections data={data} status={status} topScore={topScore} />
+        </SectionBoundary>
+      )}
+
+      {/* A player's own rounds, shown off above the board (owner, 2026-10-16); a coach opens anyone's from their row. */}
+      {data.role !== 'coach' && (
+        <SectionBoundary surface="qualifiers.player-rounds" label="Your rounds" code="CH-09223">
+          <ShowcaseRounds data={data} openRow={NO_OPEN_ROW} ownOnly />
         </SectionBoundary>
       )}
 
@@ -325,7 +335,7 @@ function Board({
               </span>
               <ToParPlate value={r.toPar} />
               <span className="ch-qfm-lb__thru ch-num">
-                {r.played}/{data.numRounds}
+                <ThruDots played={r.played} total={data.numRounds} />
               </span>
             </>
           );

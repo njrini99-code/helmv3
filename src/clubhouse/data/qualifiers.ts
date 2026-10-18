@@ -9,15 +9,18 @@ import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
 import {
   buildBoard,
+  countsOnBoard,
   endDayFor,
   parseSelectionState,
   parseStatus,
+  roundOfRow,
   roundPars,
   type ChQBoard,
   type ChQEntrant,
   type ChQFormValues,
   type ChQHole,
   type ChQRound,
+  type ChQRoundRow,
   type ChQSelection,
   type ChQSelectionState,
   type ChQStatus,
@@ -56,17 +59,7 @@ interface QRow {
 }
 type PlayerCols = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
 type EntryRow = { qualifier_id: string; player_id: string; player: PlayerCols | null };
-type RoundRow = {
-  id: string;
-  qualifier_id: string | null;
-  player_id: string;
-  qualifier_round_number: number | null;
-  total_score: number | null;
-  score_to_par: number | null;
-  round_date: string;
-  course_name: string | null;
-  holes_played: number | null;
-};
+type RoundRow = ChQRoundRow & { qualifier_id: string | null };
 
 export interface ChQListItem {
   id: string;
@@ -207,21 +200,8 @@ export interface ChQFormData {
 function entrantOf(p: PlayerCols, now: Date): ChQEntrant {
   return { playerId: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now) };
 }
-function roundOf(r: RoundRow): ChQRound {
-  return {
-    id: r.id,
-    playerId: r.player_id,
-    number: r.qualifier_round_number ?? 1,
-    total: r.total_score,
-    toPar: r.score_to_par,
-    date: r.round_date,
-    course: r.course_name,
-    holesPlayed: r.holes_played,
-  };
-}
-
 const ENTRY_SELECT = 'qualifier_id, player_id, player:golf_players(id, first_name, last_name, graduation_year)';
-const ROUND_SELECT = 'id, qualifier_id, player_id, qualifier_round_number, total_score, score_to_par, round_date, course_name, holes_played';
+const ROUND_SELECT = 'id, qualifier_id, player_id, qualifier_round_number, total_score, score_to_par, round_date, course_name, holes_played, status, is_test';
 
 async function readEntries(supabase: Supabase, qualifierIds: string[], surface: string): Promise<{ rows: EntryRow[]; error: boolean }> {
   const rows: EntryRow[] = [];
@@ -258,7 +238,9 @@ async function readRounds(supabase: Supabase, qualifierIds: string[], surface: s
       chLogServer(surface, 'rounds', error, 'qualifiers');
       return { rows, error: true };
     }
-    rows.push(...(data ?? []));
+    // The query asks for completed, non-test rounds; the same rule is held here so the board's round set is the pure one
+    // the tests and the parity check run (model.ts countsOnBoard).
+    rows.push(...(data ?? []).filter(countsOnBoard));
   }
   return { rows, error: false };
 }
@@ -327,7 +309,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
     const qEntries = entries.rows.filter((e) => e.qualifier_id === q.id && e.player);
     const board = buildBoard({
       entrants: qEntries.map((e) => entrantOf(e.player as PlayerCols, now)),
-      rounds: rounds.rows.filter((r) => r.qualifier_id === q.id).map(roundOf),
+      rounds: rounds.rows.filter((r) => r.qualifier_id === q.id).map(roundOfRow),
       squad: q.selection_slots_total,
       picks: q.selection_slots_coach_pick,
       status,
@@ -422,7 +404,7 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
   // Without the reasons the squad still shows; only the coach's notes are missing.
   if (reasonsRes.error) chLogServer('qualifiers', 'reasons', reasonsRes.error, 'qualifiers');
 
-  const qRounds = rounds.rows.map(roundOf);
+  const qRounds = rounds.rows.map(roundOfRow);
   const entrants = entries.rows.filter((e) => e.player).map((e) => entrantOf(e.player as PlayerCols, now));
   const nameOf = new Map(entrants.map((e) => [e.playerId, e.name]));
   // The names come from the entries: with those unread the squad is "not readable", never a row of "A player".
@@ -494,7 +476,7 @@ async function readDetailSecondary(a: {
         const rounds = await a.roundsRead;
         // With the rounds unread there are no cards to draw, and the tray they would sit in is not offered either.
         if (rounds.error) return { rounds: [] as ChQRound[], holes: {} as Record<string, ChQHole[]>, holesError: true };
-        const all = rounds.rows.map(roundOf);
+        const all = rounds.rows.map(roundOfRow);
         // Scorecards: a coach opens every round; a player only their own (D-33).
         const openable = all.filter((r) => a.input.role === 'coach' || r.playerId === a.input.playerId).map((r) => r.id);
         return { rounds: all, ...(await readScorecards(a.supabase, openable)) };

@@ -23,6 +23,7 @@ import { PlayerGame } from './PlayerGame';
 import { PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
 import { messageCoachHref, postRoundHref } from './player-links';
+import { useHomeDayRollover } from './use-day-rollover';
 import '../../styles/home.css';
 
 /**
@@ -33,6 +34,8 @@ import '../../styles/home.css';
  */
 export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and tests: a frozen clock (ISO). */ now?: string }) {
   const phone = useChPhone();
+  // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
+  useHomeDayRollover(data.clock, now !== undefined);
   if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} />;
   if (phone) return <PlayerHomePhone data={data} now={now} />;
   const post = postRoundHref();

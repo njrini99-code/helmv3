@@ -869,10 +869,11 @@ describe('the welcome', () => {
     expect(navigate).toHaveBeenCalledTimes(1);
   });
 
-  it('prefetches the destination while the person reads', () => {
+  it('prefetches the destination in full, data and all, while the person reads', () => {
     at('/golf/welcome?next=%2Fgolf%2Fdashboard%2Fstats');
     render(<FixedClock.Provider value={PREVIEW_AUTH_NOW}><WelcomeStage><Welcome data={PREVIEW_WELCOME_COACH} /></WelcomeStage></FixedClock.Provider>);
-    expect(router.prefetch).toHaveBeenCalledWith('/golf/dashboard/stats');
+    // The default prefetch of a dynamic page stops at its loading boundary; the hand-off then waited a server render.
+    expect(router.prefetch).toHaveBeenCalledWith('/golf/dashboard/stats', { kind: 'full' });
   });
 
   it('CH-15401 draws the frame and the course while the greeting is still being read, and the course is not redrawn when it lands', () => {

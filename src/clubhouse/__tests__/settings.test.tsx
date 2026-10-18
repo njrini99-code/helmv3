@@ -496,6 +496,8 @@ describe('Settings · 85xx confirm', () => {
     const { user, writes } = setup({ data: playerData(true), section: 'golf' });
     await user.click(screen.getByRole('button', { name: 'Leave team' }));
     await expectCode('CH-8502', /Leave Varsity/);
+    // D-70: the warning tick as a confirm for something that cannot be taken back opens (2026-10-17).
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
     await user.click(screen.getByRole('button', { name: 'Stay on the team' }));
     expect(writes.leaveTeam).not.toHaveBeenCalled();
   });
@@ -504,6 +506,8 @@ describe('Settings · 85xx confirm', () => {
     const { user, writes } = setup({ section: 'team' });
     await user.click(within(card('Invite players')).getByRole('button', { name: 'Make a new code' }));
     await expectCode('CH-8503', /K7M2Q9XA stops working/);
+    // D-70: the warning tick as a confirm for something that cannot be taken back opens (2026-10-17).
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
     await user.click(screen.getByRole('button', { name: 'Keep this code' }));
     expect(writes.regenerateCode).not.toHaveBeenCalled();
   });
@@ -512,6 +516,8 @@ describe('Settings · 85xx confirm', () => {
     const { user, writes } = setup({ data: playerData(true), section: 'notifications' });
     await user.click(screen.getByRole('button', { name: 'Reset' }));
     await expectCode('CH-8504', /Reset CoachHelm updates/);
+    // D-70: the warning tick as a confirm for something that cannot be taken back opens (2026-10-17).
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
     expect(writes.setRoutingAll).not.toHaveBeenCalled();
   });
 
@@ -519,6 +525,8 @@ describe('Settings · 85xx confirm', () => {
     const { user, writes } = setup({ section: 'coachhelm' });
     await user.click(screen.getByRole('switch', { name: 'CoachHelm on your dashboards' }));
     await expectCode('CH-8505', /Turn off CoachHelm/);
+    // D-70: the warning tick as a confirm for something that cannot be taken back opens (2026-10-17).
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
     expect(writes.setCoachHelmCoach).not.toHaveBeenCalled();
   });
 
@@ -1285,6 +1293,71 @@ describe('Settings · what is reported', () => {
 });
 
 // ── The phone (docs/clubhouse/phone/settings.md, owner-approved 2026-09-30) ──
+
+describe('Settings · a refused save says why; only a save that got no answer says "Check your connection" (VERIFY 2026-10-17)', () => {
+  const RLS = 'new row violates row-level security policy for table "notification_preferences"';
+
+  it('CH-8005 a switch the database refuses flips back and says the account has no access, not the connection', async () => {
+    const { user } = setup({ section: 'notifications', writes: { setDelivery: vi.fn(() => fail(RLS)) } });
+    await user.click(screen.getByRole('switch', { name: 'Messages by email' }));
+    await expectCode('CH-8005', /Couldn’t change messages email/);
+    expect(code('CH-8005')!.textContent).toMatch(/It is back where it was\. Your account doesn’t have access to do this\./);
+    expect(code('CH-8005')!.textContent).not.toMatch(/connection/);
+    expect(screen.getByRole('switch', { name: 'Messages by email' })).toBeChecked();
+  });
+
+  it('CH-8005 a switch whose save never got an answer (a throw, or the browser’s "Load failed") still says to check the connection', async () => {
+    const first = setup({ section: 'notifications', writes: { setDelivery: vi.fn(() => Promise.reject(new TypeError('Load failed'))) } });
+    await first.user.click(screen.getByRole('switch', { name: 'Messages by email' }));
+    await expectCode('CH-8005', /Check your connection and try again\./);
+    first.unmount();
+    const second = setup({ section: 'notifications', writes: { setDelivery: vi.fn(() => fail('TypeError: Load failed')) } });
+    await second.user.click(screen.getByRole('switch', { name: 'Messages by email' }));
+    await expectCode('CH-8005', /Check your connection and try again\./);
+  });
+
+  it('CH-8021 a refusal the server words itself is shown as it is; a technical one is still a refusal, not the connection', async () => {
+    const first = setup({ section: 'coachhelm', writes: { setCoachHelmTeam: vi.fn(() => fail('Only the head coach can change this.')) } });
+    await first.user.click(screen.getByRole('switch', { name: 'CoachHelm for the whole team' }));
+    await expectCode('CH-8021', /It is back where it was\. Only the head coach can change this\./);
+    first.unmount();
+    const second = setup({ section: 'coachhelm', writes: { setCoachHelmTeam: vi.fn(() => fail('PGRST116: JSON object requested, multiple (or no) rows returned')) } });
+    await second.user.click(screen.getByRole('switch', { name: 'CoachHelm for the whole team' }));
+    await expectCode('CH-8021', /The server didn’t accept the change\. The error has been reported\./);
+    expect(code('CH-8021')!.textContent).not.toMatch(/connection/);
+  });
+
+  it('CH-8022 a CoachHelm autosave the database refuses says so; one that threw says to check the connection', async () => {
+    const first = setup({ section: 'coachhelm', writes: { savePhilosophy: vi.fn(() => Promise.resolve({ success: false, error: RLS })) } });
+    await first.user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
+    await expectCode('CH-8022', /It’s back where it was\. Your account doesn’t have access to do this\./);
+    first.unmount();
+    const second = setup({ section: 'coachhelm', writes: { savePhilosophy: vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))) } });
+    await second.user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
+    await expectCode('CH-8022', /Check your connection and try again\./);
+  });
+
+  it('CH-8011 a form save refused by a policy (an error, not zero rows) says the account has no access; one that never reached the server says to check the connection', async () => {
+    const first = setup({ section: 'team', writes: { saveTeam: vi.fn(() => fail('new row violates row-level security policy for table "golf_teams"')) } });
+    await first.user.type(screen.getByLabelText('Team name'), ' A');
+    await first.user.click(within(card('Team details')).getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-8011', /Couldn.t save team details/);
+    expect(code('CH-8011')!.textContent).toMatch(/Your account doesn’t have access to do this\./);
+    expect(code('CH-8011')!.textContent).not.toMatch(/connection/);
+    first.unmount();
+    const second = setup({ section: 'team', writes: { saveTeam: vi.fn(() => fail('TypeError: Failed to fetch')) } });
+    await second.user.type(screen.getByLabelText('Team name'), ' A');
+    await second.user.click(within(card('Team details')).getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-8011', /Check your connection and try again\./);
+  });
+
+  it('CH-8018 a refusal with no plain reason keeps the card’s own next step', async () => {
+    const { user } = setup({ data: playerData(false, false), section: 'golf', writes: { requestJoin: vi.fn(() => fail('duplicate key value violates unique constraint "golf_team_join_requests_pkey"')) } });
+    await user.type(screen.getByLabelText('Invite code'), 'abc123');
+    await user.click(screen.getByRole('button', { name: 'Ask to join' }));
+    await expectCode('CH-8018', /Check the code with your coach\./);
+  });
+});
 
 describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   const realMatchMedia = window.matchMedia;
@@ -2120,6 +2193,108 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       // Turning it back on needs no question.
       await user.click(within(power).getByRole('switch', { name: 'CoachHelm on your dashboards' }));
       await waitFor(() => expect(writes.setCoachHelmCoach).toHaveBeenCalledWith({ enabled: true }));
+    });
+  });
+
+  describe('the browser’s Back and the iOS edge swipe over an edit sheet (CH-8509, VERIFY 2026-10-17)', () => {
+    const openTeamDetails = async (user: User) => {
+      await openRow(user, /^Team/);
+      const details = await screen.findByRole('region', { name: 'Team details' });
+      await user.click(within(details).getByRole('button', { name: /^Team name Varsity/ }));
+      return dialog('Team details');
+    };
+    const onTeam = () => top().queryByRole('heading', { level: 1, name: 'Team' });
+
+    it('81901 CH-8509 a Back while a section sheet holds edits asks first and keeps the section; the stack still pops on the next Back', async () => {
+      const { user, writes } = phone();
+      const sheet = await openTeamDetails(user);
+      await user.type(within(sheet).getByLabelText('Team name'), ' A');
+      act(() => window.history.back());
+      const ask = await openSheet('CH-8509');
+      expect(within(ask).getByRole('button', { name: 'Discard changes' })).toBeTruthy();
+      // The section and the sheet are still there, as typed, and the section is a history entry again.
+      expect(onTeam()).toBeTruthy();
+      expect(within(dialog('Team details')).getByLabelText('Team name')).toHaveValue('Varsity A');
+      expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1);
+      // Keep editing, then Back again: it asks again.
+      await user.click(within(ask).getByRole('button', { name: 'Keep editing' }));
+      await waitFor(() => expect(sheetOf('CH-8509')).toBeNull());
+      act(() => window.history.back());
+      await user.click(within(await openSheet('CH-8509')).getByRole('button', { name: 'Discard changes' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Team details' })).toBeNull());
+      expect(writes.saveTeam).not.toHaveBeenCalled();
+      expect(onTeam()).toBeTruthy();
+      // With nothing held, the next Back pops the section as it always did: the stack's count was never thrown off.
+      act(() => window.history.back());
+      await screen.findByRole('navigation', { name: 'Settings sections' });
+      expect(top().queryByRole('button', { name: 'Back to Settings' })).toBeNull();
+    });
+
+    it('81901 CH-8509 the Profile sheet over Account asks too, and Account stays', async () => {
+      const { user } = phone();
+      await openRow(user, /^Account/);
+      await user.click(screen.getByRole('button', { name: 'Profile Maya Reyes' }));
+      await user.type(within(dialog('Profile')).getByLabelText('Full name'), ' Jr');
+      act(() => window.history.back());
+      // Account's own sheets carry a CH-8509 question too (closed), so find the open one.
+      await waitFor(() => expect(document.querySelector('[data-ch-code="CH-8509"][open]')).not.toBeNull());
+      expect(top().getByRole('heading', { level: 1, name: 'Account' })).toBeTruthy();
+      expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes Jr');
+    });
+
+    it('81901 CH-8509 the Profile sheet over the Settings list: Back with edits asks and stays on Settings; Back with none closes the sheet', async () => {
+      const { user } = phone();
+      await screen.findByRole('navigation', { name: 'Settings sections' });
+      await user.click(screen.getByRole('button', { name: /Maya Reyes/ }));
+      // Open over the list, the sheet is a history entry of its own.
+      await waitFor(() => expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1));
+      await user.type(within(dialog('Profile')).getByLabelText('Full name'), ' Jr');
+      act(() => window.history.back());
+      await waitFor(() => expect(document.querySelector('[data-ch-code="CH-8509"][open]')).not.toBeNull());
+      expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes Jr');
+      expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
+      expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1);
+      await user.click(within(document.querySelector('[data-ch-code="CH-8509"][open]') as HTMLElement).getByRole('button', { name: 'Discard changes' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull());
+      // Opened again with nothing changed, Back just closes it, and Settings stays.
+      await user.click(screen.getByRole('button', { name: /Maya Reyes/ }));
+      await waitFor(() => expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1));
+      await act(async () => {
+        window.history.back();
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull());
+      expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
+      expect(sheetOf('CH-8509')).toBeNull();
+    });
+
+    it('81901 a Back over a sheet with nothing changed pops the section without asking, as before', async () => {
+      const { user } = phone();
+      await openTeamDetails(user);
+      act(() => window.history.back());
+      await screen.findByRole('navigation', { name: 'Settings sections' });
+      expect(sheetOf('CH-8509')).toBeNull();
+    });
+
+    it('81901 CH-8402 a Back while a sheet is saving keeps it open and asks nothing; the save then lands', async () => {
+      let resolve: (v: ChResult) => void = () => {};
+      const saveTeam = vi.fn(() => new Promise<ChResult>((r) => (resolve = r)));
+      const { user } = phone({ writes: { saveTeam } });
+      const sheet = await openTeamDetails(user);
+      await user.type(within(sheet).getByLabelText('Team name'), ' A');
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+      // The Back's popstate arrives a task later (and the page's capture listener stops it), so wait it out.
+      await act(async () => {
+        window.history.back();
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1);
+      expect(onTeam()).toBeTruthy();
+      expect(sheet.hasAttribute('open')).toBe(true);
+      expect(sheetOf('CH-8509')).toBeNull();
+      await act(async () => resolve({ success: true }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Team details' })).toBeNull());
+      expect(onTeam()).toBeTruthy();
     });
   });
 

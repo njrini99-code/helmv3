@@ -18,6 +18,7 @@ import { GolfPhone } from './GolfPhone';
 import { NotificationsPhone } from './NotificationsPhone';
 import { PreferencesPhone } from './PreferencesPhone';
 import { TeamPhone } from './TeamPhone';
+import { HeldSheetsContext, type ChHeldSheet } from './sheets';
 import { ActionRow, Group, LinkRow, NavRow } from './ui';
 import { canvasScrollNow } from '../../../lib/smooth-scroll';
 import { poppedByUA } from '../../../lib/ua-pop';
@@ -123,13 +124,60 @@ export function SettingsPhone({
   // it come back and leave a second time (the shell's CH-1908, lib/ua-pop.ts, read before the stack pops).
   const [dir, setDir] = useState<1 | -1 | 0>(1);
 
-  // A section is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906).
+  // CH-8509: a Back (the iOS edge swipe, the browser's back) that would pop the section while an edit sheet holds
+  // unsaved edits or a save in flight is answered by that sheet instead, with the same discard question its Cancel asks.
+  // The sheets are not history entries, so the Back has already moved to the list's entry: the section's is put back
+  // first, and the stack (usePhoneStackHistory) never sees the pop, so its count still matches the history. Registered
+  // before that hook, in the capture phase, so it runs first.
+  const heldSheets = useRef<ChHeldSheet[]>([]);
+  const registerSheet = useCallback((sheet: ChHeldSheet) => {
+    heldSheets.current = [...heldSheets.current, sheet];
+    return () => {
+      heldSheets.current = heldSheets.current.filter((x) => x !== sheet);
+    };
+  }, []);
+  const sectionOpen = useRef(section != null);
+  useEffect(() => {
+    sectionOpen.current = section != null;
+  }, [section]);
+  // Profile, Email and Password also open over the list itself (the identity row). There a Back would leave Settings
+  // before anything could ask, so a sheet over the list is a history entry of its own, like a section (owner,
+  // 2026-10-17: "fix it"): Back closes it, or asks first when it holds edits.
+  const sheetOverList = section == null && (profileOpen || emailOpen || passwordOpen);
+  const overList = useRef(sheetOverList);
+  useEffect(() => {
+    overList.current = sheetOverList;
+  }, [sheetOverList]);
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      if (!sectionOpen.current && !overList.current) return;
+      const state = window.history.state as { chPhone?: unknown } | null;
+      if (typeof state?.chPhone === 'number' && state.chPhone >= 1) return;
+      const top = [...heldSheets.current].reverse().find((x) => x.held());
+      if (!top) return;
+      e.stopImmediatePropagation();
+      window.history.pushState({ chPhone: 1 }, '');
+      chTrail('settings back held by an edit sheet');
+      top.requestClose();
+    };
+    window.addEventListener('popstate', onPop, true);
+    return () => window.removeEventListener('popstate', onPop, true);
+  }, []);
+
+  // A section is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906); so is a sheet over
+  // the list, which the same Back closes.
   const popTo = useCallback((level: number) => {
     if (level >= 1) return;
+    if (!sectionOpen.current) {
+      setProfileOpen(false);
+      setEmailOpen(false);
+      setPasswordOpen(false);
+      return;
+    }
     setDir(poppedByUA() ? 0 : -1);
     setSection(null);
   }, []);
-  usePhoneStackHistory(section ? 1 : 0, popTo);
+  usePhoneStackHistory(section || sheetOverList ? 1 : 0, popTo);
 
   const open = (id: ChSettingsSection) => {
     chTrail(`settings section ${id}`);
@@ -155,51 +203,53 @@ export function SettingsPhone({
   const profile = data.profile.error ? null : data.profile.value;
 
   return (
-    <main className="ch-setm" aria-label="Settings">
-      <PhoneTop
-        back={section ? { label: 'Settings', onBack: back } : null}
-        start={!section}
-        // The design draws the large title in the page and nothing in the bar; the bar's is the screen's heading for VoiceOver.
-        title={current?.label ?? 'Settings'}
-        titleId="ch-setm-title"
-      />
-      {/* CH-8609: a section pushes in from the right over the list, which fades under it, and Back slides it off the
-          same way; base duration, instant with reduced motion or Animations off. */}
-      <AnimatePresence mode="popLayout" initial={false} custom={way}>
-        <PushPage key={section ?? 'root'} sub={!!section} way={way} reduced={reduced}>
-          <p className="ch-setm-title" aria-hidden="true">
-            {current?.label ?? 'Settings'}
-          </p>
-          {section == null ? (
-            <Root data={data} writes={writes} onOpen={open} onProfile={() => setProfileOpen(true)} />
-          ) : (
-            <SectionBoundary surface={`settings.${section}`} label={current?.label ?? 'Settings'} code="CH-8212">
-              {section === 'account' && (
-                <AccountPhone
-                  data={data}
-                  writes={writes}
-                  sentTo={sentTo}
-                  onProfile={() => setProfileOpen(true)}
-                  onEmail={() => setEmailOpen(true)}
-                  onPassword={() => setPasswordOpen(true)}
-                  onDeleted={onDeleted}
-                />
-              )}
-              {section === 'notifications' && <NotificationsPhone data={data} writes={writes} device={device} />}
-              {section === 'team' && <TeamPhone data={data} writes={writes} />}
-              {section === 'golf' && <GolfPhone data={data} writes={writes} />}
-              {section === 'coachhelm' && <CoachHelmPhone data={data} writes={writes} />}
-              {section === 'preferences' && <PreferencesPhone device={device} />}
-            </SectionBoundary>
-          )}
-        </PushPage>
-      </AnimatePresence>
+    <HeldSheetsContext.Provider value={registerSheet}>
+      <main className="ch-setm" aria-label="Settings">
+        <PhoneTop
+          back={section ? { label: 'Settings', onBack: back } : null}
+          start={!section}
+          // The design draws the large title in the page and nothing in the bar; the bar's is the screen's heading for VoiceOver.
+          title={current?.label ?? 'Settings'}
+          titleId="ch-setm-title"
+        />
+        {/* CH-8609: a section pushes in from the right over the list, which fades under it, and Back slides it off the
+            same way; base duration, instant with reduced motion or Animations off. */}
+        <AnimatePresence mode="popLayout" initial={false} custom={way}>
+          <PushPage key={section ?? 'root'} sub={!!section} way={way} reduced={reduced}>
+            <p className="ch-setm-title" aria-hidden="true">
+              {current?.label ?? 'Settings'}
+            </p>
+            {section == null ? (
+              <Root data={data} writes={writes} onOpen={open} onProfile={() => setProfileOpen(true)} />
+            ) : (
+              <SectionBoundary surface={`settings.${section}`} label={current?.label ?? 'Settings'} code="CH-8212">
+                {section === 'account' && (
+                  <AccountPhone
+                    data={data}
+                    writes={writes}
+                    sentTo={sentTo}
+                    onProfile={() => setProfileOpen(true)}
+                    onEmail={() => setEmailOpen(true)}
+                    onPassword={() => setPasswordOpen(true)}
+                    onDeleted={onDeleted}
+                  />
+                )}
+                {section === 'notifications' && <NotificationsPhone data={data} writes={writes} device={device} />}
+                {section === 'team' && <TeamPhone data={data} writes={writes} />}
+                {section === 'golf' && <GolfPhone data={data} writes={writes} />}
+                {section === 'coachhelm' && <CoachHelmPhone data={data} writes={writes} />}
+                {section === 'preferences' && <PreferencesPhone device={device} />}
+              </SectionBoundary>
+            )}
+          </PushPage>
+        </AnimatePresence>
 
-      {/* Hosted here, because the identity row opens Profile from the list, and Change email opens over it. */}
-      {profile && <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} data={data} profile={profile} writes={writes} onChangeEmail={() => setEmailOpen(true)} />}
-      <EmailSheet open={emailOpen} onClose={() => setEmailOpen(false)} email={data.email} writes={writes} onSent={setSentTo} />
-      <PasswordSheet open={passwordOpen} onClose={() => setPasswordOpen(false)} hasEmail={!!data.email} writes={writes} />
-    </main>
+        {/* Hosted here, because the identity row opens Profile from the list, and Change email opens over it. */}
+        {profile && <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} data={data} profile={profile} writes={writes} onChangeEmail={() => setEmailOpen(true)} />}
+        <EmailSheet open={emailOpen} onClose={() => setEmailOpen(false)} email={data.email} writes={writes} onSent={setSentTo} />
+        <PasswordSheet open={passwordOpen} onClose={() => setPasswordOpen(false)} hasEmail={!!data.email} writes={writes} />
+      </main>
+    </HeldSheetsContext.Provider>
   );
 }
 

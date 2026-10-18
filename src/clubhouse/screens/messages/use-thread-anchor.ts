@@ -16,9 +16,30 @@ const SETTLE_MS = 700;
  */
 export function useThreadAnchor(
   scroller: RefObject<HTMLElement | null>,
-  { convId, count, lastMine, typing }: { convId: string; count: number; lastMine: boolean; typing: boolean },
+  {
+    convId,
+    count,
+    lastMine,
+    typing,
+    paused = false,
+  }: {
+    convId: string;
+    count: number;
+    lastMine: boolean;
+    typing: boolean;
+    /**
+     * A search hit is being shown (useFocusMessage): nothing pulls the thread to its end, neither the settle hold nor
+     * arrivals nor a resize, until the jump is done and the reader's own position decides again.
+     */
+    paused?: boolean;
+  },
 ) {
   const nearEnd = useRef(true);
+  const held = useRef(paused);
+  // First of this hook's layout effects, so the others read this commit's value.
+  useLayoutEffect(() => {
+    held.current = paused;
+  }, [paused]);
   const viewportHeight = useRef<number | null>(null);
   const seen = useRef({ convId, count });
   const [unseen, setUnseen] = useState(0);
@@ -52,7 +73,7 @@ export function useThreadAnchor(
     viewportHeight.current = s.clientHeight;
     const observer = new ResizeObserver(() => {
       viewportHeight.current = s.clientHeight;
-      if (nearEnd.current) toEnd();
+      if (nearEnd.current && !held.current) toEnd();
     });
     observer.observe(s);
     // Loaded attachments can grow the content while the viewport stays unchanged.
@@ -63,6 +84,8 @@ export function useThreadAnchor(
   useLayoutEffect(() => {
     const was = seen.current;
     seen.current = { convId, count };
+    // Held for a search hit: the messages loading under it are not news below, and the end is not where to go.
+    if (held.current) return;
     if (was.convId !== convId) {
       toEnd();
       return;
@@ -82,7 +105,7 @@ export function useThreadAnchor(
   // touches it, each frame of the settle puts it back at the end. Scroll events in that window are the reset's,
   // not the reader's, so they don't decide `nearEnd`.
   useLayoutEffect(() => {
-    toEnd();
+    if (!held.current) toEnd();
     const s = scroller.current;
     if (!s || typeof requestAnimationFrame === 'undefined') return;
     const until = performance.now() + SETTLE_MS;
@@ -94,6 +117,8 @@ export function useThreadAnchor(
     };
     const hold = () => {
       if (stopped || !s.isConnected) return;
+      // A search hit took the thread (paused): the settle hold stops for good, so it can't pull the reader off it.
+      if (held.current) return stop();
       if (s.scrollHeight - s.scrollTop - s.clientHeight > 1) toEnd();
       if (performance.now() < until) frame = requestAnimationFrame(hold);
     };

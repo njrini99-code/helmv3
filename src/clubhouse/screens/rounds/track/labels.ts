@@ -134,6 +134,23 @@ export function scoreName(score: number, par: number): string {
 }
 
 /**
+ * The distance boxes are text fields; the Fairway entry's are `type="number"`,
+ * which never hand the engine anything but a number. The engine reads a value
+ * with parseFloat, so "1,5" from a comma-locale decimal pad (the meters pad)
+ * was recorded as 1, and "150y" as 150. A comma is the decimal point here
+ * (cleanDistance), and anything else that isn't a plain number is refused
+ * (isDistanceText) rather than read as its leading digits.
+ */
+export function cleanDistance(raw: string): string {
+  return raw.replace(/,/g, '.');
+}
+
+/** True when the box holds a plain non-negative number ("150", "1.5", "3."), as a number input would. */
+export function isDistanceText(text: string): boolean {
+  return /^\s*(\d+\.?\d*|\.\d+)\s*$/.test(text);
+}
+
+/**
  * The quick picks under the distance box. Putts and on-green proximity use the
  * Fairway entry's values (feet, or meters); off the green the board's yard
  * picks, and their nearest round meters in meters.

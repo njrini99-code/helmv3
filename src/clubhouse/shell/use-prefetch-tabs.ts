@@ -45,14 +45,14 @@ export function needsRefresh(at: number | null | undefined, shown: number | unde
 
 type Router = ReturnType<typeof useRouter>;
 
-function fetchAhead(router: Router, href: string, now: number): void {
+export function fetchAhead(router: Router, href: string, now: number): void {
   // Not held (never fetched, dropped by a refresh, or past Next's hold): this call fetches it now.
   if (!held(fetchedAt.get(href), shownAt.get(href), now)) fetchedAt.set(href, now);
   router.prefetch?.(href, { kind: PrefetchKind.FULL });
 }
 
 /** When the main thread is idle (iOS Safari has no requestIdleCallback, so a short timeout), cancellable. */
-function whenIdle(run: () => void, timeout = 2000): () => void {
+export function whenIdle(run: () => void, timeout = 2000): () => void {
   const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
   if (w.requestIdleCallback) {
     const id = w.requestIdleCallback(run, { timeout });
@@ -66,7 +66,7 @@ function whenIdle(run: () => void, timeout = 2000): () => void {
 let documentPage = true;
 
 /**
- * Fetches the phone tabs' pages whole ahead of a tap, so a switch to one shows the page at once instead of its route
+ * Fetches the main sections' pages whole ahead of a tap, so a switch to one shows the page at once instead of its route
  * skeleton and then the page (native-feel audit 2026-10-08, P0-2). A default prefetch stops at a dynamic route's loading
  * boundary, and since the app-wide 30s dynamic router cache was removed (it made Fairway, Baseball and Lift Lab serve
  * stale pages, #2189) every switch drew the skeleton, then the page 360–580ms later (WebKit, local production build,
@@ -83,7 +83,7 @@ let documentPage = true;
  * The last two other sections left (Roster, Settings, …) are kept the same way, so going back to one is instant too
  * (`sections` lists them all; only the ones visited are fetched). Not as the
  * strip opens: with a real network that fetch raced the tap and the page was asked for twice (WebKit, 700ms latency:
- * skeleton at 944ms, page at 1711ms). Skipped with Data Saver on or offline, and off the phone (empty lists).
+ * skeleton at 944ms, page at 1711ms). Skipped with Data Saver on or offline.
  * Next prefetches only in production builds.
  */
 export function usePrefetchTabs(hrefs: readonly string[], current: string, sections: readonly string[] = []): void {

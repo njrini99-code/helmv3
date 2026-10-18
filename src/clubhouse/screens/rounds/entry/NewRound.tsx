@@ -16,7 +16,7 @@ import { useRoundPorts } from './ports';
 import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRuntime';
 import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
-import { loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
+import { afterSavedCourseStart, loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
 import { canvasScrollNow } from '../../../lib/smooth-scroll';
 
 const LIBRARY = '/golf/dashboard/rounds';
@@ -73,7 +73,12 @@ export function NewRound({ playerId }: { playerId: string }) {
       ...SETUP_READ_PORTS,
       start: async (form) => {
         const result = await latest.current.start(toStartForm(form));
-        if (result.ok) return { ok: true, data: { roundId: result.roundId } };
+        if (result.ok) {
+          // A round from one of the player's saved courses: its use is noted, and one with no library course behind it
+          // is offered to the library, as Fairway's saved-course start does. Both best-effort, never awaited.
+          if (form.pick?.savedId) afterSavedCourseStart(form);
+          return { ok: true, data: { roundId: result.roundId } };
+        }
         const { open, ...refusal } = startRefusal(result);
         if (open) {
           // CH-11907: the qualifier's round is already under way, so it opens; starting is refused for good.

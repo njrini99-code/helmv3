@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronLeft, CircleCheck, FileText, Megaphone, TriangleAlert } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, CircleCheck, FileText, Megaphone, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
@@ -8,67 +8,103 @@ import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { Skeleton } from '../../ui/States';
+import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { clock, dayLabel, needsMyAck, railTime, type ChAnnouncement, type ChAnnouncementDetail } from './model';
 import type { ChMessagesApi } from './MessagesView';
 
-/** Pinned above conversations: the team's announcements, newest first. */
+/**
+ * The team's announcements, folded under the conversations (owner, 2026-10-16: messages first, announcements folded).
+ * One row says how many there are, the newest title and how many wait on your acknowledgement; it opens to the newest
+ * three. Search, or an open announcement, unfolds it.
+ */
 export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string }) {
+  const [open, setOpen] = useState(false);
   const s = q.trim().toLowerCase();
   const list = api.announcements.filter((a) => !s || a.title.toLowerCase().includes(s) || a.body.toLowerCase().includes(s)).slice(0, s ? 20 : 3);
   if (api.annError) {
     return (
-      <section className="ch-ms-sec" aria-label="Announcements">
+      <section className="ch-ms-sec is-ann" aria-label="Announcements">
         <div className="ch-ms-sec__l">Announcements</div>
         <InlineNotice code="CH-7206" title="Announcements didn’t load" body="Try again; the error has been reported." onRetry={api.refetchAnns} />
       </section>
     );
   }
   if (!list.length) return null;
+  const shown = open || !!s || list.some((a) => a.id === api.selectedAnnId);
+  const waiting = api.announcements.filter((a) => needsMyAck(a, api.viewer.role)).length;
   const more = s ? 0 : api.announcements.length - list.length;
   return (
-    <section className="ch-ms-sec" aria-label="Announcements">
-      <div className="ch-ms-sec__l">Announcements</div>
-      <div className="ch-ms-sec__card">
-        {list.map((a) => {
-          const mine = needsMyAck(a, api.viewer.role);
-          return (
-            <button
-              key={a.id}
-              type="button"
-              className={'ch-ms-row is-ann' + (mine ? ' is-unread' : '') + (api.selectedAnnId === a.id ? ' is-sel' : '')}
-              aria-current={api.selectedAnnId === a.id ? 'true' : undefined}
-              onClick={() => {
-                haptic('select');
-                chTrail('messages open announcement');
-                api.selectAnn(a.id);
-              }}
-            >
-              <span className={'ch-ms-grp is-ann' + (a.urgent ? ' is-urgent' : '')}>
-                <Icon icon={Megaphone} size={15} />
-              </span>
-              <span className="ch-ms-row__main">
-                <span className="ch-ms-row__top">
-                  <b>{a.title}</b>
-                  <span className="ch-num">{railTime(a.publishedAt, api.now, api.timeZone)}</span>
-                </span>
-                <span className="ch-ms-row__bot">
-                  <span>
-                    {api.viewer.role === 'coach' && a.requiresAck ? <em>{`${a.ackCount} of ${a.total} acknowledged · `}</em> : mine ? <em>Needs your acknowledgement · </em> : null}
-                    {a.body}
+    <section className={'ch-ms-sec is-ann' + (shown ? ' is-open' : '')} aria-label="Announcements">
+      <button
+        type="button"
+        className="ch-ms-fold"
+        aria-expanded={shown}
+        onClick={() => {
+          haptic('select');
+          setOpen(!shown);
+        }}
+      >
+        <span className={'ch-ms-grp is-ann' + (api.announcements[0]?.urgent ? ' is-urgent' : '')}>
+          <Icon icon={Megaphone} size={15} />
+        </span>
+        <span className="ch-ms-fold__b">
+          <b>
+            Announcements <span className="ch-num">{api.announcements.length}</span>
+          </b>
+          <span>{api.announcements[0]?.title}</span>
+        </span>
+        {waiting > 0 && (
+          <span className="ch-ms-count ch-num" aria-label={`${waiting} need your acknowledgement`}>
+            {waiting}
+          </span>
+        )}
+        <Icon icon={ChevronDown} size={16} className="ch-ms-fold__chev" />
+      </button>
+      {shown && (
+        <div className="ch-ms-fold__body">
+          <div className="ch-ms-sec__card">
+            {list.map((a) => {
+              const mine = needsMyAck(a, api.viewer.role);
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  className={'ch-ms-row is-ann' + (mine ? ' is-unread' : '') + (api.selectedAnnId === a.id ? ' is-sel' : '')}
+                  aria-current={api.selectedAnnId === a.id ? 'true' : undefined}
+                  onClick={() => {
+                    haptic('select');
+                    chTrail('messages open announcement');
+                    api.selectAnn(a.id);
+                  }}
+                >
+                  <span className={'ch-ms-grp is-ann' + (a.urgent ? ' is-urgent' : '')}>
+                    <Icon icon={Megaphone} size={15} />
                   </span>
-                  {mine && <span className="ch-ms-count" aria-label="Needs your acknowledgement">1</span>}
-                </span>
-              </span>
+                  <span className="ch-ms-row__main">
+                    <span className="ch-ms-row__top">
+                      <b>{a.title}</b>
+                      <span className="ch-num">{railTime(a.publishedAt, api.now, api.timeZone)}</span>
+                    </span>
+                    <span className="ch-ms-row__bot">
+                      <span>
+                        {api.viewer.role === 'coach' && a.requiresAck ? <em>{`${a.ackCount} of ${a.total} acknowledged · `}</em> : mine ? <em>Needs your acknowledgement · </em> : null}
+                        {a.body}
+                      </span>
+                      {mine && <span className="ch-ms-count" aria-label="Needs your acknowledgement">1</span>}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {more > 0 && (
+            <button type="button" className="ch-ms-more" onClick={() => api.selectAnn(api.announcements[list.length]!.id)}>
+              {more} earlier {more === 1 ? 'announcement' : 'announcements'}
             </button>
-          );
-        })}
-      </div>
-      {more > 0 && (
-        <button type="button" className="ch-ms-more" onClick={() => api.selectAnn(api.announcements[list.length]!.id)}>
-          {more} earlier {more === 1 ? 'announcement' : 'announcements'}
-        </button>
+          )}
+        </div>
       )}
     </section>
   );
@@ -86,7 +122,40 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const toast = useToast();
   const load = api.announcementDetail;
+  /**
+   * An attached document opens through a signed link asked for at the tap (getPreviewUrl), as Fairway's announcement
+   * card and the Team Hub open one: the stored file_url points at the private bucket and never opens (#1259). The tab
+   * opens inside the tap, or Safari blocks it, and the link fills it in.
+   */
+  const openDoc = async (d: ChAnnouncementDetail['documents'][number]) => {
+    const sign = api.openAnnouncementDocument;
+    if (!sign) {
+      if (d.url) window.open(d.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    const win = window.open('', '_blank');
+    setBusy(`doc:${d.id}`);
+    const res = await sign(d.id)
+      .catch(() => ({ url: null, noContent: false }))
+      .finally(() => setBusy(null));
+    const { url } = res;
+    const noContent = !!res.noContent;
+    if (url) {
+      if (win) win.location.href = url;
+      else window.location.assign(url);
+      return;
+    }
+    win?.close();
+    haptic('error');
+    toast({
+      tone: 'error',
+      title: `Couldn’t open ${d.title}`,
+      body: noContent ? 'That file has no stored copy to open.' : 'Try again in a moment.',
+      code: 'CH-7021',
+    });
+  };
   useEffect(() => {
     let live = true;
     setFailed(false);
@@ -222,14 +291,21 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
                     <span>Files</span>
                   </div>
                   {detail.documents.map((d) => (
-                    <a key={d.id} className="ch-ms-bub ch-ms-bub--file" href={d.url} target="_blank" rel="noreferrer">
+                    <button
+                      key={d.id}
+                      type="button"
+                      className="ch-ms-bub ch-ms-bub--file"
+                      disabled={busy === `doc:${d.id}`}
+                      aria-label={`Open ${d.title}`}
+                      onClick={() => void openDoc(d)}
+                    >
                       <span className="ch-ms-file__ic">
                         <Icon icon={FileText} size={16} />
                       </span>
                       <span style={{ minWidth: 0 }}>
                         <b>{d.title}</b>
                       </span>
-                    </a>
+                    </button>
                   ))}
                 </div>
               )}

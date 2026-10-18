@@ -15,14 +15,15 @@ assistive-technology acceptance.
 
 The frame around every page: sidebar, top bar, bell, offline banner, full-page
 errors, and the behaviour every page shares. Code `src/clubhouse/shell/`,
-`src/clubhouse/ui/`, `src/clubhouse/lib/`. Tests `src/clubhouse/__tests__/shell.test.tsx`.
+`src/clubhouse/ui/`, `src/clubhouse/lib/`. Tests
+`src/clubhouse/__tests__/shell.test.tsx`.
 
 The shell's rows apply on every page: a page's own catalog only lists what is
-specific to it. The accessibility scan (`npm run clubhouse:a11y`, axe-core,
-WCAG 2.2 AA at 1280px and 390px) covers the bell panel, the phone bell sheet
-and the phone More sheet open. The phone chrome (the tab bar, the top bar's variants, pushed
-screens) follows the owner's design (`docs/clubhouse/phone/foundation.md`,
-D-40 to D-43).
+specific to it. The accessibility scan (`npm run clubhouse:a11y`, axe-core, WCAG
+2.2 AA at 1280px and 390px) covers the bell panel, the phone bell sheet and the
+phone More sheet open. The phone chrome (the tab bar, the top bar's variants,
+pushed screens) follows the owner's design
+(`docs/clubhouse/phone/foundation.md`, D-40 to D-43).
 
 ## 10xx Error toasts
 
@@ -65,7 +66,7 @@ that the screen does not show.
 | CH-1302 | The bell has nothing | The shared section empty at the rows' inset: "You’re all caught up" + what shows up here | `EmptyState` in `Bell` | shell.test › CH-1302 |
 | CH-1303 | The bell's filter has nothing | The shared section empty: "Nothing of this kind" + Show all | `EmptyState` in `Bell` | shell.test › CH-1303 |
 | CH-1304 | Nothing is scheduled | No next-event card in the sidebar; with an event it shows "2 of 3 confirmed" and a bar | `Sidebar`, `NextEventCard` | shell.test › CH-1304 |
-| CH-1305 | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player | The team name under GolfHelm is a plain label: no chevrons, no button, no team list in the phone More sheet | `Sidebar`, `teamSwitchFor` (the gate is `canSwitchTeams` and two or more teams, the rule `setActiveTeam` enforces) | team-switch.test › CH-1305 |
+| CH-1305 | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player | The team name heading the sidebar's Team group is a plain label: no chevrons, no button, no team list in the phone More sheet | `Sidebar`, `teamSwitchFor` (the gate is `canSwitchTeams` and two or more teams, the rule `setActiveTeam` enforces) | team-switch.test › CH-1305 |
 | CH-1306 | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell | The page empty with a compass medallion: "We couldn’t find that" + "It may have moved, or it’s no longer on your team. Everything else is where you left it." and Back to Home. Off Clubhouse the dashboard keeps its Fairway 404 | `ClubhouseNotFound` (`shell/NotFound.tsx`) from `dashboard/not-found.tsx` behind `isClubhouseFor(session.role)` | shell.test › CH-1306, not-found.test › CH-1306 |
 
 ## 14xx Loading
@@ -112,7 +113,7 @@ that the screen does not show.
 | CH-1704 | Opening the account sheet; swiping it away | A tick; a medium tap as the sheet settles shut (D-70) | `SectionStrip`, `AccountSheet`, `useSheetDrag` | shell.test › CH-1611 (the swipe), CH-1704 (the tick) |
 | CH-1705 | Opening the bell, a notification, or a menu item | A selection tick | `Bell`, `Menu` | shell.test › CH-1705 |
 | CH-1706 | The connection drops | The OS warning pattern | `OfflineBanner` | shell.test › CH-1706 |
-| CH-1707 | Picking another team in the switcher | A selection tick; nothing more when it lands (the new team is the confirmation), the error pattern when it fails | `BrandTeamSwitch`, `MoreTeamSwitch`, `useAction` | team-switch.test › CH-1707 |
+| CH-1707 | Picking another team in the switcher | A selection tick; nothing more when it lands (the new team is the confirmation), the error pattern when it fails | `TeamSwitch`, `MoreTeamSwitch`, `useAction` | team-switch.test › CH-1707 |
 | CH-1708 | A finger scrubs a slider | The Taptic Engine warms as the finger lands, a selection tick marks each step it crosses (at most every 40ms), and the engine idles on release; a key press ticks once (D-70 selection) | `Slider` → `hapticScrub` (`lib/haptics.ts`, the bridge's selectionStart, selectionChanged and selectionEnd) | motion-physics.test › CH-1708 |
 | CH-1709 | A pull to refresh passes its trigger (the iPhone app, CH-1909) | The medium tap, once (D-70's settle; owner-approved for the pull 2026-10-08) | `PullToRefresh` → `haptic('commit')` | motion-approved.test › CH-1909 |
 
@@ -132,7 +133,7 @@ that the screen does not show.
 | CH-1810 | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell | `TopBar`, `PhoneTop` | shell.test › CH-1810 |
 | CH-1811 | On the phone the bell drops the feed as lock-screen stacks under a green veil (`BellStacks`, notification-stacks.ts) instead of a popover: a modal dialog; focus moves in, Tab stays inside, Esc, a tap on the open space, the bell or a drag up closes it and focus returns to the bell; the edge swipe is off while it is up | `Bell`, `BellStacks` (`aria-modal`, `data-state="open"`) | shell.test › CH-1811 |
 | CH-1812 | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page | `ToastProvider` follows the open dialog (`useToastHost`) | shell.test › CH-1812 |
-| CH-1813 | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team | `BrandTeamSwitch` (`aria-haspopup="listbox"`, `role="listbox"`/`option`), `useTeamSwitch` → `setActiveTeam` + `router.refresh()` | team-switch.test › CH-1813 |
+| CH-1813 | On a desktop a head coach on more than one team sees the sidebar's Team group heading (the team's name) as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team | `TeamSwitch` (`aria-haspopup="listbox"`, `role="listbox"`/`option`), `useTeamSwitch` → `setActiveTeam` + `router.refresh()` | team-switch.test › CH-1813 |
 | CH-1814 | On the phone the same coach sees their teams in the account sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason | `MoreTeamSwitch` in `AccountSheet` | team-switch.test › CH-1814 |
 | CH-1815 | On the phone every key a finger uses reaches at least 44 by 44: the bar's back link and text action (a pushed screen's bar has the shell bar's 44px row, with no hairline), the hero bell (its 40px disc drawn inside a 44px key, where it was), a sheet's Close (its reach leans up into the header's padding, so a title-only header no longer clips it to 43), and the search field (36px drawn, 44px to the finger; its input and clear key take their own taps, and its 16px text keeps iOS from zooming the page on focus). Measured in WebKit at 390 on 2026-10-08 | `[data-ui='clubhouse'] .ch-pbar` (shell.css), `.ch-root[data-phone-hero] .ch-topbar .ch-bell`, `.ch-modal__head .ch-iconbtn::before`, `.ch-search` (controls.css) | shell-reach-css.test › CH-1815 |
 | CH-1816 | On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls="ch-strip"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section | `SectionTrigger`, `useSectionGestures` (section-switch.tsx) | shell.test › CH-1816 |

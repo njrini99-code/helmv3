@@ -13,25 +13,77 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route: `/golf/dashboard/coachhelm`, one page for both roles. The player sees their own insights, one focus first, and the focus areas a coach proposed to them, which they accept or decline (Q-77). Beside that board the player has three views of their own data (owner, 2026-10-01: "coachhelm for player you can build but be detailed"), chosen with the sub-navigation (CH-13930) and addressed by `?view=`: Game profile (`profile`, rows marked "Profile:"), Standing (`standing`, "Standing:") and Deep dive (`deep-dive`, "Deep dive:"). Development stays Stats' Development tab, a link out of the sub-navigation (CH-13931). The coach sees the program pulse and their team's players, each with a top signal, and can assign it as a focus or dismiss it. Every comparison is against the Tour of the team (Q-88): the LPGA's for a women's team, and never a college one. Spec: `docs/clubhouse/phone/coachhelm.md`.
+Route: `/golf/dashboard/coachhelm`, one page for both roles. The player sees
+their own insights, one focus first, and the focus areas a coach proposed to
+them, which they accept or decline (Q-77). Beside that board the player has
+three views of their own data (owner, 2026-10-01: "coachhelm for player you can
+build but be detailed"), chosen with the sub-navigation (CH-13930) and addressed
+by `?view=`: Game profile (`profile`, rows marked "Profile:"), Standing
+(`standing`, "Standing:") and Deep dive (`deep-dive`, "Deep dive:"). Development
+stays Stats' Development tab, a link out of the sub-navigation (CH-13931). The
+coach sees the program pulse and their team's players, each with a top signal,
+and can assign it as a focus or dismiss it. Every comparison is against the Tour
+of the team (Q-88): the LPGA's for a women's team, and never a college one.
+Spec: `docs/clubhouse/phone/coachhelm.md`.
 
-A player never sees a coach control (Assign, Dismiss, Undo), and a coach never sees Accept or Decline. A coach reads only the players on their team, whichever other teams they staff. Controls that lead to a screen that isn't rebuilt yet (Roster, CoachHelm settings, Start a round) are not drawn (`nav.rebuiltHref`); no control leads nowhere.
+A player never sees a coach control (Assign, Dismiss, Undo), and a coach never
+sees Accept or Decline. A coach reads only the players on their team, whichever
+other teams they staff. Controls that lead to a screen that isn't rebuilt yet
+(Roster, CoachHelm settings, Start a round) are not drawn (`nav.rebuiltHref`);
+no control leads nowhere.
 
 Where things live:
-- Code: `src/clubhouse/screens/coachhelm/` (`PlayerBoard`, `CoachBoard`, `Proposals`, `parts`, `writes`, `CoachHelmSkeleton`); the player's views in `screens/coachhelm/views/` (`PlayerHelmTabs`, `Frame`, `Profile`, `Standing`, `DeepDive`, `KeepReading`, `Skeletons`)
-- Player views' loaders: `src/clubhouse/data/coachhelm-profile.ts` (`loadPlayerProfile`), `coachhelm-standing.ts` (`loadPlayerStanding`) and `coachhelm-dive.ts` (`loadPlayerDeepDive`), with their pure steps in `coachhelm-profile-shape.ts`, `coachhelm-standing-shape.ts` and `coachhelm-dive-shape.ts`, and the shared `coachhelm-views-shape.ts` (the view union, the addresses, the Development link); the gate every view and the board share is `loadPlayerHelmGate` in `coachhelm.ts`
-- Player views' tests: `coachhelm-profile.test.tsx`, `coachhelm-standing.test.tsx`, `coachhelm-dive.test.tsx`, `coachhelm-views.test.tsx` (the route, the gate, the sub-navigation)
-- Loader: `src/clubhouse/data/coachhelm.ts` (`loadPlayerCoachHelm`, `loadCoachCoachHelm`), with its pure steps in `coachhelm-shape.ts` (types, partition, sorting, the pulse, the stance pill), `coachhelm-classify.ts` (what a card states, finding, strength or note, and whether its read is current), `coachhelm-voice.ts` (whose voice the text is in) and `coachhelm-map.ts` (generator output to what the screen draws); the confidence read uses the one set of words `lib/coachhelm/confidence-label.ts` holds (Solid, Early, Thin); the Tour values come from `loadTourBenchmarks` in `stats-common.ts` (`golf_pga_standards`, the team's own tour)
-- Route: `src/clubhouse/routes/coachhelm.tsx`; `coachhelm/page.tsx` branches on `isClubhouseFor` and `coachhelm/loading.tsx` uses `ClubhouseSwitch`
+- Code: `src/clubhouse/screens/coachhelm/` (`PlayerBoard`, `CoachBoard`,
+  `Proposals`, `parts`, `writes`, `CoachHelmSkeleton`); the player's views in
+  `screens/coachhelm/views/` (`PlayerHelmTabs`, `Frame`, `Profile`, `Standing`,
+  `DeepDive`, `KeepReading`, `Skeletons`)
+- Player views' loaders: `src/clubhouse/data/coachhelm-profile.ts`
+  (`loadPlayerProfile`), `coachhelm-standing.ts` (`loadPlayerStanding`) and
+  `coachhelm-dive.ts` (`loadPlayerDeepDive`), with their pure steps in
+  `coachhelm-profile-shape.ts`, `coachhelm-standing-shape.ts` and
+  `coachhelm-dive-shape.ts`, and the shared `coachhelm-views-shape.ts` (the view
+  union, the addresses, the Development link); the gate every view and the board
+  share is `loadPlayerHelmGate` in `coachhelm.ts`
+- Player views' tests: `coachhelm-profile.test.tsx`,
+  `coachhelm-standing.test.tsx`, `coachhelm-dive.test.tsx`,
+  `coachhelm-views.test.tsx` (the route, the gate, the sub-navigation)
+- Loader: `src/clubhouse/data/coachhelm.ts` (`loadPlayerCoachHelm`,
+  `loadCoachCoachHelm`), with its pure steps in `coachhelm-shape.ts` (types,
+  partition, sorting, the pulse, the stance pill), `coachhelm-classify.ts` (what
+  a card states, finding, strength or note, and whether its read is current),
+  `coachhelm-voice.ts` (whose voice the text is in) and `coachhelm-map.ts`
+  (generator output to what the screen draws); the confidence read uses the one
+  set of words `lib/coachhelm/confidence-label.ts` holds (Solid, Early, Thin);
+  the Tour values come from `loadTourBenchmarks` in `stats-common.ts`
+  (`golf_pga_standards`, the team's own tour)
+- Route: `src/clubhouse/routes/coachhelm.tsx`; `coachhelm/page.tsx` branches on
+  `isClubhouseFor` and `coachhelm/loading.tsx` uses `ClubhouseSwitch`
 - Tests: `src/clubhouse/__tests__/coachhelm.test.tsx`; the swap audit's code
   fixes (section 13) in `coachhelm-audit.test.ts` (the pure steps) and
   `coachhelm-audit.test.tsx` (the loaders, the route and the cards)
-- Ask (the chat sub-tab, rows marked "Ask:"): `src/clubhouse/screens/coachhelm/chat/`, loaders `src/clubhouse/data/coachhelm-chat.ts` and `coachhelm-chat-thread.ts`; tests `coachhelm-ask.test.tsx`, `coachhelm-ask-loader.test.tsx`, `coachhelm-thread-ui.test.tsx`; preview `/clubhouse-preview/coachhelm-ask`
-- Preview: `/clubhouse-preview/coachhelm-views` (`?view=profile`, `?state=partial|empty|edge|failed|off|loading`; `?view=standing`, `?state=early|empty|womens|nobaseline|failed|off|loading`; `?view=deep-dive`, `?state=young|partsfailed|empty|norounds|failed|off|loading`, `&q=in-slope|in-pen|in-brk|in-dbl` for the read it opens on); `/clubhouse-preview/coachhelm` (the coach; `?state=assigned|empty|noroster|failed|pulsefailed|quiet|off|loading|failwrites|failundo|duplicate`) and `/clubhouse-preview/coachhelm-player` (`?state=empty|norounds|working|failed|off|loading|proposed|failproposal|proposalsfailed`)
+- Ask (the chat sub-tab, rows marked "Ask:"):
+  `src/clubhouse/screens/coachhelm/chat/`, loaders
+  `src/clubhouse/data/coachhelm-chat.ts` and `coachhelm-chat-thread.ts`; tests
+  `coachhelm-ask.test.tsx`, `coachhelm-ask-loader.test.tsx`,
+  `coachhelm-thread-ui.test.tsx`; preview `/clubhouse-preview/coachhelm-ask`
+- Preview: `/clubhouse-preview/coachhelm-views` (`?view=profile`,
+  `?state=partial|empty|edge|failed|off|loading`; `?view=standing`,
+  `?state=early|empty|womens|nobaseline|failed|off|loading`; `?view=deep-dive`,
+  `?state=young|partsfailed|empty|norounds|failed|off|loading`,
+  `&q=in-slope|in-pen|in-brk|in-dbl` for the read it opens on);
+  `/clubhouse-preview/coachhelm` (the coach;
+  `?state=assigned|empty|noroster|failed|pulsefailed|quiet|off|loading|failwrites|failundo|duplicate`)
+  and `/clubhouse-preview/coachhelm-player`
+  (`?state=empty|norounds|working|failed|off|loading|proposed|failproposal|proposalsfailed`)
 
-Accept and Decline (the player's answer to a proposed focus area) go through `useAction` as well, and confirm in place: the follow-up (the "Started" or "Declined" chip) is inside the action, so a toast's Retry completes it.
+Accept and Decline (the player's answer to a proposed focus area) go through
+`useAction` as well, and confirm in place: the follow-up (the "Started" or
+"Declined" chip) is inside the action, so a toast's Retry completes it.
 
-Assign, Dismiss and Undo go through `useAction`, so these belong to the shell: offline refusal (CH-1903), slow saves (CH-1902), and the success and error haptics (D-70). The follow-ups (marking Assigned, hiding a dismissed card, restoring it) are inside the action, so a toast's Retry completes them.
+Assign, Dismiss and Undo go through `useAction`, so these belong to the shell:
+offline refusal (CH-1903), slow saves (CH-1902), and the success and error
+haptics (D-70). The follow-ups (marking Assigned, hiding a dismissed card,
+restoring it) are inside the action, so a toast's Retry completes them.
 
 ## 130xx Error toasts
 
@@ -65,6 +117,7 @@ Assign, Dismiss and Undo go through `useAction`, so these belong to the shell: o
 | CH-13208 | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round | Above the board or the page: "Part of this board didn’t load" + "Tour comparison unavailable, so a card may be drawn without it." / "Which reads are older than a newer round could not be checked, so a read and the counts may be out of date." / "Which reads already have a focus could not be checked." / "This week’s drill text is missing." + Try again. The cards still draw, each without what the read would have said; no gap is drawn as "none", "not assigned" or "up to date". The coach's board says the focus status at the card (CH-13207) instead of here | `BoardPartial` in `CoachBoard`, `PlayerBoard` and `DeepDive`, `ChBoardMissing` (`missing` on the loader's result) | coachhelm-failed-reads.test › CH-13208 |
 | CH-13226 | Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed | Under the findings (or in their place when none were found): "What’s new may be incomplete" / "didn’t fully load" + "Rounds didn’t load, so anything made from it is missing here and was not checked. Asking still works." + Try again. "Nothing is flagged right now" (CH-13325), "Nothing to report yet" (CH-13322) and the coverage line are not said over a rounds read that failed | `Findings` in `Home`, `loadAskCoachHelm` (`ChAskPulse.missing`, `noRoundsFrom`) | coachhelm-failed-reads.test › CH-13226 |
 | CH-13260 | Profile: the Game profile doesn't load (the genome read fails or throws) | "Your game profile didn’t load" + "Nothing is lost. Your profile is still saved; try again in a moment." + Try again (asks the server again), under the sub-navigation. It never reads as the first run ("Your game profile starts with a few rounds"): `loadGenome` throws on a failed read, which is the failed state, and answers null only for no row or nothing computed | `InlineNotice` in `Profile`, `loadPlayerProfile` (logged `clubhouse.coachhelm.profile.genome`) | coachhelm-profile.test › CH-13260 |
+| CH-13261 | Profile: what CoachHelm sees doesn't load (the player's insight read fails) | "What CoachHelm sees didn’t load" + "Your measures below are still right; try again in a moment." + Try again, in the green board's place; the genome's shape and measures stay. Never drawn as "nothing to say" | `RefreshNotice` in `Profile` (`Sees`), `sees.error` from `loadPlayerCoachHelm` | coachhelm-profile.test › CH-13261 |
 | CH-13270 | Standing: the standing doesn't load (the standing read fails or throws) | "Your standing didn’t load" + "Nothing is lost. Your stats are still saved; try again in a moment." + Try again (asks the server again), under the sub-navigation. It never reads as the first run ("Standing starts with a few rounds") | `InlineNotice` in `Standing`, `loadPlayerStanding` (logged `clubhouse.coachhelm.standing.map`) | coachhelm-standing.test › CH-13270 |
 | CH-13271 | Standing: their scoring average doesn't load (the read every projection starts from fails) | "Your projections didn’t load" + "Your scoring average, which every projection starts from, didn’t load. The comparisons below are not affected. Try again in a moment." + Try again; the rows draw with no projection and no "Most to gain", and the page is not called an early read, since how many rounds there are is not known. With no rows as well, the same notice sits above the first-run page | `InlineNotice` in `Standing`, `readBaseline` (logged `clubhouse.coachhelm.standing.baseline`) | coachhelm-standing.test › CH-13271 |
 | CH-13272 | Standing: the cohort lookup (their team's gender, which picks the Tour) failed | Above the rows: "Your team’s Tour couldn’t be confirmed" + "The rows below are against the men’s Tour, the default, which may not be the one for your team. Your stats and your team’s are not affected. Try again in a moment." + Try again. The rows still draw; the Tour is not stated as theirs. The fallback to the men's default stays for the generators and the nightly job, which never show it | `InlineNotice` in `Standing`, `readCohort` (`PlayerCohort.failed`, logged `clubhouse.coachhelm.standing.cohort` when it throws) | coachhelm-failed-reads.test › CH-13272 |
@@ -135,7 +188,8 @@ Assign, Dismiss and Undo go through `useAction`, so these belong to the shell: o
 
 ## 135xx Confirm
 
-None. Dismiss is undoable, so it doesn't ask: the notice (CH-13901) keeps Undo in place.
+None. Dismiss is undoable, so it doesn't ask: the notice (CH-13901) keeps Undo
+in place.
 
 ## 136xx Motion
 

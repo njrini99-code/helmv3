@@ -1,7 +1,9 @@
 'use client';
 
-import { ChevronLeft, Clock, FileText, Lock, Paperclip, Repeat, Text, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, ChevronLeft, Clock, FileText, Lock, Paperclip, Plane, Repeat, Text, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { getItineraryForEvent } from '@/app/golf/actions/travel';
 import { addCoachBlockedTime, deleteCoachBlockedTime } from '@/app/golf/actions/calendar-blocked-time';
 import { attachDocumentToEvent, detachDocumentFromEvent, getEventDocuments } from '@/app/golf/actions/event-documents';
 import { getDocuments } from '@/app/golf/actions/documents';
@@ -17,6 +19,7 @@ import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { isOffline, normalise, useAction } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
+import { newRequestId } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
 import { addDays, dayLabel, dayNum, dowOf, monthName, rangeLabel, type ChCalEvent } from './model';
 import type { ChNow } from './views';
@@ -127,6 +130,44 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
   );
 }
 
+/**
+ * The trip linked to an event (golf_travel_itineraries.event_id), as Fairway's event drawer shows it: "View itinerary"
+ * with the destination, to Travel with that trip open. Read when the event opens, for every viewer (RLS scopes it to the
+ * team). Nothing is drawn while it reads, when there is no trip, or when the read fails (reported, never shown as a trip).
+ */
+export function LinkedTrip({ eventId, preview }: { eventId: string; preview?: boolean }) {
+  const [trip, setTrip] = useState<{ id: string; event_name: string; destination: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    setTrip(null);
+    if (preview) return;
+    getItineraryForEvent(eventId)
+      .then((res) => {
+        if (!live) return;
+        if (!res.success) chReport(new Error(res.error || 'linked trip read failed'), { surface: 'calendar.trip', severity: 'low' });
+        setTrip(res.success ? (res.data ?? null) : null);
+      })
+      .catch((err) => {
+        if (live) chReport(err, { surface: 'calendar.trip', severity: 'low' });
+      });
+    return () => {
+      live = false;
+    };
+  }, [eventId, preview]);
+  if (!trip) return null;
+  return (
+    <div className="ch-in__fact">
+      <Icon icon={Plane} size={15} />
+      <div>
+        <Link className="ch-in__trip" href={`/golf/dashboard/travel?trip=${trip.id}`}>
+          View itinerary · <b>{trip.destination || trip.event_name || 'the trip'}</b>
+          <Icon icon={ArrowRight} size={13} />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; onClose: () => void; onSaved: (date: string) => void; today: string }) {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(today);
@@ -146,11 +187,23 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
     setTouched(false);
   }, [open, today]);
   const bad = !title.trim() || (!allDay && win[1] <= win[0]);
+  // One request id per set of contents until an add lands: the same block sends the same id, whether the toast's
+  // Retry replays it, Add is pressed again, or the sheet was closed and opened again in between, so a reply that was
+  // lost after the server stored the block cannot add it a second time. Different contents get a new id, and so does
+  // the next add once one has landed. A ref, not state: the toast's Retry runs an earlier render's action.
+  const attempt = useRef<{ sig: string; id: string } | null>(null);
+  const requestIdFor = (payload: unknown) => {
+    const sig = JSON.stringify(payload);
+    if (attempt.current?.sig === sig) return attempt.current.id;
+    const id = newRequestId();
+    attempt.current = { sig, id };
+    return id;
+  };
   // Closing the sheet and re-reading (or moving to the block's day) follow a landed add inside the action, so the toast's Retry does them too.
   const save = useAction(
     'calendar.addBusy',
     async () => {
-      const res = await addCoachBlockedTime({
+      const block = {
         title: title.trim(),
         startDate: date,
         endDate: date,
@@ -158,8 +211,12 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
         endTime: allDay ? undefined : toHHMM(win[1]),
         allDay,
         recurrenceRule: repeat === 'weekly' ? serializeRecurrenceRule({ frequency: 'weekly', weekdays: [new Date(`${date}T12:00:00Z`).getUTCDay()], until }) : undefined,
-      });
-      if (normalise(res).success) onSaved(date);
+      };
+      const res = await addCoachBlockedTime({ ...block, requestId: requestIdFor(block) });
+      if (normalise(res).success) {
+        attempt.current = null;
+        onSaved(date);
+      }
       return res;
     },
     () => ({ done: `Busy time added · ${title.trim()}`, failed: "Couldn’t add your busy time", hint: 'Your entry is still here. Try again.', code: 'CH-6006' }),

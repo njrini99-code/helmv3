@@ -31,7 +31,7 @@ Team Hub opens on Home, or on the tab in `?tab=`, for a coach and for a player. 
 | --- | --- | --- | --- |
 | 100101 | — | `HUB_READY` | Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents, and Tasks for a coach). A player's Home shows their RSVPs, the post waiting on them, the next trip, Updates and their tasks; a coach's shows this week's replies as counts, the newest post with its read receipts, the next trip and Updates, and a coach also gets New announcement. |
 | 100102 | — | `TAB_LINK_OPENS_A_TAB` | ?tab=home\|ann\|travel\|docs\|tasks opens that tab; a tab the role does not have (tasks, for a player) or a value that is not a tab opens Home. |
-| 100103 | — | `TASK_LINK_OPENS_THE_TASK` | ?task=<id> (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it. |
+| 100103 | — | `TASK_LINK_OPENS_THE_TASK` | ?task={id} (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it. |
 
 ## 02 — Initial loading / skeleton
 
@@ -98,6 +98,12 @@ search or filter, so it has no filtered empty state.
 Status: DEFINED
 
 Checked before anything is sent, with the message under the field and the warning haptic (focus does not move to the first invalid field: the checklist's rule is not met): a headline of at least three characters and at least one player when the audience is chosen (CH-10101, CH-10102); a trip's name, place, leaving day and a return that is not before it, on Plan a trip and on Edit trip (CH-10103 to CH-10106); a task's name and at least one player (CH-10107, CH-10108). The drop zone has no client-side check on a file: one the server refuses says so by name (CH-10008).
+
+Uploads (a coach's Documents): the picker offers the `documents` bucket's types, the same list as Fairway's Documents
+(`HUB_UPLOAD_ACCEPT`); a dropped or picked file of another type, or over the bucket's 25 MB, is refused by name before
+anything is sent ("<name> can’t be shared" with the types it takes, "<name> is too large" with "Files can be up to 25
+MB."), with the error haptic, and the other files go on. No Bridge ID is minted for the refusal yet; it carries
+CH-10008's code.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -260,6 +266,15 @@ Status: DEFINED
 
 Nothing refreshes in the background: the page is as fresh as its last read. After a coach's change lands, the page reads again (101501); every date and time is resolved on the server in the team's zone.
 
+Team Hub's badge (a player's posts, open tasks and new trips; the shell's polled count) is read again at once when a
+player's Got it, task tick or untick lands, as production's hub does; a refused write leaves it alone. A player's Travel
+tab, and no other tab or opening of the page, marks travel seen once a visit (`markTravelSeen`, what production's Travel page does on a visit, now that
+`/golf/dashboard/travel` opens that tab), and the badge is read again. Opening an update marks that notification read in
+its own feed (`markNotificationRead`), as the bell does, and the row stops counting as new. A post's attachment count
+lists its files on request (`getAnnouncementDetail`, read the first time it opens; a failed read says so with Try
+again) and each opens as a Documents file does (100604 on a refusal). Bridge IDs for these are not minted yet (no new
+rows in `bridge-contracts.json`).
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 101501 | — | `PAGE_READS_AGAIN_AFTER_A_CHANGE` | After a coach's post, trip, task, upload or delete lands, the page reads again from the server (router.refresh). |
@@ -296,7 +311,7 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-170
 
 Status: DEFINED
 
-The tabs are a real tablist, each controlling its panel; a reply is a radio group named for its event; a task's box names the task and says when it is done; each card is a section named by its heading, and a failed-read or crash notice is an alert (101801). Toasts are announced by the shell. Axe over every preview state at 1280 and 390 is reserved: it was not run in this pass (101802). Not built: arrow keys moving between tabs (Tab visits each).
+The tabs are a real tablist, each controlling its panel; a reply is a radio group named for its event; a task's box names the task and says when it is done; each card is a section named by its heading, and a failed-read or crash notice is an alert (101801). Toasts are announced by the shell. Axe over every preview state at 1280 and 390 is reserved: it was not run in this pass (101802). The tabs are one stop: the arrows, Home and End move between them (102001).
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
@@ -361,7 +376,7 @@ Failed reads are logged by name, failed writes are reported under the `hub` surf
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 102301 | — | `FAILURES_REPORTED` | A read that fails in the loader is logged through chLogServer("hub", <read>) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab <tab>, action hub.<name>); a section that crashes reports under its own surface (hub.updates and the rest). |
+| 102301 | — | `FAILURES_REPORTED` | A read that fails in the loader is logged through chLogServer("hub", {read}) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab {tab}, action hub.{name}); a section that crashes reports under its own surface (hub.updates and the rest). |
 
 From the shell (P001): 12301 FAILURES_REPORTED.
 

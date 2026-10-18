@@ -179,8 +179,9 @@ describe('Qualifiers · the standings model', () => {
       ['e', 5, false],
     ]);
     // Two places on score (3 places, 1 pick). B and C are level at the second place, so they share a tie at the cut
-    // until the coach chooses (Q-114); D is on the bubble; the rest are out.
-    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', 'bubble', null]);
+    // until the coach chooses (Q-114). D is fourth of a squad of three, below the travel cut, so D is out, not on the
+    // Bubble: the Bubble is inside the squad (DESIGN.md, production's tiers; the parity fix of 2026-10-17).
+    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', null, null]);
     expect(b.submitted).toBe(6);
   });
   it('averages full rounds only, and counts the shorter ones it left out', () => {
@@ -569,7 +570,7 @@ describe('Qualifiers · list', () => {
     const hero = document.querySelector('.ch-qf-hero') as HTMLAnchorElement;
     expect(hero.getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${data.items[0]!.id}`);
     expect(hero.textContent).toMatch(/Pinehurst qualifier.*View leaderboard/);
-    expect(within(hero).getByText('Leaders')).toBeTruthy();
+    expect(within(hero).getByText(/^Standings · top \d+$/)).toBeTruthy();
     const titles = (heading: string) =>
       [...(screen.getByRole('heading', { level: 2, name: heading }).closest('section') as HTMLElement).querySelectorAll('h3')].map((h) => h.textContent);
     expect(titles('Upcoming and live')).toEqual(['Conference qualifier']);
@@ -628,7 +629,7 @@ describe('Qualifiers · one qualifier', () => {
     const d = detail();
     wrap(<QualifierDetail data={d} writes={fakeWrites()} live={false} />);
     const fact = (k: string) => [...document.querySelectorAll('.ch-qf-facts > div')].find((f) => f.querySelector('dt')!.textContent === k)!.textContent;
-    expect([...document.querySelectorAll('.ch-qf-facts dt')].map((t) => t.textContent)).toEqual(['Dates', 'Entry deadline', 'Entrants', 'Rounds submitted', 'Course', 'Spots']);
+    expect([...document.querySelectorAll('.ch-qf-facts dt')].map((t) => t.textContent)).toEqual(['Dates', 'Entrants', 'Rounds submitted', 'Course', 'Spots']);
     expect(fact('Dates')).toMatch(/2026 · 3 rounds$/);
     expect(fact('Entrants')).toBe('Entrants8players');
     expect(fact('Rounds submitted')).toBe('Rounds submitted13of 24');
@@ -773,7 +774,7 @@ describe('Qualifiers · one qualifier', () => {
     expect(screen.queryByText(/Two top-10s last spring/)).toBeNull();
   });
 
-  it('CH-09212 CH-09213 CH-09214 CH-09215 a crash stays inside its section', () => {
+  it('CH-09212 CH-09213 CH-09214 CH-09215 CH-09223 a crash stays inside its section', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const d = detail();
     const broken = { ...d, roundCourses: d.roundCourses.map((c) => ({ ...c, course: {} as never })), board: { ...d.board!, rows: d.board!.rows.map((r, i) => (i === 0 ? { ...r, name: null as never, rounds: null as never } : r)) } };
@@ -782,6 +783,8 @@ describe('Qualifiers · one qualifier', () => {
     expect(code('CH-09213')!.textContent).toMatch(/Round-by-round scores couldn’t be shown/);
     expect(code('CH-09214')!.textContent).toMatch(/Selections couldn’t be shown/);
     expect(code('CH-09215')!.textContent).toMatch(/Course per round couldn’t be shown/);
+    // The coach's panel falls back to the first row, the one broken above.
+    expect(code('CH-09223')!.textContent).toMatch(/A player’s rounds couldn’t be shown/);
     expect(screen.getByRole('heading', { name: 'Pinehurst qualifier' })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -2309,10 +2312,10 @@ describe('Qualifiers · Manage selections', () => {
     expect(selectionReason('reasoning required for coach-pick')).toBe('Say why you picked this player.');
     expect(selectionReason('That player is not on this team')).toBe('That player isn’t on this team.');
     expect(selectionReason("Couldn't confirm your roster just now. Please try again.")).toBe('The roster couldn’t be checked just now. Try again.');
-    expect(selectionReason('could not verify remaining coach-pick slots; please try again')).toBe('The roster couldn’t be checked just now. Try again.');
+    expect(selectionReason('could not verify remaining coach-pick slots; please try again')).toBe('The picks already made couldn’t be checked just now. Try again.');
     expect(selectionReason('cannot confirm: state must be closed, all coach picks chosen with reasoning')).toBe('Choose every pick, each with a reason, before confirming.');
     expect(selectionReason('Qualifier not found')).toMatch(/couldn’t be found/);
-    expect(selectionReason('workspace not loadable')).toMatch(/couldn’t be found/);
+    expect(selectionReason('workspace not loadable')).toMatch(/couldn’t be read just now/);
     expect(selectionReason(undefined)).toBeNull();
   });
 
@@ -2397,7 +2400,7 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
   it('91901 board 02: facts, the leaderboard as cards, and Manage selections for the coach', () => {
     wrap(<QualifierDetail data={detail('live')} writes={fakeWrites()} live={false} />);
     const facts = document.querySelector('.ch-qfm-facts')!;
-    expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots', 'Deadline']);
+    expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots']);
     expect(facts.textContent).toMatch(/4\+1/);
     // Drawn, decoratively: the rounds posted along the rounds due, and the squad's seats (four won on score, one pick).
     expect(facts.querySelector('.ch-qf-bar i')).not.toBeNull();

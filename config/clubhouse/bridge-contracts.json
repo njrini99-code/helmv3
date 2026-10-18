@@ -917,7 +917,7 @@
     "item": 13,
     "name": "ON_A_DESKTOP_A_HEAD_COACH_ON",
     "chCode": "CH-1813",
-    "meaning": "On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team",
+    "meaning": "On a desktop a head coach on more than one team sees the sidebar's Team group heading (the team's name) as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -1149,7 +1149,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.<read>.",
+    "meaning": "A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.{read}.",
     "status": "implemented",
     "where": "src/clubhouse/lib/track.ts, track-server.ts, use-action.ts",
     "tests": [
@@ -1201,12 +1201,13 @@
     "category": 1,
     "item": 3,
     "name": "LINKS_OPEN_WHAT_THEY_NAME",
-    "meaning": "Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, and Message coach the coach's thread (?user=); a link to a screen not yet rebuilt for the viewer's role is not drawn.",
+    "meaning": "Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), and the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1); a link to a screen not yet rebuilt for the viewer's role is not drawn.",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions; src/clubhouse/screens/home/HomePhone.tsx#UpNext, Today, WeekStrip, NoEvents, RoundSheet; src/clubhouse/screens/home/Leaderboard.tsx#Row; src/clubhouse/screens/home/LatestRound.tsx#LatestRound; src/clubhouse/screens/home/player-links.ts",
     "tests": [
       "src/clubhouse/__tests__/home.test.tsx",
-      "src/clubhouse/__tests__/player-home.test.tsx"
+      "src/clubhouse/__tests__/player-home.test.tsx",
+      "src/clubhouse/__tests__/wiring-p002-home.test.tsx"
     ]
   },
   {
@@ -1837,7 +1838,7 @@
     "category": 21,
     "item": 1,
     "name": "LOADERS_NEVER_THROW",
-    "meaning": "Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', <read>) and flagged on its own section instead of throwing, so one failed read never takes the page down.",
+    "meaning": "Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down.",
     "status": "implemented",
     "where": "src/clubhouse/data/home.ts#loadCoachHome; src/clubhouse/data/player-home.ts#loadPlayerHome",
     "tests": [
@@ -1851,7 +1852,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', <read>), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round).",
+    "meaning": "A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round).",
     "status": "implemented",
     "where": "src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/data/home.ts; src/clubhouse/data/player-home.ts; src/clubhouse/screens/home/HomeActions.tsx; src/clubhouse/screens/home/HomePhone.tsx",
     "tests": [
@@ -1891,11 +1892,12 @@
     "category": 1,
     "item": 2,
     "name": "DEEP_LINK_OPENS_PROFILE",
-    "meaning": "On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=.",
+    "meaning": "On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=. The bell's join-request link (?tab=requests) opens the phone's requests sheet once when a request is waiting, and ?invite=1 (Home's first-run Invite players) opens the invite sheet once on desktop and the phone; each param is dropped, closing the sheet spends it, and only the coach's roster reads them.",
     "status": "implemented",
     "where": "src/clubhouse/screens/roster/Roster.tsx#Roster",
     "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
+      "src/clubhouse/__tests__/roster.test.tsx",
+      "src/clubhouse/__tests__/wiring-p003-roster.test.tsx"
     ]
   },
   {
@@ -4495,7 +4497,7 @@
     "category": 1,
     "item": 4,
     "name": "TIMES_ARE_THE_TEAMS_ZONE",
-    "meaning": "Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour, one that runs past midnight ends at 24, and an all-day event keeps its stored dates, one entry for each day of a span.",
+    "meaning": "The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and it never drags; an all-day event keeps its stored dates, one entry for each day of a span.",
     "status": "implemented",
     "where": "src/clubhouse/data/calendar.ts#loadCalendar, zoned",
     "tests": [
@@ -5046,6 +5048,28 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60629,
+    "page": "P006",
+    "category": 6,
+    "item": 29,
+    "name": "RESTORING_A_CANCELLED_EVENT_FAILS",
+    "chCode": "CH-6016",
+    "meaning": "Restoring a cancelled event fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60630,
+    "page": "P006",
+    "category": 6,
+    "item": 30,
+    "name": "DELETING_A_CANCELLED_EVENT_PERMANENTLY_FAILS",
+    "chCode": "CH-6017",
+    "meaning": "Deleting a cancelled event permanently fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -5139,7 +5163,7 @@
     "category": 8,
     "item": 7,
     "name": "REPLY_IS_FOR_INVITED_PLAYERS",
-    "meaning": "A player is offered the reply (Going, Maybe, Can't make it) only on an event that requires an RSVP, whose invite list they are on, that has not started and is not cancelled; once it starts the panel says replies are closed. An event without RSVP (requires_rsvp off or null, the default) shows no reply control, reply counts or badges, Needs attention row or Nudge; the coach panel lists it as Invited. The editor Require RSVP switch is off for a new event and is sent on create, edit and series edit (series only when changed).",
+    "meaning": "A player is offered the reply (Going, Maybe, Can't make it) only on an event that requires an RSVP, whose invite list they are on or that invites no one (the team's: any player may reply, as production allows, golf_event_attendance_insert_self; told \"Open to the whole team\"; from the rows, an invite list is the rows the coach's invitation wrote, notified_at, so a teammate's own reply keeps it open; and once migration 20261017102000 is applied the count function's coach_invited says the same, so a teammate's reply still keeps it open), that has not started and is not cancelled, locked when the server locks it (`lib/calendar/rsvp.ts`, as Fairway's drawer reads it): a timed event at its stored start, an all-day event 24 hours after its stored UTC midnight, every day of a run with the run, and any event past its reply deadline (`rsvp_deadline`, which Fairway's editor can set). Once it starts the panel says replies are closed; past the deadline it says the deadline the coach set has passed. An event without RSVP (requires_rsvp off or null, the default) shows no reply control, reply counts or badges, Needs attention row or Nudge; the coach panel lists it as Invited. The editor Require RSVP switch is off for a new event and is sent on create, edit and series edit (series only when changed).",
     "status": "implemented",
     "where": "src/clubhouse/screens/calendar/inspector.tsx#EventDetail, PlayerReply",
     "tests": [
@@ -5240,6 +5264,17 @@
     "name": "REMOVE",
     "chCode": "CH-6505",
     "meaning": "Remove (a calendar-app link)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61105,
+    "page": "P006",
+    "category": 11,
+    "item": 5,
+    "name": "DELETE_PERMANENTLY",
+    "chCode": "CH-6506",
+    "meaning": "Delete permanently (a cancelled event's menu, coach)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5533,7 +5568,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A read that fails in the loader is logged through chLogServer(\"calendar\", <read>) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance).",
+    "meaning": "A read that fails in the loader is logged through chLogServer(\"calendar\", {read}) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance).",
     "status": "implemented",
     "where": "src/clubhouse/data/calendar.ts; src/clubhouse/lib/use-action.ts; the section loaders in editor.tsx, extras.tsx and inspector.tsx",
     "tests": [
@@ -5572,11 +5607,12 @@
     "category": 1,
     "item": 2,
     "name": "DEEP_LINK_OPENS_CONVERSATION",
-    "meaning": "A link with ?conversation=<id> opens that thread, and ?player=<golf_players.id> opens or starts the direct thread with that player; the address is then cleaned.",
+    "meaning": "A link with ?conversation=<id> opens that thread, and ?player=<golf_players.id> opens or starts the direct thread with that player; the address is then cleaned. A new link arriving while the page is open is taken too; a thread missing from the list is refetched once before it opens. A search hit opens its thread at the matched message, ringed for a moment; the end-anchor waits while it does.",
     "status": "implemented",
     "where": "Messages.tsx deep-link effect",
     "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
+      "src/clubhouse/__tests__/messages.test.tsx",
+      "src/clubhouse/__tests__/wiring-p007-messages.test.tsx"
     ]
   },
   {
@@ -5852,7 +5888,7 @@
     "item": 5,
     "name": "NOBODY_CHOSEN",
     "chCode": "CH-7105",
-    "meaning": "Nobody chosen",
+    "meaning": "Nobody chosen, or a coach's group with no player",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6028,7 +6064,7 @@
     "item": 16,
     "name": "A_SHARED_FILE_WONT_OPEN",
     "chCode": "CH-7021",
-    "meaning": "A shared file won't open (Details › Files)",
+    "meaning": "A shared file won't open (Details › Files, or an announcement's Files)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6242,6 +6278,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70636,
+    "page": "P007",
+    "category": 6,
+    "item": 36,
+    "name": "REMOVING_SOMEONE_FROM_A_GROUP_FAILS",
+    "chCode": "CH-7024",
+    "meaning": "Removing someone from a group fails (the group's creator, desktop or phone Details › Remove)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,
@@ -6341,6 +6388,17 @@
     "name": "DELETE_A_CONVERSATION",
     "chCode": "CH-7503",
     "meaning": "Delete a conversation",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71104,
+    "page": "P007",
+    "category": 11,
+    "item": 4,
+    "name": "REMOVE_A_MEMBER",
+    "chCode": "CH-7504",
+    "meaning": "Remove a member (the group's creator, never their own row)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6788,7 +6846,7 @@
     "item": 6,
     "name": "THE_TEAMS_COURSE_LOCATION",
     "chCode": "CH-8320",
-    "meaning": "The team's course location (Team; held migration 20261008150000)",
+    "meaning": "The team's course location (Team; migration 20261008150000, applied 2026-10-11)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7677,7 +7735,7 @@
     "item": 6,
     "name": "PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED",
     "chCode": "CH-8509",
-    "meaning": "Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes",
+    "meaning": "Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -8177,7 +8235,7 @@
     "category": 1,
     "item": 2,
     "name": "DETAIL_READY",
-    "meaning": "A qualifier opens with its status pill and name, six facts (dates, entry deadline, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen.",
+    "meaning": "A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
     "tests": [
@@ -9037,6 +9095,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90634,
+    "page": "P009",
+    "category": 6,
+    "item": 34,
+    "name": "THE_PLAYERS_ROUNDS_PANEL_CRASHES",
+    "chCode": "CH-09223",
+    "meaning": "The player's rounds panel crashes (desktop, beside the leaderboard)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -9535,7 +9604,7 @@
     "category": 19,
     "item": 1,
     "name": "PHONE_DETAIL",
-    "meaning": "At 820px and below a qualifier is one column: three facts (rounds in, spots, deadline), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop.",
+    "meaning": "At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx#QualifierDetailPhone",
     "tests": [
@@ -9652,7 +9721,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', <read>).",
+    "meaning": "A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', {read}).",
     "status": "implemented",
     "where": "src/clubhouse/lib/use-action.ts#useAction; ui/SectionBoundary.tsx; CoursePicker.tsx; src/clubhouse/data/qualifiers.ts",
     "tests": [
@@ -9743,7 +9812,7 @@
     "category": 1,
     "item": 3,
     "name": "TASK_LINK_OPENS_THE_TASK",
-    "meaning": "?task=<id> (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
+    "meaning": "?task={id} (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
     "status": "implemented",
     "where": "src/clubhouse/screens/hub/parts.tsx#TaskRow; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute; src/app/golf/(dashboard)/dashboard/tasks/layout.tsx",
     "tests": [
@@ -10719,7 +10788,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A read that fails in the loader is logged through chLogServer(\"hub\", <read>) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab <tab>, action hub.<name>); a section that crashes reports under its own surface (hub.updates and the rest).",
+    "meaning": "A read that fails in the loader is logged through chLogServer(\"hub\", {read}) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab {tab}, action hub.{name}); a section that crashes reports under its own surface (hub.updates and the rest).",
     "status": "implemented",
     "where": "src/clubhouse/data/hub.ts#log; src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/ui/SectionBoundary.tsx#SectionBoundary",
     "tests": [
@@ -10938,6 +11007,19 @@
     "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/entry/setup-reads.ts#toStartForm; src/clubhouse/screens/rounds/track/parts.tsx#TrackStrip; src/clubhouse/data/rounds.ts; src/lib/golf/round-session/play-order.ts",
     "tests": [
       "src/clubhouse/__tests__/rounds-shotgun-start.test.tsx"
+    ]
+  },
+  {
+    "id": 110116,
+    "page": "P011",
+    "category": 1,
+    "item": 16,
+    "name": "YOUR_SAVED_COURSES_ARE_OFFERED",
+    "meaning": "Round setup's course picker lists the player's own saved courses (golf_player_courses, getPlayerSavedCourses, the source Fairway's setup reads) as \"Your courses\", after Recently played. A saved course is left out when the library already lists its course (its course_id, or a library course of the same name, spaces and case aside), so a course is offered once. It has one tee set, the one it was saved with (White when none was named, as on Fairway), and its card is the holes it was saved with (a blank card of its length when it has none). Starting from it sends what Fairway's saved-course start sends: the course's name, city, state, rating, slope and tees, its library link if it has one, and no tee; a course with no library course behind it is offered to the library with Fairway's input and the round is linked to the course and tee that offer finds or creates (the engine's opt-in libraryOffer), so later checkpoints and the submit carry them, as Fairway's do; the course is touched once the round starts (Fairway touches it when picked), best-effort. A saved course's card needs a yardage on at least one hole; the rest start at 0. A failed saved-courses read leaves the library as it is.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/entry/setup-reads.ts#listCoursesRead; src/clubhouse/screens/rounds/entry/setup-reads.ts#afterSavedCourseStart; src/clubhouse/screens/rounds/setup/RoundSetup.tsx; src/clubhouse/screens/rounds/setup/shape.ts#groupCourses",
+    "tests": [
+      "src/clubhouse/__tests__/round-lifecycle-parity.test.tsx"
     ]
   },
   {
@@ -11259,7 +11341,7 @@
     "item": 17,
     "name": "CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN",
     "chCode": "CH-11316",
-    "meaning": "Change round type: the player is in no qualifier",
+    "meaning": "Change round type: there is no qualifier to choose",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -11803,7 +11885,7 @@
     "item": 38,
     "name": "CHANGING_A_LIVE_ROUNDS_TYPE_FAILS",
     "chCode": "CH-11020",
-    "meaning": "Changing a live round's type fails (Continue round)",
+    "meaning": "Changing a round's type fails (Continue round, or a submitted round's review, CH-11522)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -11814,7 +11896,7 @@
     "item": 39,
     "name": "CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES",
     "chCode": "CH-11218",
-    "meaning": "Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load",
+    "meaning": "Change round type: the player's qualifier entries (or the slots their rounds hold, or, for a coach on a review, the team's qualifiers) didn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -12285,7 +12367,18 @@
     "item": 21,
     "name": "CHANGE_ROUND_TYPE",
     "chCode": "CH-11521",
-    "meaning": "Change round type (Continue round: the Exit sheet's \"Change round type\" row, \"Practice now. Changes what it counts toward.\")",
+    "meaning": "Change round type (Continue round: the Exit sheet's \"Change round type\" row, \"Practice now. Changes what it counts toward.\"; a submitted round: its review's Change round type, CH-11522)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111122,
+    "page": "P011",
+    "category": 11,
+    "item": 22,
+    "name": "CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS",
+    "chCode": "CH-11522",
+    "meaning": "Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -12416,6 +12509,19 @@
     "where": "src/clubhouse/screens/rounds/setup/CoursePicker.tsx#useRead",
     "tests": [
       "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
+  },
+  {
+    "id": 111504,
+    "page": "P011",
+    "category": 15,
+    "item": 4,
+    "name": "A_COMPLETED_ROUND_WITHOUT_A_RECAP_GETS_ONE",
+    "meaning": "A completed round whose review opens with no stored recap asks generateRoundRecap once (useRoundRecap; the loader marks it recapPending), as the Fairway round page does, and draws the recap it gets back through the figure check (111502, D13). A stored recap, a round that is not completed, and a fixture ask for nothing; a failure is quiet and the next visit asks again.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/use-round-recap.ts#useRoundRecap; src/clubhouse/data/round-review-shape.ts#toReview; src/clubhouse/screens/rounds/RoundReview.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-recap-deferred.test.tsx"
     ]
   },
   {
@@ -12782,6 +12888,19 @@
     ]
   },
   {
+    "id": 112402,
+    "page": "P011",
+    "category": 24,
+    "item": 2,
+    "name": "ROUND_LIFECYCLE_MATCHES_PRODUCTION",
+    "meaning": "Driven through the real new-round engine to the same round (course, tees, nine, start hole, type, date), Clubhouse's setup (its read ports and toStartForm) and Fairway's (the library tee pick and the setup form's submit) make the same start, the same checkpoint for every hole and the same submit, field for field; the one kept difference is the back nine's start hole configs (card numbers on Fairway, 1 to 9 on Clubhouse). The course's city and state are saved as the library has them, and a round from one of the player's saved courses (110116) sends what Fairway's saved-course start sends. Yardages follow Fairway's rule for the course (yardageRule): a library tee starts on its pars with a blank yardage at 0, a saved course needs one yardage, a course typed in by hand needs every one.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/entry/setup-reads.ts#toStartForm; src/clubhouse/screens/rounds/setup/RoundSetup.tsx; src/lib/golf/round-session/use-new-round-session.ts",
+    "tests": [
+      "src/clubhouse/__tests__/round-lifecycle-parity.test.tsx"
+    ]
+  },
+  {
     "id": 120101,
     "page": "P012",
     "category": 1,
@@ -13116,7 +13235,7 @@
     "category": 5,
     "item": 16,
     "name": "ONLY_CLASSES_IN_THE_SAME_TERM_COUNT",
-    "meaning": "Every check that compares classes counts only the classes of the term in question. The exact-same-time refusal (CH-12107) and the overlap note (CH-12108) count only classes in the term the form is set to. This week's overlaps with the team (CH-12109), on the overview, the cards, the side card, the form and the import result, count only classes in the current term, because the week's events are this term's. A class with no term is in the current term. The same days and times in another term never refuse a save.",
+    "meaning": "Every check that compares classes counts only the classes of the term in question. The exact-same-time refusal (CH-12107) and the overlap note (CH-12108) count only classes in the term the form is set to. This week's overlaps with the team (CH-12109), on the overview, the cards, the side card, the form and the import result, count only classes in the current term, because the week's events are this term's. The week's team events are the ones the player's Calendar shows: a meeting that invites no one is the coach's own (D2-8) and is left out, decided by `golf_event_attendance_counts` or, until migration 20261017102000 is applied, the attendance rows; a read that fails leaves every event in. A class with no term is in the current term. The same days and times in another term never refuse a save.",
     "status": "implemented",
     "where": "src/clubhouse/data/classes-shape.ts#checkDraft, overlapsAmong, inTermLabel, inTerm; src/clubhouse/screens/classes/ClassForm.tsx#ClassForm; src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (conflicts); src/clubhouse/screens/classes/ImportSchedule.tsx#ImportedView",
     "tests": [
@@ -14662,6 +14781,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130637,
+    "page": "P013",
+    "category": 6,
+    "item": 37,
+    "name": "PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD",
+    "chCode": "CH-13261",
+    "meaning": "Profile: what CoachHelm sees doesn't load (the player's insight read fails)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130701,
     "page": "P013",
     "category": 7,
@@ -15467,7 +15597,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A read that fails in a loader is logged through chLogServer('coachhelm', <read>, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players).",
+    "meaning": "A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players).",
     "status": "reserved",
     "where": "src/clubhouse/data/coachhelm.ts#log; src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/ui/SectionBoundary.tsx#SectionBoundary",
     "tests": [

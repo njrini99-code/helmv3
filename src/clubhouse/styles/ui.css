@@ -1434,7 +1434,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-zn__id {
   position: sticky;
-  top: 24px;
+  /* Below the sticky top bar, never behind it. */
+  top: calc(var(--ch-topbar-h) + 24px);
   align-self: start;
   display: grid;
   align-content: start;

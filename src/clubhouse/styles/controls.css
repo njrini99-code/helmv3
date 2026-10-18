@@ -41,9 +41,9 @@
   }
 }
 .ch-seg__b.is-on {
-  color: var(--ch-green-700);
+  color: var(--ch-seg-on-ink);
   font-weight: 600;
-  text-shadow: none;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
 }
 /* CH-1617: pressed, an option that isn't chosen takes the Ledger's press tint over the press beat, after the beat UIKit
    waits so a scroll that starts on it never flashes it; letting go clears it at once. It never scales (lib/press.ts):
@@ -60,8 +60,8 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--ch-control-bg);
-  box-shadow: var(--ch-elevation-control);
+  background: var(--ch-seg-on-bg);
+  box-shadow: var(--ch-seg-on-shadow);
 }
 .ch-seg__l {
   position: relative;
@@ -358,6 +358,12 @@
   height: 36px;
   border-radius: 10px;
   color: var(--ch-green-700);
+}
+.ch-modal__action {
+  flex: none;
+  display: flex;
+  align-items: center;
+  align-self: center;
 }
 .ch-modal__titles {
   flex: 1;
@@ -935,4 +941,53 @@ html[data-fw-theme='dark'] .ch-slider input::-webkit-slider-thumb {
 }
 html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   background: linear-gradient(180deg, #f4eedd 0%, #e6dfcd 70%, #d8d1bf 100%);
+}
+
+/* Every window on the desktop is one material (owner, 2026-10-16: "more premium and add same blur"), the one the
+   course picker was researched to: the page behind dimmed with a light blur, no tint; the panel a solid surface
+   with one hairline edge, one soft shadow and 20px corners (the Claude and ChatGPT dialogs: solid, a 1px edge, one
+   shadow, 16-20px); a 20px title; the footer on the panel's own surface over a hairline, not a tinted bar. */
+@media (min-width: 821px) {
+  .ch-modal::backdrop {
+    background: rgb(12 12 10 / 0.38);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  .ch-modal__panel {
+    border-radius: 20px;
+    background: #fbfaf6;
+    box-shadow:
+      0 0 0 1px rgb(16 18 14 / 0.08),
+      var(--ch-elevation-overlay);
+  }
+  .ch-modal__head {
+    padding: 22px 18px 8px 24px;
+  }
+  .ch-modal__titles h2 {
+    font: 600 20px/1.25 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  .ch-modal__body {
+    padding: 14px 24px 22px;
+  }
+  .ch-modal__foot {
+    padding: 14px 18px 14px 24px;
+    border-top: 1px solid rgb(16 18 14 / 0.07);
+    background: transparent;
+    box-shadow: none;
+  }
+  html[data-fw-theme='dark'] .ch-modal::backdrop {
+    background: rgb(0 0 0 / 0.5);
+  }
+  html[data-fw-theme='dark'] .ch-modal__panel {
+    background: rgb(32 32 30);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.14),
+      var(--ch-elevation-overlay);
+  }
+  html[data-fw-theme='dark'] .ch-modal__foot {
+    border-top-color: rgb(255 255 255 / 0.08);
+    background: transparent;
+    box-shadow: none;
+  }
 }

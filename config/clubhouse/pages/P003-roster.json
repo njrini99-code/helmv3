@@ -233,6 +233,21 @@
       ]
     },
     {
+      "id": "ACT-P003-OPEN-INVITE",
+      "label": "Open the invite sheet: Invite players, or arriving with ?invite=1",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+      "handler": "setInvite(true); the linkedInvite arrival effect",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "deepLink": 30102
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx",
+        "src/clubhouse/__tests__/wiring-p003-roster.test.tsx"
+      ]
+    },
+    {
       "id": "ACT-P003-OPEN-PLAYER",
       "label": "Open a player (panel on desktop, pushed profile on the phone)",
       "component": "src/clubhouse/screens/roster/Roster.tsx#RosterList",

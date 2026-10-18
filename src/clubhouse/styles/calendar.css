@@ -1226,6 +1226,29 @@
   margin-top: 1px;
   color: var(--ch-green-700);
 }
+/* The linked trip (Fairway's "View itinerary"): a quiet link in the facts, the destination in the primary ink. */
+.ch-in__trip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  color: inherit;
+  text-decoration: none;
+}
+.ch-in__trip b {
+  font-weight: 500;
+  color: var(--ch-text-primary);
+}
+.ch-in__trip:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+@media (hover: hover) {
+  .ch-in__trip:hover b {
+    color: var(--ch-green-700);
+  }
+}
 .ch-in__sec {
   display: flex;
   flex-direction: column;
@@ -1566,13 +1589,10 @@
   padding: 0 9px;
   font-size: 12px;
 }
-.ch-in__att .ch-seg__b.is-on.is-late .ch-seg__l {
-  color: var(--ch-warning-600);
-}
+/* On the green chip the chosen mark is ivory whatever it is (amber ink on green was unreadable); absent keeps its strike. */
 .ch-in__att .ch-seg__b.is-on.is-absent .ch-seg__l {
-  color: var(--ch-text-primary);
   text-decoration: line-through;
-  text-decoration-color: var(--ch-warning-600);
+  text-decoration-color: rgb(249 247 241 / 0.7);
 }
 .ch-in__note {
   margin: 0;

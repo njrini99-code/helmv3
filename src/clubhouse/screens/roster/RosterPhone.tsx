@@ -32,7 +32,6 @@ import { figureParts, formatHcp, rosterFailedParts, rosterPeek, rowNote } from '
 import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
-import { useArrivalPainted } from '../../lib/use-painted';
 
 export type { PhoneSort } from './sort';
 
@@ -50,6 +49,9 @@ const ROLL_HOLD_MS = CH_DUR.base * 1000 + 50;
  * and the player profile as a pushed screen with its ⋯ action sheet. Same
  * data, actions and catalog as desktop.
  */
+/** A `?tab=requests` arrival not yet shown (see RosterPhone). */
+let linkedRequests = false;
+
 export function RosterPhone({
   data,
   players,
@@ -82,6 +84,25 @@ export function RosterPhone({
   const copy = useCopyText();
   const [sort, setSort] = useChSessionState<PhoneSort>('phoneSort', 'avg');
   const [requestsOpen, setRequestsOpen] = useState(false);
+  // The bell's join-request notice links here with `?tab=requests` (createTeamJoinRequest): it opens the requests
+  // sheet once, and the param is dropped so a reload shows the list. The flag outlives a remount that dropping the
+  // param can cause (as the linked player does in Roster) and lapses when the sheet closes.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('tab') === 'requests') {
+      linkedRequests = true;
+      url.searchParams.delete('tab');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+    if (!linkedRequests) return;
+    if (jr.reqs.length) setRequestsOpen(true);
+    else linkedRequests = false;
+    // Once, on arrival: the list it reads is the one the page arrived with.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeRequests = useCallback(() => {
+    linkedRequests = false;
+    setRequestsOpen(false);
+  }, []);
   const [acting, setActing] = useState(false);
   const open = openId ? players.find((p) => p.id === openId) : undefined;
   const activeCount = players.filter((p) => p.status === 'active').length;
@@ -92,6 +113,14 @@ export function RosterPhone({
   // Only a chosen sort rolls the figures (a refresh that changes an average takes the new figure at once), so the
   // permission is set with the sort and lapses once the roll is over.
   const [rolling, setRolling] = useState(false);
+  // The figures are plain text until a finger or focus lands on the sort, the only control that rolls them (pointerdown
+  // comes before the click, so the numerals are mounted at their values when the sort rolls them). Mounting a list's
+  // worth of Number Flow elements was about 20ms of a switch to Roster's long frame (WebKit, phone, 57–67ms with them,
+  // 37–52ms without, 2026-10-16), and a frame after the paint it still landed inside the switch.
+  const [flowLive, setFlowLive] = useState(false);
+  const goLive = () => {
+    if (!flowLive) setFlowLive(true);
+  };
   const chooseSort = useCallback(
     (v: PhoneSort) =>
       startTransition(() => {
@@ -196,7 +225,7 @@ export function RosterPhone({
           />
         ) : (
           <>
-            <div className="ch-rsm-sort">
+            <div className="ch-rsm-sort" onPointerDownCapture={goLive} onFocusCapture={goLive}>
               <span>Sort by</span>
               <Segmented<PhoneSort>
                 size="sm"
@@ -215,7 +244,7 @@ export function RosterPhone({
               />
             </div>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} rolling={rolling} onOpen={onOpen} />
+              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} rolling={rolling} live={flowLive} onOpen={onOpen} />
             </SectionBoundary>
           </>
         )}
@@ -260,7 +289,7 @@ export function RosterPhone({
           onStatus(p);
         }}
       />
-      <RequestsSheet open={requestsOpen} onClose={() => setRequestsOpen(false)} data={data} jr={jr} />
+      <RequestsSheet open={requestsOpen} onClose={closeRequests} data={data} jr={jr} />
       {children}
     </main>
   );
@@ -278,6 +307,7 @@ function RosterPhoneList({
   statsError,
   sort,
   rolling,
+  live,
   onOpen,
 }: {
   active: ChRosterPlayer[];
@@ -286,6 +316,8 @@ function RosterPhoneList({
   sort: PhoneSort;
   /** A sort was just chosen: the figures roll to it (RosterPhone). */
   rolling: boolean;
+  /** The figures are Number Flow (a hand is on the sort), not text (RosterPhone). */
+  live: boolean;
   onOpen: (id: string) => void;
 }) {
   const reduced = useChReducedMotion();
@@ -295,10 +327,7 @@ function RosterPhoneList({
     drawn.current = sort;
   });
   const slide = !reduced && drawn.current !== sort;
-  // The figures are plain text for the page's first frame and become Number Flow once it is painted: mounting a list's
-  // worth of Number Flow elements was about 20ms of a switch to Roster's long frame (WebKit, phone, 57–67ms with them,
-  // 37–52ms without, 2026-10-16). The text is what Number Flow draws, so nothing moves when they swap.
-  const live = useArrivalPainted();
+  // The text is what Number Flow draws, so nothing moves when they swap.
   const row = (p: ChRosterPlayer) => (
     <li key={p.id}>
       <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} roll={rolling && !reduced} live={live} />

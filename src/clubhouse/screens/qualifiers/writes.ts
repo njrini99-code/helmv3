@@ -171,15 +171,25 @@ export function selectionReason(error: string | undefined): string | null {
   if (/not a coach|unauthori[sz]ed/i.test(error)) return 'Only this team’s coaches manage its squad.';
   if (/illegal transition/i.test(error)) return 'The squad moved on since this page loaded. Reload to see where it stands.';
   if (/picks locked/i.test(error)) return 'Picks open once you start selecting.';
+  if (/places at the cut locked/i.test(error)) return 'Places at the cut are given once you start selecting.';
   if (/slots filled/i.test(error)) return 'Every pick is taken. Remove one first.';
+  if (/places at the cut are chosen/i.test(error)) return 'Every place at the cut is given. Take one back first.';
+  if (/not tied at the cut/i.test(error)) return 'That player isn’t level at the cut any more. Reload to see the standings.';
   if (/reasoning required/i.test(error)) return 'Say why you picked this player.';
   if (/not on this team/i.test(error)) return 'That player isn’t on this team.';
   if (/not entered in this qualifier/i.test(error)) return 'That player isn’t entered in this qualifier.';
+  if (/no scored round/i.test(error)) return 'That player has no score in this qualifier yet, so they can’t be a coach’s pick.';
   if (/could not verify the player is entered/i.test(error)) return 'The entrants couldn’t be checked just now. Try again.';
+  if (/could not verify the player has a scored round/i.test(error)) return 'That player’s rounds couldn’t be checked just now. Try again.';
+  if (/could not verify remaining coach-pick slots/i.test(error)) return 'The picks already made couldn’t be checked just now. Try again.';
   if (/no entrant has a qualifying score/i.test(error)) return 'Nobody has a score in yet and no pick is made, so there is no squad to confirm.';
+  // Before the general refusal below: a tie at the cut is its own reason (Q-114), and "choose every pick" would send the coach to the wrong place.
+  if (/cannot confirm: tie at the cut/i.test(error)) return 'Give every place at the cut to a level player before confirming.';
   if (/cannot confirm/i.test(error)) return 'Choose every pick, each with a reason, before confirming.';
   if (/could not verify|couldn.t confirm your roster/i.test(error)) return 'The roster couldn’t be checked just now. Try again.';
-  if (/not found|not loadable/i.test(error)) return 'This qualifier couldn’t be found. It may have been deleted.';
+  // The workspace read failed (or the qualifier is gone): a retry is the first thing to try.
+  if (/not loadable/i.test(error)) return 'The squad couldn’t be read just now. Try again, or reload the page.';
+  if (/not found/i.test(error)) return 'This qualifier couldn’t be found. It may have been deleted.';
   return null;
 }
 

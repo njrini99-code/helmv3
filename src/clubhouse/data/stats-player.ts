@@ -7,6 +7,7 @@ import type { ChSgTour } from '../lib/sg';
 import { classYearLabel, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
   bandPutts,
+  cachedPutts,
   earlierInFilter,
   filterOptions,
   loadPutts,
@@ -386,6 +387,9 @@ export async function loadPlayerProfile(input: {
   const teamRate = (made: keyof ChRoundCache, total: keyof ChRoundCache) => (t ? rate(teamCache, made, total) : null);
   const per = (rs: ChRound[], key: keyof ChRoundCache) => weightedMean(rs, (r) => cacheNum(r, key));
   const teamPer = (key: keyof ChRoundCache) => (t ? per(teamHole, key) : null);
+  // Putts and three-putts a round over the rounds with putts recorded (cachedPutts), as the calculator and the Fairway pages count them.
+  const perPutts = (rs: ChRound[], key: 'total_putts' | 'three_putts') => weightedMean(rs, (r) => cachedPutts(cache.byRound.get(r.id), key));
+  const teamPerPutts = (key: 'total_putts' | 'three_putts') => (t ? perPutts(teamHole, key) : null);
   const bigNumbersPct = (rs: ChRound[]) =>
     bigNumberRate(
       rs.flatMap((r) => {
@@ -447,8 +451,8 @@ export async function loadPlayerProfile(input: {
     row('Short game', 'Scrambling from the fairway', s?.scramblingPctFairway ?? null, null, 'scrambling_pct_fairway', '%', 0, false),
     row('Short game', 'Scrambling from the rough', s?.scramblingPctRough ?? null, null, 'scrambling_pct_rough', '%', 0, false),
     row('Short game', 'Sand saves', rate(mineCache, 'sand_saves', 'sand_attempts'), teamRate('sand_saves', 'sand_attempts'), 'scrambling_pct_sand', '%', 0, false),
-    row('Putting', 'Putts per round', per(holeWin, 'total_putts'), teamPer('total_putts'), null, '', 1, true),
-    row('Putting', '3-putts per round', per(holeWin, 'three_putts'), teamPer('three_putts'), null, '', 2, true),
+    row('Putting', 'Putts per round', perPutts(holeWin, 'total_putts'), teamPerPutts('total_putts'), null, '', 1, true),
+    row('Putting', '3-putts per round', perPutts(holeWin, 'three_putts'), teamPerPutts('three_putts'), null, '', 2, true),
     row('Putting', 'Make 3–5 ft', makeRate('3–5 ft'), null, 'putts_made_3_5ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
     row('Putting', 'Make 5–10 ft', makeRate('5–10 ft'), null, 'putts_made_5_10ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
     row('Putting', 'Make 10–15 ft', makeRate('10–15 ft'), null, 'putts_made_10_15ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
@@ -532,7 +536,8 @@ export async function loadPlayerProfile(input: {
         fairwaysPct: total ? null : pct(c?.fairways_hit, c?.fairways_total),
         girPct: total ? null : c?.greens_total ? pct(c.greens_hit, c.greens_total) : pct(r.total_gir, r.total_gir_possible),
         scramblePct: total ? null : pct(c?.scrambles_converted, c?.scramble_attempts),
-        putts: total ? null : (c?.total_putts ?? r.total_putts),
+        // No putt recorded is no putts figure, never "0 putts" (cachedPutts).
+        putts: total ? null : c ? cachedPutts(c) : r.total_putts != null && r.total_putts > 0 ? r.total_putts : null,
         sg: r.strokes_gained_total,
         sgLegs: [r.strokes_gained_tee, r.strokes_gained_approach, r.strokes_gained_around_green, r.strokes_gained_putting],
       };

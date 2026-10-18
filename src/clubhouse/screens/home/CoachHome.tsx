@@ -15,6 +15,7 @@ import { Leaderboard } from './Leaderboard';
 import { HomeActions } from './HomeActions';
 import { HomePhone } from './HomePhone';
 import { coachFailedParts } from './model';
+import { useHomeDayRollover } from './use-day-rollover';
 import '../../styles/home.css';
 
 /**
@@ -24,6 +25,8 @@ import '../../styles/home.css';
  */
 export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string }) {
   const phone = useChPhone();
+  // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
+  useHomeDayRollover(data.clock, now !== undefined);
   if (isFirstRun(data)) return <HomeFirstRun data={data} />;
   if (phone) return <HomePhone data={data} now={now} />;
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
@@ -75,7 +78,8 @@ export function isFirstRun(data: ChCoachHome): boolean {
  * head as the loaded page on desktop (states audit, 2026-10-08) and the Ledger's page intro on the phone (`--first`).
  */
 function HomeFirstRun({ data }: { data: ChCoachHome }) {
-  const roster = rebuiltHref('/golf/dashboard/roster');
+  // Opens Roster's invite sheet, not only the page (Roster reads `?invite=1` once).
+  const roster = rebuiltHref('/golf/dashboard/roster?invite=1');
   return (
     <main className="ch-h-main ch-h-main--first" data-canopy="">
       <header className="ch-h-head" data-canopy-head="">

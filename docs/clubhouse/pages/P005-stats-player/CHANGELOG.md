@@ -1,5 +1,59 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-17 — Figures checked against production on the same rounds; putts with none recorded fixed
+
+The profile's figures were run beside production's on the same round ids:
+`getDetailedStats` (the Fairway player page's calculator), the Fairway Team
+stats page's row for the player, and the Standing strip
+(`stats-production-parity.test.ts`; fixtures always, every production player's
+rows in the opt-in read-only pass, 187 player windows, 2026-10-17).
+
+- **Putts and 3-putts per round leave out a round with no putt recorded**
+  (`stats-player.ts`, `perPutts`, with `cachedPutts` in `stats-common.ts`), for
+  the player and the team column, and the Rounds tab shows no putts figure for
+  it instead of 0. Production writes 0 putts for such a round and its calculator
+  counts only holes with a putt. No production round is like that today, so no
+  number moved.
+- **Matched with no change (0 differences at the shown precision):** fairways,
+  greens, putts, 3-putts, scrambling, sand saves, penalties, par 3/4/5 scoring,
+  birdies, pars and bogeys a round, putts per green, rounds counted, and strokes
+  gained and its legs against the Team stats page's stored values.
+- **Differ on purpose (unchanged):** a round posted as a total only counts in
+  the scoring average, to par and best round (Q-123: 15, 15 and 2 of 187 pairs,
+  7 players, up to 1.03 strokes); strokes gained waits for three whole rounds
+  (25 pairs where production shows a value).
+- **Production's Standing strip is a different basis, not a window of this
+  page:** it reads every completed round, test rounds included, and the pressure
+  gap and opening hole only the last 90 days; strokes gained averages nine- and
+  eighteen-hole rounds per round; its 175+ yd proximity drops every par-5
+  approach that misses the green as a lay-up, where production's own leak map
+  (and this page, which uses its aggregator and read) drops only long leaves.
+  Against the profile over the whole career: 20 of 49 strokes gained, 6 of 11
+  pressure gap, 4 of 33 opening hole and 50 of 57 proximity 175+ pairs differ.
+  The HELD OD-01 chain adds the test-round filter; none of it changes the 90-day
+  window or the lay-up rule.
+- **Production rounds twice:** the calculator rounds rates to 0.1 and the
+  Fairway page then shows a whole percent, so 61.46% shows as 62% there and 61%
+  here (fairways 14, greens 5, scrambling 11, sand saves 2 of about 187 pairs).
+  Clubhouse rounds once; left as it is.
+
+## 2026-10-16 — Game detail: the section bar scrolls with the page; the summary sticks below the top bar
+
+Desktop My stats (`stats.css`). The section bar (`.ch-gd__nav`) is no longer
+sticky: the owner said a bar riding over the sections "looks bad". Its glass and
+its opaque fallbacks (P005-D5, below) are gone with it. A section's summary
+(`.ch-gm__id`) used to stick at 24px, behind the top bar; it now sticks at the
+top bar's height plus 24px. Measured by the main session in Chrome at 1567px:
+the top bar's bottom at 64px, and the summaries of Strokes gained, Scoring and
+Approach stick at 88px, 24px below it; a short section (Off the tee, Short game,
+Putting) pushes its summary up as the section ends; the section bar is
+`position: static`. Not checked in Safari.
+
+## 2026-10-16 — Shared change in StatsTeamPhone
+
+`StatsTeamPhone.tsx` is named by this page too; the player's page is unchanged.
+See P004's entry (rolling figures are text until a hand is on the legs).
+
 ## 2026-10-16 — A switch to My stats on the phone renders the first screen, then the rest
 
 Game detail and everything under it (the trend, the rounds, development) start
@@ -168,31 +222,32 @@ Held items: none
 
 ## 2026-10-08 — Premium pass: one round set, one chart, one surface, the best card
 
-Approved by the owner on 2026-10-08 (P005-A2, C2; findings D1, D2, D5 to D8, D12, D13).
+Approved by the owner on 2026-10-08 (P005-A2, C2; findings D1, D2, D5 to D8,
+D12, D13).
 
 - **One round set (D2).** The hero, Game detail and the charts read the same
   rounds: Game detail's scoring average is always the window's posted totals
   (`perEighteen`), and the preview's Last 10 reads 73.6 everywhere.
-- **One chart and one axis on the phone (D1).** Scoring trend draws every round in
-  the window; Score by round is desktop only. Score charts put lower scores higher
-  and say "Lower is better"; the mean label moves off any value label
+- **One chart and one axis on the phone (D1).** Scoring trend draws every round
+  in the window; Score by round is desktop only. Score charts put lower scores
+  higher and say "Lower is better"; the mean label moves off any value label
   (`meanLabelSpot`).
 - **One surface in Game detail (A2).** On desktop each section is the one card;
-  its tiles and par tiles sit between hairlines with soft rules, no boxes inside.
-  The sticky section bar is opaque without backdrop-filter or under Reduce
-  Transparency (D5).
+  its tiles and par tiles sit between hairlines with soft rules, no boxes
+  inside. The sticky section bar is opaque without backdrop-filter or under
+  Reduce Transparency (D5).
 - **The personal-best card (C2).** Personal bests offer "Share best score": a
   dated card (the score, to par when it is the same round, the course, the date,
   "Attested by Coach `<surname>`" for the team's primary coach, so a shared card
-  doesn't point to the school; owner, 2026-10-08), drawn on a canvas and handed to the
-  share sheet, or downloaded where there is none (CH-5810, CH-5005). It never
-  shows a school or team name, and a coach's card names the player by first
-  name and last initial. The loader reads the attesting coach from
+  doesn't point to the school; owner, 2026-10-08), drawn on a canvas and handed
+  to the share sheet, or downloaded where there is none (CH-5810, CH-5005). It
+  never shows a school or team name, and a coach's card names the player by
+  first name and last initial. The loader reads the attesting coach from
   `golf_team_coach_staff` and `golf_coaches`; a failed read drops the line.
 - **Findings.** One h1 on the phone (the bar's title is plain text) and the
-  overview's section titles are h2 (D7); Development rows show units (D8, fixture
-  metric ids); the phone's change chip says "SG a round" (D6); "holes" and
-  "Par 4s: 65%" (D12); the loading preview is the phone's own (D13).
+  overview's section titles are h2 (D7); Development rows show units (D8,
+  fixture metric ids); the phone's change chip says "SG a round" (D6); "holes"
+  and "Par 4s: 65%" (D12); the loading preview is the phone's own (D13).
 
 ## 2026-10-08 — Security: Add focus area trusts only the session
 

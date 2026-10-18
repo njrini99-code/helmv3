@@ -370,6 +370,14 @@ export function useStaffInvite(staff: ChStaffWrites) {
 /** A player's team: leave it, ask to join another, cancel a request (CH-8017 to CH-8019). */
 export function useMembership(m: ChMembership, writes: ChSettingsWrites, done: { onLeft: () => void; onJoined: () => void }) {
   const [requests, setRequests] = useState(m.requests);
+  // A fresh server read (the refresh after Ask to join) brings the new request: the card follows it, so the waiting
+  // row replaces the form at once, as Fairway's re-read does, instead of offering the form again until the section is
+  // reopened. A cancel patches the page's copy (keepSaved), which arrives here the same way.
+  const [seen, setSeen] = useState(m.requests);
+  if (seen !== m.requests) {
+    setSeen(m.requests);
+    setRequests(m.requests);
+  }
   const leave = useSaveAction('settings.leaveTeam', writes.leaveTeam, SAVE_COPY.leave, () => {
     done.onLeft();
     writes.refresh();

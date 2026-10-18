@@ -11,7 +11,7 @@ import type { LieType } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
-import { APPROACH_GRID, BREAK_OPTIONS, distanceText, PENALTY_OPTIONS, PUTT_TAGS, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
+import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, distanceText, isDistanceText, PENALTY_OPTIONS, PUTT_TAGS, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
 import { Seg } from './parts';
 
 const STROKE_AND_DISTANCE = new Set(['ob', 'lost']);
@@ -198,6 +198,11 @@ export function EditShotSheet({
   }
   const update = (u: Partial<EditFormData>) => dispatch({ type: 'SET_EDIT_FORM_DATA', payload: { ...form, ...u } });
   const save = () => {
+    // The shared rules read the boxes with parseFloat ("150y" is 150); a box that isn't a plain number is refused here,
+    // as Fairway's number inputs (which would hold nothing) are.
+    const notNumber = (v: string) => v.trim() !== '' && !isDistanceText(v);
+    const typo = !form.isPenalty && (notNumber(form.distanceToHoleBefore) || (form.result !== 'hole' && notNumber(form.distanceToHoleAfter)));
+    if (typo) return setIssue({ rule: 'distance_not_decreasing', severity: 'block', message: 'Enter each distance as a number, like 150.', holeNumber: hole.holeNumber, shotNumber: shot.shotNumber });
     const issues = editedShotIssues(form, shot, hole, shots);
     const block = issues.find((i) => i.severity === 'block');
     if (block) return setIssue(block);
@@ -304,7 +309,7 @@ export function EditShotSheet({
           <div className="ch-rt-sub">
             <label htmlFor="ch-rt-edit-before">Distance before</label>
             <div className="ch-rt-dist">
-              <input id="ch-rt-edit-before" type="text" inputMode="numeric" autoComplete="off" value={form.distanceToHoleBefore} onChange={(e) => update({ distanceToHoleBefore: e.target.value })} />
+              <input id="ch-rt-edit-before" type="text" inputMode="numeric" autoComplete="off" value={form.distanceToHoleBefore} onChange={(e) => update({ distanceToHoleBefore: cleanDistance(e.target.value) })} />
               <em>{unit(form.distanceUnitBefore)}</em>
             </div>
           </div>
@@ -322,7 +327,7 @@ export function EditShotSheet({
             <div className="ch-rt-sub">
               <label htmlFor="ch-rt-edit-after">Distance after</label>
               <div className="ch-rt-dist">
-                <input id="ch-rt-edit-after" type="text" inputMode="numeric" autoComplete="off" value={form.distanceToHoleAfter} onChange={(e) => update({ distanceToHoleAfter: e.target.value })} />
+                <input id="ch-rt-edit-after" type="text" inputMode="numeric" autoComplete="off" value={form.distanceToHoleAfter} onChange={(e) => update({ distanceToHoleAfter: cleanDistance(e.target.value) })} />
                 <em>{unit(form.distanceUnitAfter)}</em>
               </div>
             </div>

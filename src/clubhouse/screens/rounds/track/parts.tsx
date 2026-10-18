@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronDown, Flag } from 'lucide-react';
+import { ChevronDown, Flag, Pencil } from 'lucide-react';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import { frontierIndex, playedBefore } from '@/lib/golf/round-session/play-order';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
@@ -284,7 +284,22 @@ export function HoleMap({
  * the rows show at once (hidden from a screen reader while folded) and the
  * chevron turns (base, ease-out); it doesn't turn with reduced motion.
  */
-export function ShotLog({ shots, pref }: { shots: ShotRecord[]; pref: DistancePreference }) {
+export function ShotLog({
+  shots,
+  pref,
+  onEdit,
+  editDisabled = false,
+}: {
+  shots: ShotRecord[];
+  pref: DistancePreference;
+  /**
+   * CH-11505 mid-hole: a recorded shot in the open log is tapped to change or delete it (useShotTracking's
+   * handleEditShot), as Fairway's shot pills do before the hole is holed. Without it the rows are read-only.
+   */
+  onEdit?: (shot: ShotRecord) => void;
+  /** While an undo or the hole's save runs, the rows can't be opened. */
+  editDisabled?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const bodyId = useId();
   if (!shots.length)
@@ -320,18 +335,38 @@ export function ShotLog({ shots, pref }: { shots: ShotRecord[]; pref: DistancePr
       </button>
       <div className="ch-rt-log__b" id={bodyId} hidden={!open}>
         <ol>
-          {shots.map((s, i) => (
-            <li key={i} className="ch-rt-log__r">
-              <span className={'ch-rt-log__n ' + lieClass(s)} aria-hidden="true">
-                {s.isPenalty ? 'P' : s.shotNumber}
-              </span>
-              <span className="ch-rt-log__rb">
-                <b>{shotTitle(s)}</b>
-                <em>{shotLine(s, pref)}</em>
-              </span>
-              {s.isPenalty && <strong>+1</strong>}
-            </li>
-          ))}
+          {shots.map((s, i) => {
+            const row = (
+              <>
+                <span className={'ch-rt-log__n ' + lieClass(s)} aria-hidden="true">
+                  {s.isPenalty ? 'P' : s.shotNumber}
+                </span>
+                <span className="ch-rt-log__rb">
+                  <b>{shotTitle(s)}</b>
+                  <em>{shotLine(s, pref)}</em>
+                </span>
+                {s.isPenalty && <strong>+1</strong>}
+              </>
+            );
+            return onEdit ? (
+              <li key={s.id ?? `${s.shotNumber}-${i}`}>
+                <button
+                  type="button"
+                  className="ch-rt-log__r ch-rt-log__r--btn"
+                  disabled={editDisabled}
+                  aria-label={`Change shot ${s.shotNumber}: ${shotTitle(s)}, ${shotLine(s, pref)}`}
+                  onClick={() => onEdit(s)}
+                >
+                  {row}
+                  <Icon icon={Pencil} size={14} className="ch-rt-log__pen" />
+                </button>
+              </li>
+            ) : (
+              <li key={i} className="ch-rt-log__r">
+                {row}
+              </li>
+            );
+          })}
         </ol>
       </div>
     </div>

@@ -167,6 +167,18 @@ export async function loadRoundCache(
   return { byRound, error: false };
 }
 
+/**
+ * A round's putts, or its three-putts, from its cache row: none when the round has no putt recorded. Production's round totals
+ * (recompute_golf_round_totals, then update_round_stats_cache) write 0 putts for a round whose holes carry no putt count, and the
+ * Fairway pages leave such a round out of putts per round (calculatePuttsPerRound, aggregateCountableRounds: putts > 0), so a
+ * zero here is "not recorded", never a round holed in no putts. Three-putts follow: no putts recorded, no three-putt count.
+ */
+export function cachedPutts(c: ChRoundCache | undefined, key: 'total_putts' | 'three_putts' = 'total_putts'): number | null {
+  if (!c || typeof c.total_putts !== 'number' || c.total_putts <= 0) return null;
+  const v = c[key];
+  return typeof v === 'number' ? v : null;
+}
+
 /** Aggregate rate over rounds, weighting by attempts (never a mean of percentages). */
 export function rate(rows: ChRoundCache[], made: keyof ChRoundCache, total: keyof ChRoundCache): number | null {
   let m = 0;

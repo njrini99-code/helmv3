@@ -14,17 +14,14 @@ assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
 Route `/golf/dashboard/messages` (coach and player) · code
-`src/clubhouse/screens/messages/`, loader
-`src/clubhouse/data/messages.ts` · tests
-`src/clubhouse/__tests__/messages.test.tsx` · preview
+`src/clubhouse/screens/messages/`, loader `src/clubhouse/data/messages.ts` ·
+tests `src/clubhouse/__tests__/messages.test.tsx` · preview
 `/clubhouse-preview/messages`
 (`?state=empty|rail|failed|thread-failed|loading|loading-route|announcement|ann-failed|files-failed|add-failed`)
-and
-`/clubhouse-preview/messages-player`. Below 820px the same numbers hold on the
-phone
-design (`MessagesPhone`, `docs/clubhouse/phone/messages.md`); CH-7018 to
-CH-7021,
-7214, 7215, 7306, 7307, 7409, 7410, 7604, 7704 and 7804 were added with it.
+and `/clubhouse-preview/messages-player`. Below 820px the same numbers hold on
+the phone design (`MessagesPhone`, `docs/clubhouse/phone/messages.md`); CH-7018
+to CH-7021, 7214, 7215, 7306, 7307, 7409, 7410, 7604, 7704 and 7804 were added
+with it.
 
 Messages keeps the live realtime hooks (D-13). Every change runs through one
 helper (`attempt` in `Messages.tsx`) with the same rules as `useAction`:
@@ -56,9 +53,10 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7018 | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) | "Couldn't add Nora" + "Try again in a moment." Done: "Added Nora to Varsity team" | `attempt('addMember')` | messages.test › CH-7018 |
 | CH-7019 | A coach's new group is created, but a coach picked for it couldn't be added (D-45) | "Group created, but Dan wasn't added" + "Add them from Details." (warning haptic) | `createGroup` | messages.test › CH-7019 |
 | CH-7020 | Copying a message fails (phone, from the long-press sheet) | "Couldn't copy the message" + "Try again in a moment." Done: "Copied" | `PhoneThread` | messages.test › CH-7020 |
-| CH-7021 | A shared file won't open (Details › Files) | "Couldn't open Room list · Pinehurst.pdf" + "Try again in a moment." | `FilesPanel`, `FilesSection` | messages.test › CH-7021 |
+| CH-7021 | A shared file won't open (Details › Files, or an announcement's Files) | "Couldn't open Room list · Pinehurst.pdf" + "Try again in a moment."; an announcement file with no stored copy: "That file has no stored copy to open." | `FilesPanel`, `FilesSection`, announcements `openDoc` | messages.test › CH-7021, wiring-p007-messages.test |
 | CH-7022 | Text delivered, attachment metadata refused | "Message sent; attachments not saved". Only unsaved files and the original reply remain; retry sends no copy of delivered text | `sendFiles`, `Composer` | messages.test › CH-7022 |
 | CH-7023 | Attachment send cannot be confirmed | Frozen original text/files/reply, "Couldn’t confirm this send", Retry send; reload restores stored filenames/request identity; queued later draft survives pending Retry and resumes after confirmation | `sendFiles`, `Composer` | messages.test › CH-7023 |
+| CH-7024 | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) | "Couldn’t remove Eli" + the server's reason, or "They’re still in the group. Try again in a moment." The row comes back. Done: "Removed Eli from Varsity team" | `attempt('removeMember')` | wiring-p007-messages.test › a refusal puts the row back |
 
 ## 71xx Validation
 
@@ -68,7 +66,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7102 | An announcement with no title | "Give the announcement a title." | `NewMessage` | messages.test › CH-7102 |
 | CH-7103 | An announcement with no body | "Write what the team needs to know." | `NewMessage` | messages.test › CH-7103 |
 | CH-7104 | A group with no name | "Name the group so players know what it's for." | `NewMessage` | messages.test › CH-7104 |
-| CH-7105 | Nobody chosen | "Choose who to message." / "Choose at least one person." | `NewMessage` | messages.test › CH-7105 |
+| CH-7105 | Nobody chosen, or a coach's group with no player | "Choose who to message." / "Choose at least one person." / "Choose at least one player. Coaches join the group once it exists." (a coach group of coaches only) | `NewMessage` | messages.test › CH-7105, wiring-p007-messages.test |
 
 ## 72xx Didn't load
 
@@ -128,6 +126,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7501 | Delete a message | "Delete this message?" + "It's removed for everyone in the conversation. This can't be undone." | `Modal` | messages.test › CH-7501 |
 | CH-7502 | Leave a group | "Leave Varsity team?" + "You stop getting its messages. Someone in the group can add you back." | `Modal` | messages.test › CH-7502 |
 | CH-7503 | Delete a conversation | "Delete 26-27 Group Chat?" + "It leaves your inbox. The other people keep their copy, and it comes back if someone sends a new message." | `Modal` | messages.test › CH-7503; hide-golf-conversation.test |
+| CH-7504 | Remove a member (the group's creator, never their own row) | "Remove Eli from Varsity team?" + "Eli stops getting its messages. You can add them back from Add." Keep / Remove (warning haptic) | `Modal` (`RemoveMemberModal`) | wiring-p007-messages.test › asks first |
 
 ## 76xx Motion
 

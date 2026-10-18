@@ -29,6 +29,7 @@ import {
   BellOff,
   Megaphone,
   Plus,
+  UserMinus,
   UserPlus,
   type LucideIcon,
 } from "lucide-react";
@@ -48,6 +49,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, m as M } from "motion/react";
 import { chTween } from "../../lib/motion";
 import { useThreadAnchor } from "./use-thread-anchor";
+import { useFocusMessage } from "./use-focus-message";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
@@ -71,6 +73,8 @@ import {
   dayLabel,
   filterConvs,
   firstName,
+  groupLacksPlayer,
+  MESSAGE_MAX,
   railTime,
   sectionOf,
   threadItems,
@@ -180,6 +184,12 @@ export interface ChMessagesApi {
   /** The open group's creator only: who on the team isn't in it yet, and adding one (D-47). */
   addCandidates: () => Promise<ChMember[] | null>;
   addMember: (userId: string, name: string) => Promise<boolean>;
+  /**
+   * The open group's creator only, never on their own row (removeGolfGroupMember, as Fairway's group details allow):
+   * after a confirm (CH-7504) the row leaves at once and comes back if the server refuses (CH-7024). Absent in the
+   * preview.
+   */
+  removeMember?: (userId: string, name: string) => Promise<boolean>;
   /** The open conversation's shared files, newest first (D-48). */
   files: (conversationId: string) => Promise<ChFile[] | null>;
 
@@ -194,6 +204,12 @@ export interface ChMessagesApi {
 
   searchMessages: (q: string) => Promise<ChSearchHit[] | null>;
   openHit: (hit: ChSearchHit) => void;
+  /** A search hit the open thread should go to (useFocusMessage); the end-anchor is paused while it is set. */
+  focusMessageId?: string | null;
+  /** The hit the thread came to, marked for a moment (FOUND_FOR_MS). */
+  foundMessageId?: string | null;
+  /** The thread came to the hit (its id), or gave up on one outside the loaded history (null). */
+  messageFocused?: (id: string | null) => void;
 
   mute: ChMute | null;
   muteError: boolean;
@@ -208,6 +224,11 @@ export interface ChMessagesApi {
   selectedAnnId: string | null;
   selectAnn: (id: string | null) => void;
   announcementDetail: (id: string) => Promise<ChAnnouncementDetail | null>;
+  /**
+   * A signed link to an announcement's attached document (getPreviewUrl), asked for at the tap; `url: null` when it
+   * can't be had (`noContent`: the document has no stored file). Absent in the preview, which opens its fixture's `url`.
+   */
+  openAnnouncementDocument?: (documentId: string) => Promise<{ url: string | null; noContent?: boolean }>;
   acknowledge: (id: string) => Promise<boolean>;
   completeTask: (announcementId: string, taskId: string) => Promise<boolean>;
   createAnnouncement: (a: {
@@ -478,7 +499,6 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           />
         ) : (
           <>
-            {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
             {sections.map(([k, l]) => {
               const rows = list.filter(
                 (c) => sectionOf(c.lastAt, api.now, api.timeZone) === k,
@@ -502,6 +522,8 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                   : "Nothing unread. You’re caught up."}
               </div>
             )}
+            {/* Messages first; the team's announcements fold under them (owner, 2026-10-16). */}
+            {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
             <MessageHits api={api} q={q} />
           </>
         )}
@@ -890,7 +912,8 @@ export function Bubble({
         (m.mine ? " is-mine" : "") +
         (first ? " is-first" : "") +
         (last ? " is-last" : "") +
-        (m.failed ? " is-failed" : "")
+        (m.failed ? " is-failed" : "") +
+        (api.foundMessageId === m.id ? " is-found" : "")
       }
     >
       {!m.mine && (
@@ -1368,6 +1391,7 @@ export function Composer({
             );
           }}
           onKeyDown={onKey}
+          maxLength={MESSAGE_MAX}
           enterKeyHint={phone ? "enter" : "send"}
         />
         <button
@@ -1419,8 +1443,12 @@ function Thread({
     api.viewer.role,
   );
 
-  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor.
-  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing });
+  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor. A search hit holds it
+  // (useFocusMessage) until the thread has come to the message and its mark has faded.
+  const focusing = !!api.focusMessageId || (!!api.foundMessageId && api.msgs.some((m) => m.id === api.foundMessageId));
+  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
+  const reducedMotion = useChReducedMotion();
+  useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
   // The thread eases like the page does, with a longer glide (a conversation is read down a long column); desktop,
   // wheel only: a trackpad stays native.
   usePanelSmoothScroll(scroller, { duration: THREAD_SCROLL_DUR });
@@ -1642,6 +1670,7 @@ export function EditMessageModal({ api, message, onClose }: { api: ChMessagesApi
         rows={4}
         aria-label="Message"
         value={text}
+        maxLength={MESSAGE_MAX}
         onChange={(e) => setText(e.target.value)}
       />
     </Modal>
@@ -1761,6 +1790,47 @@ export function DeleteConversationModal({ api, conv, open, onClose, onDeleted }:
 }
 
 /**
+ * The group's creator removes someone from it, after a confirm (CH-7504), as Fairway's group details allow. Remove fires
+ * the warning haptic (D-70); a refusal puts the row back and says so (CH-7024).
+ */
+export function RemoveMemberModal({ api, conv, member, onClose }: { api: ChMessagesApi; conv: ChConv; member: ChMember | null; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const first = firstName(member?.name ?? "them");
+  return (
+    <Modal
+      code="CH-7504"
+      open={member != null}
+      onClose={onClose}
+      icon={UserMinus}
+      title={`Remove ${first} from ${conv.title}?`}
+      description={`${first} stops getting its messages. You can add them back from Add.`}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Keep
+          </Button>
+          <Button
+            variant="danger"
+            feel="warning"
+            disabled={busy || !api.removeMember}
+            onClick={async () => {
+              if (!member || !api.removeMember) return;
+              setBusy(true);
+              // The row leaves as the sheet closes; a refusal brings it back with a toast.
+              onClose();
+              await api.removeMember(member.userId, member.name);
+              setBusy(false);
+            }}
+          >
+            {busy ? "Removing…" : "Remove"}
+          </Button>
+        </>
+      }
+    />
+  );
+}
+
+/**
  * The group's creator adds teammates or coaches who aren't in it yet (D-47),
  * on desktop and phone: the candidates load when it opens (CH-7410), a failed
  * load says so with Try again (CH-7215), nobody left says so (CH-7307), and a
@@ -1864,7 +1934,10 @@ function Details({
   const [leaving, setLeaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [removing, setRemoving] = useState<ChMember | null>(null);
   const mayAdd = conv.group && conv.creatorId === api.viewer.userId;
+  // Remove is the creator's too, on anyone but themselves (removeGolfGroupMember; Leave group is the creator's own way).
+  const mayRemove = mayAdd && !!api.removeMember;
   const other = !conv.group
     ? personOf(api, conv.memberIds[0] ?? "")
     : undefined;
@@ -1951,6 +2024,10 @@ function Details({
                 </span>
                 {mb.userId === conv.creatorId ? (
                   <Badge tone="neutral">Admin</Badge>
+                ) : mayRemove && mb.userId !== api.viewer.userId ? (
+                  <button type="button" className="ch-btn ch-btn--sm ch-btn--ghost" aria-label={`Remove ${mb.name}`} onClick={() => setRemoving(mb)}>
+                    Remove
+                  </button>
                 ) : (
                   <span />
                 )}
@@ -1981,6 +2058,7 @@ function Details({
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={onClose} />
       <DeleteConversationModal api={api} conv={conv} open={deleting} onClose={() => setDeleting(false)} onDeleted={onClose} />
       {mayAdd && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
+      {mayRemove && <RemoveMemberModal api={api} conv={conv} member={removing} onClose={() => setRemoving(null)} />}
     </aside>
   );
 }
@@ -2160,11 +2238,13 @@ function NewMessage({
   const announce = mode === "announce";
   const needsTitle = (coachGroup || announce) && !title.trim();
   const needsBody = announce && !body.trim();
+  // A coach's group is a team broadcast: with no player in it, it would reach the whole team (groupLacksPlayer).
+  const needsPlayer = mode === "group" && groupLacksPlayer(api.viewer.role, to, api.directory);
   const canGo = announce
     ? !needsTitle && !needsBody
     : mode === "direct"
       ? to.length === 1
-      : to.length >= 1 && !needsTitle;
+      : to.length >= 1 && !needsTitle && !needsPlayer;
   const go = async () => {
     setTouched(true);
     if (!canGo) {
@@ -2399,7 +2479,9 @@ function NewMessage({
               <span className="ch-field__help is-error" data-ch-code="CH-7105">
                 {mode === "direct"
                   ? "Choose who to message."
-                  : "Choose at least one person."}
+                  : needsPlayer
+                    ? "Choose at least one player. Coaches join the group once it exists."
+                    : "Choose at least one person."}
               </span>
             )}
           </>

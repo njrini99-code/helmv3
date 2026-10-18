@@ -50,12 +50,12 @@
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stamp-workspace.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stamp-workspace.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stamp-workspace.mjs",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
             "timeout": 10
           }
         ]
@@ -65,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/restore-session-state.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/restore-session-state.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/restore-session-state.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: restore session state"
           }
@@ -77,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs",
             "timeout": 60
           }
         ]
@@ -88,7 +88,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-remove.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-remove.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-remove.mjs",
             "timeout": 60
           }
         ]
@@ -99,7 +99,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/route-prompt.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/route-prompt.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/route-prompt.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: route prompt"
           }
@@ -111,7 +111,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: save session state"
           }
@@ -124,7 +124,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs",
             "timeout": 20
           }
         ]
@@ -134,7 +134,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
             "timeout": 10
           }
         ]

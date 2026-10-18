@@ -17,7 +17,7 @@ import { render, screen } from '@testing-library/react';
 import type { GolfCourse, GolfCourseTee } from '@/lib/types/golf-course';
 
 vi.mock('@/components/ui/sonner', () => ({ useToast: () => ({ showToast: vi.fn() }) }));
-vi.mock('@/lib/golf/upload-course-image', () => ({ uploadCourseImage: vi.fn() }));
+vi.mock('@/lib/golf/upload-course-image', () => ({ uploadCourseImage: vi.fn(), discardCourseImageUpload: vi.fn(async () => {}) }));
 
 const baseCourse: GolfCourse = {
   id: 'course-1',

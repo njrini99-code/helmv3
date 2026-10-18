@@ -225,6 +225,8 @@
   /* Space and layout */
   --ch-gutter: 40px;
   --ch-sidebar-w: 240px;
+  /* The sidebar folded to its icon rail (RailToggle): the rows' 16px icons, 20px in from the edge, stay where they are. */
+  --ch-rail-w: 56px;
   --ch-topbar-h: 56px;
   /* Phone chrome (owner design, design/handoff/mobile/m-shell.jsx, m.css; D-40, D-43) */
   --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */
@@ -294,6 +296,9 @@
 
   /* Shell literals promoted to tokens (P001-D6), so dark mode and the light can reach them. */
   --ch-on-green-bright: #fbfaf6;
+  /* The sidebar brand's ivory: "Golf" and the logo's ball (owner, 2026-10-16: "darker ivory"). On the green in both
+     themes, so it is not remapped. */
+  --ch-brand-ivory: #ebe1c8;
   --ch-on-green-glyph: #cfc7b2;
   --ch-on-green-plate: #f4f1e8;
   --ch-on-green-label: #e9e4d6;
@@ -381,6 +386,12 @@
   --ch-elevation-mark-ink: 0 5px 10px -6px rgb(28 25 18 / 0.45);
   --ch-elevation-plate: 0 18px 28px -24px rgb(28 25 18 / 0.5);
   --ch-elevation-pill-on: 0 1px 2px rgb(21 90 57 / 0.32);
+  /* The chosen segment of every switcher (owner, 2026-10-16: green, with more depth): a lit green chip raised off its
+     well, the light on its top edge, a contact shadow and a soft one under it. */
+  --ch-seg-on-bg: linear-gradient(180deg, var(--ch-green-fill-500) 0%, var(--ch-green-fill-700) 100%);
+  --ch-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 1px 2px rgb(11 58 37 / 0.35),
+    0 3px 8px -2px rgb(11 58 37 / 0.3);
+  --ch-seg-on-ink: var(--ch-on-fill-50);
   --ch-elevation-face: var(--ch-light-drift-near) 1px 3px rgb(28 25 18 / 0.12), var(--ch-light-drift-mid) 8px 16px -6px rgb(28 25 18 / 0.24),
     var(--ch-light-drift) 20px 32px -16px rgb(28 25 18 / 0.28);
   --ch-elevation-face-hover: var(--ch-light-drift-near) 3px 6px rgb(28 25 18 / 0.1), var(--ch-light-drift-mid) 22px 36px -12px rgb(28 25 18 / 0.34),
@@ -684,6 +695,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-elevation-mark-ink: 0 5px 10px -6px rgb(0 0 0 / 0.6);
   --ch-elevation-plate: 0 18px 28px -24px rgb(0 0 0 / 0.7);
   --ch-elevation-pill-on: 0 1px 2px rgb(0 0 0 / 0.4);
+  --ch-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5),
+    0 3px 8px -2px rgb(0 0 0 / 0.45);
   --ch-elevation-face: var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 16px -6px rgb(0 0 0 / 0.5),
     var(--ch-light-drift) 20px 32px -16px rgb(0 0 0 / 0.5);
   --ch-elevation-face-hover: var(--ch-light-drift-near) 3px 6px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 22px 36px -12px rgb(0 0 0 / 0.6),

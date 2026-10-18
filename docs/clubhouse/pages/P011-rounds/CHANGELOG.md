@@ -1,5 +1,356 @@
 # P011 — Rounds: changelog
 
+## 2026-10-17 — Add a course draws the chosen photo itself
+
+The photo chosen in Add a course is drawn on a canvas from the file's own
+pixels (`LocalPhoto` in `setup/AddCourseSheet.tsx`, cropped like the card's
+`object-fit: cover`) instead of an `<img>` whose source is an object URL made
+from the file. It looks the same; nothing on the page is built from the file,
+which clears code scanning's `js/xss-through-dom` finding on the PR. Checked in
+WebKit: the frame draws at device resolution. Test: `round-setup.test.tsx`
+CH-11511.
+
+## 2026-10-17 — Shot entry checked against production: a shot changes mid-hole, and distances are numbers
+
+Parity pass on the in-round hole and shot entry (`track/`: ShotEntry, the
+penalty and change sheets, the shot log, the hole review) against Fairway's shot
+screen (`FairwayShotTracking` and its entry, pills, penalty and edit modals),
+the shared `useShotTracking` engine, and what reaches `golf_shots`,
+`golf_holes`, `putt_details` and `approach_miss_details`.
+
+```text
+Design package: none (no board); the open shot log's rows take the hole review's row grammar and its pencil
+PR/commit:      agent/course-picker-premium-pr (see the PR)
+Contract IDs:   111105 (CH-11505, a second way in); 110504 (CH-11104, now blocks); 110505 (CH-11105, a typo refused)
+Actions:        none new (handleEditShot, handleSaveEditedShot, handleDeleteShot as before)
+Data impact:    none to the schema; a meters player's comma decimal is no longer stored short
+Held items:     none
+```
+
+### Changed
+
+- **A recorded shot opens to change or delete before the hole is holed**
+  (CH-11505, `parts.tsx` `ShotLog`, `RoundTracking.tsx`). Fairway's shot pills
+  open any recorded shot mid-hole; Clubhouse only opened one from the hole
+  review after hole-out, so a wrong tee shot on shot 3 could only be undone back
+  to. The open shot log's rows are now buttons into the same change sheet (held
+  while an undo, an edit or the hole's save runs).
+- **The distance boxes hand the engine a number** (`labels.ts` `cleanDistance`,
+  `isDistanceText`; `ShotEntry.tsx`, `sheets.tsx`). They are text fields and the
+  engine reads them with `parseFloat`, so "1,5" from a comma-locale decimal pad
+  (the meters pad) was recorded as 1 (3 ft instead of 5 ft), and "150y" as 150,
+  with the error line showing but Next shot on. A comma is now the decimal
+  point, and anything else that isn't a plain number blocks Next shot ("Enter a
+  valid distance", CH-11104) or the change sheet's Save (CH-11105), as Fairway's
+  number inputs do.
+
+Unchanged after the check (every renderer write is the shared engine's): results
+offered per shot, the locked unit (feet on the green, yards elsewhere), meters
+converted to stored yards and feet, driver only off a par 4 or 5 tee, a par 3's
+tee shot stored as an approach, tee miss left or right, the approach miss grid
+and its derived lie, putt break, slope and paired miss tags (stored in tap
+order), penalties and which stroke went for out of bounds and lost ball, tap in,
+undo, delete and renumbering, a finished hole changed after going back, and the
+15-stroke limit. Neither screen has a score-only mode or a GPS distance. Left as
+it is: Fairway's change modal also offers short and long for a tee miss (0 such
+rows in production in 120 days; its live entry offers only left and right), and
+its quick distance picks in the change modal (input help only).
+
+### Verification
+
+`src/hooks/golf/__tests__/shot-entry-parity.test.tsx` (new) plays eleven holes
+through both screens' own controls (par 3 two putts, par 4 bunker up and down,
+par 5 out of bounds and water, a lost ball from here, holed from off the green,
+three putts, a 9-hole round's last hole with a tap in, a meters player, a
+mid-hole change, a mid-hole delete and undo, a finished hole changed) and
+requires every recorded row, hole checkpoint, stats update and autosave to be
+equal, and every recorded row's stored columns inside the live CHECK
+constraints; a twelfth, Clubhouse only, types "1,5" m; and
+`round-tracking-shot-parity.test.tsx` (new) covers the two fixes. Read-only
+production sample (rounds of the last 120 days): 480 rounds and 8,379 holes with
+shots, 0 holes whose score, putts or penalties differ from their shots, no lie,
+result, unit, break, slope, penalty, miss direction, putt tag or approach lie
+the Clubhouse screens can't write (`deep_rough` and `recovery` are allowed by
+the constraint and in 0 rows), and the rows only the change sheet makes, on both
+screens: 24 off-target tee shots and 15 approach misses with no miss direction,
+4 fairway tee shots with one, and 5 putts measured in yards. Not checked in a
+browser or on a device; no screenshots.
+
+## 2026-10-17 — Round lifecycle checked against production: the start's city and state, and the recap
+
+Parity pass on the round lifecycle (start, autosave, checkpoints, offline
+replay, resume, discard, submit, recap, review, library), against Fairway's
+NewRound, Continue and round pages and the shared engine
+(`src/lib/golf/round-session/`). Both UIs drive the same engine, so a payload
+can differ only in what each setup feeds it; `round-lifecycle-parity.test.tsx`
+drives both setups through the real engine to the same round and compares every
+server write field by field (112402).
+
+```text
+Design package: none (layout unchanged; the existing recap section now appears on a round that had no recap stored)
+PR/commit:      agent/course-picker-premium-pr (see the PR)
+Contract IDs:   110116 (new), 111504 (new), 112402 (new)
+Actions:        none new; the review calls the existing generateRoundRecap, and setup the existing getPlayerSavedCourses,
+                touchSavedCourse and contributeCourseFromRound, as Fairway does
+Data impact:    golf_rounds.course_city / course_state now saved as the library has them; ai_recap written on first review
+Held items:     none (20261001000000, the submit's optimistic lock, stays held; the app already sends the key)
+```
+
+### Fixed
+
+- **A course's city and state reach the round as the library has them**
+  (`setup-reads.ts` `toStartForm`, `shape.ts`, `RoundSetup.tsx`,
+  `AddCourseSheet.tsx`). The start split the printed place ("Chapel Hill, NC")
+  back into a city and a state, so a course with a state and no city was saved
+  with the state as its city (`course_city = 'NC'`). The pick now carries the
+  course's own `city` and `state`; Fairway's tee pick passes them straight
+  through the same way.
+- **A completed round with no recap gets one when its review opens** (111504,
+  `use-round-recap.ts`, `RoundReview.tsx`, `round-review-shape.ts`
+  `recapPending`). Fairway's round page asks `generateRoundRecap` once after
+  mount when a completed round has none stored (`useDeferredRoundRecap`), and
+  that is the only writer of `golf_rounds.ai_recap`; Clubhouse only read it, so
+  a round posted and reviewed in Clubhouse never got a recap. The recap still
+  passes the figure check before it is drawn (D13's "no new AI call" was about
+  that check, not about writing the recap). A failure is quiet, as on Fairway,
+  and the next visit asks again. This spends one LLM call per round on its first
+  review, as Fairway does (owner: keep, as production, unless told otherwise).
+  Before and after captures not taken.
+
+### Added
+
+- **"Your courses" in the course picker** (110116, `setup-reads.ts`
+  `listCoursesRead`, `listTeesRead`, `teeHolesRead`, `afterSavedCourseStart`;
+  `shape.ts` group `saved`; `RoundSetup.tsx` `pickTee`). Fairway's setup offers
+  the player's own saved courses (`golf_player_courses`,
+  `getPlayerSavedCourses`); Clubhouse offered only library courses, and 52 of
+  the 54 saved rows have no library course behind them (26 with no library
+  course of the same name either), so those players had to type a course they
+  had saved again. Each saved course is listed after Recently played with its
+  one tee set (White when none was named, as on Fairway) and the card it was
+  saved with, and is left out when the library already lists it (its link, or
+  the same name). Starting from one sends what Fairway's saved-course start
+  sends (the parity test drives both). A saved course with no library course
+  behind it is offered to the library with Fairway's input and the round is
+  linked to the course and tee that finds or creates, so its later checkpoints
+  and its submit carry them, as Fairway's do (the engine's new opt-in
+  `libraryOffer`, below); the course is touched, best-effort. One difference
+  kept: the touch happens when a round starts, not when the course is picked, so
+  a course looked at and left is not moved. Fairway lists saved courses beside
+  the library without removing names the library has; Clubhouse lists each
+  course once. Before and after captures not taken (the preview has no saved
+  courses).
+- **Yardages follow Fairway's rule for the course** (`shape.ts` `yardageRule`,
+  `setupBlocker`; `toStartForm` `yardage`). A library tee's card starts on its
+  pars, a blank yardage at 0 yards (Fairway's preloaded start gates a library
+  tee on its pars); a saved course needs a yardage on at least one hole ("Add a
+  yardage for at least one hole"), the rest at 0; a course typed in by hand
+  still needs every yardage, as Fairway's hole editor does. Before, every hole
+  of every card needed a yardage. A yardage over 999 still stops Start.
+
+### Changed in the shared engine (opt-in; Fairway unchanged)
+
+- `src/lib/golf/round-session/start-form.ts`: `NewRoundStartForm` takes two
+  optional fields, `yardage` ('every' | 'any' | 'none', default 'every') and
+  `libraryOffer` (holes, under the card's numbers); `validateStartHoles(holes,
+  yardage = 'every')`.
+- `src/lib/golf/round-session/use-new-round-session.ts`: `start(form)` passes
+  `form.yardage` to `validateStartHoles`, and `handleHolesSave` runs the legacy
+  saved-course catalog offer (`contributeCourseFromRound`, then the course and
+  tee refs) when the form carries `libraryOffer`, there is no "save course"
+  opt-in and no library link yet. Only Clubhouse's `start(form)` passes either
+  field; Fairway's screens never call `start(form)`, so their path, payloads and
+  every round-session and Fairway round test are unchanged (32 files, 242
+  tests).
+
+### Checked, unchanged (same as production)
+
+- The start, each hole's checkpoint, autosave (every 15 s, in both) and the
+  submit: the same engine handlers and the same payloads, with
+  `expectedUpdatedAt` on the submit of an existing round (112402).
+- The back nine: Fairway's quick start sends its hole configs under the card's
+  numbers (10 to 18), Clubhouse's under 1 to 9; the holes themselves, and every
+  write after the start, are numbered by position in both, and no 9-hole round
+  in production has a hole numbered past 9 (read-only check, 2026-10-17).
+- Offline replay: the Clubhouse shell starts the sync engine
+  (`shell/OfflineSync.tsx`) as Fairway's `OfflineProvider` does, and the offline
+  banner shows what is waiting. Discard (library and round) marks the round
+  discarded and drops its queued copy, as the engines do.
+- After a submit, the review opens (`/rounds/[id]`, as Fairway's overlay
+  pushes); Home, Rounds, Stats, Qualifiers and the stats cache are revalidated
+  by the shared server action. A recap is now written on that first review.
+- Review totals: of 427 completed rounds with holes in the last 60 days, none
+  has a stored total, nine, to par or putts that differs from its holes, so the
+  review's nines (from the holes) and its totals (from the round) agree.
+
+## 2026-10-17 — Change a submitted round's type from its review; qualifier rounds checked against production
+
+Parity pass on how a round becomes a qualifier round, against Fairway's
+new-round setup, its continue editor and its round page (`RoundTypeEditor`), and
+the live `reclassify_golf_round` and `submit_round_atomic`.
+
+```text
+Design package: none (no board); the review's control is the existing Change round type sheet (CH-11521)
+PR/commit:      agent/course-picker-premium-pr (see the PR)
+Contract IDs:   111122 (CH-11522, new); 111121, 110638, 110639, 110417 (copy widened)
+Actions:        ACT-P011-REVIEW-CHANGE-ROUND-TYPE (new), on the existing updateRoundType
+Data impact:    none new; a coach's save inserts the player's golf_qualifier_entries row, as on Fairway
+Held items:     none
+```
+
+### Changed (2026-10-17)
+
+- **A submitted round's type can be changed from its review** (CH-11522,
+  `RoundReview.tsx` `ChangeRoundType`). Fairway's round page has had this since
+  2026-08-19 (the coach's report of players who tapped Practice for a qualifier
+  round); the Clubhouse review had no way to do it. The rules are Fairway's: the
+  owning player and a coach of the player's team; the player's entered
+  qualifiers, finished ones included; for a coach, the round's team's other
+  qualifiers too (test ones left out), marked "Not entered yet. Saving enters
+  the player in it.", and `updateRoundType` enters them. Taken slots are shown
+  and not offered. The options are read beside the holes
+  (`data/rounds-type-options.ts`); any of the reads failing is "didn't load"
+  (CH-11218), never a shorter list.
+- **The sheet's words follow the viewer and the round** (`RoundTypeSheet.tsx`,
+  `round-type.ts`). A coach with no team qualifier is told to create one, not to
+  ask a coach (CH-11316); a coach's permission refusal is worded for a coach
+  (CH-11020); the toast says when the save entered the player. On a live round a
+  closed qualifier now says "Closed. It has to be reopened before this round can
+  be submitted.": the live `submit_round_atomic` still refuses a completed
+  qualifier, though `round-submit.ts`'s comment says that check was removed, so
+  the old "Adding this round changes its final standings" was only true of a
+  submitted round.
+- **Setup asks the server about every open qualifier** (`setup-reads.ts`). A
+  qualifier whose entry count said "all rounds in" was blocked without asking,
+  and any refusal read "Try again in a moment". Now the server's next round
+  decides, as on Fairway, and its definitive refusals are said as such (every
+  round in, more than one saved round, no longer entered, gone,
+  `qualifierBlockedReason`); only a failed read says to try again.
+
+Unchanged after the check: the new-round payload (the engine's `start(form)`
+with the qualifier and its round, or none for practice and tournament), the
+device's day for the date, the in-progress round that opens instead of starting,
+and Continue's options (the player's entered qualifiers).
+
+### Verification (2026-10-17)
+
+round-type-review.test (new: the options for both viewers, the coach's
+non-entered qualifier and the payload of its save, the loader for both viewers,
+CH-11316, CH-11020, the live-round hint, the setup's refusals),
+round-entry-routes (CH-11211 follows the server rule), and the action's own
+`round-type.test.ts` for the coach entering the player. Not checked in a browser
+or on a device; no screenshots.
+
+## 2026-10-17 — A coach on /rounds goes to Team stats
+
+Readiness audit (2026-10-17): a coach on `/golf/dashboard/rounds` stood on
+"not rebuilt". The page's plain `redirect()` to Team stats never ran: the frame
+drops a page that is not rebuilt for the role. It now redirects through
+`redirectToClubhouse`, and `/rounds` (exactly, not its children) is on the
+frame's aliased list (`CH_ALIASED_ROUTES`, nav.ts), so the segment renders
+hidden and its redirect fires. A player's Rounds is unchanged (checked in
+Chrome). Test: `alias-frame.test.ts`.
+
+## 2026-10-16 — Round type, holes and the track strip take the shared green chip
+
+The chosen Round type and Holes in setup, and the chosen chip in the track
+strip, are the lit green chip every switcher draws (`rounds-setup.css`,
+`rounds-track.css`). The window-only light-track version of the Holes choice in
+Add a course is gone with it, so the window and the page match. Add a course's
+photo refusal is drawn in warning amber, not danger red: nothing is lost by it,
+and the red-token rule (D-42) reserves red for under par, the flag and
+destructive actions. Shared detail: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-16 — The course picker and Add a course, rebuilt
+
+Owner, 2026-10-16, across the day: "wider than tall", "Claude and ChatGPT and
+Apple level", "it still looks vibe coded", no shimmer after picking a course,
+and Add a course in the picker's corner with the team's own photo.
+
+```text
+Design package: design/handoff/ v2 (rounds-flow.jsx Picker, rounds-course.jsx AddCourse) is the base; the photo cards,
+                the phone list and the two-column Add a course are the owner's direction of 2026-10-16 and depart
+                from the boards
+PR/commit:      agent/course-picker-premium-pr (see the PR)
+Contract IDs:   CH-11510, CH-11511, CH-11403, CH-11404, 111503 (unchanged); no new contract row
+Actions:        round start now also uploads a typed course's photo (best-effort); no new server action
+Data impact:    may write golf_courses.image_url and one object in the course-images bucket per typed course
+Held items:     none
+```
+
+### Changed (2026-10-16)
+
+- **Desktop picker** (`CoursePicker`, `rounds-setup.css`): the window is
+  landscape, 880px wide and at most 680 tall, and the courses are photo cards,
+  the photo on its own corners with the name, place, par and tee count under it
+  in the page's type, three to a row (880px is the Add a course window's width
+  too). No text over a photo and no scrim. Loading cards are still shapes (no
+  shimmer), six in waiting. The cards fold back as they leave the list's top and
+  unfold coming up from its bottom (a scroll-driven animation; still with
+  reduced motion or Animations off).
+- **Photos are real or absent.** A course shows its uploaded photo
+  (`image_url`), else a bundled photo of the real course
+  (`resolveRealCourseImage`), else a quiet tile with the flag. No stand-in scene
+  and no repeated photo. `ChSetupCourse.image` carries it (`setup-reads`).
+- **Phone picker**: a list to scan with a thumb, a small photo or the flag tile
+  beside the name, place and par, on hairlines; full-width photo cards were a
+  screen each.
+- **No shimmer after the pick**: a course's tees are asked for on hover, focus
+  or press of its card (once while the picker is open; a failed read is asked
+  again), so the tee list usually opens on them. When they are still on the way
+  the list holds a quiet space the height of a tee. The stale-read rule (111503)
+  is unchanged.
+- **Add a course** moved into the picker's head, beside Close (`Modal`
+  `action`), always in reach. On the desktop it is two columns: the form, and
+  the course as the picker will show it, filling in as it is typed, with a photo
+  slot (choose or drop; JPG, PNG, WebP or AVIF, up to 5 MB). The review step is
+  a plain summary, the name field takes focus, one focus ring per field, and the
+  footer reads the note on the left with Cancel and Next together on the right.
+  On the phone the card and its photo slot follow the form, so a phone can add a
+  photo too.
+- **The photo's path** (`AddCourseSheet` -> `ChSetupForm.coursePhoto` ->
+  `toStartForm` `courseImage` -> `useNewRoundSession`): only a course typed by
+  hand and saved carries it. After `contributeCourseFromRound` resolves the
+  library course, the start uploads the photo and sets it as the course's image
+  only when the course has none, not awaited and best-effort: a photo never
+  blocks or undoes a started round.
+- The photo slot's hint now names AVIF, which the code already accepted.
+- The photo's refusal message is `.ch-acs__photo-error`, in warning amber (see
+  the segmented-switcher entry above).
+
+### Why
+
+- The list of rows read as generated UI beside the dialogs the owner compared it
+  with; booking-style photo cards with the text under them, one material and one
+  shadow are the researched answer (see the shared entry for the material).
+- Course photos were left out in Q-72 because no course had `image_url`. A
+  course's own photo, or a real one of it, is now shown when there is one
+  (DESIGN.md Data assumptions, phone/rounds.md).
+
+### Verification (2026-10-16)
+
+- Before and after captures, Playwright WebKit headless,
+  `/clubhouse-preview/setup` (synthetic fixture, no auth): the picker and Add a
+  course at 1440x900 and 390x844, filed under
+  `.helm/screenshots/clubhouse/P011-rounds/` and listed in VERIFY.md. The
+  fixture's courses carry no photo, so the captures show the flag tiles: a photo
+  card with a real photo was not captured.
+- Not verified: a real iPhone Safari pass; the photo upload end to end against a
+  real round. Note for review: the image write used to go through
+  `setCourseImageUrl` -> `updateCourse`, which is gated to coaches (and the
+  policy `golf_courses_update_authenticated` refuses players too), so a player's
+  photo was refused and swallowed. The owner decided any golf team member may
+  set a course's photo. `setCourseImageUrl` now calls a narrow `SECURITY
+  DEFINER` RPC, `golf_set_course_image` (migration
+  `20261016220000_golf_set_course_image.sql`; tests: pgTAP
+  `supabase/tests/rls/golf_set_course_image.sql`, vitest
+  `set-course-image-url.test.ts`). The migration is NOT applied to production:
+  it needs applying after merge. Until then `setCourseImageUrl` falls back to
+  `updateCourse` when the function is missing, so coaches keep uploading and a
+  player's photo is still refused (the upload lands in the bucket either way),
+  and the deploy order is safe whichever comes first. A real round's photo end
+  to end was not run.
+
 ## 2026-10-14 — The course map hydrates without a mismatch
 
 Every shot-tracking screen logged "A tree hydrated but some attributes of the
@@ -12,13 +363,11 @@ trig.
 
 ## 2026-10-12 — round entry, recovery and continue follow the dashboard role
 
-No visible change for a single-profile user. `/rounds/new`, `/rounds/recover` and
-`/rounds/continue/[id]` draw Clubhouse only when the gate is on for the player
-and the
-dashboard layout's role (`getGolfDashboardRole`) is the player's, and the
-autosave and submit
-traces tag `ui` the same way. Fairway, the page's own access checks and the
-gate-off path are unchanged.
+No visible change for a single-profile user. `/rounds/new`, `/rounds/recover`
+and `/rounds/continue/[id]` draw Clubhouse only when the gate is on for the
+player and the dashboard layout's role (`getGolfDashboardRole`) is the player's,
+and the autosave and submit traces tag `ui` the same way. Fairway, the page's
+own access checks and the gate-off path are unchanged.
 
 ## 2026-10-12 — the old review address loads in the review's shape
 
@@ -40,7 +389,7 @@ Data impact: none (existing updateRoundType; reads golf_qualifier_entries and go
 Held items: none
 ```
 
-### Changed
+### Changed (2026-10-12)
 
 - A continued round's Exit sheet has a "Change round type" row ("Practice now.
   Changes what it counts toward."). It opens `RoundTypeSheet`: Practice,
@@ -57,12 +406,12 @@ Held items: none
   active member of the team; offline nothing is sent (CH-1903).
 - The Fairway continue page is unchanged (a comment only).
 
-### Why
+### Why (2026-10-12)
 
 - Owner decision: rebuild the dropped Fairway round-type editor (2026-08-31:
   players can edit a live round's type; Q-92b).
 
-### Verification
+### Verification (2026-10-12)
 
 - round-entry-continue.test (CH-11521, CH-11411, CH-11020, CH-11218, CH-11316,
   CH-11110, CH-1903, the auto-save hold while the sheet is open, and the
@@ -416,28 +765,28 @@ under); the desktop setup is unchanged.
 ## 2026-10-08 — Premium pass (backlog)
 
 - **Full screen on the phone (D1):** the shot screen and setup call
-  `usePhoneImmersive` (the shell's bar goes inert) and hide the shell's top bar and
-  bell while they are up (`.ch-root:has(.ch-rt-q|.ch-rsu)`, so the server's first
-  paint is already full screen). The live `/golf/dashboard/rounds/new` route renders
-  the same `RoundSetup` and `RoundTracking`. One h1 per screen (D11): the shot
-  screen's is the course and hole, setup's names the screen, the phone library and
-  review leave it to the bar.
+  `usePhoneImmersive` (the shell's bar goes inert) and hide the shell's top bar
+  and bell while they are up (`.ch-root:has(.ch-rt-q|.ch-rsu)`, so the server's
+  first paint is already full screen). The live `/golf/dashboard/rounds/new`
+  route renders the same `RoundSetup` and `RoundTracking`. One h1 per screen
+  (D11): the shot screen's is the course and hole, setup's names the screen, the
+  phone library and review leave it to the bar.
 - **On the course (owner board 3):** the shot screen in track mode on the phone:
   deep green full bleed; Exit, the round and Card in glass pills; the hole strip
-  as plates; the drawn hole as the hero (solid line for each played shot, dashed to
-  the pin, numbered stops) with "Hole N / Par · yds" and "Shot N · kind / distance /
-  yards to the pin" set on it; the one-line shot log; one ivory entry card with the
-  real fields; Undo, Penalty and a big Next shot on the green. Every rule is
-  `useShotTracking`'s and `shot-entry-rules`' (undo asks first, D-70; plausibility;
-  the 15-stroke note; putting details; the miss grids). Desktop keeps its layout
-  with the same drawn hole.
+  as plates; the drawn hole as the hero (solid line for each played shot, dashed
+  to the pin, numbered stops) with "Hole N / Par · yds" and "Shot N · kind /
+  distance / yards to the pin" set on it; the one-line shot log; one ivory entry
+  card with the real fields; Undo, Penalty and a big Next shot on the green.
+  Every rule is `useShotTracking`'s and `shot-entry-rules`' (undo asks first,
+  D-70; plausibility; the 15-stroke note; putting details; the miss grids).
+  Desktop keeps its layout with the same drawn hole.
 - **Course view (board 3b):** tapping the hole opens it full screen (a panel on
   the desktop): the hole top to bottom with 50/100/150 rings from the pin scaled
   from the hole's yardage, each shot numbered with its club and distance, and a
-  sheet of this hole's shots. ‹ › look at other holes (the round screen's finished
-  holes' shots; view only, never the scored hole). No GPS, satellite or course
-  geometry; "Your last 3" and "Team average" are left out (not loaded). The drawn
-  hole's geometry is `track/hole-geometry.ts`.
+  sheet of this hole's shots. ‹ › look at other holes (the round screen's
+  finished holes' shots; view only, never the scored hole). No GPS, satellite or
+  course geometry; "Your last 3" and "Team average" are left out (not loaded).
+  The drawn hole's geometry is `track/hole-geometry.ts`.
 - **The scorecard as a hung board (A2):** each nine a field-green board, hole
   numbers debossed, figures on ivory plates, the Score row the largest numerals
   (D8), Tot past a gutter, the whole cell the target (D9); on the phone a sticky
@@ -446,19 +795,20 @@ under); the desktop setup is unchanged.
   CoachHelm from N holes" (no Sparkles, D14) on both widths; any clause its own
   strokes-gained or putts figures contradict is cut before it shows
   (`recap-check.ts`, D13; no new AI call). "Select a hole" on the desktop (D17).
-- **One sun (A1):** the green feature cards (in progress, the review's phone hero,
-  the setup band) and the shot screen's field take the shell's global light
-  (`--ch-light-*`): sky from the sun's side, a sun-side rim, a leaning cast shadow.
-  Never on figures.
+- **One sun (A1):** the green feature cards (in progress, the review's phone
+  hero, the setup band) and the shot screen's field take the shell's global
+  light (`--ch-light-*`): sky from the sun's side, a sun-side rim, a leaning
+  cast shadow. Never on figures.
 - **Library and posting:** a month's low is an 18-hole figure and nine-hole rows
-  say so (D2); the ribbon draws under par red, over par at 3:1, Even in the legend,
-  a qualifier as a gilt outline, with an honest caption and ink-500 labels
-  (D3–D5); played holes on the round card show the number over the score (D15); the
-  best round keeps its whole course name (D16); the desktop score box keeps one
-  width (D18). Submitting, posted and didn't-submit are a modal dialog over a 0.96
-  green with an opaque card and focus on the title (D6, D7). The spinner stops
-  under Animations off (D20); the bar's blur has its prefix (D21).
-- Not here: B3 (D-70 stands); 44pt shared buttons and red failure titles (shell).
+  say so (D2); the ribbon draws under par red, over par at 3:1, Even in the
+  legend, a qualifier as a gilt outline, with an honest caption and ink-500
+  labels (D3–D5); played holes on the round card show the number over the score
+  (D15); the best round keeps its whole course name (D16); the desktop score box
+  keeps one width (D18). Submitting, posted and didn't-submit are a modal dialog
+  over a 0.96 green with an opaque card and focus on the title (D6, D7). The
+  spinner stops under Animations off (D20); the bar's blur has its prefix (D21).
+- Not here: B3 (D-70 stands); 44pt shared buttons and red failure titles
+  (shell).
 
 ## 2026-10-08 — States and native feel
 
@@ -487,10 +837,10 @@ WebKit at 390x844 with touch.
   of hole squares (two ninths of the card's width, `cqw`) and drops its foot's
   second line from a 359px card, as the card does. Measured in WebKit from 355
   to 445px; within 0.3px at 390 and 430.
-- **Copy:** the page's own words take the curly apostrophe: the list, the review,
-  setup and the round-review route ("Your rounds didn’t load", "Couldn’t check
-  for a round in progress", "This round isn’t here", "The round’s date can’t be
-  after today" and the rest). The catalog's quotes match, and the
+- **Copy:** the page's own words take the curly apostrophe: the list, the
+  review, setup and the round-review route ("Your rounds didn’t load", "Couldn’t
+  check for a round in progress", "This round isn’t here", "The round’s date
+  can’t be after today" and the rest). The catalog's quotes match, and the
   copy-apostrophes guard now covers Rounds, its screens and its round-review,
   round-new, round-continue and round-recover routes. Tee names and other words
   from the server are shown as sent.
@@ -539,8 +889,8 @@ Held items:     none
 ```
 
 The screen's imports and test mocks now point at the files that own the server
-actions (round-submit.ts, round-partial.ts and shot-actions.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
-by domain. No behavior change.
+actions (round-submit.ts, round-partial.ts and shot-actions.ts) after `golf.ts`,
+`insights.ts` and `admin-data.ts` were split by domain. No behavior change.
 
 ## 2026-10-07 — A round row answers the press
 
@@ -584,7 +934,8 @@ hole's head and the arrows stay put. With reduced motion it is instant.
 
 On desktop, the round's green slab is now the framed page head:
 
-- **Back link:** "Rounds" (or "Stats") is a quiet link above the double hairline.
+- **Back link:** "Rounds" (or "Stats") is a quiet link above the double
+  hairline.
 - **Head:** the date and kind are the eyebrow, the course is in the head's
   heavy sans, and the tee line follows. The score sits on the right in forest
   ink: over par in amber, under par in red.
@@ -1279,7 +1630,7 @@ Data impact:    none
 Held items:     none
 ```
 
-### Added
+### Added (2026-09-30)
 
 - 12 Rounds preview pages in `CH_A11Y_PAGES` (the library: default, empty,
   failed; the review: default, coach, no shots; setup: default, failed courses;
@@ -1294,12 +1645,12 @@ Held items:     none
 - **The tracking scorecard scrolls sideways with no way to focus it.** It is now
   a focusable, labelled region (`role="region"`, `tabIndex 0`, "Scorecard").
 
-### Why
+### Why (2026-09-30)
 
 - `clubhouse:a11y` had never scanned Team Hub, Rounds or Classes; the first run
   failed 13 of the 26 new entries.
 
-### Verification
+### Verification (2026-09-30)
 
 - Re-run: hub and rounds 40 of 40 clean at 1280 and 390 (`PROGRESS.md`).
 
@@ -1314,7 +1665,7 @@ Data impact:    none
 Held items:     none
 ```
 
-### Added
+### Added (2026-09-30, 2)
 
 - `screens/rounds/setup/`: the green band with its steps, the course card, the
   open qualifier, Round details (type, date, holes, which qualifier round), the
@@ -1333,20 +1684,20 @@ Held items:     none
   `round-setup.test.tsx` (19 cases, mutation-checked: 17 of 18 killed; the
   survivor is equivalent). Preview `/clubhouse-preview/setup`.
 
-### Fixed
+### Fixed (2026-09-30)
 
 - **The setup's class prefix was `ch-rs`, which is Roster's, and hid the page on
   the phone.** It is now `ch-rsu`.
 - A new round hides the phone tab bar (`usePhoneTabsHidden`); the date and holes
   fields stack at 390.
 
-### Why
+### Why (2026-09-30, 2)
 
 - Q-72h: a player's "Add a course" is the round's own course (the library's add
   is coach only), saved by default, and the picker's tee cards draw one length
   bar, not per-hole bars.
 
-### Verification
+### Verification (2026-09-30, 2)
 
 - See VERIFY.md (real Chromium at 390: the dock read "Finley GC · Blue · 18
   holes · Par 72"; axe at 1280 and 390).
@@ -1362,7 +1713,7 @@ Data impact:    none
 Held items:     none
 ```
 
-### Added
+### Added (2026-09-30, 3)
 
 - `screens/rounds/track/`: the hole strip, the hole hero with its schematic map
   and shot log, the live entry (club, putt read, result, tee miss, the approach
@@ -1385,12 +1736,12 @@ Held items:     none
   20 of 21 killed; the survivor is equivalent). Preview
   `/clubhouse-preview/track` with a stand-in round screen.
 
-### Why
+### Why (2026-09-30, 3)
 
 - ROUNDS_PLAN "Avoid a third copy": the handlers move into one shared hook
   before a second screen calls them.
 
-### Verification
+### Verification (2026-09-30, 3)
 
 - See VERIFY.md (desktop and 390 checked headless; a shot recorded in real
   Chromium at 390; axe at 1280 and 390).
@@ -1406,7 +1757,7 @@ Data impact:    none
 Held items:     none
 ```
 
-### Added
+### Added (2026-09-30, 4)
 
 - `RoundReview`, `ReviewLoadFailed`, the loader `loadRoundReview` (pure steps in
   `round-review-shape.ts`) and the route `ClubhouseRoundReviewRoute`, for the
@@ -1422,18 +1773,18 @@ Held items:     none
   CH-11804. `round-review.test.tsx` (29 cases, mutation-checked: 21 of 21 killed
   after three sharper tests). Preview `/clubhouse-preview/round`.
 
-### Fixed
+### Fixed (2026-09-30, 2)
 
 - The catalog named the wrong test file for the review's rows (85ee9559a).
 - Browser pass: the review hero's course name was dark on dark green.
 
-### Why
+### Why (2026-09-30, 4)
 
 - Q-72e: the board's review is the round page, so it lives at `/rounds/[id]`;
   the AI deep review at `/rounds/[id]/review` stays with CoachHelm. Q-72f: the
   card shows the player's own posting notes, and Focus and Keep are left out.
 
-### Verification
+### Verification (2026-09-30, 4)
 
 - See VERIFY.md.
 
@@ -1448,7 +1799,7 @@ Data impact:    none
 Held items:     none
 ```
 
-### Added
+### Added (2026-09-30, 5)
 
 - `screens/rounds/` (`RoundsLibrary`, `parts`, `writes`, `RoundsSkeleton`), the
   loader `loadRoundsLibrary` (pure steps in `rounds-shape.ts`) and the route
@@ -1477,13 +1828,13 @@ Held items:     none
 - **The phone ribbon's labels were about 5px.** It now draws the last ten rounds
   on a narrower canvas.
 
-### Why
+### Why (2026-09-30, 5)
 
 - Q-72a to d: no course photos, "50+ stats tracked" becomes a plain list, the
   hole map is a labelled schematic, and the submit overlay names the real shot
   count. Round entry reuses the hardened engine, so one engine and two renderers
   until the flag flips.
 
-### Verification
+### Verification (2026-09-30, 5)
 
 - See VERIFY.md.

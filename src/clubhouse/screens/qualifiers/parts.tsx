@@ -127,3 +127,25 @@ export function qualifierPeek(r: ChQRow, numRounds: number): ChPlayerPeek {
     avg: r.avg,
   };
 }
+
+/**
+ * Thru as dots (owner, 2026-10-16): one per scheduled round, green for each one played. A long qualifier (more than
+ * eight rounds) keeps the figure, since a row of dots that long stops being countable at a glance.
+ */
+export function ThruDots({ played, total }: { played: number; total: number }) {
+  const label = `${played} of ${total} ${total === 1 ? 'round' : 'rounds'}`;
+  if (total > 8) {
+    return (
+      <span className="ch-num" aria-label={label}>
+        {played}/{total}
+      </span>
+    );
+  }
+  return (
+    <span className="ch-qf-dots" role="img" aria-label={label}>
+      {Array.from({ length: total }, (_, i) => (
+        <i key={i} className={i < played ? 'is-on' : undefined} />
+      ))}
+    </span>
+  );
+}

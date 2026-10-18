@@ -226,10 +226,16 @@ before, after, baseline or evidence.
   not.
 - Not reproduced: the editor setting its fields again when the page re-reads
   while it is open (CONTRACT.md 12).
-- Not handled: a create whose answer is lost can be created twice by Retry
-  (CONTRACT.md 06).
-- v2 draws a whole-page first-run state for a team that has never scheduled
-  anything (D-71); it is not built.
+- Not run against a database or in a browser: Retry after a create's answer is
+  lost (CONTRACT.md 06). It no longer creates twice: events and series are
+  keyed by a request id since C-17 (`event-create-idempotency.test.ts`,
+  `calendar.test.tsx` C-17), and busy time since 2026-10-17
+  (`blocked-time-idempotency.test.ts`, `calendar.test.tsx` CH-6006). Attaching
+  a file, attendance and replies set one row per event and file or player, so
+  a repeat cannot add a second. Unit tests and source reading only.
+- Not captured in a browser in this pass: the D-71 first-run page (CH-6309,
+  `CalendarFirstRun.tsx`, built 2026-09-30; desktop and phone both draw it).
+  Proved in jsdom only (`calendar.test.tsx` CH-6309).
 
 ## Premium audit matrix — 2026-10-06
 

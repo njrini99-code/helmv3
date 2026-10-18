@@ -13,18 +13,34 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route `/golf/dashboard/settings` · code `src/clubhouse/screens/settings/` (the phone screen: `phone/`) · tests
-`src/clubhouse/__tests__/settings.test.tsx` (each test is named by its number) · preview
-`/clubhouse-preview/settings` (`?state=failed|partial|failwrites|player|noteam|assistant|loading`).
+Route `/golf/dashboard/settings` · code `src/clubhouse/screens/settings/` (the
+phone screen: `phone/`) · tests `src/clubhouse/__tests__/settings.test.tsx`
+(each test is named by its number) · preview `/clubhouse-preview/settings`
+(`?state=failed|partial|failwrites|player|noteam|assistant|loading`).
 
-Success confirmations are listed next to their error: the toast shows for 4 seconds, errors for 8 with Retry.
+Success confirmations are listed next to their error: the toast shows for 4
+seconds, errors for 8 with Retry.
 
-**Phone (81901).** At 820px or less Settings is a different screen (owner design, `docs/clubhouse/phone/settings.md`):
-a grouped list that pushes to each section, edit cards as sheets, choices as bottom sheets, destructive choices as
-action sheets. It uses the same writes, hooks (`screens/settings/hooks.ts`) and numbers as desktop, so every row below
-exists on the phone with the differences named in its "How" cell. Desktop only: CH-8009 and CH-8504 (Mute push, Mute
-email and Reset are not in the phone design, and each kind's sheet changes the same switches) and CH-8507 (there is no
-rail to switch). The tests for the phone are the "Settings · phone" group in `settings.test.tsx`.
+The second line of an 80xx error toast is chosen by cause (`saveFailureBody` in
+`parts.tsx`). Only a save that got no answer (it threw, gave no reason, or
+failed with the browser's network wording) says "Check your connection and try
+again." A save the server refused says why: "Your account doesn't have access to
+do this." for a policy or a missing grant (also when the database words it as
+"violates row-level security"), the session line for an expired sign-in, the
+server's own short sentence as written, and "The server didn't accept the
+change. The error has been reported." for a technical refusal; a card's own next
+step (CH-8018) stands in for that last one. A switch's toast keeps "It is back
+where it was." in front.
+
+**Phone (81901).** At 820px or less Settings is a different screen (owner
+design, `docs/clubhouse/phone/settings.md`): a grouped list that pushes to each
+section, edit cards as sheets, choices as bottom sheets, destructive choices as
+action sheets. It uses the same writes, hooks (`screens/settings/hooks.ts`) and
+numbers as desktop, so every row below exists on the phone with the differences
+named in its "How" cell. Desktop only: CH-8009 and CH-8504 (Mute push, Mute
+email and Reset are not in the phone design, and each kind's sheet changes the
+same switches) and CH-8507 (there is no rail to switch). The tests for the phone
+are the "Settings · phone" group in `settings.test.tsx`.
 
 ## 80xx Error toasts
 
@@ -59,7 +75,7 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 | CH-8027 | Declining an assistant coach request fails (head coach) | "Couldn't decline Avery Lee" + the reason, Retry; the request stays. On success: "Declined Avery Lee" and the request leaves. The person is detached from the program, not deleted | `useAction('settings.declineAssistant')` (`useCoachingStaff`) → `declinePendingAssistantCoach` | settings-staff.test › CH-8027 |
 | CH-8028 | Making a staff invite fails (head coach) | "Couldn't make the assistant coach invite" / "Couldn't make the program admin invite" + the server's reason (for example "Only a head coach of this team can invite staff."), Retry; a code shown before is cleared first. On success there is no toast: the code, its role and how long it works show, with Copy staff code, Copy staff invite link and Share (Copy code, Copy link and Share on the phone) | `useAction('settings.createStaffInvite')` (`useStaffInvite`) → `createStaffInvite` | settings-staff.test › CH-8028 |
 | CH-8029 | Send a test push fails (P008-C3, D1-6) | "Couldn't send a test" + the server's reason ("No device has push on yet.", "Too many tests. Try again in a minute.") or "Try again in a moment." / "Check your connection and try again." Done: "Test sent" + where it went, with a success haptic | `useTestPush` → `POST /api/push-subscriptions/test` (the caller's own Web Push subscriptions only); Send a test beside Push on this device (desktop), a row under it (phone) | settings.test › CH-8029 |
-| CH-8320 | The team's course location (Team; held migration 20261008150000) | Card (desktop) / group (phone): "Course location", Set: `<name>` or Not set, Use my location (rounded to two decimals) with a name, Clear; a denied or missing location says why inline. Draws nothing until the columns exist or when the read fails | `useCourseLocation` → `golf_team_settings` course_latitude/longitude/label (coach RLS); the shell's light reads it for the sun | course-location.test |
+| CH-8320 | The team's course location (Team; migration 20261008150000, applied 2026-10-11) | Card (desktop) / group (phone): "Course location", Set: `<name>` or Not set, Use my location (rounded to two decimals) with a name, Clear; a denied or missing location says why inline. Draws nothing while the columns are missing or when the read fails | `useCourseLocation` → `golf_team_settings` course_latitude/longitude/label (coach RLS); the shell's light reads it for the sun | course-location.test |
 
 ## 81xx Validation (shown before anything is sent; Save stays disabled)
 
@@ -130,7 +146,7 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 | CH-8506 | Following a link off Settings with unsaved changes | "Leave without saving?" + "Your changes on this page haven't been saved." Keep editing / Discard and leave | `useUnsavedGuard`; on the phone an edit sheet with changes counts as unsaved (a link off the page asks with the same dialog) | settings.test › CH-8506 |
 | CH-8507 | Switching section with unsaved changes | "Leave without saving?" + "Your changes in this section haven't been saved." | `SettingsView` | settings.test › CH-8507 |
 | CH-8508 | Closing or reloading the tab with unsaved changes | The browser's own "Leave site?" prompt | `beforeunload` in `useUnsavedGuard`; on the phone, while an edit sheet holds changes | settings.test › CH-8508 |
-| CH-8509 | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes | An action sheet "Discard your changes?" + "What you changed hasn't been saved." with Discard changes in red and Keep editing; a warning haptic as it opens; a swipe that is refused puts the sheet back | `ActionSheet` inside `FormSheet` (`phone/sheets.tsx`) | settings.test › CH-8509 |
+| CH-8509 | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes | An action sheet "Discard your changes?" + "What you changed hasn't been saved." with Discard changes in red and Keep editing; a warning haptic as it opens; a swipe that is refused puts the sheet back | `ActionSheet` inside `FormSheet` (`phone/sheets.tsx`); a Back is held by `SettingsPhone` (`HeldSheetsContext`), which puts the section's history entry back and asks the topmost sheet, so the section stays; a Back while a sheet saves does nothing | settings.test › CH-8509 |
 | CH-8510 | Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet | A sheet "Delete account" with the field "Type delete to confirm"; Delete stays off until "delete" is typed, and Cancel leaves the account alone | `FormSheet` (`phone/AccountPhone.tsx`) | settings.test › CH-8510 |
 
 ## 86xx Motion (v2, D-64: press 110, quick 180, base 260, release 280ms; off when Animations is off or the OS asks for reduced motion)
@@ -173,7 +189,9 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 
 ## 89xx Network and UX
 
-Settings uses the shared behaviour: CH-1901 offline banner, CH-1902 "Still saving…" after 5 seconds, CH-1903 a save refused while offline, and the CH-195x experience signals. See [shell](shell.md).
+Settings uses the shared behaviour: CH-1901 offline banner, CH-1902 "Still
+saving…" after 5 seconds, CH-1903 a save refused while offline, and the CH-195x
+experience signals. See [shell](shell.md).
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |

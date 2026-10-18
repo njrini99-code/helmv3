@@ -528,7 +528,11 @@ const annDetail = (title: unknown = 'Upload yardage book') => ({
   success: true,
   data: { id: 'a1', acknowledgements: [], recipients: [], documents: [], tasks: [{ task_id: 't1', task: { title, due_date: null }, assignments: [{ player_id: 'p-me', status: 'pending' }] }] },
 });
-const openAnnouncement = async (user: User) => user.click(await screen.findByRole('button', { name: /Bus times/ }));
+// Announcements fold under the conversations: open the fold, then the announcement.
+const openAnnouncement = async (user: User) => {
+  await user.click(await screen.findByRole('button', { name: /^Announcements/, expanded: false }));
+  await user.click(screen.getByRole('button', { name: /^Bus times/ }));
+};
 const newMessage = async (user: User, kind: RegExp) => {
   await user.click(screen.getAllByRole('button', { name: 'New message' })[0]!);
   const dlg = within(screen.getByRole('heading', { name: 'New message' }).closest('dialog') as HTMLElement);

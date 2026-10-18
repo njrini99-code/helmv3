@@ -1,5 +1,193 @@
 # P006 — Calendar: changelog
 
+## 2026-10-17 — Production's event actions, live updates, linked trips, team replies, the whole window
+
+```text
+Design package: none (new menu items and a dialog in the existing patterns; one facts row)
+PR/commit:      uncommitted (Calendar and Classes production-parity audit, coordinator follow-up)
+Contract IDs:   CH-6016 (60629), CH-6017 (60630), CH-6506 (61105) new; 60104, 60807 wording
+Actions:        ACT-P006-RESTORE-EVENT, ACT-P006-DELETE-EVENT, ACT-P006-OPEN-TRIP (new); ACT-P006-REPLY widened
+Data impact:    reads golf_travel_itineraries (getItineraryForEvent); realtime on golf_events by team; the window
+                read and the replies read are by overlap; the replies read adds notified_at
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md), for the
+                open-reply count (below)
+```
+
+### Added
+
+- Restore event and Delete permanently on a cancelled event's menu (coach), as
+  Fairway's event menu offers them. Restore sends `updateGolfEvent` with
+  `status: 'confirmed'` (no question: it destroys nothing; CH-6016 when it
+  fails). Delete permanently asks first (CH-6506, the warning haptic on the
+  red button, D-70), calls `deleteGolfEventPermanently` (the server allows it
+  only for a cancelled event or one with no attendance), closes the panel and
+  reads again (CH-6017 when it fails). A live event and a player get neither.
+- Live updates: one realtime channel on `golf_events` for the team
+  (`useCalendarLive`, live.ts), as Fairway's range hook. A change, or a
+  reconnect after the feed dropped, re-reads the page (`router.refresh`, one
+  read per burst, 800 ms); a dropped feed is reported. Replies are not on the
+  feed, as in production.
+- The trip linked to an event: "View itinerary" and the destination in the
+  facts, to Travel with that trip open (`getItineraryForEvent`, every viewer, as
+  Fairway's drawer). Nothing is drawn with no trip or on a failed read
+  (reported).
+- An event that asks for replies and invites no one is the team's: any player
+  may reply ("Open to the whole team"), and Needs your reply asks them, as
+  production allows (`golf_event_attendance_insert_self`). The invite list is
+  read from the rows the coach's invitation wrote (`notified_at`), so a
+  teammate's own reply keeps it open. A meeting with no invitees stays the
+  coach's own (D2-8 wins).
+
+### Fixed
+
+- The window read events by their start only, so an event that began before
+  the window and ran into it (a ten-day camp, a tournament that began the
+  Friday before) was missing from the window's first days. The loader now reads
+  every event that overlaps the window (`end_time` on or after its start, or a
+  start inside it) and fills each day it covers; the replies read follows the
+  same rule. Fairway's read (`page.tsx`) still has the gap; flagged, not
+  changed.
+
+### Open question
+
+- Once migration 20261017102000 is applied, the count function cannot tell a
+  coach's invitation from a player's own reply, so the first reply to a team
+  event closes it to the other players. Recommended default: add an
+  `invited_by_coach` count (rows with `notified_at`) to
+  `golf_event_attendance_counts` before the migration is applied.
+
+### Verification
+
+- `calendar.test.tsx` (CH-6016, CH-6017, CH-6506, a live event and a player get
+  neither) and `calendar-parity.test.tsx` (the feed: channel, filter, one read
+  per burst, reconnect, removal, off by default; the linked trip for coach and
+  player, none and a failed read; team replies on screen and in the loader; the
+  overlap read and the days it fills). No screenshots: not captured.
+
+## 2026-10-17 — Parity with production: events over several days, reply locks
+
+```text
+Design package: none (copy only: "From 7:00 AM", "Until 4:30 PM", "Starts … · ends …", "Ends Sun 18 Oct",
+                "Replies closed at the deadline the coach set.")
+PR/commit:      uncommitted (Calendar and Classes production-parity audit)
+Contract IDs:   60104, 60807 (wording)
+Actions:        none new; the editor's payload for a timed run over several days
+Data impact:    the loader also reads golf_events.rsvp_deadline
+Held items:     none
+```
+
+### Fixed (2026-10-17)
+
+- A timed event that runs past midnight (a tournament from Friday 7 AM to
+  Sunday 4:30 PM, an overnight trip) was drawn on its first day only, ending at
+  midnight. Production's calendar puts it on every day it covers
+  (`eventDaySpan`), and now so does `loadCalendar`: its start to midnight,
+  whole days, then midnight to its end, each entry carrying the run in `span`.
+  Each day says its part (From, All day, Until); the panel says when the run
+  starts and ends. Production has eight such rows; all eight now land on the
+  same days in both (spot check, below).
+- Editing such an event from any of its days opens on the run (its first day,
+  start, last day and end), where it had opened on the clicked day's part (a
+  later day started at 12:00 AM). A save that leaves its days and times alone
+  sends no end, so the stored end is kept; one that changes them sends the end
+  moved by any clock change between the two days (the server builds the end
+  with the start's offset: a run from Saturday 31 October to Monday 2 November
+  would otherwise end an hour early). Duplicate publishes the same days and
+  times, at the right instants, instead of a "24:00" end the server refuses.
+  It never drags (`movable`), its invitees are busy on every day it covers, and
+  a week that holds only a later day of it opens on a real start, not midnight
+  (`focusHour`).
+- A player's reply locks when the server locks it (`lib/calendar/rsvp.ts`, the
+  same rule Fairway's drawer shows): an all-day event stays open through its
+  day (it had closed at the start of the day, while the server takes replies
+  for 24 hours from its UTC midnight), every day of a run locks with the run,
+  and a reply deadline (Fairway's editor can set one) closes it and says so.
+  One rule (`replyLock`, model.ts) serves the event and Needs your reply, which
+  no longer asks a player for a reply the server would refuse.
+
+### Verification (2026-10-17)
+
+- `src/clubhouse/__tests__/calendar-parity.test.tsx` (loader, labels, the
+  editor's payload from a later day, Duplicate, the reply locks), and the
+  updated 60104 case in `calendar.test.tsx`.
+- Read-only spot check of production rows (scratch script, not committed):
+  three teams, next 30 days, coach and one player each: identical event-days in
+  Clubhouse and Fairway. The eight timed multi-day rows: 8 of 8 on the same
+  days (Clubhouse showed one day each before).
+- No screenshots: not captured in this pass (VERIFY has no new rows).
+
+## 2026-10-17 — A player's meeting rule reads invite counts
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner-flagged attendance RLS, docs/clubhouse/STATUS.md)
+Contract IDs:   none new (D2-8 unchanged)
+Actions:        none
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000)
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Changed
+
+- `loadCalendar` (`data/calendar.ts`), player only: D2-8 (a meeting with no
+  invitees is the coach's own) asks `golf_event_attendance_counts` how many
+  each meeting in the window invites, beside the attendance read (no extra
+  round trip). The player's own place and reply still come from their own row.
+  Until the migration is applied the rows decide, as before; a failed count is
+  logged (`meetingInvites`) and never hides a meeting.
+
+### Why
+
+- Migration 20261017102000 narrows `golf_event_attendance` so a player reads
+  only their own row. Without the count, every meeting that invites teammates
+  but not this player would have read as having no invitees and disappeared.
+
+### Verification (2026-10-17, 2)
+
+- `npm run test:file -- src/clubhouse/__tests__/attendance-counts.test.ts
+  src/clubhouse/__tests__/calendar.test.tsx`. No screenshots: nothing visible
+  changed.
+
+## 2026-10-17 — Retry cannot add the same busy time twice; stale VERIFY rows corrected
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner request "fix whatever needs it")
+Contract IDs:   60606 (CH-6006), 60409 (CH-6309)
+Actions:        addCoachBlockedTime takes an optional requestId
+Data impact:    none (no migration; the id becomes the busy-time row's primary key)
+Held items:     none
+```
+
+### Fixed (2026-10-17, 2)
+
+- VERIFY's open bug "Retry can create the same event twice when a create's
+  answer is lost" was already fixed for events: New event and a repeating
+  series have sent a request id that becomes the row's key since C-17. Busy
+  time was the last create the toast can retry without one. The sheet now
+  makes one id per set of contents and keeps it across Retry, Add again and a
+  reopened sheet until an add lands; `addCoachBlockedTime` stores the block
+  under it, and a repeat that hits the key answers with the block that landed
+  once it reads back as the coach's own with the same title and start (anything
+  else keeps the existing failure). Messages are unchanged. Without an id
+  (Fairway's availability screen) the add behaves as before.
+- VERIFY said the D-71 first-run page was not built; it is (CH-6309,
+  2026-09-30). Both rows now name only what is still unverified.
+
+### Verification (2026-10-17, 3)
+
+- Unit tests: `blocked-time-idempotency.test.ts` (server: no second row, a
+  mismatched or another coach's id refused) and `calendar.test.tsx` CH-6006
+  (client: the same id across Retry and a reopened sheet, a new one for new
+  contents or after a landed add). Not run against a database or in a browser.
+
+## 2026-10-16 — The attendance switch takes the shared green chip
+
+The chosen attendance choice is ivory on the shared green chip, whatever it is:
+amber ink on green was unreadable, so Late no longer draws its own colour, and
+Absent keeps its strike in a lighter line (`calendar.css`, `.ch-in__att`).
+Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-14 — Keyboard and focus (runtime audit A-09, A-14, A-23, A-24, A-25)
 
 WebKit audit of the desktop calendar, coach and player:
@@ -159,42 +347,100 @@ against WebKit's edge gestures.
 
 ## 2026-10-08 — the player peek (P003-C1)
 
-The shared PlayerPeek: for the coach, each attendee row in the event panel peeks at the player (a hold on the phone, a rest of the pointer on desktop), from the roster the Calendar already loaded. No new reads.
+The shared PlayerPeek: for the coach, each attendee row in the event panel peeks
+at the player (a hold on the phone, a rest of the pointer on desktop), from the
+roster the Calendar already loaded. No new reads.
 
 ## 2026-10-08 — premium pass: findings D2, D3, D4, D6
 
-- D2: a week or day block on its own wraps its title to the lines its height leaves above the time, up to three (`--ch-ev-lines`, `.ch-ev--wrap`), so "Bus to Pine…" reads in full. A block with room for only one line keeps the plain cut-off.
-- D3: a new event opens on the first two free hours for everyone invited (`seedWindow`): after now today, from 9 AM on another day, and on the first free window when the day's free time is past. It no longer opens on daily practice with the whole team Busy.
-- D4: Find a time's proposed band is an outline over a faint wash, and a clashing block sits above it in amber, so you can see the clash in the lanes, not only in the list.
-- D6: Agenda keeps the arrows' place in the toolbar, hidden and inert, so the toolbar doesn't shift by about 80px when you switch views.
+- D2: a week or day block on its own wraps its title to the lines its height
+  leaves above the time, up to three (`--ch-ev-lines`, `.ch-ev--wrap`), so "Bus
+  to Pine…" reads in full. A block with room for only one line keeps the plain
+  cut-off.
+- D3: a new event opens on the first two free hours for everyone invited
+  (`seedWindow`): after now today, from 9 AM on another day, and on the first
+  free window when the day's free time is past. It no longer opens on daily
+  practice with the whole team Busy.
+- D4: Find a time's proposed band is an outline over a faint wash, and a
+  clashing block sits above it in amber, so you can see the clash in the lanes,
+  not only in the list.
+- D6: Agenda keeps the arrows' place in the toolbar, hidden and inert, so the
+  toolbar doesn't shift by about 80px when you switch views.
 
 ## 2026-10-08 — premium pass: peek an event (P006-C3)
 
-An event peeks where it is listed, through the shared peek (`ui/Peek.tsx`): a hold on a phone agenda row, a rest of the pointer (or keyboard focus) on a desktop week block. The card (`screens/calendar/peek.tsx`) shows kind, title, day and time, and place; for the coach, how many are going, how many can't, and who hasn't replied. Its actions are Open; for the coach, Nudge the people who haven't replied, which opens Messages prefilled with them and a short draft that the coach sends; and, for a qualifier, tournament or trip with a place, Directions as a plain Apple Maps link. Classes and busy time don't peek; a block that is being dragged doesn't either. Not built: answering the invite from the peek.
+An event peeks where it is listed, through the shared peek (`ui/Peek.tsx`): a
+hold on a phone agenda row, a rest of the pointer (or keyboard focus) on a
+desktop week block. The card (`screens/calendar/peek.tsx`) shows kind, title,
+day and time, and place; for the coach, how many are going, how many can't, and
+who hasn't replied. Its actions are Open; for the coach, Nudge the people who
+haven't replied, which opens Messages prefilled with them and a short draft that
+the coach sends; and, for a qualifier, tournament or trip with a place,
+Directions as a plain Apple Maps link. Classes and busy time don't peek; a block
+that is being dragged doesn't either. Not built: answering the invite from the
+peek.
 
 ## 2026-10-08 — premium pass: daylight on the grid (P006-A1)
 
-The Week and Day grids carry the day's light from the global light's sun at the team's place (`daylightOn` over `sunTimes`, `useLightPlace`): a night wash before sunrise and after sunset, a warm band through golden hour, and "Sunset 6:31" on the last column shown. Washes sit on the frame under the events and never tint an event; dark mode has its own night; print drops them.
+The Week and Day grids carry the day's light from the global light's sun at the
+team's place (`daylightOn` over `sunTimes`, `useLightPlace`): a night wash
+before sunrise and after sunset, a warm band through golden hour, and "Sunset
+6:31" on the last column shown. Washes sit on the frame under the events and
+never tint an event; dark mode has its own night; print drops them.
 
 ## 2026-10-08 — premium pass: drag to reschedule, with Undo (P006-B3)
 
-On desktop a coach picks up one of their events and drops it on another day and time, in 15-minute detents (a selection tick per detent). The block held steps back, a dashed ghost shows where it lands, and an invitee's event or class there lights amber while it is held (`clashesAt`). Alt+↑/↓ on a focused block moves it 15 minutes. A drop shows "Moved to 4:00 PM" with Undo for the done toast's life (4 s); the move is optimistic and nothing is written until the window closes, so invitees are notified only once it stands, and an undone move never reaches anyone. Leaving the page writes a waiting move at once. A failed write puts the block back (CH-6015); offline nothing is held (CH-1903). Series, multi-day, all-day, class and busy blocks don't drag (a series still asks "this event or all" in the editor). Not built: changing length by dragging the bottom edge. The notification timing needed no server change.
+On desktop a coach picks up one of their events and drops it on another day and
+time, in 15-minute detents (a selection tick per detent). The block held steps
+back, a dashed ghost shows where it lands, and an invitee's event or class there
+lights amber while it is held (`clashesAt`). Alt+↑/↓ on a focused block moves it
+15 minutes. A drop shows "Moved to 4:00 PM" with Undo for the done toast's life
+(4 s); the move is optimistic and nothing is written until the window closes, so
+invitees are notified only once it stands, and an undone move never reaches
+anyone. Leaving the page writes a waiting move at once. A failed write puts the
+block back (CH-6015); offline nothing is held (CH-1903). Series, multi-day,
+all-day, class and busy blocks don't drag (a series still asks "this event or
+all" in the editor). Not built: changing length by dragging the bottom edge. The
+notification timing needed no server change.
 
 ## 2026-10-08 — premium pass: swipe through days and weeks on the phone (P006-B2, D5)
 
-The phone Day view's agenda pages left and right with the phone's own momentum (scroll-snap, one day a page; `DayPager` in `CalendarPhone.tsx`), with one selection tick when a page settles (`scrollend`, or the scroll going quiet where WebKit lacks it). Past Saturday the strip turns to the next week. The neighbouring days are rendered for the swipe, clipped to the day's height, inert and hidden from assistive tech; a day outside the loaded window shows only its heading until its week arrives. A swipe doesn't also slide the agenda (CH-6606 still slides for a tap). ‹ › Previous week and Next week sit at the day heading's end, the same reach for VoiceOver and the keyboard (D5). They sit there rather than at the strip's ends so the seven day keys keep their width.
+The phone Day view's agenda pages left and right with the phone's own momentum
+(scroll-snap, one day a page; `DayPager` in `CalendarPhone.tsx`), with one
+selection tick when a page settles (`scrollend`, or the scroll going quiet where
+WebKit lacks it). Past Saturday the strip turns to the next week. The
+neighbouring days are rendered for the swipe, clipped to the day's height, inert
+and hidden from assistive tech; a day outside the loaded window shows only its
+heading until its week arrives. A swipe doesn't also slide the agenda (CH-6606
+still slides for a tap). ‹ › Previous week and Next week sit at the day
+heading's end, the same reach for VoiceOver and the keyboard (D5). They sit
+there rather than at the strip's ends so the seven day keys keep their width.
 
 ## 2026-10-08 — premium pass: coach-only meetings (D2-8, D7)
 
-A meeting with no invitees is the coach's own (a parent call, a staff meeting): the Calendar loader leaves it out of a player's payload, and the player's Home leaves it out of Up next and Today. Only once the invite list has loaded; when replies fail to load, nothing is hidden. No schema change.
+A meeting with no invitees is the coach's own (a parent call, a staff meeting):
+the Calendar loader leaves it out of a player's payload, and the player's Home
+leaves it out of Up next and Today. Only once the invite list has loaded; when
+replies fail to load, nothing is hidden. No schema change.
 
 ## 2026-10-08 — premium pass: open on now (P006-B1, D1)
 
-The Week and Day grids open with the now line, or the next event when today is not on show, about 30% down the canvas, on first paint and on T or Today (`focusHour` in `model.ts`, `useOpenOnNow` in `Calendar.tsx`). Opening is instant; Today eases unless motion is reduced. Back and Forward keep the place RouteFrame restored, and stepping a week keeps the canvas where it is.
+The Week and Day grids open with the now line, or the next event when today is
+not on show, about 30% down the canvas, on first paint and on T or Today
+(`focusHour` in `model.ts`, `useOpenOnNow` in `Calendar.tsx`). Opening is
+instant; Today eases unless motion is reduced. Back and Forward keep the place
+RouteFrame restored, and stepping a week keeps the canvas where it is.
 
 ## 2026-10-08 — dark: Clubhouse at night
 
-Calendar follows GolfHelm's dark theme ("Clubhouse at night"). A tournament or qualifier block, the month's competition chip and the detail panel's next-up card keep their filled green with ivory type; practice blocks, agenda times and lane events take the light text green; the competition dot, the phone's now line and its competition dots lift to the light green so they hold on the dark ground; selection, today, travel, the class hatch and the coach's busy hatch are redrawn as ivory or champagne washes. Light mode is unchanged (every rule is scoped to `html[data-fw-theme='dark']`).
+Calendar follows GolfHelm's dark theme ("Clubhouse at night"). A tournament or
+qualifier block, the month's competition chip and the detail panel's next-up
+card keep their filled green with ivory type; practice blocks, agenda times and
+lane events take the light text green; the competition dot, the phone's now line
+and its competition dots lift to the light green so they hold on the dark
+ground; selection, today, travel, the class hatch and the coach's busy hatch are
+redrawn as ivory or champagne washes. Light mode is unchanged (every rule is
+scoped to `html[data-fw-theme='dark']`).
 
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
@@ -251,8 +497,8 @@ Held items:     none
 ```
 
 The screen's imports and test mocks now point at the files that own the server
-actions (calendar-events.ts and calendar-blocked-time.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
-by domain. No behavior change.
+actions (calendar-events.ts and calendar-blocked-time.ts) after `golf.ts`,
+`insights.ts` and `admin-data.ts` were split by domain. No behavior change.
 
 ## 2026-10-07 — Views settle in; weeks slide
 
@@ -499,14 +745,20 @@ Data impact:    none
 
 ### Duplicate, Print and the jump panel's Close (Clickables gaps 9, 15, 21)
 
-- **Issue.** The board draws Duplicate, Print and a Close on the jump panel; none existed.
-- **Fix.** Event actions › Duplicate (coach) opens New event seeded from the event and publishes a new one; More › Print week (day, month or agenda by view) prints the view with the shell dropped; the jump panel has its own Close.
+- **Issue.** The board draws Duplicate, Print and a Close on the jump panel;
+  none existed.
+- **Fix.** Event actions › Duplicate (coach) opens New event seeded from the
+  event and publishes a new one; More › Print week (day, month or agenda by
+  view) prints the view with the shell dropped; the jump panel has its own
+  Close.
 - **Checked.** calendar 74/74, 5 of 5 mutations caught.
 
 ### Compare schedules on a class (Clickables gap 17)
 
-- **Issue.** A coach looking at a player's class had no way to set it against the team's schedule.
-- **Fix.** A class's detail ends with Compare schedules: New event on the class's day with only its player invited, so Find a time compares the two.
+- **Issue.** A coach looking at a player's class had no way to set it against
+  the team's schedule.
+- **Fix.** A class's detail ends with Compare schedules: New event on the
+  class's day with only its player invited, so Find a time compares the two.
 - **Checked.** calendar 75/75, the mutation caught.
 
 ## 2026-09-30 — The editor keeps what was typed through a page re-read
@@ -519,10 +771,11 @@ Data impact:    none
 
 ### Fixed (with a test that fails without the fix)
 
-- **A re-read wiped the editor.** The editor seeded its fields whenever the team list changed identity, and
-  every page re-read brings it in a new array. A refresh that landed while the editor was open (one still in
-  flight from deleting busy time, or a Retry elsewhere) cleared the title and reset the type. It now seeds
-  once per opening.
+- **A re-read wiped the editor.** The editor seeded its fields whenever the team
+  list changed identity, and every page re-read brings it in a new array. A
+  refresh that landed while the editor was open (one still in flight from
+  deleting busy time, or a Retry elsewhere) cleared the title and reset the
+  type. It now seeds once per opening.
 
 ## 2026-09-30 — The first-run page (D-71, CH-6309)
 
@@ -535,16 +788,18 @@ Data impact:    one read added: a coach's head count of the team's events, in th
 Held items:     none
 ```
 
-### Added
+### Added (2026-09-30)
 
-- `CalendarFirstRun`: a coach whose team has never scheduled anything gets the v2 page empty state and
-  Create event instead of an empty month. Once anything exists, an empty range keeps CH-6301. A player
-  never gets it, and neither does a count that failed or an events read that failed.
+- `CalendarFirstRun`: a coach whose team has never scheduled anything gets the
+  v2 page empty state and Create event instead of an empty month. Once anything
+  exists, an empty range keeps CH-6301. A player never gets it, and neither does
+  a count that failed or an events read that failed.
 
-### Fixed
+### Fixed (2026-09-30)
 
-- The first-run row reused CH-6308, the phone Day view's empty day; `clubhouse:check` reported the code
-  catalogued twice. It is CH-6309 now, with its own Bridge ID.
+- The first-run row reused CH-6308, the phone Day view's empty day;
+  `clubhouse:check` reported the code catalogued twice. It is CH-6309 now, with
+  its own Bridge ID.
 
 ## 2026-09-30 — V2 page docs and contracts, proven by tests; Retry finishes the job; a player's data trimmed
 
@@ -558,68 +813,100 @@ Data impact:    none
 Held items:     none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
-- The six page docs, the manifest's 21 actions, and the 30 behaviour contracts (the address, the seeds, the team's zone,
-  the loaded window, offline file removal, the role gates, success, the two warnings, kept state, the two optimistic
-  changes, Retry and Try again, the checked time, the phone layout, the keys, the loader's rounds, failures reported
-  and the tests).
-- The catalog: CH-6305 now names its test; CH-6009 says the Undo may also throw, and what it says offline.
+- The six page docs, the manifest's 21 actions, and the 30 behaviour contracts
+  (the address, the seeds, the team's zone, the loaded window, offline file
+  removal, the role gates, success, the two warnings, kept state, the two
+  optimistic changes, Retry and Try again, the checked time, the phone layout,
+  the keys, the loader's rounds, failures reported and the tests).
+- The catalog: CH-6305 now names its test; CH-6009 says the Undo may also throw,
+  and what it says offline.
 
-### Fixed
+### Fixed (2026-09-30, 2)
 
-- The toast's Retry now finishes the job. Seven writes did their follow-up in the button's handler after
-  `await action.run()`, so a Retry that landed sent the write and left the page as it was: publishing or saving an
-  event (the editor stayed open, the panel and the grid did not update), cancelling an event, creating a calendar-app
-  link (Create link stayed, and pressing it again made a second link), removing busy time, adding busy time (pressing
-  Add again made a duplicate), attaching a file, and a player's reply (the choice went back to what it was and the page
-  did not re-read). Each follow-up now lives inside the action passed to `useAction`, guarded by
-  `normalise(res).success` (61401). The reply keeps the last confirmed answer in a ref, because the Retry runs an
-  earlier render's action.
-- A player's browser was sent every invitee's id and reply for every event, though the screen never showed them (the
-  database lets a team player read them anyway). The loader now sends a player only their own place on each invite
+- The toast's Retry now finishes the job. Seven writes did their follow-up in
+  the button's handler after `await action.run()`, so a Retry that landed sent
+  the write and left the page as it was: publishing or saving an event (the
+  editor stayed open, the panel and the grid did not update), cancelling an
+  event, creating a calendar-app link (Create link stayed, and pressing it again
+  made a second link), removing busy time, adding busy time (pressing Add again
+  made a duplicate), attaching a file, and a player's reply (the choice went
+  back to what it was and the page did not re-read). Each follow-up now lives
+  inside the action passed to `useAction`, guarded by `normalise(res).success`
+  (61401). The reply keeps the last confirmed answer in a ref, because the Retry
+  runs an earlier render's action.
+- A player's browser was sent every invitee's id and reply for every event,
+  though the screen never showed them (the database lets a team player read them
+  anyway). The loader now sends a player only their own place on each invite
   list and their own reply (60803).
-- Add to calendar app offered a player a Team schedule link that the server refuses ("Only coaches can create team
-  feeds"), a button that could only fail. A player is now offered only My schedule (60804).
-- Undo on a removed file did not catch a thrown error (no toast, nothing reported) and tried to send while offline. It
-  now reports, says "Couldn't put … back" (CH-6009), and sends nothing offline (60701).
-- The Cancel event question promised "Replies and attendance are kept, and the event stays on the calendar marked cancelled" for a series too, but This and following and All in series call `deleteRecurringEvent`, which deletes the events and their replies and attendance. The question now says what those scopes do (61101).
-- `?date=2026-02-30` was accepted and rolled forward; the loader now takes only a real date (60102).
-- The loader read a coach's busy time after the replies, a fourth round for no reason; it now reads it with the events
-  (62101).
+- Add to calendar app offered a player a Team schedule link that the server
+  refuses ("Only coaches can create team feeds"), a button that could only fail.
+  A player is now offered only My schedule (60804).
+- Undo on a removed file did not catch a thrown error (no toast, nothing
+  reported) and tried to send while offline. It now reports, says "Couldn't put
+  … back" (CH-6009), and sends nothing offline (60701).
+- The Cancel event question promised "Replies and attendance are kept, and the
+  event stays on the calendar marked cancelled" for a series too, but This and
+  following and All in series call `deleteRecurringEvent`, which deletes the
+  events and their replies and attendance. The question now says what those
+  scopes do (61101).
+- `?date=2026-02-30` was accepted and rolled forward; the loader now takes only
+  a real date (60102).
+- The loader read a coach's busy time after the replies, a fourth round for no
+  reason; it now reads it with the events (62101).
 
-### Why
+### Why (2026-09-30)
 
-- D-62 and D-69: every page answers all 25 categories and proves each behaviour by a test that names it. The Retry class
-  of bug was found on Qualifiers the same day (Retry re-ran only the write).
+- D-62 and D-69: every page answers all 25 categories and proves each behaviour
+  by a test that names it. The Retry class of bug was found on Qualifiers the
+  same day (Retry re-ran only the write).
 
-### Verification
+### Verification (2026-09-30)
 
-- `npx vitest run src/clubhouse/__tests__/calendar.test.tsx` 67/67; `npm run -s typecheck:fast` exit 0; eslint exit 0.
+- `npx vitest run src/clubhouse/__tests__/calendar.test.tsx` 67/67; `npm run -s
+  typecheck:fast` exit 0; eslint exit 0.
 - Mutation-checked: 37 changes to the guarded code, all caught (VERIFY.md).
 
 ### Found, not fixed
 
-- Shell, not this page: the toasts sit outside a native modal dialog, which a browser makes inert, so a Retry (and the announcement of an error toast) raised by a failure inside a dialog is probably not reachable until the dialog closes. Not verified in a browser; the jsdom tests do not see it. It affects every page's Retry.
-- A create whose answer is lost on the way back can be created twice by Retry (no idempotency key on
-  `createGolfEvent`, `addCoachBlockedTime` or `createCalendarFeed`).
-- The editor sets its fields again whenever the page re-reads while it is open. Not reproduced. (Reproduced and fixed since, above.)
-- Cancelling a series by scope deletes the events (with their replies and attendance) instead of soft-cancelling them as one event does; whether it should soft-cancel is the owner's call. Editing or cancelling a series by scope is limited to the coach who created it (`Not authorized` for a second coach), though the screen offers the scopes to every coach.
-- Attendance's Retry sends every changed mark again, including those that had saved; harmless, each is an upsert.
-- `getAttendanceReport` and the attendance select policy let an active team player read a whole event's attendance;
-  the Clubhouse never asks for it for a player.
-- The v2 first-run page empty state for a team that has never scheduled anything (D-71) is not built. (Built since: CH-6309, above.)
+- Shell, not this page: the toasts sit outside a native modal dialog, which a
+  browser makes inert, so a Retry (and the announcement of an error toast)
+  raised by a failure inside a dialog is probably not reachable until the dialog
+  closes. Not verified in a browser; the jsdom tests do not see it. It affects
+  every page's Retry.
+- A create whose answer is lost on the way back can be created twice by Retry
+  (no idempotency key on `createGolfEvent`, `addCoachBlockedTime` or
+  `createCalendarFeed`).
+- The editor sets its fields again whenever the page re-reads while it is open.
+  Not reproduced. (Reproduced and fixed since, above.)
+- Cancelling a series by scope deletes the events (with their replies and
+  attendance) instead of soft-cancelling them as one event does; whether it
+  should soft-cancel is the owner's call. Editing or cancelling a series by
+  scope is limited to the coach who created it (`Not authorized` for a second
+  coach), though the screen offers the scopes to every coach.
+- Attendance's Retry sends every changed mark again, including those that had
+  saved; harmless, each is an upsert.
+- `getAttendanceReport` and the attendance select policy let an active team
+  player read a whole event's attendance; the Clubhouse never asks for it for a
+  player.
+- The v2 first-run page empty state for a team that has never scheduled anything
+  (D-71) is not built. (Built since: CH-6309, above.)
 
 ## 2026-09-30 — V2 phone build
 
-- `CalendarPhone` on the owner's v2 phone board (Day, Month, List, the event in a sheet, New event as a sheet); the
-  container, its writes and its dialogs are shared with the desktop. New catalog row CH-6308. Gaps in Q-67.
+- `CalendarPhone` on the owner's v2 phone board (Day, Month, List, the event in
+  a sheet, New event as a sheet); the container, its writes and its dialogs are
+  shared with the desktop. New catalog row CH-6308. Gaps in Q-67.
 
 ## 2026-09-30 — `?new=1&type=`
 
-- The editor opens on a type named in the address, for the phone Home's quick chips.
+- The editor opens on a type named in the address, for the phone Home's quick
+  chips.
 
 ## 2026-09-29 — Desktop build
 
-- Desktop Calendar on the existing server actions (week, day, month and agenda; the panel; the editor with Find a
-  time; attendance; busy time; files; calendar-app links; the player's view) and the state catalog (CH-60xx to CH-68xx).
+- Desktop Calendar on the existing server actions (week, day, month and agenda;
+  the panel; the editor with Find a time; attendance; busy time; files;
+  calendar-app links; the player's view) and the state catalog (CH-60xx to
+  CH-68xx).

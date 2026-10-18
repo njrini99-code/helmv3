@@ -26,8 +26,10 @@ Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx
                          ClubhouseCoachHelmRoute({ view, player, c, insight }):
                          ?view=development -> redirect to Stats' Development
                          (/golf/dashboard/stats?tab=dev), before the session is
-                         read; no session -> nothing; session.coach ->
-                         resolveClubhouseTeam, and no team (or not a coach team)
+                         read; no session -> nothing; the dashboard role
+                         (pickGolfDashboardRole, not "has a coach row") is the
+                         coach -> resolveClubhouseTeam, and no team (or not a
+                         coach team)
                          -> the no-team page (CH-13308), else ONE <Suspense>,
                          not keyed by view, around an async CoachHelmView
                          (?view=ask the Ask sub-tab: loadCoachHelmGate, then
@@ -107,7 +109,7 @@ Client controller: useAction (offline refusal CH-1903, slow notice CH-1902, chRe
 Writes: LIVE_COACHHELM_WRITES and LIVE_PLAYER_WRITES (writes.ts), one method per server action
 ↓
 Server actions: src/app/golf/actions/development.ts (createFocusAreaFromInsightV2, acceptFocusArea, declineFocusArea),
-                src/app/golf/actions/insights.ts (dismissInsight, reactivateInsight)
+                src/app/golf/actions/insights-feed.ts (dismissInsight, reactivateInsight)
 ↓
 Data: golf_player_focus_areas, golf_coach_insights, golf_insight_action
 ↓
@@ -130,7 +132,7 @@ component) -> the view's loader, for session.player.id
 ↓
 Reads (the shared client unless the lib's own loader says otherwise; every
 failure logs through chLogServer('coachhelm', …)):
-  profile   -> loadGenome (golf_player_genome)
+  profile   -> loadGenome (golf_player_genome) and loadPlayerCoachHelm (the Board's insight read, carried as `sees`)
   standing  -> loadPlayerStandingMap (golf_player_standing; the lib's
                service-role client, scoped by the player id and filtered to
                it), golf_player_stats_cache (rounds played and the scoring
@@ -211,7 +213,7 @@ There are no realtime hooks: the page is read once on the server.
 | createFocusAreaFromInsightV2 | actions/development.ts | Existing (the Fairway Brief's) | Assign as focus: a proposal the player accepts |
 | acceptFocusArea, declineFocusArea | actions/development.ts | Existing (Fairway Development's, and Stats Development's Accept and Decline) | The player's answer to a proposed focus area: `proposed` to `active`, or to `declined` |
 | loadTourBenchmarks, tourForGender | clubhouse/data/stats-common.ts | Existing (Stats and Home use them) | The team's own tour's values from `golf_pga_standards` (Q-88) |
-| dismissInsight, reactivateInsight | actions/insights.ts | Existing (the Fairway Brief's) | Dismiss, and its true reverse |
+| dismissInsight, reactivateInsight | actions/insights-feed.ts | Existing (the Fairway Brief's) | Dismiss, and its true reverse |
 | getInsightsForPlayer, getTopInsightsForPlayers | actions/insight-delivery.ts | Existing (the delivery actions) | A player's ranked feed (up to 30); one top insight per team player |
 | getCoachProgramPulse | lib/coachhelm/v3/chat/request-cache.ts | Existing (cached per request) | The program pulse |
 | isCoachHelmEnabledForPlayer, isCoachHelmEnabledForCoach | lib/coachhelm/v2/gate.ts | Existing | Whether CoachHelm is on, and who turned it off |
@@ -322,6 +324,20 @@ Read path:  the loaders, on the server, behind the same switch as the board
             is
 Write path: none
 ```
+
+### Links the chat engine writes (Ask)
+
+The receipts and pulse items come from production's chat engine
+(`lib/coachhelm/v3/chat`: `action-planners.ts`, `practice-planner.ts`,
+`program-pulse.ts`) and name Fairway addresses. Every one goes through
+`askLinkHref` (`data/coachhelm-chat-links.ts`): a moved address opens the
+Clubhouse screen its alias redirect opens for a coach (`/tasks` -> Team Hub
+Tasks, `/announcements` -> Team Hub Announcements, `/intelligence` -> the
+CoachHelm board or Ask), anything else only when `rebuiltHref(href, 'coach')`
+keeps it. `wiring-p013-links.test.tsx` reads the engine's source and fails when
+it writes an address that opens nothing here; a new alias in
+`src/app/golf/(dashboard)/dashboard/*/layout.tsx` for a coach needs the same
+target here.
 
 ## Held dependencies
 

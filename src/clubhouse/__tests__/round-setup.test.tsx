@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { PREVIEW_SETUP_COURSES, PREVIEW_SETUP_QUALIFIERS, PREVIEW_SETUP_TEES, PREVIEW_SETUP_TODAY, previewTeeHoles } from '../preview/fixtures-setup';
@@ -65,9 +65,20 @@ describe('Round setup: rules', () => {
     expect(setupBlocker({ ...form, date: '2026-10-15' }, PREVIEW_SETUP_TODAY)).toBe("The round’s date can’t be after today");
     expect(setupBlocker({ ...form, type: 'qualifier' }, PREVIEW_SETUP_TODAY)).toBe('Choose the qualifier round');
     expect(setupBlocker({ ...form, holes: holes.slice(0, 9) }, PREVIEW_SETUP_TODAY)).toBe('This card has 9 holes; play 9');
-    expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4 needs a yardage');
+    // Yardages follow Fairway's rule for the same course (yardageRule, 2026-10-17). A course typed in by hand needs every one.
+    const typed = { ...form.pick!, courseId: null, teeId: null };
+    expect(setupBlocker({ ...form, pick: typed, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4 needs a yardage');
     // A blank hole on the unplayed nine doesn't stop a 9-hole round.
-    expect(setupBlocker({ ...form, count: 9, holes: holes.map((h) => (h.n === 14 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, pick: typed, count: 9, holes: holes.map((h) => (h.n === 14 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    // A library tee's card starts on its pars: a blank yardage starts at 0, as Fairway's preloaded start allows; one over
+    // the limit still stops it.
+    expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, holes: holes.map((h) => ({ ...h, yards: '' })) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '1200' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4: 1200 yards is too long (999 at most)');
+    // A saved course needs a yardage on at least one hole.
+    const saved = { ...form.pick!, teeId: null, savedId: 'sc1' };
+    expect(setupBlocker({ ...form, pick: saved, holes: holes.map((h) => (h.n === 4 ? h : { ...h, yards: '' })) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, pick: saved, holes: holes.map((h) => ({ ...h, yards: '' })) }, PREVIEW_SETUP_TODAY)).toBe('Add a yardage for at least one hole');
     expect(setupBlocker(form, PREVIEW_SETUP_TODAY)).toBeNull();
     expect(holeIssue({ n: 2, par: 4, yards: '0' })).toBe('Hole 2 needs a yardage');
   });
@@ -122,6 +133,18 @@ describe('112401 Round setup: picking a course', () => {
     expect(screen.getByRole('button', { name: /Play the Gold tees, not ready yet/ })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Courses' }));
     expect(await screen.findByRole('region', { name: 'Team courses' })).toBeInTheDocument();
+  });
+
+  it('CH-11404 a course\u2019s tees are asked for as the hand reaches its card, once, and the tee list opens on them', async () => {
+    const { user, ports } = setup();
+    await user.click(screen.getByRole('button', { name: /Browse courses/ }));
+    const card = await within(code('CH-11510')!).findByRole('button', { name: /^Finley GC/ });
+    await user.hover(card);
+    expect(ports.listTees).toHaveBeenCalledTimes(1);
+    expect(ports.listTees).toHaveBeenCalledWith('finley');
+    await user.click(card);
+    expect(await screen.findByRole('button', { name: 'Play the Blue tees, 6,984 yards' })).toBeEnabled();
+    expect(ports.listTees).toHaveBeenCalledTimes(1);
   });
 
   it('CH-11403 the library is on its way, in the shape of its rows', async () => {
@@ -284,12 +307,43 @@ describe('Round setup: details and starting', () => {
     expect(code('CH-11108')).toHaveTextContent('Hole 1 needs a yardage');
     for (let n = 1; n <= 9; n++) await user.type(within(sheet).getByLabelText(`Hole ${n} yardage`), String(300 + n));
     await user.click(next());
-    expect(within(sheet).getByText('Chapel Ridge GC')).toBeInTheDocument();
+    // The review's summary and the preview beside it both name the course.
+    expect(within(sheet.querySelector('.ch-acs-sum') as HTMLElement).getByText('Chapel Ridge GC')).toBeInTheDocument();
     expect(within(sheet).getByRole('checkbox')).toBeChecked();
     await user.click(next());
     expect(dock()).toHaveTextContent('Chapel Ridge GC · Blue · 9 holes · Par 36');
     await user.click(startBtn());
     await waitFor(() => expect(ports.start).toHaveBeenCalled());
     expect(vi.mocked(ports.start).mock.calls[0]![0]).toMatchObject({ pick: { courseId: null, teeId: null, courseName: 'Chapel Ridge GC' }, count: 9, saveCourse: true });
+  });
+
+  it('CH-11511 the photo chosen for a typed course goes with the round\u2019s start, and only a real image is taken', async () => {
+    const { user, ports } = setup();
+    await user.click(screen.getByRole('button', { name: /Browse courses/ }));
+    await user.click(await screen.findByRole('button', { name: /Add a course/ }));
+    const sheet = code('CH-11511')!;
+    const slot = sheet.querySelector('.ch-acs__photo input[type=file]') as HTMLInputElement;
+    fireEvent.change(slot, { target: { files: [new File(['x'], 'notes.txt', { type: 'text/plain' })] } });
+    expect(within(sheet).getByRole('alert')).toHaveTextContent('Use a JPG, PNG, WebP or AVIF photo');
+    const photo = new File(['img'], 'course.webp', { type: 'image/webp' });
+    fireEvent.change(slot, { target: { files: [photo] } });
+    expect(within(sheet).queryByRole('alert')).toBeNull();
+    // The preview is drawn from the file's pixels (a canvas), never from a URL made of the file.
+    expect(sheet.querySelector('.ch-acs__photo canvas')).not.toBeNull();
+    expect(sheet.querySelector('.ch-acs__photo img')).toBeNull();
+    expect(within(sheet).getByRole('button', { name: 'Remove photo' })).toBeInTheDocument();
+    const next = () => within(sheet).getByRole('button', { name: /Next|Use this course/ });
+    await user.type(within(sheet).getByLabelText('Course name'), 'Chapel Ridge GC');
+    await user.click(within(sheet).getByRole('radio', { name: '9 holes' }));
+    await user.click(next());
+    await user.click(within(sheet).getByRole('radio', { name: 'Blue' }));
+    await user.click(next());
+    for (let n = 1; n <= 9; n++) await user.type(within(sheet).getByLabelText(`Hole ${n} yardage`), String(300 + n));
+    await user.click(next());
+    await user.click(next());
+    await user.click(startBtn());
+    await waitFor(() => expect(ports.start).toHaveBeenCalled());
+    expect(vi.mocked(ports.start).mock.calls[0]![0].coursePhoto).toBe(photo);
+    vi.restoreAllMocks();
   });
 });

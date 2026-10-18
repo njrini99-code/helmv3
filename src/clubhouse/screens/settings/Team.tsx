@@ -24,7 +24,7 @@ import {
   type ChTeamInfo,
 } from './model';
 import { SAVE_COPY, useInvite } from './hooks';
-import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction } from './parts';
+import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 import { StaffCards } from './Staff';
 
 /** Team's reads that failed, for its one section notice (shared with TeamPhone). */
@@ -109,6 +109,7 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
 function InviteCard({ code: initial, writes }: { code: string; writes: ChSettingsWrites }) {
   const { code, canShare, regen, copy, share } = useInvite(initial, writes);
   const [confirm, setConfirm] = useState(false);
+  useWarnOnOpen(confirm);
   return (
     <Card id="set-invite" title="Invite players" description="Players join with this code, then you approve them from Roster.">
       <Row label="Invite code" help="Share it, or send the join link.">
@@ -217,7 +218,9 @@ function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: 
   const f = useDraft(reminders);
   useReportDirty('reminders', f.dirty);
   const save = useSaveAction('settings.saveReminders', writes.saveReminders, SAVE_COPY.reminders, (_r, saved) => f.commit(saved));
-  const invalid = remindersProblem(f.draft);
+  // The database checks the order whether or not reminders are on (golf_team_settings_event_reminder_ordering), as
+  // Fairway's panel does: times left out of order and then switched off would otherwise send and fail.
+  const invalid = remindersProblem({ ...f.draft, enabled: true });
   return (
     <Card
       id="set-reminders"
@@ -237,7 +240,8 @@ function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: 
       <Row label="Send reminders">
         <SettingSwitch label="Send reminders" hideLabel checked={f.draft.enabled} onChange={(v) => f.setDraft((d) => ({ ...d, enabled: v }))} />
       </Row>
-      {f.draft.enabled && (
+      {/* Out of order with reminders off, the two times stay on screen so the problem can be fixed. */}
+      {(f.draft.enabled || !!invalid) && (
         <div className="ch-set-sliders">
           <Slider
             label="First reminder"

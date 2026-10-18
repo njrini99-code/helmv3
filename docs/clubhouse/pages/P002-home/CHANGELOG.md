@@ -1,13 +1,119 @@
 # P002 — Home: changelog
 
+## 2026-10-17 — Wiring checked against production
+
+One change: the coach first run's Invite players (desktop and phone) links
+`/golf/dashboard/roster?invite=1`, so it opens Roster's invite sheet instead of
+only the Roster page (`CoachHome.tsx`, `HomeFirstRun`; P003 reads the param).
+
+Home has no write, so the pass checked every link and both loaders. Every link
+resolves for the role that sees it and carries params its target reads: Calendar
+`?new=1` (with `&type=` from the phone's quick chips), `?date=&event=` and
+`?view=day&date=` (`parseView`, `parseNewType`, `parseDate`); Messages
+`?conversation=` (the team chat), `?player=`, `?user=` (Message coach, a coach
+in the Messages directory) and the prefill key (Nudge, Message invitees); Stats
+`?player=`; the round review `/rounds/<id>` (coach and player patterns in
+`nav.ts`); `/rounds/new`, Classes and Roster through `rebuiltHref` for the right
+role. Loaders against Fairway's `dashboard-data.ts`: rounds are `is_test =
+false`, `status = completed` with a total (same); events are team events without
+classes (same) and also drop cancelled events, which Fairway's Home (both roles,
+`dashboard-data.ts`) still shows (Clubhouse is right; left as a Fairway
+question); the roster is active members (same); a meeting with no invitees stays
+off a player's Home, as on the player's Calendar. No realtime on either side.
+
+## 2026-10-17 — A player's Home reads reply counts, not teammates' replies
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner-flagged attendance RLS, docs/clubhouse/STATUS.md)
+Contract IDs:   none new (D2-8 and the agenda lines unchanged)
+Actions:        ACT-P002-OPEN-PLAYER-HOME
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000)
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Changed
+
+- `loadHomeWeek` (`data/home.ts`) takes `viewer: 'player'` from player Home
+  (`data/player-home.ts`): the week's "N players", "N of M confirmed" and the
+  phone cards come from `golf_event_attendance_counts` instead of every
+  invitee's row, so no teammate's id or reply reaches the player's page (the
+  rows' path carried every invitee's id in `inviteeIds` until player-home
+  stripped it). The lines render exactly as before. Coach Home keeps the rows.
+- `ChHomeEvent.invitedCount` (new, optional): how many are invited. Player
+  Home's D2-8 rule (a meeting with no invitees is the coach's own) reads it, so
+  a meeting that invites only teammates still shows.
+- `inviteDetail` and `confirmedLine` (`screens/home/model.ts`) also take a
+  count; a count reads like a list the player is given no names for.
+- Until the migration is applied the function answers PGRST202 / 42883 and the
+  rows are read as before. Any other failure drops the counts (never
+  "0 players"), logged as `attendance`, and never hides a meeting.
+
+### Why
+
+- Migration 20261017102000 narrows `golf_event_attendance` so a player reads
+  only their own row. This closes the VERIFY note that players can read
+  teammates' replies through the API once the migration is applied.
+
+### Verification
+
+- `npm run test:file -- src/clubhouse/__tests__/attendance-counts.test.ts`
+  (same agenda as the rows' path, no attendance read, no teammate id in the
+  payload, D2-8 with counts, fallback, failure, coach) plus the existing Home
+  suites. No screenshots: nothing visible changed.
+
+## 2026-10-17 — "Today" turns at the team's midnight
+
+```text
+Design package: none (no visible change to the design)
+PR/commit:      uncommitted (owner request "fix whatever needs it")
+Contract IDs:   none new (20301's prose in CONTRACT 03)
+Actions:        ACT-P002-OPEN-COACH-HOME, ACT-P002-OPEN-PLAYER-HOME
+Data impact:    none (the loaders return the team clock they already read)
+Held items:     none
+```
+
+### Changed (2026-10-17)
+
+- Both Homes carry the team clock they were read on (`clock: { tz, day }`, from
+  `homeClock`). `useHomeDayRollover` compares the team-local date now with that
+  day, in the team's zone (the device's only when a page has no clock), and
+  reads the page again when it has turned: at the team's next midnight, and
+  when the page comes back into view (visibilitychange, focus, pageshow), at
+  most three times for one new day if the server still answers with the old
+  one. The date line, greeting, week strip, Today and the day card no longer
+  keep yesterday on a page left open overnight. A frozen preview clock never
+  rolls.
+- "Today", "Tomorrow" and the weekday already compared both dates on the
+  team's clock (2026-10-02); now covered by a test across zones.
+- VERIFY: the `golf_event_attendance` read question answered (players can read
+  teammates' replies through the API; Home shows counts only), and the
+  skeleton gap corrected (the phone skeleton is phone-shaped and role-aware
+  since 2026-10-08; the desktop one is still the coach's shape). CONTRACT 02
+  and 20301 follow.
+
+### Verification (2026-10-17)
+
+- `npm run test:file -- src/clubhouse/__tests__/home-day-rollover.test.tsx
+  src/clubhouse/__tests__/home.test.tsx
+  src/clubhouse/__tests__/player-home.test.tsx`; the rollover file also under
+  `TZ=Pacific/Auckland` and `TZ=America/Los_Angeles`. No screenshots: nothing
+  visible changed and the dev server was not run.
+
+## 2026-10-16 — The phone's game switch takes the shared green chip
+
+The chosen segment of the phone's game switch (`.ch-ph-game`) is the lit green
+chip every switcher draws now, on this switch's tighter corner, instead of a
+quiet raised ivory one (`home.css`). Shared detail: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-14 — The desktop head stacks on a narrow canvas
 
-- **A narrow canvas stacks the head** (home.css, `@container (max-width: 640px)`):
-  in a small window, iPad split view or a phone turned sideways the greeting sat
-  in a 91px column beside its two buttons ("Welcome / back, / Nick."). Under 640px
-  of canvas the head is one column, the actions under the brief, and the loading
-  head stacks the same way so nothing jumps when the page lands. Checked in the
-  iPhone 17 Pro Simulator in landscape.
+- **A narrow canvas stacks the head** (home.css, `@container (max-width:
+  640px)`): in a small window, iPad split view or a phone turned sideways the
+  greeting sat in a 91px column beside its two buttons ("Welcome / back, /
+  Nick."). Under 640px of canvas the head is one column, the actions under the
+  brief, and the loading head stacks the same way so nothing jumps when the page
+  lands. Checked in the iPhone 17 Pro Simulator in landscape.
 
 ## 2026-10-12 — Home follows the dashboard layout's role
 
@@ -48,38 +154,77 @@ this section.
 
 ## 2026-10-08 — the player peek (P003-C1)
 
-The shared PlayerPeek: the phone's Latest rounds rows peek at the player on a hold, from the board's row when the player has one, else from the round (`roundPeek`). No new reads.
+The shared PlayerPeek: the phone's Latest rounds rows peek at the player on a
+hold, from the board's row when the player has one, else from the round
+(`roundPeek`). No new reads.
 
 ## 2026-10-08 — premium pass: findings D3, D4, D5
 
-- D3: a leaderboard row is a table row (a `div` with `role="row"`). The player's name is the link to their stats, and its `::after` covers the row, so the whole row still opens it. The row draws the focus ring (`:has(:focus-visible)`), and assistive tech now hears a row with a link in it, not a row that is a link.
-- D4: players on the same season average, to the tenth, share a place with a T, and the next place counts them all: 1, T2, T2, 4 (`leaderPlaces`). An early read has no place yet ("—"); the loader already sorts early reads last.
-- D5: on the phone, a part that didn't load keeps its section and the same head as the others (Up next, Team scoring, Latest rounds: a title over the rule), at one rhythm. Up next's failed section keeps 18px below the page notice.
-- D8: the phone date line is no longer tracked: 13px, weight 500, 0.01em, the values P001 D5 sets for the shell's eyebrow. D2 was already fixed: the stack overlaps by 4px (aesthetic audit H-1), so no initials are clipped.
-- Not changed: D6. With the Day card the coach's desktop columns end about 90px apart in the preview, not 300px. P002-A1, the alternative fix, is on the not-building list.
+- D3: a leaderboard row is a table row (a `div` with `role="row"`). The player's
+  name is the link to their stats, and its `::after` covers the row, so the
+  whole row still opens it. The row draws the focus ring
+  (`:has(:focus-visible)`), and assistive tech now hears a row with a link in
+  it, not a row that is a link.
+- D4: players on the same season average, to the tenth, share a place with a T,
+  and the next place counts them all: 1, T2, T2, 4 (`leaderPlaces`). An early
+  read has no place yet ("—"); the loader already sorts early reads last.
+- D5: on the phone, a part that didn't load keeps its section and the same head
+  as the others (Up next, Team scoring, Latest rounds: a title over the rule),
+  at one rhythm. Up next's failed section keeps 18px below the page notice.
+- D8: the phone date line is no longer tracked: 13px, weight 500, 0.01em, the
+  values P001 D5 sets for the shell's eyebrow. D2 was already fixed: the stack
+  overlaps by 4px (aesthetic audit H-1), so no initials are clipped.
+- Not changed: D6. With the Day card the coach's desktop columns end about 90px
+  apart in the preview, not 300px. P002-A1, the alternative fix, is on the
+  not-building list.
 
 ## 2026-10-08 — premium pass: the sunset on the day's rail
 
-"Later today" carries today's sunset at the team's place (the global light's `sunTimes` and `useLightPlace`) while it is still ahead, with when the light turns golden; a champagne mark on the rail and a sunset glyph. Nothing after sunset.
+"Later today" carries today's sunset at the team's place (the global light's
+`sunTimes` and `useLightPlace`) while it is still ahead, with when the light
+turns golden; a champagne mark on the rail and a sunset glyph. Nothing after
+sunset.
 
 ## 2026-10-08 — premium pass: trend sparkline in the phone's Latest rounds (P002-C2)
 
-Each latest round on the coach's phone carries its player's last rounds as a 64x18 bare FormLine between the player and the score (from the leaderboard rows Home already loads; three rounds or more). It is decorative beside the figures (the trend itself lives in Stats), and absent when the leaderboard read failed.
+Each latest round on the coach's phone carries its player's last rounds as a
+64x18 bare FormLine between the player and the score (from the leaderboard rows
+Home already loads; three rounds or more). It is decorative beside the figures
+(the trend itself lives in Stats), and absent when the leaderboard read failed.
 
 ## 2026-10-08 — premium pass: the coach's phone Home is the day (concept board 1)
 
-The coach's phone Home opens on one living green card for the next thing that matters (`screens/home/DayCard.tsx`, owner-approved phone concept board 1, "The day, not a dashboard"); desktop keeps its dashboard, and the player's phone keeps Up next.
+The coach's phone Home opens on one living green card for the next thing that
+matters (`screens/home/DayCard.tsx`, owner-approved phone concept board 1, "The
+day, not a dashboard"); desktop keeps its dashboard, and the player's phone
+keeps Up next.
 
-- The card holds the event under way ("Now · until 5:00 PM") or next ("Next up · 3:30 PM") with its time chip, the invitees (28px coins that no longer clip their initials, P002 D2) and "5 of 6 going · Eli hasn't replied". Once today's events are over and rounds came in today, it becomes the day's recap, each round opening its card. A live round has no read on Home yet, so that phase isn't drawn.
-- Actions are the coach's and prefill Messages only (D2-7): Nudge the people who haven't replied, or Message the invitees when everyone has. Directions is a plain Apple Maps link, only for competitions and travel with a place (no maps API, D1-2).
-- "Later today" replaces Today when the day has events: the rest of today on the same rail (the card's event and what is over left out), then the week's next competition. A slot is ready for the sunset row from the global light.
-- "Since you last looked": chips for rounds posted since this device last showed Home and for new replies to the card's event, kept on the device only; nothing on a first visit.
-- The loader adds `awaiting` (who hasn't replied, id and name) and `inviteeIds` to the coach's events, null when replies didn't load; the player's Home strips both. Latest rounds carry their `date`.
+- The card holds the event under way ("Now · until 5:00 PM") or next ("Next up ·
+  3:30 PM") with its time chip, the invitees (28px coins that no longer clip
+  their initials, P002 D2) and "5 of 6 going · Eli hasn't replied". Once today's
+  events are over and rounds came in today, it becomes the day's recap, each
+  round opening its card. A live round has no read on Home yet, so that phase
+  isn't drawn.
+- Actions are the coach's and prefill Messages only (D2-7): Nudge the people who
+  haven't replied, or Message the invitees when everyone has. Directions is a
+  plain Apple Maps link, only for competitions and travel with a place (no maps
+  API, D1-2).
+- "Later today" replaces Today when the day has events: the rest of today on the
+  same rail (the card's event and what is over left out), then the week's next
+  competition. A slot is ready for the sunset row from the global light.
+- "Since you last looked": chips for rounds posted since this device last showed
+  Home and for new replies to the card's event, kept on the device only; nothing
+  on a first visit.
+- The loader adds `awaiting` (who hasn't replied, id and name) and `inviteeIds`
+  to the coach's events, null when replies didn't load; the player's Home strips
+  both. Latest rounds carry their `date`.
 - The gap under the hero is one 34px step (P002 D7).
 
 ## 2026-10-08 — premium pass: the brief loses the AI glyph (D1)
 
-The phone hero's brief is deterministic (`homeSubline`), so it no longer wears the Sparkles glyph that reads as model output; the line stands alone. The owner declined the "Why this line" sheet (P002-C1: "Take this out").
+The phone hero's brief is deterministic (`homeSubline`), so it no longer wears
+the Sparkles glyph that reads as model output; the line stands alone. The owner
+declined the "Why this line" sheet (P002-C1: "Take this out").
 
 ## 2026-10-08 — Copy: typographic apostrophes
 
@@ -527,9 +672,15 @@ PR/commit:      agent/clubhouse
 Data impact:    none
 ```
 
-- **Issue.** The player Home's four parts of the game drew a D1 mark and "D1 60" under each bar.
-- **Fix.** The mark is the Tour's average from `golf_pga_standards.pga_tour_value` for the team's own tour ("Tour 66"); a stat the tour has no value for (fairways, scrambling overall, putts per round) still draws no mark. `ChPlayerLeg.d1` is `bench`, `d1Error` is `benchError`, and the read is logged as `tourBenchmarks`.
-- **Checked.** strokes-gained.test and player-home.test; a mutation back to "D1" is caught.
+- **Issue.** The player Home's four parts of the game drew a D1 mark and "D1 60"
+  under each bar.
+- **Fix.** The mark is the Tour's average from
+  `golf_pga_standards.pga_tour_value` for the team's own tour ("Tour 66"); a
+  stat the tour has no value for (fairways, scrambling overall, putts per round)
+  still draws no mark. `ChPlayerLeg.d1` is `bench`, `d1Error` is `benchError`,
+  and the read is logged as `tourBenchmarks`.
+- **Checked.** strokes-gained.test and player-home.test; a mutation back to "D1"
+  is caught.
 
 ## 2026-09-30 — The player's strokes gained says vs Tour, not vs D1
 
@@ -538,8 +689,13 @@ PR/commit:      agent/clubhouse
 Data impact:    none
 ```
 
-- **Issue.** The player Home said "Per round vs D1" and "strokes gained vs D1". Stored strokes gained is measured against the Tour; there is no D1 value (Q-88). The figure is the season's, and the legs' header said "Last 10 rounds".
-- **Fix.** "Season, per round vs Tour" and "Last 10 rounds · strokes gained this season vs Tour · D1 marks the stats" (the women's Tour baseline for a women's team; `ChPlayerHome.tour`).
+- **Issue.** The player Home said "Per round vs D1" and "strokes gained vs D1".
+  Stored strokes gained is measured against the Tour; there is no D1 value
+  (Q-88). The figure is the season's, and the legs' header said "Last 10
+  rounds".
+- **Fix.** "Season, per round vs Tour" and "Last 10 rounds · strokes gained this
+  season vs Tour · D1 marks the stats" (the women's Tour baseline for a women's
+  team; `ChPlayerHome.tour`).
 - **Checked.** strokes-gained.test (2 cases), mutations caught for the label.
 
 ## 2026-09-30 — Latest round opens its review (Clickables); Latest rounds links to Team stats (Clickables gap 6)
@@ -551,14 +707,20 @@ Data impact:    none
 
 ### Latest round opens its review (Clickables)
 
-- **Issue.** Home's latest round linked to Stats, though the round review now exists.
-- **Fix.** Open recap (desktop), Round recap (coach phone) and the player's phone card open the round's review, falling back to Stats when the review is not rebuilt for the viewer.
-- **Checked.** home and player-home 94/94, 3 of 4 mutations caught (the fourth is equivalent today).
+- **Issue.** Home's latest round linked to Stats, though the round review now
+  exists.
+- **Fix.** Open recap (desktop), Round recap (coach phone) and the player's
+  phone card open the round's review, falling back to Stats when the review is
+  not rebuilt for the viewer.
+- **Checked.** home and player-home 94/94, 3 of 4 mutations caught (the fourth
+  is equivalent today).
 
 ### Latest rounds links to Team stats (Clickables gap 6)
 
-- **Issue.** The coach phone Home's Latest rounds header had no way on (the board's "All").
-- **Fix.** It links to Team stats, only when rounds are listed (a coach has no rounds library, Q-79).
+- **Issue.** The coach phone Home's Latest rounds header had no way on (the
+  board's "All").
+- **Fix.** It links to Team stats, only when rounds are listed (a coach has no
+  rounds library, Q-79).
 - **Checked.** home 58/58, 2 of 2 mutations caught.
 
 ## 2026-09-30 — Page docs; every contract proven by a test; two fixes
@@ -572,24 +734,43 @@ Data impact:    none
 Held items:     none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
-- The six page docs, the manifest's roles (coach and player), design files, tests and 13 actions, and the 18 behaviour contracts (the two Homes opening, links out, the clock, an unknown timezone, which Home a role gets, the team from the session, the player's own rounds only, a player's week naming no one, Message coach finding the coach, each role's own controls, Try again, the haptic grammar, the countdown's timer, the phone Home, loaders that never throw, failures reported, the tests).
-- `home.test.tsx` now renders the real dashboard page for both roles (only the session, the flag and the request-scoped team resolvers are faked) and `player-home.test.tsx` covers what the player's loader reads and whom it names. Existing tests carry the new IDs in their titles; no assertion was weakened.
+- The six page docs, the manifest's roles (coach and player), design files,
+  tests and 13 actions, and the 18 behaviour contracts (the two Homes opening,
+  links out, the clock, an unknown timezone, which Home a role gets, the team
+  from the session, the player's own rounds only, a player's week naming no one,
+  Message coach finding the coach, each role's own controls, Try again, the
+  haptic grammar, the countdown's timer, the phone Home, loaders that never
+  throw, failures reported, the tests).
+- `home.test.tsx` now renders the real dashboard page for both roles (only the
+  session, the flag and the request-scoped team resolvers are faked) and
+  `player-home.test.tsx` covers what the player's loader reads and whom it
+  names. Existing tests carry the new IDs in their titles; no assertion was
+  weakened.
 - The catalog and checklist headers name both roles.
 
 ### Fixed
 
-- A stored team timezone that is not a real zone threw a `RangeError` in `homeClock` and failed the whole page. It now reads as Eastern, like a missing one, and is logged as `clubhouse.home.timezone` (20618). The test failed before the fix.
-- The player's countdown was named "Starts in 1 days" for a screen reader. It now says "1 day" (21807). The expected string in the existing test changed to match, on purpose.
+- A stored team timezone that is not a real zone threw a `RangeError` in
+  `homeClock` and failed the whole page. It now reads as Eastern, like a missing
+  one, and is logged as `clubhouse.home.timezone` (20618). The test failed
+  before the fix.
+- The player's countdown was named "Starts in 1 days" for a screen reader. It
+  now says "1 day" (21807). The expected string in the existing test changed to
+  match, on purpose.
 
-### Why
+### Why (2026-09-30)
 
-- D-62 and D-69: every page copies the Messages gold standard and answers every category, and Permission has to be real now that Home serves two roles from one address.
+- D-62 and D-69: every page copies the Messages gold standard and answers every
+  category, and Permission has to be real now that Home serves two roles from
+  one address.
 
-### Verification
+### Verification (2026-09-30)
 
-- `npx vitest run` on `home.test.tsx` and `player-home.test.tsx` 90/90; `npm run -s typecheck:fast` exit 0; `npx eslint` on the changed files exit 0; 57 mutation checks, each failing the test that guards it (VERIFY.md).
+- `npx vitest run` on `home.test.tsx` and `player-home.test.tsx` 90/90; `npm run
+  -s typecheck:fast` exit 0; `npx eslint` on the changed files exit 0; 57
+  mutation checks, each failing the test that guards it (VERIFY.md).
 
 ## 2026-09-30 — Message coach finds the team's creating coach
 
@@ -598,9 +779,12 @@ PR/commit: c7810ccf4
 Contract IDs: 20805 (documented here)
 ```
 
-### Changed
+### Changed (2026-09-30, 2)
 
-- `golf_teams.created_by` is a `golf_coaches.id`, not a user id (true of all ten live teams), so the lookup always fell back to whichever coach of the organisation came first. `coachFor` now matches it against `golf_coaches.id` and returns that coach's `user_id`.
+- `golf_teams.created_by` is a `golf_coaches.id`, not a user id (true of all ten
+  live teams), so the lookup always fell back to whichever coach of the
+  organisation came first. `coachFor` now matches it against `golf_coaches.id`
+  and returns that coach's `user_id`.
 - A loader test that a player's week names no teammates, only a count.
 
 ## 2026-09-30 — Player Home
@@ -610,21 +794,34 @@ PR/commit: 4c7b2e8fc
 Contract IDs: CH-2215 to CH-2217, CH-2310 to CH-2313 (new catalog rows); CH-2309 extended
 ```
 
-### Changed
+### Changed (2026-09-30, 3)
 
-- `PlayerHome`, `PlayerHomePhone`, `PlayerGame` and `Countdown`, from `loadPlayerHome`, on the owner's `Player - Home.html` and `Player - Home - Mobile.html` (spec `phone/home-player.md`). The player's own rounds only; the week through `loadHomeWeek`, now shared with Coach Home along with `homeClock` and `latestWithHoles`.
-- Message coach opens the coach's thread through a new Messages deep link, `?user=` (CH-7001). `/golf/dashboard` is now rebuilt for players.
+- `PlayerHome`, `PlayerHomePhone`, `PlayerGame` and `Countdown`, from
+  `loadPlayerHome`, on the owner's `Player - Home.html` and `Player - Home -
+  Mobile.html` (spec `phone/home-player.md`). The player's own rounds only; the
+  week through `loadHomeWeek`, now shared with Coach Home along with `homeClock`
+  and `latestWithHoles`.
+- Message coach opens the coach's thread through a new Messages deep link,
+  `?user=` (CH-7001). `/golf/dashboard` is now rebuilt for players.
 - Gaps against the boards logged as Q-69.
 
 ## 2026-09-30 — v2 phone and first-run page
 
-### Changed
+### Changed (2026-09-30, 4)
 
-- `HomePhone` on the owner's v2 phone board (spec `phone/home.md`): the hero, Up next, Today, the team's scoring form, This week and Latest rounds, each round opening its card in a sheet. The loader gains `phone`. New catalog rows CH-2211 to CH-2214, CH-2308 and CH-2309; gaps logged as Q-66.
+- `HomePhone` on the owner's v2 phone board (spec `phone/home.md`): the hero, Up
+  next, Today, the team's scoring form, This week and Latest rounds, each round
+  opening its card in a sheet. The loader gains `phone`. New catalog rows
+  CH-2211 to CH-2214, CH-2308 and CH-2309; gaps logged as Q-66.
 - The v2 first-run page empty state on desktop and phone (CH-2308, D-71).
 
 ## 2026-09-29 — Fidelity pass and desktop build
 
-### Changed
+### Changed (2026-09-29)
 
-- Coach Home on `Coach Home v3`: the week and the latest round in one sheet, the leaderboard, and the full state catalog (CH-22xx to CH-28xx). The fidelity pass (D-17) added the brief under the greeting, Message team and New event (D-4), the agenda's invitee details and "5 of 6 confirmed", "No rounds 9 days", the Full roster arrow and the player stats link, compared side by side at 1280px.
+- Coach Home on `Coach Home v3`: the week and the latest round in one sheet, the
+  leaderboard, and the full state catalog (CH-22xx to CH-28xx). The fidelity
+  pass (D-17) added the brief under the greeting, Message team and New event
+  (D-4), the agenda's invitee details and "5 of 6 confirmed", "No rounds 9
+  days", the Full roster arrow and the player stats link, compared side by side
+  at 1280px.

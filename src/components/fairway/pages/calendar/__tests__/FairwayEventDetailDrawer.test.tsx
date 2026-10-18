@@ -665,6 +665,27 @@ describe('FairwayEventDetailDrawer — People section', () => {
     expect(screen.getByText('People · 2')).toBeInTheDocument();
   });
 
+  it('counts everyone invited when a player is sent only their own reply', async () => {
+    getEventRSVP.mockResolvedValueOnce({
+      success: true,
+      data: {
+        summary: {
+          total: 6,
+          accepted: 3,
+          declined: 1,
+          tentative: 1,
+          pending: 1,
+          attendees: [{ playerId: 'p1', playerName: 'Braeden Grant', avatarUrl: null, status: 'accepted', respondedAt: null }],
+        },
+        acceptanceRate: 50,
+        responseRate: 83,
+      },
+    });
+    renderDrawer({ isCoach: false });
+    expect(await screen.findByText('Braeden Grant')).toBeInTheDocument();
+    expect(screen.getByText('People · 6')).toBeInTheDocument();
+  });
+
   it('shows an empty message when no one is invited yet', async () => {
     renderDrawer({ isCoach: true });
     expect(await screen.findByText('No one invited yet.')).toBeInTheDocument();

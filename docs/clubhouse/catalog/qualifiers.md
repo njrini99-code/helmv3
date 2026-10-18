@@ -14,10 +14,12 @@ assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
 Routes:
-- `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` and `/[id]/selection` (Manage selections)
+- `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` and
+  `/[id]/selection` (Manage selections)
 - `/golf/dashboard/my-qualifiers`
 
-Coaches and players share the list and the detail (D-30). Create, edit and Manage selections are coach-only.
+Coaches and players share the list and the detail (D-30). Create, edit and
+Manage selections are coach-only.
 
 Where things live:
 - Code: `src/clubhouse/screens/qualifiers/`
@@ -26,9 +28,13 @@ Where things live:
 - Tests: `src/clubhouse/__tests__/qualifiers.test.tsx`
 - Preview:
   - `/clubhouse-preview/qualifiers` (`?state=empty|failed|partial|loading`)
-  - `/clubhouse-preview/qualifier` (`?q=live|upcoming|selected|completed|spring`, and `?state=failed|scores|partial|failwrites|loading`)
-  - `/clubhouse-preview/qualifier-new` and `/clubhouse-preview/qualifier-edit` (`?state=failed|noroster|courses|failwrites|loading`)
-  - `/clubhouse-preview/qualifiers-player`, `/clubhouse-preview/qualifier-player` and `/clubhouse-preview/my-qualifiers`
+  - `/clubhouse-preview/qualifier`
+    (`?q=live|upcoming|selected|completed|spring`, and
+    `?state=failed|scores|partial|failwrites|loading`)
+  - `/clubhouse-preview/qualifier-new` and `/clubhouse-preview/qualifier-edit`
+    (`?state=failed|noroster|courses|failwrites|loading`)
+  - `/clubhouse-preview/qualifiers-player`,
+    `/clubhouse-preview/qualifier-player` and `/clubhouse-preview/my-qualifiers`
 
 Every save goes through `useAction`, so these belong to the shell:
 - offline refusal (CH-1903);
@@ -93,6 +99,7 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09220 | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) | "These standings may be out of date." + "The latest scores didn’t load, so this is the last list that did. Try again to bring it up to date." + Try again, in the leaderboard (desktop and phone), above the last good rows (or above "Awaiting first round" when the last good board had no round in). A recovered read clears it; another qualifier never inherits the rows; a first load that fails is CH-09203 or CH-09204 | `InlineNotice` (`StaleStandings`) from `useLastGood(qualifier id, data, board loaded)` | qualifiers.test › CH-09220 |
 | CH-09221 | The coach's pick notes don't load (detail, coach, confirmed squad) | "Pick notes didn’t load." + "The squad is right; the coach’s notes on the picks are missing until they load." + Try again, under the squad. The picks stay; the notes are never shown as "no notes" | `InlineNotice` in `Selections`; `reasonsError` from `loadQualifierDetail` | qualifiers.test › CH-09221 |
 | CH-09222 | A player's entries don't load on /my-qualifiers | "Your qualifiers didn't load" + Try again, never "You aren’t entered in any qualifiers"; the head reads "— active · — concluded", never "0 active · 0 concluded" | `InlineNotice`; `entriesError` from `loadQualifierList` | qualifiers.test › CH-09222 |
+| CH-09223 | The player's rounds panel crashes (desktop, beside the leaderboard) | "A player’s rounds couldn't be shown." | `SectionBoundary` `qualifiers.player-rounds` | qualifiers.test › CH-09223 |
 
 ## 093xx Empty
 

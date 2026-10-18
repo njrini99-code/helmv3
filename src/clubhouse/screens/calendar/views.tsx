@@ -23,6 +23,7 @@ import {
   monthCells,
   monthName,
   rangeLabel,
+  startLabel,
   addDays,
   type ChCalEvent,
   type ChCalPerson,
@@ -35,6 +36,8 @@ export { TYPE_ICON };
 export interface ChNow {
   date: string;
   hour: number;
+  /** The instant itself, once the browser's clock is read (absent on the server's first render and in a frozen preview). */
+  ms?: number;
 }
 
 /** What a block says. A class shown as Busy never leaks its title or room. */
@@ -499,7 +502,7 @@ export function AgendaView({
               }}
             >
               <span className="ch-ag__t">
-                {e.allDay ? 'All day' : fmtHour(e.start!)}
+                {startLabel(e)}
                 {!e.allDay && <span>{fmtHour(e.end!)}</span>}
               </span>
               <span className={`ch-ag__dot ch-dot-${e.type}`} aria-hidden="true" />

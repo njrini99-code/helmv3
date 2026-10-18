@@ -15,6 +15,7 @@ import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
 import { activeNavItem, isAliased, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel } from './nav';
 import { Sidebar } from './Sidebar';
+import { RailToggle } from './RailToggle';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
 import { AccountSheet } from './AccountSheet';
@@ -24,6 +25,7 @@ import { RouteFrame } from './RouteFrame';
 import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
 import { NotRebuilt } from './NotRebuilt';
+import { useRelinkEpoch } from './relink';
 import { ClubhouseMarker } from './context';
 import { LightProvider } from './light';
 import { DockProvider, PhoneDock } from './Dock';
@@ -35,7 +37,7 @@ import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 import '../styles/controls.css';
-import { useCanvasSmoothScroll } from '../lib/smooth-scroll';
+import { useCanvasSmoothScroll, useSmoothWheelEverywhere } from '../lib/smooth-scroll';
 
 /** Set under ChMotionFeatures, so a frame rendered inside it doesn't render a second one. */
 const ChMotionScope = createContext(false);
@@ -95,6 +97,7 @@ export function ClubhouseFrame({
   search = '',
   forceRebuilt = false,
   lightAt = null,
+  folded: foldedHint = false,
   children,
 }: {
   userData: GolfUserData;
@@ -106,9 +109,12 @@ export function ClubhouseFrame({
   forceRebuilt?: boolean;
   /** Preview only: hold the global light at this instant (?at=). */
   lightAt?: number | null;
+  /** The sidebar folded to its icon rail on the last visit (the server's cookie; RailToggle). */
+  folded?: boolean;
   children: ReactNode;
 }) {
   const role = userData.role;
+  const [folded, setFolded] = useState(foldedHint);
   const teamSwitch = teamSwitchFor(userData);
   const item = activeNavItem(pathname, role);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role);
@@ -119,10 +125,15 @@ export function ClubhouseFrame({
   const { showAnimations } = useAppearancePreferences();
   // Smooth wheel scrolling on the desktop canvas (off on a phone, with reduced motion and with Animations off).
   useCanvasSmoothScroll();
+  // …and every other box that scrolls: lists, panes, a modal's body, a sheet.
+  useSmoothWheelEverywhere();
   useEffect(() => chTagSession(), []);
   // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
   useEffect(() => liftHandoffCurtain(), []);
   useReloadFromBackForwardCache();
+  // A stored link to the screen already open, naming another item (the bell's `?conversation=` on Messages): the screen
+  // mounts again for it, as it would arriving from elsewhere (relink.ts).
+  const relink = useRelinkEpoch(pathname, search);
 
   // The live shell renders the animation features above the frame (ChMotionFeatures, below); a preview renders the frame alone.
   const scoped = useContext(ChMotionScope);
@@ -141,13 +152,14 @@ export function ClubhouseFrame({
                       <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
                         Skip to content
                       </a>
-                      <div className="ch-app">
-                        <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
+                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined}>
+                        <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} folded={folded} />
+                        <RailToggle folded={folded} onFold={setFolded} />
                         <div className="ch-canvas" id="ch-canvas">
                           <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
                           <OfflineBanner />
                           {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
-                          <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
+                          <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}${relink ? `\u0000${relink}` : ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
                             {rebuilt ? (
                               children
                             ) : (

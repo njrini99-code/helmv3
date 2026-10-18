@@ -9,7 +9,7 @@ import { Icon } from '../../ui/Icon';
 import { haptic } from '../../lib/haptics';
 import { chReport } from '../../lib/track';
 import { useAction } from '../../lib/use-action';
-import { Card } from './parts';
+import { Card, refineSaveFailure } from './parts';
 import type { ChResult } from './model';
 import { Group } from './phone/ui';
 
@@ -158,6 +158,7 @@ function useCourseLocation(teamId: string) {
       return r;
     },
     (value: ChCourseLocation | null) => (value ? { done: 'Course location saved', failed: 'Couldn’t save the course location' } : { done: 'Course location cleared', failed: 'Couldn’t clear the course location' }),
+    refineSaveFailure,
   );
 
   const locate = useCallback(async () => {

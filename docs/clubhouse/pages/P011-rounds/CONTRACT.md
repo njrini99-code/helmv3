@@ -53,6 +53,7 @@ on the first hole over par again. A test covers 110101 to 110115.
 | 110113 | — | `THE_OPEN_QUALIFIER_SETS_THE_ROUND` | When the player has an open qualifier, it is offered above Round details. Play sets the type to Qualifier, the course and the tees, and the note says which round it counts as ("This counts as round 3 of 3 in Fall qualifier 2"). Choosing the Qualifier type lists the player's qualifiers; one with no round open is listed but cannot be chosen (110805). |
 | 110114 | — | `ROUND_ENTRY_FOLLOWS_THE_FLAG` | /golf/dashboard/rounds/new and /golf/dashboard/rounds/continue/[id] draw Clubhouse's screens for a player when golf_clubhouse_ui is on: the pages branch on isClubhouseFor('player'), Continue's page loads the round once (its owner, that it is still in progress, its holes, shots and yardages, the qualifier round numbers left to choose) and hands it to Clubhouse, and each route's loading is Clubhouse's skeleton inside the shell (CH-11407). With the flag off the Fairway client renders exactly as before, with its round-type editor. A coach on /rounds/new keeps the legacy message. The Fairway-only type editor is not passed to Clubhouse. |
 | 110115 | — | `A_SHOTGUN_START_CHANGES_ONLY_THE_ORDER` | Once the scorecard is in, Round details offers "Starting hole": the holes the round plays, by the card's numbers, the first played by default; the dock adds "· Starts on hole N" when it is not the first. Start hands the engine the start as a position in the holes played (setup-reads#toStartForm `setup.startHole`); every autosave keeps it in draft_data, so Continue resumes in the same order. Holes keep their numbers and places everywhere (strip, scorecard, Out/In, Front · Back, the review); only the walk changes: from 6 the round plays 6 to 18, then 1 to 5, and finishes after the 18th hole played. A 9-hole round wraps inside its nine. The strip lets the player go back to holes played earlier in that order, never ahead past the next one; Round complete's Back names the hole the round ended on; the unfinished card's next hole follows the order (lib/golf/round-session/play-order.ts). |
+| 110116 | — | `YOUR_SAVED_COURSES_ARE_OFFERED` | Round setup's course picker lists the player's own saved courses (golf_player_courses, getPlayerSavedCourses, the source Fairway's setup reads) as "Your courses", after Recently played. A saved course is left out when the library already lists its course (its course_id, or a library course of the same name, spaces and case aside), so a course is offered once. It has one tee set, the one it was saved with (White when none was named, as on Fairway), and its card is the holes it was saved with (a blank card of its length when it has none). Starting from it sends what Fairway's saved-course start sends: the course's name, city, state, rating, slope and tees, its library link if it has one, and no tee; a course with no library course behind it is offered to the library with Fairway's input and the round is linked to the course and tee that offer finds or creates (the engine's opt-in libraryOffer), so later checkpoints and the submit carry them, as Fairway's do; the course is touched once the round starts (Fairway touches it when picked), best-effort. A saved course's card needs a yardage on at least one hole; the rest start at 0. A failed saved-courses read leaves the library as it is. |
 
 ## 02 — Initial loading / skeleton
 
@@ -116,7 +117,7 @@ empty (110413). A test covers 110413.
 | 110414 | CH-11313 | `A_ROUND_WITH_NO_STROKES_GAINED` | A round with no strokes gained (posted without shots) |
 | 110415 | CH-11314 | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | Nothing on this device to recover |
 | 110416 | CH-11315 | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | Completed rounds with no score at all (no total and no nines) |
-| 110417 | CH-11316 | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | Change round type: the player is in no qualifier |
+| 110417 | CH-11316 | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | Change round type: there is no qualifier to choose |
 
 ## 05 — Validation
 
@@ -127,8 +128,9 @@ Start round names it in the dock (110510): a yardage that is missing or over 999
 (CH-11109), and when adding a course the step's own message (CH-11108). Pars are buttons for 3 to 6, and the yardage
 box takes digits only. On the shot screen the one thing missing is named above the disabled Next shot (CH-11101),
 by the rules the Fairway entry runs (`shot-entry-rules`, so the hint cannot disagree with the button); an unusual
-shot asks once (CH-11102), an impossible one is blocked (CH-11103), a distance that is not a number says so
-(CH-11104), a changed shot that breaks a rule says so in its sheet (CH-11105), and shot 12 warns of the 15-stroke
+shot asks once (CH-11102), an impossible one is blocked (CH-11103), a distance that is not a plain number says so
+and keeps Next shot off (CH-11104; a comma is read as the decimal point), a changed shot that breaks a rule, or whose
+distance is not a number, says so in its sheet (CH-11105), and shot 12 warns of the 15-stroke
 limit (CH-11106). A test covers 110510.
 
 | Bridge ID | Code | Name | Meaning |
@@ -197,8 +199,8 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 | 110635 | CH-11216 | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
 | 110636 | CH-11217 | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
 | 110637 | CH-11213 | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
-| 110638 | CH-11020 | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | Changing a live round's type fails (Continue round) |
-| 110639 | CH-11218 | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load |
+| 110638 | CH-11020 | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | Changing a round's type fails (Continue round, or a submitted round's review, CH-11522) |
+| 110639 | CH-11218 | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | Change round type: the player's qualifier entries (or the slots their rounds hold, or, for a coach on a review, the team's qualifiers) didn't load |
 
 ## 07 — Network / offline
 
@@ -282,7 +284,8 @@ Status: DEFINED
 
 Discarding an unfinished round asks first, with the warning haptic before the question, and says what goes with it: every
 shot, and that it can't be undone (CH-11501, CH-11701). On the shot screen, Undo asks first (CH-11502), Delete shot asks
-inside the change sheet (CH-11505), leaving a hole with a result picked but not recorded asks (CH-11504), and Exit's
+inside the change sheet (CH-11505; a recorded shot opens it from the open shot log before the hole is holed, as
+Fairway's shot pills do, and from the hole review after), leaving a hole with a result picked but not recorded asks (CH-11504), and Exit's
 Discard round asks again (CH-11507). Nothing is optimistic: the card leaves only once the server has deleted the round
 (111301). There is no Undo after a discard. The catalog's kind map files every confirm-kind row here, so this category
 also holds sheets that are not destructive (Penalty, Exit, Scorecard, Round complete, Browse courses, Add a course).
@@ -326,7 +329,8 @@ unchanged when the flag is off.
 | 111118 | CH-11518 | `A_SAVED_QUALIFIER_ROUND_WITH_NO_ROUND` | A saved qualifier round with no round number (it predates the durable number) is finished and submitted |
 | 111119 | CH-11519 | `THE_SAME_AND_NO_ROUND_IS_LEFT` | The same, and no round is left to choose |
 | 111120 | CH-11520 | `DISCARD_ON_A_SAVED_ROUND` | Discard on a saved round (Recover) |
-| 111121 | CH-11521 | `CHANGE_ROUND_TYPE` | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward.") |
+| 111121 | CH-11521 | `CHANGE_ROUND_TYPE` | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward."; a submitted round: its review's Change round type, CH-11522) |
+| 111122 | CH-11522 | `CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS` | Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`) |
 
 ## 12 — State preservation
 
@@ -386,6 +390,7 @@ zone (America/New_York for a player with no team).
 | 111501 | — | `TOTALS_AND_SEASON_MATCH_HOME_AND_STATS` | A round's total is the canonical one (withCanonicalRoundTotal: front plus back over a stale stored total), in the library and in the review. The season figures and the ribbon come from countable 18-hole rounds since August 1, the rule Home and Stats use, so the numbers agree across screens; the window and the sample are stated in the words ("Since August 1", "18-hole", "Not counted"). |
 | 111502 | — | `REVIEW_SHOWS_ONLY_WHAT_WAS_RECORDED` | The review never invents a figure: a nine with a hole not scored has no total ("—") rather than a short one, a par 3 never counts a fairway whatever was stored, a hole scored without shots says so (CH-11306), a round posted as a total says so (CH-11305), and the recap and the notes are drawn only when they were written. |
 | 111503 | — | `A_STALE_TEE_READ_IS_IGNORED` | A slow read for a course the player has left never replaces the next course's tees: the picker keeps only the latest answer of each read. |
+| 111504 | — | `A_COMPLETED_ROUND_WITHOUT_A_RECAP_GETS_ONE` | A completed round whose review opens with no stored recap asks generateRoundRecap once (useRoundRecap; the loader marks it recapPending), as the Fairway round page does, and draws the recap it gets back through the figure check (111502, D13). A stored recap, a round that is not completed, and a fixture ask for nothing; a failure is quiet and the next visit asks again. |
 
 ## 16 — Micro animation
 
@@ -544,6 +549,7 @@ that no test names; the hand contracts are named by Bridge ID only once the titl
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 112401 | — | `TESTS_NAME_CONTRACTS` | The page's test files (rounds.test, round-review.test, round-setup.test, round-tracking.test and round-entry.test, and, through the real engines, round-entry-wiring.test, round-entry-continue.test and round-entry-routes.test) name in a test title every P011 catalog code of kinds 0 to 5 that is not marked preview (clubhouse:check enforces it), and every hand contract they prove by its Bridge ID. |
+| 112402 | — | `ROUND_LIFECYCLE_MATCHES_PRODUCTION` | Driven through the real new-round engine to the same round (course, tees, nine, start hole, type, date), Clubhouse's setup (its read ports and toStartForm) and Fairway's (the library tee pick and the setup form's submit) make the same start, the same checkpoint for every hole and the same submit, field for field; the one kept difference is the back nine's start hole configs (card numbers on Fairway, 1 to 9 on Clubhouse). The course's city and state are saved as the library has them, and a round from one of the player's saved courses (110116) sends what Fairway's saved-course start sends. Yardages follow Fairway's rule for the course (yardageRule): a library tee starts on its pars with a blank yardage at 0, a saved course needs one yardage, a course typed in by hand needs every one. |
 
 From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 

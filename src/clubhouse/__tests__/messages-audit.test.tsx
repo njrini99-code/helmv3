@@ -255,8 +255,8 @@ describe('Messages · swap audit §12', () => {
     const ann = await screen.findByRole('region', { name: 'Announcements' });
     const conv = screen.getByText('Varsity team');
     expect(code('CH-7402')).toBeNull();
-    // The announcements came first in the same frame as the conversations, above them.
-    expect(ann.compareDocumentPosition(conv) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The announcements came in the same frame as the conversations, folded under them (owner, 2026-10-16).
+    expect(ann.compareDocumentPosition(conv) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 
   it('announcements read with the page: the inbox shows at once and the client does not read them again', async () => {

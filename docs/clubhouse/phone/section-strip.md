@@ -18,16 +18,15 @@ Desktop keeps the sidebar.
   (owner, 2026-10-16: on Stats the switcher seemed gone while the large title
   was in view).
 - **The strip.** Tapping the title slides a row of pills out from under the top
-  bar: every section the role has,
-  in the sidebar's order with the old tabs first, then Settings, then the
-  account pill (who you are; it opens the
-  account sheet with the team switch, Help and Sign out). The current section is
-  centred and filled green. The row
-  scrolls sideways to find a section; pills snap. Counts sit on their pill, and
-  the closed title carries a dot while
-  another section has something new. The page behind does not dim; a tap
-  outside, Esc, or tapping the title again
-  closes it.
+  bar: every section the role has, in the sidebar's order with the old tabs
+  first (since 2026-10-16 Team Hub and Qualifiers sit under Team in the sidebar,
+  so the pills after the old tabs follow that order: for a coach Messages, Team
+  Hub, Roster, Qualifiers, Recruiting), then Settings, then the account pill
+  (who you are; it opens the account sheet with the team switch, Help and Sign
+  out). The current section is centred and filled green. The row scrolls
+  sideways to find a section; pills snap. Counts sit on their pill, and the
+  closed title carries a dot while another section has something new. The page
+  behind does not dim; a tap outside, Esc, or tapping the title again closes it.
 - **Gestures on the top bar (section pages only, never on a pushed page):**
   - pull the bar down to draw the strip out under the finger, release past half
     (or flick) to open;

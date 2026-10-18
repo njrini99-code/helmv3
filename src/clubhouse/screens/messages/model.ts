@@ -189,8 +189,23 @@ export interface ChAnnouncementDetail {
   acknowledged: Array<{ playerId: string; name: string; at: string }>;
   waiting: Array<{ playerId: string; name: string }>;
   tasks: Array<{ taskId: string; title: string; due: string | null; doneByMe: boolean; done: number; total: number }>;
-  documents: Array<{ id: string; title: string; url: string; size: number }>;
+  /**
+   * `url` is the stored `file_url`, which points at the private documents bucket and never opens (Fairway #1259): the
+   * live pane opens a file through `api.openAnnouncementDocument` (a signed link per tap) instead.
+   */
+  documents: Array<{ id: string; title: string; url?: string; size: number }>;
 }
+
+/** The server's limit on a message (sendMessageSchema `content.max(5000)`); the fields stop there, as Fairway's do. */
+export const MESSAGE_MAX = 5000;
+
+/**
+ * A coach's new group is created as a team broadcast, which adds the chosen players and, given none, every player on
+ * the team (`createGolfTeamBroadcast`). Coaches join it after (D-45), so a group of coaches alone would reach the whole
+ * team: it needs at least one player, as Fairway's group sheet asks.
+ */
+export const groupLacksPlayer = (role: 'coach' | 'player', to: readonly string[], directory: readonly ChPerson[]) =>
+  role === 'coach' && to.length > 0 && !to.some((id) => directory.some((p) => p.userId === id && p.role === 'player' && !!p.playerId));
 
 /** A file shared in a conversation (getGolfConversationFiles; no storage path). Open it through its message's attachments. */
 export interface ChFile {

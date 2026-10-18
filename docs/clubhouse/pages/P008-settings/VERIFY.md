@@ -15,8 +15,8 @@ verification and durable writes are still pending.
 
 Desktop section swaps, phone pushes, settings sheets and reorder list.
 
-Check the single 260ms entrance without exit wait; verify instant reduced motion,
-drag/scroll conflicts and pending saves.
+Check the single 260ms entrance without exit wait; verify instant reduced
+motion, drag/scroll conflicts and pending saves.
 
 Fresh WebKit 26.6: `/clubhouse-preview/settings` at
 375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
@@ -281,25 +281,40 @@ before, after, baseline or evidence.
   CoachHelm access check made a head
   coach see the switch disabled with "Only the head coach can change this."
   (80804).
-- Found and not fixed:
-  - Phone: the browser's Back or the iOS edge swipe while a section-level sheet
-    (Team details, Golf details, a reminder
-    time, Join a team) holds edits pops the section behind it and drops the
-    sheet without the discard question. The page
-    guard (CH-8508, CH-8506) covers closing the tab and links, not history
-    entries; the sheets are not history entries.
-  - A refused instant save (a switch or CoachHelm autosave) always says "Check
-    your connection", because it never shows
-    the server's reason; a refusal that arrives as an error (an upsert against a
-    policy, "violates row-level
-    security") reads the same way on a form save.
-  - Two CoachHelm priority moves in a row: if the first save fails and the
-    second lands, the screen shows the order
-    from before the first move while the server has both moves.
-  - The loader reads `golf_coach_philosophy` and `golf_teams` twice each.
-  - Leave team, Make a new invite code, Reset CoachHelm updates and Turn off
-    CoachHelm open their confirm without the
-    warning haptic (an owner decision under D-70).
+- Fixed 2026-10-17 (each has a test in `settings.test.tsx` that fails without
+  the fix; jsdom only, not yet seen in Safari, the Simulator or on an iPhone):
+  - Phone: the browser's Back or the iOS edge swipe while an edit sheet holds
+    edits over a section (Team details, Golf details, a reminder time, Join a
+    team, Profile over Account) now asks the CH-8509 discard question and keeps
+    the section; Keep editing leaves the sheet as typed, Discard closes it, and
+    the next Back pops the section as before. A Back while a sheet saves does
+    nothing. A clean sheet still goes with its section. The page puts the
+    section's history entry back before the stack sees the pop
+    (`SettingsPhone`, `HeldSheetsContext` in `phone/sheets.tsx`).
+  - A refused save says why instead of "Check your connection": a switch, a
+    CoachHelm autosave (CH-8022), a form save and the course location. A policy
+    refusal that arrives as an error ("violates row-level security") reads
+    "Your account doesn’t have access to do this."; only a save that threw, gave
+    no reason or failed with the browser's network wording keeps "Check your
+    connection and try again." (`saveFailureBody` in `parts.tsx`).
+- Fixed 2026-10-17 (the rest of the list):
+  - Phone: a Back while the Profile, Change email or Password sheet is open over
+    the list itself now closes the sheet instead of leaving Settings, and asks
+    first when it holds edits: a sheet over the list is a history entry of its
+    own, as a section is. Test `settings.test.tsx` (fails without the fix);
+    checked in WebKit at 390px (Back with edits stayed on Settings, asked, kept
+    the text).
+  - Two CoachHelm priority moves in a row where the first save fails and the
+    second lands: a failed save now puts back only the fields nothing has
+    changed since it was sent, so the screen keeps the second move, as the
+    server does. Test `settings-philosophy-save.test.tsx` (fails without the
+    fix).
+  - The loader reads `golf_coach_philosophy` and `golf_teams` once each (the
+    digest is a column of the philosophy row; the team name comes from the team
+    row each role reads). Test `settings-server.test.tsx` (fails without it).
+  - Leave team, Make a new code, Reset CoachHelm updates and Turn off CoachHelm
+    give the warning tick as their desktop confirm opens (D-70); the phone's
+    action sheets already did. Tests CH-8502 to CH-8505.
 
 ## 2026-10-02 — Custom native overlay lifetime
 

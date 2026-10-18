@@ -339,6 +339,81 @@
 .ch-hb-ann__f:empty {
   display: none;
 }
+/* A post's attachments: the count opens the list; each file opens like a Documents row. */
+.ch-hb-ann__files {
+  display: grid;
+  gap: 6px;
+  font: 400 13px/1.3 var(--ch-font-sans);
+}
+.ch-hb-ann__files-t,
+.ch-hb-ann__files-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-text-secondary);
+  font: 600 13px/1 var(--ch-font-sans);
+  cursor: pointer;
+}
+.ch-hb-ann__files-retry {
+  display: inline;
+  min-height: 0;
+  color: var(--ch-text-primary);
+  text-decoration: underline;
+}
+.ch-hb-ann__files ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-hb-ann__file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ch-bg-hover);
+  color: inherit;
+  font: 500 13.5px/1.3 var(--ch-font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-hb-ann__file span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-hb-ann__file em {
+  flex: none;
+  font: 600 11px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-hb-ann__file[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+.ch-hb-ann__files-err {
+  color: var(--ch-text-secondary);
+}
+.ch-hb-ann__files-t:focus-visible,
+.ch-hb-ann__files-retry:focus-visible,
+.ch-hb-ann__file:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
 .ch-hb-acked {
   display: inline-flex;
   align-items: center;

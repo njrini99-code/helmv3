@@ -1,5 +1,144 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-17 — Wiring checked against production; moved links open their Clubhouse screen
+
+```text
+Design package: none (links only; no visual change)
+PR/commit:      uncommitted (Clubhouse wiring pass, P001-P015 remaining screens)
+Contract IDs:   none new
+Actions:        none changed (ACT-P013-* checked)
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- **Ask's receipt chips and pulse findings link where production's do**
+  (`data/coachhelm-chat-links.ts` `askLinkHref`, used by `chat/ActionCard.tsx`
+  `AskReceiptCard` and by `loadAskCoachHelm`'s findings). The chat engine
+  (`lib/coachhelm/v3/chat`) writes Fairway addresses: `/golf/dashboard/tasks`
+  ("1 task"), `/announcements`, `/intelligence?view=players|signals` ("Open
+  development"). Those screens moved in Clubhouse, so `rebuiltHref` answered
+  null and the chip or link was drawn as plain text, where production links it.
+  They now open the screen the address's own alias redirect opens for a coach,
+  in one step: Team Hub's Tasks (`?task=` carried), Team Hub's Announcements,
+  the CoachHelm board (`?player=` carried, `?view=chat` to Ask). Anything else
+  is still a link only when it is rebuilt for a coach.
+- **The Game profile's "What CoachHelm sees" rows are a client link**
+  (`views/Profile.tsx`). They were a plain `<a>`, so opening a read in Deep dive
+  reloaded the whole app (shell, session, fonts); every other link between the
+  views is a `next/link`.
+- **The route follows the dashboard role, not "has a coach row"**
+  (`routes/coachhelm.tsx`, `ClubhouseCoachHelmRoute`). A user whose onboarded
+  profile is the player one, with an unfinished coach profile beside it, is
+  drawn as a player by the layout, but took the coach branch here and got the
+  coach's "You aren't on a team yet" (CH-13308) instead of their own CoachHelm.
+  The coach branch now runs only when `pickGolfDashboardRole` (the role
+  `resolveClubhouseTeam` and the layout use) is the coach; the player branch
+  needs no team, as before. Same rule as `routes/roster.tsx`.
+
+### Checked, no change
+
+- Assign as focus, Dismiss and Undo call `createFocusAreaFromInsightV2`,
+  `dismissInsight` and `reactivateInsight` (`actions/insights-feed.ts`, the same
+  module Fairway's Game fingerprint imports) with the insight's own title,
+  description, area type, metric and current value; `verifyPlayerAccess` /
+  `verifyInsightAccess` admit a coach of the player's team. Accept and Decline
+  call `acceptFocusArea` / `declineFocusArea` on the player's own proposed row,
+  as Stats Development does.
+- Ask uses production's own `useCoachHelmChat` (the same `POST
+  /api/coachhelm/v3/chat/stream` body: messages, conversation id, turn key;
+  approvals resubmit through the hook). The conversation list and a thread read
+  the same columns and order as `listConversations` / `listMessages` (RLS:
+  `coach_id = current_coach_id()`).
+- The loaders' filters match production's: the coach's roster is the team's
+  `status = 'active'` members (as `getCoachChatContext`); round reads are
+  `is_test = false`, `status = 'completed'`.
+- `?view=development` (77 of production's 228 `dev_plan_assigned` notifications,
+  every one to a player) redirects to Stats' Development tab
+  (`/golf/dashboard/stats?tab=dev`), which `StatsPlayer` opens; the other 151
+  open the player's board. No realtime on this page.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/wiring-p013-links.test.tsx`,
+  `wiring-p013-route.test.tsx` and the existing CoachHelm tests touching the
+  changed files (results in the session report). The engine guard reads every
+  `href:` the chat engine writes and asserts each opens a Clubhouse screen.
+
+## 2026-10-16 — The Game profile reads what CoachHelm says; Standing is greener and organized
+
+Owner, 2026-10-16: base the profile on actual CoachHelm output ("make it based
+on actual CoachHelm output"). The genome alone read 3 rounds (the last 90 days,
+countable rounds only) while the Board's insights read 23.
+
+- **The profile leads with CoachHelm's insights** (`Profile.tsx`,
+  `coachhelm-profile.ts`). `loadPlayerProfile` now also calls
+  `loadPlayerCoachHelm`, the Board's own ranked read for the player, and carries
+  it as `ChProfile.sees`. On the green board the top insight is the headline
+  with its lede, sample, window and date, then **Costing you** and **Working**
+  (up to four each), every row opening its evidence in Deep dive. Insights that
+  are out of date are left off, and the text is the engine's, nothing written
+  for the page. The genome follows as a quieter section, "The shape of your
+  game". The intro line now reads "What CoachHelm reads in your rounds, and the
+  shape of your game."
+- **The insights not loading** is its own notice, CH-13261 ("What CoachHelm sees
+  didn’t load", with Try again), never "nothing to say"; the measures stay. A
+  new screen test and a loader test cover it, and CH-13261 is in the catalog.
+- **The genome's section is organized and greener** (`coachhelm-profile.css`):
+  how many measures are read is a row of dots, the measures split into "With a
+  read" and "Still filling in" (green-tinted tiles that each say what they still
+  need), and a measure with no stance draws on green. Inside a green board the
+  ledger heading ink resets to the board's.
+- **Standing is greener and organized** (`Standing.tsx`,
+  `coachhelm-standing.css`): the headline and Most to gain sit on the green
+  board; each group's head carries its tally against the Tour ("n ahead, n
+  behind") over a green rule; a stat ahead of the Tour sits on a faint green
+  wash. The data is unchanged (`golf_player_standing`, the nightly read).
+
+- **Standing's bars show the gap** (`Standing.tsx`, `coachhelm-standing.css`): a
+  new `.ch-hs-tr__gap` fills the space from the Tour's mark to the player's,
+  green when ahead and amber when behind. The track is green-tinted and the
+  marker solid. The Game profile's scales get the same track, a full-strength
+  fill and a solid marker (`coachhelm-profile.css`).
+- **Deep dive at more contrast** (`DeepDive.tsx`, `coachhelm-dive.css`): the
+  hero is a green board (`ch-scoreboard`), the rail a bright panel with the open
+  read lit green, the heads field green, and the gauge track green-tinted. The
+  open read no longer has a green side bar (see the shared entry).
+
+Checked: the vitest above; the Standing and profile tests (64) and the CoachHelm
+tests passed in the main session. No visual check is recorded for these commits,
+and no migration is involved.
+
+## 2026-10-16 — CoachHelm and Ask at full contrast; CoachHelm on a bright sheet
+
+Owner, 2026-10-16: "more contrast on this and the other ones", "coachhelm
+contrast is the same". In light mode only (`coachhelm.css` `.ch-hl`,
+`coachhelm-ask.css` `.ch-ask`; dark mode is unchanged):
+
+- Both screens take the page-scoped contrast step the Qualifiers page took: text
+  one grade darker (secondary copy reads as primary, tertiary as secondary), and
+  the Increase Contrast rules and borders.
+- The whole ink ramp is darker, 700 down to 300, so copy that names a mid ink
+  directly (a locked measure, a quiet caption) is darker as well. The same ramp
+  change is in Qualifiers' block (P009).
+- On the desktop (above 820px), CoachHelm sits on one bright surface sheet over
+  the parchment, on 24px corners, so its copy reads on a white ground. The phone
+  is unchanged.
+
+Checked by the main session in Chrome on Board, Game profile, Standing and Deep
+dive; Ask and the phone were not reported as checked, and nothing was checked in
+Safari.
+
+## 2026-10-16 — The other views are fetched whole once the page is idle
+
+The view strip never prefetched, so on the desktop every switch between Board,
+Ask and the rest waited on the server for the whole page (owner, desktop
+Safari). `useViewSwitch` takes the list of views (`CoachBoard`, `PlayerBoard`
+and `views/Frame.tsx` pass theirs; the player's is `PLAYER_HELM_VIEWS`) and
+fetches the others whole once the page is idle, as the phone's tabs are
+(`use-prefetch-tabs`). Data Saver and offline skip it. No visible change.
+
 ## 2026-10-16 — The phone Evidence sheet slides out; ivory ink holds at night
 
 - **Evidence on the phone (audit A-18):** the sheet stays mounted after its
@@ -116,11 +255,12 @@ Phone only; the desktop is unchanged.
 
 ## 2026-10-08 — The green card is where the light lands (P013-A3)
 
-Approved by the owner on 2026-10-08. On the phone the focus's claim, the page's one
-green card, takes the only light-aimed rim: a 1px rim of the shell's light on its
-sun-facing top and side, a darker hairline opposite. Its "Worth closing" stance is
-gilt that catches the light on its sun side. Nothing else on the page gains depth,
-no figure is lit, nothing moves, and the rim goes under Increase Contrast.
+Approved by the owner on 2026-10-08. On the phone the focus's claim, the page's
+one green card, takes the only light-aimed rim: a 1px rim of the shell's light
+on its sun-facing top and side, a darker hairline opposite. Its "Worth closing"
+stance is gilt that catches the light on its sun side. Nothing else on the page
+gains depth, no figure is lit, nothing moves, and the rim goes under Increase
+Contrast.
 
 ## 2026-10-08 — Premium pass findings (D3 to D13)
 
@@ -271,8 +411,8 @@ Held items:     none
 ```
 
 The screen's imports and test mocks now point at the files that own the server
-actions (insights-feed.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
-by domain. No behavior change.
+actions (insights-feed.ts) after `golf.ts`, `insights.ts` and `admin-data.ts`
+were split by domain. No behavior change.
 
 ## 2026-10-07 — Rows answer the press
 
@@ -509,11 +649,11 @@ Data impact:    none; the same tables, the same filters, read-only
 Held items:     none
 ```
 
-- **What changed.** The row, the settings and the staffed teams (a player's
-  row and memberships) start together; every team's settings come in one read
-  (`.in('team_id', ids)`; `team_id` is unique on `golf_team_coachhelm_settings`).
-  A coach gate is two round trips, not four; a closed gate with three teams
-  was six reads in turn and is four reads in two.
+- **What changed.** The row, the settings and the staffed teams (a player's row
+  and memberships) start together; every team's settings come in one read
+  (`.in('team_id', ids)`; `team_id` is unique on
+  `golf_team_coachhelm_settings`). A coach gate is two round trips, not four; a
+  closed gate with three teams was six reads in turn and is four reads in two.
 - **The answer is the same.** `gate-batching.test.ts` runs the batched gate
   and `gate-serial.reference.ts` (a frozen copy of the serial one) over the
   same fake database in every combination of each read's outcome (the row
@@ -1129,7 +1269,7 @@ Data impact:    none (reads through the delivery actions and existing tables;
 Held items:     none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
 - The page: one route, `/golf/dashboard/coachhelm`, is the coach's board
   (program pulse, By player, the chosen player's focus with Assign as focus,
@@ -1174,6 +1314,6 @@ Held items:     none
 - `docs/clubhouse/phone/coachhelm.md`, "Open questions for the owner", predates
   the `?view=` guard and the Stats Accept and Decline.
 
-### Verification
+### Verification (2026-09-30)
 
 - See VERIFY.md.

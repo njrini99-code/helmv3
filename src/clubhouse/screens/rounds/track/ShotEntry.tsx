@@ -20,7 +20,7 @@ import type { ApproachMissDirection, PuttMissTag, RoundHole, ShotRecord } from '
 import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
-import { APPROACH_GRID, BREAK_OPTIONS, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
+import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, isDistanceText, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
 import { Sec, Seg } from './parts';
 
 export interface ShotEntryProps {
@@ -93,15 +93,17 @@ export function ShotEntry(p: ShotEntryProps) {
   };
   const issue = shotPlausibility(input, p.ready);
   const key = plausibilityKey(p.currentHole.number, p.currentShot, issue, p.resultOfShot, p.distanceAfterShot);
-  const blocker = nextShotBlocker(input, p.ready, issue, key !== null && key === confirmedKey);
+  const parsed = parseFloat(p.distanceAfterShot);
+  const holed = result === 'hole';
+  // A box that isn't a plain number blocks Next shot, as Fairway's number input (which would hold nothing) does;
+  // the shared gate alone would record "150y" as 150.
+  const distanceInvalid = !holed && !!p.distanceAfterShot && !isDistanceText(p.distanceAfterShot);
+  const blocker = distanceInvalid ? 'Enter a valid distance' : nextShotBlocker(input, p.ready, issue, key !== null && key === confirmedKey);
   const canRecord = blocker === null;
 
   const afterUnit = lockedAfterUnit(p.isPutting, result);
   const unitWord = meters ? 'm' : afterUnit === 'feet' ? 'ft' : 'yds';
   const distLabel = p.isPutting ? `Leave distance (${unitWord})` : result === 'green' ? `Proximity to hole (${unitWord})` : `Distance remaining (${unitWord})`;
-  const parsed = parseFloat(p.distanceAfterShot);
-  const distanceInvalid = !!p.distanceAfterShot && (!Number.isFinite(parsed) || parsed < 0);
-  const holed = result === 'hole';
   const teeMiss = p.isTeeShot && !!result && ['rough', 'sand', 'other'].includes(result);
   const approachMiss = p.isApproachOrAroundGreen && !!result && !['green', 'hole'].includes(result);
   const puttMissed = p.isPutting && !!result && result !== 'hole';
@@ -270,7 +272,7 @@ export function ShotEntry(p: ShotEntryProps) {
                 aria-invalid={distanceInvalid || undefined}
                 aria-describedby={distanceInvalid ? 'ch-rt-dist-err' : undefined}
                 value={p.distanceAfterShot}
-                onChange={(e) => p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: e.target.value })}
+                onChange={(e) => p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: cleanDistance(e.target.value) })}
               />
               <em>{unitWord}</em>
               <div className="ch-rt-quick" role="group" aria-label="Quick distances">

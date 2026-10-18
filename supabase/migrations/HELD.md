@@ -3,7 +3,8 @@
 <!-- markdownlint-disable MD013 MD060 -->
 
 A migration file that exists here but has no row in the ledger looks identical
-whether it was **held on purpose** or **forgotten**. This file is the difference.
+whether it was **held on purpose** or **forgotten**. This file is the
+difference.
 
 ## Why this exists
 
@@ -69,7 +70,7 @@ actions. This covers a decision that leaves no runtime trace at all.
 | `20260929200000_golf_qualifier_db_hardening.sql` | **HOLD** | Owner decision D-35 (2026-09-29, `docs/clubhouse/PROGRESS.md`): closes the older Qualifiers database gaps the Clubhouse security review found. (1) `coach_reasoning` becomes coach-only: table-level SELECT on `golf_qualifier_selections` is revoked from `authenticated`, every other column is granted back, and coaches read the note through the new coach-gated `golf_qualifier_selection_reasons(uuid)`. (2) The entries insert and update policies also require an active `golf_team_members` row for that player on the qualifier's team. (3) The remove-with-round guard becomes SECURITY DEFINER and refuses any unfinished round (draft included). (4) `anon` loses its grants on three qualifier tables, and `is_team_coach` / `is_team_player` pin `pg_temp`. Order: the app already reads the note through `src/lib/golf/qualifier-selection-reasons.ts` (function first, column fallback), so the file can be applied before or after the deploy that carries it, but not before that deploy reaches production: an older build that selects `coach_reasoning` directly (the CoachHelm qualifying workspace) would lose the note. After apply, `npm run db:types`, then the fallback can go. Live counts (aggregates): 224 qualifier rounds, none with no team, another team's team or another status; 6 selection rows, none with reasoning written. pgTAP: `supabase/tests/rls/golf_qualifier_db_hardening.sql`. Held data plan: `docs/clubhouse/held/data/qualifier-db-hardening.md`. Owner applies. **Verified 2026-10-07 (plan phase 6, item 6.2):** production serves `ef6e017a2` (`npm run release:status`, "verified in the served bundle"). That commit contains `src/lib/golf/qualifier-selection-reasons.ts`, and both readers of the note call it: the CoachHelm qualifying loader (`src/lib/coachhelm/v3/qualifying/loader.ts`) and the Clubhouse qualifiers data (`src/clubhouse/data/qualifiers.ts`). Every other read of `golf_qualifier_selections` in `src/` selects named columns without `coach_reasoning` (no `select('*')`), and the writes are upserts with no RETURNING, so none needs column SELECT. **Exact apply order:** (1) no deploy has to come first, because the function-first, column-fallback reader is already live; (2) `npm run db:apply -- supabase/migrations/20260929200000_golf_qualifier_db_hardening.sql --apply --held-override <row anchor> --reason "..."` (dry run first); (3) confirm the `-- VERIFY:` block passes; (4) `npm run db:types`; (5) remove the column fallback in the reader in a follow-up. Its `is_team_coach` / `is_team_player` `pg_temp` pin overlaps `20261007100000_golf_rls_helpers_sql_language.sql`, which sets `pg_catalog, public, pg_temp` on the same two functions: apply in filename order (this file first), because the later file wins and `20261007100000`'s VERIFY expects its own path. **Deploy precondition met (2026-10-12):** `ef6e017a2` is an ancestor of `86c43bd8e` (`git merge-base --is-ancestor`), the commit production serves per the 2026-10-12 release check. Amended 2026-10-12: `SET LOCAL lock_timeout = '3s'` before the ALTER POLICY statements. Status stays HOLD; applying is the owner's decision. | 2026-09-29, amended 2026-10-12 |
 | `20260930140000_recruit_documents_film.sql` | **HOLD** | Owner decision Q-95 item 6 (2026-09-30): film uploads are allowed, as a file drop. One storage.buckets row: the private recruit-documents bucket takes video/mp4, video/quicktime and video/x-m4v and its per-file cap goes from 25 MB to 100 MB; no policy, table or grant change; the bucket holds no objects. Assumes the project-wide Storage upload limit is at least 100 MB (not readable from here: confirm before applying). Until applied, the Recruiting upload dialog says when Storage refuses a film (CH-14107, CH-14108). Held data plan: `docs/clubhouse/held/data/recruit-documents-film.md`. Owner applies. | 2026-09-30 |
 | `20260930160000_golf_document_policy_scoping.sql` | **APPLIED 2026-10-03 — hold discharged (owner-approved; ledger + pg_policies verified)** | Clubhouse documents/announcements security review (2026-09-30): two pre-existing policy bugs. (1) `golf_announcement_documents` insert/delete compared the announcement's team with itself, so any account with a coach row anywhere could attach or detach files on any team's announcement; now a coach staffed on that team, and an attached document must be that team's. (2) `golf_document_versions` admitted every coach in the document's organization and any roster row regardless of status; now `is_golf_team_coach` / `is_golf_team_player` plus `is_public`, as `golf_documents` already does. Live (aggregates): 1 document with versions, 0 coaches lose access; 1 announcement link, 0 cross-team. No data change. The server actions were tightened in the same change, so apply order does not matter. pgTAP not written or run (local Supabase was stopped to save memory). Held data plan: `docs/clubhouse/held/data/document-policy-scoping.md`. Owner applies. | 2026-09-30 |
-| `20261001000000_submit_round_expected_updated_at.sql` | **HOLD** | Swap audit C-6/R-6 (2026-09-30): `submit_round_atomic` has no optimistic lock, so a stale device that misses the client's best-effort staleness check can overwrite another device's newer holes at submit. Draft adds the `save_partial_round_atomic` conflict check inside the submit, read from `p_round_data->>'expected_updated_at'` (no signature change; a missing key skips the check, so app and migration can ship in either order). Replays on the local stack, and `supabase/tests/rls/golf_round_submit_expected_updated_at.sql` passes against it. The anchor occurs exactly once in the live body (read-only check 2026-10-12, prosrc md5 `c522e4cdc0c6ac85dee3eddab76a8348`). The app sends the key on `agent/clubhouse-release` (`src/app/golf/actions/round-submit.ts`, existing-round path) but not in the build production serves. Rollback capture: `supabase/rollbacks/20261001000000_submit_round_expected_updated_at.rollback.sql` (live body, verbatim). Needs owner review before any apply. | 2026-09-30, re-checked 2026-10-12 |
+| `20261001000000_submit_round_expected_updated_at.sql` | **HOLD** | Swap audit C-6/R-6 (2026-09-30): `submit_round_atomic` has no optimistic lock, so a stale device that misses the client's best-effort staleness check can overwrite another device's newer holes at submit. Draft adds the `save_partial_round_atomic` conflict check inside the submit, read from `p_round_data->>'expected_updated_at'` (no signature change; a missing key skips the check, so app and migration can ship in either order). Replays on the local stack, and `supabase/tests/rls/golf_round_submit_expected_updated_at.sql` passes against it. The anchor occurs exactly once in the live body (read-only check 2026-10-12, prosrc md5 `c522e4cdc0c6ac85dee3eddab76a8348`). The app sends the key (`src/app/golf/actions/round-submit.ts`, existing-round path) since #2189, which production serves (`87bd60345`, re-checked 2026-10-17). Rollback capture: `supabase/rollbacks/20261001000000_submit_round_expected_updated_at.rollback.sql` (live body, verbatim). Needs owner review before any apply. | 2026-09-30, re-checked 2026-10-12 |
 | `20261001120000_integrity_completed_round_skips_total_only.sql` | **APPLIED — in the production ledger (verified 2026-10-07; hold discharged)** | Swap audit §18 / Q-132 (2026-10-01): the nightly `completed_round_zero_scored_holes` check has read 14 every night since 28 Sep; all 14 are rounds posted as a total only, which count in scores since Q-123 and have no holes by design. The check now leaves them out (one anchored change, guarded by the live body's md5), so it reads 0 and a real lost round stands out. Fixed 2026-10-01 before any apply: the guard's RAISE did not parse, and it now accepts the replay body as well as production's (local reset and CI apply it). Production anchor matches once. No data change; apply any time after review. | 2026-10-01 |
 | `20261001130000_golf_attachments_revoke_anon_hide_deleted.sql` | **APPLIED 2026-10-03 — hold discharged (owner-approved; ledger, anon grants = 0 and SELECT policy verified)** | Swap audit F-11 (2026-10-01): revokes the `anon` grants on `golf_message_attachments` (RLS already limits rows; defence in depth) and stops the SELECT policy showing the files of a deleted message. Live: 2 of 14 attachment rows sit on deleted messages and stop being readable. No data change; apply any time after review. Plan: `docs/clubhouse/held/data/message-attachments-hardening.md`. | 2026-10-01 |
 | `20261005120000_golf_shot_tables_hardening.sql` | **HOLD** | Written 2026-10-05 ("WRITTEN, NOT APPLIED. Owner applies after review"), never registered here until 2026-10-07. Golf-only privilege and index DDL, no function body or data change. **Revokes:** (A) `EXECUTE` on `calculate_round_strokes_gained(uuid)` and `recompute_golf_round_totals(uuid)` from PUBLIC, anon and authenticated (service_role keeps it); (B) every `anon` privilege on `golf_rounds`, `golf_holes`, `golf_shots`, `putt_details`, `approach_miss_details` and `golf_player_stats_cache`; (C) drops two redundant `golf_shots` prefix indexes (`idx_golf_shots_round_id`, `idx_golf_shots_round_hole`). **Checked 2026-10-07 (plan phase 6, item 6.3):** no live code path depends on anon access to those tables. Every Supabase client in `src/` carries the user session (`src/lib/supabase/server.ts`, `client.ts`, `middleware.ts`; the only other publishable-key client authenticates a request, `observed-user-from-request.ts`); golf has no public no-auth route besides its `(auth)` pages; RLS already gives anon zero rows on these tables. No `.rpc()` call, trigger or script in `src/`, `scripts/` or `supabase/functions/` calls the two revoked functions directly (`recompute_golf_round_totals` runs only from the postgres-owned `SECURITY DEFINER` trigger function `golf_holes_recompute_round_totals_fn`, which keeps working; the app's SG recompute calls the different `recalculate_round_strokes_gained`). pgTAP `supabase/tests/rls/golf_shot_tables_hardening.sql` exists and passed 28 of 28 on a local native stack on 2026-10-07, together with the other 91 RLS suites. Overlap: `20261007102000_revoke_anon_public_table_grants.sql` (phase 6) revokes anon on all public tables, which includes part B; both are idempotent, apply in either order. Order against the shot policy consolidation (`20261007101000`): independent. Amended 2026-10-12: `SET LOCAL lock_timeout = '3s'` before the two `DROP INDEX` statements (ACCESS EXCLUSIVE on `golf_shots`). Owner applies. | 2026-10-05, amended 2026-10-12 |
@@ -83,6 +84,10 @@ actions. This covers a decision that leaves no runtime trace at all.
 | `20261007104000_wrap_auth_uid_in_seven_policies.sql` | **HOLD** | Plan phase 6 item 6.5: wraps `auth.uid()` in seven policies (performance). Not applied (no ledger row). Low risk; `test:rls` before apply. Amended 2026-10-12: `SET LOCAL lock_timeout = '3s'` before the ALTER POLICY statements (ACCESS EXCLUSIVE on `golf_rounds` and `baseball_players`). | 2026-10-11, amended 2026-10-12 |
 | `20261007105000_add_missing_foreign_key_indexes.sql` | **HOLD** | Plan phase 6 item 6.5: 11 foreign-key indexes. Not applied (no ledger row; none of its indexes exist on 2026-10-11). Low risk. | 2026-10-11 |
 | `20261007106000_helm_debug_record_trace_steps_batch.sql` | **HOLD** | Plan phase 6 item 6.9: service-role-only `helm_debug_record_trace_steps(uuid, jsonb)` batch writer for the flight recorder; the app falls back to per-step writes while it is missing (Sentry JAVASCRIPT-NEXTJS-196). Not applied (no ledger row, function absent on 2026-10-11). pgTAP `supabase/tests/rls/helm_debug_record_trace_steps_batch.sql`. Low risk; next to apply. | 2026-10-11 |
+| `20261016220000_golf_set_course_image.sql` | **HOLD** | Owner decision 2026-10-16: any golf team member (coach or player) may set a course's photo. Adds one SECURITY DEFINER function, `public.golf_set_course_image(uuid, text)`, that checks membership and pins the storage host and the course's folder, then writes only `image_url`, the last-edited columns and one `golf_course_edit_history` row; no table, policy or grant changes. Apply after PR #2201 merges, with the owner's OK. Until it is applied the app falls back to the coach-only `updateCourse` write (`setCourseImageUrl`, PGRST202 or 42883), so coaches keep uploading photos and a player's photo is refused. Rollback: `DROP FUNCTION IF EXISTS public.golf_set_course_image(uuid, text);`. | 2026-10-16 |
+| `20261017100000_notification_preferences_keep_all_keys.sql` | **HOLD** | Written 2026-10-17; owner applies after review. Clubhouse Settings P008: the `validate_notification_preferences_trigger` on `public.users` rebuilds `notification_preferences` from nine fixed keys, so `email_task_reminders`, `email_coachhelm`, `push_announcements`, `push_task_reminders`, `push_coachhelm` and `quiet_mode` (all written by `updateNotificationPreferences`) save and then read back as their defaults. `CREATE OR REPLACE` of the trigger function only: the nine keys keep today's casts and defaults; the six are kept when present as JSON booleans and never defaulted; unknown keys are still dropped. SECURITY INVOKER and `search_path = ''` kept as live; no table, policy, grant or data change; nothing to backfill. Low risk. pgTAP `supabase/tests/rls/notification_preferences_keep_all_keys.sql` (16, run 2026-10-17 on the local stack with the migration in a rolled-back transaction: all pass; without it 9 fail). | 2026-10-17 |
+| `20261017101000_golf_announcement_children_team_scoped.sql` | **HOLD** | Written 2026-10-17; owner applies after review. Clubhouse Announcements P010: the coach INSERT, DELETE and SELECT policies on `golf_announcement_recipients` and the INSERT and DELETE policies on `golf_announcement_tasks` compare the announcement's team with itself, so they pass for anyone with any `golf_coaches` row who can see the post (nested RLS on `golf_announcements` stops a plain other-team coach, but not a player on the team who coaches elsewhere, or an admin with a coach row: they can narrow an all-team post, strip its recipients and attach tasks). Re-creates the five as `EXISTS (golf_announcements a WHERE a.id = announcement_id AND is_golf_team_coach(a.team_id))`, TO authenticated as live. `select_own` and `ann_tasks_select_team` untouched. App writes (`src/app/golf/actions/announcements.ts`) run as the team's coach and pass. Low-medium risk. pgTAP `supabase/tests/rls/golf_announcement_children_team_scoped.sql` (14, run 2026-10-17 locally in a rolled-back transaction: all pass; without it the dual-role cases fail). | 2026-10-17 |
+| `20261017102000_golf_event_attendance_players_own_rows.sql` | **HOLD** | Written 2026-10-17; owner applies after review. Owner-flagged (`docs/clubhouse/STATUS.md`): `golf_event_attendance_select_team` lets an active player read every teammate's RSVP row. Adds SECURITY DEFINER `golf_event_attendance_counts(uuid[])` (invited, accepted, declined, pending, and `coach_invited` — rows the coach's invitation wrote, so a player's own reply keeps a team-wide event open — per event of the caller's own teams; `search_path = ''`; EXECUTE authenticated only) and re-creates the SELECT policy so a player sees only their own row (coach branch unchanged; roles public to authenticated). Strictly narrower: no caller gains a row. **Apply after** the Clubhouse change that reads the function (`src/clubhouse/data/attendance-counts.ts`; shell, player Home, player Calendar and Classes' week overlap list (`data/classes.ts`, `coachOnlyMeetings`) fall back to the direct read until then) is deployed. Checked live callers: player own-row reads and the player RSVP upsert still pass; coach paths unchanged; `get_player_hub_events` / `get_coach_today_schedule` are SECURITY DEFINER. `getEventRSVP` has no role gate, and (corrected 2026-10-17) its live caller, Fairway's event drawer (`FairwayEventDetailDrawer.tsx` → `EventPeopleSection`), shows the People list to players too: **after apply, a Fairway player sees only their own reply there, not teammates' names and replies. Visible change on live Fairway; owner decides it with the apply.** The header count still counts everyone (`getEventRSVP` takes its totals from `golf_event_attendance_counts`, test `get-event-rsvp-counts.test.ts`). Re-verified 2026-10-17: full local pgTAP 98/98 with the three 20261017 migrations applied, and each file's VERIFY queries return rows. The legacy `EventDetailModal` is mounted only by the baseball `PremiumCalendarClient`. Medium risk. pgTAP `supabase/tests/rls/golf_event_attendance_players_own_rows.sql` (12, run 2026-10-17 locally in a rolled-back transaction: all pass). | 2026-10-17 |
 
 ## Why `20260528011000` is obsolete rather than pending
 
@@ -477,7 +482,8 @@ treat it with the same R3 deliberateness as the SQL actions below.
 
 ### O6(a) — insert the two missing ledger rows
 
-**APPLIED 2026-09-06** (owner-authorized). Both rows verified present by `SELECT version, name` immediately after the INSERT.
+**APPLIED 2026-09-06** (owner-authorized). Both rows verified present by `SELECT
+version, name` immediately after the INSERT.
 
 Closes the "NO LEDGER ROW" note on `20260903190000` and `20260903193000`
 above. `supabase_migrations.schema_migrations` columns (confirmed live via
@@ -509,18 +515,19 @@ ON CONFLICT (version) DO NOTHING;
 
 ### O6(b) — a read-only role for the Repair stage
 
-**APPLIED 2026-09-06** (owner-authorized). Role, four grants and four policies created; `pg_policies` shows the four `helm_repair_ro_*` rows. Minting `HELM_REPAIR_DB_KEY` still needs the JWT secret and remains an owner step.
+**APPLIED 2026-09-06** (owner-authorized). Role, four grants and four policies
+created; `pg_policies` shows the four `helm_repair_ro_*` rows. Minting
+`HELM_REPAIR_DB_KEY` still needs the JWT secret and remains an owner step.
 
-`docs/ai-system/selfheal/repair-contract.md` names exactly what Repair reads
-and writes: SELECT on `public.background_job_logs` (STEP 0b), `public.admin_events`
-and `public.admin_error_resolutions` (STEP 1); INSERT — never UPDATE or
-DELETE — on `public.background_job_logs`, and only its own heartbeat row
-(STEP 6). This role is what
-`.github/workflows/selfheal-repair.yml`'s planned `HELM_REPAIR_DB_KEY` secret
-(see that workflow's TODO) should actually authenticate as, in place of the
-full `SUPABASE_SERVICE_ROLE_KEY` the workflow uses today — the contract has
-never needed write access to anything but its own heartbeat, so the
-credential should not be able to do more than that.
+`docs/ai-system/selfheal/repair-contract.md` names exactly what Repair reads and
+writes: SELECT on `public.background_job_logs` (STEP 0b), `public.admin_events`
+and `public.admin_error_resolutions` (STEP 1); INSERT — never UPDATE or DELETE —
+on `public.background_job_logs`, and only its own heartbeat row (STEP 6). This
+role is what `.github/workflows/selfheal-repair.yml`'s planned
+`HELM_REPAIR_DB_KEY` secret (see that workflow's TODO) should actually
+authenticate as, in place of the full `SUPABASE_SERVICE_ROLE_KEY` the workflow
+uses today — the contract has never needed write access to anything but its own
+heartbeat, so the credential should not be able to do more than that.
 
 All three tables have RLS enabled (confirmed live, `list_tables`: 276 of 276
 `public` tables carry `rls_enabled = true`), so a bare `GRANT` is necessary
@@ -571,17 +578,23 @@ not have access to and does not attempt to derive here.
 
 ### O6(c) — stop exposing `graphql_public` over the API
 
-**NOT applied as SQL, by decision 2026-09-06.** Live check: `authenticator` has no `pgrst.db_schemas` in `rolconfig`, so the exposed-schema list is dashboard-managed on this project, and Supabase's own troubleshooting docs state that a manual `ALTER ROLE authenticator SET pgrst.db_schemas` makes the dashboard stop managing schemas from then on. Do this in Dashboard → Project Settings → Data API → Exposed schemas: remove `graphql_public`, save. The SQL below is kept only as the documented alternative.
+**NOT applied as SQL, by decision 2026-09-06.** Live check: `authenticator` has
+no `pgrst.db_schemas` in `rolconfig`, so the exposed-schema list is
+dashboard-managed on this project, and Supabase's own troubleshooting docs state
+that a manual `ALTER ROLE authenticator SET pgrst.db_schemas` makes the
+dashboard stop managing schemas from then on. Do this in Dashboard → Project
+Settings → Data API → Exposed schemas: remove `graphql_public`, save. The SQL
+below is kept only as the documented alternative.
 
 Independently confirmed 2026-09-05 (`grep -rn "graphql" src/ --include="*.ts"
 --include="*.tsx" -i`): exactly 4 lines, all references to the
 `graphql_public`/`graphql` schema keys Supabase's own `db:types` generator
-always emits into `src/lib/types/database.ts`, plus one test asserting
-against that same generated structure. **Zero application code issues a
-GraphQL query, imports a GraphQL client, or calls `/graphql/v1` anywhere in
-`src/`.** The ~430 `pg_graphql_anon_table_exposed`/`pg_graphql_authenticated_table_exposed`
-WARN-level security-advisor findings (126 + 308 unique tables) are dead
-surface with no code path depending on them.
+always emits into `src/lib/types/database.ts`, plus one test asserting against
+that same generated structure. **Zero application code issues a GraphQL query,
+imports a GraphQL client, or calls `/graphql/v1` anywhere in `src/`.** The ~430
+`pg_graphql_anon_table_exposed`/`pg_graphql_authenticated_table_exposed`
+WARN-level security-advisor findings (126 + 308 unique tables) are dead surface
+with no code path depending on them.
 
 `supabase/config.toml`'s `[api] schemas = ["public", "graphql_public"]`
 governs the **local** stack only. In production the exposed-schemas list is a
@@ -608,7 +621,19 @@ source for that, only `src/`).
 
 ### O7 — investigate and, if warranted, restore the `admin_allowlist` vs `users.role` divergence
 
-**(a) RUN 2026-09-06 — one row.** The divergent allowlist entry is the founder account (the `note` column records it was added 2026-07-29 so `is_super_admin()` would pass); its `users.role` is `coach`. **(b) deliberately NOT run**: `users.role = 'admin'` still drives post-login routing (`src/app/golf/actions/auth.ts`, `src/app/golf/(dashboard)/layout.tsx`) and team-creation behavior (`src/app/golf/actions/teams.ts`), so flipping the founder's role changes their day-to-day coach experience — an owner decision. Owner confirmed 2026-09-06 that `coach` is intentional (that login is the test-coach account; `admin@` is the admin account, role `admin` and allowlisted). Resolved by changing the drift check, not the row: `check-supabase-drift.mjs` now fails only on a `users.role = 'admin'` account missing from `admin_allowlist` (the 2026-07-29 Forbidden shape) and reports allowlisted non-admin accounts as deliberate dual-role logins.
+**(a) RUN 2026-09-06 — one row.** The divergent allowlist entry is the founder
+account (the `note` column records it was added 2026-07-29 so `is_super_admin()`
+would pass); its `users.role` is `coach`. **(b) deliberately NOT run**:
+`users.role = 'admin'` still drives post-login routing
+(`src/app/golf/actions/auth.ts`, `src/app/golf/(dashboard)/layout.tsx`) and
+team-creation behavior (`src/app/golf/actions/teams.ts`), so flipping the
+founder's role changes their day-to-day coach experience — an owner decision.
+Owner confirmed 2026-09-06 that `coach` is intentional (that login is the
+test-coach account; `admin@` is the admin account, role `admin` and
+allowlisted). Resolved by changing the drift check, not the row:
+`check-supabase-drift.mjs` now fails only on a `users.role = 'admin'` account
+missing from `admin_allowlist` (the 2026-07-29 Forbidden shape) and reports
+allowlisted non-admin accounts as deliberate dual-role logins.
 
 Closes the register's "INVESTIGATE, not a migration" row above (F040 in the
 2026-09-05 coverage matrix). `db-drift.yml`'s "admin_allowlist and
@@ -740,18 +765,17 @@ by app code or RLS. Full working detail: `scratchpad/exec/phase2-P3.md`
 The result is nine names, not zero and not 141:
 `20260905100000_revoke_secdef_execute_from_authenticated.sql` (register row
 below, PENDING OWNER REVIEW) revokes `authenticated`/`anon`/`PUBLIC` EXECUTE
-from eight pure trigger functions
-(`extract_email_click_from_event`, `sync_coach_last_email_event`,
-`sync_email_snapshot_from_event`, `golf_event_documents_assert_same_team`,
-`golf_holes_recompute_round_totals_fn`, `set_calendar_feed_token`,
-`update_round_stats_cache`, `log_crm_stage_transition` — Postgres never
-checks the triggering session's EXECUTE privilege on a trigger function,
-regardless of SECURITY mode, so this is a categorical guarantee, not an
-inference from absent evidence) plus one internal composability gate,
-`__admin_rollup_b_gate()` (called only via `PERFORM
+from eight pure trigger functions (`extract_email_click_from_event`,
+`sync_coach_last_email_event`, `sync_email_snapshot_from_event`,
+`golf_event_documents_assert_same_team`, `golf_holes_recompute_round_totals_fn`,
+`set_calendar_feed_token`, `update_round_stats_cache`,
+`log_crm_stage_transition` — Postgres never checks the triggering session's
+EXECUTE privilege on a trigger function, regardless of SECURITY mode, so this is
+a categorical guarantee, not an inference from absent evidence) plus one
+internal composability gate, `__admin_rollup_b_gate()` (called only via `PERFORM
 public.__admin_rollup_b_gate();` from within its ~17 sibling admin-rollup
-SECURITY DEFINER functions, themselves deliberately kept — see those
-siblings' own history in `20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql`
+SECURITY DEFINER functions, themselves deliberately kept — see those siblings'
+own history in `20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql`
 and `20260709010100_gate_admin_event_summary.sql` — and owned by the same
 `postgres` role as its callers, so the nested call needs no grant).
 
