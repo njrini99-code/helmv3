@@ -2519,6 +2519,89 @@
   box-shadow: 0 4px 12px -4px rgb(11 58 37 / 0.45);
   cursor: pointer;
 }
+/* Jump to latest (wave 5 #17): the same pill, quieter, once the reader is away from the end with nothing new. */
+.ch-ms-below.is-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ch-sheet-bg);
+  color: var(--ch-text-primary);
+  box-shadow: var(--ch-elevation-floating);
+}
+/* "New": the first message that was unread when the thread opened. */
+.ch-ms-day.is-new span {
+  background: var(--ch-green-50);
+  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.18);
+  color: var(--ch-green-700);
+  font-weight: 600;
+}
+/* A web link in a bubble (wave 5 #13): underlined in the bubble's own ink, and free to wrap. */
+.ch-ms-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.ch-ms-msg:not(.is-mine) .ch-ms-link {
+  color: var(--ch-green-700);
+}
+.ch-ms-link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* A search hit's match, marked in its row (wave 5 #11). */
+.ch-ms-hit {
+  padding: 0 1px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ch-champagne-500) 34%, transparent);
+  color: inherit;
+}
+/* The message Delete asks about, quoted (wave 5 #14). */
+.ch-ms-delq {
+  display: -webkit-box;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--ch-bg-inset);
+  font: var(--ch-type-body);
+  color: var(--ch-text-secondary);
+  white-space: pre-wrap;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+/* A picked file's name ends in an ellipsis rather than running the chip off its row (wave 5 #6). */
+.ch-ms-to__n {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ms-comp .ch-ms-to__c:has(.ch-ms-to__n) {
+  max-width: 100%;
+  overflow-wrap: normal;
+}
+/* "N left" near the 5000-character limit (wave 5 #21). */
+.ch-ms-comp__hint {
+  display: flex;
+  gap: 12px;
+}
+.ch-ms-comp__left {
+  margin-left: auto;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-comp > .ch-ms-comp__left {
+  padding: 0 16px;
+  text-align: right;
+}
+.ch-ms-comp__left.is-out {
+  color: var(--ch-text-primary);
+  font-weight: 600;
+}
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept

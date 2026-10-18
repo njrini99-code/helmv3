@@ -262,7 +262,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                       <b>Insight dismissed.</b> It no longer shows on your board or on {firstName(cur.name)}’s. Undo brings it back.
                     </span>
                     <Button size="sm" variant="ghost" disabled={busy} onClick={() => void undo.run(cur)}>
-                      {here('undo') ? <span data-ch-code="CH-13403">Undoing</span> : 'Undo'}
+                      {here('undo') ? <span data-ch-code="CH-13403">Undoing…</span> : 'Undo'}
                     </Button>
                   </div>
                 ) : (
@@ -291,7 +291,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                           />
                         ) : stale ? null : (
                           <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
-                            {here('assign') ? <span data-ch-code="CH-13403">Assigning</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
+                            {here('assign') ? <span data-ch-code="CH-13403">Assigning…</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
                           </Button>
                         )}
                         <Button
@@ -304,7 +304,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                             void dismiss.run(cur);
                           }}
                         >
-                          {here('dismiss') ? <span data-ch-code="CH-13403">Dismissing</span> : 'Dismiss'}
+                          {here('dismiss') ? <span data-ch-code="CH-13403">Dismissing…</span> : 'Dismiss'}
                         </Button>
                         {mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
                         {!mine && !stale && !statusUnknown && cur.top.declined && (

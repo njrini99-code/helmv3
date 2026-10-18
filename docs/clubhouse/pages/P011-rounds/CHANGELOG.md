@@ -1,5 +1,64 @@
 # P011 — Rounds: changelog
 
+## 2026-10-18 — Wave 5: the round flow, setup to posted
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, round flow)
+
+- Track: Undo's "Undo shot 2?" scrolls itself into view clear of the action
+  bar (CH-11502). A birdie or bogey in the holed-out hero keeps its own ink
+  on its pale mark. The strip's "Thru 3 +1" stays pinned at the right edge
+  while the holes scroll. The scorecard (CH-11509, CH-11508) has even hole
+  columns, with its label and Tot columns pinned and a fade at Tot on a
+  phone. The picked quick distance is green, as on desktop.
+- Track: after a hole saves and play moves on, the new hole says "Hole 4
+  saved · Birdie" in place of "No shots yet" for four seconds or until its
+  first shot; a move the player makes on the strip says nothing.
+- One shot-line form everywhere: "→ fairway · 140 yds left" (shot log, hole
+  review, round review). The slope choice reads "Downhill".
+- Round complete: Post round (was Submit round), "Posting round",
+  "The round didn’t post", and "Your 74 (+2) at Finley GC is posted."
+  The same word everywhere a finished round is sent: the library card
+  ("Ready to post", Post round; Post in the more-unfinished list), the
+  qualifier round sheet (CH-11518) and Recover's finished round.
+- Recovery (CH-11512): "Pick up where you left off" / "Your shots are on
+  this device from when the app closed."
+- Setup: "Front 9" never wraps; a tee with no yardage shows "—" without
+  "yds"; the picker's head says "Add" on a phone (still named "Add a
+  course"); 18 holes off on a 9-hole tee says why; the dock names the nine
+  ("Back nine"). Setup is kept for the tab (keyed by page, team and
+  player) so Back and return keeps the course, tees and pars; cleared once
+  a round starts or posts.
+- Review: the phone charts' words are about 12px (31 units), every other
+  hole number and score tick gives way, the trail's labels never overprint
+  and the putts line ends inside the stage (its dots drop their numbers on
+  a phone), and "Hole 2: +1" no longer touches the score labels. Note:
+  "Pick a hole to read it and see its shots."
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Discarding…" (CH-11501, library and Recover) and "Restoring…"
+  on Recover; "Trying again…" on the library's Try again (CH-11213).
+
 ## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
 
 ```text

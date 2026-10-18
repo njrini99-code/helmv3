@@ -1,5 +1,45 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-18 — Wave 5: what was typed survives Cancel
+
+```text
+Design package: none (wave-5 feedback review, item 7)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, kept draft)
+
+- `ProspectForm`: Cancel, Esc or the backdrop on Add keeps what was typed,
+  and the next Add starts from it; an Add that lands ends it. Edit is
+  unchanged (Cancel discards), as Team Hub's edit. A kept Add saves under its
+  first opening, so a lost-reply Add retried after Cancel keeps its request
+  id (CH-14915).
+
+### Verification (2026-10-18, kept draft)
+
+- `recruiting.test.tsx` › CH-14910 CH-14915 Cancel keeps what was typed;
+  `recruiting-upload.test.tsx` (CH-14915) unchanged and passing.
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Saving…" (CH-14403), "Uploading…" and "Uploading… 42%"
+  (CH-14404), "Removing…" (CH-14405) and "Deleting…" (CH-14406).
+
 ## 2026-10-18 — Wave 4: phone text follows Dynamic Type
 
 ```text

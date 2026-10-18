@@ -1324,9 +1324,10 @@ button.ch-more__row[disabled] {
   .ch-root[data-phone-notabs] .ch-toasts {
     bottom: calc(12px + env(safe-area-inset-bottom) + var(--keyboard-height, 0px));
   }
-  /* A pushed screen hides the tab bar: toasts sit above its composer instead (and above the keyboard). */
+  /* A pushed screen hides the tab bar: toasts sit above its composer instead (and above the keyboard). A Messages
+     composer gives its measured height, safe area included (composer-inset.ts), so a grown one isn't covered. */
   .ch-root[data-phone-immersive] .ch-toasts {
-    bottom: calc(72px + env(safe-area-inset-bottom) + var(--keyboard-height, 0px));
+    bottom: calc(var(--ch-ms-comp-h, calc(60px + env(safe-area-inset-bottom))) + 12px + var(--keyboard-height, 0px));
   }
   .ch-toast {
     min-width: 0;

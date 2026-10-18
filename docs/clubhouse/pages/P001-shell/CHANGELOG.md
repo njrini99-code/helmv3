@@ -1,5 +1,28 @@
 # P001 — Shell: changelog
 
+## 2026-10-18 — Wave 5: toasts close, replace and hold an Undo
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, toasts)
+
+- `ui/Toast.tsx`: on a device with a mouse a toast has a ghost Dismiss X
+  ("Dismiss notification"), and Esc closes it while focus is inside it;
+  focus goes back where it was, and inside a dialog Esc closes only the
+  toast (CH-1817). A toast raised with a `replace` key takes the place of a
+  live one with the same key, so contradictory notices never stack
+  (CH-1910). `onExpire` runs once when a toast leaves without its action
+  (it ran out, was closed, swiped, replaced or pushed out), never while its
+  action is still on screen, so held work like an Undo commits then.
+- `ui/Retry.tsx`, `ui/Notices.tsx`: "Trying again…" while a retry runs.
+
 ## 2026-10-18 — Wave 4: Dynamic Type for the shell's phone text
 
 ```text

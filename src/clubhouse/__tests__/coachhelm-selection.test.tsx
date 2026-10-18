@@ -46,7 +46,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('a write in flight on the coach’s board', () => {
-  it('CH-13403 Assign for one player does not read "Assigning" on another player’s card, whose controls wait without a label', async () => {
+  it('CH-13403 Assign for one player does not read "Assigning…" on another player’s card, whose controls wait without a label', async () => {
     const u = userEvent.setup();
     let done!: (v: { success: boolean }) => void;
     const w = writesOf();
@@ -54,17 +54,17 @@ describe('a write in flight on the coach’s board', () => {
     render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={w} />));
     await pickPlayer(u, 'Jonah Okafor');
     await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    expect(await screen.findByRole('button', { name: 'Assigning' })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Assigning…' })).toBeDisabled();
 
     // Another player's card, while Jonah's write runs: its button says what it is, and waits.
     await pickPlayer(u, 'Eli Brandt');
-    expect(screen.queryByRole('button', { name: 'Assigning' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Assigning…' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeDisabled();
 
     // Back on Jonah's: it is still his that is working.
     await pickPlayer(u, 'Jonah Okafor');
-    expect(screen.getByRole('button', { name: 'Assigning' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Assigning…' })).toBeDisabled();
 
     await act(async () => done({ success: true }));
     expect(code('CH-13601')?.textContent).toMatch(/Assigned as Jonah’s focus/);
@@ -81,9 +81,9 @@ describe('a write in flight on the coach’s board', () => {
     render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={w} />));
     await pickPlayer(u, 'Jonah Okafor');
     await u.click(screen.getByRole('button', { name: 'Dismiss' }));
-    expect(await screen.findByRole('button', { name: 'Dismissing' })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Dismissing…' })).toBeDisabled();
     await pickPlayer(u, 'Priya Natarajan');
-    expect(screen.queryByRole('button', { name: 'Dismissing' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Dismissing…' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeDisabled();
     await act(async () => done({ success: true }));
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeEnabled();
@@ -92,9 +92,9 @@ describe('a write in flight on the coach’s board', () => {
     vi.mocked(w.undo).mockReturnValueOnce(new Promise((r) => (undone = r)));
     await pickPlayer(u, 'Jonah Okafor');
     await u.click(await screen.findByRole('button', { name: 'Undo' }));
-    expect(await screen.findByRole('button', { name: 'Undoing' })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Undoing…' })).toBeDisabled();
     await pickPlayer(u, 'Priya Natarajan');
-    expect(screen.queryByRole('button', { name: 'Undoing' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Undoing…' })).toBeNull();
     await act(async () => undone({ success: true }));
   });
 
@@ -107,7 +107,7 @@ describe('a write in flight on the coach’s board', () => {
     await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
     await screen.findByText(/Couldn’t assign the focus to Jonah/);
     expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeEnabled();
-    expect(screen.queryByRole('button', { name: 'Assigning' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Assigning…' })).toBeNull();
   });
 });
 

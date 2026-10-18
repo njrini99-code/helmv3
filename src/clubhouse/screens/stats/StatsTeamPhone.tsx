@@ -161,7 +161,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
         {noRounds && filtered ? (
           <TeamFilterEmpty />
-        ) : noRounds && data.window === 'season' && !nineOnly ? (
+        ) : noRounds && (data.window === 'season' || (data.window !== 'qualifiers' && data.filterOptions.total === 0)) && !nineOnly ? (
           <StatsTeamFirstRun />
         ) : noRounds ? (
           // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).

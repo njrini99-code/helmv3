@@ -8,6 +8,7 @@ import { AutoSaveHeldError } from '@/hooks/golf/use-shot-state-machine';
 import { RoundTracking, type RoundTrackingProps } from '../screens/rounds/track/RoundTracking';
 import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay, type ChSummaryHole } from '../screens/rounds/track/round-sheets';
 import { PREVIEW_TRACK_ROUND, trackingFixture } from './fixtures-tracking';
+import { postedScore } from '../screens/rounds/entry/session';
 
 const wait = <T,>(v: T, ms = 500) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 const NONE: ShotRecord[] = [];
@@ -116,7 +117,7 @@ export function PreviewTracking({ state }: { state?: string }) {
       />
       <ScorecardSheet open={sheet === 'card'} onClose={() => setSheet(null)} course={PREVIEW_TRACK_ROUND.course} tee="Blue" holes={card} current={holes[index]!.number} />
       <RoundCompleteSheet open={sheet === 'summary'} heading="Finley GC · Blue · Oct 14" holes={summary} onBack={() => setSheet(null)} onSubmit={submitRound} />
-      {submit && <SubmitOverlay state={submit} course={PREVIEW_TRACK_ROUND.course} shots={shotCount} coach="Coach Reyes" reviewHref={`/clubhouse-preview/round`} error={null} onRetry={submitRound} />}
+      {submit && <SubmitOverlay state={submit} course={PREVIEW_TRACK_ROUND.course} shots={shotCount} coach="Coach Reyes" score={postedScore(card)} reviewHref={`/clubhouse-preview/round`} error={null} onRetry={submitRound} />}
     </>
   );
 }

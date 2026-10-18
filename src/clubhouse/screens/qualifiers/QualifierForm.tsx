@@ -225,7 +225,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           back={{ label: 'Cancel', chevron: false, onBack: cancel }}
           action={
             <PhoneTextAction onClick={() => void submit()} disabled={blocked} busy={pending}>
-              {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving' : 'Creating'}</span> : editing ? 'Save' : 'Create'}
+              {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving…' : 'Creating…'}</span> : editing ? 'Save' : 'Create'}
             </PhoneTextAction>
           }
         />
@@ -500,7 +500,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 Cancel
               </Button>
               <Button type="submit" variant="primary" leftIcon={Check} disabled={pending || blocked}>
-                {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving' : 'Creating'}</span> : editing ? 'Save changes' : 'Create qualifier'}
+                {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving…' : 'Creating…'}</span> : editing ? 'Save changes' : 'Create qualifier'}
               </Button>
             </div>
           </div>

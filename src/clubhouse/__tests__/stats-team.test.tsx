@@ -63,6 +63,8 @@ const wrap = (data: ChTeamStats) => render(tree(data));
 const stats = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 // A team with no round at all: nothing loaded for the filter's sheet either (a loaded 9-hole round would be CH-4301 with the CH-4319 hint, not the first run).
 const empty = (over: Partial<ChTeamStats> = {}) => stats({ roundCount: 0, grid: [], players: [], putting: null, bests: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 0, courses: [] }, ...over });
+// A team that has posted rounds, none of them in this window: the window's empty (CH-4301), not the first run.
+const emptyWindow = (over: Partial<ChTeamStats> = {}) => empty({ filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 4, courses: [] }, ...over });
 
 /** One active player with one countable round from yesterday, so every read downstream runs. */
 function seasonTables(): import('./supabase-fake').ChFakeTables {
@@ -277,7 +279,7 @@ describe('Stats team · reads that fail', () => {
 describe('Stats team · empty', () => {
   it('CH-4301 no rounds in the window: offers the season', async () => {
     const user = userEvent.setup();
-    wrap(empty({ window: 'last10' }));
+    wrap(emptyWindow({ window: 'last10' }));
     await expectCode('CH-4301', /No 18-hole rounds in this window yet/);
     // The whole body is empty, so it is the page's empty state (states audit, 2026-10-08), not a section's.
     expect(code('CH-4301')!.classList.contains('ch-empty-page')).toBe(true);
@@ -290,6 +292,12 @@ describe('Stats team · empty', () => {
     expect(code('CH-4310')!.textContent).toMatch(/No stats yet/);
     expect(code('CH-4301')).toBeNull();
     expect(screen.getByRole('link', { name: /View roster/ })).toHaveAttribute('href', '/golf/dashboard/roster');
+  });
+
+  it('CH-4310 a team that has never posted a round gets the first run in the default window too', () => {
+    wrap(empty({ window: 'last10' }));
+    expect(code('CH-4310')!.textContent).toMatch(/No stats yet/);
+    expect(code('CH-4301')).toBeNull();
   });
 
   it('CH-4302 no qualifier rounds', () => {
@@ -655,7 +663,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
   });
 
   it('CH-4301 no rounds in the window: offers the season', () => {
-    wrap(empty());
+    wrap(emptyWindow());
     expect(code('CH-4301')).not.toBeNull();
     expect(screen.getByRole('button', { name: /season/i })).toBeTruthy();
   });
@@ -681,7 +689,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
   });
 
   it('CH-4301 on the phone the empty window is the page’s empty state, with Show the season as its one action', () => {
-    wrap(empty());
+    wrap(emptyWindow());
     expect(code('CH-4301')!.classList.contains('ch-empty-page')).toBe(true);
     expect(screen.getByRole('button', { name: 'Show the season' }).className).toMatch(/ch-btn--primary/);
   });

@@ -1,5 +1,61 @@
 # P007 — Messages: changelog
 
+## 2026-10-18 — Wave 5: Messages feedback fixes
+
+```text
+Design package: none (wave-5 feedback review, items 1-2, 4-14, 17-22)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-5 feedback)
+
+- Toasts sit above the composer, however tall it grows: `composer-inset.ts`
+  hands its measured height to `.ch-toasts` (desktop and phone).
+- "Mute a week" reads "Muted until Oct 25 · 2:40 PM" (`untilLabel`: today,
+  tomorrow, a weekday within the week, then a date).
+- Phone Details: the Mute tile opens desktop's three choices in a sheet;
+  Muted turns notifications back on. The duplicate switch is gone (owner
+  decision); the panel says until when.
+- Phone New message: the first message grows as the thread's does, Return
+  adds a line, and it (and a New announcement) survives Cancel until a
+  conversation or a post takes it. Desktop's announcement draft does too.
+  Busy labels: "Starting…" (Next and Create group, as desktop) and
+  "Posting…".
+- Surprised is an open-mouthed face, not Lucide's frown.
+- More than ten files: ten are kept and CH-7106 says so; a long file name
+  ends in an ellipsis on its chip.
+- Desktop: Edit only on a message with text; Save waits for a change, with
+  focus in the box; Delete quotes the message (three lines); a Reply tool
+  quotes the message on the composer and sends with it.
+- Search hits open at their match, marked; the empty line says "No
+  conversation names match." Groups with none says "No group conversations
+  yet."
+- Web links in a message are links (http and https only, React nodes; the
+  iOS app opens them in the in-app browser).
+- Scrolled up, "Jump to latest"; a thread opened with something unread marks
+  it with a "New" divider. The phone's actions sheet says whose message.
+- "N left" within 300 characters of the 5000 limit.
+- Safe choices name what stays: "Keep conversation", "Keep Eli".
+- Deleting a conversation that fails is CH-7025 (it shared mute's CH-7011).
+- Mute and unmute toasts replace each other (`replace: 'mute'`, CH-1910):
+  a quick mute, unmute, mute leaves only the last.
+
+### Verification (2026-10-18, wave-5 feedback)
+
+- `messages.test.tsx` › Messages · wave 5 feedback (16 tests),
+  `screens/messages/__tests__/model.test.ts`, `thread-anchor.test.tsx`;
+  the existing Messages suites pass with the CH-7025 and CH-7302 strings.
+- WebKit (Playwright, dev preview): 1280 toast bottom 670 over the composer
+  top 683; 390 toast bottom 512 over the composer top 524 with a five-line
+  draft; mute a week, links, Reply, Edit, Delete quote, Jump to latest,
+  attach limit, search mark, phone mute sheet and New message draft as
+  described. The preview clears unread on tap, so its phone thread shows no
+  "New" divider; the live container clears it after the open.
+
 ## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
 
 ```text

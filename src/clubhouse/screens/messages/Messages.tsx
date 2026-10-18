@@ -701,7 +701,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     deleteConversation: canHide
       ? async () => {
           if (!selectedId) return false;
-          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
+          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7025' }, async () => {
             const res = await hideGolfConversation(selectedId);
             if (!res.success) throw new Error(res.error);
             haptic('success');
@@ -780,7 +780,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
         if (!r.success) throw new Error(r.error);
         setMuteState(r.data);
         haptic('success');
-        toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });
+        // One mute toast at a time: a quick mute, unmute, mute leaves only the last (CH-1910).
+        toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
       });
     },
 

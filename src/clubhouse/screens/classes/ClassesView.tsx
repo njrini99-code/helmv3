@@ -474,7 +474,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
                 if (asking) void remove.run(asking);
               }}
             >
-              {remove.pending ? 'Removing' : 'Remove class'}
+              {remove.pending ? 'Removing…' : 'Remove class'}
             </Button>
           </>
         }
@@ -498,7 +498,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
               Keep them
             </Button>
             <Button variant="danger" disabled={removeAll.pending || classes.length === 0} feel={null} onClick={() => void removeAll.run(classes.map((c) => c.id))}>
-              {removeAll.pending ? 'Deleting' : 'Delete all classes'}
+              {removeAll.pending ? 'Deleting…' : 'Delete all classes'}
             </Button>
           </>
         }

@@ -227,7 +227,7 @@ export function ImportSchedule({
               Start over
             </Button>
             <Button variant="primary" leftIcon={Check} disabled={!rows.length || importing} onClick={() => void onImport(rows)}>
-              {importing ? 'Importing' : `Import ${rows.length} ${rows.length === 1 ? 'class' : 'classes'}`}
+              {importing ? 'Importing…' : `Import ${rows.length} ${rows.length === 1 ? 'class' : 'classes'}`}
             </Button>
           </>
         ) : undefined

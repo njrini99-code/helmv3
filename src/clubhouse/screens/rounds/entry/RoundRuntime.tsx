@@ -14,7 +14,7 @@ import type { RoundNotices } from './ports';
 import { RecoveryDialog } from './RecoveryDialog';
 import { ReloadBanner, RoundErrorBanner } from './ReloadBanner';
 import { QUALIFIER_CLOSED_REASON, SaveAsPracticeSheet } from './SaveAsPracticeSheet';
-import { cardHoles, outcomeOf, recoveryFacts, summaryHoles, type ChRecovery, type ChRoundSession } from './session';
+import { cardHoles, outcomeOf, postedScore, recoveryFacts, summaryHoles, type ChRecovery, type ChRoundSession } from './session';
 import { useEntryFailureToast } from './failures';
 import '../../../styles/rounds-track.css';
 
@@ -348,6 +348,7 @@ export function RoundRuntime({
           course={course}
           shots={shots}
           coach={null}
+          score={postedScore(card)}
           reviewHref={session.completedRoundId ? routes.review(session.completedRoundId) : null}
           error={session.error || null}
           onRetry={() => s.current.submitRetry()}

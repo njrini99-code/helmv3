@@ -3183,6 +3183,23 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
     display: none;
   }
 }
+/* A phone: the pictures are about 290px wide, so their words are set at 31 units (about 12px on screen) and the stages
+   give the drawing more of the width. Every other hole number and score tick gives way where they would touch
+   (RoundZones `ch-rzsvg__alt`); the trail lays its own labels out at this size. */
+@container chrv (max-width: 440px) {
+  .ch-rv .ch-rzsvg text,
+  .ch-rv .ch-rzsvg text[font-weight='700'] {
+    font-size: 31px;
+  }
+  .ch-rv .ch-rzsvg .ch-rzsvg__alt {
+    display: none;
+  }
+  /* The trail's shot numbers sit inside 7px dots here, too small to hold a figure: the dots keep their colour and
+     the list under the trail numbers the shots. */
+  .ch-rv .ch-rzsvg .ch-rzsvg__in {
+    display: none;
+  }
+}
 
 /* Premium pass: depth on the bands, a deep-green stage for the round's line and for the hole's shots, gradients on every fill, gold
    hairlines on the numbers. Same tokens; nothing new is drawn from outside the palette. */
@@ -3204,6 +3221,14 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 .ch-rv .ch-rzplate {
   margin: 4px 0 14px;
   padding: 16px 18px 8px;
+}
+@container chrv (max-width: 440px) {
+  .ch-rv .ch-rzstage {
+    padding: 18px 12px 10px;
+  }
+  .ch-rv .ch-rzplate {
+    padding: 14px 12px 6px;
+  }
 }
 .ch-rv .ch-rzstage .ch-rzsvg,
 .ch-rv .ch-rzplate .ch-rzsvg {

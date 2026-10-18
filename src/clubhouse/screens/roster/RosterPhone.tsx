@@ -502,7 +502,7 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
       footer={
         n > 0 || jr.approvingAll ? (
           <Button variant="primary" size="lg" leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.approveAll()}>
-            {jr.approvingAll ? <span data-ch-code="CH-3403">Approving</span> : `Approve all ${n}`}
+            {jr.approvingAll ? <span data-ch-code="CH-3403">Approving…</span> : `Approve all ${n}`}
           </Button>
         ) : undefined
       }

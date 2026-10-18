@@ -30,12 +30,30 @@ export interface RecFormState {
 }
 
 const keyOf = (f: RecFormState | null) => (f ? `${f.mode}:${f.prospect?.id ?? ''}:${f.nonce}` : '');
+/**
+ * Which form an opening is: every Add is the same form, whatever its nonce. Each Edit is its own, so Cancel on an edit
+ * discards it and the next opening starts from the prospect as they are (as Team Hub's edit does).
+ */
+const slotOf = (f: RecFormState) => (f.mode === 'add' ? 'add' : `edit:${f.nonce}`);
+
+interface Held {
+  key: string;
+  slot: string;
+  /** The opening the draft was started in. A kept Add saves under it, so its request id (CH-14915) is the same. */
+  opening: RecFormState | null;
+  draft: ChDraft;
+  problems: ChDraftProblem[];
+  open: boolean;
+  /** Closed by Cancel, Esc or the backdrop: what was typed waits for the same form to open again. */
+  cancelled: boolean;
+}
 
 /**
  * Add and edit, one form (AddProspect board on desktop, PhoneEdit on the phone). Only a first name is required.
  * A refusal is shown beside its field before anything is sent (CH-14101 to CH-14104), and a save that fails leaves
  * the form open with what was typed (CH-14910). The form closes from the save's own action once it has landed. Enter in a
- * field saves (CH-14913), and Esc closes the dialog.
+ * field saves (CH-14913), and Esc closes the dialog. Cancel, Esc or the backdrop keeps what was typed in Add for the
+ * next Add (wave 5 #7, as Team Hub's compose); an Add that lands ends it.
  */
 export function ProspectForm({
   form,
@@ -57,10 +75,25 @@ export function ProspectForm({
 }) {
   const uid = useId();
   const key = keyOf(form);
-  const [held, setHeld] = useState<{ key: string; draft: ChDraft; problems: ChDraftProblem[] }>({ key: '', draft: draftOf(null), problems: [] });
-  // Each opening starts from the prospect as it is now, and from nothing for a new one.
-  if (form && held.key !== key) setHeld({ key, draft: draftOf(form.prospect), problems: [] });
+  const [held, setHeld] = useState<Held>({ key: '', slot: '', opening: null, draft: draftOf(null), problems: [], open: false, cancelled: false });
+  // Each opening starts from the prospect as it is now, and from nothing for a new one, unless an Add was cancelled
+  // with something typed: that comes back.
+  if (form && held.key !== key) {
+    const slot = slotOf(form);
+    setHeld(
+      held.cancelled && held.slot === slot
+        ? { ...held, key, problems: [], open: true, cancelled: false }
+        : { key, slot, opening: form, draft: draftOf(form.prospect), problems: [], open: true, cancelled: false },
+    );
+  } else if (!form && held.open) {
+    // Closed without Cancel: the save landed (or the prospect went), so the draft is done with.
+    setHeld({ ...held, open: false, slot: held.cancelled ? held.slot : '' });
+  }
   const { draft, problems } = held;
+  const close = () => {
+    setHeld((h) => ({ ...h, cancelled: true }));
+    onClose();
+  };
   const setDraft = (next: ChDraft) => setHeld((h) => ({ ...h, draft: next, problems: h.problems.length ? checkDraft(next) : [] }));
 
   // The field to start in: the one a shortcut named (Add beside "No notes yet"), else the first name. A phone editing a prospect
@@ -82,7 +115,7 @@ export function ProspectForm({
       requestAnimationFrame(() => document.getElementById(`${uid}-${found[0]!.field}`)?.focus());
       return;
     }
-    onSave(inputFromDraft(draft, { nextStep }), form);
+    onSave(inputFromDraft(draft, { nextStep }), form.mode === 'add' ? (held.opening ?? form) : form);
   };
 
   const adding = form?.mode === 'add';
@@ -165,7 +198,7 @@ export function ProspectForm({
 
   if (phone) {
     return (
-      <RecFormSheet open={!!form} onClose={onClose} title={adding ? 'New prospect' : 'Prospect'} actionLabel={adding ? 'Add' : 'Save'} onAction={submit} busy={saving}>
+      <RecFormSheet open={!!form} onClose={close} title={adding ? 'New prospect' : 'Prospect'} actionLabel={adding ? 'Add' : 'Save'} onAction={submit} busy={saving}>
         {form && body}
       </RecFormSheet>
     );
@@ -173,18 +206,18 @@ export function ProspectForm({
   return (
     <Modal
       open={!!form}
-      onClose={() => !saving && onClose()}
+      onClose={() => !saving && close()}
       width={600}
       icon={adding ? UserPlus : UserRoundPen}
       title={adding ? 'Add prospect' : 'Edit prospect'}
       description={adding ? 'Only a first name is required. Everything else can wait.' : form?.prospect ? `Update what you know about ${form.prospect.firstName}.` : undefined}
       footer={
         <>
-          <Button variant="ghost" disabled={saving} onClick={onClose}>
+          <Button variant="ghost" disabled={saving} onClick={close}>
             Cancel
           </Button>
           <Button variant="primary" disabled={saving} feel="press" onClick={submit}>
-            {saving ? <span data-ch-code="CH-14403">Saving</span> : adding ? 'Add prospect' : 'Save changes'}
+            {saving ? <span data-ch-code="CH-14403">Saving…</span> : adding ? 'Add prospect' : 'Save changes'}
           </Button>
         </>
       }

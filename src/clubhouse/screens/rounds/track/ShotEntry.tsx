@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type Dispatch, type RefObject } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type RefObject } from 'react';
 import { ArrowRight, Check, FlagTriangleRight, TriangleAlert, Undo2 } from 'lucide-react';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 import { displayToFeet, displayToYards, yardsToDisplay, type DistancePreference } from '@/lib/golf/distance-units';
@@ -19,6 +19,7 @@ import {
 import type { ApproachMissDirection, PuttMissTag, RoundHole, ShotRecord } from '@/lib/types/golf';
 import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
+import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
 import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, isDistanceText, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
 import { Sec, Seg } from './parts';
@@ -384,12 +385,24 @@ function TapIn({ plan, pref, onTapIn }: { plan: TapInPlan; pref: DistancePrefere
   );
 }
 
-/** CH-11502: undo asks first, naming the shot; a failed undo says so and keeps the shot (CH-11002). */
+/**
+ * CH-11502: undo asks first, naming the shot; a failed undo says so and keeps the shot (CH-11002). It opens at the
+ * foot of the card, which on a phone can be under the action bar or below the screen, so it brings itself into view
+ * clear of the bar (`scroll-margin-bottom`), at once with reduced motion.
+ */
 export function UndoConfirm({ shots, saving, error, dispatch, onUndo }: { shots: ShotRecord[]; saving: boolean; error: string | null; dispatch: Dispatch<ShotAction>; onUndo: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useChReducedMotion();
   const last = shots[shots.length - 1];
+  const shown = !!last;
+  useEffect(() => {
+    const el = ref.current;
+    if (shown && typeof el?.scrollIntoView === 'function') el.scrollIntoView({ block: 'nearest', behavior: reduced ? 'instant' : 'smooth' });
+    // Once, as it opens.
+  }, [shown]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!last) return null;
   return (
-    <div className="ch-rt-confirm" role="group" aria-label={`Undo shot ${shots.length}`} data-ch-code="CH-11502">
+    <div ref={ref} className="ch-rt-confirm" role="group" aria-label={`Undo shot ${shots.length}`} data-ch-code="CH-11502">
       <div>
         <b>Undo shot {shots.length}?</b>
         <span>{last.isPenalty ? shotTitle(last) : `${shotTitle(last)} → ${RESULT_LABEL[last.result].toLowerCase()}`}</span>

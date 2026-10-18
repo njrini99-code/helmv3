@@ -669,7 +669,7 @@ describe('Qualifiers · one qualifier', () => {
     wrap(<QualifierDetail data={detail()} writes={writes} live={false} />);
     await user.click(screen.getByRole('button', { name: 'Close qualifier' }));
     await user.click(within(code('CH-09501') as HTMLElement).getByRole('button', { name: 'Close qualifier' }));
-    await expectCode('CH-09405', /Closing/);
+    await expectCode('CH-09405', /Closing…/);
     await act(async () => finish({ success: true }));
     await expectCode('CH-09901', /Players can’t enter or submit rounds in it, including rounds already started, until you reopen it/);
     expect(router.refresh).toHaveBeenCalled();
@@ -681,7 +681,7 @@ describe('Qualifiers · one qualifier', () => {
     const writes = fakeWrites({ setStatus: vi.fn(never) });
     const { unmount } = wrap(<QualifierDetail data={detail('selected')} writes={writes} live={false} />);
     await user.click(screen.getByRole('button', { name: 'Reopen qualifier' }));
-    await expectCode('CH-09406', /Reopening/);
+    await expectCode('CH-09406', /Reopening…/);
     unmount();
     wrap(<QualifierDetail data={detail('completed')} writes={fakeWrites({ setStatus: vi.fn(fail) })} live={false} />);
     await user.click(screen.getByRole('button', { name: 'Reopen qualifier' }));
@@ -1632,7 +1632,7 @@ describe('Qualifiers · create and edit', () => {
     const writes = fakeWrites({ create: vi.fn(never) });
     wrap(<QualifierForm data={form({ initial: { ...form().initial, name: 'Q', startDate: '2026-10-19' } })} writes={writes} />);
     await user.click(screen.getByRole('button', { name: 'Create qualifier' }));
-    await expectCode('CH-09404', /Creating/);
+    await expectCode('CH-09404', /Creating…/);
     expect((code('CH-09404')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
     expect(writes.create).toHaveBeenCalledTimes(1);
   });
@@ -1983,7 +1983,7 @@ describe('Qualifiers · races and pending scope (owner rules 2 and 4, 2026-10-01
     await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
     // Cal's row says it is saving; nobody else's does.
     const calRow = screen.getByText('Cal', { selector: 'b' }).closest('li') as HTMLElement;
-    expect(within(calRow).getByText('Saving').getAttribute('data-ch-code')).toBe('CH-09408');
+    expect(within(calRow).getByText('Saving…').getAttribute('data-ch-code')).toBe('CH-09408');
     expect(document.querySelectorAll('li [data-ch-code="CH-09408"]')).toHaveLength(1);
     expect((within(calRow).getByRole('button') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Give the place Ben' }) as HTMLButtonElement).disabled).toBe(false);
@@ -2019,7 +2019,7 @@ describe('Qualifiers · races and pending scope (owner rules 2 and 4, 2026-10-01
       const sheet = () => screen.getByRole('dialog', { name: d.name });
       await user.click(within(await screen.findByRole('dialog', { name: d.name })).getByRole('button', { name: 'Reopen qualifier' }));
       // In flight: the sheet is still there and its button says what it is doing.
-      const busy = within(sheet()).getByText('Reopening');
+      const busy = within(sheet()).getByText('Reopening…');
       expect(busy.getAttribute('data-ch-code')).toBe('CH-09406');
       expect((busy.closest('button') as HTMLButtonElement).disabled).toBe(true);
       // Refused: the sheet stays, the button is back, the toast says so.
@@ -2254,7 +2254,7 @@ describe('Qualifiers · Manage selections', () => {
     await user.click(open('Confirm squad'));
     await expectCode('CH-09505', /5 players make the trip: Sofia Alvarez, Theo Marchetti, .*Eli Brandt/);
     await user.click(inDialog('CH-09505', 'Confirm squad'));
-    await expectCode('CH-09408', /Confirming/);
+    await expectCode('CH-09408', /Confirming…/);
     await act(async () => settle({ success: false }));
     await expectCode('CH-09008', /nobody was told/);
     expect(router.push).not.toHaveBeenCalled();
@@ -3070,7 +3070,7 @@ describe('Qualifiers · when a write is slow or refused, and when a read did not
     const pill = () => document.querySelector('.ch-qf-status')!.textContent;
     await user.click(screen.getByRole('button', { name: 'Close qualifier' }));
     await user.click(inDialog('CH-09501', 'Close qualifier'));
-    await expectCode('CH-09405', /Closing/);
+    await expectCode('CH-09405', /Closing…/);
     expect([pill(), code('CH-09901')]).toEqual(['Live', null]);
     await act(async () => settleClose({ success: false, error: 'nope' }));
     expect([pill(), code('CH-09901')]).toEqual(['Live', null]);
@@ -3079,7 +3079,7 @@ describe('Qualifiers · when a write is slow or refused, and when a read did not
     let settlePick: (v: { success: boolean }) => void = () => {};
     const second = wrap(<QualifierSelection data={previewSelection('picking')} writes={selWrites({ setPick: vi.fn(() => new Promise((r) => (settlePick = r))) })} />);
     await chooseEli(user);
-    await expectCode('CH-09408', /Saving/);
+    await expectCode('CH-09408', /Saving…/);
     expect(screen.getByText('0 of 1 chosen')).toBeTruthy();
     await act(async () => settlePick({ success: true }));
     expect(await screen.findByText('1 of 1 chosen')).toBeTruthy();
@@ -3089,7 +3089,7 @@ describe('Qualifiers · when a write is slow or refused, and when a read did not
     wrap(<QualifierSelection data={previewSelection('picked')} writes={selWrites({ removePick: vi.fn(() => new Promise((r) => (settleRemove = r))) })} />);
     await user.click(screen.getByRole('button', { name: 'Remove Eli Brandt' }));
     await user.click(inDialog('CH-09504', 'Remove'));
-    await expectCode('CH-09408', /Removing/);
+    await expectCode('CH-09408', /Removing…/);
     expect(screen.getByText('1 of 1 chosen')).toBeTruthy();
     await act(async () => settleRemove({ success: false, error: 'nope' }));
     expect(screen.getByText('1 of 1 chosen')).toBeTruthy();

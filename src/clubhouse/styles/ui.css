@@ -340,7 +340,8 @@
 .ch-toasts {
   position: fixed;
   right: 20px;
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  /* Above a Messages composer while one is on screen (composer-inset.ts sets the height), never over its Send. */
+  bottom: calc(var(--ch-ms-comp-h, 0px) + 20px + env(safe-area-inset-bottom));
   z-index: var(--ch-z-toast);
   display: flex;
   flex-direction: column;
@@ -393,6 +394,34 @@
 @media (hover: hover) {
   .ch-toast__action:hover {
     background: rgb(255 255 255 / 0.14);
+  }
+}
+/* A mouse can't swipe a toast away (CH-1614), so hover-capable devices get a ghost Dismiss X (Toast.tsx). */
+.ch-toast__close {
+  display: none;
+}
+@media (hover: hover) {
+  .ch-toast__close {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ch-radius-sm);
+    background: transparent;
+    color: rgb(255 255 255 / 0.6);
+    cursor: pointer;
+  }
+  .ch-toast__action + .ch-toast__close {
+    margin-left: -4px;
+  }
+  .ch-toast__close:hover {
+    background: rgb(255 255 255 / 0.1);
+    color: #fff;
   }
 }
 
@@ -1089,6 +1118,15 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 :where(html[data-fw-theme='dark']) .ch-toast__action {
   color: var(--ch-ink-950);
+}
+:where(html[data-fw-theme='dark']) .ch-toast__close {
+  color: var(--ch-ink-600);
+}
+@media (hover: hover) {
+  :where(html[data-fw-theme='dark']) .ch-toast__close:hover {
+    background: rgb(0 0 0 / 0.06);
+    color: var(--ch-ink-950);
+  }
 }
 :where(html[data-fw-theme='dark']) .ch-surface {
   box-shadow: var(--ch-elevation-reading);

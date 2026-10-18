@@ -1,5 +1,6 @@
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import { RoundTracking, type RoundTrackingProps } from '../screens/rounds/track/RoundTracking';
@@ -68,8 +69,8 @@ afterEach(() => {
 describe('112401 Round tracking: words', () => {
   it('names shots, lines, scores and the round so far', () => {
     expect(shotTitle(TEE)).toBe('Tee · Driver');
-    expect(shotLine(TEE, 'yards')).toBe('420 yds → fairway · 150 yds');
-    expect(shotLine(TEE, 'meters')).toBe('384 m → fairway · 137 m');
+    expect(shotLine(TEE, 'yards')).toBe('420 yds → fairway · 150 yds left');
+    expect(shotLine(TEE, 'meters')).toBe('384 m → fairway · 137 m left');
     const putt = shot({
       shotNumber: 3,
       shotType: 'putting',
@@ -299,6 +300,63 @@ describe('Round tracking: holing out', () => {
     expect(code('CH-11003')).toBeNull();
   });
 
+  it('the next hole says the hole before it saved, once the round screen has moved on after the save', async () => {
+    let finish: (ok: boolean) => void = () => {};
+    // The round screen moves to the next hole only once the hole's save has landed.
+    function Round() {
+      const [index, setIndex] = useState(2);
+      const onHoleComplete = () =>
+        new Promise<boolean>((resolve) => {
+          finish = (ok) => {
+            if (ok) setIndex(0);
+            resolve(ok);
+          };
+        });
+      return <RoundTracking round={ROUND} holes={HOLES} currentHoleIndex={index} onHoleComplete={onHoleComplete} onNavigateToHole={setIndex} />;
+    }
+    render(
+      <ToastProvider>
+        <Round />
+      </ToastProvider>,
+    );
+    const user = userEvent.setup();
+    await user.click(pick(/^Holed/));
+    await user.click(next());
+    await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
+    expect(screen.queryByText(/saved · /)).toBeNull();
+    await act(async () => finish(true));
+    expect(await screen.findByText('Hole 3 saved · Hole in one')).toBeInTheDocument();
+    expect(code('CH-11308')).toBeNull();
+  });
+
+  it('a hole the player leaves on the strip while it saves is not announced when the save lands', async () => {
+    let finish: (ok: boolean) => void = () => {};
+    function Round() {
+      const [index, setIndex] = useState(2);
+      const onHoleComplete = () =>
+        new Promise<boolean>((resolve) => {
+          finish = (ok) => {
+            if (ok) setIndex(0);
+            resolve(ok);
+          };
+        });
+      return <RoundTracking round={ROUND} holes={HOLES} currentHoleIndex={index} onHoleComplete={onHoleComplete} onNavigateToHole={setIndex} />;
+    }
+    render(
+      <ToastProvider>
+        <Round />
+      </ToastProvider>,
+    );
+    const user = userEvent.setup();
+    await user.click(pick(/^Holed/));
+    await user.click(next());
+    await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
+    await user.click(screen.getByRole('button', { name: 'Hole 1' }));
+    await act(async () => finish(true));
+    expect(screen.queryByText(/saved · /)).toBeNull();
+    expect(code('CH-11308')).toHaveTextContent('No shots yet on this hole');
+  });
+
   it('CH-11901 the save line never says "Round saved" while the holed hole is saving or after its save failed', async () => {
     let finish: (ok: boolean) => void = () => {};
     const onHoleComplete = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
@@ -466,7 +524,7 @@ describe('Round tracking: the round sheets', () => {
     expect(within(sheet).getByText('Fairways').nextSibling).toHaveTextContent('1/2');
     expect(within(sheet).getByText('Greens').nextSibling).toHaveTextContent('2/3');
     expect(within(sheet).queryByText('Front · Back')).toBeNull();
-    await user.click(within(sheet).getByRole('button', { name: 'Submit round' }));
+    await user.click(within(sheet).getByRole('button', { name: 'Post round' }));
     expect(onSubmit).toHaveBeenCalled();
   });
 
@@ -475,11 +533,11 @@ describe('Round tracking: the round sheets', () => {
     const onRetry = vi.fn();
     const { rerender } = render(<SubmitOverlay state="saving" course="Finley GC" shots={71} coach="Coach Reyes" reviewHref="/r" error={null} onRetry={onRetry} />);
     expect(screen.getByRole('status')).toHaveTextContent('Saving 71 shots');
-    rerender(<SubmitOverlay state="done" course="Finley GC" shots={71} coach="Coach Reyes" reviewHref="/r" error={null} onRetry={onRetry} />);
-    expect(screen.getByRole('status')).toHaveTextContent('Coach Reyes can see it now.');
+    rerender(<SubmitOverlay state="done" course="Finley GC" shots={71} coach="Coach Reyes" score={{ strokes: 74, toPar: 2 }} reviewHref="/r" error={null} onRetry={onRetry} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Your 74 (+2) at Finley GC is posted. Coach Reyes can see it now.');
     expect(screen.getByRole('link', { name: 'View round review' })).toHaveAttribute('href', '/r');
     rerender(<SubmitOverlay state="failed" course="Finley GC" shots={71} coach={null} reviewHref={null} error={null} onRetry={onRetry} />);
-    expect(code('CH-11005')).toHaveTextContent('The round didn’t submit');
+    expect(code('CH-11005')).toHaveTextContent('The round didn’t post');
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalled();
   });

@@ -1,5 +1,22 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-18 — Wave 5: a team with no rounds gets the first run
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, first run)
+
+- A team that has never posted a round sees the first run (CH-4310) in the
+  default window too, not "No 18-hole rounds in this window yet"
+  (CH-4301). Qualifiers keep CH-4302.
+
 ## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
 
 ```text

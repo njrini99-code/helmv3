@@ -149,7 +149,7 @@ export function QualifierDetail({
             feel={null}
             onClick={() => void close.run()}
           >
-            {close.pending ? <span data-ch-code="CH-09405">Closing</span> : 'Close qualifier'}
+            {close.pending ? <span data-ch-code="CH-09405">Closing…</span> : 'Close qualifier'}
           </Button>
         </>
       }
@@ -223,7 +223,7 @@ export function QualifierDetail({
                   disabled={reopen.pending}
                   onClick={() => void reopenNow()}
                 >
-                  {reopen.pending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
+                  {reopen.pending ? <span data-ch-code="CH-09406">Reopening…</span> : 'Reopen qualifier'}
                 </Button>
               )}
             </div>

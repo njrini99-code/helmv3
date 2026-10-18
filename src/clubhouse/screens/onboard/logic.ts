@@ -70,8 +70,9 @@ export function railOf(path: OnboardPath, step: OnboardStep): { sections: string
     const x = SECTION[s];
     if (x && !sections.includes(x)) sections.push(x);
   }
-  // Before the code is known the rail still shows where the path goes.
-  if (path === 'pre') sections.push('You', 'Account');
+  // Before the code is known the rail shows the player's path (the usual one), so the count doesn't jump from "1 of 3"
+  // to "2 of 5" once a roster code is in; a staff code shortens it.
+  if (path === 'pre') sections.push('You', 'Account', 'Your game', 'Photo');
   const cur = SECTION[step];
   return { sections, current: cur ? sections.indexOf(cur) : -1 };
 }

@@ -121,7 +121,7 @@ describe('Stats player · saves', () => {
     await user.click(screen.getByRole('button', { name: 'Add focus area' }));
     await user.type(screen.getByRole('textbox', { name: 'What to work on' }), 'Lag putting');
     await user.click(screen.getByRole('button', { name: 'Propose focus area' }));
-    await expectCode('CH-5401', /Adding/);
+    await expectCode('CH-5401', /Adding…/);
     expect((code('CH-5401')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
   });
 });
@@ -177,7 +177,7 @@ describe('Stats player · reads that fail', () => {
     // Only the proposed one takes an answer.
     expect(screen.getAllByRole('group', { name: /^Answer / })).toHaveLength(1);
     await user.click(within(group).getByRole('button', { name: 'Accept' }));
-    await expectCode('CH-5404', /Accepting/);
+    await expectCode('CH-5404', /Accepting…/);
     expect(within(group).getByRole('button', { name: 'Decline' })).toHaveProperty('disabled', true);
     expect(answer.accept).toHaveBeenCalledWith('f9');
     release({ success: false, error: 'nope' });

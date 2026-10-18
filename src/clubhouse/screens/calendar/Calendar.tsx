@@ -95,22 +95,22 @@ function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | n
   }, [tick, first, on, hour, reduced]);
 }
 
-/**
- * P006-B3: how long a dragged event's move can be undone: the done toast's own life (ui/Toast.tsx DISMISS_MS.done), so
- * Undo is on screen for the whole window. Nothing is written until it closes, so invitees hear of a move only once
- * it stands, and an undone move never reaches anyone.
- */
-const MOVE_UNDO_MS = 4000;
 /** Widgets whose arrow keys move their own selection or focus, and the page's popovers (A-09). */
 const COMPOSITE = '[role="radiogroup"], [role="tablist"], [role="menu"], [role="menubar"], [role="listbox"], [role="grid"], [role="tree"], [role="slider"], [role="dialog"]';
 const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 
-/** Optimistic moves held for their Undo window, then written. Leaving the page writes a waiting move at once. */
+/**
+ * P006-B3: optimistic moves held while their toast offers Undo, then written. The write is the toast's onExpire, so it
+ * lands exactly when Undo stops being offered (the clock waits while the toast is held, hovered or focused), and
+ * invitees hear of a move only once it stands. Leaving the page, or the next move, writes a waiting move at once; an
+ * Undo pressed after that says the move already stands.
+ */
 /** `preview`: the dev preview keeps a move on screen and writes nothing. */
 function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean) {
   const toast = useToast();
   const [moves, setMoves] = useState<Map<string, ChMoveTarget>>(() => new Map());
-  const held = useRef<{ id: string; timer: number; write: () => void } | null>(null);
+  /** The move waiting on its Undo; each move is its own record, so a stale toast never acts on a newer move. */
+  const held = useRef<{ id: string; write: () => void } | null>(null);
   const drop = useCallback((id: string) => setMoves((m) => (m.has(id) ? new Map([...m].filter(([k]) => k !== id)) : m)), []);
   // The server's copy has caught up: the moves already written stand on their own.
   useEffect(() => {
@@ -119,7 +119,6 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
   const flush = useCallback(() => {
     const h = held.current;
     if (!h) return;
-    window.clearTimeout(h.timer);
     h.write();
   }, []);
   useEffect(() => {
@@ -140,6 +139,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
       setMoves((m) => new Map(m).set(e.id, to));
       const write = () => {
         held.current = null;
+        entry.written = true;
         if (preview) return;
         chTrail('calendar move event');
         const startTime = toHHMM(to.start);
@@ -160,20 +160,26 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
           .then((res) => (res?.success ? onSaved() : fail(new Error(res?.error || 'Move was not saved'))))
           .catch(fail);
       };
-      held.current = { id: e.id, timer: window.setTimeout(write, MOVE_UNDO_MS), write };
+      const entry = { id: e.id, write, written: false };
+      held.current = entry;
       const day = to.date === e.date ? '' : ` ${to.date === today ? 'today' : `on ${dowOf(to.date)} ${dayNum(to.date)}`}`;
       toast({
         title: `Moved to ${fmtHour(to.start)}${day}`,
         action: {
           label: 'Undo',
           run: () => {
-            const h = held.current;
-            if (!h || h.id !== e.id) return;
-            window.clearTimeout(h.timer);
+            if (held.current !== entry) {
+              // Written already (a second press of an Undo that ran does nothing).
+              if (entry.written) toast({ title: 'Already saved. Drag it back to undo.' });
+              return;
+            }
             held.current = null;
             drop(e.id);
             haptic('select');
           },
+        },
+        onExpire: () => {
+          if (held.current === entry) flush();
         },
       });
     },

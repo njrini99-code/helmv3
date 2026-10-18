@@ -328,7 +328,7 @@ button.ch-rt-strip__h {
   font: 600 34px/1 var(--ch-font-sans);
   letter-spacing: -0.03em;
 }
-.ch-rt-hero__done span {
+.ch-rt-hero__done span:not(.ch-score) {
   font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
@@ -495,6 +495,10 @@ button.ch-rt-strip__h {
   box-shadow: none;
   font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+/* The hole before has just saved (RoundTracking): the same quiet line, its tick in green. */
+.ch-rt-log.is-saved svg {
+  color: var(--ch-green-600);
 }
 .ch-rt-log__h {
   all: unset;
@@ -970,6 +974,8 @@ button.ch-rt-strip__h {
   padding: 12px;
   border-radius: 12px;
   background: var(--ch-warning-100);
+  /* Brought into view (UndoConfirm) clear of the sticky action bar under the card. */
+  scroll-margin-bottom: 140px;
 }
 .ch-rt-confirm > div {
   flex: 1 1 200px;
@@ -1357,9 +1363,15 @@ button.ch-rt-strip__h {
   gap: 10px;
   overflow-x: auto;
 }
+/* Even hole columns between a fixed label column and a fixed Tot. When the card is wider than its sheet (a phone),
+   the label and Tot columns stay put on ivory while the holes scroll between them, and a fade at Tot says there is
+   more. Separate borders (no spacing) so the pinned corner cells can keep the card's radius. */
 .ch-rt-mc {
+  width: 100%;
   min-width: 520px;
-  border-collapse: collapse;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
   border-radius: 12px;
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
@@ -1400,6 +1412,46 @@ button.ch-rt-strip__h {
 }
 .ch-rt-mc .is-p {
   color: var(--ch-ink-600);
+}
+.ch-rt-mc thead th:first-child {
+  width: 56px;
+}
+.ch-rt-mc thead th:last-child {
+  width: 48px;
+}
+.ch-rt-mc tr > :first-child,
+.ch-rt-mc tr > :last-child {
+  position: sticky;
+  z-index: 1;
+  background: var(--ch-ivory-0);
+}
+.ch-rt-mc tr > :first-child {
+  left: 0;
+}
+.ch-rt-mc tr > :last-child {
+  right: 0;
+}
+.ch-rt-mc tr > :last-child::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 14px;
+  background: linear-gradient(90deg, transparent, var(--ch-ivory-0));
+  pointer-events: none;
+}
+.ch-rt-mc thead tr > :first-child {
+  border-top-left-radius: 12px;
+}
+.ch-rt-mc thead tr > :last-child {
+  border-top-right-radius: 12px;
+}
+.ch-rt-mc tbody tr:last-child > :first-child {
+  border-bottom-left-radius: 12px;
+}
+.ch-rt-mc tbody tr:last-child > :last-child {
+  border-bottom-right-radius: 12px;
 }
 .ch-rt-mc b {
   font: 700 14px/1 var(--ch-font-sans);
@@ -2218,7 +2270,12 @@ button.ch-rt-strip__h {
     outline: 2px solid var(--ch-champagne-300);
     outline-offset: 2px;
   }
+  /* The running total stays pinned at the strip's right edge while the holes scroll under it, behind a short fade
+     that never takes a tap from the chips. */
   .ch-rt-strip__tot {
+    position: sticky;
+    right: 0;
+    z-index: 1;
     flex-direction: row;
     align-items: baseline;
     gap: 6px;
@@ -2226,7 +2283,20 @@ button.ch-rt-strip__h {
     margin-left: 4px;
     padding: 0 6px 0 12px;
     border-left: 1px solid rgb(244 238 221 / 0.16);
+    background: var(--ch-green-900);
+    /* Covers the strip's own 8px right padding too, where a chip would otherwise show past it. */
+    box-shadow: 8px 0 0 var(--ch-green-900);
     white-space: nowrap;
+  }
+  .ch-rt-strip__tot::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: calc(100% + 1px);
+    width: 20px;
+    background: linear-gradient(90deg, rgb(8 43 28 / 0), var(--ch-green-900));
+    pointer-events: none;
   }
   .ch-rt-strip__tot em {
     align-self: center;
@@ -2381,14 +2451,18 @@ button.ch-rt-strip__h {
   .ch-rt-hero__done .ch-score {
     transform: scale(1.6);
     margin-right: 20px;
-    color: var(--ch-on-green-ink);
     text-shadow: none;
+  }
+  /* Ivory only where the mark has no pale disc of its own: a birdie and a bogey keep their ui.css inks (and the
+     caption's ink below skips the mark, a span too). */
+  .ch-rt-hero__done .ch-score:not(.ch-score--birdie, .ch-score--bogey) {
+    color: var(--ch-on-green-ink);
   }
   .ch-rt-hero__done b {
     font-size: 26px;
     color: var(--ch-on-green-ink);
   }
-  .ch-rt-hero__done span {
+  .ch-rt-hero__done span:not(.ch-score) {
     color: var(--ch-on-green-ink-soft);
   }
 
@@ -2409,6 +2483,9 @@ button.ch-rt-strip__h {
     padding: 0;
     border: 0;
     color: var(--ch-on-green-ink-soft);
+  }
+  .ch-rt-log.is-saved svg {
+    color: var(--ch-hero-mint);
   }
   .ch-rt-log__h {
     min-height: 44px;
@@ -2570,9 +2647,10 @@ button.ch-rt-strip__h {
     color: var(--ch-ink-700);
     box-shadow: none;
   }
+  /* The picked distance is the course's green, as on desktop, not black. */
   .ch-rt-quick button[aria-pressed='true'] {
-    background: var(--ch-ink-900);
-    color: var(--ch-ivory-100);
+    background: var(--ch-green-800);
+    color: var(--ch-on-fill-100);
   }
   .ch-rt-shotlen {
     font-size: calc(13 * var(--ch-type-k));

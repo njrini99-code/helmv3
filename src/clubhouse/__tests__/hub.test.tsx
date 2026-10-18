@@ -480,7 +480,7 @@ describe('Team Hub · coach', () => {
     await expectCode('CH-10102', /Choose at least one player/);
     await user.click(within(dialog).getByRole('button', { name: 'Eli Brandt' }));
     await user.click(within(dialog).getByRole('button', { name: 'Post' }));
-    await expectCode('CH-10402', /Posting/);
+    await expectCode('CH-10402', /Posting…/);
     expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: 'Details in the app.', requiresAck: true, playerIds: ['eli'], documentIds: [] });
     release({ success: false });
     await expectCode('CH-10005', /Couldn’t post the announcement/);
@@ -630,7 +630,7 @@ describe('Team Hub · coach', () => {
     fireEvent.change(d.getByLabelText('Back'), { target: { value: '2026-11-16' } });
     await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
     await user.click(d.getByRole('button', { name: 'Publish' }));
-    await expectCode('CH-10403', /Saving/);
+    await expectCode('CH-10403', /Saving…/);
     expect(plan).toHaveBeenCalledWith(expect.objectContaining({ eventId: null, name: 'Seahawk', destination: 'Wilmington', departDate: '2026-11-14', returnDate: '2026-11-16', transport: 'bus', teamId: 't1' }));
     release({ success: false });
     await expectCode('CH-10006', /Couldn’t save Seahawk/);
@@ -739,7 +739,7 @@ describe('Team Hub · coach', () => {
     await expectCode('CH-10108');
     await user.click(within(dialog).getByRole('button', { name: 'Ava Lindqvist' }));
     await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
-    await expectCode('CH-10404', /Assigning/);
+    await expectCode('CH-10404', /Assigning…/);
     expect(assign).toHaveBeenCalledWith({ teamId: 't1', title: 'Book physicals', detail: '', dueDate: null, playerIds: ['ava'] });
     release({ success: false });
     await expectCode('CH-10007', /Couldn’t assign Book physicals/);
@@ -2033,7 +2033,7 @@ describe('Team Hub · Edit an announcement', () => {
     // A post that asks for no acknowledgement opens with the switch off, and is saved as it was.
     expect((dialog.getByRole('switch', { name: 'Ask players to acknowledge' }) as HTMLInputElement).checked).toBe(false);
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
-    await expectCode('CH-10406', /Saving/);
+    await expectCode('CH-10406', /Saving…/);
     expect((code('CH-10406')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
     expect(code('CH-10402')).toBeNull();
     release({ success: true });
@@ -2083,8 +2083,8 @@ describe('Team Hub · a post whose files did not attach (Q-82)', () => {
     const toast = code('CH-10012') as HTMLElement;
     expect(toast.textContent).toMatch(/The files didn’t attach, so players see the post with no files\. They can still open them in Documents\./);
     expect(toast.getAttribute('role')).toBe('alert');
-    // A Retry would post it again: there is none. And the usual "Posted" is not said beside it.
-    expect(within(toast).queryByRole('button')).toBeNull();
+    // A Retry would post it again: there is none (its only button is the mouse's Dismiss). And the usual "Posted" is not said beside it.
+    expect(within(toast).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Dismiss notification']);
     expect(screen.queryByText('Posted “Waiver”')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(hapticSpy).not.toHaveBeenCalledWith('success');

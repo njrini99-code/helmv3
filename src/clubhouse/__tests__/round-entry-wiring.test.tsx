@@ -525,7 +525,7 @@ describe('Round entry: a submit the coach’s closed qualifier refuses (CH-11516
   async function submitClosed(user: ReturnType<typeof userEvent.setup>) {
     mocks.submitGolfRoundComprehensive.mockResolvedValue({ success: false, error: closed });
     await finishRound();
-    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Submit round/ }));
+    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Post round/ }));
     await waitFor(() => expect(code('CH-11516')).toHaveAttribute('open'));
   }
 
@@ -533,7 +533,7 @@ describe('Round entry: a submit the coach’s closed qualifier refuses (CH-11516
     const user = await playing();
     await submitClosed(user);
     expect(code('CH-11516')).toHaveTextContent(closed);
-    expect(screen.queryByText('The round didn’t submit')).toBeNull();
+    expect(screen.queryByText('The round didn’t post')).toBeNull();
     expect(code('CH-11005')).toBeNull();
   });
 

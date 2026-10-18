@@ -81,18 +81,18 @@ A stage is saved the moment it is picked. The prospect moves at once and goes ba
 | --- | --- | --- | --- | --- |
 | CH-14401 | The page is on its way | The header, the pipeline, the table and the panel in their final slots; on a phone, the search, the timeline and seven rows | `RecruitingSkeleton` via `recruiting/loading.tsx`, inside the Clubhouse shell (`ClubhouseSwitch`); everywhere else the existing skeleton | recruiting.test › CH-14401 |
 | CH-14402 | A prospect's documents are loading | Two rows where the list will be, marked busy, with "Loading documents" for a screen reader | `Documents` | recruiting.test › CH-14402 |
-| CH-14403 | An add or a save is on its way | The button says "Saving" and is off; nothing closes the dialog or the sheet. After 5 seconds the shell says "Still saving…" once (CH-1902) | `ProspectForm`, `useAction` | recruiting.test › CH-14403 |
-| CH-14404 | A document is uploading | The dialog's button says "Uploading" and is off; once the browser reports how much has left the device it says "Uploading 42%" | `UploadDialog` in `Documents` | recruiting.test › CH-14404 CH-14005; recruiting-upload.test › CH-14404 |
-| CH-14405 | A document is being removed | The question's button says "Removing" and is off | `Documents` | recruiting.test › CH-14502 CH-14405 |
-| CH-14406 | A prospect is being deleted | The question's button says "Deleting" and is off | `RecruitingView` | recruiting.test › CH-14501 CH-14406 |
+| CH-14403 | An add or a save is on its way | The button says "Saving…" and is off; nothing closes the dialog or the sheet. After 5 seconds the shell says "Still saving…" once (CH-1902) | `ProspectForm`, `useAction` | recruiting.test › CH-14403 |
+| CH-14404 | A document is uploading | The dialog's button says "Uploading…" and is off; once the browser reports how much has left the device it says "Uploading… 42%" | `UploadDialog` in `Documents` | recruiting.test › CH-14404 CH-14005; recruiting-upload.test › CH-14404 |
+| CH-14405 | A document is being removed | The question's button says "Removing…" and is off | `Documents` | recruiting.test › CH-14502 CH-14405 |
+| CH-14406 | A prospect is being deleted | The question's button says "Deleting…" and is off | `RecruitingView` | recruiting.test › CH-14501 CH-14406 |
 | CH-14407 | A file is being sent to Storage and the browser reports progress | Under the title and category, a progress bar (`role="progressbar"`, named "Upload progress") and "Keep this page open until it finishes." The number is what has really left the device, held at 99 until Storage has answered; with no total there is no bar and no number | `putWithProgress` (an `XMLHttpRequest`, for its upload progress), `UploadDialog` | recruiting-upload.test › CH-14407 |
 
 ## 145xx Confirm
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-14501 | Delete prospect, from the panel (desktop) or the edit sheet (phone) | Desktop: "Delete Mason Reilly?" + "This removes them from your list, with their notes and documents. This can’t be undone." Keep them · Delete prospect (danger; "Deleting" while it runs). Phone: the same title and line as an action sheet, with Delete prospect in red and Cancel apart. Typing the name is not asked | `Modal` (desktop), `RecActionSheet` (phone) | recruiting.test › CH-14501 CH-14702 |
-| CH-14502 | Remove a document | "Remove this document?" + "Fall schedule.pdf is deleted from Mason’s documents. This can’t be undone." Keep it · Remove document (danger; "Removing" while it runs) | `Modal` in `Documents` | recruiting.test › CH-14502 CH-14405 |
+| CH-14501 | Delete prospect, from the panel (desktop) or the edit sheet (phone) | Desktop: "Delete Mason Reilly?" + "This removes them from your list, with their notes and documents. This can’t be undone." Keep them · Delete prospect (danger; "Deleting…" while it runs). Phone: the same title and line as an action sheet, with Delete prospect in red and Cancel apart. Typing the name is not asked | `Modal` (desktop), `RecActionSheet` (phone) | recruiting.test › CH-14501 CH-14702 |
+| CH-14502 | Remove a document | "Remove this document?" + "Fall schedule.pdf is deleted from Mason’s documents. This can’t be undone." Keep it · Remove document (danger; "Removing…" while it runs) | `Modal` in `Documents` | recruiting.test › CH-14502 CH-14405 |
 
 ## 146xx Motion
 

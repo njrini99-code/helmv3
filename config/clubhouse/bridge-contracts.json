@@ -347,6 +347,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10706,
+    "page": "P001",
+    "category": 7,
+    "item": 6,
+    "name": "TWO_NOTICES_ABOUT_THE_SAME_THING_IN",
+    "chCode": "CH-1910",
+    "meaning": "Two notices about the same thing in a row (Conversation muted, then Notifications back on)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10801,
     "page": "P001",
     "category": 8,
@@ -1051,6 +1062,17 @@
     "chCode": "CH-1816",
     "meaning": "On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls=\"ch-strip\"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11826,
+    "page": "P001",
+    "category": 18,
+    "item": 26,
+    "name": "A_TOAST_IS_CLOSED_WITHOUT_A_FINGER",
+    "chCode": "CH-1817",
+    "meaning": "A toast is closed without a finger: on a device with a mouse (`hover: hover`) it has a ghost Dismiss X (\"Dismiss notification\"), and Esc closes it while focus is inside it. Focus goes back where it was before it came into the toast; inside an open dialog (CH-1812) Esc closes only the toast. Closing it counts as letting it run out: held work (a calendar move, CH-6015) is written",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -5756,7 +5778,7 @@
     "item": 2,
     "name": "A_RAIL_SEARCH_OR_THE_UNREAD_FILTER",
     "chCode": "CH-7302",
-    "meaning": "A rail search or the Unread filter has nothing",
+    "meaning": "A rail search or a filter has nothing",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -5889,6 +5911,17 @@
     "name": "NOBODY_CHOSEN",
     "chCode": "CH-7105",
     "meaning": "Nobody chosen, or a coach's group with no player",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70506,
+    "page": "P007",
+    "category": 5,
+    "item": 6,
+    "name": "MORE_THAN_TEN_FILES_PICKED_FOR_ONE",
+    "chCode": "CH-7106",
+    "meaning": "More than ten files picked for one message (desktop or phone composer, phone New message)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6285,6 +6318,17 @@
     "name": "REMOVING_SOMEONE_FROM_A_GROUP_FAILS",
     "chCode": "CH-7024",
     "meaning": "Removing someone from a group fails (the group's creator, desktop or phone Details › Remove)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70637,
+    "page": "P007",
+    "category": 6,
+    "item": 37,
+    "name": "DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS",
+    "chCode": "CH-7025",
+    "meaning": "Deleting a conversation from your inbox fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -10893,7 +10937,7 @@
     "category": 1,
     "item": 6,
     "name": "UNFINISHED_ROUNDS_ARE_LISTED",
-    "meaning": "The newest unfinished round fills the card; every other one is listed under \"N more unfinished rounds\" with Discard, Continue or Submit. A round whose every hole has a score reads \"Ready to submit\" (the card says \"Submit round\"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one.",
+    "meaning": "The newest unfinished round fills the card; every other one is listed under \"N more unfinished rounds\" with Discard, Continue or Post. A round whose every hole has a score reads \"Ready to post\" (the card says \"Post round\"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/parts.tsx#UnfinishedCard; src/clubhouse/data/rounds.ts#loadUnfinished",
     "tests": [

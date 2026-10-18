@@ -12,7 +12,7 @@ const SETTLE_MS = 700;
  * Where a thread sits as messages arrive (high-fidelity audit §6.6, T25). A conversation opens at its end. A new
  * message, or someone starting to type, follows the end only while the reader is already there or the message is
  * their own; someone reading older messages stays put and is told how many arrived below (`unseen`), with `toEnd`
- * taking them down.
+ * taking them down. `atEnd` says whether the reader is at the end at all, for a Jump to latest with nothing new.
  */
 export function useThreadAnchor(
   scroller: RefObject<HTMLElement | null>,
@@ -43,12 +43,15 @@ export function useThreadAnchor(
   const viewportHeight = useRef<number | null>(null);
   const seen = useRef({ convId, count });
   const [unseen, setUnseen] = useState(0);
+  // State only when it flips, so scrolling doesn't render the thread each frame.
+  const [atEnd, setAtEnd] = useState(true);
 
   const toEnd = useCallback(() => {
     const s = scroller.current;
     if (s) s.scrollTop = s.scrollHeight;
     nearEnd.current = true;
     setUnseen(0);
+    setAtEnd(true);
   }, [scroller]);
 
   useEffect(() => {
@@ -60,6 +63,7 @@ export function useThreadAnchor(
       if (viewportHeight.current !== null && viewportHeight.current > 0 && s.clientHeight !== viewportHeight.current) return;
       nearEnd.current = s.scrollHeight - s.scrollTop - s.clientHeight <= NEAR_END_PX;
       if (nearEnd.current) setUnseen(0);
+      setAtEnd(nearEnd.current);
     };
     s.addEventListener('scroll', onScroll, { passive: true });
     return () => s.removeEventListener('scroll', onScroll);
@@ -132,5 +136,5 @@ export function useThreadAnchor(
     // Once per mount; conversation changes are handled above.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { unseen, toEnd };
+  return { unseen, atEnd, toEnd };
 }

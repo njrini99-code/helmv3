@@ -302,7 +302,7 @@ export function Roster({ data }: { data: ChRoster }) {
         footer={
           <>
             <Button variant="ghost" onClick={() => setRemoving(null)}>
-              Cancel
+              {removing ? `Keep ${removing.firstName}` : 'Keep player'}
             </Button>
             <Button
               variant="danger"
@@ -312,7 +312,7 @@ export function Roster({ data }: { data: ChRoster }) {
                 if (removing) void remove.run(removing);
               }}
             >
-              {remove.pending ? <span data-ch-code="CH-3402">Removing</span> : 'Remove player'}
+              {remove.pending ? <span data-ch-code="CH-3402">Removing…</span> : 'Remove player'}
             </Button>
           </>
         }

@@ -86,7 +86,7 @@ the rail version stays until this page's v2 pass.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 70401 | CH-7301 | `NO_CONVERSATIONS_YET` | No conversations yet |
-| 70402 | CH-7302 | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | A rail search or the Unread filter has nothing |
+| 70402 | CH-7302 | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | A rail search or a filter has nothing |
 | 70403 | CH-7303 | `NO_MESSAGE_MENTIONS_THE_SEARCH` | No message mentions the search |
 | 70404 | CH-7304 | `A_THREAD_WITH_NO_MESSAGES` | A thread with no messages |
 | 70405 | CH-7305 | `NOTHING_OPEN` | Nothing open |
@@ -111,6 +111,7 @@ the whole team. Message fields stop at 5,000 characters, the server's limit.
 | 70503 | CH-7103 | `AN_ANNOUNCEMENT_WITH_NO_BODY` | An announcement with no body |
 | 70504 | CH-7104 | `A_GROUP_WITH_NO_NAME` | A group with no name |
 | 70505 | CH-7105 | `NOBODY_CHOSEN` | Nobody chosen, or a coach's group with no player |
+| 70506 | CH-7106 | `MORE_THAN_TEN_FILES_PICKED_FOR_ONE` | More than ten files picked for one message (desktop or phone composer, phone New message) |
 
 ## 06 — Server / system error
 
@@ -158,6 +159,7 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70634 | CH-7023 | `ATTACHMENT_SEND_CANNOT_BE_CONFIRMED` | Attachment send cannot be confirmed |
 | 70635 | CH-7217 | `PENDING_ATTACHMENT_RECOVERY_CANNOT_BE_CHECKED` | Pending attachment recovery cannot be checked |
 | 70636 | CH-7024 | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
+| 70637 | CH-7025 | `DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS` | Deleting a conversation from your inbox fails |
 
 ## 07 — Network / offline
 
@@ -173,7 +175,7 @@ CH-1905.
 | --- | --- | --- | --- |
 | 70701 | CH-7005 | `THE_NETWORK_DROPS_MID_SEND` | The network drops mid-send (Safari's "Load failed", Chrome's "Failed to fetch", Firefox's "NetworkError…": the same test the bubble's CH-7017 uses, so the toast and the bubble agree; the browser's text is never shown) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -352,7 +354,7 @@ CH-1842, 11825 CH-1816.
 | 71803 | CH-7803 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

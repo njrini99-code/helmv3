@@ -296,7 +296,7 @@ describe('Messages · actions that fail', () => {
     await expectCode('CH-7010', /Couldn’t leave the group/);
   });
 
-  it('CH-7503 CH-7011 deleting a conversation asks first, hides it for you only, and a failed delete says so', async () => {
+  it('CH-7503 CH-7025 deleting a conversation asks first, hides it for you only, and a failed delete says so', async () => {
     const user = userEvent.setup();
     a.canHideGolfConversations.mockResolvedValue(true);
     a.hideGolfConversation.mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValueOnce({ success: true });
@@ -307,7 +307,7 @@ describe('Messages · actions that fail', () => {
     await expectCode('CH-7503', /Delete Varsity team\?/);
     expect(a.hideGolfConversation).not.toHaveBeenCalled();
     await user.click(within(code('CH-7503') as HTMLElement).getByRole('button', { name: 'Delete conversation' }));
-    await expectCode('CH-7011', /Couldn’t delete the conversation/);
+    await expectCode('CH-7025', /Couldn’t delete the conversation/);
     expect(a.hideGolfConversation).toHaveBeenCalledWith('team');
     await user.click(within(code('CH-7503') as HTMLElement).getByRole('button', { name: 'Delete conversation' }));
     await waitFor(() => expect(a.hideGolfConversation).toHaveBeenCalledTimes(2));
@@ -456,7 +456,7 @@ describe('Messages · empty and loading', () => {
     const user = userEvent.setup();
     show();
     await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'zzz');
-    await expectCode('CH-7302', /No conversation matches “zzz”/);
+    await expectCode('CH-7302', /No conversation names match\./);
   });
 
   it('CH-7304 a thread with no messages yet', async () => {
@@ -1569,5 +1569,241 @@ describe('Messages · senders peek (P003-C1)', () => {
     show({ ...data, role: 'player', viewerPlayerId: 'p-me' });
     await screen.findByText('Yes coach');
     expect(document.getElementById('ch-ms-message-j1')!.querySelector('.ch-peek-target')).toBeNull();
+  });
+});
+
+describe('Messages · wave 5 feedback', () => {
+  const jonahMsg = { id: 'j1', conversation_id: 'team', sender_id: 'jonah', content: 'Which bay?', created_at: '2026-10-14T18:05:00Z', isRead: true };
+  const dmJonah = { id: 'dm-jonah', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' };
+
+  it('#8 #9 Edit is offered only on a message with text; Save waits for a change, with focus in the box', async () => {
+    const user = userEvent.setup();
+    a.getGolfMessageAttachments.mockResolvedValue({ attachments: [] });
+    live.msgs.messages = [mine, { id: 'm2', conversation_id: 'team', sender_id: 'me', content: '', created_at: '2026-10-14T18:01:00Z', isRead: true, has_attachments: true }];
+    show();
+    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    const mores = screen.getAllByRole('button', { name: 'More message actions' });
+    await user.click(mores[1]!);
+    expect(await screen.findByRole('menuitem', { name: 'Delete' })).toBeTruthy();
+    expect(screen.queryByRole('menuitem', { name: 'Edit' })).toBeNull();
+    await user.keyboard('{Escape}');
+    await user.click(mores[0]!);
+    await user.click(await screen.findByRole('menuitem', { name: 'Edit' }));
+    const dlg = within(screen.getByRole('heading', { name: 'Edit message' }).closest('dialog') as HTMLElement);
+    const box = dlg.getByRole('textbox', { name: 'Message' });
+    const save = dlg.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
+    await waitFor(() => expect(document.activeElement).toBe(box));
+    expect(save.disabled).toBe(true);
+    await user.type(box, ' sharp');
+    expect(save.disabled).toBe(false);
+    await user.click(save);
+    await waitFor(() => expect(live.msgs.editMessage).toHaveBeenCalledWith('m1', 'Bus at 6:15 sharp'));
+  });
+
+  it('#14 #19 Delete quotes the message it asks about; the conversation confirm keeps by name', async () => {
+    const user = userEvent.setup();
+    a.canHideGolfConversations.mockResolvedValue(true);
+    show();
+    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    await messageMenu(user, 'Delete');
+    await expectCode('CH-7501');
+    expect(code('CH-7501')!.querySelector('.ch-ms-delq')?.textContent).toBe('Bus at 6:15');
+    await user.click(within(code('CH-7501') as HTMLElement).getByRole('button', { name: 'Keep it' }));
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: 'Delete conversation' }));
+    await expectCode('CH-7503');
+    expect(within(code('CH-7503') as HTMLElement).getByRole('button', { name: 'Keep conversation' })).toBeTruthy();
+  });
+
+  it('#10 desktop Reply puts the quote on the composer, focuses it, and sends with it', async () => {
+    const user = userEvent.setup();
+    live.msgs.messages = [mine, jonahMsg];
+    show();
+    await screen.findByText('Which bay?', { selector: '.ch-ms-bub' });
+    const replies = screen.getAllByRole('button', { name: 'Reply' });
+    expect(replies).toHaveLength(2);
+    await user.click(replies[1]!);
+    const box = screen.getByRole('textbox', { name: /Message Varsity team/ });
+    await waitFor(() => expect(document.activeElement).toBe(box));
+    expect(screen.getByRole('button', { name: 'Reply to Jonah Okafor' })).toBeTruthy();
+    await user.type(box, 'Bay 4{Enter}');
+    await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('Bay 4', 'j1'));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Cancel reply' })).toBeNull());
+  });
+
+  it('#13 a web link in a message is a link that opens apart from the app; other schemes stay text', async () => {
+    live.msgs.messages = [{ ...mine, content: 'Tee sheet: https://golf.example.com/tee. Not javascript:alert(1)' }];
+    show();
+    const link = await screen.findByRole('link', { name: 'https://golf.example.com/tee' });
+    expect(link.getAttribute('href')).toBe('https://golf.example.com/tee');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noreferrer noopener');
+    expect(link.closest('.ch-ms-bub')!.textContent).toBe('Tee sheet: https://golf.example.com/tee. Not javascript:alert(1)');
+    expect(link.closest('.ch-ms-bub')!.querySelectorAll('a')).toHaveLength(1);
+  });
+
+  it('#11 a search hit opens at its match, marked, and the empty line speaks of names only', async () => {
+    const user = userEvent.setup();
+    a.searchGolfMessages.mockResolvedValue({
+      results: [{ messageId: 'm9', conversationId: 'team', conversationName: 'Varsity team', senderName: 'Jonah Okafor', content: 'Practice moved to the north range because the main one is flooded, bring the bus pass', createdAt: '2026-10-14T17:00:00Z' }],
+    });
+    show();
+    await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'bus pass');
+    await expectCode('CH-7302', /^No conversation names match\.$/);
+    const mark = await waitFor(() => {
+      const m = document.querySelector('mark.ch-ms-hit');
+      expect(m).not.toBeNull();
+      return m!;
+    });
+    expect(mark.textContent).toBe('bus pass');
+    expect(mark.parentElement!.textContent).toBe('Jonah Okafor: …is flooded, bring the bus pass');
+  });
+
+  it('#12 Groups with no group says so, not “caught up”', async () => {
+    const user = userEvent.setup();
+    live.convs.conversations = [{ ...dmJonah, last_message: { content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', sender_id: 'jonah' } }];
+    live.msgs.messages = [];
+    show();
+    await user.click(await screen.findByRole('radio', { name: 'Groups' }));
+    await expectCode('CH-7302', /^No group conversations yet\.$/);
+  });
+
+  it('#6 CH-7106 more than ten files: ten are kept and the rest are said, not dropped silently', async () => {
+    const user = userEvent.setup({ applyAccept: false });
+    show();
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, Array.from({ length: 11 }, (_, i) => new File(['x'], `plan-${i}.pdf`, { type: 'application/pdf' })));
+    await expectCode('CH-7106', /Up to 10 files per message.*1 file wasn’t added/);
+    expect(screen.getAllByRole('button', { name: /^Remove plan-/ })).toHaveLength(10);
+    expect(screen.getByTitle('plan-0.pdf').querySelector('.ch-ms-to__n')?.textContent).toBe('plan-0.pdf');
+  });
+
+  it('#21 the composer counts down within 300 of the limit', async () => {
+    show();
+    const box = await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    fireEvent.change(box, { target: { value: 'x'.repeat(4600) } });
+    expect(screen.queryByText('400 left')).toBeNull();
+    fireEvent.change(box, { target: { value: 'x'.repeat(4800) } });
+    expect(screen.getByText('200 left')).toBeTruthy();
+    fireEvent.change(box, { target: { value: 'x'.repeat(5000) } });
+    expect(screen.getByText('No characters left')).toBeTruthy();
+  });
+
+  it('#7 an announcement draft outlives Cancel', async () => {
+    const user = userEvent.setup();
+    show();
+    let dlg = await newMessage(user, /Announcement/);
+    await user.type(dlg.getByRole('textbox', { name: /^Title/ }), 'Bus times');
+    await user.type(dlg.getByRole('textbox', { name: /^Message/ }), 'Leaves at 6:15.');
+    await user.click(dlg.getByRole('button', { name: 'Cancel' }));
+    dlg = await newMessage(user, /Announcement/);
+    expect((dlg.getByRole('textbox', { name: /^Title/ }) as HTMLInputElement).value).toBe('Bus times');
+    expect((dlg.getByRole('textbox', { name: /^Message/ }) as HTMLTextAreaElement).value).toBe('Leaves at 6:15.');
+  });
+
+  it('#2 a week’s mute reads as a date, not “today”', async () => {
+    const user = userEvent.setup();
+    a.getGolfConversationMute.mockResolvedValue({ success: true, data: { muted: true, until: '2026-10-21T18:40:00Z' } });
+    show();
+    await openDetails(user);
+    expect(await screen.findByText('Muted until Oct 21 · 2:40 PM')).toBeTruthy();
+  });
+
+  it('#15 mute then unmute leaves one toast, the last (CH-1910 replace)', async () => {
+    const user = userEvent.setup();
+    a.setGolfConversationMute
+      .mockResolvedValueOnce({ success: true, data: { muted: true, until: null } })
+      .mockResolvedValueOnce({ success: true, data: { muted: false, until: null } });
+    show();
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: 'Until I turn it on' }));
+    await screen.findByText('Conversation muted');
+    await user.click(await screen.findByRole('button', { name: 'Unmute' }));
+    await screen.findByText('Notifications back on');
+    await waitFor(() => expect(screen.queryByText('Conversation muted')).toBeNull());
+  });
+
+  it('#17 a thread opened with something unread marks where it starts', async () => {
+    live.convs.conversations = [{ ...team, unread_count: 1 }];
+    live.msgs.messages = [mine, jonahMsg];
+    show();
+    const sep = await screen.findByRole('separator', { name: 'New messages' });
+    expect(sep.nextElementSibling?.id).toBe('ch-ms-message-j1');
+  });
+
+  describe('phone', () => {
+    const openThread = async (user: User) => {
+      await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+      return screen.findByRole('region', { name: /Varsity team/ });
+    };
+
+    it('#4 #7 #18 New message: Return adds a line, the first message survives Cancel, and Next says Starting… while it works', async () => {
+      const user = userEvent.setup();
+      let finish!: (v: unknown) => void;
+      a.createGolfConversation.mockImplementation(() => new Promise((r) => { finish = r; }));
+      showPhone();
+      await user.click(await screen.findByRole('button', { name: 'New message' }));
+      let newMsg = await screen.findByRole('region', { name: 'New message' });
+      await user.click(within(newMsg).getByRole('option', { name: /Eli Brandt/ }));
+      const box = within(newMsg).getByRole('textbox', { name: 'Message Eli' }) as HTMLTextAreaElement;
+      expect(box.getAttribute('enterkeyhint')).toBe('enter');
+      await user.type(box, 'Range at 4{Enter}Bring balls');
+      expect(box.value).toBe('Range at 4\nBring balls');
+      await user.click(within(newMsg).getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(screen.queryByRole('region', { name: 'New message' })).toBeNull());
+      await user.click(screen.getByRole('button', { name: 'New message' }));
+      newMsg = await screen.findByRole('region', { name: 'New message' });
+      await user.click(within(newMsg).getByRole('option', { name: /Eli Brandt/ }));
+      expect((within(newMsg).getByRole('textbox', { name: 'Message Eli' }) as HTMLTextAreaElement).value).toBe('Range at 4\nBring balls');
+      await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
+      expect(within(newMsg).getByRole('button', { name: 'Starting…' })).toBeTruthy();
+      await act(async () => finish({ error: 'nope' }));
+      await expectCode('CH-7002');
+      expect((within(newMsg).getByRole('textbox', { name: 'Message Eli' }) as HTMLTextAreaElement).value).toBe('Range at 4\nBring balls');
+    });
+
+    it('#20 the actions sheet says whose message it is', async () => {
+      const user = userEvent.setup();
+      live.msgs.messages = [mine, jonahMsg];
+      showPhone();
+      const thread = await openThread(user);
+      await within(thread).findByText('Which bay?', { selector: '.ch-ms-bub' });
+      const [, theirs] = within(thread).getAllByRole('button', { name: 'Message actions' });
+      await user.click(theirs!);
+      await expectCode('CH-7604');
+      expect(code('CH-7604')!.querySelector('.ch-msp-acts__preview .ch-ms-msg__t')?.textContent).toBe('Jonah · 2:05 PM');
+    });
+
+    it('a direct thread, not muted and with nothing to delete, draws no empty panel where the switch was', async () => {
+      const user = userEvent.setup();
+      live.convs.conversations = [{ ...dmJonah, last_message: { content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', sender_id: 'jonah' } }];
+      live.msgs.messages = [{ id: 'j2', conversation_id: 'dm-jonah', sender_id: 'jonah', content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', isRead: true }];
+      showPhone();
+      await user.click(await screen.findByRole('button', { name: /Jonah Okafor/ }));
+      const thread = await screen.findByRole('region', { name: /Jonah Okafor/ });
+      await user.click(within(thread).getByRole('button', { name: 'Details' }));
+      const details = await screen.findByRole('region', { name: 'Details' });
+      await within(details).findByRole('button', { name: 'Mute this conversation' });
+      expect(details.querySelectorAll('.ch-msp-panel.is-plain')).toHaveLength(0);
+    });
+
+    it('Mute offers desktop’s three choices, and the switch is gone', async () => {
+      const user = userEvent.setup();
+      a.setGolfConversationMute.mockResolvedValue({ success: true, data: { muted: true, until: '2026-10-21T18:40:00Z' } });
+      showPhone();
+      const thread = await openThread(user);
+      await user.click(within(thread).getByRole('button', { name: 'Details' }));
+      const details = await screen.findByRole('region', { name: 'Details' });
+      expect(within(details).queryByText('Mute notifications')).toBeNull();
+      await user.click(await within(details).findByRole('button', { name: 'Mute this conversation' }));
+      const sheet = within(screen.getByRole('heading', { name: 'Mute this conversation' }).closest('dialog') as HTMLElement);
+      expect(sheet.getByRole('button', { name: 'Mute 8 hours' })).toBeTruthy();
+      expect(sheet.getByRole('button', { name: 'Until I turn it on' })).toBeTruthy();
+      await user.click(sheet.getByRole('button', { name: 'Mute a week' }));
+      await waitFor(() => expect(a.setGolfConversationMute).toHaveBeenCalledWith('team', true, 168));
+      expect(await within(details).findByText('Muted until Oct 21 · 2:40 PM')).toBeTruthy();
+      expect(within(details).getByRole('button', { name: 'Muted. Turn notifications back on' })).toBeTruthy();
+    });
   });
 });

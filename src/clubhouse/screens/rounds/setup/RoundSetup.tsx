@@ -13,6 +13,7 @@ import { Select } from '../../../ui/Select';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { AddCourseSheet } from './AddCourseSheet';
 import { CoursePicker } from './CoursePicker';
+import { clearSetupDraft, readSetupDraft, restoreSetupDraft, useSetupDraftKey, writeSetupDraft } from './draft';
 import { HoleConfig } from './HoleConfig';
 import { holesForRound, parOf, setupBlocker, startPosition, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPick, type ChSetupPorts, type ChSetupQualifier, type ChStartFailure, type ChStartResult } from './shape';
 import '../../../styles/rounds-setup.css';
@@ -37,6 +38,8 @@ export interface RoundSetupProps {
    * as well (WKWebView reports false on reachable networks) and refuses an offline start itself, with its own words.
    */
   isOffline?: () => boolean;
+  /** The signed-in player: with the page's team, the key of the setup kept for this tab (draft.ts). None, nothing is kept. */
+  viewerId?: string | null;
 }
 
 type HolesLoad = { state: 'idle' } | { state: 'loading' } | { state: 'failed'; error: string };
@@ -62,7 +65,7 @@ function ScorecardHead() {
  * screen draws; the round screen's ports read the course library and start
  * the round (docs/clubhouse/ROUNDS_PLAN.md).
  */
-export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, preselectQualifierId = null, isOffline }: RoundSetupProps) {
+export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, preselectQualifierId = null, isOffline, viewerId = null }: RoundSetupProps) {
   const [form, setForm] = useState<ChSetupForm>({
     pick: null,
     type: 'practice',
@@ -80,6 +83,25 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
   const [holesLoad, setHolesLoad] = useState<HolesLoad>({ state: 'idle' });
   const [lastTee, setLastTee] = useState<string | null>(null);
   const set = (patch: Partial<ChSetupForm>) => setForm((f) => ({ ...f, ...patch }));
+  // The setup kept for this tab comes back after mount (never during hydration), unless the page opened on a qualifier
+  // to play; from then on every change is kept, until the round starts.
+  const draftKey = useSetupDraftKey(viewerId);
+  const draftLoaded = useRef(false);
+  useEffect(() => {
+    if (!preselectQualifierId) {
+      const draft = readSetupDraft(draftKey);
+      if (draft) setForm(restoreSetupDraft(draft, qualifiers));
+    }
+    // Mount only.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // The first run is the default form, before the draft above has landed: it must not overwrite the draft.
+    if (!draftLoaded.current) {
+      draftLoaded.current = true;
+      return;
+    }
+    writeSetupDraft(draftKey, form);
+  }, [draftKey, form]);
   // A new round is a full-screen flow on the phone: the dock holds Start, and Back is in the band.
   usePhoneTabsHidden(true);
   // P011-D1: the band is the screen's own top bar (Back, the step), so the shell's top bar and bell go too.
@@ -146,7 +168,10 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
     'rounds.start',
     async (f) => {
       const r = await ports.start(f);
-      if (r.ok) onStarted(r.data.roundId);
+      if (r.ok) {
+        clearSetupDraft(draftKey);
+        onStarted(r.data.roundId);
+      }
       return r.ok ? { success: true, data: r } : { success: false, error: r.error, data: r };
     },
     (f) => ({ done: '', failed: `Couldn’t start your round at ${f.pick?.courseName ?? 'the course'}`, hint: 'Nothing was saved yet. Try again in a moment.', code: 'CH-11007', offline: isOffline }),
@@ -326,6 +351,8 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
                       </button>
                     ))}
                   </div>
+                  {/* Why 18 is off: the card the tees came with has nine. */}
+                  {form.holes.length > 0 && form.holes.length < 18 && <span className="ch-rsu-field__hint">These tees have 9 holes</span>}
                 </div>
               </div>
               {/* Always shown so a shotgun start is findable; it waits for the card's holes before it can be set. */}
@@ -442,7 +469,8 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           {p && !blocker ? (
             <>
               {/* No-break spaces keep "Par 72" and "18 holes" whole when the phone dock wraps. */}
-              <b>{p.courseName}</b> · {p.teeName} · {played.length}&nbsp;holes · Par&nbsp;{parOf(played)}
+              {/* Nine of an 18-hole card says which nine. */}
+              <b>{p.courseName}</b> · {p.teeName} · {form.count === 9 && form.holes.length === 18 ? (form.nine === 'back' ? 'Back nine' : 'Front nine') : <>{played.length}&nbsp;holes</>} · Par&nbsp;{parOf(played)}
               {startAt > 1 && startHole != null ? ` · Starts on hole\u00a0${startHole}` : ''}
             </>
           ) : (

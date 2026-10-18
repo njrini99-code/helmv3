@@ -109,7 +109,7 @@ describe('112401 Round review, on screen', () => {
     const shots = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(shots).toHaveLength(6);
     expect(shots[0]!.textContent).toContain('Tee · Driver');
-    expect(shots[0]!.textContent).toContain('518 yds → rough, 238 yds · missed right');
+    expect(shots[0]!.textContent).toContain('518 yds → rough · 238 yds left · missed right');
     expect(shots[shots.length - 1]!.textContent).toContain('3 ft → holed');
     expect(shots[shots.length - 1]!.textContent).toContain('Straight · level');
   });

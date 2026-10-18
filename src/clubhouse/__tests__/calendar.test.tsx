@@ -176,6 +176,102 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
   });
 
+  const moveToast = () => screen.getByText('Moved to 1:45 PM').closest('.ch-toast') as HTMLElement;
+
+  it('the write waits with the toast: a mouse over it pauses both, and it is written once, as the toast closes', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    a.updateGolfEvent.mockResolvedValue({ success: true });
+    const view = wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    fireEvent.pointerOver(moveToast(), { pointerType: 'mouse' });
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+    });
+    // Undo is still on screen, so nothing is written.
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeTruthy();
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    fireEvent.pointerOut(moveToast(), { pointerType: 'mouse', relatedTarget: document.body });
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
+    // Leaving afterwards writes nothing more.
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    view.unmount();
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('Undo after the hover outlasts 4 seconds still puts it back, and nothing is ever written', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const view = wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    fireEvent.pointerOver(moveToast(), { pointerType: 'mouse' });
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+    });
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    view.unmount();
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+  });
+
+  it('Undo pressed twice undoes once and never claims the move was saved; the leaving toast takes no input', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const view = wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    const undo = screen.getByRole('button', { name: 'Undo' });
+    fireEvent.click(undo);
+    fireEvent.click(undo);
+    expect(screen.queryByText('Already saved. Drag it back to undo.')).toBeNull();
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    // Still fading out, the card is inert: the second press reached a toast that takes no input.
+    expect(undo.closest('.ch-toast')!.hasAttribute('inert')).toBe(true);
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+    });
+    view.unmount();
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+  });
+
+  it('an Undo pressed after the move was written (the page was left, or the next move) says it already stands', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    a.updateGolfEvent.mockResolvedValue({ success: true });
+    wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByText('Already saved. Drag it back to undo.')).toBeTruthy();
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:45 – 2:30 PM/);
+    // The next move of the same event writes the first at once; the first toast's Undo and clock leave the second alone.
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(2);
+    expect(a.updateGolfEvent).toHaveBeenLastCalledWith('e9', expect.objectContaining({ startTime: '14:00' }));
+    fireEvent.click(within(screen.getByText('Moved to 2:00 PM').closest('.ch-toast') as HTMLElement).getByRole('button', { name: 'Undo' }));
+    expect(screen.getAllByText('Already saved. Drag it back to undo.').length).toBeGreaterThan(0);
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      vi.advanceTimersByTime(4000);
+    });
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(3);
+    expect(a.updateGolfEvent).toHaveBeenLastCalledWith('e9', expect.objectContaining({ startTime: '14:15' }));
+  });
+
   it('a series, a class and a player’s view never drag', () => {
     const { unmount } = wrap(cal());
     expect(block(/^Short-game block/).classList.contains('is-draggable')).toBe(false);
@@ -1086,6 +1182,10 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     wrap(cal());
     await user.click(within(screen.getByRole('list', { name: 'This week' })).getByRole('button', { name: /^Sun 11/ }));
     await expectCode('CH-6308', /Nothing on this day/);
+    // The coach's empty day has its own New event (the neighbouring days drawn for the swipe have none), and no
+    // "0 events" over the empty state.
+    expect(within(live('[data-ch-code="CH-6308"]') as HTMLElement).getByRole('button', { name: 'New event' })).toBeTruthy();
+    expect(screen.queryByText(/^0 events/)).toBeNull();
   });
 
   it('CH-6201 the calendar didn’t load: the notice, never an empty day', () => {

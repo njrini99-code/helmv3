@@ -380,6 +380,8 @@
   padding: 0 11px;
   font-size: calc(12.5 * var(--ch-type-k));
   line-height: 30px;
+  /* "Front 9" never breaks between its words. */
+  white-space: nowrap;
 }
 .ch-rsu-seg button:focus-visible,
 .ch-rsu-par button:focus-visible,

@@ -70,7 +70,7 @@ function RecoverCard({
         {ago && <p className="ch-rcv-saved">Saved {ago}</p>}
         <div className="ch-rcv-acts" role="group" aria-label={`Actions for the round at ${round.course}`}>
           <Button variant="primary" size={size} leftIcon={History} disabled={busy} onClick={onResume}>
-            {resuming ? 'Restoring' : round.finished ? 'Submit round' : 'Restore round'}
+            {resuming ? 'Restoring…' : round.finished ? 'Post round' : 'Restore round'}
           </Button>
           {round.queued && (
             <Button size={size} leftIcon={RotateCw} disabled={busy} onClick={onRetry}>
@@ -289,7 +289,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
               Keep it
             </Button>
             <Button variant="danger" disabled={discard.pending} feel={null} onClick={() => asking && void discard.run(asking)}>
-              {discard.pending ? 'Discarding' : 'Discard round'}
+              {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>
         }

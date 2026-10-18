@@ -1,5 +1,41 @@
 # P006 — Calendar: changelog
 
+## 2026-10-18 — Wave 5: the empty phone day has New event
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, empty day)
+
+- Phone Day, a coach's empty day (CH-6308): "Plan something for the team."
+  with a New event button, and no "0 events" over it.
+
+## 2026-10-18 — Wave 5: a move is written when its Undo goes
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, move Undo)
+
+- A dragged or Alt+arrow move (CH-6015) is written by its toast's
+  `onExpire`, not by a separate 4-second timer: the write happens exactly
+  when Undo stops being offered. Hovering, focusing or holding the toast
+  pauses both, so Undo can no longer silently do nothing. Leaving the page
+  still writes a waiting move at once; an Undo pressed after a move was
+  written says "Already saved. Drag it back to undo."
+
 ## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
 
 ```text

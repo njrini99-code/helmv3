@@ -339,7 +339,7 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
                 if (asking) void remove.run(asking);
               }}
             >
-              {remove.pending ? <span data-ch-code="CH-14405">Removing</span> : 'Remove document'}
+              {remove.pending ? <span data-ch-code="CH-14405">Removing…</span> : 'Remove document'}
             </Button>
           </>
         }
@@ -394,7 +394,7 @@ function UploadDialog({
               Cancel
             </Button>
             <Button variant="primary" disabled={busy || !staged} onClick={() => staged && onUpload(staged)}>
-              {busy ? <span data-ch-code="CH-14404">{progress === null ? 'Uploading' : `Uploading ${progress}%`}</span> : 'Upload'}
+              {busy ? <span data-ch-code="CH-14404">{progress === null ? 'Uploading…' : `Uploading… ${progress}%`}</span> : 'Upload'}
             </Button>
           </>
         )

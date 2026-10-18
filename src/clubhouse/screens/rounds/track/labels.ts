@@ -30,7 +30,7 @@ export const BREAK_OPTIONS: Array<[NonNullable<ShotRecord['puttBreak']>, string]
 export const SLOPE_OPTIONS: Array<[NonNullable<ShotRecord['puttSlope']>, string]> = [
   ['uphill', 'Uphill'],
   ['level', 'Level'],
-  ['downhill', 'Down'],
+  ['downhill', 'Downhill'],
   ['severe', 'Severe'],
 ];
 const BREAK_WORDS: Record<NonNullable<ShotRecord['puttBreak']>, string> = {
@@ -108,11 +108,16 @@ export function shotTitle(shot: ShotRecord): string {
   return shotKind(shot.shotType).replace('Tee shot', 'Tee');
 }
 
-/** A recorded shot's line: "395 yds → fairway · 150 yds", "12 ft → holed · L → R, uphill", "+1 stroke". */
+/** Where a shot finished, in the one form every shot line uses: "fairway · 150 yds left", "holed". */
+export function shotFinish(shot: ShotRecord, pref: DistancePreference): string {
+  return shot.result === 'hole' ? 'holed' : `${RESULT_LABEL[shot.result].toLowerCase()} · ${distanceText(shot.distanceToHoleAfter, shot.distanceUnitAfter, pref)} left`;
+}
+
+/** A recorded shot's line: "395 yds → fairway · 150 yds left", "12 ft → holed · L → R, uphill", "+1 stroke". */
 export function shotLine(shot: ShotRecord, pref: DistancePreference): string {
   if (shot.isPenalty) return '+1 stroke';
   const from = distanceText(shot.distanceToHoleBefore, shot.distanceUnitBefore, pref);
-  const to = shot.result === 'hole' ? 'holed' : `${RESULT_LABEL[shot.result].toLowerCase()} · ${distanceText(shot.distanceToHoleAfter, shot.distanceUnitAfter, pref)}`;
+  const to = shotFinish(shot, pref);
   const read = [shot.puttBreak && BREAK_WORDS[shot.puttBreak], shot.puttSlope].filter(Boolean).join(', ');
   return `${from} → ${to}${read ? ` · ${read}` : ''}`;
 }

@@ -81,15 +81,15 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-3401 | Roster is loading | Header, toolbar and six face cards as skeletons in their final slots | `RosterSkeleton`, `aria-busy`; below 820px the phone list rows, switched in CSS | roster.test › CH-3401 |
-| CH-3402 | A remove is in flight | The button reads "Removing" and can't be pressed again | `Modal` footer | roster.test › CH-3402 |
-| CH-3403 | Approve all is in flight (phone join requests sheet, D-55) | The footer reads "Approving" and can't be pressed again; each Approve and Decline waits too | `RequestsSheet` footer | roster.test › CH-3403 |
-| CH-3404 | A status change is in flight | The confirm button reads "Saving" and can't be pressed again; Cancel waits and the dialog can't be dismissed | `StatusConfirm` footer | roster.test › CH-3404 |
+| CH-3402 | A remove is in flight | The button reads "Removing…" and can't be pressed again | `Modal` footer | roster.test › CH-3402 |
+| CH-3403 | Approve all is in flight (phone join requests sheet, D-55) | The footer reads "Approving…" and can't be pressed again; each Approve and Decline waits too | `RequestsSheet` footer | roster.test › CH-3403 |
+| CH-3404 | A status change is in flight | The confirm button reads "Saving…" and can't be pressed again; Cancel waits and the dialog can't be dismissed | `StatusConfirm` footer | roster.test › CH-3404 |
 
 ## 35xx Confirm
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-3501 | Remove from team (row menu; on the phone, the profile's ⋯ sheet) | "Remove player?" + "Remove Theo Marchetti from Varsity? They can rejoin later with the team code." + "Their account and stats are not deleted…" Cancel / Remove player | `Modal` | roster.test › CH-3501 |
+| CH-3501 | Remove from team (row menu; on the phone, the profile's ⋯ sheet) | "Remove player?" + "Remove Theo Marchetti from Varsity? They can rejoin later with the team code." + "Their account and stats are not deleted…" Keep Theo / Remove player (the safe choice names the player) | `Modal` | roster.test › CH-3501 |
 | CH-3502 | Mark inactive / Mark active (coach only: row menu; on the phone, the profile's ⋯ sheet) | "Mark player inactive?" + "Move Theo Marchetti to Inactive on Varsity?" + "They stay on the team with their account and stats, but leave team rankings and averages. Until you mark them active again, the app shows them no team." Cancel / Mark inactive. For an inactive player: "Mark player active?" + "Move Theo Marchetti back to the active roster of Varsity?" Not destructive: the confirm is the primary, no red and no warning haptic (D-42, D-70) | `StatusConfirm` (`Modal`) | roster.test › CH-3502 |
 
 ## 36xx Motion

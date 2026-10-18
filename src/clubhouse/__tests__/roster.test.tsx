@@ -227,7 +227,7 @@ describe('Roster · player status (Active / Inactive)', () => {
     expect(code('CH-3502')!.textContent).toMatch(/stay on the team with their account and stats/);
     await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
     expect(actions.status).toHaveBeenCalledWith(theo.id, 'inactive');
-    await expectCode('CH-3404', /Saving/);
+    await expectCode('CH-3404', /Saving…/);
     expect((code('CH-3404')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
     await act(async () => settle({ success: false, error: 'Failed to update player status' }));
     await expectCode('CH-3008', /Couldn’t mark Theo Marchetti inactive/);
@@ -463,7 +463,7 @@ describe('Roster · loading, haptics, accessibility', () => {
     wrap(roster());
     await openRemove(user);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
-    await expectCode('CH-3402', /Removing/);
+    await expectCode('CH-3402', /Removing…/);
     expect((code('CH-3402')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -743,7 +743,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     await user.click(screen.getByRole('button', { name: /2 join requests/ }));
     const sheet = await screen.findByRole('dialog', { name: 'Join requests' });
     await user.click(within(sheet).getByRole('button', { name: 'Approve all 2' }));
-    await expectCode('CH-3403', /Approving/);
+    await expectCode('CH-3403', /Approving…/);
     expect((code('CH-3403')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
     act(() => finish());
     await waitFor(() => expect(actions.accept).toHaveBeenCalledTimes(2));
@@ -877,7 +877,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     expect(await screen.findByText('Couldn’t remove Theo Marchetti: you’re offline')).toBeTruthy();
     expect(screen.getByRole('button', { name: `Actions for ${theo.name}` })).toBeTruthy();
     expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(true);
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Keep Theo' }));
     // Approve all is refused the same way.
     const { result } = renderHook(() => useJoinRequests('Varsity', PREVIEW_ROSTER.requests), {
       wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,

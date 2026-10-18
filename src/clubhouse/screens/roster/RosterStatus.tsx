@@ -24,7 +24,7 @@ export function statusCopy(name: string, to: Status): ActionCopy {
 /**
  * CH-3502: the coach confirms a status change before it is written (the Fairway "Change status" dialog, rebuilt as a
  * question with one answer, since there are only two statuses). Not destructive: the confirm is the primary, with no
- * warning haptic and no red (D-42). CH-3404: while it saves the button reads "Saving" and can't be pressed again.
+ * warning haptic and no red (D-42). CH-3404: while it saves the button reads "Saving…" and can't be pressed again.
  *
  * Inactive is said as what it does here: the player stays on the team with their stats, leaves the active roster's
  * rankings and averages, and (every player read of a team asks for an active membership) has no team in the app
@@ -73,7 +73,7 @@ export function StatusConfirm({
               if (player) onConfirm(player, to);
             }}
           >
-            {pending ? <span data-ch-code="CH-3404">Saving</span> : deactivating ? 'Mark inactive' : 'Mark active'}
+            {pending ? <span data-ch-code="CH-3404">Saving…</span> : deactivating ? 'Mark inactive' : 'Mark active'}
           </Button>
         </>
       }

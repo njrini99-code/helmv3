@@ -53,10 +53,10 @@ function ProposalRow({ p, writes, quiet = false }: { p: ChProposal; writes: ChPl
       ) : (
         <span className="ch-hl-prop__a" role="group" aria-label={`Answer ${p.title}`}>
           <Button size="sm" variant={quiet ? 'secondary' : 'primary'} feel="press" disabled={pending} onClick={() => void accept.run()}>
-            {accept.pending ? <span data-ch-code="CH-13404">Accepting</span> : 'Accept'}
+            {accept.pending ? <span data-ch-code="CH-13404">Accepting…</span> : 'Accept'}
           </Button>
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => void decline.run()}>
-            {decline.pending ? <span data-ch-code="CH-13404">Declining</span> : 'Decline'}
+            {decline.pending ? <span data-ch-code="CH-13404">Declining…</span> : 'Decline'}
           </Button>
         </span>
       )}

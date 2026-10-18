@@ -1036,7 +1036,7 @@ export function StaffDone({ d, finish, dir }: StepProps) {
     >
       <div className="ch-ox-act">
         <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="commit" onClick={() => finish('/golf/dashboard')}>
-          Go to the dashboard
+          Go to your dashboard
         </Button>
       </div>
     </Q>

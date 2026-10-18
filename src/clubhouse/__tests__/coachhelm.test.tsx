@@ -689,7 +689,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
     await u.click(within(row('Downhill putts inside 6 ft')).getByRole('button', { name: 'Accept' }));
     expect(hapticSpy).toHaveBeenCalledWith('press');
     expect(w.accept).toHaveBeenCalledWith('fa-ladder');
-    await expectCode('CH-13404', /Accepting/);
+    await expectCode('CH-13404', /Accepting…/);
     const pair = within(row('Downhill putts inside 6 ft')).getAllByRole('button') as HTMLButtonElement[];
     expect(pair.map((b) => b.disabled)).toEqual([true, true]);
     // The other proposal is its own: it is not waiting.
@@ -713,7 +713,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
     showProposed(w);
     await u.click(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Decline' }));
     expect(w.decline).toHaveBeenCalledWith('fa-lag');
-    await expectCode('CH-13404', /Declining/);
+    await expectCode('CH-13404', /Declining…/);
     expect((within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Accept' }) as HTMLButtonElement).disabled).toBe(true);
     done({ success: true });
     await expectCode('CH-13902', /Declined · Lag putting from 30 ft/);
@@ -856,7 +856,7 @@ describe('CoachHelm for the coach, on screen', () => {
       // CH13-22: the player's value now is the focus's starting point.
       currentValue: 23,
     });
-    await expectCode('CH-13403', /Assigning/);
+    await expectCode('CH-13403', /Assigning…/);
     expect((code('CH-13403')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: /Dismiss/ }) as HTMLButtonElement).disabled).toBe(true);
     done({ success: true });
@@ -965,12 +965,12 @@ describe('CoachHelm for the coach, on screen', () => {
     await pick(u, 'Jonah Okafor');
     await u.click(screen.getByRole('button', { name: 'Dismiss' }));
     await u.click(await screen.findByRole('button', { name: 'Undo' }));
-    const busy = await screen.findByRole('button', { name: 'Undoing' });
+    const busy = await screen.findByRole('button', { name: 'Undoing…' });
     expect(busy.querySelector('[data-ch-code="CH-13403"]')).not.toBeNull();
     expect((busy as HTMLButtonElement).disabled).toBe(true);
     done({ success: true });
     await waitFor(() => expect(code('CH-13901')).toBeNull());
-    expect(screen.queryByRole('button', { name: 'Undoing' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Undoing…' })).toBeNull();
   });
 
   it('dismissing a player’s last signal takes them out of the count of players as well as of signals', async () => {

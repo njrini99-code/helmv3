@@ -106,7 +106,7 @@ export function ClassDetail({
                 The last sync failed, so your coach won’t see this class on the team calendar yet.
               </span>
               <Button size="sm" leftIcon={RotateCw} disabled={syncing} onClick={() => onRetrySync(c)}>
-                {syncing ? 'Syncing' : 'Retry sync'}
+                {syncing ? 'Syncing…' : 'Retry sync'}
               </Button>
             </div>
           )}

@@ -718,13 +718,13 @@ describe('Recruiting · desktop', () => {
     await user.click(within(dlg()).getByRole('button', { name: 'Keep them' }));
     expect(w.remove).not.toHaveBeenCalled();
     expect(rowNames()).toHaveLength(8);
-    // Delete, answered slowly: "Deleting" and nothing can be double-tapped.
+    // Delete, answered slowly: "Deleting…" and nothing can be double-tapped.
     const slow = deferred<{ success: boolean }>();
     w.remove.mockReturnValue(slow.promise);
     await askDelete(user, 'Mason Reilly');
     await user.click(within(dlg()).getByRole('button', { name: 'Delete prospect' }));
-    expect(code('CH-14406')?.textContent).toBe('Deleting');
-    expect((within(dlg()).getByRole('button', { name: 'Deleting' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(code('CH-14406')?.textContent).toBe('Deleting…');
+    expect((within(dlg()).getByRole('button', { name: 'Deleting…' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => slow.resolve({ success: true }));
     await waitFor(() => expect(rowNames()).toHaveLength(7));
     expect(w.remove).toHaveBeenCalledTimes(1);
@@ -835,8 +835,8 @@ describe('Recruiting · desktop', () => {
     await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'Ellie');
     await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
     await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
-    expect(code('CH-14403')?.textContent).toBe('Saving');
-    expect((within(dlg()).getByRole('button', { name: 'Saving' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(code('CH-14403')?.textContent).toBe('Saving…');
+    expect((within(dlg()).getByRole('button', { name: 'Saving…' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => answer.resolve({ success: false, error: 'Failed to add recruit' }));
     await expectCode('CH-14001', /Couldn’t add Ellie.*Failed to add recruit\./);
     expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('Ellie');
@@ -847,6 +847,31 @@ describe('Recruiting · desktop', () => {
     await waitFor(() => expect(rowNames()).toHaveLength(9));
     expect(w.create).toHaveBeenCalledTimes(2);
     expect(w.create).toHaveBeenLastCalledWith(expect.objectContaining({ first_name: 'Ellie', hometown: 'Wilmington' }), expect.any(String));
+  });
+
+  it('CH-14910 CH-14915 Cancel keeps what was typed for the next Add, under the same request id; a landed Add starts the next one empty (wave 5 #7)', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    w.create.mockImplementationOnce(() => Promise.resolve({ success: false, error: 'Failed to add recruit' }) as never);
+    wrap(PREVIEW_RECRUITING, w);
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'Ellie');
+    await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
+    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await expectCode('CH-14001');
+    await user.click(within(dlg()).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(dlg()).toBeNull());
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('Ellie');
+    expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Wilmington');
+    w.create.mockImplementation(() => ok({ id: 'new-2' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await waitFor(() => expect(dlg()).toBeNull());
+    expect(w.create).toHaveBeenCalledTimes(2);
+    const ids = w.create.mock.calls.map((c) => (c as unknown as [unknown, string])[1]);
+    expect(ids[1]).toBe(ids[0]);
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('');
   });
 
   it('CH-14906 Edit opens the form on the prospect as they are; Save sends everything, updates the row, the panel and the list, and says so', async () => {
@@ -981,7 +1006,7 @@ describe('Recruiting · desktop', () => {
     const slow = deferred<{ success: boolean }>();
     w.documents.remove.mockReturnValueOnce(slow.promise as never);
     await user.click(within(code('CH-14006') as HTMLElement).getByRole('button', { name: 'Retry' }));
-    expect(code('CH-14405')?.textContent).toBe('Removing');
+    expect(code('CH-14405')?.textContent).toBe('Removing…');
     await act(async () => slow.resolve({ success: true }));
     await waitFor(() => expect(screen.queryByText('Fall tournament schedule.pdf')).toBeNull());
     expect(document.querySelector('dialog[open]')).toBeNull();
@@ -1008,7 +1033,7 @@ describe('Recruiting · desktop', () => {
     const slow = deferred<{ success: boolean; data: { id: string } }>();
     w.documents.upload.mockReturnValue(slow.promise as never);
     await user.click(d.getByRole('button', { name: 'Upload' }));
-    expect(code('CH-14404')?.textContent).toBe('Uploading');
+    expect(code('CH-14404')?.textContent).toBe('Uploading…');
     w.documents.list.mockImplementation(() => ok([{ ...PREVIEW_DOCUMENTS['p-mason']![0]!, id: 'd-new', title: 'Spring transcript, junior', category: 'transcript' }, ...PREVIEW_DOCUMENTS['p-mason']!.map((x) => ({ ...x }))]));
     await act(async () => slow.resolve({ success: true, data: { id: 'd-new' } }));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());

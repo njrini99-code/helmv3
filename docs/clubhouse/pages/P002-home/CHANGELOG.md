@@ -1,5 +1,36 @@
 # P002 — Home: changelog
 
+## 2026-10-18 — Wave 5: Start a round icons
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Start a round)
+
+- The player's first-run Home (CH-2312) draws a flag over "Welcome to the
+  team" and a plus on Start a round, as Rounds does.
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- A section's Try again reads "Trying again…" while it runs (CH-2402).
+
 ## 2026-10-18 — Wave 4: phone text follows Dynamic Type
 
 ```text

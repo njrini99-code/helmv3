@@ -112,11 +112,11 @@ action, so a toast's Retry that lands does it too.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-10401 | Files are uploading | "Uploading…" on the drop zone; it can't be pressed again | `Documents` | hub.test › CH-10401 |
-| CH-10402 | A post is being sent | "Posting" on the button; it can't be pressed twice | `ComposeSheet` | hub.test › CH-10402 |
-| CH-10403 | A trip is being saved | "Saving" | `TripSheet` | hub.test › CH-10403 |
-| CH-10404 | A task is being assigned | "Assigning" | `AssignSheet` | hub.test › CH-10404 |
+| CH-10402 | A post is being sent | "Posting…" on the button; it can't be pressed twice | `ComposeSheet` | hub.test › CH-10402 |
+| CH-10403 | A trip is being saved | "Saving…" | `TripSheet` | hub.test › CH-10403 |
+| CH-10404 | A task is being assigned | "Assigning…" | `AssignSheet` | hub.test › CH-10404 |
 | CH-10405 | Team Hub is loading | The header, the tab strip and the two Home columns as grey blocks, in place (nothing for the first 150ms, then a fade); on the phone the opening on its double rule, the tabs on their hairline and two flush sections with rows on seams, in the loaded page's geometry and the signed-in role's opening and tab count from the shell (a coach's New announcement; five tabs or four), so either role's page lands with 0px shift at 390; read as "Loading Team Hub" | `HubSkeleton` from `team-hub/loading.tsx` through `ClubhouseSwitch` | hub.test › CH-10405 |
-| CH-10406 | An edit is being saved | "Saving" on the button of Edit announcement; it can't be pressed twice | `ComposeSheet` (edit) | hub.test › CH-10406 |
+| CH-10406 | An edit is being saved | "Saving…" on the button of Edit announcement; it can't be pressed twice | `ComposeSheet` (edit) | hub.test › CH-10406 |
 | CH-10407 | Plan a trip: the travelers' classes are being checked | "Checking their classes…" once the chosen travelers have settled (350ms; a run of taps on player chips is one question). Publish never waits for it, and an answer for travelers or days no longer on screen is not shown | `ClassClashes` (`useClassCheck`) | hub.test › CH-10407 |
 
 | CH-10408 | A player's event reply is being sent | "Sending reply for Team dinner…" beside that event's selected reply. Its three choices remain disabled across tab changes until the answer; another event can save independently. Refusal restores the last confirmed reply and offers Retry | `ReplyChoices` → `useAction('hub.reply')` + Hub-lifetime event gate | hub.test › CH-10408 |

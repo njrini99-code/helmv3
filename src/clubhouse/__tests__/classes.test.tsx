@@ -1624,7 +1624,7 @@ describe('Classes, delete all', () => {
   /** The control under the deck (the dialog has a button of the same name). */
   const deleteAll = () => within(document.querySelector('.ch-cl-delall') as HTMLElement).getByRole('button', { name: 'Delete all classes' }) as HTMLButtonElement;
   const question = () => screen.getByRole('dialog', { name: 'Delete all classes?' });
-  const confirm = (user: ReturnType<typeof userEvent.setup>) => user.click(within(question()).getByRole('button', { name: /^(Delete all classes|Deleting)$/ }));
+  const confirm = (user: ReturnType<typeof userEvent.setup>) => user.click(within(question()).getByRole('button', { name: /^(Delete all classes|Deleting…)$/ }));
   const answer = (over: Partial<ChRemoveAllData>, error = 'stopped'): { success: boolean; error: string; data: ChRemoveAllData } => ({ success: false, error, data: { removed: [], kept: [], offCalendar: [], ...over } });
   const idOf = (n: number) => `c0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
@@ -1689,8 +1689,8 @@ describe('Classes, delete all', () => {
     const w = show(PREVIEW_CLASSES, { removeAll: vi.fn(() => held.promise) });
     await user.click(deleteAll());
     await confirm(user);
-    await waitFor(() => expect(within(question()).getByRole('button', { name: 'Deleting' })).toBeTruthy());
-    expect((within(question()).getByRole('button', { name: 'Deleting' }) as HTMLButtonElement).disabled).toBe(true);
+    await waitFor(() => expect(within(question()).getByRole('button', { name: 'Deleting…' })).toBeTruthy());
+    expect((within(question()).getByRole('button', { name: 'Deleting…' }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(question()).getByRole('button', { name: 'Keep them' }) as HTMLButtonElement).disabled).toBe(true);
     expect(deleteAll().disabled).toBe(true);
     // Esc and the Close button leave it open: closing would hide a delete that is still going.
@@ -2145,11 +2145,11 @@ describe('Classes, offline and slow', () => {
     await screen.findByRole('dialog', { name: 'Edit class' });
     fireEvent.click(within(sheet()).getByRole('button', { name: 'Save changes' }));
     expect(w.save).toHaveBeenCalledTimes(1);
-    expect((within(sheet()).getByRole('button', { name: 'Saving' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(sheet()).getByRole('button', { name: 'Saving…' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => void vi.advanceTimersByTime(CH_SLOW_SAVE_AFTER + 10));
     await expectCode('CH-1902', /Still saving/);
     // A second tap while it runs sends nothing more.
-    fireEvent.click(within(sheet()).getByRole('button', { name: 'Saving' }));
+    fireEvent.click(within(sheet()).getByRole('button', { name: 'Saving…' }));
     expect(w.save).toHaveBeenCalledTimes(1);
     await act(async () => answer.resolve({ success: false }));
   });

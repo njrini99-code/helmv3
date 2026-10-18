@@ -75,7 +75,7 @@ events follow Calendar's date-span rules. Owner decision: Safari review,
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-2401 | Home is loading | A skeleton in Home's own shape (header, two panes, five leaderboard rows), so nothing shifts when data lands. On the phone the hero is the reader's own, from the shell's role: the coach's brief as three lines over the coach's Up next card, the player's Up next with its countdown under the greeting and the two keys under it; the card, the keys and the first section land within half a pixel of their bars (WebKit 390, 2026-10-08) | `HomeSkeleton`, `aria-busy` | home.test › CH-2401 |
-| CH-2402 | Try again was pressed on a section | The notice title reads "Trying again" and the button steps aside until the page re-renders | `RefreshNotice` (`useTransition`) | preview |
+| CH-2402 | Try again was pressed on a section | The notice title reads "Trying again…" and the button steps aside until the page re-renders | `RefreshNotice` (`useTransition`) | preview |
 
 ## 26xx Motion
 

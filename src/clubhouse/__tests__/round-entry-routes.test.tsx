@@ -211,7 +211,8 @@ describe('Round entry: useAction options (CH-1903, CH-11007)', () => {
     const user = shown({ success: false, error: 'Nope.' }, { retry: false });
     await user.click(screen.getByRole('button', { name: 'run' }));
     await waitFor(() => expect(code('CH-11007')).not.toBeNull());
-    expect(within(code('CH-11007')!).queryByRole('button')).toBeNull();
+    // No action: its only button is the mouse's Dismiss.
+    expect(within(code('CH-11007')!).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Dismiss notification']);
   });
 
   it('retry names the action', async () => {
@@ -602,7 +603,7 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
     const s = fakeSession({ submitting: true, error: 'The server said no.' });
     runtime(s);
     const user = userEvent.setup();
-    expect(code('CH-11005')).toHaveTextContent('The round didn’t submit');
+    expect(code('CH-11005')).toHaveTextContent('The round didn’t post');
     await user.click(screen.getByRole('button', { name: 'Go back' }));
     expect(s.submitGoBack).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: 'Try again' }));

@@ -229,7 +229,7 @@ export interface ChSummaryHole extends ChCardHole {
 
 /**
  * CH-11508: the round is complete. The figures (putts, fairways, greens,
- * front and back), the card, and Submit. Back returns to the last hole.
+ * front and back), the card, and Post round. Back returns to the last hole.
  */
 export function RoundCompleteSheet({
   open,
@@ -272,7 +272,7 @@ export function RoundCompleteSheet({
             <span>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</span>
           </button>
           <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onSubmit}>
-            <span>Submit round</span>
+            <span>Post round</span>
             <Icon icon={Send} size={16} />
           </button>
         </>
@@ -295,13 +295,13 @@ export function RoundCompleteSheet({
       </div>
       <Scorecard holes={holes} current={null} />
       {/* R-11: no promise of edits the round review doesn't offer, or of a coach the player may not have. */}
-      <p className="ch-rt-sum__n">Submitting posts this round to your stats.</p>
+      <p className="ch-rt-sum__n">Posting adds this round to your stats.</p>
     </Modal>
   );
 }
 
 /**
- * CH-11603: submitting the round, over the screen. It names what is really
+ * CH-11603: posting the round, over the screen. It names what is really
  * happening (the shot count) instead of timing fake steps (Q-72d); the spinner
  * stops with reduced motion. Posted: success, and the round's review (the round
  * screen opens it after a beat). Failed (CH-11005): the round stays saved on the
@@ -315,6 +315,7 @@ export function SubmitOverlay({
   course,
   shots,
   coach,
+  score = null,
   reviewHref,
   error,
   onRetry,
@@ -326,6 +327,8 @@ export function SubmitOverlay({
   course: string;
   shots: number;
   coach: string | null;
+  /** The posted round's strokes and score to par, named in the success line ("Your 74 (+2) at Finley GC is posted."). */
+  score?: { strokes: number; toPar: number } | null;
   reviewHref: string | null;
   error: string | null;
   onRetry: () => void;
@@ -350,7 +353,7 @@ export function SubmitOverlay({
           <>
             <span className={'ch-rt-spin ch-rt-spin--lg' + (reduced ? ' is-still' : '')} aria-hidden="true" />
             <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1}>
-              Submitting round
+              Posting round
             </h2>
             <span className="ch-rt-subm__m">Saving {shots} shots, updating your stats and writing the round recap. Keep this screen open.</span>
             {slowHref && (
@@ -370,7 +373,7 @@ export function SubmitOverlay({
               Round posted
             </h2>
             <span className="ch-rt-subm__m">
-              Your round at {course} is posted.{coach ? ` ${coach} can see it now.` : ''}
+              Your {score ? `${score.strokes} (${formatToPar(score.toPar)})` : 'round'} at {course} is posted.{coach ? ` ${coach} can see it now.` : ''}
             </span>
             {reviewHref && (
               <a className="ch-btn ch-btn--primary ch-btn--lg" href={reviewHref}>
@@ -386,7 +389,7 @@ export function SubmitOverlay({
               <Icon icon={TriangleAlert} size={24} />
             </span>
             <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1} data-ch-code="CH-11005">
-              The round didn&rsquo;t submit
+              The round didn&rsquo;t post
             </h2>
             <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Check your connection, then try again.'}</span>
             <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onRetry}>

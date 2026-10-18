@@ -197,7 +197,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                       </button>
                       {href && (
                         <Link href={href} className="ch-rd-more__go" onClick={() => haptic('press')}>
-                          {r.readyToSubmit ? 'Submit' : 'Continue'}
+                          {r.readyToSubmit ? 'Post' : 'Continue'}
                         </Link>
                       )}
                     </li>
@@ -282,7 +282,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
               Keep it
             </Button>
             <Button variant="danger" disabled={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
-              {discard.pending ? 'Discarding' : 'Discard round'}
+              {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>
         }

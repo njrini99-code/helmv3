@@ -123,7 +123,7 @@ export function UnfinishedCard({
             )}
           </span>
           {startHref && (
-            // CH-11703: Start a round, Continue and Submit are primary taps (light).
+            // CH-11703: Start a round, Continue and Post round are primary taps (light).
             <Link href={startHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
               Start a round
               <Icon icon={ArrowRight} size={15} />
@@ -135,13 +135,13 @@ export function UnfinishedCard({
   }
   const started = round.date === todayIso ? 'Today' : shortDay(round.date);
   const thru = round.played.length;
-  const cta = round.readyToSubmit ? 'Submit round' : round.nextHole ? `Continue at hole ${round.nextHole}` : 'Continue';
+  const cta = round.readyToSubmit ? 'Post round' : round.nextHole ? `Continue at hole ${round.nextHole}` : 'Continue';
   return (
     <div className="ch-rd-unf">
       <div className="ch-rd-unf__top">
         <span className="ch-rd-unf__k">
           <i />
-          {round.readyToSubmit ? 'Ready to submit' : 'In progress'}
+          {round.readyToSubmit ? 'Ready to post' : 'In progress'}
         </span>
         <span className="ch-rd-unf__t">{started}</span>
       </div>
@@ -153,7 +153,7 @@ export function UnfinishedCard({
         <InlineNotice
           code="CH-11215"
           title="Couldn’t check whether this round was already posted"
-          body="Every hole is scored, but your posted rounds didn’t load, so Submit isn’t offered here yet. Try again."
+          body="Every hole is scored, but your posted rounds didn’t load, so Post round isn’t offered here yet. Try again."
           onRetry={onRetry}
           retrying={retrying}
         />

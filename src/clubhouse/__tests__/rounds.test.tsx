@@ -138,20 +138,20 @@ describe('112401 Rounds library, on screen', () => {
     expect(document.querySelector('.ch-rd-unf__f > span')!.textContent).toBe('−1 through 2');
   });
 
-  it('110106 a round with every hole scored reads Ready to submit, and its link says Submit round', () => {
+  it('110106 a round with every hole scored reads Ready to post, and its link says Post round', () => {
     const done = PREVIEW_ROUNDS_MANY.unfinished.list[2]!;
     show({ ...PREVIEW_ROUNDS_MANY, unfinished: { list: [done], error: false } });
-    expect(screen.getByText('Ready to submit')).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Submit round/ }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
+    expect(screen.getByText('Ready to post')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Post round/ }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
     expect(document.querySelector('.ch-rd-strip .is-next')).toBeNull();
   });
 
-  it('110106 more than one unfinished round: the newest in the card, the rest listed with Continue or Submit', () => {
+  it('110106 more than one unfinished round: the newest in the card, the rest listed with Continue or Post', () => {
     show(PREVIEW_ROUNDS_MANY);
     const more = screen.getByRole('region', { name: '2 more unfinished rounds' });
     expect(within(more).getByText('Oct 2 · not started')).toBeTruthy();
     expect(within(more).getByText('Sep 29 · through 18')).toBeTruthy();
-    expect(within(more).getByRole('link', { name: 'Submit' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
+    expect(within(more).getByRole('link', { name: 'Post' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
     expect(within(more).getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[1]!.id}`);
   });
 
@@ -336,23 +336,23 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
     expect(within(more).queryByText(/not started/)).toBeNull();
   });
 
-  it('CH-11215 a finished round whose "already posted" check could not run is not offered Submit', async () => {
+  it('CH-11215 a finished round whose "already posted" check could not run is not offered Post round', async () => {
     const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
     const finished = { ...PREVIEW_UNFINISHED, played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [finished], error: false } });
     await expectCode('CH-11215', /Couldn’t check whether this round was already posted/);
-    expect(screen.queryByRole('link', { name: /Submit/ })).toBeNull();
-    expect(screen.queryByText('Ready to submit')).toBeNull();
+    expect(screen.queryByRole('link', { name: /Post/ })).toBeNull();
+    expect(screen.queryByText('Ready to post')).toBeNull();
     expect(screen.getByRole('link', { name: 'Continue' })).toBeTruthy();
   });
 
-  it('CH-11215 a finished round in the more-unfinished list says its posted check failed, and is Continue, never Submit', () => {
+  it('CH-11215 a finished round in the more-unfinished list says its posted check failed, and is Continue, never Post', () => {
     const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
     const finished = { ...PREVIEW_UNFINISHED, id: 'a0000000-0000-4000-8000-000000000043', course: 'Governors Club', played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [PREVIEW_UNFINISHED, finished], error: false } });
     const more = screen.getByRole('region', { name: '1 more unfinished round' });
     expect(within(more).getByText(/through 18 · couldn’t check if posted/)).toBeTruthy();
-    expect(within(more).queryByRole('link', { name: 'Submit' })).toBeNull();
+    expect(within(more).queryByRole('link', { name: 'Post' })).toBeNull();
     expect(within(more).getByRole('link', { name: 'Continue' })).toBeTruthy();
   });
 

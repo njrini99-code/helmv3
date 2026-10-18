@@ -1,5 +1,22 @@
 # P015 — Auth: changelog
 
+## 2026-10-18 — Wave 5: onboarding count and staff finish
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, onboarding)
+
+- Before the team code is known the rail counts the player's path, so it
+  reads "1 of 5" then "2 of 5"; a staff code shortens it to three.
+- The staff finish says "Go to your dashboard", as the player's does.
+
 ## 2026-10-18 — Wave 3: the sign-up legal line names both pages
 
 ```text

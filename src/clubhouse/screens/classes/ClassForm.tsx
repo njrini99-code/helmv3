@@ -142,7 +142,7 @@ export function ClassForm({
               Cancel
             </Button>
             <Button variant="primary" disabled={saving} onClick={submit}>
-              {saving ? (editing ? 'Saving' : 'Adding') : editing ? 'Save changes' : 'Add class'}
+              {saving ? (editing ? 'Saving…' : 'Adding…') : editing ? 'Save changes' : 'Add class'}
             </Button>
           </>
         }

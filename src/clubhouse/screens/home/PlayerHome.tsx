@@ -1,6 +1,6 @@
 'use client';
 
-import { GraduationCap, MessageSquare, Play, Plus, Users } from 'lucide-react';
+import { Flag, GraduationCap, MessageSquare, Plus, Users } from 'lucide-react';
 import Link from 'next/link';
 import type { ChHomeEvent } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
@@ -122,12 +122,12 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
       <EmptyState
         size="page"
         code="CH-2312"
-        icon={Play}
+        icon={Flag}
         title="Welcome to the team"
         body="Post your first round to start your stats. Team updates and your schedule show up here too."
         action={
           start ? (
-            <Button variant="primary" leftIcon={Play} href={start}>
+            <Button variant="primary" leftIcon={Plus} href={start}>
               Start a round
             </Button>
           ) : undefined

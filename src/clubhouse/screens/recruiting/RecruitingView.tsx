@@ -381,7 +381,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
           code="CH-14501"
           title={asking ? `Delete ${asking.name}?` : 'Delete prospect?'}
           message="This removes them from your list, with their notes and documents. This can’t be undone."
-          actionLabel={del.pending ? 'Deleting' : 'Delete prospect'}
+          actionLabel={del.pending ? 'Deleting…' : 'Delete prospect'}
           busy={del.pending}
           onAction={() => asking && void del.run(asking)}
         />
@@ -400,7 +400,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
                 Keep them
               </Button>
               <Button variant="danger" disabled={del.pending} feel="warning" onClick={() => asking && void del.run(asking)}>
-                {del.pending ? <span data-ch-code="CH-14406">Deleting</span> : 'Delete prospect'}
+                {del.pending ? <span data-ch-code="CH-14406">Deleting…</span> : 'Delete prospect'}
               </Button>
             </>
           }

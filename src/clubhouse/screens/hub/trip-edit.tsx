@@ -113,7 +113,7 @@ export function TripEditSheet({
             Cancel
           </Button>
           <Button variant="primary" disabled={save.pending} feel={null} onClick={() => submit()}>
-            {save.pending ? 'Saving' : 'Save changes'}
+            {save.pending ? 'Saving…' : 'Save changes'}
           </Button>
         </>
       }

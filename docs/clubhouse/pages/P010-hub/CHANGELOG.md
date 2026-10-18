@@ -1,5 +1,22 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Posting…" (CH-10402), "Saving…" (CH-10403, CH-10406),
+  "Assigning…" (CH-10404), and "Saving…" / "Deleting…" in the
+  trip editor and its delete question.
+
 ## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
 
 ```text

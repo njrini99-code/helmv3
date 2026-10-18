@@ -59,7 +59,7 @@ export function InlineNotice({
         {!covered && onRetry && (
           <div className="ch-notice__act">
             <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={retry} disabled={retrying}>
-              {retrying ? 'Trying again' : 'Try again'}
+              {retrying ? 'Trying again…' : 'Try again'}
             </Button>
           </div>
         )}
@@ -218,7 +218,7 @@ export function RouteErrorView({
           )}
           <div className="ch-empty-page__a">
             <Button variant="primary" leftIcon={RotateCw} onClick={onRetry} disabled={isRetrying} feel="commit">
-              {isRetrying ? 'Trying again' : reload ? 'Reload' : 'Try again'}
+              {isRetrying ? 'Trying again…' : reload ? 'Reload' : 'Try again'}
             </Button>
             {homePath && (
               <Button variant="secondary" leftIcon={place ? ChevronLeft : House} href={homePath}>

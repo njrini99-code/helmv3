@@ -1336,7 +1336,7 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('link', { name: 'Back to Home' }).getAttribute('href')).toBe('/golf/dashboard');
     rerender(view({ kind: 'unknown', isRetrying: true, retryCount: 1 }));
-    expect((screen.getByRole('button', { name: 'Trying again' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Trying again…' }) as HTMLButtonElement).disabled).toBe(true);
     rerender(view({ kind: 'chunk', isRetrying: false, retryCount: 2 }));
     expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
     expect(screen.getByText('Tried again 2 times.')).toBeTruthy();

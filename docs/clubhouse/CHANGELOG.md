@@ -1,5 +1,18 @@
 # Clubhouse changelog
 
+## 2026-10-18 — Toasts that stay out of the way and keep their promises
+
+`ui/Toast.tsx`: a toast can carry `onExpire`, run once when it closes without
+its action (time out, dismiss, swipe, replace, overflow), so a deferred write
+happens exactly when its Undo leaves the screen; Calendar's drag-move Undo uses
+it, and an Undo pressed after the write says "Already saved. Drag it back to
+undo." A `replace` key drops a live toast of the same kind (CH-1910), so
+"Muted / Notifications back on / Muted" no longer stack. Devices with hover get
+a Dismiss X, and Esc closes a toast that holds focus (CH-1817). `ui.css` and
+`shell.css` lift the toast stack above the Messages composer by its measured
+height (`--ch-ms-comp-h`), so a toast never sits on Send. Pending labels end
+in "…" everywhere.
+
 ## 2026-10-18 — Dynamic Type reaches phone text
 
 Phone text in the page sheets (messages, calendar, hub, home, qualifiers,

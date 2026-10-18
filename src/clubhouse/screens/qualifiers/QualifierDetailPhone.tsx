@@ -222,7 +222,7 @@ export function QualifierDetailPhone({
                 });
               }}
             >
-              {reopenPending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
+              {reopenPending ? <span data-ch-code="CH-09406">Reopening…</span> : 'Reopen qualifier'}
             </Button>
           )}
         </div>

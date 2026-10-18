@@ -402,7 +402,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
               disabled={start.pending}
               onClick={() => void start.run()}
             >
-              {start.pending ? <span data-ch-code="CH-09408">Starting</span> : 'Start selecting'}
+              {start.pending ? <span data-ch-code="CH-09408">Starting…</span> : 'Start selecting'}
             </Button>
           </>
         }
@@ -426,7 +426,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
               disabled={confirm.pending}
               onClick={() => void confirm.run()}
             >
-              {confirm.pending ? <span data-ch-code="CH-09408">Confirming</span> : 'Confirm squad'}
+              {confirm.pending ? <span data-ch-code="CH-09408">Confirming…</span> : 'Confirm squad'}
             </Button>
           </>
         }
@@ -452,7 +452,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                 if (removing) void remove.run(removing);
               }}
             >
-              {remove.pending ? <span data-ch-code="CH-09408">Removing</span> : 'Remove'}
+              {remove.pending ? <span data-ch-code="CH-09408">Removing…</span> : 'Remove'}
             </Button>
           </>
         }
@@ -502,7 +502,7 @@ function TieRow({ c, stage, full, choose }: { c: ChQCandidate; stage: 0 | 1 | 2;
       <ToPar value={c.toPar} />
       {stage === 1 && (
         <Button size="sm" variant="ghost" disabled={act.pending || (!c.onScore && full)} onClick={() => void act.run(!c.onScore)}>
-          {act.pending ? <span data-ch-code="CH-09408">Saving</span> : c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
+          {act.pending ? <span data-ch-code="CH-09408">Saving…</span> : c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
         </Button>
       )}
     </li>
@@ -600,7 +600,7 @@ function PickDialog({
               void act.run(who, reason.trim());
             }}
           >
-            {act.pending ? <span data-ch-code="CH-09408">Saving</span> : 'Save pick'}
+            {act.pending ? <span data-ch-code="CH-09408">Saving…</span> : 'Save pick'}
           </Button>
         </>
       }

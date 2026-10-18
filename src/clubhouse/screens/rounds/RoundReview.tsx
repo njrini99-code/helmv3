@@ -272,7 +272,7 @@ function HoleCard({
                 <div>
                   <b>{[s.kind, s.club].filter(Boolean).join(' · ')}</b>
                   <span>
-                    {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to].filter(Boolean).join(', ')].filter(Boolean).join(' → ')}
+                    {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to && `${s.to} left`].filter(Boolean).join(' · ')].filter(Boolean).join(' → ')}
                     {s.miss ? ` · ${s.miss}` : ''}
                   </span>
                   {s.read && <em>{s.read}</em>}
@@ -498,7 +498,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           }
         >
           {points.length >= 2 ? (
-            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Move across it to read a hole, click one to see its shots.">
+            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Pick a hole to read it and see its shots.">
               <ScoreFlow
                 holes={r.holes}
                 outScore={r.front.score}

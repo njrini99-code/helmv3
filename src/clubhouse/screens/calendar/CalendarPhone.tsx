@@ -6,7 +6,7 @@ import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
-import { IconButton } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
@@ -114,7 +114,7 @@ export function CalendarPhone({
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
           <Swap swapKey={pv}>
-            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} range={data.range} />}
+            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} range={data.range} onNew={onNew} />}
             {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />}
             {pv === 'list' &&
               (events.some((e) => e.date >= now.date) ? (
@@ -146,6 +146,7 @@ function DayView({
   coach,
   range,
   failed,
+  onNew,
 }: {
   anchor: string;
   events: ChCalEvent[];
@@ -156,6 +157,8 @@ function DayView({
   onDay: (date: string) => void;
   onOpen: (id: string, date: string) => void;
   coach: boolean;
+  /** New event on a day (coach): the empty day's action. */
+  onNew?: (date: string) => void;
   /** The dates the page has loaded: a neighbouring day outside it waits for its week instead of reading as empty. */
   range: { from: string; to: string };
   /** The events didn't load (CH-6201): the strip and the week arrows still move the page, with no counts and no swipe,
@@ -176,7 +179,7 @@ function DayView({
         </h3>
       </div>
     ) : (
-      <DayPage date={date} events={events} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined} />
+      <DayPage date={date} events={events} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined} onNew={live ? onNew : undefined} />
     );
   return (
     <>
@@ -241,6 +244,7 @@ function DayPage({
   coach,
   onWeek,
   failed,
+  onNew,
 }: {
   date: string;
   events: ChCalEvent[];
@@ -253,6 +257,8 @@ function DayPage({
   onWeek?: (dir: 1 | -1) => void;
   /** The events didn't load: the heading and arrows stay, no count, and the notice in the list's place. */
   failed?: ReactNode;
+  /** The day on show's New event (coach); the neighbouring days drawn beside it for a swipe have none. */
+  onNew?: (date: string) => void;
 }) {
   const anchor = date;
   const list = events.filter((e) => e.date === anchor).sort(byStart);
@@ -273,7 +279,8 @@ function DayPage({
         <h3>
           {dowOf(anchor)} {dayNum(anchor)} {monthName(anchor)}
         </h3>
-        {!failed && (
+        {/* An empty day has no "0 events": the empty state under it says so. */}
+        {!failed && list.length > 0 && (
           <span className="ch-num">
             {team.length} {team.length === 1 ? 'event' : 'events'}
             {blocks > 0 ? ` · ${blocks} ${coach ? (blocks === 1 ? 'class or busy block' : 'classes or busy blocks') : blocks === 1 ? 'class' : 'classes'}` : ''}
@@ -291,7 +298,20 @@ function DayPage({
       {failed ? (
         failed
       ) : !list.length ? (
-        <EmptyState compact code="CH-6308" icon={CalendarDays} title="Nothing on this day" body={coach ? 'Tap + to plan something for the team.' : 'Events your coach invites you to show here.'} />
+        <EmptyState
+          compact
+          code="CH-6308"
+          icon={CalendarDays}
+          title="Nothing on this day"
+          body={coach ? 'Plan something for the team.' : 'Events your coach invites you to show here.'}
+          action={
+            coach && onNew ? (
+              <Button size="sm" leftIcon={Plus} onClick={() => onNew(anchor)}>
+                New event
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <ol className="ch-calm-agenda">
           {list.map((e, i) => {

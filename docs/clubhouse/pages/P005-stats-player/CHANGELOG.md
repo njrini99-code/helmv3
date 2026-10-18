@@ -1,5 +1,21 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Adding…" (CH-5401) and "Accepting…" / "Declining…" (CH-5404)
+  while those writes run.
+
 ## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
 
 ```text

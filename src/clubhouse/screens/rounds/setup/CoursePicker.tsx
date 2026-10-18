@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, Flag, Plus, Search } from 'lucide-react';
 import { haptic } from '../../../lib/haptics';
+import { useChPhone } from '../../../lib/use-phone';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
 import { Modal } from '../../../ui/Modal';
@@ -51,6 +52,7 @@ export function CoursePicker({
   onAddCourse: () => void;
 }) {
   const [course, setCourse] = useState<ChSetupCourse | null>(initialCourse);
+  const phone = useChPhone();
   useEffect(() => {
     if (open) setCourse(initialCourse);
   }, [open, initialCourse]);
@@ -86,9 +88,10 @@ export function CoursePicker({
       // Typing a course in is in the head's corner, always in reach (owner, 2026-10-16), not under the whole library.
       action={
         course ? undefined : (
-          <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" onClick={onAddCourse}>
+          // The phone head says "Add" so the title stays on one line at 390; the name stays whole.
+          <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" aria-label="Add a course" onClick={onAddCourse}>
             <Icon icon={Plus} size={14} />
-            <span>Add a course</span>
+            <span>{phone ? 'Add' : 'Add a course'}</span>
           </button>
         )
       }
@@ -240,7 +243,7 @@ function TeeList({ course, listTees, onBack, onPick }: { course: ChSetupCourse; 
               </span>
               <span className="ch-rsu-tee__y">
                 <b>{t.yards ? t.yards.toLocaleString('en-US') : '—'}</b>
-                <em>yds</em>
+                {t.yards ? <em>yds</em> : null}
               </span>
               <span className="ch-rsu-tee__f">
                 <span>
