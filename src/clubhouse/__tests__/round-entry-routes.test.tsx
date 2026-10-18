@@ -613,7 +613,7 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
   it('CH-11910 every hole is in but the finish sheet is closed: a note offers it again', async () => {
     const s = fakeSession({ pendingFinalStats: [], showFinishConfirm: false });
     runtime(s);
-    await userEvent.setup().click(within(code('CH-11910')!).getByRole('button', { name: 'Review and submit' }));
+    await userEvent.setup().click(within(code('CH-11910')!).getByRole('button', { name: 'Review and post' }));
     expect(s.setShowFinishConfirm).toHaveBeenCalledWith(true);
     runtime(fakeSession({ pendingFinalStats: [], showFinishConfirm: true }));
     expect(document.querySelectorAll('[data-ch-code="CH-11910"]')).toHaveLength(1);

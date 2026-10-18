@@ -1,5 +1,21 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-18 — Wave 8: the calendar pick's press
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- The calendar line's pick takes the row press tint a beat after the finger
+  lands, as a Ledger row does.
+
 ## 2026-10-18 — Wave 6: next steps, the calendar line and Email and Call
 
 ```text

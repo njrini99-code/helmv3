@@ -1,5 +1,27 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-18 — Wave 8: premium details, Filter on the column edge
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Desktop: Filter's icon starts on the column's edge
+  (`.ch-btn--flush-start`); the phone filter bar is unchanged.
+- Phone: the note under a panel ("2 legs are losing strokes…") is the
+  secondary ink, not green (green is gains only).
+- Phone header: each part of "Sophomore · 21 rounds this season · 3.9 hcp"
+  keeps to one line and the dot stays at a line's end.
+- Phone header: the ringed coin is inset by its 4px ring to the column edge.
+- Phone: the filter button matches the window switch's 40px track and radius.
+
 ## 2026-10-18 — Wave 7: player stats trend
 
 ```text

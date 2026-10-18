@@ -448,6 +448,16 @@ describe('Settings · 83xx empty', () => {
     expect(screen.getByRole('button', { name: 'Add photo' })).toBeTruthy();
     expect(document.querySelector('.ch-set-photo .ch-avatar')?.textContent).toBe('MR');
   });
+  it('a photo that does not load falls back to the monogram, and Replace still applies (wave 7 premium #12)', () => {
+    const data = coachData();
+    setup({ data: { ...data, profile: { value: { ...(data.profile.value as object), avatarUrl: 'https://x.test/gone.png' }, error: false } } as ChSettingsData });
+    const img = document.querySelector('.ch-set-photo img')!;
+    expect(img).toBeTruthy();
+    fireEvent.error(img);
+    expect(document.querySelector('.ch-set-photo img')).toBeNull();
+    expect(document.querySelector('.ch-set-photo .ch-avatar')?.textContent).toBe('MR');
+    expect(screen.getByRole('button', { name: 'Replace photo' })).toBeTruthy();
+  });
 });
 
 describe('Settings · 84xx loading', () => {

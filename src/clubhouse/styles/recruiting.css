@@ -1992,11 +1992,17 @@
   font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-600);
   cursor: pointer;
+  transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-rec-cal__pick:hover {
     background: var(--ch-bg-hover);
   }
+}
+/* A press tints the pick a beat after the finger lands, as a Ledger row does (CH-1606). */
+.ch-rec-cal__pick:active {
+  background-color: var(--ch-ledger-row-press);
+  transition-delay: var(--ch-dur-press-delay);
 }
 .ch-rec-cal__pick:focus-visible {
   outline: 2px solid var(--ch-border-focus);

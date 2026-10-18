@@ -1697,7 +1697,7 @@ a.ch-rd-sc:focus-visible {
   .ch-rd.is-phone .ch-rd-season__big b {
     font-size: 48px;
     font-weight: 600;
-    letter-spacing: -0.055em;
+    letter-spacing: -0.035em;
   }
   .ch-rd.is-phone .ch-rd-season__f {
     padding: 12px 0;
@@ -3169,16 +3169,37 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   min-width: 0;
   max-width: 100%;
 }
-@container chrv (max-width: 640px) {
-  /* The pictures are drawn on a 720 unit canvas: on a phone their words are set larger so they still read. */
-  .ch-rv .ch-rzsvg text {
-    font-size: 21px;
+/* The pictures are drawn on a 720 unit canvas, so their words are sized by each picture's own width (its stage or plate is
+   the `chrz` container, whose content box is the drawing's width), not the review's: two side by side on a desktop are
+   about 510px each. Each step keeps the words at about 11px on screen or more. The shot numbers inside the trail's dots
+   keep their size (they fit the dot). */
+.ch-rv .ch-rzstage,
+.ch-rv .ch-rzplate {
+  container: chrz / inline-size;
+}
+@container chrz (max-width: 720px) {
+  .ch-rv .ch-rzsvg text:not(.ch-rzsvg__in) {
+    font-size: 13.5px;
   }
-  .ch-rv .ch-rzsvg text[font-weight='700'] {
-    font-size: 22px;
+  .ch-rv .ch-rzsvg text[font-weight='700']:not(.ch-rzsvg__in) {
+    font-size: 14px;
   }
 }
-@container chrv (max-width: 640px) {
+@container chrz (max-width: 600px) {
+  .ch-rv .ch-rzsvg text:not(.ch-rzsvg__in) {
+    font-size: 16.5px;
+  }
+  .ch-rv .ch-rzsvg text[font-weight='700']:not(.ch-rzsvg__in) {
+    font-size: 17px;
+  }
+}
+@container chrz (max-width: 480px) {
+  .ch-rv .ch-rzsvg text:not(.ch-rzsvg__in) {
+    font-size: 22px;
+  }
+  .ch-rv .ch-rzsvg text[font-weight='700']:not(.ch-rzsvg__in) {
+    font-size: 22.5px;
+  }
   .ch-rv .ch-rzsvg__hint {
     display: none;
   }
@@ -3186,9 +3207,9 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 /* A phone: the pictures are about 290px wide, so their words are set at 31 units (about 12px on screen) and the stages
    give the drawing more of the width. Every other hole number and score tick gives way where they would touch
    (RoundZones `ch-rzsvg__alt`); the trail lays its own labels out at this size. */
-@container chrv (max-width: 440px) {
-  .ch-rv .ch-rzsvg text,
-  .ch-rv .ch-rzsvg text[font-weight='700'] {
+@container chrz (max-width: 360px) {
+  .ch-rv .ch-rzsvg text:not(.ch-rzsvg__in),
+  .ch-rv .ch-rzsvg text[font-weight='700']:not(.ch-rzsvg__in) {
     font-size: 31px;
   }
   .ch-rv .ch-rzsvg .ch-rzsvg__alt {
@@ -3646,7 +3667,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   .ch-rd[data-canopy] .ch-rd-season__big b {
     order: 1;
     font: 600 58px/0.92 var(--ch-font-sans);
-    letter-spacing: -0.058em;
+    letter-spacing: -0.035em;
     font-variation-settings: 'wdth' 90;
   }
   .ch-rd[data-canopy] .ch-rd-season__big::after {
@@ -3770,22 +3791,26 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   fill: var(--ch-rd-chip);
   stroke: var(--ch-rd-chip-ring);
 }
+/* The ribbon is drawn on a 640 unit canvas about 516px wide on a desktop: its words are set at 13.75 to 14 units so they
+   read at 11px or more there (the phone's narrower canvas sets its own, below). */
 .ch-rd .ch-rd-stage .ch-rd-rib__t {
   fill: var(--ch-rd-soft);
-  font-size: 12px;
+  font-size: 13.75px;
   font-weight: 500;
 }
 .ch-rd .ch-rd-stage .ch-rd-rib__t.is-par {
   fill: var(--ch-rd-ink);
   font-weight: 700;
 }
+/* The average's words fill a 90 unit chip, so they stay a step smaller and keep its ends clear (+12.4 still fits). */
 .ch-rd .ch-rd-stage .ch-rd-rib__t.is-avg {
   fill: var(--ch-rd-avg-ink);
+  font-size: 13px;
   font-weight: 600;
 }
 .ch-rd .ch-rd-stage .ch-rd-rib__v {
   fill: var(--ch-rd-ink);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 600;
 }
 .ch-rd .ch-rd-stage .ch-rd-rib__v.is-under {
@@ -3793,7 +3818,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 }
 .ch-rd .ch-rd-stage .ch-rd-rib__d {
   fill: var(--ch-rd-ink);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 600;
 }
 .ch-rd .ch-rd-stage .ch-rd-rib rect.is-even {

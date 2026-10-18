@@ -1,5 +1,23 @@
 # P003 — Roster: changelog
 
+## 2026-10-18 — Wave 8: premium details
+
+```text
+Design package: none (wave-7 premium review, items 10, 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-7 premium)
+
+- Phone rows: the class year stays plain and only the note takes its tone
+  ("Sophomore" in ink, "Scoring up 2.1" in amber), `RosterPhone.tsx`.
+- Phone rows: the ringed coin is inset by its 3px ring, so the ring meets the
+  column's 20px edge (`roster.css`); the skeleton's coin is inset the same.
+
 ## 2026-10-18 — Wave 7: player Roster coaches
 
 ```text

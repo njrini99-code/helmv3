@@ -65,6 +65,16 @@ describe('useThreadAnchor', () => {
     expect(el.scrollTop).toBe(2000);
   });
 
+  it('marks the thread scrolled off its top, so its top edge fades under the header (wave 7 premium #19)', () => {
+    render(<Thread convId="a" count={10} />);
+    geometry(2000, 0);
+    expect(el.classList.contains('is-scrolled')).toBe(false);
+    geometry(2000, 300);
+    expect(el.classList.contains('is-scrolled')).toBe(true);
+    geometry(2000, 0);
+    expect(el.classList.contains('is-scrolled')).toBe(false);
+  });
+
   it('says when the reader is away from the end with nothing new, for Jump to latest (wave 5 #17)', () => {
     render(<Thread convId="a" count={10} />);
     expect(screen.queryByText('away from the end')).toBeNull();

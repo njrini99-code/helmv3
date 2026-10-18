@@ -3,6 +3,7 @@ import { Fragment, type ReactNode } from 'react';
 import type { ChSgChange } from '../../data/stats-common';
 import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
+import { withPointSpan } from '../../ui/point-span';
 import { SerifText } from '../../ui/SerifText';
 import { monotonePath } from '../../lib/chart';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
@@ -101,7 +102,7 @@ function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
       <span className={'ch-fg__v ch-num' + (it.tone ? ` ch-${it.tone}` : '')}>
         {/* A new window's figure crossfades in where the old one was (CH-5604, CH-4604). */}
         <Swap swapKey={`${it.value}${it.unit ?? ''}`} inline>
-          {it.value}
+          {lead ? withPointSpan(it.value) : it.value}
           {it.unit && it.value !== NO_DATA && <small>{it.unit}</small>}
         </Swap>
       </span>

@@ -37,6 +37,8 @@ export interface ChHomeDay {
   /** Team events that day, excluding personal class blocks. */
   eventCount: number;
   hasCompetition: boolean;
+  /** The day's competition, for its mark (calendar TYPE_ICON): a tournament outranks a qualifier on the same day. */
+  competitionType: 'tournament' | 'qualifier' | null;
 }
 
 export interface ChAgendaRow {
@@ -519,6 +521,11 @@ export async function loadHomeWeek(
       isToday: date === today,
       eventCount: dayEvents.length,
       hasCompetition: dayEvents.some((e) => COMPETITION_TYPES.has(e.event_type)),
+      competitionType: dayEvents.some((e) => e.event_type === 'tournament')
+        ? 'tournament'
+        : dayEvents.some((e) => e.event_type === 'qualifier')
+          ? 'qualifier'
+          : null,
     };
   });
 

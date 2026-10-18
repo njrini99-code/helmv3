@@ -402,7 +402,13 @@ export function RosterPhoneRow({
           <Avatar name={p.name} size={40} />
           <span className="ch-rsm-row__b">
             <b>{p.name}</b>
-            <span className={note?.tone ? `is-${note.tone}` : undefined}>{[p.classYear, note?.text].filter(Boolean).join(' · ') || ' '}</span>
+            {/* The class year stays plain; only the note takes its tone (amber for a slide, green for a gain). */}
+            <span>
+              {p.classYear}
+              {p.classYear && note?.text ? ' · ' : null}
+              {note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : null}
+              {!p.classYear && !note?.text ? ' ' : null}
+            </span>
           </span>
           {p.trend.length >= 3 && (
             <span className="ch-rsm-row__spark" aria-hidden="true">

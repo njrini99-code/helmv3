@@ -168,9 +168,7 @@ function CourseList({
                   <span className="ch-cpk__card">
                     {/* The course's own photo (one its team uploaded, or the real course's), never a stand-in scene: a
                         course without one is a quiet tile with the flag (owner, 2026-10-16). */}
-                    <span className={'ch-cpk__media' + (c.image ? '' : ' is-blank')}>
-                      {c.image ? <img src={c.image} alt="" loading="lazy" decoding="async" /> : <Icon icon={Flag} size={20} />}
-                    </span>
+                    <CourseMedia image={c.image} />
                     <span className="ch-cpk__row">
                       <span className="ch-cpk__b">
                         <b>{c.name}</b>
@@ -267,5 +265,16 @@ function TeeList({ course, listTees, onBack, onPick }: { course: ChSetupCourse; 
         </div>
       )}
     </div>
+  );
+}
+
+/** A course's photo, or the quiet flag tile when it has none or its photo doesn't load (a broken image never shows). */
+function CourseMedia({ image }: { image: string | null | undefined }) {
+  const [broken, setBroken] = useState<string | null>(null);
+  const src = image && image !== broken ? image : null;
+  return (
+    <span className={'ch-cpk__media' + (src ? '' : ' is-blank')}>
+      {src ? <img src={src} alt="" loading="lazy" decoding="async" onError={() => setBroken(src)} /> : <Icon icon={Flag} size={20} />}
+    </span>
   );
 }

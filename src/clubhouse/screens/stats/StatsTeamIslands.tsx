@@ -1,6 +1,7 @@
 'use client';
 
 import { useHeroTone } from '../../ui/PageHero';
+import { withPointSpan } from '../../ui/point-span';
 import { ArrowDownRight, ArrowUpRight, CalendarRange, Download, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useId, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
@@ -142,7 +143,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
       <WindowSwitch value={useShownWindow()} onChange={go} custom={hasRange(filter)} />
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
-        <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)}>
+        <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)} className="ch-btn--flush-end">
           Export
         </Button>
       )}
@@ -233,8 +234,9 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const all = [...team, ...lines.flatMap((l) => l.v)].filter((v): v is number => v != null);
   const w = 900;
   const h = 300;
-  const padL = 38;
-  const padR = 16;
+  // Room for a tick such as −1.5, and for half the last week's date, at the chart's tick size (stats.css `.ch-sgt__svg .ch-tick`).
+  const padL = 46;
+  const padR = 28;
   const padT = 16;
   const padB = 28;
   // Par is what the window's rounds were played against (the average score less the average to par), not a number written here.
@@ -348,7 +350,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           <span className="ch-sgt__row">
             <b className={'ch-sgt__n ch-num' + (!isSg || leadValue == null ? '' : leadValue >= 0 ? ' ch-gain' : ' ch-loss')}>
               <Swap swapKey={`${lens}${leadText}`} inline>
-                {leadText}
+                {withPointSpan(leadText)}
               </Swap>
             </b>
             {lead?.delta == null && lead?.context && (
@@ -537,7 +539,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                 <g aria-hidden="true" className="ch-sgt__scrub">
                   <line x1={x(scrub)} x2={x(scrub)} y1={padT} y2={h - padB} />
                   <circle cx={x(scrub)} cy={y(team[scrub]!)} r={5} />
-                  <text x={Math.min(Math.max(x(scrub), padL + 44), w - padR - 44)} y={padT - 3} textAnchor="middle">
+                  <text x={Math.min(Math.max(x(scrub), padL + 54), w - padR - 54)} y={padT - 3} textAnchor="middle">
                     {data.weeks[scrub]} · {fmt(team[scrub]!)}
                   </text>
                 </g>

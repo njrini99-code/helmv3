@@ -1,5 +1,30 @@
 # P007 — Messages: changelog
 
+## 2026-10-18 — Wave 8: premium details
+
+```text
+Design package: none (wave-7 premium review, items 15, 18, 19, 21)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-7606 (wording: the chosen chip takes the green fill)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-7 premium)
+
+- Phone inbox filters take the Qualifiers chips: a surface pill with a
+  hairline, the chosen one the green fill (it still fades in over the quick
+  beat, CH-7606), and Unread's count as its own figure ("Unread 2").
+- Phone inbox search is the kit's field, as Qualifiers draws it (36px drawn,
+  44px reach); the tinted skin and its 2px inset fill are gone.
+- The phone skeleton draws the 36px field and 36px chips, so nothing shifts
+  when the inbox arrives.
+- A bubble's name and time start (or end) on its text's 14px inset (were 12px
+  and 6px), desktop and phone.
+- A thread scrolled off its top fades into the header over 16px instead of
+  being cut off (`use-thread-anchor` toggles `.is-scrolled`).
+
 ## 2026-10-18 — Wave 7: player Messages preview
 
 ```text

@@ -975,8 +975,13 @@
     outline: 2px solid var(--ch-border-focus);
     outline-offset: -2px;
   }
+  /* Inset by the ring's 3px, so the ring (not the coin) meets the column's 20px edge; the skeleton's coin sits there too. */
   .ch-rsm-row .ch-avatar {
+    margin-inline-start: 3px;
     box-shadow: 0 0 0 2px var(--ch-workspace), 0 0 0 3px var(--ch-champagne-rule);
+  }
+  .ch-rsm-row > .ch-skel:first-child {
+    margin-inline-start: 3px;
   }
   .ch-rsm-row__b {
     display: flex;
@@ -999,10 +1004,10 @@
     color: var(--ch-text-tertiary);
     overflow-wrap: anywhere;
   }
-  .ch-rsm-row__b > span.is-warning {
+  .ch-rsm-row__b > span > .is-warning {
     color: var(--ch-chart-loss);
   }
-  .ch-rsm-row__b > span.is-positive {
+  .ch-rsm-row__b > span > .is-positive {
     color: var(--ch-chart-gain);
   }
   .ch-rsm-row__spark {

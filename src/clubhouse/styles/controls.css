@@ -1015,3 +1015,19 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     font-size: max(16px, calc(16 * var(--ch-type-k))) !important;
   }
 }
+
+/* A ghost button on a column's edge: its label lines up with the column, not its padding (wave 7 premium, row 13).
+   The margin cancels the button's inline padding at its size (--ch-btn-pad-x, ui.css); the hover and press tint still
+   reach past the words. */
+.ch-btn.ch-btn--flush-start {
+  margin-inline-start: calc(-1 * var(--ch-btn-pad-x, 14px));
+}
+.ch-btn.ch-btn--flush-end {
+  margin-inline-end: calc(-1 * var(--ch-btn-pad-x, 14px));
+}
+
+/* A hero figure's decimal point (ui/point-span.tsx): room on each side, so a display figure's tight tracking never
+   draws the point against the digits ("73.4" read "734"). */
+.ch-num__pt {
+  margin-inline: 0.06em;
+}

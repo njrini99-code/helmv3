@@ -235,23 +235,26 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
 
 
 /**
- * The phone's top and bottom edges carry the app's colour (F-49): green under the status bar on the
- * hero Home, the phone ivory elsewhere. theme-color tints the browser chrome; the html background
- * is what newer Safari samples and what the rubber band shows. Both are put back on unmount.
+ * The phone's top and bottom edges carry the app's colour (F-49): the hero bar's green under the
+ * status bar on the hero Home, the phone ivory elsewhere. theme-color tints the browser chrome; the
+ * html background is what newer Safari samples and what the rubber band shows. Both are put back on
+ * unmount.
  */
 /** The two edge colours, read once per theme. */
 let edgeCache: { theme: string; page: string; green: string } | null = null;
 
 /**
- * The page and green tokens, as the theme has them. They change only with the theme, so they are read once per theme:
- * read on every hero change, getComputedStyle re-styled the page that had just arrived inside the section switch (25ms
- * of a switch to My stats' 125ms of script at 4x CPU, Chromium, production build, 2026-10-15).
+ * The page and green tokens, as the theme has them. The green is the hero bar's own (shell.css): green-800 by day, the
+ * frame at night, so the edge never meets the bar a shade off. They change only with the theme, so they are read once
+ * per theme: read on every hero change, getComputedStyle re-styled the page that had just arrived inside the section
+ * switch (25ms of a switch to My stats' 125ms of script at 4x CPU, Chromium, production build, 2026-10-15).
  */
 function edgeTokens(root: Element): { page: string; green: string } {
   const theme = `${document.documentElement.getAttribute('data-fw-theme') ?? ''}|${window.matchMedia('(prefers-color-scheme: dark)').matches}`;
   if (edgeCache?.theme !== theme) {
     const css = getComputedStyle(root);
-    edgeCache = { theme, page: css.getPropertyValue('--ch-bg-page').trim(), green: css.getPropertyValue('--ch-green-800').trim() };
+    const bar = document.documentElement.getAttribute('data-fw-theme') === 'dark' ? '--ch-frame' : '--ch-green-800';
+    edgeCache = { theme, page: css.getPropertyValue('--ch-bg-page').trim(), green: css.getPropertyValue(bar).trim() };
   }
   return edgeCache;
 }

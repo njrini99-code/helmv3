@@ -86,6 +86,9 @@
     color: var(--ch-text-primary);
   }
 }
+.ch-hb-tabs button:active {
+  color: var(--ch-text-primary);
+}
 .ch-hb-tabs button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
@@ -448,13 +451,20 @@
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
-/* Coach: the count opens who hasn't acknowledged (.ch-hb-ann__wait). */
+/* Coach: the count opens who hasn't acknowledged (.ch-hb-ann__wait). A press tints it inside its focus ring's
+   corners, a beat after the finger lands (CH-1606). */
 .ch-hb-reads--open {
   min-height: 32px;
   padding: 0;
   border: 0;
+  border-radius: 6px;
   background: none;
   cursor: pointer;
+  transition: background-color var(--ch-dur-press) var(--ch-ease);
+}
+.ch-hb-reads--open:active {
+  background-color: var(--ch-ledger-row-press);
+  transition-delay: var(--ch-dur-press-delay);
 }
 .ch-hb-reads--open[aria-expanded='true'] svg {
   transform: rotate(180deg);
@@ -1396,11 +1406,21 @@
   .ch-hb-ann.is-featured .ch-hb-iconbtn {
     color: var(--ch-on-green-ink-soft);
   }
+  /* The card is green in both themes, so the author's coin keeps the day's neutral (tokens.css): the night coin
+     (#243a2c) sank into the night green. */
+  html[data-fw-theme='dark'] .ch-hb-ann.is-featured .ch-hb-ann__h .ch-avatar {
+    --ch-av-bg: #d9e4d8;
+    --ch-av-fg: #23402f;
+    --ch-av-ring: rgb(35 64 47 / 0.18);
+  }
   .ch-hb-ann.is-featured .ch-hb-iconbtn:active {
     background: rgb(255 255 255 / 0.08);
   }
   .ch-hb-ann.is-featured .ch-hb-reads {
     color: var(--ch-on-green-ink-soft);
+  }
+  .ch-hb-ann.is-featured .ch-hb-reads--open:active {
+    background-color: rgb(255 255 255 / 0.08);
   }
   .ch-hb-ann.is-featured .ch-hb-reads__t {
     background: rgb(255 255 255 / 0.14);

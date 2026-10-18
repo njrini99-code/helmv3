@@ -57,7 +57,12 @@ export function useThreadAnchor(
   useEffect(() => {
     const s = scroller.current;
     if (!s) return;
+    // Once the thread is scrolled off its top, its top edge fades (messages.css `.ch-ms-scroll.is-scrolled`) instead of
+    // cutting messages off under the header. A class on the scroller, so scrolling never renders the thread.
+    const edge = () => s.classList.toggle('is-scrolled', s.scrollTop > 0);
+    edge();
     const onScroll = () => {
+      edge();
       // A keyboard/composer resize can emit scroll before ResizeObserver runs.
       // Preserve the reader's previous intent until that new geometry is anchored.
       if (viewportHeight.current !== null && viewportHeight.current > 0 && s.clientHeight !== viewportHeight.current) return;

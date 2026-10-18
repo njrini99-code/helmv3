@@ -1,5 +1,31 @@
 # P011 — Rounds: changelog
 
+## 2026-10-18 — Wave 8: premium details
+
+```text
+Design package: none (wave-7 premium review, items 2, 5, 12)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-7 premium)
+
+- Round review charts: each picture's stage or plate is its own size
+  container (`chrz`), so its words are sized by the drawing's width, not the
+  review's. At 1280 the running score and shot trail read at about 11.5px
+  (were 7 to 8.5px); 1024 and 1440 hold about 11.5 to 12.5px; the phone keeps
+  31 units. The trail's dot numerals keep their size.
+- Rounds ribbon (desktop): ticks, values and dates at 13.75 to 14 units, about
+  11px at 1280 (were 9.7 to 10px); the average chip's words at 13.
+- Season hero figure (phone 48px, desktop 58px): tracking eased to −0.035em
+  and the decimal point in its own span (`withPointSpan`), so it no longer
+  touches the 3.
+- Setup course picker: a course photo that doesn't load falls back to the
+  quiet flag tile.
+
 ## 2026-10-18 — Wave 5: the round flow, setup to posted
 
 ```text

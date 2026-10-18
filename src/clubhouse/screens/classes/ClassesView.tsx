@@ -318,7 +318,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       <div className="ch-cl-delall">
         <Button
           variant="ghost"
-          className="ch-cl-danger"
+          className={'ch-cl-danger' + (phone ? '' : ' ch-btn--flush-end')}
           leftIcon={Trash2}
           feel="warning"
           disabled={busy}

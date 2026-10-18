@@ -70,11 +70,6 @@
   flex-wrap: nowrap;
   margin: 0;
 }
-.ch-h-main--desk > .ch-h-head .ch-btn--primary .ch-btn__kbd {
-  color: var(--ch-green-700);
-  background: rgb(15 74 47 / 0.08);
-  box-shadow: inset 0 0 0 1px rgb(15 74 47 / 0.16);
-}
 /* The first sheet follows the title block with the page's own rhythm, where the green dissolves. */
 .ch-h-main--desk > .ch-h-head + .ch-h-sheet,
 .ch-h-main--desk > .ch-h-head + .ch-h-flow {
@@ -1332,7 +1327,8 @@
   }
   .ch-hm-form__top b {
     font: 500 44px/0.9 var(--ch-font-sans);
-    letter-spacing: -0.05em;
+    /* -0.035em, not tighter: the decimal point touched the 3 ("73.4" read "734"); the hero figures share it. */
+    letter-spacing: -0.035em;
     font-variation-settings: 'wdth' 92;
     color: var(--ch-text-primary);
   }
@@ -2260,10 +2256,11 @@
 .ch-ph-nines.ch-scoreboard > .ch-nine + .ch-nine {
   box-shadow: inset 0 1px 0 var(--ch-board-rule);
 }
-/* The card's onward link: a quiet green action at the foot, not a second raised button inside the card. */
+/* The card's onward link: a quiet green action at the foot, not a second raised button inside the card. Its arrow ends
+   on the card's edge (.ch-btn--flush-end). */
 .ch-ph-card__more {
   align-self: flex-end;
-  margin: -4px -8px -6px 0;
+  margin-block: -4px -6px;
 }
 /* Scoring on the phone (.mp-card.mp-paper): the title and meta sit above the card; the card opens on the window picker, then the line, the four figures and the note. */
 .ch-ph-game.is-phone {
@@ -3047,7 +3044,7 @@
   }
   .ch-hm-form__top b {
     font-size:56px;
-    letter-spacing:-.055em;
+    letter-spacing:-.035em;
   }
   .ch-hm-form__top>span:first-child::after {
     content:"Team scoring average · last 10 rounds";
@@ -3643,9 +3640,34 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   .ch-root .ch-hm-day__open:focus-visible::after {
     box-shadow: inset 0 0 0 2px var(--ch-on-green-ink);
   }
+  /* A press on the card deepens its green, as the player's Up next does (a.ch-hm-next:active::after). The link's
+     ::after is the hit area over the words, so the shade is the card's own layer under them; a press on an action
+     leaves the card as it is. */
+  .ch-hm-day::after {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--ch-green-900);
+    opacity: 0;
+    content: '';
+    pointer-events: none;
+    transition: opacity var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hm-day:has(.ch-hm-day__open:active)::after {
+    opacity: 0.38;
+    transition-delay: var(--ch-dur-press-delay);
+  }
   /* P002 D2: 28px coins whose 2px rings just touch, so two initials always clear the next coin. */
   .ch-hm-day__stack .ch-avatar + .ch-avatar {
     margin-left: -2px;
+  }
+  /* The card is green in both themes, so its coins keep the day's neutral (tokens.css): the night coin (#243a2c) sank
+     into the night green. */
+  html[data-fw-theme='dark'] .ch-hm-day .ch-hm-day__stack .ch-avatar {
+    --ch-av-bg: #d9e4d8;
+    --ch-av-fg: #23402f;
+    --ch-av-ring: rgb(35 64 47 / 0.18);
   }
   .ch-hm-day__people {
     flex-wrap: wrap;

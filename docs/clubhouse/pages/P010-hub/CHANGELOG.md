@@ -1,5 +1,23 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-18 — Wave 8: press states and the featured coin
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Dark: the author's coin on the featured (green) announcement keeps the
+  day's neutral, so it no longer sinks into the night green.
+- Presses answer: a tab takes the primary ink, and the coach's read count
+  takes the row press tint (a white wash on the featured card).
+
 ## 2026-10-18 — Wave 7: player Team Hub
 
 ```text

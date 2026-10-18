@@ -8,6 +8,7 @@ import { createContext, useContext, useMemo, useState, type CSSProperties } from
 import type { ChFigure, ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
+import { withPointSpan } from '../../ui/point-span';
 import { EmptyState } from '../../ui/States';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
@@ -232,7 +233,7 @@ function Hero({ figures }: { figures: readonly ChFigure[] }) {
     <dl className="ch-stm-hero">
       <dt>{f.label}</dt>
       {toPar != null && <dd className="ch-stm-hero__par ch-num">{formatToPar(toPar, 1) === 'E' ? 'Even par' : `${formatToPar(toPar, 1)} to par`}</dd>}
-      <dd className="ch-stm-hero__v ch-num">{figureValue(f)}</dd>
+      <dd className="ch-stm-hero__v ch-num">{withPointSpan(figureValue(f))}</dd>
       <dd className="ch-stm-hero__c" aria-hidden={none ? true : undefined}>
         {!none && (
           <>

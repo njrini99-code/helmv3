@@ -442,6 +442,12 @@
   overflow: auto;
   overscroll-behavior: contain;
 }
+/* Scrolled off its top, the thread fades into the header over 16px rather than being cut off under it (use-thread-anchor
+   toggles the class; the shell's canopy fades the same way). */
+.ch-ms-scroll.is-scrolled {
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 16px);
+  mask-image: linear-gradient(180deg, transparent, #000 16px);
+}
 .ch-ms-msgs {
   display: flex;
   flex-direction: column;
@@ -488,8 +494,9 @@
 .ch-ms-msg.is-mine .ch-ms-msg__col {
   align-items: flex-end;
 }
+/* The name and the time under a bubble start (or end) on its text's 14px inset. */
 .ch-ms-msg__who {
-  padding-left: 12px;
+  padding-left: 14px;
   font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
@@ -851,7 +858,7 @@
   outline-offset: -2px;
 }
 .ch-ms-msg__t {
-  padding: 0 6px;
+  padding: 0 14px;
   font: var(--ch-type-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -1583,54 +1590,70 @@
   }
 
   /* Inbox */
-  /* The design's 40px field inside a 44px target: the transparent border is tappable, the fill stops inside it. */
-  .ch-msp-search.ch-search {
-    height: 44px;
-    padding: 0 12px;
-    border: 2px solid transparent;
-    border-radius: 14px;
-    background: var(--ch-ledger-row-hover);
-    background-clip: padding-box;
-    box-shadow: none;
-  }
-  .ch-msp-search input {
-    font: 400 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
-  }
+  /* Search is the kit's field, as Qualifiers draws it (controls.css: 36px drawn, 44px to the finger, 16px text). */
   .ch-msp-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
   }
-  /* A filter is an engraved ring on the parchment; the chosen one takes the green tint and ink. The fill, ring and ink
-     cross over the quick beat as the choice moves (CH-7606; the weight stays, so no chip changes width). */
+  /* The filters are the Qualifiers chips (one treatment across the app): a quiet surface pill with a hairline, the
+     chosen one the green fill and ink, a count as its own figure. The fill is a layer under the label that fades in over
+     the quick beat as the last chip's fades out (CH-7606; a gradient cannot fade as a background, and the weight stays,
+     so no chip changes width). */
   .ch-msp-chip {
     position: relative;
-    height: 34px;
+    z-index: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
     padding: 0 13px;
     border: 0;
     border-radius: 999px;
-    background: transparent;
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+    background: var(--ch-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
     font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
     cursor: pointer;
     transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-msp-chip:active {
-    background: var(--ch-ledger-row-hover);
+  .ch-msp-chip span {
+    color: var(--ch-text-tertiary);
+    transition: color var(--ch-dur-quick) var(--ch-ease), opacity var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-msp-chip::after {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--ch-seg-on-bg);
+    box-shadow: var(--ch-seg-on-shadow);
+    opacity: 0;
+    transition: opacity var(--ch-dur-quick) var(--ch-ease);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-msp-chip:active:not([aria-pressed='true']) {
+    background: var(--ch-bg-subtle);
     transition-duration: var(--ch-dur-press);
   }
-  /* A 44px target around the 34px chip (the 6px gaps shared out, for a short chip such as All). */
+  /* A 44px target around the 36px chip (the 6px gaps shared out, for a short chip such as All). */
   .ch-msp-chip::before {
     content: '';
     position: absolute;
-    inset: -5px -3px;
+    inset: -4px -3px;
   }
   .ch-msp-chip[aria-pressed='true'] {
-    background: var(--ch-ledger-row-press);
-    box-shadow: inset 0 0 0 1px var(--ch-green-ring);
-    color: var(--ch-green-700);
+    box-shadow: inset 0 0 0 1px transparent;
+    color: var(--ch-seg-on-ink);
+  }
+  .ch-msp-chip[aria-pressed='true'] span {
+    color: var(--ch-seg-on-ink);
+    opacity: 0.8;
+  }
+  .ch-msp-chip[aria-pressed='true']::after {
+    opacity: 1;
   }
   .ch-msp .ch-ms-sec {
     display: flex;

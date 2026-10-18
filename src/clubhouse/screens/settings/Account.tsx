@@ -38,6 +38,9 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
   // The coin keeps the saved initials while the name field is being edited or is empty.
   const name = (coach ? f.draft.fullName : `${f.draft.firstName} ${f.draft.lastName}`).trim() || profile.fullName;
   const invalid = profileProblem(data.role, f.draft);
+  // A photo that doesn't load falls back to the initials (the URL stays, so Replace and Remove still apply).
+  const [broken, setBroken] = useState<string | null>(null);
+  const photo = f.draft.avatarUrl && f.draft.avatarUrl !== broken ? f.draft.avatarUrl : null;
 
   return (
     <Card
@@ -57,9 +60,9 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
     >
       <div className="ch-set-photo">
         <span className={'ch-set-photo__img' + (uploading ? ' is-busy' : '')} data-ch-code={f.draft.avatarUrl ? undefined : 'CH-8304'}>
-          {f.draft.avatarUrl ? (
+          {photo ? (
             // A user-uploaded storage URL, shown as a plain image.
-            <img src={f.draft.avatarUrl} alt="" width={64} height={64} />
+            <img src={photo} alt="" width={64} height={64} onError={() => setBroken(photo)} />
           ) : (
             <Avatar name={name || 'You'} size={64} />
           )}

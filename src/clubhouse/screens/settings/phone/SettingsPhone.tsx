@@ -267,6 +267,9 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
   const coach = data.role === 'coach';
   const profile = data.profile.error ? null : data.profile.value;
   const name = profile?.fullName || data.email || 'Your profile';
+  // A photo that doesn't load falls back to the initials.
+  const [broken, setBroken] = useState<string | null>(null);
+  const photo = profile?.avatarUrl && profile.avatarUrl !== broken ? profile.avatarUrl : null;
   const head = data.coachhelm && !data.coachhelm.error ? !!data.coachhelm.value.team?.isHeadCoach : false;
   // The handicap the roster shows (data/season.ts displayHandicap): the index when set, else the handicap.
   const hcp = data.golf && !data.golf.error ? data.golf.value.handicapIndex.trim() || data.golf.value.handicap.trim() : '';
@@ -279,9 +282,9 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
       {/* A profile that didn't load opens Account, where the notice and Try again are. */}
       <button type="button" className="ch-setm-id" onClick={profile ? onProfile : () => onOpen('account')}>
         <span className={'ch-setm-coin' + (coach ? '' : ' is-player')} aria-hidden="true">
-          {profile?.avatarUrl ? (
+          {photo ? (
             // A user-uploaded storage URL, shown as a plain image.
-            <img src={profile.avatarUrl} alt="" width={56} height={56} />
+            <img src={photo} alt="" width={56} height={56} onError={() => setBroken(photo)} />
           ) : (
             initials(name)
           )}

@@ -97,7 +97,7 @@ export function StatsFilter({
   return (
     <section className={'ch-sf' + (phone ? ' is-phone' : '')} aria-label="Round filter">
       <div className="ch-sf__bar">
-        <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm ch-sf__open" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        <button type="button" className={'ch-btn ch-btn--ghost ch-btn--sm ch-sf__open' + (phone ? '' : ' ch-btn--flush-start')} aria-haspopup="dialog" onClick={() => setOpen(true)}>
           <Icon icon={SlidersHorizontal} size={14} />
           <span>Filter</span>
           {chips.length > 0 && <span className="ch-sf__n ch-num" aria-label={`${chips.length} on`}>{chips.length}</span>}

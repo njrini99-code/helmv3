@@ -1,5 +1,26 @@
 # P001 — Shell: changelog
 
+## 2026-10-18 — Wave 8: push bar presses and the dark hero edge
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Phone push bar: Back and the text action dim to half opacity while
+  pressed (a disabled text action does not).
+- Dark phone hero: theme-color and the html background take the bar's own
+  `--ch-frame`; light keeps green-800, the light hero bar's colour.
+- Controls: `.ch-btn--flush-start` / `.ch-btn--flush-end` set a ghost
+  button's label on a column edge by cancelling its inline padding
+  (`--ch-btn-pad-x`, ui.css; 14px until a size sets it).
+
 ## 2026-10-18 — Wave 7: a player's next event
 
 ```text

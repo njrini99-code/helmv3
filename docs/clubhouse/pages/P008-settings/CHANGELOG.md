@@ -1,5 +1,24 @@
 # P008 — Settings: changelog
 
+## 2026-10-18 — Wave 8: premium details
+
+```text
+Design package: none (wave-7 premium review, items 12, 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-7 premium)
+
+- A profile photo that doesn't load falls back to the initials (desktop
+  Account, phone Account sheet and the phone Settings row); Replace and Remove
+  still apply to the saved URL.
+- Phone: the profile row's ringed coin is inset by its 4px ring, so the ring
+  meets the column's 20px edge.
+
 ## 2026-10-18 — Wave 7: player Settings
 
 ```text

@@ -96,7 +96,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
         {!data.week.error && !nothingAhead ? (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
             {/* The board's Today is a small label inside This week, not a section of its own. */}
-            <WeekStrip days={data.week.days} note={data.weekNote} majorIcon={Flag}>
+            <WeekStrip days={data.week.days} note={data.weekNote}>
               <SectionBoundary surface="home.today" label="Today" code="CH-2214">
                 <Today inline list={data.today} now={now} failed={false} quiet={false} canPlan={false} />
               </SectionBoundary>
@@ -187,7 +187,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
             ]}
           />
           {/* The board's "Open recap": the round's own review; My stats when it isn't rebuilt. */}
-          <Button variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} className="ch-ph-card__more">
+          <Button variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} className="ch-ph-card__more ch-btn--flush-end">
             {roundHref(r.id, 'player') ? 'Open recap' : 'My stats'}
           </Button>
         </div>

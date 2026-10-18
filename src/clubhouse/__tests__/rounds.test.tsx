@@ -279,7 +279,8 @@ describe('112401 Rounds library, on screen', () => {
   it('111811 the season figures: average, to par, best, putts and greens from countable 18-hole rounds', () => {
     show(PREVIEW_ROUNDS_IDLE);
     const season = screen.getByRole('region', { name: 'Season scoring' });
-    expect(within(season).getByText('73.4')).toBeTruthy();
+    // The figure's decimal point is its own span (withPointSpan), so the figure is read as one text.
+    expect(season.querySelector('.ch-rd-season__big b')!.textContent).toBe('73.4');
     expect(within(season).getByText('avg · +1.9 to par')).toBeTruthy();
     expect(within(season).getByText('Best').nextSibling!.textContent).toBe('69');
     // P011-D16: the whole course name, not its first word.

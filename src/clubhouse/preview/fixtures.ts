@@ -78,6 +78,8 @@ export const PREVIEW_HOME: ChCoachHome = {
       isToday: dayOfMonth === 14,
       eventCount: eventCount as number,
       hasCompetition: hasCompetition as boolean,
+      // Friday's competition is the Pinehurst qualifier.
+      competitionType: hasCompetition ? ('qualifier' as const) : null,
     })),
     agenda: [
       { id: 'a1', timeLabel: '3:30', title: 'Short-game block', detail: 'Practice green · 6 players', isNext: true, isCompetition: false, when: 'today' },

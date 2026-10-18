@@ -51,6 +51,8 @@ const DAYS: ChPlayerHome['week']['days'] = WEEK.map(([weekday, dayOfMonth, event
   isToday: dayOfMonth === 14,
   eventCount,
   hasCompetition,
+  // Friday's competition is the Pinehurst qualifier.
+  competitionType: hasCompetition ? 'qualifier' : null,
 }));
 void _i;
 void _g;

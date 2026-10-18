@@ -1,5 +1,21 @@
 # P012 — Classes: changelog
 
+## 2026-10-18 — Wave 8: Delete all classes on the column edge
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Desktop: "Delete all classes" ends on the column's edge
+  (`.ch-btn--flush-end`); the phone's full-width row is unchanged.
+
 ## 2026-10-18 — Wave 7: only the meetings the player is on
 
 ```text

@@ -506,6 +506,13 @@
   font: 500 11px var(--ch-font-sans);
   fill: var(--ch-text-tertiary);
 }
+/* The team chart is drawn on a 900 unit canvas about 700px wide at 1280, so its ticks are set in those units: 14.5 reads
+   at about 11px there. The phone keeps its own floor (below). */
+@media (min-width: 821px) {
+  .ch-sgt__svg .ch-tick {
+    font-size: 14.5px;
+  }
+}
 .ch-sgt__ends {
   display: flex;
   flex-direction: column;
@@ -2193,11 +2200,12 @@
     color: var(--ch-text-tertiary);
     text-align: right;
   }
-  /* The one-line reading under a panel (m.css .m-note): italic, green. */
+  /* The one-line reading under a panel (m.css .m-note): italic, in the secondary ink. The board's green read as a gain,
+     but the reading as often says a leg is losing strokes (green is gains only). */
   .ch-stm-note {
     margin: 0;
     font: italic 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
-    color: var(--ch-green-700);
+    color: var(--ch-text-secondary);
     text-wrap: pretty;
   }
   .ch-stm-chart {
@@ -2434,6 +2442,9 @@
     font: var(--ch-type-caption);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
+  }
+  .ch-spm-head p > span {
+    white-space: nowrap;
   }
   .ch-spm-head__msg {
     display: grid;
@@ -3107,12 +3118,14 @@
     flex: 1;
     justify-content: center;
   }
+  /* Drawn as tall as the window switch's 40px track, with its 14px radius, so the row's two controls share one edge;
+     the shared button reach (controls.css) still takes a 44px tap. */
   .ch-stm-controls .ch-sf.is-phone .ch-sf__open {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     padding: 0;
     justify-content: center;
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-control);
   }
@@ -3620,7 +3633,9 @@
     padding: 16px 0 0;
     border-top: var(--ch-ledger-rule-double);
   }
+  /* Inset by the ring's 4px, so the ring (not the coin) meets the column's 20px edge. */
   .ch-stm .ch-spm-head > .ch-avatar {
+    margin-inline-start: 4px;
     box-shadow: var(--ch-ledger-avatar-ring);
   }
   .ch-stm .ch-spm-head h1 {
@@ -4239,7 +4254,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   .ch-stm.is-team .ch-stm-hero__v {
     grid-area: v;
     font: 560 64px/1 var(--ch-font-sans);
-    letter-spacing: -0.045em;
+    letter-spacing: -0.035em;
     color: var(--ch-text-primary);
   }
   .ch-stm.is-team .ch-stm-hero__c {
@@ -4720,7 +4735,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   stroke-width: 2.5;
 }
 .ch-st[data-canopy] .ch-sgt__scrub text {
-  font: 600 12px var(--ch-font-sans);
+  font: 600 14.5px var(--ch-font-sans);
   fill: var(--ch-text-primary);
 }
 
@@ -5218,7 +5233,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   stroke-width: 2;
 }
 .ch-st[data-canopy] .ch-sgt__best text {
-  font: 600 11px var(--ch-font-sans);
+  font: 600 14.5px var(--ch-font-sans);
   fill: var(--ch-champagne-300);
   paint-order: stroke;
   stroke: var(--ch-green-800);

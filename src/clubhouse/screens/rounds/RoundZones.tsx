@@ -68,7 +68,7 @@ export function ScoreFlow({
   const stepBy = hi - lo > 8 ? 2 : 1;
   const ticks: number[] = [];
   for (let v = Math.ceil(lo / stepBy) * stepBy; v <= hi; v += stepBy) ticks.push(v);
-  // On a phone the words are drawn larger (rounds.css, `chrv`), so where they would touch every other tick and hole
+  // On a phone the words are drawn larger (rounds.css, `chrz`), so where they would touch every other tick and hole
   // number gives way (`ch-rzsvg__alt`); par and the odd holes always stay.
   const tickAlt = (v: number) => (H / (hi - lo)) * stepBy < 36 && (v / stepBy) % 2 !== 0;
   const worst = costliest(holes, 1)[0];
@@ -308,7 +308,7 @@ const LIE_COLOR: Record<string, string> = {
   tee: 'var(--ch-stage-line)',
 };
 
-/** The label size the stylesheet gives the picture's words now (larger in a narrow `chrv`), in its own units. */
+/** The label size the stylesheet gives the picture's words now (larger in a narrow `chrz`, the picture's own width), in its own units. */
 function useLabelSize(fallback: number) {
   const ref = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState(fallback);

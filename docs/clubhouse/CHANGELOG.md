@@ -1,5 +1,20 @@
 # Clubhouse changelog
 
+## 2026-10-18 — Premium details: edges, presses, figures and fallbacks
+
+`ui.css`: buttons carry their inline padding as `--ch-btn-pad-x` (14, sm 11,
+lg 20, icon 0); `controls.css` adds `.ch-btn--flush-start` / `--flush-end`,
+which cancel it so a ghost button's label sits on the column edge (Home card
+link, Stats Filter and Export, Delete all classes). `ui/point-span.tsx`
+`withPointSpan` opens the decimal point in hero figures (`.ch-num__pt`), so
+"73.4" no longer reads "734" on Home, Rounds and Stats. Desktop coins under
+about 35px get the phone's initials floor; BackLink's chevron draws at the
+Clubhouse stroke (1.6). `shell.css`: the phone push bar's Back and text action
+dim while pressed, and the dark hero's theme-color and html background take
+the bar's `--ch-frame`. Also: dark coins on green cards, one icon per event
+type on every week strip, chart labels at 11px or more on desktop, image
+fallbacks for course and profile photos, and one filter-chip and search skin.
+
 ## 2026-10-18 — The player's side: privacy, asks and replies
 
 A player sees a meeting only when they are on its invite list (own attendance

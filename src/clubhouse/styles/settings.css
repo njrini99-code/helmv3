@@ -782,7 +782,9 @@
     font: 600 calc(19 * var(--ch-type-k))/1 var(--ch-font-sans);
     transition: opacity var(--ch-dur-base) var(--ch-ease);
   }
+  /* Inset by the ring's 4px, so the ring (not the coin) meets the column's 20px edge. */
   .ch-setm-id > .ch-setm-coin {
+    margin-inline-start: 4px;
     box-shadow: var(--ch-ledger-avatar-ring);
   }
   .ch-setm-coin.is-player {

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Icon } from './Icon';
 
 /**
  * The Ledger section (owner, 2026-10-07: "flush, not so card heavy"): a heading on the canvas over an engraved rule,
@@ -48,7 +49,7 @@ export function Section({
 export function BackLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link href={href} className="ch-backlink">
-      <ChevronLeft size={15} strokeWidth={2.2} aria-hidden="true" />
+      <Icon icon={ChevronLeft} size={15} />
       {children}
     </Link>
   );

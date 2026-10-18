@@ -8,6 +8,7 @@ import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useInViewOnce } from '../../lib/use-in-view';
 import { InlineNotice } from '../../ui/Notices';
+import { withPointSpan } from '../../ui/point-span';
 import { Icon } from '../../ui/Icon';
 
 /** A calendar date (yyyy-mm-dd) as a Date at noon UTC, so no zone moves it a day. */
@@ -406,7 +407,7 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
             Season scoring
           </span>
           <div className="ch-rd-season__big">
-            <b className="ch-num">{formatFixed(season.avg, 1)}</b>
+            <b className="ch-num">{withPointSpan(formatFixed(season.avg, 1))}</b>
             <em>avg · {formatToPar(season.toPar, 1)} to par</em>
           </div>
         </div>

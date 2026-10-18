@@ -2,7 +2,7 @@
 
 import { Info, MessageSquare, Plus, Share } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChWindow } from '../../data/stats-common';
 import { basisWords, clearFilters, hasRange, isFiltered, per18, type ChFilter } from '../../data/stats-filter';
@@ -143,7 +143,19 @@ export function StatsPlayerPhone({
           <h1>{data.name}</h1>
           <p className="ch-num">
             {/* The season's count, said as such: under it the window (Last 10) counts its own rounds ("5 rounds" over "10 countable rounds", 2026-10-14). */}
-            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`].filter(Boolean).join(' · ')}
+            {/* Each part keeps to one line with the dot after it (stats.css): the line breaks only between parts, never
+                "21 rounds this / season", and a wrapped line never starts with a dot. */}
+            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`]
+              .filter(Boolean)
+              .map((part, i, all) => (
+                <Fragment key={i}>
+                  {i > 0 && ' '}
+                  <span>
+                    {part}
+                    {i < all.length - 1 && ' ·'}
+                  </span>
+                </Fragment>
+              ))}
           </p>
         </span>
         {coach && messageHref && (

@@ -202,10 +202,11 @@ describe('Today, on the phone', () => {
     expect(document.querySelectorAll('.ch-hm-tl.is-player > li.is-past')).toHaveLength(2);
   });
 
-  it('says "Up next · Qualifier" on the hero card, and draws a flag on the competition day', () => {
+  it('says "Up next · Qualifier" on the hero card, and marks the competition day with the calendar’s qualifier icon', () => {
     show();
     expect(screen.getByRole('link', { name: /Up next · Qualifier/ })).toBeTruthy();
-    expect(document.querySelector('.ch-hm-week .is-major svg')!.getAttribute('class')).toMatch(/lucide-flag/);
+    // One icon per event type everywhere (calendar/type-icon.ts): the flag is Practice's.
+    expect(document.querySelector('.ch-hm-week .is-major svg')!.getAttribute('class')).toMatch(/lucide-target/);
   });
 });
 

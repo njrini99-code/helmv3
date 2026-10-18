@@ -1,5 +1,31 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-18 — Wave 8: premium details, Filter and Export on the edge
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Desktop: Filter's icon starts on the column's edge
+  (`.ch-btn--flush-start`) and Export's label ends on the head's content
+  edge (`.ch-btn--flush-end`); the phone filter bar is unchanged.
+- Team strokes-gained chart: ticks, week dates, Best and the scrub label are
+  set at 14.5 units on its 900 unit canvas (about 11px at 1280, were 8.5px);
+  `padL`/`padR` make room for "−1.5" and the last date.
+- Phone hero figure: tracking eased to −0.035em, so "73.6" no longer reads
+  "736" (the same value as Home and Rounds).
+- Hero decimals sit in their own span (`withPointSpan`): the phone hero, the
+  desktop strokes-gained card's lead and a game's lead figure.
+- Phone: the filter button is drawn 40px with the window switch's 14px radius,
+  level with its track; the shared button reach keeps a 44px tap.
+
 ## 2026-10-18 — Wave 5: a team with no rounds gets the first run
 
 ```text

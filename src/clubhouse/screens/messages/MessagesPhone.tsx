@@ -246,13 +246,14 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
         <div className="ch-msp-tools">
           <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
           <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
+            {/* The Qualifiers chips: a count is its own figure beside the word (space kept, so it reads "Unread 2"). */}
             {(
               [
-                ["all", "All"],
-                ["unread", `Unread · ${unread}`],
-                ["groups", "Groups"],
-              ] as Array<[ChConvFilter, string]>
-            ).map(([k, l]) => (
+                ["all", "All", null],
+                ["unread", "Unread", unread],
+                ["groups", "Groups", null],
+              ] as Array<[ChConvFilter, string, number | null]>
+            ).map(([k, l, n]) => (
               <button
                 key={k}
                 type="button"
@@ -264,6 +265,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                 }}
               >
                 {l}
+                {n != null && <> <span>{n}</span></>}
               </button>
             ))}
           </div>

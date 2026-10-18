@@ -126,6 +126,9 @@ export function ProfileSheet({
   // The coin keeps the saved initials while the name is being edited or is empty.
   const name = (coach ? draft.fullName : `${draft.firstName} ${draft.lastName}`).trim() || profile.fullName;
   const invalid = profileProblem(data.role, draft);
+  // A photo that doesn't load falls back to the initials (the URL stays, so Replace and Remove still apply).
+  const [broken, setBroken] = useState<string | null>(null);
+  const photo = draft.avatarUrl && draft.avatarUrl !== broken ? draft.avatarUrl : null;
   return (
     <FormSheet
       open={open}
@@ -141,9 +144,9 @@ export function ProfileSheet({
     >
       <div className="ch-setm-photo">
         <span className={'ch-setm-coin is-big' + (uploading ? ' is-busy' : '')} data-ch-code={draft.avatarUrl ? undefined : 'CH-8304'}>
-          {draft.avatarUrl ? (
+          {photo ? (
             // A user-uploaded storage URL, shown as a plain image.
-            <img src={draft.avatarUrl} alt="" width={84} height={84} />
+            <img src={photo} alt="" width={84} height={84} onError={() => setBroken(photo)} />
           ) : (
             initials(name || 'You')
           )}

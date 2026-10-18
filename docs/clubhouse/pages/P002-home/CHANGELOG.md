@@ -1,5 +1,37 @@
 # P002 — Home: changelog
 
+## 2026-10-18 — Wave 8: premium details on Home
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (the week's event types, already read)
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- A competition day in the week strips (desktop, coach phone, player phone)
+  carries its event type's own calendar icon (`TYPE_ICON`): Target for a
+  qualifier, Trophy for a tournament. It was a Trophy on the coach phone and
+  a Flag (Practice's icon) elsewhere. Week days carry `competitionType`; a
+  tournament outranks a qualifier on the same day.
+- Dark: the coins in the coach phone's Next up card keep the day's neutral,
+  so they no longer sink into the night green.
+- The team scoring figure (phone 56px, desktop 64px) sets its decimal point
+  in `.ch-num__pt` (`ui/point-span.tsx`, 0.06em each side) and the phone's
+  tracks at -0.035em, so "73.4" no longer reads "734".
+- Desktop, light: the New event key's "N" chip inherits the primary
+  button's ivory chip (the green-on-green override is gone).
+- Dark phone Home: theme-color and the html background take the hero bar's
+  own colour (`--ch-frame`), not green-800 under a darker bar.
+- A press on the coach phone's Next up card deepens its green (opacity of a
+  layer under the words), as the player's Up next does.
+- The player's "Open recap" / "My stats" link ends on the card's edge
+  (`.ch-btn--flush-end`).
+
 ## 2026-10-18 — Wave 7: player Home privacy, replies and coach asks
 
 ```text
