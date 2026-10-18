@@ -1,5 +1,50 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-18 — Wave 6: honest projections, units and words
+
+```text
+Design package: none (wave-6 CoachHelm review, review6-ch)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads 6 more stats-cache columns; focus areas save the
+                typeset title
+Held items:     Priority vs "Worth closing"; Standing hero "0 of 19 stats"
+```
+
+### Changed (2026-10-18, wave 6)
+
+- Standing: "Most to gain" and the headline never lead with Strokes gained:
+  total (the sum of the rows). A putt band and sand scrambling are sized by
+  the player's own attempts a round from `golf_player_stats_cache`, as their
+  insight cards are; without attempts, a part of the game is capped at what
+  its strokes-gained category is behind (3–5 ft no longer reads 1.7 strokes
+  while all of putting is 0.63). The early notice names the team floor only
+  when a row is short of teammates. Dates and dots no longer break a line.
+- Profile: driver usage and miss side are never a strength or a watch-out.
+- Board and Deep dive: "What’s working" headings, "Needs work" on the tile,
+  and a bare number says what it counts ("gap", "a round", "made").
+  Distances keep their unit on the line ("4–6 ft"). The slope read says
+  "from 4–6 ft", drops its "(n=…)" aside and labels its chart "Make rate,
+  downhill vs level, same distance" (stored rows refresh on the next
+  generator run; until then the page drops their "(n=…)" aside). A
+  proposal says `From the read “…”`. A focus area is saved with the
+  typeset title.
+- Coach board: players with no insights are named; the pulse says "scoring
+  worse over their last three rounds" with "+2.1 strokes".
+- Ask: the trend averages a rate by its sample and names its player; the
+  table column is "Rate". The action card says "On confirm:", "Sent:",
+  "Notifies:" or "Nothing was sent." by its state. The rate-limit notice
+  reads "Too many questions in a row." Below 1440px, opening the evidence
+  moves the chats aside without changing the kept choice.
+
+### Verification (2026-10-18, wave 6)
+
+- Updated and new cases in `coachhelm-standing`, `coachhelm-thread`,
+  `coachhelm-thread-ui`, `coachhelm`, `coachhelm-audit`, `coachhelm-dive`,
+  `coachhelm-profile`; engine: `genome-ui`, `putt-slope-bias`,
+  `program-pulse-movement` (new).
+
 ## 2026-10-18 — Wave 5: pending labels end in “…”
 
 ```text

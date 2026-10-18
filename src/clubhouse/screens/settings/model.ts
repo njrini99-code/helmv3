@@ -191,8 +191,10 @@ export function minutesLabel(m: number): string {
 export interface ChProblem {
   code: string;
   text: string;
+  /** The id of the field it is about, so that field can say it too (aria-invalid and its help line). */
+  field?: string;
 }
-const problem = (code: string, text: string): ChProblem => ({ code, text });
+const problem = (code: string, text: string, field?: string): ChProblem => (field ? { code, text, field } : { code, text });
 
 export function profileProblem(role: 'coach' | 'player', p: { fullName: string; firstName: string; lastName: string }): ChProblem | null {
   if (role === 'coach') return p.fullName.trim() ? null : problem('CH-8101', 'Add your name.');
@@ -214,9 +216,9 @@ export function emailProblem(next: string, current: string | null): ChProblem | 
 }
 
 export function teamProblem(t: ChTeamInfo): ChProblem | null {
-  if (!t.name.trim()) return problem('CH-8108', 'The team needs a name.');
-  if (t.org && !t.org.name.trim()) return problem('CH-8109', 'The school needs a name.');
-  if (t.org && t.org.state.trim() && !/^[A-Za-z]{2}$/.test(t.org.state.trim())) return problem('CH-8110', 'Use the two-letter state code.');
+  if (!t.name.trim()) return problem('CH-8108', 'The team needs a name.', 'set-team-name');
+  if (t.org && !t.org.name.trim()) return problem('CH-8109', 'The school needs a name.', 'set-org-name');
+  if (t.org && t.org.state.trim() && !/^[A-Za-z]{2}$/.test(t.org.state.trim())) return problem('CH-8110', 'Use the two-letter state code.', 'set-org-state');
   return null;
 }
 
@@ -353,6 +355,9 @@ export function distinctStaffTitle(title: string | null | undefined, roleLabel: 
 export function pendingCoachName(c: ChPendingCoach): string {
   return c.fullName?.trim() || c.email || 'Unnamed coach';
 }
+
+/** What declining a request does, said before it is done (CH-8511): the server detaches them, it never deletes the account. */
+export const DECLINE_NOTE = 'Their request comes off the list and they get no access to this team. Their account stays, so they can ask again.';
 
 export interface ChSettingsWrites {
   saveProfile: (p: ChProfileInput) => Promise<ChResult>;

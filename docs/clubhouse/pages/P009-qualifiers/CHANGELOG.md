@@ -1,5 +1,47 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-18 — Wave 6: qualifier form and selections
+
+```text
+Design package: none (wave-6 coach workflow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave 6)
+
+- Form placeholders no longer print like values: the full-contrast block
+  keeps them on the lightest ink, and the samples read "e.g. Pinehurst
+  qualifier", "e.g. Finley GC".
+- "Optional" is the shared `.ch-field__opt` tag (controls.css); the page's
+  own `.ch-qf-optional` and `.ch-qf-label` are gone.
+- End date can't be set before the start date (`min`); the check stays.
+- Paired short fields (start and end, squad and picks) stay two-up on a
+  phone: `.ch-qf-2` columns are `minmax(140px, 1fr)`.
+- Squad size help says the limit: "Players who make the trip, up to 12."
+- A round with no course of its own and no qualifier course reads "Choose
+  one, or set the qualifier's course above".
+- Manage selections: the stage note counts down the picks left ("Choose 1
+  more coach's pick, with a reason, …") and says a missing reason.
+
+### Added (2026-10-18, wave 6)
+
+- Players head: one "Select all" (every active player) or "Clear all" (keeps
+  a player with a round in or a squad place).
+- Manage selections: while a pick is open, each player in the rest of the
+  field has Pick, which opens the pick dialog with them chosen.
+
+### Verification (2026-10-18, wave 6)
+
+- WebKit (Playwright, dev preview; 320, 390, 1280): the name placeholder is
+  `rgb(85 82 75)` against the value's `rgb(20 20 18)`; start and end, squad
+  and picks sit two-up at 390 and 1280 (the desktop Travel squad pair, which
+  stacked before, now does too) and stack at 320 (a 280px column), with no
+  sideways scroll; Pick on Eli Brandt opens the dialog with Eli chosen.
+
 ## 2026-10-18 — Wave 5: pending labels end in “…”
 
 ```text

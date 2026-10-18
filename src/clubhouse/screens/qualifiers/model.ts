@@ -412,13 +412,21 @@ export const FORM_HELP = {
  * What Manage selections is waiting for, by stage (0 standings, 1 picks, 2 confirmed). Its skeleton draws the standings
  * stage's sentence, the commonest way in, so the note's lines wrap where the page's do.
  */
-export function stageNoteText(stage: 0 | 1 | 2, o: { topN: number; picks: number; picksReady?: boolean; nobody?: boolean; tie?: number }): string {
-  const { topN, picks, picksReady = false, nobody = false, tie = 0 } = o;
+export function stageNoteText(
+  stage: 0 | 1 | 2,
+  o: { topN: number; picks: number; made?: number; reasons?: number; picksReady?: boolean; nobody?: boolean; tie?: number },
+): string {
+  // At stage 1 the note counts down (wave-6 #11): `picks` is the picks still to make, `made` those made, `reasons` those made without one.
+  const { topN, picks, made = 0, reasons = 0, picksReady = false, nobody = false, tie = 0 } = o;
   if (stage === 1 && tie > 0) return `Players are level at the last place on score. Give ${plural(tie, 'more place', 'more places')} to confirm the squad.`;
   if (stage === 0) return `Start selecting when the standings are where you want them.${picks ? ` Then choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason.` : ''} The top ${topN} on score are set when you confirm.`;
   if (stage === 1) {
     if (nobody) return 'Nobody has a score in and no pick is made yet, so there is no squad to confirm.';
-    return picksReady ? 'Every pick is made. Confirm the squad to tell the players.' : `Choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason, to confirm the squad.`;
+    if (picksReady) return 'Every pick is made. Confirm the squad to tell the players.';
+    const missing = reasons === 1 ? 'the missing reason' : `the ${reasons} missing reasons`;
+    if (!picks) return `Every pick is chosen. Add ${missing}, then confirm the squad.`;
+    const what = made ? plural(picks, 'more coach’s pick', 'more coach’s picks') : plural(picks, 'coach’s pick', 'coach’s picks');
+    return `Choose ${what}, ${picks === 1 ? 'with a reason' : 'each with a reason'}, to confirm the squad.${reasons ? ` Add ${missing} too.` : ''}`;
   }
   return 'The squad is confirmed, and every entrant has been told whether they made it.';
 }

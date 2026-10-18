@@ -163,7 +163,8 @@ export function ProspectForm({
           id={`${uid}-notes`}
           className="ch-textarea"
           rows={phone ? 4 : 3}
-          placeholder="Where you saw them, what stood out, next steps"
+          // With a Next step field above, the notes don't ask for next steps too.
+          placeholder={nextStep ? 'Where you saw them, what stood out' : 'Where you saw them, what stood out, next steps'}
           value={draft.notes}
           aria-invalid={problems.some((p) => p.field === 'notes') || undefined}
           aria-describedby={problems.some((p) => p.field === 'notes') ? `${uid}-notes-e` : undefined}

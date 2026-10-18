@@ -276,6 +276,9 @@ export function TeamHub({
   );
 
   // ── Coach writes (the three forms are in sheets.tsx, each with its own action) ──
+  // Several files dropped at once land with one summary toast (onUpload), not one each; a failure still has its own, with
+  // Retry. The batch is read when each upload starts, so a Retry pressed later says its own "shared".
+  const batch = useRef(0);
   const upload = useAction(
     'hub.uploadDocument',
     async (f: File) => {
@@ -283,7 +286,7 @@ export function TeamHub({
       if (normalise(res).success) refresh();
       return res;
     },
-    (f) => ({ done: `${f.name} shared with the team`, failed: `Couldn’t upload ${f.name}`, hint: 'Check the file is under 25 MB and try again.', code: 'CH-10008' }),
+    (f) => ({ done: batch.current > 1 ? '' : `${f.name} shared with the team`, failed: `Couldn’t upload ${f.name}`, hint: 'Check the file is under 25 MB and try again.', code: 'CH-10008' }),
   );
   const remove = useAction(
     'hub.delete',
@@ -355,11 +358,15 @@ export function TeamHub({
     });
     if (!sendable.length) return;
     setUploading(true);
+    batch.current = sendable.length;
+    let shared = 0;
     try {
-      for (const f of sendable) await upload.run(f);
+      for (const f of sendable) if ((await upload.run(f)).success) shared += 1;
     } finally {
+      batch.current = 0;
       setUploading(false);
     }
+    if (sendable.length > 1 && shared > 0) toast({ title: shared === 1 ? '1 file shared with the team' : `${shared} files shared with the team` });
   };
   const onConfirmDelete = () => {
     if (confirm) void remove.run(confirm);

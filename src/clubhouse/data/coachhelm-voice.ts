@@ -83,11 +83,13 @@ function toSecondPerson(text: string): string {
 
 /**
  * The stored text is typed on a keyboard; the page sets it in the type the rest of Clubhouse uses: curly apostrophes and
- * quotes, and an en dash between the two ends of a number range ("4-6 ft" reads "4–6 ft"; a date or a chain is left).
+ * quotes, an en dash between the two ends of a number range ("4-6 ft" reads "4–6 ft"; a date or a chain is left), and a
+ * no-break space between a distance and its unit, so "4–6 ft" never breaks before "ft".
  */
 function typeset(text: string): string {
   return text
     .replace(/(^|[^\d-])(\d{1,3}(?:\.\d+)?)-(\d{1,3}(?:\.\d+)?)(?![\d-])/g, '$1$2–$3')
+    .replace(/(\d) (ft|yds?)\b/g, '$1\u00a0$2')
     .replace(/(^|[\s([{])"/g, '$1“')
     .replace(/"/g, '”')
     .replace(/(^|[\s([{])'/g, '$1‘')

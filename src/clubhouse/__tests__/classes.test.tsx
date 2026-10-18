@@ -1242,7 +1242,8 @@ describe('Classes, on the phone', () => {
 
 const STAT_ID = 'c0000000-0000-4000-8000-000000000001';
 const sheet = () => screen.getByRole('dialog', { name: /^(Add a class|Edit class)$/ });
-const field = (label: string) => within(sheet()).getByLabelText(label) as HTMLInputElement;
+// An optional field's label ends in its Optional tag ("Room Optional"), which is part of its name.
+const field = (label: string) => within(sheet()).getByLabelText(new RegExp(`^${label}( Optional)?$`)) as HTMLInputElement;
 const setField = (label: string, value: string) => fireEvent.change(field(label), { target: { value } });
 const day = (d: string) => within(sheet()).getByRole('button', { name: d });
 const submitForm = (user: ReturnType<typeof userEvent.setup>) => user.click(within(sheet()).getByRole('button', { name: /^(Add class|Save changes)$/ }));
@@ -1907,6 +1908,26 @@ describe('Classes, import', () => {
     expect(await screen.findByRole('dialog', { name: 'Import schedule' })).toBeTruthy();
   });
 
+  it('CH-12504 Start over asks first once the review holds a few classes or one came off; Keep reviewing keeps it as it was', async () => {
+    const user = userEvent.setup();
+    show();
+    await openImport(user);
+    await pasteAndRead(user);
+    await reviewArrived();
+    await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
+    await user.click(inSheet().getByRole('button', { name: 'Start over' }));
+    const ask = await screen.findByRole('dialog', { name: 'Start over?' });
+    expect(ask.getAttribute('data-ch-code')).toBe('CH-12504');
+    expect(within(ask).getByText('The 4 classes you reviewed are let go, and nothing is imported.')).toBeTruthy();
+    // One dialog at a time: the review steps aside while it is asked.
+    expect(screen.queryByRole('dialog', { name: 'Review your schedule' })).toBeNull();
+    await user.click(within(ask).getByRole('button', { name: 'Keep reviewing' }));
+    expect(await screen.findByRole('button', { name: 'Import 4 classes' })).toBeTruthy();
+    await user.click(inSheet().getByRole('button', { name: 'Start over' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Start over?' })).getByRole('button', { name: 'Start over' }));
+    expect(await screen.findByRole('dialog', { name: 'Import schedule' })).toBeTruthy();
+  });
+
   it('CH-12109 an import saves the reviewed rows, puts each on the calendar from next Monday, and says how many, until when, and what overlaps the team', async () => {
     const user = userEvent.setup();
     const w = show();
@@ -1925,7 +1946,9 @@ describe('Classes, import', () => {
     expect(inSheet().getByText('4 classes imported')).toBeTruthy();
     // PHIL 150 has no days: it is saved, and the result says it isn't on the calendar and why, rather than "they're on your calendar".
     expect(inSheet().getByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing.")).toBeTruthy();
-    expect([...importSheet().querySelectorAll('.ch-cl-ok__chips span')].map((s) => s.textContent)).toEqual(['GEOG 110', 'MATH 232', 'ART 101', 'PHIL 150']);
+    expect([...importSheet().querySelectorAll('.ch-cl-ok__chips > *')].map((s) => s.textContent)).toEqual(['GEOG 110', 'MATH 232', 'ART 101', 'PHIL 150']);
+    // Only the class that isn't on the calendar is a button: it opens that class's form.
+    expect([...importSheet().querySelectorAll('.ch-cl-ok__chips > button')].map((b) => b.getAttribute('aria-label'))).toEqual(['Open PHIL 150 to add what’s missing']);
     await expectCode('CH-12109', /3 overlaps with the team this week\.GEOG 110 meets over Practice; GEOG 110 meets over Practice/);
     expect(hapticSpy).toHaveBeenCalledWith('success');
     await user.click(inSheet().getByRole('button', { name: 'View classes' }));
@@ -2167,6 +2190,7 @@ describe('Classes, offline and slow', () => {
     await waitFor(() => expect(w.read).toHaveBeenCalledWith({ kind: 'file', file }));
     await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Start over' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Start over?' })).getByRole('button', { name: 'Start over' }));
     await screen.findByRole('dialog', { name: 'Import schedule' });
     line!.mockReturnValue(false);
     w.read.mockClear();
@@ -2174,6 +2198,7 @@ describe('Classes, offline and slow', () => {
     await waitFor(() => expect(w.read).toHaveBeenCalledTimes(1));
     await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Start over' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Start over?' })).getByRole('button', { name: 'Start over' }));
     await pasteAndRead(user);
     await waitFor(() => expect(w.read).toHaveBeenCalledTimes(2));
   });
@@ -2385,6 +2410,11 @@ describe('Classes, review fixes on screen', () => {
     await user.click(inSheet().getByRole('button', { name: 'Import 1 class' }));
     const result = await inSheet().findByText(/^Not on your calendar: PHIL 150 \(no meeting days\)\./);
     expect(result.textContent).not.toMatch(/on your calendar and repeat/);
+    // Its chip opens the class's form, in place of the result (one dialog at a time).
+    await user.click(inSheet().getByRole('button', { name: 'Open PHIL 150 to add what’s missing' }));
+    expect(await screen.findByRole('dialog', { name: 'Edit class' })).toBeTruthy();
+    expect(field('Course code').value).toBe('PHIL 150');
+    expect(screen.queryByRole('dialog', { name: 'Schedule imported' })).toBeNull();
   });
 
   it('CH-12109 the import result counts overlaps with this week’s practice only for classes in this term', async () => {

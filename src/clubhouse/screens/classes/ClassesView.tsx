@@ -448,6 +448,11 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
         onClose={() => setImporting(false)}
         read={writes.read}
         onImport={(rows) => doImport.run(rows)}
+        // One dialog at a time: the result steps aside for the class's form.
+        onEdit={(c) => {
+          setImporting(false);
+          setForm({ editing: classes.find((x) => x.id === c.id) ?? c, id: '' });
+        }}
         importing={doImport.pending}
         imported={importedNow}
         syncState={importSync}

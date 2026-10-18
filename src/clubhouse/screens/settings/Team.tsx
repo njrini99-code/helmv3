@@ -49,8 +49,9 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
   return (
     <>
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
-      {data.team?.error ? <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} title="Team details" description="Shown to your players, and on invites and exports." covered={covered} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
+      {/* The invite code first: it is what a coach comes here for most, and Team details ran it under the fold (wave-6 #20). */}
       {data.joinCode?.error ? <ReadFailed what="Your invite code" code="CH-8206" onRetry={writes.refresh} title="Invite players" description="Players join with this code, then you approve them from Roster." covered={covered} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
+      {data.team?.error ? <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} title="Team details" description="Shown to your players, and on invites and exports." covered={covered} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
       <StaffCards coachId={data.coachId} writes={writes} />
       {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} title="Scoring and format" description="Defaults for new rounds and events. The timezone sets when every event and reminder happens." covered={covered} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
       {data.reminders?.error ? <ReadFailed what="Event reminders" code="CH-8208" onRetry={writes.refresh} title="Event reminders" description="Players who haven’t replied get a nudge before each event." covered={covered} /> : data.reminders && <RemindersCard reminders={data.reminders.value} writes={writes} />}
@@ -70,6 +71,8 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
   const org = f.draft.org;
   const setOrg = (k: keyof NonNullable<ChTeamInfo['org']>, v: string) => f.setDraft((d) => (d.org ? { ...d, org: { ...d.org, [k]: v } } : d));
   const invalid = teamProblem(f.draft);
+  // The field a problem names says it too, once there are changes, as the save bar does (wave-6 #22).
+  const errorAt = (id: string) => (invalid && f.dirty && invalid.field === id ? invalid : null);
   return (
     <Card
       id="set-team"
@@ -87,16 +90,16 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
       }
     >
       <div className="ch-set-grid">
-        <Field id="set-team-name" label="Team name" value={f.draft.name} onChange={(e) => f.setDraft((d) => ({ ...d, name: e.target.value }))} />
+        <Field id="set-team-name" label="Team name" error={errorAt('set-team-name')} value={f.draft.name} onChange={(e) => f.setDraft((d) => ({ ...d, name: e.target.value }))} />
         <Field id="set-team-season" label="Season" placeholder="2026–27" value={f.draft.season} onChange={(e) => f.setDraft((d) => ({ ...d, season: e.target.value }))} />
       </div>
       {org && (
         <>
           <div className="ch-set-sub">School</div>
           <div className="ch-set-grid">
-            <Field id="set-org-name" label="Name" span={2} value={org.name} onChange={(e) => setOrg('name', e.target.value)} />
+            <Field id="set-org-name" label="Name" span={2} error={errorAt('set-org-name')} value={org.name} onChange={(e) => setOrg('name', e.target.value)} />
             <Field id="set-org-city" label="City" value={org.city} onChange={(e) => setOrg('city', e.target.value)} />
-            <Field id="set-org-state" label="State" maxLength={2} placeholder="NC" value={org.state} onChange={(e) => setOrg('state', e.target.value.toUpperCase())} />
+            <Field id="set-org-state" label="State" maxLength={2} placeholder="NC" error={errorAt('set-org-state')} value={org.state} onChange={(e) => setOrg('state', e.target.value.toUpperCase())} />
             <Field id="set-org-div" label="Division" placeholder="NCAA D1" value={org.division} onChange={(e) => setOrg('division', e.target.value)} />
             <Field id="set-org-conf" label="Conference" placeholder="ACC" value={org.conference} onChange={(e) => setOrg('conference', e.target.value)} />
           </div>

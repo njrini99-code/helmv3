@@ -165,7 +165,7 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
 }
 
 /**
- * One row of "Also worth knowing" or "Working" (helm3.jsx `Row`). Choosing it
+ * One row of "Also worth knowing" or "What’s working" (helm3.jsx `Row`). Choosing it
  * puts it in the focus card (CH-13701: a selection tap). CH-13803: one button
  * named for its category, title, value and priority. CH-13602: on desktop it
  * takes the Ledger row tint on hover (quick) and a deeper tint on press.
@@ -187,7 +187,15 @@ export function InsightRow({ ins, onPick }: { ins: ChInsight; onPick: () => void
         <b>{ins.title}</b>
         <span className="ch-sr-only">{stance.word}</span>
       </span>
-      <span className="ch-hl-row__v ch-num">{ins.value}</span>
+      <span className="ch-hl-row__v ch-num">
+        {ins.value}
+        {ins.value && ins.valueUnit && (
+          <>
+            {' '}
+            <small>{ins.valueUnit}</small>
+          </>
+        )}
+      </span>
       <Icon icon={ChevronRight} size={15} />
     </button>
   );

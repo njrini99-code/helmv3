@@ -109,7 +109,7 @@ function Sees({ sees }: { sees: NonNullable<ChProfile['sees']> }) {
   if (!live.length) return null;
   const groups = [
     { key: 'warn', title: 'Costing you', rows: live.filter((i) => !i.strength).slice(0, 4) },
-    { key: 'good', title: 'Working', rows: live.filter((i) => i.strength).slice(0, 4) },
+    { key: 'good', title: 'What’s working', rows: live.filter((i) => i.strength).slice(0, 4) },
   ].filter((g) => g.rows.length > 0);
   const top = live[0]!;
   const meta = [top.evidence.sample, top.evidence.window, top.evidence.asOf].filter(Boolean).join(' · ');
@@ -148,14 +148,15 @@ function Sees({ sees }: { sees: NonNullable<ChProfile['sees']> }) {
 }
 
 function Hero({ p }: { p: ChProfile }) {
-  const meta = [`Last ${p.windowDays} days`, p.rounds != null ? `${p.rounds} ${p.rounds === 1 ? 'round' : 'rounds'}` : null, p.refreshed ? `Refreshed ${p.refreshed}` : null].filter(Boolean);
+  const meta = [`Last ${p.windowDays} days`, p.rounds != null ? `${p.rounds} ${p.rounds === 1 ? 'round' : 'rounds'}` : null, p.refreshed ? `Refreshed ${p.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
   const none = p.strengths.length === 0 && p.watchouts.length === 0;
   return (
     // The shape of the game on the team board's green (owner, 2026-10-16: "more green"), with how much of it is read so far.
     <section className={'ch-hg-hero' + (p.sees?.list.some((i) => !i.stale) ? ' is-second' : ' ch-scoreboard')} aria-labelledby="ch-hg-hero-t">
       <div className="ch-hg-hero__k">
         <span>The shape of your game</span>
-        <span className="ch-num">{meta.join(' · ')}</span>
+        {/* A no-break space before each dot, so a wrapped line never starts with one. */}
+        <span className="ch-num">{meta.join('\u00a0· ')}</span>
       </div>
       <h2 id="ch-hg-hero-t">{p.courseProfile ?? 'What your rounds say so far'}</h2>
       {none ? (

@@ -426,7 +426,9 @@
 }
 .ch-hb-ann__files-t:focus-visible,
 .ch-hb-ann__files-retry:focus-visible,
-.ch-hb-ann__file:focus-visible {
+.ch-hb-ann__file:focus-visible,
+.ch-hb-reads--open:focus-visible,
+.ch-hb-pickall:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: 6px;
@@ -445,6 +447,30 @@
   font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
+}
+/* Coach: the count opens who hasn't acknowledged (.ch-hb-ann__wait). */
+.ch-hb-reads--open {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.ch-hb-reads--open[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.ch-hb-ann__wait {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  margin: 0;
+  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hb-ann__wait em {
+  font: 500 calc(12 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
 }
 .ch-hb-reads__t {
   width: 90px;
@@ -544,6 +570,9 @@
   margin: 12px 0 0;
   padding-top: 12px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
+}
+.ch-hb-pass__f:empty {
+  display: none;
 }
 .ch-hb-pass__f dt {
   margin-bottom: 5px;
@@ -933,6 +962,22 @@
   gap: 8px;
   margin-top: 8px;
 }
+/* A list's label with its Clear all / Select all on the right. */
+.ch-hb-fhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ch-hb-pickall {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  cursor: pointer;
+}
 .ch-hb-picks {
   display: flex;
   flex-wrap: wrap;
@@ -1105,8 +1150,8 @@
   }
 }
 @container chhb (max-width: 640px) {
-  .ch-hb-docs,
-  .ch-hb-2 {
+  /* A form's paired short fields (date and time) stay side by side, as Add a class keeps them. */
+  .ch-hb-docs {
     grid-template-columns: minmax(0, 1fr);
   }
   .ch-hb-rsvp__list li {
@@ -1610,6 +1655,10 @@
 .ch-hb-steps li.is-on {
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
+}
+/* Travelers, with no calendar event to choose them from. */
+.ch-hb-steps li.is-skip {
+  text-decoration: line-through;
 }
 .ch-hb-evpick {
   display: flex;

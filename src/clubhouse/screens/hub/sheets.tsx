@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight, Check, FileText, Megaphone, Paperclip, Pencil, Plane, SquareCheck, TriangleAlert, X } from 'lucide-react';
-import { useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChTeamHub } from '../../data/hub';
 import { tripWindow } from '../../data/hub-shape';
 import { Avatar } from '../../ui/Avatar';
@@ -12,6 +12,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Switch } from '../../ui/Switch';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
+import { useChPhone } from '../../lib/use-phone';
 import { normalise, useAction } from '../../lib/use-action';
 import { ClassClashes, useClassCheck } from './TravelerClasses';
 import type { ChHubWrites, ChTripInput } from './writes';
@@ -26,15 +27,36 @@ import { radioKeys, rovingRadios } from './radio';
  * the job the same way the first press would have.
  */
 
-export function Field({ label, error, errorCode, children, id }: { label: string; error?: string | null; errorCode?: string; children: ReactNode; id: string }) {
+/** A labelled field. `optional` adds the shared Optional tag (controls.css); a refused save's message is read out at once. */
+export function Field({
+  label,
+  error,
+  errorCode,
+  children,
+  id,
+  optional = false,
+}: {
+  label: string;
+  error?: string | null;
+  errorCode?: string;
+  children: ReactNode;
+  id: string;
+  optional?: boolean;
+}) {
   return (
     <div className="ch-field">
       <label className="ch-field__label" htmlFor={id}>
         {label}
+        {optional && (
+          <>
+            {' '}
+            <span className="ch-field__opt">Optional</span>
+          </>
+        )}
       </label>
       {children}
       {error && (
-        <span className="ch-field__help is-error" id={`${id}-err`} data-ch-code={errorCode}>
+        <span className="ch-field__help is-error" id={`${id}-err`} role="alert" data-ch-code={errorCode}>
           {error}
         </span>
       )}
@@ -53,12 +75,15 @@ function PlayerPicks({
   picked,
   onChange,
   label,
+  id,
 }: {
   players: ChTeamHub['players'];
   error: boolean;
   picked: string[];
   onChange: (ids: string[]) => void;
   label: string;
+  /** The group's id: a refused save moves focus to its first player. */
+  id?: string;
 }) {
   if (players.length === 0 && error) return <RefreshNotice code="CH-10208" title="The team list didn’t load." body="Players can’t be chosen until it does. Try again; the error has been reported." />;
   if (players.length === 0)
@@ -68,7 +93,7 @@ function PlayerPicks({
       </span>
     );
   return (
-    <div className="ch-hb-picks" role="group" aria-label={label}>
+    <div className="ch-hb-picks" role="group" aria-label={label} id={id}>
       {players.map((p) => {
         const on = picked.includes(p.id);
         return (
@@ -88,6 +113,43 @@ function PlayerPicks({
       })}
     </div>
   );
+}
+
+/**
+ * Clear all / Select all for a list that starts with everyone chosen (Assign a task, an event's travelers). A chosen id
+ * not on the list (an invitee who has left the roster) can't be seen or toggled, so neither press changes it.
+ */
+function PickAll({ players, picked, onChange }: { players: ChTeamHub['players']; picked: string[]; onChange: (ids: string[]) => void }) {
+  if (players.length < 2) return null;
+  const listed = new Set(players.map((p) => p.id));
+  const all = players.every((p) => picked.includes(p.id));
+  const kept = picked.filter((x) => !listed.has(x));
+  return (
+    <button
+      type="button"
+      className="ch-hb-pickall"
+      onClick={() => {
+        haptic('select');
+        onChange(all ? kept : [...kept, ...players.map((p) => p.id)]);
+      }}
+    >
+      {all ? 'Clear all' : 'Select all'}
+    </button>
+  );
+}
+
+/** Today on this device (YYYY-MM-DD), the earliest a due date can be picked. */
+const localToday = () => new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+
+/** Focus moved to a field after the render that shows it (a refused Publish goes back to Logistics first). */
+function useFocusAfter() {
+  const [target, setTarget] = useState<string | null>(null);
+  useEffect(() => {
+    if (!target) return;
+    document.getElementById(target)?.focus();
+    setTarget(null);
+  }, [target]);
+  return setTarget;
 }
 
 /**
@@ -204,6 +266,7 @@ export function ComposeSheet({
   edit?: { announcement: ChHubAnnouncement | null; write: ChHubWrites['editAnnouncement']; onSaved: (id: string, change: ChAnnouncementEdit) => void };
 }) {
   const id = useId();
+  const phone = useChPhone();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [aud, setAud] = useState<'all' | 'pick' | 'travel'>('all');
@@ -281,6 +344,10 @@ export function ComposeSheet({
     setTried(true);
     if (title.trim().length < 3 || !body.trim() || (!edit && aud === 'pick' && picked.length === 0)) {
       haptic('warning');
+      // A refused save says why beside the field (role=alert) and moves focus to the first one, as Add a class does.
+      if (title.trim().length < 3) document.getElementById(`${id}-t`)?.focus();
+      else if (!body.trim()) document.getElementById(`${id}-b`)?.focus();
+      else document.getElementById(`${id}-picks`)?.querySelector('button')?.focus();
       return;
     }
     if (edit) {
@@ -295,6 +362,8 @@ export function ComposeSheet({
       onClose={onClose}
       icon={edit ? Pencil : Megaphone}
       title={edit ? 'Edit announcement' : 'New announcement'}
+      // A new post starts on its headline on desktop; an edit, and the phone (whose keyboard would rise over the sheet), keep the heading first.
+      initialFocus={!edit && !phone ? `[id="${id}-t"]` : undefined}
       description={edit ? 'Players see the new wording in Team Hub. Who it went to and its attachments stay as posted.' : 'Players see it in Team Hub and the bell.'}
       footer={
         <>
@@ -356,9 +425,9 @@ export function ComposeSheet({
                 </button>
               ))}
             </div>
-            {aud === 'pick' && <PlayerPicks players={players} error={playersError} picked={picked} onChange={setPicked} label="Players who get it" />}
+            {aud === 'pick' && <PlayerPicks players={players} error={playersError} picked={picked} onChange={setPicked} label="Players who get it" id={`${id}-picks`} />}
             {pickErr && players.length > 0 && (
-              <span className="ch-field__help is-error" data-ch-code="CH-10102">
+              <span className="ch-field__help is-error" role="alert" data-ch-code="CH-10102">
                 {pickErr}
               </span>
             )}
@@ -366,7 +435,9 @@ export function ComposeSheet({
         )}
         {!edit && (
           <div className="ch-field">
-            <span className="ch-field__label">Attachments (optional)</span>
+            <span className="ch-field__label">
+              Attachments <span className="ch-field__opt">Optional</span>
+            </span>
             <DocumentPicks documents={documents} picked={attached} onChange={setDocs} />
           </div>
         )}
@@ -389,7 +460,8 @@ const TRIP_STEPS = ['Event', 'Travelers', 'Logistics', 'Itinerary'] as const;
 
 /**
  * Plan a trip, in the board's four steps: the calendar event it's for (optional), who travels (that event's invitees),
- * logistics, then the itinerary notes. Back and Next move between steps; Publish saves the trip, then the travelers.
+ * logistics, then the itinerary notes. Back and Next move between steps; a trip with no event skips Travelers, which has
+ * nothing to choose then. Enter is Next until the last step. Publish saves the trip, then the travelers.
  * The trip is saved once: a travelers write that fails is retried on its own (the saved trip's id is kept), so a
  * Retry never makes a second trip.
  */
@@ -419,6 +491,8 @@ export function TripSheet({
   onDone: () => void;
 }) {
   const id = useId();
+  const phone = useChPhone();
+  const focusAfter = useFocusAfter();
   const empty: ChTripInput = { teamId, eventId: null, name: '', destination: '', transport: 'bus', departDate: '', departTime: '', from: '', returnDate: '', returnTime: '', hotel: '', notes: '' };
   const [v, setV] = useState<ChTripInput>(empty);
   const [step, setStep] = useState(0);
@@ -494,33 +568,55 @@ export function TripSheet({
   );
   const pending = plan.pending;
   const logisticsBad = v.name.trim().length < 3 || !v.destination.trim() || !v.departDate || (!!v.returnDate && v.returnDate < v.departDate);
+  // The first Logistics field a save refuses, in the order they are shown.
+  const firstBad = () =>
+    v.name.trim().length < 3 ? 'name' : !v.destination.trim() ? 'destination' : !v.departDate ? 'departDate' : v.returnDate && v.returnDate < v.departDate ? 'returnDate' : null;
+  // Without an event there is no one to choose: Travelers is skipped both ways.
+  const skipTravelers = !event;
+  const after = (n: number) => (n === 0 && skipTravelers ? 2 : Math.min(TRIP_STEPS.length - 1, n + 1));
   const next = () => {
     // Logistics holds the required fields; they are checked leaving it, and again on Publish.
     if (step === 2 && logisticsBad) {
       setTried(true);
       haptic('warning');
+      focusAfter(`${id}-${firstBad()}`);
       return;
     }
     haptic('select');
-    setStep((n) => Math.min(TRIP_STEPS.length - 1, n + 1));
+    setStep(after(step));
   };
   const back = () => {
     haptic('select');
-    setStep((n) => Math.max(0, n - 1));
+    setStep((n) => (n === 2 && skipTravelers ? 0 : Math.max(0, n - 1)));
   };
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
+    // Enter in a field is Next until the last step; only Publish saves.
+    if (step < TRIP_STEPS.length - 1) {
+      next();
+      return;
+    }
     setTried(true);
     if (logisticsBad) {
       haptic('warning');
       setStep(2);
+      focusAfter(`${id}-${firstBad()}`);
       return;
     }
     void plan.run({ trip: { ...v, teamId }, travelers });
   };
-  const input = (k: keyof ChTripInput, label: string, type = 'text', err?: string | null, code?: string) => (
-    <Field label={label} id={`${id}-${k}`} error={err} errorCode={code}>
-      <input id={`${id}-${k}`} className="ch-input" type={type} value={v[k] ?? ''} onChange={set(k)} aria-invalid={!!err} aria-describedby={err ? `${id}-${k}-err` : undefined} />
+  const input = (k: keyof ChTripInput, label: string, type = 'text', err?: string | null, code?: string, extra?: { optional?: boolean; min?: string }) => (
+    <Field label={label} id={`${id}-${k}`} error={err} errorCode={code} optional={extra?.optional}>
+      <input
+        id={`${id}-${k}`}
+        className="ch-input"
+        type={type}
+        value={v[k] ?? ''}
+        min={extra?.min || undefined}
+        onChange={set(k)}
+        aria-invalid={!!err}
+        aria-describedby={err ? `${id}-${k}-err` : undefined}
+      />
     </Field>
   );
   const last = step === TRIP_STEPS.length - 1;
@@ -530,7 +626,8 @@ export function TripSheet({
       onClose={onClose}
       icon={Plane}
       title="Plan a trip"
-      description={event ? `${event.title} · ${event.label}` : 'Players see the itinerary in Team Hub.'}
+      // The phone hides the step strip, so its description says where the coach is.
+      description={phone ? `Step ${step + 1} of ${TRIP_STEPS.length} · ${TRIP_STEPS[step]}` : event ? `${event.title} · ${event.label}` : 'Players see the itinerary in Team Hub.'}
       footer={
         <>
           {step > 0 ? (
@@ -548,7 +645,7 @@ export function TripSheet({
             </Button>
           ) : (
             <Button variant="primary" rightIcon={ArrowRight} onClick={next}>
-              Next: {step === 2 ? 'Itinerary' : TRIP_STEPS[step + 1]}
+              Next: {TRIP_STEPS[after(step)]}
             </Button>
           )}
         </>
@@ -556,11 +653,15 @@ export function TripSheet({
     >
       <form className="ch-hb-form" onSubmit={submit} noValidate>
         <ol className="ch-hb-steps" aria-label="Steps">
-          {TRIP_STEPS.map((l, i) => (
-            <li key={l} className={i < step ? 'is-done' : i === step ? 'is-on' : undefined} aria-current={i === step ? 'step' : undefined}>
-              {l}
-            </li>
-          ))}
+          {TRIP_STEPS.map((l, i) => {
+            const skipped = i === 1 && skipTravelers;
+            return (
+              <li key={l} className={skipped ? 'is-skip' : i < step ? 'is-done' : i === step ? 'is-on' : undefined} aria-current={i === step ? 'step' : undefined}>
+                {l}
+                {skipped && <span className="ch-sr-only">, skipped: no calendar event</span>}
+              </li>
+            );
+          })}
         </ol>
         {step === 0 && (
           <div className="ch-field">
@@ -603,9 +704,12 @@ export function TripSheet({
               </span>
             ) : (
               <div className="ch-field">
-                <span className="ch-field__label">
-                  {players.length > 0 ? `Who’s traveling · ${travelers.length} of ${players.length}` : 'Who’s traveling'}
-                </span>
+                <div className="ch-hb-fhead">
+                  <span className="ch-field__label">
+                    {players.length > 0 ? `Who’s traveling · ${travelers.length} of ${players.length}` : 'Who’s traveling'}
+                  </span>
+                  <PickAll players={players} picked={travelers} onChange={setTravelers} />
+                </div>
                 <PlayerPicks players={players} error={playersError} picked={travelers} onChange={setTravelers} label="Who’s traveling" />
                 <span className="ch-field__help">They are invited to {event.title} in Calendar, and are this trip’s travelers.</span>
                 <ClassClashes check={classCheck.check} names={names} onRetry={classCheck.retry} />
@@ -640,20 +744,20 @@ export function TripSheet({
               </div>
             </div>
             <div className="ch-hb-2">
-              {input('departDate', 'Leaves', 'date', errs.departDate, 'CH-10105')}
-              {input('departTime', 'At', 'time')}
+              {input('departDate', 'Departs', 'date', errs.departDate, 'CH-10105')}
+              {input('departTime', 'Departure time', 'time')}
             </div>
-            {input('from', 'From')}
+            {input('from', 'From', 'text', null, undefined, { optional: true })}
             <div className="ch-hb-2">
-              {input('returnDate', 'Back', 'date', errs.returnDate, 'CH-10106')}
-              {input('returnTime', 'At', 'time')}
+              {input('returnDate', 'Returns', 'date', errs.returnDate, 'CH-10106', { min: v.departDate })}
+              {input('returnTime', 'Return time', 'time')}
             </div>
-            {input('hotel', 'Hotel (optional)')}
+            {input('hotel', 'Hotel', 'text', null, undefined, { optional: true })}
           </>
         )}
         {step === 3 && (
           <>
-            <Field label="Itinerary for the players (optional)" id={`${id}-notes`}>
+            <Field label="Itinerary for the players" id={`${id}-notes`} optional>
               <textarea id={`${id}-notes`} className="ch-textarea" rows={5} value={v.notes} onChange={set('notes')} />
             </Field>
             <dl className="ch-hb-tripsum">
@@ -662,7 +766,7 @@ export function TripSheet({
                 <dd>{[v.name.trim(), v.destination.trim()].filter(Boolean).join(' · ') || '—'}</dd>
               </div>
               <div>
-                <dt>Leaves</dt>
+                <dt>Departs</dt>
                 <dd>{[v.departDate, v.departTime, v.from.trim()].filter(Boolean).join(' · ') || '—'}</dd>
               </div>
               <div>
@@ -673,6 +777,8 @@ export function TripSheet({
             {span && <ClassClashes check={classCheck.check} names={names} onRetry={classCheck.retry} />}
           </>
         )}
+        {/* Enter in a field submits, which is Next until the last step (a form with several fields needs a submit button for it). */}
+        <button type="submit" hidden />
       </form>
     </Modal>
   );
@@ -697,6 +803,7 @@ export function AssignSheet({
   onDone: () => void;
 }) {
   const id = useId();
+  const phone = useChPhone();
   const [title, setTitle] = useState('');
   const [detail, setDetail] = useState('');
   const [due, setDue] = useState('');
@@ -739,6 +846,8 @@ export function AssignSheet({
     setTried(true);
     if (title.trim().length < 3 || picked.length === 0) {
       haptic('warning');
+      if (title.trim().length < 3) document.getElementById(`${id}-t`)?.focus();
+      else document.getElementById(`${id}-picks`)?.querySelector('button')?.focus();
       return;
     }
     void give.run({ teamId, title, detail, dueDate: due || null, playerIds: picked });
@@ -749,6 +858,7 @@ export function AssignSheet({
       onClose={onClose}
       icon={SquareCheck}
       title="Assign a task"
+      initialFocus={phone ? undefined : `[id="${id}-t"]`}
       description="Each player checks it off in Team Hub."
       footer={
         <>
@@ -765,29 +875,35 @@ export function AssignSheet({
         <Field label="Task" id={`${id}-t`} error={titleErr} errorCode="CH-10107">
           <input id={`${id}-t`} className="ch-input" value={title} maxLength={140} aria-invalid={!!titleErr} aria-describedby={titleErr ? `${id}-t-err` : undefined} onChange={(e) => setTitle(e.target.value)} />
         </Field>
-        <Field label="What it’s for (optional)" id={`${id}-d`}>
+        <Field label="What it’s for" id={`${id}-d`} optional>
           <input id={`${id}-d`} className="ch-input" value={detail} maxLength={200} onChange={(e) => setDetail(e.target.value)} />
         </Field>
-        <Field label="Due (optional)" id={`${id}-due`}>
-          <input id={`${id}-due`} className="ch-input" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+        <Field label="Due" id={`${id}-due`} optional>
+          {/* The picker starts at today: a task isn't due in the past. */}
+          <input id={`${id}-due`} className="ch-input" type="date" value={due} min={localToday()} onChange={(e) => setDue(e.target.value)} />
         </Field>
         <div className="ch-field">
-          <span className="ch-field__label">
-            {players.length > 0 ? (
-              <>
-                For <span className="ch-num">{picked.length}</span> of <span className="ch-num">{players.length}</span>
-              </>
-            ) : (
-              'For'
-            )}
-          </span>
-          <PlayerPicks players={players} error={playersError} picked={picked} onChange={setPicked} label="Players the task is for" />
+          <div className="ch-hb-fhead">
+            <span className="ch-field__label">
+              {players.length > 0 ? (
+                <>
+                  For <span className="ch-num">{picked.length}</span> of <span className="ch-num">{players.length}</span>
+                </>
+              ) : (
+                'For'
+              )}
+            </span>
+            <PickAll players={players} picked={picked} onChange={setPicked} />
+          </div>
+          <PlayerPicks players={players} error={playersError} picked={picked} onChange={setPicked} label="Players the task is for" id={`${id}-picks`} />
           {pickErr && players.length > 0 && (
-            <span className="ch-field__help is-error" data-ch-code="CH-10108">
+            <span className="ch-field__help is-error" role="alert" data-ch-code="CH-10108">
               {pickErr}
             </span>
           )}
         </div>
+        {/* Enter in Task or What it's for assigns, as the button does. */}
+        <button type="submit" hidden />
       </form>
     </Modal>
   );

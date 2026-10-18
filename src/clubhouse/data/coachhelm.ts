@@ -10,6 +10,7 @@ import { isCountableRound } from '@/lib/golf/round-countable';
 import { chLogServer } from '../lib/track-server';
 import { isNote, isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
+import { speak } from './coachhelm-voice';
 import { boardMissing, firstName, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChPulse, type ChPulseResult, type ChTourBaseline } from './coachhelm-shape';
 import { tourForGender } from './stats-common';
 
@@ -281,7 +282,8 @@ async function loadProposals(supabase: Supabase, playerId: string, teamId: strin
     log('proposals', res.error);
     return { list: [], error: true };
   }
-  const titles = new Map(insights.map((i) => [i.id, i.title]));
+  // The read's title as the player reads it everywhere else on the page: typeset, in their voice.
+  const titles = new Map(insights.map((i) => [i.id, speak(i.title, { role: 'player' })]));
   const list: ChProposal[] = (res.data ?? []).map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null }));
   return { list, error: false };
 }
@@ -488,7 +490,8 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   // A read beside the cards that failed leaves them drawn without it, and the board says so: never "not assigned", "not declined",
   // "not out of date" or "no Tour comparison", and with the focus status unknown it does not offer Assign.
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
-  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length, ...(missing ? { missing } : {}) };
+  const withoutNames = roster.filter((p) => !heads.get(p.id)?.[0] && p.name !== NO_NAME).map((p) => p.name);
+  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length, withoutNames, ...(missing ? { missing } : {}) };
 }
 
 async function topInsights(ids: string[]): Promise<Map<string, EvidenceInsight[]>> {

@@ -46,6 +46,9 @@ function useOnline(): boolean {
 /** The `useViewSwitch` value that stands for "no chat open". */
 const NEW_CHAT = 'new';
 
+/** A desktop window too narrow for the chats, the conversation and the evidence together (the `has-panel.has-evidence` grid). */
+const narrowDesktop = () => typeof window !== 'undefined' && window.matchMedia?.('(max-width: 1440px)').matches === true;
+
 /** The team's name beside the sub-tab strip: a label, not a switcher (the shell owns the active team). */
 function TeamLabel({ name }: { name: string }) {
   return (
@@ -121,6 +124,13 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const [panelOpen, setPanelOpen] = useAskKept('askPanel', initial?.panelOpen ?? true);
   const [drawer, setDrawer] = useState(initial?.drawer ?? false);
   const [evidence, setEvidence] = useState<EvidenceFocus | null>(initial?.evidence ?? null);
+  // Below 1440px the chats, the conversation and the evidence do not fit side by side (the thread was about 330px at 1280): opening
+  // the evidence moves the chats aside for as long as it is open, without changing the kept choice, and showing the chats closes it.
+  const [chatsAside, setChatsAside] = useState(false);
+  const openEvidence = (focus: EvidenceFocus | null) => {
+    setChatsAside(!phone && focus !== null && narrowDesktop());
+    setEvidence(focus);
+  };
   const lastSent = useRef('');
   // A new chat's id arrives on the first response, after the send, and only this frame knows which send it is for. `epoch` moves each
   // time the coach leaves a chat for a new one; `expecting` is the epoch of the send that is waiting for its chat's id (none for a send
@@ -244,7 +254,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
         onRetry={chat.retry}
         onNewChat={newChat}
         evidenceFocus={evidence}
-        onOpenEvidence={setEvidence}
+        onOpenEvidence={openEvidence}
       />
     </SectionBoundary>
   );
@@ -252,6 +262,12 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   // The big box sits inside the new-chat page on desktop; everywhere else it docks at the foot.
   const docked = !(showHome && !phone) && !data.threadFailed;
   const evidenceOpen = evidence !== null && !showHome;
+  const chatsShown = panelOpen && !(chatsAside && evidenceOpen);
+  const showChats = () => {
+    setPanelOpen(true);
+    setChatsAside(false);
+    if (evidenceOpen && narrowDesktop()) setEvidence(null);
+  };
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
@@ -279,18 +295,18 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
         <CoachHelmTabs active={sw.shown} onGo={sw.go} />
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
-      <div className={'ch-ask-body' + (!phone && panelOpen ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
+      <div className={'ch-ask-body' + (!phone && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
         {!phone && (
           <SectionBoundary surface="coachhelm.ask.history" label="Your chats" code="CH-13225">
-            <HistoryPanel {...histProps} heading="CoachHelm" open={panelOpen} onHide={() => setPanelOpen(false)} />
+            <HistoryPanel {...histProps} heading="CoachHelm" open={chatsShown} onHide={() => setPanelOpen(false)} />
           </SectionBoundary>
         )}
         <section className="ch-ask-main" aria-label="Conversation">
           {!phone && (
             <header className="ch-ask-head">
-              {!panelOpen && (
+              {!chatsShown && (
                 <>
-                  <button type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={() => setPanelOpen(true)}>
+                  <button type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={showChats}>
                     <Icon icon={PanelLeftOpen} size={19} />
                   </button>
                   <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" onClick={newChat}>

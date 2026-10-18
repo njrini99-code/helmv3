@@ -211,6 +211,14 @@
 .ch-hd-it__v {
   font: 600 15px/1 var(--ch-font-sans);
   color: var(--ch-hd-ink);
+  text-align: right;
+}
+/* What the number counts ("gap", "a round"), under it, so the column keeps its width. */
+.ch-hd-it__v small {
+  display: block;
+  margin-top: 3px;
+  font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
 }
 .ch-hd-it svg {
   color: var(--ch-text-tertiary);

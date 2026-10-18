@@ -151,7 +151,14 @@ describe('Generator output to the board', () => {
 
   it('the lede is the first sentence and the reasoning the rest, never the drill parsed out of it', () => {
     const i = toChInsight(slope(jonah));
-    expect(i.lede).toBe("Inside 4-6 ft you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level).");
+    expect(i.lede).toBe("From 4-6 ft, you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap.");
+    // A row stored before the generator stopped writing its "(n=…)" aside reads the same: the sample is the evidence line's.
+    const stored = toChInsight({ ...slope(jonah), content: "Inside 4-6 ft you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level). Short putts carry (n=75) the highest leverage." });
+    expect(stored.lede).toBe("Inside 4-6 ft you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap.");
+    expect(stored.why).toBe('Short putts carry the highest leverage.');
+    // Only the slope read's aside: putt-bias's per-side counts say what the evidence line does not.
+    const other = toChInsight({ ...breakBias(jonah), content: 'On 10-20 ft putts you make 36% of left-to-right breaks vs 51% the other way (n=22/24). Read more break.' });
+    expect(other.lede).toContain('(n=22/24)');
     expect(i.why).toMatch(/^Short putts carry the highest leverage/);
     expect(i.why).toMatch(/Rehearse a downhill-only ladder drill/);
   });
@@ -366,8 +373,8 @@ describe('Which insight leads, and who is most pressing', () => {
 
   it('130102 the focus is the top-ranked insight that is not working; the rest split into the other things to look at and what is working', () => {
     const { focus, also, working } = partitionInsights(list);
-    expect(focus?.title).toBe('Downhill putts inside 4-6 ft: a real penalty');
-    expect(also.map((i) => i.title)).toEqual(['Penalty strokes: 1.1 per round', 'Putting break: under-reading left-to-right (10-20 ft)']);
+    expect(focus?.title).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
+    expect(also.map((i) => i.title)).toEqual(['Penalty strokes: 1.1 per round', 'Putting break: under-reading left-to-right (10–20\u00a0ft)']);
     expect(working.map((i) => i.title)).toEqual(['Double bogey-or-worse rate: 1.6%']);
   });
 
@@ -446,7 +453,7 @@ describe('CoachHelm for the player, on screen', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
     expect(screen.getByText('Player')).toBeTruthy();
     expect(screen.getByText('One thing to work on this week, based on the rounds you’ve posted.')).toBeTruthy();
-    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
     expect(screen.queryByRole('button', { name: /Assign|Dismiss|Share/ })).toBeNull();
   });
 
@@ -455,7 +462,7 @@ describe('CoachHelm for the player, on screen', () => {
     const card = within(document.querySelector('.ch-hl-focus') as HTMLElement);
     expect(card.getByText('Putting')).toBeTruthy();
     expect(card.getByText('Worth closing')).toBeTruthy();
-    expect(card.getByText(/^Inside 4-6 ft you're making 58%/)).toBeTruthy();
+    expect(card.getByText(/^From 4–6 ft, you’re making 58%/)).toBeTruthy();
     const bars = within(card.getByRole('list'));
     expect(bars.getByText('Downhill').parentElement!.textContent).toBe('Downhill58%');
     expect(bars.getByText('Level').parentElement!.textContent).toBe('Level81%');
@@ -489,12 +496,13 @@ describe('CoachHelm for the player, on screen', () => {
       inList('Also worth knowing')
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Course managementPenalty strokes: 1.1 per roundPriority1.1', 'PuttingPutting break: under-reading left-to-right (10-20 ft)Worth closing36%']);
+    // A bare number says what it counts beneath it ("a round", "made").
+    ).toEqual(['Course managementPenalty strokes: 1.1 per roundPriority1.1 a round', 'PuttingPutting break: under-reading left-to-right (10–20\u00a0ft)Worth closing36% made']);
     expect(
-      inList('Working')
+      inList('What’s working')
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Course managementDouble bogey-or-worse rate: 1.6%Working1.6%']);
+    ).toEqual(['Course managementDouble bogey-or-worse rate: 1.6%Working1.6% of holes']);
     expect(screen.getByText('Reads update as you post rounds. Your coaches see the same insights.')).toBeTruthy();
   });
 
@@ -506,7 +514,7 @@ describe('CoachHelm for the player, on screen', () => {
     expect(focusHeading()).toBe('Penalty strokes: 1.1 per round');
     const also = inList('Also worth knowing');
     expect(also.queryByText('Penalty strokes: 1.1 per round')).toBeNull();
-    expect(also.getByRole('button', { name: /Downhill putts inside 4-6 ft/ })).toBeTruthy();
+    expect(also.getByRole('button', { name: /Downhill putts from 4–6\sft/ })).toBeTruthy();
   });
 
   it('CH-13802 a gauge says every number in words: you, the Tour, the sample and the window, and no college cohort', async () => {
@@ -532,12 +540,12 @@ describe('CoachHelm for the player, on screen', () => {
   it('CH-13806 a strength picked from Working reads Working in words, with a green gauge and no drill', async () => {
     const user = userEvent.setup();
     showPlayer(PREVIEW_HELM_PLAYER);
-    await user.click(inList('Working').getByRole('button', { name: /Double bogey-or-worse rate/ }));
+    await user.click(inList('What’s working').getByRole('button', { name: /Double bogey-or-worse rate/ }));
     const card = within(document.querySelector('.ch-hl-focus') as HTMLElement);
     expect(card.getByText('Working')).toBeTruthy();
     expect(document.querySelector('.ch-hl-focus .ch-hl-g.is-good')).not.toBeNull();
     // Nothing is left to be working, so the section is gone.
-    expect(screen.queryByRole('region', { name: 'Working' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'What’s working' })).toBeNull();
   });
 
   it('CH-13805 the focus is a polite live region, so choosing another insight is announced', () => {
@@ -565,7 +573,7 @@ describe('CoachHelm for the player, on screen', () => {
   it('CH-13303 only strengths: nothing needs work, and what is working is listed beside it', async () => {
     showPlayer(PREVIEW_HELM_PLAYER_WORKING);
     await expectCode('CH-13303', /Nothing needs work right now/);
-    expect(inList('Working').getByRole('button', { name: /Double bogey-or-worse rate/ })).toBeTruthy();
+    expect(inList('What’s working').getByRole('button', { name: /Double bogey-or-worse rate/ })).toBeTruthy();
     expect(document.querySelector('.ch-hl-focus')).toBeNull();
     // Nothing else to look at, so that list isn't drawn empty.
     expect(screen.queryByRole('region', { name: 'Also worth knowing' })).toBeNull();
@@ -595,7 +603,7 @@ describe('CoachHelm for the player, on screen', () => {
   it('CH-13304 CoachHelm turned off: said plainly, with the coach’s reason when there is one', async () => {
     showPlayer(PREVIEW_HELM_PLAYER_OFF);
     await expectCode('CH-13304', /CoachHelm is off for your team.*no insights are being shown/);
-    expect(screen.queryByRole('region', { name: 'Working' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'What’s working' })).toBeNull();
   });
 
   it('CH-13304 the coach’s own words are quoted', () => {
@@ -619,7 +627,7 @@ describe('CoachHelm for the player, on screen', () => {
     // An insight whose evidence can't be read throws inside the focus card only.
     showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list: [{ ...list[0]!, evidence: null as never }, ...list.slice(1)], error: false } });
     await expectCode('CH-13204', /Your focus couldn’t be shown/);
-    expect(inList('Working').getByRole('button', { name: /Double bogey-or-worse rate/ })).toBeTruthy();
+    expect(inList('What’s working').getByRole('button', { name: /Double bogey-or-worse rate/ })).toBeTruthy();
     quiet.mockRestore();
   });
 });
@@ -643,14 +651,14 @@ describe('CoachHelm proposals, on the player’s board', () => {
     const sec = within(screen.getByRole('region', { name: 'Proposed for you' }));
     expect(sec.getByText('Accept to start a focus, or decline to set it aside.')).toBeTruthy();
     expect(sec.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Downhill putts inside 6 ftFrom: Downhill putts inside 4-6 ft: a real penaltyAcceptDecline',
+      'Downhill putts inside 6 ftFrom the read “Downhill putts from 4–6\u00a0ft: a real penalty”AcceptDecline',
       'Lag putting from 30 ftYour coach proposed this as a focus.AcceptDecline',
     ]);
     expect(within(row('Lag putting from 30 ft')).getAllByRole('button').map((b) => b.textContent)).toEqual(['Accept', 'Decline']);
     // It sits above the focus card, and the insights below are as they were.
     const all = Array.from(document.querySelectorAll('.ch-hl > *'));
     expect(all.findIndex((n) => n.classList.contains('ch-hl-prop'))).toBeLessThan(all.findIndex((n) => n.classList.contains('ch-hl-grid')));
-    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
   });
 
   it('with nothing proposed there is no section, and with CoachHelm off there is none either', () => {
@@ -755,7 +763,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
     showPlayer(PREVIEW_HELM_PLAYER_PROPOSALS_FAILED);
     await expectCode('CH-13205', /Your proposed focus areas didn’t load.*still waiting for you/);
     expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
-    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
     await u.click(within(code('CH-13205') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalled();
   });
@@ -764,7 +772,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     showPlayer({ ...PREVIEW_HELM_PLAYER_PROPOSED, proposals: { list: [null as never], error: false } });
     await expectCode('CH-13204', /Proposed focus areas couldn’t be shown/);
-    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
     quiet.mockRestore();
   });
 
@@ -790,7 +798,7 @@ describe('CoachHelm for the coach, on screen', () => {
     const pulse = within(screen.getByRole('region', { name: 'Program pulse' }));
     expect(pulse.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       '2 players haven’t replied to Team dinnerThu, Oct 16, 6:30 PM · 4 of 6 replied',
-      '2 players are scoring higher than their previous three roundsJonah Okafor +2.1 · Eli Brandt +0.8',
+      '2 players are scoring worse over their last three roundsJonah Okafor +2.1 strokes · Eli Brandt +0.8 strokes',
       '1 active focus area has no recent progressPriya Natarajan: Lag putting',
       'No rounds recorded in 9 daysThe most recent round anywhere on the team was Oct 5.',
     ]);
@@ -803,8 +811,8 @@ describe('CoachHelm for the coach, on screen', () => {
     const players = within(screen.getByRole('region', { name: 'By player' }));
     expect(players.getAllByRole('button').map((b) => b.textContent)).toEqual([
       'EBEli BrandtPenalty strokes: 1.1 per round2',
-      'JOJonah OkaforDownhill putts inside 4-6 ft: a real penalty3',
-      'PNPriya NatarajanPutting break: under-reading left-to-right (10-20 ft)1',
+      'JOJonah OkaforDownhill putts from 4–6\u00a0ft: a real penalty3',
+      'PNPriya NatarajanPutting break: under-reading left-to-right (10–20\u00a0ft)1',
       'TMTheo MarchettiDouble bogey-or-worse rate: 1.6%', // no open signal: no count (P013 D12)
     ]);
     expect(players.getByRole('button', { name: /Eli Brandt/ }).getAttribute('aria-pressed')).toBe('true');
@@ -817,7 +825,7 @@ describe('CoachHelm for the coach, on screen', () => {
     showCoach();
     await pick(u, 'Jonah Okafor');
     expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
     expect(screen.getByRole('button', { name: /Jonah Okafor/ }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
   });
@@ -849,8 +857,9 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(w.assign).toHaveBeenCalledWith({
       playerId: 'pl-jonah',
       insightId: 'in-slope',
-      title: 'Downhill putts inside 4-6 ft: a real penalty',
-      description: "Inside 4–6 ft you’re making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level).",
+      // Typeset as the player reads it, with plain spaces: it is saved, and Fairway draws it too.
+      title: 'Downhill putts from 4–6 ft: a real penalty',
+      description: 'From 4–6 ft, you’re making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap.',
       areaType: 'putting',
       targetMetric: 'putt_slope_downhill_penalty_pct',
       // CH13-22: the player's value now is the focus's starting point.
@@ -941,9 +950,9 @@ describe('CoachHelm for the coach, on screen', () => {
     await u.click(await screen.findByRole('button', { name: 'Undo' }));
     expect(w.undo).toHaveBeenCalledWith('in-slope', 'detected');
     await waitFor(() => expect(code('CH-13901')).toBeNull());
-    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
     expect(screen.getByText('3 players have an open signal.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).textContent).toBe('JOJonah OkaforDownhill putts inside 4-6 ft: a real penalty3');
+    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).textContent).toBe('JOJonah OkaforDownhill putts from 4–6\u00a0ft: a real penalty3');
   });
 
   it('Undo restores the state the insight had: a matured one comes back matured', async () => {
@@ -1043,9 +1052,16 @@ describe('CoachHelm for the coach, on screen', () => {
 
   it('CH-13310 players with no insight yet are counted under the list', () => {
     showCoach();
-    expect(code('CH-13310')!.textContent).toBe('1 player has no insights yet.');
+    // Named (owner decision, wave 6): the coach sees who to look at, not only how many.
+    expect(code('CH-13310')!.textContent).toBe('Sam Whitfield has no insights yet.');
     cleanup();
     showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 3 });
+    expect(code('CH-13310')!.textContent).toBe('Sam Whitfield and 2 more have no insights yet.');
+    cleanup();
+    showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 2, withoutNames: ['Sam Whitfield', 'Ada Lee'] });
+    expect(code('CH-13310')!.textContent).toBe('Sam Whitfield and Ada Lee have no insights yet.');
+    cleanup();
+    showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 3, withoutNames: undefined });
     expect(code('CH-13310')!.textContent).toBe('3 players have no insights yet.');
     cleanup();
     showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 0 });
@@ -1227,7 +1243,7 @@ describe('CoachHelm loaders', () => {
       expect(d.off).toBeNull();
       expect(d.insights.error).toBe(false);
       expect(d.insights.list.map((i) => i.id)).toEqual(['in-slope', 'in-dbl']);
-      expect(d.insights.list[0]!.week).toEqual({ title: 'Downhill ladder', text: 'Start 2 ft below the hole.', meta: '12 min · intermediate' });
+      expect(d.insights.list[0]!.week).toEqual({ title: 'Downhill ladder', text: 'Start 2\u00a0ft below the hole.', meta: '12 min · intermediate' });
     });
 
     it('a failed drill read keeps the drill’s name and length, and is logged', async () => {
@@ -1412,7 +1428,7 @@ describe('CoachHelm loaders', () => {
         const d = await loadPlayerCoachHelm({ playerId: p1 });
         expect(d.proposals).toEqual({
           list: [
-            { id: 'fa-ladder', title: 'Downhill putts inside 6 ft', from: 'Downhill putts inside 4-6 ft: a real penalty' },
+            { id: 'fa-ladder', title: 'Downhill putts inside 6 ft', from: 'Downhill putts from 4–6\u00a0ft: a real penalty' },
             { id: 'fa-lag', title: 'Lag putting from 30 ft', from: null },
             { id: 'fa-gone', title: 'From an insight no longer on the page', from: null },
           ],
@@ -1513,7 +1529,7 @@ describe('CoachHelm loaders', () => {
       );
       vi.mocked(getCoachProgramPulse).mockResolvedValue(
         pulse([
-          { id: 'movement-decline', headline: '2 players are scoring higher than their previous three rounds', evidence: 'Jonah Okafor +2.1', tone: 'attention', weight: 80 },
+          { id: 'movement-decline', headline: '2 players are scoring worse over their last three rounds', evidence: 'Jonah Okafor +2.1', tone: 'attention', weight: 80 },
           { id: 'signals-open', headline: '3 open signals across 2 players', evidence: 'x', tone: 'neutral', weight: 70 },
         ]),
       );
@@ -1558,7 +1574,7 @@ describe('CoachHelm loaders', () => {
       const d = await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' });
       const top = d.players.list.find((p) => p.id === jonah.id)!.top;
       expect(top.assigned).toBe('proposed');
-      expect(top.week?.text).toBe('Start 2 ft below the hole.');
+      expect(top.week?.text).toBe('Start 2\u00a0ft below the hole.');
       expect(d.players.list.find((p) => p.id === eli.id)!.top.assigned).toBeNull();
     });
 
@@ -1835,7 +1851,7 @@ describe('CoachHelm route', () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     teamOf.current = null;
     render(wrap(await resolved(await ClubhouseCoachHelmRoute())));
-    expect(focusHeading()).toBe('Downhill putts inside 4–6 ft: a real penalty');
+    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
   });
 
   const noView = { searchParams: Promise.resolve({}) };

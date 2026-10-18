@@ -179,6 +179,7 @@ Removing a class asks first, with the warning haptic before the question, and sa
 | 121101 | CH-12501 | `REMOVE_CLASS` | Remove class |
 | 121102 | CH-12502 | `CANCEL_OR_CLOSE_A_FORM_THAT_HAS` | Cancel or close a form that has changes |
 | 121103 | CH-12503 | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
+| 121104 | CH-12504 | `START_OVER_IN_THE_IMPORT_REVIEW_ONCE` | Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once) |
 
 ## 12 — State preservation
 

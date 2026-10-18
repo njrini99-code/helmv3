@@ -349,6 +349,13 @@ describe('Settings · 81xx validation', () => {
     expect(hapticSpy).toHaveBeenCalledWith('warning');
   });
 
+  it('wave-6 Team on desktop opens on the invite code, then Team details', () => {
+    setup({ section: 'team' });
+    const invite = screen.getByRole('region', { name: 'Invite players' });
+    const details = screen.getByRole('region', { name: 'Team details' });
+    expect(invite.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it.each([
     ['CH-8108', 'Team name', '', /team needs a name/],
     ['CH-8109', 'Name', '', /school needs a name/],
@@ -359,6 +366,9 @@ describe('Settings · 81xx validation', () => {
     await user.clear(f);
     if (value) await user.type(f, value);
     await expectCode(c, text);
+    // The field says it too, beside the save bar's line: marked invalid, with the problem as its help.
+    expect(f.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(f.getAttribute('aria-describedby')!)?.textContent).toMatch(text);
   });
 
   it('CH-8111 the first reminder must come first', async () => {
@@ -1103,6 +1113,7 @@ describe('Settings · Team · the coaching staff', () => {
     await expectCode('CH-8026', /Couldn’t approve Avery Lee/);
     expect(staff.approve).toHaveBeenCalledWith('avery');
     await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Decline Avery Lee?' })).getByRole('button', { name: 'Decline' }));
     await expectCode('CH-8027', /Couldn’t decline Avery Lee/);
     expect(staff.decline).toHaveBeenCalledWith('avery');
     await user.click(within(await screen.findByRole('region', { name: 'Staff invitations' })).getByRole('button', { name: 'Create invite' }));
@@ -2358,6 +2369,14 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await waitFor(() => expect(within(scoring).getByRole('button', { name: /^Default tees Blue/ })).toBeTruthy());
     });
 
+    it('wave-6 the sentence about the timezone sits under Team details, where its row is, not under Scoring and format', async () => {
+      const { user } = phone();
+      await openRow(user, /^Team/);
+      const details = await screen.findByRole('region', { name: 'Team details' });
+      expect(details.textContent).toContain('The timezone sets when every event and reminder happens.');
+      expect(screen.getByRole('region', { name: 'Scoring and format' }).textContent).not.toMatch(/timezone/);
+    });
+
     it('81901 CH-8011 CH-8108 Team name opens the details sheet with the season and school; a cleared name keeps Save off', async () => {
       const { user, writes } = phone();
       await openRow(user, /^Team/);
@@ -2604,7 +2623,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
 describe('Settings · this file', () => {
   it('82401 every catalog row of kinds 0 to 5 is named by a test here, and so is every Bridge ID this page proves', () => {
     const root = process.cwd();
-    const tests = ['settings.test.tsx', 'settings-server.test.tsx', 'course-location.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8'));
+    const tests = ['settings.test.tsx', 'settings-server.test.tsx', 'settings-staff.test.tsx', 'course-location.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8'));
     const all = tests.join('\n');
     const catalog = readFileSync(join(root, 'docs/clubhouse/catalog/settings.md'), 'utf8');
     const missing = [...catalog.matchAll(/^\|\s*CH-(80|81|82|83|84|85)(\d{2})\s*\|.*$/gm)]

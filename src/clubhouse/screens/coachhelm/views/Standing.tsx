@@ -99,7 +99,7 @@ function Row({ r }: { r: ChStandRow }) {
 }
 
 function Hero({ s }: { s: ChStanding }) {
-  const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed}` : null].filter(Boolean);
+  const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
   const { tour, team } = s.counts;
   const top = s.gaps[0];
   const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
@@ -109,7 +109,8 @@ function Hero({ s }: { s: ChStanding }) {
       <div className="ch-hs-hero__main">
         <div className="ch-hs-hero__k">
           <span>Where you stand</span>
-          {meta.length > 0 && <span className="ch-num">{meta.join(' · ')}</span>}
+          {/* No-break spaces keep a date whole ("Sep 30") and a dot off the start of a line. */}
+          {meta.length > 0 && <span className="ch-num">{meta.join('\u00a0· ')}</span>}
         </div>
         {/* A headline, so no closing full stop (states audit, 2026-10-08). It leads with the most to gain; the counts say one
             denominator, the Tour's, under it (P013 D4). */}
@@ -211,7 +212,9 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
           {s.cohortFailed && <RefreshNotice code="CH-13272" title="Your team’s Tour couldn’t be confirmed" body="The rows below are against the men’s Tour, the default, which may not be the one for your team. Your stats and your team’s are not affected. Try again in a moment." covered={s.baselineFailed} />}
           {s.state === 'early' && (
             <p className="ch-hs-early" role="note" data-ch-code="CH-13371">
-              <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds, and a comparison with your team needs 5 teammates with the stat.
+              <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds
+              {/* The team clause only where a row is short of teammates: rows with team values say otherwise. */}
+              {s.groups.some((g) => g.rows.some((r) => r.teamNote)) ? ', and a comparison with your team needs 5 teammates with the stat' : ''}.
             </p>
           )}
           <Hero s={s} />

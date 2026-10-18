@@ -62,7 +62,7 @@ import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { useLiveStandings } from '../screens/qualifiers/live';
-import { buildBoard, roundPars, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
+import { buildBoard, roundPars, stageNoteText, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
 import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '../preview/fixtures-qualifiers';
 import { isRebuilt } from '../shell/nav';
@@ -1627,6 +1627,30 @@ describe('Qualifiers · create and edit', () => {
     expect(router.push).not.toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new');
   });
 
+  it('wave-6 the Players head has one Select all or Clear all; Clear all keeps a player with a round in', async () => {
+    const user = userEvent.setup();
+    const data = form({ initial: { ...form().initial, playerIds: [] } });
+    const active = data.players.filter((p) => !p.inactive);
+    const { unmount } = wrap(<QualifierForm data={data} writes={fakeWrites()} />);
+    await user.click(screen.getByRole('button', { name: 'Select all' }));
+    expect(screen.getByText(`${active.length} of ${active.length} active players entered`)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Clear all' }));
+    expect(screen.getByText(`0 of ${active.length} active players entered`)).toBeTruthy();
+    unmount();
+    const locked = { ...data, players: data.players.map((p, i) => (i === 0 ? { ...p, locked: 'round' as const } : p)), initial: { ...data.initial, playerIds: active.map((p) => p.id) } };
+    wrap(<QualifierForm data={locked} writes={fakeWrites()} />);
+    await user.click(screen.getByRole('button', { name: 'Clear all' }));
+    expect(screen.getByText(`${data.players[0]!.inactive ? 0 : 1} of ${active.length} active players entered`)).toBeTruthy();
+  });
+
+  it('wave-6 the squad help says the limit, a round with no course says how to set one, and the end date starts at the start date', async () => {
+    wrap(<QualifierForm data={form({ initial: { ...form().initial, course: '', startDate: '2026-10-19' } })} writes={fakeWrites()} />);
+    expect(screen.getByText('Players who make the trip, up to 12.')).toBeTruthy();
+    expect(screen.getAllByText('Choose one, or set the qualifier’s course above')).toHaveLength(3);
+    expect(screen.queryByText('Uses the qualifier’s course')).toBeNull();
+    expect((document.getElementById('qf-end') as HTMLInputElement).min).toBe('2026-10-19');
+  });
+
   it('CH-09404 a create in flight reads Creating and cannot be sent twice', async () => {
     const user = userEvent.setup();
     const writes = fakeWrites({ create: vi.fn(never) });
@@ -2267,6 +2291,30 @@ describe('Qualifiers · Manage selections', () => {
     await user.click(inDialog('CH-09505', 'Confirm squad'));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${previewSelection().id}`));
     expect(hapticSpy).toHaveBeenCalledWith('success');
+  });
+
+  it('wave-6 while a pick is open, a player in the rest of the field has Pick, which opens the dialog with them chosen; the note counts down', async () => {
+    const user = userEvent.setup();
+    const data = previewSelection('picking');
+    const { unmount } = wrap(<QualifierSelection data={data} writes={selWrites()} />);
+    expect(screen.getByText('Choose 1 coach’s pick, with a reason, to confirm the squad.')).toBeTruthy();
+    const rest = screen.getByRole('region', { name: 'Rest of the field' });
+    const first = data.candidates.filter((c) => c.rank != null && !c.onScore).sort((a, b) => a.rank! - b.rank!)[0]!;
+    await user.click(within(rest).getByRole('button', { name: `Pick ${first.name}` }));
+    const dialog = await screen.findByRole('dialog', { name: 'Choose a coach’s pick' });
+    expect((within(dialog).getByRole('radio', { name: new RegExp(first.name) }) as HTMLInputElement).checked).toBe(true);
+    unmount();
+    // Once the one pick is made, no row offers Pick and the note moves on.
+    wrap(<QualifierSelection data={previewSelection('picked')} writes={selWrites()} />);
+    expect(within(screen.getByRole('region', { name: 'Rest of the field' })).queryByRole('button', { name: /^Pick / })).toBeNull();
+    expect(screen.getByText('Every pick is made. Confirm the squad to tell the players.')).toBeTruthy();
+  });
+
+  it('wave-6 the stage note counts the picks left and a missing reason', () => {
+    expect(stageNoteText(1, { topN: 4, picks: 2 })).toBe('Choose 2 coach’s picks, each with a reason, to confirm the squad.');
+    expect(stageNoteText(1, { topN: 4, picks: 1, made: 1 })).toBe('Choose 1 more coach’s pick, with a reason, to confirm the squad.');
+    expect(stageNoteText(1, { topN: 4, picks: 1, made: 1, reasons: 1 })).toBe('Choose 1 more coach’s pick, with a reason, to confirm the squad. Add the missing reason too.');
+    expect(stageNoteText(1, { topN: 4, picks: 0, made: 2, reasons: 2 })).toBe('Every pick is chosen. Add the 2 missing reasons, then confirm the squad.');
   });
 
   it('Confirm squad stays off until every pick is made with a reason', () => {

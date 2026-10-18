@@ -3,7 +3,7 @@
 import { Suspense, use, useState } from 'react';
 import { Archive, Check, Flag, Sparkles, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
-import { firstName, playersLine, pulseGapsLabel, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
+import { firstName, playersLine, pulseGapsLabel, withoutSignalsLine, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { normalise, useAction } from '../../lib/use-action';
@@ -326,7 +326,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
           </div>
           {data.withoutSignals > 0 && (
             <p className="ch-hl-note" data-ch-code="CH-13310">
-              {data.withoutSignals} {data.withoutSignals === 1 ? 'player has' : 'players have'} no insights yet.
+              {withoutSignalsLine(data.withoutSignals, data.withoutNames)}
             </p>
           )}
         </>

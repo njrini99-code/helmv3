@@ -89,7 +89,7 @@ search or filter, so it has no filtered empty state.
 | 100411 | CH-10310 | `A_TEAM_WITH_NOBODY_ON_THE_ROSTER` | A team with nobody on the roster |
 | 100412 | CH-10311 | `A_TEAM_WITH_NO_DOCUMENTS` | A team with no documents |
 | 100413 | CH-10312 | `PLAN_A_TRIP_NO_UPCOMING_EVENTS_IN` | Plan a trip: no upcoming events in the next four months |
-| 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step with no calendar event |
+| 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step) |
 | 100415 | CH-10314 | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | New announcement: files that players can't open are left out of the attach list |
 | 100416 | CH-10315 | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | Plan a trip: nobody chosen has a class during the trip |
 

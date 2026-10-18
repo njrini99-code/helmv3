@@ -1,7 +1,7 @@
 'use client';
 
 import { Ellipsis, GraduationCap, Plus, SearchX, Trash2 } from 'lucide-react';
-import { CH_STAGES, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
+import { CH_STAGES, isNextStepLate, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
@@ -13,7 +13,7 @@ import { Swap } from '../../ui/Swap';
 import { EmptyState } from '../../ui/States';
 import type { RecCtx } from './ctx';
 import { Documents } from './Documents';
-import { CalendarLine, CommitRule, ContactSection, MetaLine, NextStepSection, NotesSection, ProspectAvatar, StageChip, isStrong } from './parts';
+import { CalendarLine, CommitRule, ContactSection, MetaLine, NextStepPlate, NextStepSection, NextStepSrPrefix, NotesSection, ProspectAvatar, StageChip, isStrong } from './parts';
 import { Pipeline } from './Pipeline';
 
 /**
@@ -168,6 +168,8 @@ function ProspectTable({ c }: { c: RecCtx }) {
                   <span>
                     <b>{p.name}</b>
                     <span className="ch-rec-tb__sub">{rowLineOf(p)}</span>
+                    {/* Sorted by the next step, a list too narrow for its column carries the step under the name (CSS). */}
+                    {c.nextStep && c.sort === 'next' && <NextStepPlate p={p} now={c.now} tz={c.tz} always />}
                   </span>
                 </button>
               </th>
@@ -176,13 +178,25 @@ function ProspectTable({ c }: { c: RecCtx }) {
               <td>
                 <StageChip stage={p.stage} />
               </td>
-              {c.nextStep && <td className="is-next ch-num">{nextStepLine(p, c.now, c.tz) ?? '—'}</td>}
+              {c.nextStep && <NextCell p={p} c={c} />}
               <td className="is-when ch-num">{whenLabel(p.updatedAt, c.now, c.tz)}</td>
             </tr>
           );
         })}
       </tbody>
     </table>
+  );
+}
+
+/** The Next step column: the step, or a dash; a step whose day has passed is late (warning ink, "Overdue:" for VoiceOver). */
+function NextCell({ p, c }: { p: ChProspect; c: RecCtx }) {
+  const line = nextStepLine(p, c.now, c.tz);
+  const late = !!line && isNextStepLate(p, c.now, c.tz);
+  return (
+    <td className={'is-next ch-num' + (late ? ' is-late' : '')}>
+      {late && <NextStepSrPrefix late />}
+      {line ?? '—'}
+    </td>
   );
 }
 

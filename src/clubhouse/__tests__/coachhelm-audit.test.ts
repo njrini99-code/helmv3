@@ -206,12 +206,12 @@ describe('CH13-13 whose voice the text is in', () => {
 
     it('contractions and the verbs after you, from the generators’ real sentences', () => {
       expect(speak("Inside 4-6 ft you're making 58% of downhill putts vs 81% of level putts at the same distance", jo)).toBe(
-        'Inside 4–6 ft Jonah is making 58% of downhill putts vs 81% of level putts at the same distance',
+        'Inside 4–6\u00a0ft Jonah is making 58% of downhill putts vs 81% of level putts at the same distance',
       );
       expect(speak("When you do reach it you finish 23 ft from the hole (over 40 greens), that's the dial-in once you're on.", jo)).toBe(
-        "When Jonah does reach it Jonah finishes 23 ft from the hole (over 40 greens), that’s the dial-in once Jonah is on.",
+        "When Jonah does reach it Jonah finishes 23\u00a0ft from the hole (over 40 greens), that’s the dial-in once Jonah is on.",
       );
-      expect(speak('Across your last 55 approaches from 125-175 yd you found the green 73% of the time', jo)).toBe("Across Jonah’s last 55 approaches from 125–175 yd Jonah found the green 73% of the time");
+      expect(speak('Across your last 55 approaches from 125-175 yd you found the green 73% of the time', jo)).toBe("Across Jonah’s last 55 approaches from 125–175\u00a0yd Jonah found the green 73% of the time");
       expect(speak("You're averaging 1.1 penalty strokes per round and you couldn't escape the sand", jo)).toBe("Jonah is averaging 1.1 penalty strokes per round and Jonah couldn’t escape the sand");
       expect(speak('You have 3 doubles and you birdie 12% of par 5s. You attempted 14.', jo)).toBe('Jonah has 3 doubles and Jonah birdies 12% of par 5s. Jonah attempted 14.');
     });
@@ -230,10 +230,10 @@ describe('CH13-13 whose voice the text is in', () => {
       );
       expect(speak('43.8% of your double-or-worse holes trace to missed greens you couldn’t get up-and-down.', jo)).toBe('43.8% of Jonah’s double-or-worse holes trace to missed greens Jonah couldn’t get up-and-down.');
       expect(speak("Your lag putts (15+ ft) aren't finishing inside tap-in range, and you're only making 50% from 3-5 ft, so the second putt stops costing you a stroke.", jo)).toBe(
-        "Jonah’s lag putts (15+ ft) aren’t finishing inside tap-in range, and Jonah is only making 50% from 3–5 ft, so the second putt stops costing Jonah a stroke.",
+        "Jonah’s lag putts (15+ ft) aren’t finishing inside tap-in range, and Jonah is only making 50% from 3–5\u00a0ft, so the second putt stops costing Jonah a stroke.",
       );
       expect(speak('You ESCAPE the bunker fine, but you finish 13 ft from the hole and then 2-putt. You play worse when it counts.', jo)).toBe(
-        'Jonah escapes the bunker fine, but Jonah finishes 13 ft from the hole and then 2-putt. Jonah plays worse when it counts.',
+        'Jonah escapes the bunker fine, but Jonah finishes 13\u00a0ft from the hole and then 2-putt. Jonah plays worse when it counts.',
       );
       expect(speak("the driver is how far your approach/chip leaves you, not your stroke; the layback is better where driver isn't pinning you to a much better approach distance", jo)).toBe(
         "the driver is how far Jonah’s approach/chip leaves Jonah, not Jonah’s stroke; the layback is better where driver isn’t pinning Jonah to a much better approach distance",
@@ -276,7 +276,7 @@ describe('CH13-13 whose voice the text is in', () => {
   it('a viewer reads it typeset: curly apostrophes and quotes, an en dash in a number range, never in a date or a word', () => {
     const pl = { role: 'player' } as const;
     expect(speak('Inside 4-6 ft, from 100-150 yd and 2.5-3.5 m, you\'re "dialed in"; the players\' 3-putts', pl)).toBe(
-      'Inside 4–6 ft, from 100–150 yd and 2.5–3.5 m, you’re “dialed in”; the players’ 3-putts',
+      'Inside 4–6\u00a0ft, from 100–150\u00a0yd and 2.5–3.5 m, you’re “dialed in”; the players’ 3-putts',
     );
     expect(speak("Since 2026-10-01 the 'safe' miss is left of the up-and-down", pl)).toBe('Since 2026-10-01 the ‘safe’ miss is left of the up-and-down');
   });
@@ -287,15 +287,15 @@ describe('CH13-13 whose voice the text is in', () => {
 
   it('toChInsight speaks for the viewer in the claim, the reasoning, the text of This week and the labels on the gauge', () => {
     const coach = toChInsight(slope(jonah), { viewer: { role: 'coach', first: 'Jonah' }, drillText: 'Have the player start 2 ft below the hole.' });
-    expect(coach.lede).toBe('Inside 4–6 ft Jonah is making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level).');
+    expect(coach.lede).toBe('From 4–6\u00a0ft, Jonah is making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap.');
     expect(coach.why).toContain("Jonah’s bag");
     expect(coach.why).not.toMatch(/\byou('re)?\b/i);
-    expect(coach.week?.text).toBe('Have Jonah start 2 ft below the hole.');
+    expect(coach.week?.text).toBe('Have Jonah start 2\u00a0ft below the hole.');
     const own = toChInsight(breakBias(jonah), { viewer: { role: 'coach', first: 'Jonah' } });
     expect(own.evidence.gauge?.cmp).toBe("Jonah’s right-to-left make % (same band) 51%");
     const player = toChInsight(slope(jonah), { viewer: { role: 'player' }, drillText: 'Have the player start 2 ft below the hole.' });
     expect(player.lede).toContain("you’re making 58%");
-    expect(player.week?.text).toBe('Start 2 ft below the hole.');
+    expect(player.week?.text).toBe('Start 2\u00a0ft below the hole.');
   });
 });
 

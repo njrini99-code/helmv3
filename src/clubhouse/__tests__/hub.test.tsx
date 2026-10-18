@@ -449,6 +449,31 @@ describe('Team Hub · player', () => {
 });
 
 describe('Team Hub · coach', () => {
+  it('the acknowledgement count opens who hasn’t acknowledged yet; without the names it stays a count', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH, writes(), 'ann');
+    const count = screen.getByRole('button', { name: '5 of 6 acknowledged' });
+    expect(count.getAttribute('aria-expanded')).toBe('false');
+    await user.click(count);
+    expect(count.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById(count.getAttribute('aria-controls')!)?.textContent).toBe('Not yetJonah Okafor');
+    cleanup();
+    const rows = PREVIEW_HUB_COACH.announcements.rows.map((a) => ({ ...a, notAcked: null }));
+    show({ ...PREVIEW_HUB_COACH, announcements: { ...PREVIEW_HUB_COACH.announcements, rows } }, writes(), 'ann');
+    expect(screen.queryByRole('button', { name: '5 of 6 acknowledged' })).toBeNull();
+    expect(screen.getByText('5 of 6 acknowledged')).toBeTruthy();
+  });
+
+  it('CH-10008 several files dropped at once land with one toast that counts them; one file keeps its own name', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH, writes(), 'docs');
+    const input = document.querySelector('.ch-hb-docs input[type="file"]') as HTMLInputElement;
+    await user.upload(input, [new File(['x'], 'A.pdf', { type: 'application/pdf' }), new File(['x'], 'B.pdf', { type: 'application/pdf' }), new File(['x'], 'C.pdf', { type: 'application/pdf' })]);
+    await screen.findByText('3 files shared with the team');
+    expect(screen.queryByText('A.pdf shared with the team')).toBeNull();
+    expect(screen.queryByText('B.pdf shared with the team')).toBeNull();
+  });
+
   it('100101 Home: replies as counts, read receipts, travelers; the Tasks tab', async () => {
     show(PREVIEW_HUB_COACH);
     expect(screen.getByText('Coach view')).toBeTruthy();
@@ -603,7 +628,7 @@ describe('Team Hub · coach', () => {
     await waitFor(() => expect(router.refresh).toHaveBeenCalled());
   });
 
-  it('CH-10313 CH-10103 CH-10104 CH-10105 CH-10106 CH-10403 CH-10006 101201 planning a trip in steps: no event means no travelers to pick; Logistics checks the name, place and dates before Next; a failed save keeps them', async () => {
+  it('CH-10103 CH-10104 CH-10105 CH-10106 CH-10403 CH-10006 101201 planning a trip in steps: no event skips Travelers both ways; Logistics checks the name, place and dates before Next, says so out loud and goes to the first; a failed save keeps them', async () => {
     const user = userEvent.setup();
     let release: (v: { success: boolean }) => void = () => {};
     const plan = vi.fn(() => new Promise<{ success: boolean }>((r) => (release = r)));
@@ -611,23 +636,30 @@ describe('Team Hub · coach', () => {
     await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
     const dialog = await screen.findByRole('dialog', { name: 'Plan a trip' });
     const d = within(dialog);
-    // Event (none), Travelers (none without an event), then Logistics, which checks before it lets you on.
+    // Event (none), then straight to Logistics: without an event there is nobody to choose, and the strip says it was skipped.
     await user.click(d.getByRole('radio', { name: /No calendar event/ }));
-    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
-    await expectCode('CH-10313', /Travelers come from the trip’s calendar event/);
     await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    expect(dialog.querySelector('.ch-hb-steps li.is-skip')?.textContent).toMatch(/Travelers, skipped/);
+    expect(code('CH-10313')).toBeNull();
+    // Back skips it too.
+    await user.click(d.getByRole('button', { name: 'Back' }));
+    expect(d.getByRole('radio', { name: /No calendar event/ })).toBeTruthy();
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    // Logistics checks before it lets you on: each refusal is read out (role=alert) and focus goes to the first.
     await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
     await expectCode('CH-10103');
     await expectCode('CH-10104');
     await expectCode('CH-10105');
+    expect(code('CH-10103')?.getAttribute('role')).toBe('alert');
+    await waitFor(() => expect(document.activeElement).toBe(d.getByRole('textbox', { name: 'Trip' })));
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     await user.type(d.getByRole('textbox', { name: 'Trip' }), 'Seahawk');
     await user.type(d.getByRole('textbox', { name: 'Where' }), 'Wilmington');
-    fireEvent.change(d.getByLabelText('Leaves'), { target: { value: '2026-11-14' } });
-    fireEvent.change(d.getByLabelText('Back'), { target: { value: '2026-11-12' } });
+    fireEvent.change(d.getByLabelText('Departs'), { target: { value: '2026-11-14' } });
+    fireEvent.change(d.getByLabelText('Returns'), { target: { value: '2026-11-12' } });
     await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
     await expectCode('CH-10106', /can’t be before the departure/);
-    fireEvent.change(d.getByLabelText('Back'), { target: { value: '2026-11-16' } });
+    fireEvent.change(d.getByLabelText('Returns'), { target: { value: '2026-11-16' } });
     await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
     await user.click(d.getByRole('button', { name: 'Publish' }));
     await expectCode('CH-10403', /Saving…/);
@@ -637,6 +669,68 @@ describe('Team Hub · coach', () => {
     // Back returns to Logistics with everything kept.
     await user.click(d.getByRole('button', { name: 'Back' }));
     expect((d.getByRole('textbox', { name: 'Trip' }) as HTMLInputElement).value).toBe('Seahawk');
+  });
+
+  it('CH-10313 the Travelers step whose event left the list while the sheet was open (cancelled, re-read) says where travelers come from', async () => {
+    const user = userEvent.setup();
+    const w = writes();
+    const tree = (data: ChTeamHub) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <TeamHub data={data} writes={w} initialTab="travel" viewerName="Maya Reyes" />
+          </div>
+        </ToastProvider>
+      </LazyMotion>
+    );
+    const { rerender } = render(tree(PREVIEW_HUB_COACH));
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+    await user.click(d.getByRole('radio', { name: /ECU Intercollegiate/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+    rerender(tree({ ...PREVIEW_HUB_COACH, tripEvents: { ...PREVIEW_HUB_COACH.tripEvents, rows: PREVIEW_HUB_COACH.tripEvents.rows.filter((e) => e.id !== 'e-ecu') } }));
+    await expectCode('CH-10313', /Travelers come from the trip’s calendar event/);
+  });
+
+  it('Enter is Next on the trip’s steps and Publish only on the last; Assign a task assigns on Enter', async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_HUB_COACH, writes({ planTrip: vi.fn(async () => ({ success: true, data: { id: 't' } })) }), 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+    await user.click(d.getByRole('radio', { name: /No calendar event/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    await user.type(d.getByRole('textbox', { name: 'Trip' }), 'Seahawk');
+    await user.type(d.getByRole('textbox', { name: 'Where' }), 'Wilmington');
+    fireEvent.change(d.getByLabelText('Departs'), { target: { value: '2026-11-14' } });
+    await user.type(d.getByRole('textbox', { name: 'Where' }), '{Enter}');
+    expect(d.getByRole('button', { name: 'Publish' })).toBeTruthy();
+    expect(w.planTrip).not.toHaveBeenCalled();
+    cleanup();
+    const a = show(PREVIEW_HUB_COACH, writes(), 'tasks');
+    await user.click(screen.getByRole('button', { name: 'Assign a task' }));
+    const t = within(await screen.findByRole('dialog', { name: 'Assign a task' }));
+    await user.type(t.getByRole('textbox', { name: 'Task' }), 'Book physicals{Enter}');
+    await waitFor(() => expect(a.assignTask).toHaveBeenCalledWith(expect.objectContaining({ title: 'Book physicals' })));
+  });
+
+  it('Assign a task: Clear all and Select all over the roster, a due date from today, and a refused save goes to its field', async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_HUB_COACH, writes(), 'tasks');
+    await user.click(screen.getByRole('button', { name: 'Assign a task' }));
+    const t = within(await screen.findByRole('dialog', { name: 'Assign a task' }));
+    expect(t.getByText(/of/, { selector: '.ch-field__label' }).textContent).toBe('For 6 of 6');
+    await user.click(t.getByRole('button', { name: 'Clear all' }));
+    expect(t.getByText(/of/, { selector: '.ch-field__label' }).textContent).toBe('For 0 of 6');
+    await user.click(t.getByRole('button', { name: 'Select all' }));
+    expect(t.getByText(/of/, { selector: '.ch-field__label' }).textContent).toBe('For 6 of 6');
+    expect((t.getByLabelText('Due Optional') as HTMLInputElement).min).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    await user.click(t.getByRole('button', { name: 'Clear all' }));
+    await user.type(t.getByRole('textbox', { name: 'Task' }), 'Book physicals');
+    await user.click(t.getByRole('button', { name: 'Assign' }));
+    await expectCode('CH-10108');
+    expect(code('CH-10108')?.getAttribute('role')).toBe('alert');
+    expect(document.activeElement).toBe(t.getByRole('button', { name: /Theo Marchetti/ }));
+    expect(w.assignTask).not.toHaveBeenCalled();
   });
 
   it("a trip for a calendar event: the event fills the trip, its invitees are the travelers, and Publish saves the trip once, then who travels", async () => {
@@ -652,7 +746,7 @@ describe('Team Hub · coach', () => {
     await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
     expect((d.getByRole('textbox', { name: 'Trip' }) as HTMLInputElement).value).toBe('ECU Intercollegiate');
     expect((d.getByRole('textbox', { name: 'Where' }) as HTMLInputElement).value).toBe('Greenville CC');
-    expect((d.getByLabelText('Leaves') as HTMLInputElement).value).toBe('2026-11-17');
+    expect((d.getByLabelText('Departs') as HTMLInputElement).value).toBe('2026-11-17');
     await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
     expect(d.getByText('2 from ECU Intercollegiate')).toBeTruthy();
     await user.click(d.getByRole('button', { name: 'Publish' }));
@@ -1213,11 +1307,10 @@ const scenarios: Scenario[] = [
       await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
       const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
       await user.click(d.getByRole('radio', { name: /No calendar event/ }));
-      await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
       await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
       await user.type(d.getByRole('textbox', { name: 'Trip' }), 'Seahawk');
       await user.type(d.getByRole('textbox', { name: 'Where' }), 'Wilmington');
-      fireEvent.change(d.getByLabelText('Leaves'), { target: { value: '2026-11-14' } });
+      fireEvent.change(d.getByLabelText('Departs'), { target: { value: '2026-11-14' } });
       await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
       await user.click(d.getByRole('button', { name: 'Publish' }));
     },
@@ -1532,6 +1625,48 @@ describe('Team Hub · what is sent to a player', () => {
     actions.coachAnns.mockResolvedValue({ success: true, data: [post] });
     const coach = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'c1', playerId: null });
     expect(coach.announcements.rows[0]).toMatchObject({ ackCount: 5, recipients: 6 });
+  });
+
+  it('the coach learns who hasn’t acknowledged, by name, for a targeted post and an all-team one; a failed read leaves the count alone; a player gets no names', async () => {
+    base();
+    const post = (id: string) => ({ id, title: id, body: '', created_by: null, published_at: at(-H), created_at: at(-H), requires_acknowledgement: true, acknowledged_count: 1, total_recipients: 3, document_count: 0 });
+    const roster = [
+      { player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } },
+      { player: { id: 'p2', first_name: 'Ava', last_name: 'Lindqvist' } },
+      { player: { id: 'p3', first_name: 'Eli', last_name: 'Brandt' } },
+    ];
+    const answers = (over: Partial<import('./supabase-fake').ChFakeTables> = {}) => {
+      tables.current = {
+        golf_teams: team,
+        golf_team_members: { data: roster },
+        // 'targeted' went to p1 and p2 (and a player since gone, p9); 'all' has no recipient rows, so it went to the roster.
+        golf_announcement_recipients: { data: [{ announcement_id: 'targeted', player_id: 'p1' }, { announcement_id: 'targeted', player_id: 'p2' }, { announcement_id: 'targeted', player_id: 'p9' }] },
+        golf_announcement_acknowledgements: { data: [{ announcement_id: 'targeted', player_id: 'p1' }, { announcement_id: 'all', player_id: 'p2' }] },
+        ...over,
+      };
+    };
+    actions.coachAnns.mockResolvedValue({ success: true, data: [post('targeted'), post('all'), { ...post('plain'), requires_acknowledgement: false }] });
+    answers();
+    const coach = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'c1', playerId: null });
+    const byId = new Map(coach.announcements.rows.map((a) => [a.id, a]));
+    expect(byId.get('targeted')?.notAcked).toEqual(['Ava Lindqvist']);
+    expect(byId.get('all')?.notAcked).toEqual(['Eli Brandt', 'Theo Marchetti']);
+    expect(byId.get('plain')?.notAcked).toBeUndefined();
+    for (const table of ['golf_announcement_recipients', 'golf_announcement_acknowledgements']) {
+      logServer.mockClear();
+      answers({ [table]: { data: null, error: { message: 'permission denied' } } });
+      const failed = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'c1', playerId: null });
+      expect(failed.announcements.rows.find((a) => a.id === 'all')).toMatchObject({ ackCount: 1, recipients: 3, notAcked: null });
+      expect(logServer).toHaveBeenCalledWith('hub', 'announcementAcks', expect.anything());
+    }
+    answers({ golf_team_members: { data: null, error: { message: 'down' } } });
+    const noRoster = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'c1', playerId: null });
+    expect(noRoster.announcements.rows.find((a) => a.id === 'all')?.notAcked).toBeNull();
+    answers();
+    actions.summary.mockResolvedValue({ events: [], trips: [], tasks: [], announcements: [post('all')], announcementsLoadError: false });
+    const player = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
+    expect(player.announcements.rows[0]?.notAcked).toBeUndefined();
+    expect(JSON.stringify(player)).not.toMatch(/Brandt|Lindqvist/);
   });
 
   it('100803 a player is offered a reply only on an event they are invited to that still takes one: not one that started, was cancelled, is past its deadline, or began an all-day more than a day ago', async () => {
@@ -2336,13 +2471,13 @@ describe('Team Hub · Plan a trip warns when a traveler has a class during the t
     const user = userEvent.setup();
     const read = vi.fn(async () => answer([]));
     const w = writes({ travelerClasses: read });
-    // No calendar event: the Travelers step has no travelers.
+    // No calendar event: no travelers, so the Travelers step is skipped.
     show(PREVIEW_HUB_COACH, w, 'travel');
     await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
     let d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
     await user.click(d.getByRole('radio', { name: /No calendar event/ }));
-    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
-    await expectCode('CH-10313');
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    expect(d.getByRole('textbox', { name: 'Trip' })).toBeTruthy();
     cleanup();
     // Invitees that did not load (CH-10211).
     const unread = { ...PREVIEW_HUB_COACH, tripEvents: { rows: PREVIEW_HUB_COACH.tripEvents.rows.map((e) => ({ ...e, invited: null })), error: false } };
@@ -2369,10 +2504,10 @@ describe('Team Hub · Plan a trip warns when a traveler has a class during the t
     await expectCode('CH-10315');
     await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
     // Logistics is not a step that asks: it is where the dates are typed.
-    fireEvent.change(d.getByLabelText('Leaves'), { target: { value: '2026-11-02' } });
-    fireEvent.change(d.getAllByLabelText('At')[0]!, { target: { value: '12:00' } });
-    fireEvent.change(d.getByLabelText('Back'), { target: { value: '2026-11-04' } });
-    fireEvent.change(d.getAllByLabelText('At')[1]!, { target: { value: '14:30' } });
+    fireEvent.change(d.getByLabelText('Departs'), { target: { value: '2026-11-02' } });
+    fireEvent.change(d.getByLabelText('Departure time'), { target: { value: '12:00' } });
+    fireEvent.change(d.getByLabelText('Returns'), { target: { value: '2026-11-04' } });
+    fireEvent.change(d.getByLabelText('Return time'), { target: { value: '14:30' } });
     await new Promise((r) => setTimeout(r, 450));
     expect(read).toHaveBeenCalledTimes(1);
     await user.type(d.getByRole('textbox', { name: 'Trip' }), 'Carolina Fall Invitational');

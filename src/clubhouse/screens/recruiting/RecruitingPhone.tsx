@@ -102,7 +102,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
                             <span className="ch-recm-row__b">
                               <b>{p.name}</b>
                               <span>{rowLineOf(p) || 'No class or hometown yet'}</span>
-                              {c.nextStep && <NextStepPlate p={p} now={c.now} tz={c.tz} />}
+                              {c.nextStep && <NextStepPlate p={p} now={c.now} tz={c.tz} always={c.sort === 'next'} />}
                             </span>
                             <StageChip stage={p.stage} />
                           </button>
@@ -167,13 +167,19 @@ function Detail({ p, c, picking, onPickStage }: { p: ChProspect; c: RecCtx; pick
           {p.email && (
             <a className="ch-recm-tile" href={mailHref(p.email)}>
               <Icon icon={Mail} size={18} />
-              Email
+              <span className="ch-recm-tile__t">
+                Email{' '}
+                <span className="ch-recm-tile__v">{p.email}</span>
+              </span>
             </a>
           )}
           {p.phone && (
             <a className="ch-recm-tile" href={telHref(p.phone)}>
               <Icon icon={Phone} size={18} />
-              Call
+              <span className="ch-recm-tile__t">
+                Call{' '}
+                <span className="ch-recm-tile__v ch-num">{p.phone}</span>
+              </span>
             </a>
           )}
         </div>

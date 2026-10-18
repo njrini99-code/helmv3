@@ -176,6 +176,17 @@
   font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
+/* An optional field says so once, in one tag at the label's end (wave-6 #13: qualifier, class and hub forms). */
+.ch-field__label:has(> .ch-field__opt) {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.ch-field__opt {
+  margin-left: auto;
+  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-green-700);
+}
 .ch-field__help {
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
@@ -240,9 +251,10 @@
 .ch-input[type='datetime-local']:disabled::-webkit-date-and-time-value {
   color: var(--ch-text-tertiary);
 }
+/* A placeholder sits a step under the tertiary ink, so a sample never reads as a value typed in (wave-6 #2). */
 .ch-input::placeholder,
 .ch-textarea::placeholder {
-  color: var(--ch-text-tertiary);
+  color: var(--ch-ink-500);
 }
 
 /* Menu */

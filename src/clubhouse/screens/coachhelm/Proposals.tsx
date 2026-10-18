@@ -41,7 +41,7 @@ function ProposalRow({ p, writes, quiet = false }: { p: ChProposal; writes: ChPl
     <li className="ch-hl-prop__r">
       <span className="ch-hl-prop__t">
         <b>{p.title}</b>
-        <em>{p.from ? `From: ${p.from}` : 'Your coach proposed this as a focus.'}</em>
+        <em>{p.from ? `From the read “${p.from}”` : 'Your coach proposed this as a focus.'}</em>
       </span>
       {answered ? (
         <span className="ch-hl-done" role="status" data-ch-code="CH-13902">

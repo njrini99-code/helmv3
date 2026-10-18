@@ -124,6 +124,8 @@ export interface ChInsight {
   why: string | null;
   /** The generator's display of the headline number ("23 pts", "1.1"). */
   value: string;
+  /** What that number counts, where the number alone does not say ("gap", "a round", "made", "of holes"); null otherwise. */
+  valueUnit: string | null;
   evidence: ChHelmEvidence;
   week: ChHelmWeek | null;
   lifecycle: ChHelmLifecycle;
@@ -267,11 +269,29 @@ export interface ChCoachHelmData {
   players: { list: ChCoachPlayer[]; error: boolean };
   /** Roster players with no insight yet. */
   withoutSignals: number;
+  /** Their names, roster order (a player with no name on file is counted, not named); absent where the board cannot say. */
+  withoutNames?: string[];
   /** What the cards were drawn without because a read beside them failed. */
   missing?: ChBoardMissing;
 }
 
-/** Rows in the "Also worth knowing" list and in "Working". */
+/** Names said before the rest are counted: "A, B, C and 2 more". */
+const WITHOUT_NAMED_MAX = 3;
+
+/**
+ * "Theo Marchetti has no insights yet.", "Theo Marchetti and Sam Whitfield have no insights yet.", "A, B, C and 2 more have no
+ * insights yet."; with no names, the count alone. A player counted with no name on file is one of the "more".
+ */
+export function withoutSignalsLine(count: number, names: readonly string[] = []): string {
+  if (count <= 0) return '';
+  const shown = names.slice(0, Math.min(WITHOUT_NAMED_MAX, count));
+  if (shown.length === 0) return `${count} ${count === 1 ? 'player has' : 'players have'} no insights yet.`;
+  const more = count - shown.length;
+  const list = more > 0 ? `${shown.join(', ')} and ${more} more` : shown.length === 1 ? shown[0]! : `${shown.slice(0, -1).join(', ')} and ${shown.at(-1)}`;
+  return `${list} ${count === 1 ? 'has' : 'have'} no insights yet.`;
+}
+
+/** Rows in the "Also worth knowing" list and in "What’s working". */
 export const ALSO_MAX = 5;
 export const WORKING_MAX = 5;
 /** Rows in the program pulse (two columns of three). */
@@ -350,8 +370,8 @@ const PULSE_ICON: Array<[RegExp, ChPulseIcon]> = [
 /**
  * The program pulse as the board draws it (getProgramPulse's own headline and
  * evidence line, in its own order). The signals item is left out: the page's
- * subtitle says the same count. A higher score is worse, so "scoring higher"
- * wears the rising arrow and amber, "scoring lower" the falling arrow and green.
+ * subtitle says the same count. A higher score is worse, so "scoring worse"
+ * (scores rising) wears the rising arrow and amber, "scoring better" the falling arrow and green.
  */
 export function pulseRows(items: readonly Pick<PulseItem, 'id' | 'headline' | 'evidence' | 'tone'>[]): ChPulseRow[] {
   return items

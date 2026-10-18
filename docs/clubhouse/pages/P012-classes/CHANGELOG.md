@@ -1,5 +1,38 @@
 # P012 — Classes: changelog
 
+## 2026-10-18 — Wave 6: class form and import
+
+```text
+Design package: none (wave-6 coach workflow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave 6)
+
+- Class form samples start "e.g." (course code, credits, name, instructor,
+  building, room), so a refused save never sits under what looks like a
+  value. Credits, Instructor, Building, Room and Notes carry the shared
+  Optional tag (`.ch-field__opt`).
+- Add a class opens on the course code on desktop; Edit and the phone keep
+  the heading first.
+
+### Added (2026-10-18, wave 6)
+
+- Import review: Start over asks first (CH-12504) once the review holds three
+  or more classes or one came off.
+- Import result: a class that can't be on the calendar yet is a chip button
+  that opens its form (`onEdit` from `ClassesView`).
+
+### Verification (2026-10-18, wave 6)
+
+- WebKit (Playwright, dev preview; 320, 390, 1280): Add a class focuses the
+  course code at 1280 and the heading on the phone; five Optional tags; a
+  three-class review asks "Start over?" before it lets go.
+
 ## 2026-10-18 — Wave 5: pending labels end in “…”
 
 ```text

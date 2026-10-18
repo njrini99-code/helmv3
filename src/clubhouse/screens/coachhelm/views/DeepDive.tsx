@@ -364,7 +364,15 @@ function Item({ i, on, onPick }: { i: ChDeepInsight; on: boolean; onPick: () => 
           </em>
           <b>{i.base.title}</b>
         </span>
-        <span className="ch-hd-it__v ch-num">{i.base.value}</span>
+        <span className="ch-hd-it__v ch-num">
+          {i.base.value}
+          {i.base.value && i.base.valueUnit && (
+            <>
+              {' '}
+              <small>{i.base.valueUnit}</small>
+            </>
+          )}
+        </span>
         <Icon icon={ChevronRight} size={15} />
       </button>
     </li>
@@ -402,11 +410,11 @@ function Hero({ d }: { d: ChDeepDive }) {
       </div>
       <dl className="ch-hd-hero__f">
         <div className="is-needs">
-          <dt>Need work</dt>
+          <dt>Needs work</dt>
           <dd className="ch-num">{needs}</dd>
         </div>
         <div className="is-working">
-          <dt>Working</dt>
+          <dt>What’s working</dt>
           <dd className="ch-num">{working}</dd>
         </div>
         <div className="is-plan">
@@ -517,7 +525,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   const groups = (
     <>
       <Group id="ch-hd-needs" title="Needs work" note="Where CoachHelm sees the most to gain, in the order it ranks them." items={needs} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
-      <Group id="ch-hd-working" title="Working" note="What you do better than the comparison. Keep doing it." items={working} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
+      <Group id="ch-hd-working" title="What’s working" note="What you do better than the comparison. Keep doing it." items={working} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
     </>
   );
 

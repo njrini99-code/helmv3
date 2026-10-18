@@ -1,5 +1,54 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-18 — Wave 6: next steps, the calendar line and Email and Call
+
+```text
+Design package: none (wave-6 CoachHelm and Recruiting review, items 4-10, 23)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-6 recruiting)
+
+- Next step: a step whose day has passed is overdue. Its plate, the
+  desktop Next step column and the panel's or detail's row turn
+  `--ch-warning-600` (plate ruled in it), as Team Hub marks an overdue task
+  (the check keeps red for under par), and VoiceOver reads "Overdue:" first
+  (`isNextStepLate`; today is due, not late). Measured in WebKit: 4.57:1 on
+  the selected desktop row, 4.88 to 5.20 elsewhere in light, 7.57 or more
+  in dark.
+- Sorted by Next step due, every step shows its plate on the phone (Caleb
+  beyond two weeks, Owen with no day), and a step with a label and no day
+  sorts after the dated ones, before prospects with none. On desktop, a
+  list too narrow for the Next step column (the panel open) shows the plate
+  under the name while so sorted.
+- The pipeline head's "decisions due" skips a committed prospect: the
+  preview now reads "1 visit this month".
+- The calendar line puts a contact period's end beside its name: "Contact
+  period through Nov 8 · in-person contact for prospects from Aug 1 before
+  their junior year". `recruiting-calendar.ts` is Clubhouse-only (no
+  importer outside `src/clubhouse`); quiet, dead and Division II lines are
+  unchanged.
+- Phone detail: Email and Call show the address or number under their name,
+  cut with an ellipsis (the link's name now includes it); the Next step row
+  lines up with its heading and the notes (no 14px inset).
+- The form's Notes placeholder drops "next steps" when the form has a Next
+  step field.
+
+### Not changed (2026-10-18, wave-6 recruiting)
+
+- State keeps no placeholder: P014 finding #1 removed "NC" as a plausible
+  value, and recruiting.test pins it.
+
+### Verification (2026-10-18, wave-6 recruiting)
+
+- `recruiting.test.tsx` (CH-14802 sort and plates, overdue, head count,
+  tiles, Notes placeholder), `recruiting-calendar.test.ts`; a WebKit probe
+  at 1280 and 390, light and dark (layout, contrast).
+
 ## 2026-10-18 — Wave 5: what was typed survives Cancel
 
 ```text

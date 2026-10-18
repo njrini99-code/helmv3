@@ -94,7 +94,8 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const [giving, setGiving] = useState<ReadonlySet<string>>(new Set());
 
   const [asking, setAsking] = useState<'start' | 'confirm' | null>(null);
-  const [choosing, setChoosing] = useState<{ playerId: string | null } | null>(null);
+  // `playerId` is a pick whose reason changes; `seed` is a player chosen from the field, preselected in the list.
+  const [choosing, setChoosing] = useState<{ playerId: string | null; seed?: string } | null>(null);
   const [removing, setRemoving] = useState<ChQCandidate | null>(null);
 
   const topN = Math.max(0, data.squad - data.picks);
@@ -115,6 +116,11 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   // (canConfirmSelection), so the empty places don't hold up the confirmation.
   const picksNeeded = Math.min(data.picks, eligible.length + picks.length);
   const picksReady = picks.length === picksNeeded && picks.every((p) => (p.pick?.reasoning ?? '').trim().length > 0);
+  // The note counts down: the picks still to make, and a pick made without a reason still to finish (wave-6 #11).
+  const picksLeft = Math.max(0, picksNeeded - picks.length);
+  const reasonsLeft = picks.filter((p) => !(p.pick?.reasoning ?? '').trim()).length;
+  // A player in the rest of the field can be picked from their row while a pick is open (wave-6 #10).
+  const canPick = stage === 1 && picks.length < data.picks;
   const nobody = onScore.length + picks.length === 0;
   const canConfirm = state === 'closed' && picksReady && tieReady && !nobody;
 
@@ -239,7 +245,16 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         ))}
       </ol>
 
-      <StageNote stage={stage} topN={topN} picks={picksNeeded} picksReady={picksReady} nobody={nobody} tie={tied.length && !tieReady ? tiePlaces - tieChosen : 0} />
+      <StageNote
+        stage={stage}
+        topN={topN}
+        picks={stage === 1 ? picksLeft : picksNeeded}
+        made={stage === 1 ? picks.length : 0}
+        reasons={stage === 1 ? reasonsLeft : 0}
+        picksReady={picksReady}
+        nobody={nobody}
+        tie={tied.length && !tieReady ? tiePlaces - tieChosen : 0}
+      />
 
       <SectionBoundary surface="qualifiers.selection" label="Selections" code="CH-09219">
         <div className="ch-qf-body">
@@ -298,7 +313,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                 </div>
                 <ol className="ch-qf-list">
                   {eligible.map((c) => (
-                    <Row key={c.playerId} c={c} />
+                    <Row key={c.playerId} c={c} onPick={canPick ? () => setChoosing({ playerId: null, seed: c.playerId }) : undefined} />
                   ))}
                   {unranked.map((c) => (
                     <li key={c.playerId} className="is-open">
@@ -460,6 +475,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
       <PickDialog
         open={!!choosing}
         fixed={choosing?.playerId ? (cands.find((c) => c.playerId === choosing.playerId) ?? null) : null}
+        seed={choosing?.seed ?? null}
         eligible={eligible}
         onClose={() => setChoosing(null)}
         save={(c, reasoning) => writes.setPick(data.id, c.playerId, reasoning)}
@@ -509,7 +525,7 @@ function TieRow({ c, stage, full, choose }: { c: ChQCandidate; stage: 0 | 1 | 2;
   );
 }
 
-function Row({ c }: { c: ChQCandidate }) {
+function Row({ c, onPick }: { c: ChQCandidate; onPick?: () => void }) {
   return (
     <li>
       <span className="ch-qf-list__n ch-num">{c.rank ?? '—'}</span>
@@ -518,12 +534,35 @@ function Row({ c }: { c: ChQCandidate }) {
       {c.pick && <Badge tone="accent">Pick</Badge>}
       <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
       <ToPar value={c.toPar} />
+      {onPick && (
+        <Button size="sm" variant="ghost" leftIcon={UserPlus} onClick={onPick}>
+          Pick <span className="ch-sr-only">{c.name}</span>
+        </Button>
+      )}
     </li>
   );
 }
 
-function StageNote({ stage, topN, picks, picksReady, nobody, tie = 0 }: { stage: 0 | 1 | 2; topN: number; picks: number; picksReady: boolean; nobody: boolean; tie?: number }) {
-  const text = stageNoteText(stage, { topN, picks, picksReady, nobody, tie });
+function StageNote({
+  stage,
+  topN,
+  picks,
+  made = 0,
+  reasons = 0,
+  picksReady,
+  nobody,
+  tie = 0,
+}: {
+  stage: 0 | 1 | 2;
+  topN: number;
+  picks: number;
+  made?: number;
+  reasons?: number;
+  picksReady: boolean;
+  nobody: boolean;
+  tie?: number;
+}) {
+  const text = stageNoteText(stage, { topN, picks, made, reasons, picksReady, nobody, tie });
   return (
     <div className="ch-qf-note" data-ch-code={stage === 2 ? 'CH-09903' : undefined}>
       <Icon icon={stage === 2 ? Lock : Users} size={16} />
@@ -536,6 +575,7 @@ function StageNote({ stage, topN, picks, picksReady, nobody, tie = 0 }: { stage:
 function PickDialog({
   open,
   fixed,
+  seed,
   eligible,
   onClose,
   save,
@@ -543,6 +583,8 @@ function PickDialog({
 }: {
   open: boolean;
   fixed: ChQCandidate | null;
+  /** A player chosen from their row, already selected in the list. */
+  seed: string | null;
   eligible: ChQCandidate[];
   onClose: () => void;
   save: (c: ChQCandidate, reasoning: string) => ReturnType<ChQSelectionWrites['setPick']>;
@@ -553,10 +595,10 @@ function PickDialog({
   const [tried, setTried] = useState(false);
   useEffect(() => {
     if (!open) return;
-    setPicked(fixed?.playerId ?? null);
+    setPicked(fixed?.playerId ?? seed);
     setReason(fixed?.pick?.reasoning ?? '');
     setTried(false);
-  }, [open, fixed]);
+  }, [open, fixed, seed]);
   const who = fixed ?? eligible.find((c) => c.playerId === picked) ?? null;
   // The pick is recorded by the action, so the toast's Retry records it too.
   const act = useAction(

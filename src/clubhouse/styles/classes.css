@@ -1193,13 +1193,26 @@
   gap: 6px;
   margin: 8px 0;
 }
-.ch-cl-ok__chips span {
+.ch-cl-ok__chips > span,
+.ch-cl-ok__chips > button {
   padding: 6px 10px;
   border-radius: 999px;
   background: var(--ch-cl-t);
   color: var(--ch-cl-tf);
   box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
   font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+}
+/* A class that isn't on the calendar yet opens its form (wave-6 #18): a pencil says it can be tapped. */
+.ch-cl-ok__chips > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  cursor: pointer;
+}
+.ch-cl-ok__chips > button:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }
 .ch-cl-ok .ch-cl-clash {
   text-align: left;

@@ -167,7 +167,8 @@ function DetailsPhone({ team, scoring, writes }: { team: ChTeamInfo | null; scor
   const [editing, setEditing] = useState(false);
   return (
     <>
-      <Group title="Team details">
+      {/* The timezone row is here, so the sentence about it is too (wave-6 #19). */}
+      <Group title="Team details" note={scoring.s ? 'The timezone sets when every event and reminder happens.' : undefined}>
         {team && <NavRow label="Team name" value={team.name} onClick={() => setEditing(true)} />}
         {scoring.s && <PickerRow label="Team timezone" value={scoring.s.timezone} options={TIMEZONE_OPTIONS} disabled={scoring.busy} onPick={(v) => scoring.pick('timezone', v)} />}
       </Group>
@@ -222,7 +223,7 @@ function ScoringPhone({ scoring }: { scoring: Scoring }) {
   const { s, pick, busy } = scoring;
   if (!s) return null;
   return (
-    <Group title="Scoring and format" note="Defaults for new rounds and events. The timezone sets when every event and reminder happens.">
+    <Group title="Scoring and format" note="Defaults for new rounds and events.">
       <PickerRow
         label="Scoring format"
         value={s.scoringFormat}

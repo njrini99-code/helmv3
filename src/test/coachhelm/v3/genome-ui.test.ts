@@ -99,6 +99,27 @@ describe('derivePersona', () => {
     expect(p.strengths.length).toBeLessThanOrEqual(3);
   });
 
+  it('never ranks a style as a strength or a watch-out: driver usage and miss side are a profile, not a grade', () => {
+    const balanced = derivePersona(
+      vec({
+        driver_usage: { value: 0.6, confidence: 0.9, label: 'Mixed' },
+        miss_side_bias: { value: 0, confidence: 0.9, label: 'Symmetric' },
+      }),
+    );
+    expect(normalizeForRadar('driver_usage', { value: 0.6, confidence: 0.9 })).toBe(1);
+    expect(balanced.strengths).toEqual([]);
+    const lopsided = derivePersona(
+      vec({
+        driver_usage: { value: 0, confidence: 0.9, label: 'Layback profile' },
+        miss_side_bias: { value: -1, confidence: 0.9, label: 'Left bias' },
+      }),
+    );
+    expect(lopsided.watchouts).toEqual([]);
+    // The course profile still reads both.
+    expect(lopsided.course_profile.toLowerCase()).toContain('layback profile off the tee');
+    expect(lopsided.course_profile.toLowerCase()).toContain('tendency to miss left');
+  });
+
   it('builds a course_profile sentence from driver_usage + par3_proficiency', () => {
     const v = vec({
       driver_usage: { value: 0.8, confidence: 0.9, label: 'Bomber' },

@@ -1,6 +1,6 @@
 'use client';
 
-import { Bus, CalendarCheck, Check, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
+import { Bus, CalendarCheck, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
@@ -210,6 +210,18 @@ export function Announcement({
   const phone = useChPhone();
   const [open, setOpen] = useState(false);
   const fold = rank === 'older' && phone && !open && !!a.body;
+  // Coach: the count opens who hasn't acknowledged yet, when that read came back with anyone left.
+  const waiting = coach && a.needAck && a.notAcked && a.notAcked.length > 0 ? a.notAcked : null;
+  const [showWaiting, setShowWaiting] = useState(false);
+  const waitingId = `ch-hb-ann-wait-${a.id}`;
+  const reads = (
+    <>
+      <span className="ch-hb-reads__t" aria-hidden="true">
+        <i style={{ '--ch-hb-p': pct / 100 } as CSSProperties} />
+      </span>
+      {a.ackCount} of {a.recipients} {a.needAck ? 'acknowledged' : 'read'}
+    </>
+  );
   return (
     <article className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
       {rank === 'older' && (
@@ -253,17 +265,31 @@ export function Announcement({
       </div>
       <div className="ch-hb-ann__f">
         {coach ? (
-          <span className="ch-hb-reads ch-num">
-            <span className="ch-hb-reads__t" aria-hidden="true">
-              <i style={{ '--ch-hb-p': pct / 100 } as CSSProperties} />
-            </span>
-            {a.ackCount} of {a.recipients} {a.needAck ? 'acknowledged' : 'read'}
-          </span>
+          waiting ? (
+            <button
+              type="button"
+              className="ch-hb-reads ch-hb-reads--open ch-num"
+              aria-expanded={showWaiting}
+              aria-controls={waitingId}
+              onClick={() => (haptic('select'), setShowWaiting((v) => !v))}
+            >
+              {reads}
+              <Icon icon={ChevronDown} size={13} />
+            </button>
+          ) : (
+            <span className="ch-hb-reads ch-num">{reads}</span>
+          )
         ) : a.needAck ? (
           <Acknowledgement a={a} acked={acked} pending={pending} onAck={onAck} />
         ) : null}
         {a.documentCount > 0 && !files && <span className="ch-hb-muted ch-num">{attachmentCount(a.documentCount)}</span>}
       </div>
+      {waiting && showWaiting && (
+        <p className="ch-hb-ann__wait" id={waitingId}>
+          <em>Not yet</em>
+          {waiting.join(', ')}
+        </p>
+      )}
       {a.documentCount > 0 && files && <Attachments a={a} files={files} />}
     </article>
   );
@@ -440,10 +466,13 @@ export function TripPass({
               <dd>{t.hotel ?? 'Same day'}</dd>
             </div>
           )}
-          <div>
-            <dt>{role === 'coach' ? 'Travelers' : 'You'}</dt>
-            <dd className="ch-num">{role === 'coach' ? (t.travelerCount ?? '—') : t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling'}</dd>
-          </div>
+          {/* The big pass names the coach's travelers below; the count would say them twice. */}
+          {!(big && role === 'coach' && t.travelers && t.travelers.length > 0) && (
+            <div>
+              <dt>{role === 'coach' ? 'Travelers' : 'You'}</dt>
+              <dd className="ch-num">{role === 'coach' ? (t.travelerCount ?? '—') : t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling'}</dd>
+            </div>
+          )}
         </dl>
       </div>
       {big && (

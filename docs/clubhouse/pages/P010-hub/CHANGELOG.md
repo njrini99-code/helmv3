@@ -1,5 +1,48 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-18 — Wave 6: coach forms, who hasn't acknowledged
+
+```text
+Design package: none (wave-6 coach workflows review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none (one new coach read in loadTeamHub)
+Data impact:    read-only: golf_announcement_recipients and
+                golf_announcement_acknowledgements, coach only
+Held items:     none
+```
+
+### Changed (2026-10-18, wave 6)
+
+- A refused save in New announcement, Assign a task, Plan a trip and Edit
+  trip reads its errors out (`role="alert"`) and moves focus to the first
+  field; Plan a trip goes back to Logistics first.
+- Enter assigns a task, and is Next on Plan a trip's steps (Publish only on
+  the last). New announcement and Assign a task open on their first field on
+  desktop; the phone keeps the heading first.
+- Trip dates and times read Departs, Departure time, Returns, Return time;
+  the return date can't be picked before the departure, and a task's due date
+  starts at today. Date and time stay side by side on the phone.
+- A trip with no calendar event skips Travelers both ways, and the strip
+  marks it skipped. On the phone the sheet says "Step 3 of 4 · Logistics".
+- Optional fields carry the shared Optional tag instead of "(optional)".
+- Assign a task and an event's travelers have Clear all / Select all.
+- Several files dropped at once land with one toast ("3 files shared with
+  the team"); a failure still has its own, with Retry.
+- Trip departure reads "Mon · 12:00 PM", like the return. The big pass no
+  longer counts the travelers it names.
+- Coach: "5 of 6 acknowledged" opens who hasn't acknowledged yet. A failed
+  read leaves the count alone.
+
+### Verification (2026-10-18, wave 6)
+
+- `hub.test`, `hub-trip-manage.test`, `hub-focus-task.test`,
+  `wiring-p010-hub.test`, `hub-paged-reads.test`.
+- WebKit 320 and 1280 (Playwright, dev preview): focus on open and on a
+  refused save, Enter on Assign and on Logistics, the skipped step, the
+  phone's step line, date and time two-up at 320 with no overflow, and the
+  acknowledgement list.
+
 ## 2026-10-18 — Wave 5: pending labels end in “…”
 
 ```text

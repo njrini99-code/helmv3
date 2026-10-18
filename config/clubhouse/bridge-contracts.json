@@ -7806,6 +7806,17 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 81108,
+    "page": "P008",
+    "category": 11,
+    "item": 8,
+    "name": "DECLINE_AN_ASSISTANT_COACH_REQUEST",
+    "chCode": "CH-8511",
+    "meaning": "Decline an assistant coach request (Team, head coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
     "id": 81201,
     "page": "P008",
     "category": 12,
@@ -10137,7 +10148,7 @@
     "item": 14,
     "name": "PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH",
     "chCode": "CH-10313",
-    "meaning": "Plan a trip: the Travelers step with no calendar event",
+    "meaning": "Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -13560,6 +13571,17 @@
     "name": "DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO",
     "chCode": "CH-12503",
     "meaning": "Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 121104,
+    "page": "P012",
+    "category": 11,
+    "item": 4,
+    "name": "START_OVER_IN_THE_IMPORT_REVIEW_ONCE",
+    "chCode": "CH-12504",
+    "meaning": "Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },

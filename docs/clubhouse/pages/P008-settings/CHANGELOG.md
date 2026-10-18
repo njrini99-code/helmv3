@@ -1,5 +1,37 @@
 # P008 — Settings: changelog
 
+## 2026-10-18 — Wave 6: Team settings
+
+```text
+Design package: none (wave-6 coach workflow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave 6)
+
+- Desktop Team opens on Invite players, then Team details.
+- Phone Team: the timezone sentence moves from Scoring and format to Team
+  details, where the timezone row is.
+- Desktop Team details: a problem names its field (`ChProblem.field`), so
+  Team name, School name and State are marked invalid with the problem as
+  their help; the save bar keeps its line.
+
+### Added (2026-10-18, wave 6)
+
+- Declining an assistant coach request asks first (CH-8511): a dialog on
+  desktop, an action sheet on the phone, with Keep request and Decline.
+
+### Verification (2026-10-18, wave 6)
+
+- WebKit (Playwright, dev preview, 1280): Team opens Invite players, Team
+  details, Coaching staff; a cleared Team name is `aria-invalid` with "The team
+  needs a name." under it and in the save bar; Decline asks "Decline Avery
+  Lee?".
+
 ## 2026-10-18 — Wave 3 accessibility: card titles under the page title
 
 ```text

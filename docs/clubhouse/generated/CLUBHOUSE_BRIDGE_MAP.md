@@ -111,11 +111,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P005 | 4 | 2 | 2 | 22 | 2 | 19 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P007 | 2 | 10 | 1 | 9 | 6 | 37 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 101 |
-| P008 | 2 | 1 | 3 | 6 | 15 | 42 | 2 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 132 |
+| P008 | 2 | 1 | 3 | 6 | 15 | 42 | 2 | 8 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 133 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 134 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 12 |  | 17 | 11 | 39 | 14 | 5 | 2 |  | 22 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 182 |
-| P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
+| P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
 | P013 | 7 | 12 |  | 29 | 1 | 37 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 157 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 1 | 2 | 3 | 4 | 14 | 1 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 68 |
@@ -840,6 +840,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81105 | CH-8505 | 11 Destructive | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | implemented | Turn off CoachHelm on your dashboards |
 | 81106 | CH-8509 | 11 Destructive | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | implemented | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes |
 | 81107 | CH-8510 | 11 Destructive | `PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS` | implemented | Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet |
+| 81108 | CH-8511 | 11 Destructive | `DECLINE_AN_ASSISTANT_COACH_REQUEST` | implemented | Decline an assistant coach request (Team, head coach) |
 | 81201 | CH-8506 | 12 State preservation | `FOLLOWING_A_LINK_OFF_SETTINGS_WITH_UNSAVED` | implemented | Following a link off Settings with unsaved changes |
 | 81202 | CH-8507 | 12 State preservation | `SWITCHING_SECTION_WITH_UNSAVED_CHANGES` | implemented | Switching section with unsaved changes |
 | 81203 | CH-8508 | 12 State preservation | `CLOSING_OR_RELOADING_THE_TAB_WITH_UNSAVED` | implemented | Closing or reloading the tab with unsaved changes |
@@ -1050,7 +1051,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100411 | CH-10310 | 04 Empty | `A_TEAM_WITH_NOBODY_ON_THE_ROSTER` | implemented | A team with nobody on the roster |
 | 100412 | CH-10311 | 04 Empty | `A_TEAM_WITH_NO_DOCUMENTS` | implemented | A team with no documents |
 | 100413 | CH-10312 | 04 Empty | `PLAN_A_TRIP_NO_UPCOMING_EVENTS_IN` | implemented | Plan a trip: no upcoming events in the next four months |
-| 100414 | CH-10313 | 04 Empty | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | implemented | Plan a trip: the Travelers step with no calendar event |
+| 100414 | CH-10313 | 04 Empty | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | implemented | Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step) |
 | 100415 | CH-10314 | 04 Empty | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | implemented | New announcement: files that players can't open are left out of the attach list |
 | 100416 | CH-10315 | 04 Empty | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | implemented | Plan a trip: nobody chosen has a class during the trip |
 | 100501 | CH-10101 | 05 Validation | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | implemented | Posting or saving an edit with a headline under three characters |
@@ -1359,6 +1360,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 121101 | CH-12501 | 11 Destructive | `REMOVE_CLASS` | implemented | Remove class |
 | 121102 | CH-12502 | 11 Destructive | `CANCEL_OR_CLOSE_A_FORM_THAT_HAS` | implemented | Cancel or close a form that has changes |
 | 121103 | CH-12503 | 11 Destructive | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | implemented | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
+| 121104 | CH-12504 | 11 Destructive | `START_OVER_IN_THE_IMPORT_REVIEW_ONCE` | implemented | Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once) |
 | 121201 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A class that fails to save leaves its sheet open with every field as typed; nothing is cleared until the save lands, and the failure toast is inside the open sheet so its Retry is where the person is looking. An import that fails to save leaves the review as it was. A remove that fails leaves the question open and the class in the list. Cancel or close on a form with changes asks first (CH-12502), and each time the sheet opens it starts from the class being edited, or blank. |
 | 121401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: a save's Retry adds the class to the list, closes the sheet and starts the calendar sync; a remove's Retry takes the class out of the list and closes the question; an import's Retry shows the imported view and starts the sync; a sync's Retry puts the failed classes on the calendar. A failed sync's Retry never saves the class a second time. |
 | 121402 |  | 14 Retry / recovery | `RETRY_REPLAYS_THE_STORED_START` | reserved | Every calendar sync starts each class from the day its last attempt did. The toast's Retry replays the same arguments; the header's Retry sync and a class sheet's Retry sync pass no start, so each class takes the start held for it this visit. A Retry therefore never moves a class to a start its own term would refuse, and a class saved from its whole term is re-synced from its whole term, so a re-sync never removes the meetings already held. |

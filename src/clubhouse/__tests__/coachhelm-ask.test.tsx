@@ -788,7 +788,7 @@ describe('the container', () => {
 
   it('hands the thread the failed answer as a sentence with what to offer, by the rule of the stream route', () => {
     const cases: Array<[unknown, { message: string; recovery: string }]> = [
-      [{ statusCode: 429, responseBody: JSON.stringify({ error: 'Too many requests. Please slow down.' }) }, { message: "You're asking quickly. Wait a moment, then try again.", recovery: 'retry' }],
+      [{ statusCode: 429, responseBody: JSON.stringify({ error: 'Too many requests. Please slow down.' }) }, { message: "Too many questions in a row. Give it a few seconds and try again.", recovery: 'retry' }],
       [{ statusCode: 429, responseBody: JSON.stringify({ error: 'You have reached today’s analysis limit for your program. It resets tomorrow.', reason: 'gated' }) }, { message: 'You have reached today’s analysis limit for your program. It resets tomorrow.', recovery: 'none' }],
       [{ statusCode: 404, responseBody: JSON.stringify({ error: 'Conversation not found' }) }, { message: "That conversation isn't available. Start a new chat.", recovery: 'new-chat' }],
       [new TypeError('Failed to fetch'), { message: 'Something went wrong while answering. Try again.', recovery: 'retry' }],

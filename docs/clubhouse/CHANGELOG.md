@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-18 — One Optional tag; placeholders that read as hints
+
+`controls.css` adds `.ch-field__opt`, the one "Optional" tag every form uses
+(qualifier, class, Team Hub sheets), replacing the qualifier-only tag and the
+"(optional)" label text. Placeholder ink is `--ch-ink-500`, and sample
+placeholders start with "e.g.", so a hint never reads as a typed value.
+
 ## 2026-10-18 — Toasts that stay out of the way and keep their promises
 
 `ui/Toast.tsx`: a toast can carry `onExpire`, run once when it closes without

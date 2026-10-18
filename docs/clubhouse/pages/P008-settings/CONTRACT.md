@@ -244,6 +244,7 @@ Five confirms: Delete account (the person types delete), Leave team, Make a new 
 | 81105 | CH-8505 | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | Turn off CoachHelm on your dashboards |
 | 81106 | CH-8509 | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes |
 | 81107 | CH-8510 | `PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS` | Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet |
+| 81108 | CH-8511 | `DECLINE_AN_ASSISTANT_COACH_REQUEST` | Decline an assistant coach request (Team, head coach) |
 
 ## 12 — State preservation
 

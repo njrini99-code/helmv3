@@ -152,7 +152,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
               )}
               {working.length > 0 && (
                 <section className="ch-hl-sec" aria-labelledby="ch-hl-working">
-                  <h2 id="ch-hl-working">Working</h2>
+                  <h2 id="ch-hl-working">What’s working</h2>
                   {working.map((i) => (
                     <InsightRow key={i.id} ins={i} onPick={() => pick(i)} />
                   ))}

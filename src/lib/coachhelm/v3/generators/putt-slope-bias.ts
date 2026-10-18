@@ -323,8 +323,8 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     const gap = Math.round(agg.gap_pp);
 
     return {
-      title: `Downhill putts inside ${agg.band}: a real penalty`,
-      content: `Inside ${agg.band} you're making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance, a ${gap}-point gap (n=${agg.downhill_n} downhill / ${agg.level_n} level). Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
+      title: `Downhill putts from ${agg.band}: a real penalty`,
+      content: `From ${agg.band}, you're making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance, a ${gap}-point gap. Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
       priority: 'medium',
       signature: `putt_slope_bias:${agg.band}`,
       evidence: {
@@ -334,7 +334,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
         // reader of `your_value` saw "55" where the metric promised a gap.
         // Both make rates stay in `detail`.
         metric: 'putt_slope_downhill_penalty_pct',
-        metric_label: 'Downhill penalty vs level putts (distance-controlled)',
+        metric_label: 'Make rate, downhill vs level, same distance',
         unit: 'percent',
         polarity: 'lower_better',
         your_value: agg.gap_pp,
