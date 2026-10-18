@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
+import { renderGolfHelmResetEmail } from '@/lib/auth/golfhelm-reset-email';
 
 /**
  * Password-reset delivery through OUR Resend account, not Supabase's mailer.
@@ -77,6 +78,7 @@ export async function sendPasswordResetEmail(
   if (!apiKey) return 'unconfigured';
 
   let link: string;
+  let firstName: string | null;
   try {
     const admin = createAdminClient();
     const { data, error } = await admin.auth.admin.generateLink({
@@ -126,16 +128,25 @@ export async function sendPasswordResetEmail(
     resetUrl.searchParams.set('token_hash', data.properties.hashed_token);
     resetUrl.searchParams.set('type', 'recovery');
     link = resetUrl.toString();
+    const metadataName = data.user?.user_metadata?.first_name;
+    firstName = typeof metadataName === 'string' ? metadataName : null;
   } catch {
     return 'link-failed';
   }
+
+  // GolfHelm gets the designed email (the same design as the Supabase
+  // recovery template); the other apps keep the plain body until they get a
+  // design of their own.
+  const message =
+    appName === 'GolfHelm'
+      ? renderGolfHelmResetEmail({ link, email, firstName })
+      : { subject: `Reset your ${appName} password`, ...body(link, appName) };
 
   try {
     const { error } = await new Resend(apiKey).emails.send({
       from: process.env.PASSWORD_RESET_FROM || DEFAULT_FROM,
       to: [email],
-      subject: `Reset your ${appName} password`,
-      ...body(link, appName),
+      ...message,
     });
     if (error) {
       await logServerError(

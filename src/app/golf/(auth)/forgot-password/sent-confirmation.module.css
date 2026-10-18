@@ -1,0 +1,177 @@
+/*
+ * The "Check your email" moment on /golf/forgot-password.
+ *
+ * One short, choreographed sequence, then stillness:
+ *   0ms     the seal grows in with a soft overshoot
+ *   120ms   the envelope draws itself, then its flap folds shut
+ *   380ms   two rings ripple out once, like the letter leaving
+ *   560ms   a check pops onto the corner
+ *   200ms+  the copy below rises in, 70ms apart
+ *
+ * CSS keyframes, so the server-rendered frame is already final and nothing
+ * waits on hydration. Everything is off under reduced motion, where the final
+ * frame simply shows. Colours come from Fairway tokens in the markup.
+ */
+
+.mark {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+}
+
+.seal {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.envelope {
+  position: relative;
+}
+
+.envelope .body,
+.envelope .flap {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.envelope .flap {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+}
+
+.check {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 3px var(--fw-color-elevated);
+}
+
+.check path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.countdown {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .seal {
+    animation: sc-seal 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .envelope .body {
+    stroke-dashoffset: 1;
+    animation: sc-draw 520ms cubic-bezier(0.16, 1, 0.3, 1) 120ms forwards;
+  }
+
+  .envelope .flap {
+    stroke-dashoffset: 1;
+    animation:
+      sc-draw 360ms cubic-bezier(0.16, 1, 0.3, 1) 260ms forwards,
+      sc-fold 440ms cubic-bezier(0.16, 1, 0.3, 1) 300ms both;
+  }
+
+  .ring {
+    animation: sc-ripple 900ms cubic-bezier(0.16, 1, 0.3, 1) 380ms both;
+  }
+
+  .ring + .ring {
+    animation-delay: 520ms;
+  }
+
+  .check {
+    animation: sc-pop 440ms cubic-bezier(0.34, 1.56, 0.64, 1) 560ms both;
+  }
+
+  .check path {
+    stroke-dashoffset: 1;
+    animation: sc-draw 280ms cubic-bezier(0.16, 1, 0.3, 1) 720ms forwards;
+  }
+
+  .rise {
+    animation: sc-rise 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(200ms + var(--sc-i, 0) * 70ms);
+  }
+
+  .flash {
+    animation: sc-rise 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes sc-seal {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sc-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes sc-fold {
+  from {
+    transform: scaleY(-1);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes sc-ripple {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes sc-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

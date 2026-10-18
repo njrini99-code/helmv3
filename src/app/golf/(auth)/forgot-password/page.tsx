@@ -10,10 +10,9 @@ import {
   AuthSubmitButton,
   GroupedFieldRow,
   GroupedFields,
-  authPrimaryButtonClass,
   authTextLinkClass,
 } from '@/components/auth/golf-auth-canvas';
-import { cn } from '@/lib/utils';
+import { Rise, SentConfirmation, SentMark } from './sent-confirmation';
 
 const ERROR_ID = 'golf-forgot-error';
 
@@ -32,6 +31,8 @@ export default function ForgotPasswordPage() {
   const [submittedEmail, setSubmittedEmail] = useState('');
   // Bumped on each validation/server failure so focus returns to the field.
   const [errorNonce, setErrorNonce] = useState(0);
+  // Bumped on each successful resend so the sent animation plays again.
+  const [sendCount, setSendCount] = useState(0);
   const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -71,11 +72,18 @@ export default function ForgotPasswordPage() {
       }
       setSubmittedEmail(normalizedEmail);
       setSuccess(true);
+      setSendCount((n) => n + 1);
       setLoading(false);
     } catch {
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
+  };
+
+  const resend = async () => {
+    const result = await requestPasswordResetAction(submittedEmail);
+    if (result.success) setSendCount((n) => n + 1);
+    return result.success;
   };
 
   const homeLink = !isNative ? (
@@ -95,12 +103,13 @@ export default function ForgotPasswordPage() {
     <AuthCanvas
       contentId="auth-card"
       contentLabel={success ? 'Check your email' : 'Reset your password'}
-      title={success ? 'Check your email' : 'Reset password'}
+      hero={success ? <SentMark key={sendCount} /> : undefined}
+      title={success ? <Rise as="span" i={0}>Check your email</Rise> : 'Reset password'}
       subtitle={
         success ? (
-          <>
+          <Rise as="span" i={0}>
             We sent a reset link to <span className="font-medium text-text-primary">{submittedEmail}</span>
-          </>
+          </Rise>
         ) : (
           'Enter your email and we’ll send you a link.'
         )
@@ -118,15 +127,7 @@ export default function ForgotPasswordPage() {
       }
     >
       {success ? (
-        <div>
-          <p className="px-4 text-center text-body text-text-secondary">
-            Open the link in the email to choose a new password. It expires in 1 hour. If it
-            doesn’t arrive, check your spam folder or try a different email.
-          </p>
-          <Link href="/golf/login" className={cn(authPrimaryButtonClass, 'mt-8')}>
-            Back to sign in
-          </Link>
-        </div>
+        <SentConfirmation onResend={resend} />
       ) : (
         <form onSubmit={handleSubmit} noValidate aria-label="Reset your password">
           <GroupedFields>
