@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { localSupabase, removeSeed, scoredHoles, seedClubhousePlayer, seededRounds, type SeededPlayer } from './helpers/clubhouse-local-seed';
+import { signIn } from './helpers/clubhouse-journey';
 
 /**
  * Swap audit F-06: a Clubhouse round from setup to submit, through the screens a player uses, against a real server and
@@ -9,8 +10,9 @@ import { localSupabase, removeSeed, scoredHoles, seedClubhousePlayer, seededRoun
  * course and rounds, and there is no staging project (production has collected e2e rounds before). It seeds its own
  * player through the local service role and deletes everything it created afterwards, rounds included.
  *
- * Run (a local stack and a dev server pointed at it; see e2e/README.md):
- *   PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test e2e/clubhouse-round.spec.ts --project=chromium
+ * Run (a local stack and a dev server pointed at it; see e2e/README.md), on Chromium and WebKit; nightly in CI
+ * (.github/workflows/clubhouse-journeys.yml):
+ *   CH_BASE=http://127.0.0.1:3100 npx playwright test --config playwright.clubhouse-journeys.config.ts e2e/clubhouse-round.spec.ts
  */
 
 test.skip(!localSupabase(), 'Clubhouse round e2e runs only against a local Supabase (F-06)');
@@ -46,16 +48,14 @@ test('a player sets up a round, saves it for later, continues it and submits all
   test.setTimeout(10 * 60_000);
   page.setDefaultTimeout(30_000);
 
+  // A dev server compiles each route on its first request, so the sign-in page and the setup get minutes, not 30s; a first
+  // sign-in passes through the welcome greeting (signIn presses Continue).
   await test.step('sign in', async () => {
-    await page.goto('/golf/login');
-    await page.locator('#golf-signin-email').fill(seed.email);
-    await page.locator('#golf-signin-password').fill(seed.password);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.waitForURL((u) => u.pathname.startsWith('/golf/') && !u.pathname.endsWith('/login'), { timeout: 90_000 });
+    await signIn(page, seed);
   });
 
   await test.step('set up the round on Clubhouse', async () => {
-    await page.goto('/golf/dashboard/rounds/new');
+    await page.goto('/golf/dashboard/rounds/new', { timeout: 180_000 });
     // The setup's title since the #2180 premium pass (it was "Track every shot of this round.").
     await expect(page.getByRole('heading', { name: 'New round', level: 1 })).toBeVisible({ timeout: 90_000 });
     await page.getByRole('button', { name: 'Browse courses' }).click();

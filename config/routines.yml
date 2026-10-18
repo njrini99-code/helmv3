@@ -130,6 +130,20 @@ routines:
       Moved off every push to main (ci.yml) on 2026-09-23 to free runner
       slots for PRs; a red run blocks the next release, not a merge.
 
+  - id: clubhouse-journeys
+    trigger: github-actions-schedule
+    source: .github/workflows/clubhouse-journeys.yml
+    schedule: "47 9 * * *"
+    status: active
+    description: >-
+      Clubhouse write journeys (round setup to submit, Calendar, Qualifiers,
+      Team Hub, Settings, Messages) in Chromium and WebKit against a local
+      Supabase stack on the runner, then the Clubhouse accessibility scan in
+      the light and dark palettes, on main's head. Added 2026-10-16; never on
+      a pull request. 09:47 UTC starts after the nightly's jobs and does not
+      collide with any other entry here. A red run blocks the next Clubhouse
+      release, not a merge.
+
   - id: circleci-weekly
     trigger: circleci-scheduled-pipeline
     source: .circleci/config.yml
