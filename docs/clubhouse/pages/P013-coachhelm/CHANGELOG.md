@@ -1,5 +1,29 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-18 — Wave 10: inviting from an empty CoachHelm
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-13301 CH-13307 CH-13321 CH-13360
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- No players (CH-13307, and Ask's CH-13321): Invite players (UserPlus,
+  Roster's invite sheet) replaces Open roster, as Home has. CH-13307's body
+  no longer repeats the lede: "Invite your players. Each one’s insights show
+  up here once they post rounds."
+- An empty Game profile (CH-13360) lists its measures as the compact locked
+  tiles the loaded view uses, not seven full cards.
+- The player's Start a round uses Plus, as Home and Rounds do (Board, Game
+  profile, Standing, Deep dive).
+- A player with no round reads the lede "One thing to work on each week, from
+  the rounds you post." (it claimed rounds already posted).
+
 ## 2026-10-18 — Wave 7: player CoachHelm
 
 ```text

@@ -900,13 +900,15 @@ describe('Calendar · empty and loading', () => {
     expect(code('CH-6301')!.textContent).toMatch(/Nothing on the calendar in this range/);
   });
 
-  it('CH-6309 a team that has never scheduled anything: the page is the first-run empty; Create event opens the editor', async () => {
+  it('CH-6309 a team that has never scheduled anything: the page is the first-run empty; its one New event opens the editor', async () => {
     const user = userEvent.setup();
     wrap(cal({ events: [], firstRun: true }));
     expect(code('CH-6309')!.textContent).toMatch(/Nothing on the calendar/);
     expect(code('CH-6301')).toBeNull();
-    expect(screen.queryByRole('button', { name: /New event/ })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Create event' }));
+    // The head's New event steps aside: the empty state's is the one action, under the verb used everywhere else.
+    expect(screen.getAllByRole('button', { name: /New event/ })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Create event' })).toBeNull();
+    await user.click(within(code('CH-6309') as HTMLElement).getByRole('button', { name: 'New event' }));
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 

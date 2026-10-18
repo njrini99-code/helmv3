@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { ChevronRight, Compass, Flag, Play, Target } from 'lucide-react';
+import { ChevronRight, Compass, Flag, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
@@ -510,7 +510,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
           }
           action={
             startHref ? (
-              <Button variant="primary" leftIcon={Play} href={startHref.href}>
+              <Button variant="primary" leftIcon={Plus} href={startHref.href}>
                 {startHref.label}
               </Button>
             ) : undefined

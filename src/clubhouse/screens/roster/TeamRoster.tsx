@@ -55,6 +55,8 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
   };
 
   const { players } = data;
+  // A joined player is always on their own roster, so a new team's first run is a roster of one (CH-3309).
+  const solo = players.length === 1 && players[0]!.isYou;
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return sortTeammates(
@@ -74,7 +76,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
           <h1 className="ch-display">Your team.</h1>
-          {!data.playersError && (
+          {!data.playersError && players.length > 0 && (
             <p>
               <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} on the roster.
             </p>
@@ -92,7 +94,17 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
           onRetry={() => router.refresh()}
         />
       ) : players.length === 0 ? (
-        <EmptyState size="page" code="CH-3307" icon={Users} title="No one on the roster yet" body="Your teammates appear here once your coach adds them." />
+        <EmptyState size="page" code="CH-3307" icon={Users} title="No one on the roster yet" body="Teammates show up here as they join with the team code." />
+      ) : solo ? (
+        <>
+          {/* Nothing to search, sort or lay out for one row. */}
+          <SectionBoundary surface="roster.team" label="The roster" code="CH-3211">
+            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} />
+          </SectionBoundary>
+          <p className="ch-rs-solo" data-ch-code="CH-3309">
+            You’re the first one here. Teammates show up as they join.
+          </p>
+        </>
       ) : (
         <>
           <div className="ch-rs-bar">

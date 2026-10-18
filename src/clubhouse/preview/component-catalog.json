@@ -13,6 +13,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -67,6 +68,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/shell.css",
@@ -815,6 +817,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
@@ -983,6 +986,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -1723,6 +1727,7 @@
       "file": "src/clubhouse/screens/home/PlayerHomePhone.tsx",
       "group": "screens",
       "exports": [
+        "NoRoundsYet",
         "PlayerHomePhone"
       ],
       "styles": [
@@ -1961,6 +1966,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -2261,6 +2267,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
@@ -2496,6 +2503,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
@@ -2533,6 +2541,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -3335,6 +3344,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/auth.css",
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-thread.css",
@@ -3601,6 +3611,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css",
@@ -3631,6 +3642,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
@@ -8278,37 +8290,37 @@
           "name": "--ch-spark",
           "value": "var(--ch-ink-400)",
           "scope": ".ch-ph-spark",
-          "line": 2091
+          "line": 2095
         },
         {
           "name": "--ch-spark",
           "value": "var(--ch-chart-gain)",
           "scope": ".ch-ph-spark.is-gain",
-          "line": 2094
+          "line": 2098
         },
         {
           "name": "--ch-spark",
           "value": "var(--ch-chart-loss)",
           "scope": ".ch-ph-spark.is-loss",
-          "line": 2097
+          "line": 2101
         },
         {
           "name": "--ch-av-bg",
           "value": "#d9e4d8",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-hm-day .ch-hm-day__stack .ch-avatar",
-          "line": 3668
+          "line": 3683
         },
         {
           "name": "--ch-av-fg",
           "value": "#23402f",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-hm-day .ch-hm-day__stack .ch-avatar",
-          "line": 3669
+          "line": 3684
         },
         {
           "name": "--ch-av-ring",
           "value": "rgb(35 64 47 / 0.18)",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-hm-day .ch-hm-day__stack .ch-avatar",
-          "line": 3670
+          "line": 3685
         }
       ]
     },
@@ -9277,6 +9289,7 @@
         "ch-ox-side",
         "ch-ox-side__cap",
         "ch-ox-signin",
+        "ch-ox-signin-m",
         "ch-ox-slot",
         "ch-ox-slots",
         "ch-ox-spin",
@@ -9336,61 +9349,61 @@
           "name": "--ch-ox-mc-s",
           "value": "1",
           "scope": ".ch-ox-mcw",
-          "line": 1386
+          "line": 1401
         },
         {
           "name": "--ch-av-size",
           "value": "55px",
           "scope": ".ch-ox-mc__coin .ch-avatar",
-          "line": 1485
+          "line": 1500
         },
         {
           "name": "--ch-av-bg",
           "value": "#ede4cc",
           "scope": ".ch-ox-mc__coin .ch-avatar[data-tone]",
-          "line": 1491
+          "line": 1506
         },
         {
           "name": "--ch-av-fg",
           "value": "var(--ch-ox-felt)",
           "scope": ".ch-ox-mc__coin .ch-avatar[data-tone]",
-          "line": 1492
+          "line": 1507
         },
         {
           "name": "--ch-av-ring",
           "value": "transparent",
           "scope": ".ch-ox-mc__coin .ch-avatar[data-tone]",
-          "line": 1493
+          "line": 1508
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.9",
           "scope": "@media (max-width: 1400px) → .ch-ox-mcw",
-          "line": 1627
+          "line": 1642
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.72",
           "scope": "@media (max-width: 1200px) → .ch-ox-mcw",
-          "line": 1636
+          "line": 1651
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.64",
           "scope": "@media (max-width: 1000px) → .ch-ox-mcw",
-          "line": 1648
+          "line": 1663
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.92",
           "scope": "@media (max-width: 820px) → .ch-ox-mcw",
-          "line": 1798
+          "line": 1813
         },
         {
           "name": "--ch-ox-ink",
           "value": "var(--ch-text-primary)",
           "scope": "html[data-fw-theme='dark'] .ch-ox",
-          "line": 2101
+          "line": 2116
         }
       ]
     },
@@ -9610,115 +9623,115 @@
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3281
+          "line": 3289
         },
         {
           "name": "--ch-ink-600",
           "value": "#2b2a26",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3282
+          "line": 3290
         },
         {
           "name": "--ch-ink-500",
           "value": "#3a3833",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3283
+          "line": 3291
         },
         {
           "name": "--ch-ink-400",
           "value": "#55524b",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3284
+          "line": 3292
         },
         {
           "name": "--ch-ink-300",
           "value": "#7c786f",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3285
+          "line": 3293
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-950)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3286
+          "line": 3294
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3287
+          "line": 3295
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-700)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3288
+          "line": 3296
         },
         {
           "name": "--ch-border-hairline",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3289
+          "line": 3297
         },
         {
           "name": "--ch-border-subtle",
           "value": "rgb(28 25 18 / 0.22)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3290
+          "line": 3298
         },
         {
           "name": "--ch-border-control",
           "value": "rgb(28 25 18 / 0.34)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3291
+          "line": 3299
         },
         {
           "name": "--ch-border-strong",
           "value": "rgb(28 25 18 / 0.5)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3292
+          "line": 3300
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(28 25 18 / 0.26)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3293
+          "line": 3301
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3294
+          "line": 3302
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double rgb(28 25 18 / 0.36)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3295
+          "line": 3303
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-green-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3296
+          "line": 3304
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "var(--ch-text-secondary)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3297
+          "line": 3305
         },
         {
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3298
+          "line": 3306
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-qf .ch-scoreboard,\n.ch-qfm .ch-scoreboard",
-          "line": 3827
+          "line": 3835
         }
       ]
     },
@@ -9897,6 +9910,7 @@
         "ch-avatar",
         "ch-btn",
         "ch-form__line",
+        "ch-input",
         "ch-pill",
         "ch-rs",
         "ch-rs-attn",
@@ -9964,6 +9978,7 @@
         "ch-rs-sg",
         "ch-rs-sgbar",
         "ch-rs-skel-desk",
+        "ch-rs-solo",
         "ch-rs-sp",
         "ch-rs-sp__axis",
         "ch-rs-sp__coins",
@@ -10178,7 +10193,7 @@
           "name": "--ch-modal-max-h",
           "value": "min(680px, calc(100dvh - 48px))",
           "scope": "@media (min-width: 821px) → .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel",
-          "line": 805
+          "line": 793
         }
       ]
     },
@@ -10199,7 +10214,6 @@
         "ch-rt-bar__go",
         "ch-rt-bar__i",
         "ch-rt-bar__row",
-        "ch-rt-blocker",
         "ch-rt-body",
         "ch-rt-card",
         "ch-rt-confirm",

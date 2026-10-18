@@ -117,7 +117,7 @@ describe('P008 wiring · event reminders', () => {
 describe('P008 wiring · join a team', () => {
   it('after Ask to join the fresh read shows the waiting request in place of the form', async () => {
     const { user, writes, serve } = setup(playerData(false, false), 'golf');
-    await user.type(screen.getByLabelText('Invite code'), 'abc123');
+    await user.type(screen.getByLabelText('Team code'), 'abc123');
     await user.click(screen.getByRole('button', { name: 'Ask to join' }));
     await waitFor(() => expect(writes.requestJoin).toHaveBeenCalledWith('ABC123', ''));
     await waitFor(() => expect(writes.refresh).toHaveBeenCalledTimes(1));

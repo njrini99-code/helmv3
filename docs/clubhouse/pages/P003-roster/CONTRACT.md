@@ -91,11 +91,12 @@ First-run (30401), filtered (30402, 30403) and per-player (30405) are distinct, 
 | 30401 | CH-3301 | `NO_PLAYERS_YET` | No players yet |
 | 30402 | CH-3302 | `A_SEARCH_MATCHES_NOBODY` | A search matches nobody |
 | 30403 | CH-3303 | `A_STATUS_FILTER_HAS_NOBODY` | A status filter has nobody |
-| 30404 | CH-3304 | `THE_TEAM_HAS_NO_JOIN_CODE` | The team has no join code |
+| 30404 | CH-3304 | `THE_TEAM_HAS_NO_JOIN_CODE` | The team has no team code |
 | 30405 | CH-3305 | `A_PLAYER_HAS_NO_18_HOLE_ROUNDS` | A player has no 18-hole rounds |
 | 30406 | CH-3306 | `A_COACH_SIGNED_IN_WITH_NO_ACTIVE` | A coach signed in with no active team |
 | 30407 | CH-3307 | `A_PLAYERS_TEAM_HAS_NOBODY_ON_IT` | A player's team has nobody on it |
 | 30408 | CH-3308 | `A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE` | A player signed in with no active team |
+| 30409 | CH-3309 | `A_PLAYER_ALONE_ON_THEIR_TEAMS_ROSTER` | A player alone on their team's roster (they are always on it once joined, so this is a new team's first run) |
 
 ## 05 — Validation
 
@@ -121,7 +122,7 @@ Every change has its own toast (30601 to 30607) naming what failed and what to d
 | 30603 | CH-3003 | `DECLINING_A_JOIN_REQUEST_FAILS` | Declining a join request fails |
 | 30604 | CH-3004 | `THE_COACHS_NOTE_DOESNT_SAVE` | The coach's note doesn't save (on leaving the field) |
 | 30605 | CH-3005 | `THE_BROWSER_BLOCKS_THE_CSV_DOWNLOAD` | The browser blocks the CSV download |
-| 30606 | CH-3006 | `COPYING_THE_JOIN_CODE_OR_LINK_FAILS` | Copying the join code or link fails |
+| 30606 | CH-3006 | `COPYING_THE_JOIN_CODE_OR_LINK_FAILS` | Copying the team code or invite link fails |
 | 30607 | CH-3007 | `APPROVE_ALL_LEAVES_SOME_REQUESTS_UNAPPROVED` | Approve all (phone requests sheet, D-55) leaves some requests unapproved |
 | 30608 | CH-3201 | `THE_ROSTER_DOESNT_LOAD` | The roster doesn't load |
 | 30609 | CH-3202 | `SEASON_ROUNDS_DONT_LOAD` | Season rounds don't load |

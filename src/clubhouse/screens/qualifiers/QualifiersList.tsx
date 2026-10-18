@@ -47,6 +47,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
 
   const act = data.items.filter(isActive);
   const con = data.items.filter((i) => !isActive(i));
+  const none = !unread && data.items.length === 0;
   const { active, concluded } = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const match = (i: ChQListItem) => !needle || [i.name, i.description ?? '', i.course ?? ''].join(' ').toLowerCase().includes(needle);
@@ -74,11 +75,15 @@ export function QualifiersList({ data }: { data: ChQList }) {
       <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} start />
       <header className="ch-qf-head" data-canopy-head="">
         <div>
-          <span className="ch-qf-eyebrow ch-num">
-            {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). Counts that
-                didn't load are a dash, never 0 and never a blank line (states audit c14). */}
-            <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} · </span>
-            {unread ? `${NO_DATA} active · ${NO_DATA} concluded` : `${act.length} active · ${con.length} concluded`}
+          {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). Counts that
+              didn't load are a dash, never 0 and never a blank line (states audit c14). With no qualifier at all the
+              counts are only zeros, so the eyebrow is the name alone, and the phone (whose bar names the page) has none. */}
+          <span className={'ch-qf-eyebrow ch-num' + (none ? ' is-bare' : '')}>
+            <span className="ch-qf-eyebrow__k">
+              {data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}
+              {none ? '' : ' · '}
+            </span>
+            {none ? null : unread ? `${NO_DATA} active · ${NO_DATA} concluded` : `${act.length} active · ${con.length} concluded`}
           </span>
           <h1>{title}</h1>
           <p>{lede}</p>

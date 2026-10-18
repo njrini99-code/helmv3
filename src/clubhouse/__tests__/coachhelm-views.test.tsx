@@ -51,7 +51,7 @@ import { Profile } from '../screens/coachhelm/views/Profile';
 import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { PREVIEW_HELM_PLAYER, PREVIEW_HELM_PLAYER_OFF } from '../preview/fixtures-coachhelm';
-import { diveLoad, PREVIEW_DIVE, PREVIEW_PROFILE, PREVIEW_STANDING, profileLoad, standingLoad } from '../preview/fixtures-coachhelm-views';
+import { diveLoad, PREVIEW_DIVE, PREVIEW_PROFILE, PREVIEW_PROFILE_EMPTY, PREVIEW_STANDING, profileLoad, standingLoad } from '../preview/fixtures-coachhelm-views';
 import { ToastProvider } from '../ui/Toast';
 
 const on = { userEnabled: true, teamEnabled: true, effectivelyEnabled: true, disabledReason: null, disabledBy: null } as const;
@@ -274,5 +274,16 @@ describe('CH-13930 the player’s sub-navigation', () => {
     expect(code('CH-13304')).not.toBeNull();
     expect(code('CH-13930')).toBeNull();
     expect(screen.queryByRole('radiogroup')).toBeNull();
+  });
+});
+
+describe('CoachHelm player views · empty', () => {
+  it('CH-13360 an empty Game profile lists every measure as the compact locked tiles, not a column of full cards', () => {
+    render(wrap(<Profile load={profileLoad(PREVIEW_PROFILE_EMPTY)} />));
+    expect(code('CH-13360')).not.toBeNull();
+    const grid = document.querySelector('#ch-hg-all')!.closest('section')!.querySelector('ol.ch-hg-grid')!;
+    expect(grid.classList.contains('is-locked')).toBe(true);
+    expect(grid.children.length).toBe(PREVIEW_PROFILE_EMPTY.measures.length);
+    expect(screen.getByRole('link', { name: /Start a round/ }).querySelector('svg.lucide-plus')).not.toBeNull();
   });
 });

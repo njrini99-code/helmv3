@@ -321,8 +321,9 @@ export function ShotEntry(p: ShotEntryProps) {
 
       <div className="ch-rt-bar">
         {blocker && (
-          // CH-11101: the one thing still missing, named above the disabled button.
-          <p className="ch-rt-blocker" id={BLOCKER_ID} role="status" aria-live="polite" data-ch-code="CH-11101">
+          // CH-11101: the one thing still missing. The disabled button shows it in place of its label; this line keeps the
+          // live announcement for screen readers.
+          <p className="ch-rt-blocker ch-sr-only" id={BLOCKER_ID} role="status" aria-live="polite" data-ch-code="CH-11101">
             {blocker}
           </p>
         )}
@@ -337,7 +338,7 @@ export function ShotEntry(p: ShotEntryProps) {
           </button>
           <button
             type="button"
-            className="ch-btn ch-btn--primary ch-btn--lg ch-rt-bar__go"
+            className={'ch-btn ch-btn--primary ch-btn--lg ch-rt-bar__go' + (blocker ? ' is-blocked' : '')}
             disabled={!canRecord}
             aria-describedby={blocker ? BLOCKER_ID : undefined}
             aria-label={holed ? `Complete hole with score ${p.currentShot}` : 'Record next shot'}
@@ -347,8 +348,8 @@ export function ShotEntry(p: ShotEntryProps) {
               p.onNextShot();
             }}
           >
-            <span>{holed ? `Hole out · ${p.currentShot}` : 'Next shot'}</span>
-            <Icon icon={holed ? Check : ArrowRight} size={16} />
+            <span aria-hidden={blocker ? true : undefined}>{blocker ?? (holed ? `Hole out · ${p.currentShot}` : 'Next shot')}</span>
+            {!blocker && <Icon icon={holed ? Check : ArrowRight} size={16} />}
           </button>
         </div>
       </div>

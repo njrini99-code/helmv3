@@ -676,7 +676,7 @@ describe('Stats player · the Rounds tab says why there is no earlier window', (
     cleanup();
     expect(await why(filt({ types: ['tournament'] }))).toBe('Needs 3 earlier 18-hole rounds: fewer than 13 match these filters.');
     cleanup();
-    expect(await why(filt())).toMatch(/^Needs 3 earlier 18-hole rounds: this window has fewer than 13 in the last 12 months/);
+    expect(await why(filt())).toBe('Comparing starts at 13 rounds: the newest 10 against at least 3 before them.');
     cleanup();
     expect(await why(filterFor('season'))).toBe('The season has no earlier window to compare with.');
     cleanup();

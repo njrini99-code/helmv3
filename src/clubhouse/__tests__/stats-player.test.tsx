@@ -238,6 +238,16 @@ describe('Stats player · empty', () => {
     expect(code('CH-5305')!.textContent).toMatch(/Early read\. .+ Strokes gained shows once there are three/);
   });
 
+  it('CH-5309 an early read with no strokes gained: the desktop says it in one line, as the phone does, not a chart of dashes', () => {
+    show(PREVIEW_PLAYER_EARLY);
+    expect(code('CH-5309')!.textContent).toMatch(/No strokes gained in this window.*after three rounds with shots/);
+    expect(screen.queryByRole('heading', { name: 'Where the strokes go' })).toBeNull();
+    cleanup();
+    show(PREVIEW_PLAYER);
+    expect(code('CH-5309')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Where the strokes go' })).toBeTruthy();
+  });
+
   it('CH-5306 CH-5307 a player not on the team, for a coach and for a player', () => {
     wrap(<NotOnTeam coach />);
     expect(code('CH-5306')!.textContent).toMatch(/That player isn’t on your team/);

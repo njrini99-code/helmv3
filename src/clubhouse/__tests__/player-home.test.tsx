@@ -30,7 +30,7 @@ import { markAppRunning, RouteScope } from '../lib/session-state';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_HOME_NOW } from '../preview/fixtures';
-import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED } from '../preview/fixtures-player-home';
+import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_ROUNDS } from '../preview/fixtures-player-home';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 function wrap(node: React.ReactNode) {
@@ -241,6 +241,19 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(code('CH-2312')!.textContent).toMatch(/Welcome to the team/);
   });
 
+  it('CH-2312 the team’s events but no round: the week and Up next stay, and one welcome stands in for the empty blocks', () => {
+    expect(isPlayerFirstRun(PREVIEW_PLAYER_HOME_NO_ROUNDS)).toBe(false);
+    show(PREVIEW_PLAYER_HOME_NO_ROUNDS);
+    const welcome = code('CH-2312') as HTMLElement;
+    expect(welcome.textContent).toMatch(/Welcome to the team/);
+    expect(document.querySelector('.ch-ph-next')).not.toBeNull();
+    expect(screen.getByRole('heading', { name: 'This week' })).toBeTruthy();
+    // The head carries Start a round, so the welcome keeps only Add classes; no "No rounds posted yet" twice over.
+    expect(screen.getAllByRole('link', { name: 'Start a round' })).toHaveLength(1);
+    expect(within(welcome).getByRole('link', { name: 'Add classes' })).toBeTruthy();
+    for (const c of ['CH-2302', 'CH-2310', 'CH-2311']) expect(code(c)).toBeNull();
+  });
+
   it('CH-2313 a player on no team', () => {
     wrap(<PlayerHomeNoTeam />);
     expect(code('CH-2313')!.textContent).toMatch(/aren’t on a team yet/);
@@ -256,6 +269,14 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
   });
   afterEach(() => {
     window.matchMedia = real;
+  });
+
+  it('CH-2312 on the phone too: the team’s events but no round keep Up next and the week, with the welcome under them', () => {
+    show(PREVIEW_PLAYER_HOME_NO_ROUNDS);
+    expect(code('CH-2312')!.closest('.ch-hm-body')).not.toBeNull();
+    expect(document.querySelector('.ch-hm-week')).not.toBeNull();
+    expect(screen.getAllByRole('link', { name: 'Start a round' })).toHaveLength(1);
+    for (const c of ['CH-2302', 'CH-2310']) expect(code(c)).toBeNull();
   });
 
   it('CH-1209 CH-2201 on the phone the reads that fail are told once under the greeting, with one Try again', () => {

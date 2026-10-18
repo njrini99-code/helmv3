@@ -4,6 +4,7 @@ import { formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { holeCoverage } from '../../data/round-scope';
 import { Zone, ZoneBig as Big, ZoneBlock as Vis, ZoneNote as Missing, Zones } from '../../ui/Zone';
+import { EmptyState } from '../../ui/States';
 import { LegBars } from './LegBars';
 
 /**
@@ -144,9 +145,14 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
           </>
         }
       >
-        <Vis title="Where the strokes go" note="The same number split by the shots it counts. Right of the line gains strokes, left loses them.">
-          <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} />
-        </Vis>
+        {/* No figure at all yet: one line, as the phone says it (CH-5309), not a chart of dashes that reads as broken. */}
+        {sg == null && legs.every((l) => l.value == null) ? (
+          <EmptyState compact code="CH-5309" title="No strokes gained in this window." body="Strokes gained by leg appears after three rounds with shots." />
+        ) : (
+          <Vis title="Where the strokes go" note="The same number split by the shots it counts. Right of the line gains strokes, left loses them.">
+            <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} />
+          </Vis>
+        )}
         {sg != null && (
           <Vis title={coach ? 'Against the team and the Tour' : 'Against the Tour'} note={`Total strokes gained a round, ${formatSigned(sgLo, 0)} to ${formatSigned(sgHi, 0)}.`}>
             <div className="ch-zpin">

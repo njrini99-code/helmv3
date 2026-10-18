@@ -201,6 +201,21 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
+/* The phone's sign-in line on the intro (wave 10): the pill above hides at the same width. */
+.ch-ox .ch-ox-signin-m {
+  display: none;
+  margin: 24px 0 0;
+  font: 500 14px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-ox .ch-ox-signin-m a {
+  font-weight: 600;
+}
+@media (max-width: 820px) {
+  .ch-ox .ch-ox-signin-m {
+    display: block;
+  }
+}
 /* Hover steps the pill down to the primary key's hover face (ui.css). */
 @media (hover: hover) {
   .ch-ox .ch-ox-signin a:hover {

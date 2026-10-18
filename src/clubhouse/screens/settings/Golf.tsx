@@ -89,7 +89,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
           onClose={() => !leave.pending && setLeaving(false)}
           icon={LogOut}
           title={`Leave ${m.team.name}?`}
-          description="You come off the roster right away. To come back, you’ll need the invite code and your coach’s approval."
+          description="You come off the roster right away. To come back, you’ll need the team code or an invite link from your coach."
           footer={
             <>
               <Button variant="secondary" disabled={leave.pending} onClick={() => setLeaving(false)}>
@@ -110,7 +110,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
   }
 
   return (
-    <Card id="set-membership" code="CH-8302" title="Join a team" description="Ask your coach for the team’s invite code. They approve your request from their roster.">
+    <Card id="set-membership" code="CH-8302" title="Join a team" description="Ask your coach for the team code. They approve your request from their roster.">
       {requests.length > 0 && (
         <div className="ch-set-requests">
           {requests.map((r) => (
@@ -142,7 +142,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
             await join.run(code, note);
           }}
         >
-          <Field id="set-join-code" label="Invite code" autoComplete="off" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
+          <Field id="set-join-code" label="Team code" autoComplete="off" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
           <Field id="set-join-note" label="Note to the coaches" help="Optional." maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="ch-set-span2">
             <Button type="submit" variant="primary" disabled={!code.trim() || join.pending}>

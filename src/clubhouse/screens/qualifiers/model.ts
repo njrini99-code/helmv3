@@ -346,7 +346,7 @@ export function ctaLabel(status: ChQStatus): string {
 
 /** The list's lede, by who reads it. The list and its skeleton say the same sentence, so the skeleton's lines wrap where the page's do. */
 export function listLede(coach: boolean, mode: 'all' | 'mine'): string {
-  if (coach) return 'Run head-to-head qualifiers to decide who plays this week.';
+  if (coach) return 'Rank players over counted rounds and pick who travels.';
   return mode === 'mine' ? 'The qualifiers you’re entered in, and where you stand.' : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
 }
 

@@ -109,7 +109,7 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09302 | Search or filter matches nothing | "No qualifiers match your filters." + Clear filters | `EmptyState` | qualifiers.test › CH-09302 |
 | CH-09303 | Nothing has concluded yet | "No concluded qualifiers yet." under Concluded | `EmptyState` | qualifiers.test › CH-09303 |
 | CH-09304 | No round is in yet | "Awaiting first round." + "7 players entered. Standings appear once a player submits a round." | `EmptyState` | qualifiers.test › CH-09304 |
-| CH-09305 | The roster has no active players (form) | "No active players on the roster." | `EmptyState` | qualifiers.test › CH-09305 |
+| CH-09305 | The roster has no active players (form) | Over the form, before any field: "No active players on the roster." + "A qualifier needs at least one entrant, so Create waits until players join." + Invite players (Roster's invite sheet). Create (and the phone bar's) is off; the Players head reads "Nobody to enter yet", never "0 of 0" | `EmptyState` | qualifiers.test › CH-09305 |
 | CH-09306 | A player isn't entered in any qualifier (/my-qualifiers) | The page empty state (v2 medallion): "You aren’t entered in any qualifiers" + See the team's qualifiers | `EmptyState` | qualifiers.test › CH-09306 |
 | CH-09308 | A round has no hole-by-hole card | "No hole-by-hole card for this round. Only the total was recorded." | `Scorecard` | qualifiers.test › CH-09308 |
 | CH-09309 | Not on a team | The page empty state (v2 medallion): "You aren’t on a team yet" | `EmptyState` (route) | qualifiers.test › CH-09309 |

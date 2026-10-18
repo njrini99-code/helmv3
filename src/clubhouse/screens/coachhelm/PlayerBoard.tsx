@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
-import { Play, Sparkles } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import { partitionInsights, type ChInsight, type ChPlayerHelm } from '../../data/coachhelm-shape';
 import { PLAYER_HELM_HREF, PLAYER_HELM_VIEWS, type PlayerHelmView } from '../../data/coachhelm-views-shape';
 import { useChSessionState } from '../../lib/session-state';
@@ -68,7 +68,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
       <Head phone={phone} aside={!phone ? tabs : undefined}>
-        One thing to work on this week, based on the rounds you’ve posted.
+        {data.rounds === 0 ? 'One thing to work on each week, from the rounds you post.' : 'One thing to work on this week, based on the rounds you’ve posted.'}
       </Head>
 
       {!data.off && <Proposals proposals={data.proposals} writes={writes} />}
@@ -99,7 +99,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
             body={`CoachHelm reads the rounds you post. ${short != null ? `After ${short} ${short === 1 ? 'round' : 'rounds'}` : 'Once there is enough to go on'}, one thing to work on this week shows up here.`}
             action={
               startHref ? (
-                <Button variant="primary" leftIcon={Play} href={startHref.href}>
+                <Button variant="primary" leftIcon={Plus} href={startHref.href}>
                   {startHref.label}
                 </Button>
               ) : undefined
@@ -118,7 +118,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
             }
             action={
               startHref ? (
-                <Button variant="primary" leftIcon={Play} href={startHref.href}>
+                <Button variant="primary" leftIcon={Plus} href={startHref.href}>
                   {startHref.label}
                 </Button>
               ) : undefined

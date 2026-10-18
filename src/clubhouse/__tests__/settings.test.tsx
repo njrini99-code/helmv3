@@ -206,11 +206,11 @@ describe('Settings · 80xx error toasts', () => {
     await expectCode('CH-8011', /team details/);
   });
 
-  it('CH-8012 a new invite code fails and the old one stays', async () => {
+  it('CH-8012 a new team code fails and the old one stays', async () => {
     const { user } = setup({ section: 'team', writes: { regenerateCode: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) } });
     await user.click(within(card('Invite players')).getByRole('button', { name: 'Make a new code' }));
     await user.click(within(code('CH-8503') as HTMLElement).getByRole('button', { name: 'Make a new code' }));
-    await expectCode('CH-8012', /invite code/);
+    await expectCode('CH-8012', /team code/);
     expect(screen.getByText('K7M2Q9XA')).toBeTruthy();
   });
 
@@ -253,7 +253,7 @@ describe('Settings · 80xx error toasts', () => {
 
   it('CH-8018 a join request fails (player, no team)', async () => {
     const { user } = setup({ data: playerData(false, false), section: 'golf', writes: { requestJoin: vi.fn(() => fail('That code does not match a team.')) } });
-    await user.type(screen.getByLabelText('Invite code'), 'abc123');
+    await user.type(screen.getByLabelText('Team code'), 'abc123');
     await user.click(screen.getByRole('button', { name: 'Ask to join' }));
     await expectCode('CH-8018', /does not match a team/);
   });
@@ -349,11 +349,15 @@ describe('Settings · 81xx validation', () => {
     expect(hapticSpy).toHaveBeenCalledWith('warning');
   });
 
-  it('wave-6 Team on desktop opens on the invite code, then Team details', () => {
+  it('wave-6 Team on desktop opens on the team code, then Team details', () => {
     setup({ section: 'team' });
     const invite = screen.getByRole('region', { name: 'Invite players' });
     const details = screen.getByRole('region', { name: 'Team details' });
     expect(invite.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Wave 10 (A): a code or link join is instant, so the coach is not told they approve it.
+    expect(invite.textContent).toMatch(/Players who sign up with your team code or open your invite link join right away\. You can remove anyone from Roster\./);
+    expect(invite.textContent).not.toMatch(/approve/);
+    expect(within(invite).getByText('Team code')).toBeTruthy();
   });
 
   it.each([
@@ -401,7 +405,7 @@ describe('Settings · 82xx didn\'t load', () => {
     ['CH-8202', 'notifications', { delivery: failedRead }, /email and push settings didn’t load/],
     ['CH-8204', 'notifications', { digest: failedRead }, /didn’t load/],
     ['CH-8205', 'team', { team: failedRead }, /Team details didn’t load/],
-    ['CH-8206', 'team', { joinCode: failedRead }, /invite code didn’t load/],
+    ['CH-8206', 'team', { joinCode: failedRead }, /team code didn’t load/],
     ['CH-8207', 'team', { scoring: failedRead }, /Scoring settings didn’t load/],
     ['CH-8208', 'team', { reminders: failedRead }, /Event reminders didn’t load/],
     ['CH-8211', 'coachhelm', { coachhelm: failedRead }, /CoachHelm settings didn’t load/],
@@ -522,7 +526,7 @@ describe('Settings · 85xx confirm', () => {
     expect(writes.leaveTeam).not.toHaveBeenCalled();
   });
 
-  it('CH-8503 a new invite code asks first', async () => {
+  it('CH-8503 a new team code asks first', async () => {
     const { user, writes } = setup({ section: 'team' });
     await user.click(within(card('Invite players')).getByRole('button', { name: 'Make a new code' }));
     await expectCode('CH-8503', /K7M2Q9XA stops working/);
@@ -953,7 +957,7 @@ describe('Settings · saving', () => {
     leave.unmount();
 
     const join = setup({ data: playerData(false, false), section: 'golf' });
-    await join.user.type(screen.getByLabelText('Invite code'), 'abc123');
+    await join.user.type(screen.getByLabelText('Team code'), 'abc123');
     await join.user.click(screen.getByRole('button', { name: 'Ask to join' }));
     await waitFor(() => expect(join.writes.refresh).toHaveBeenCalledTimes(1));
   });
@@ -986,7 +990,7 @@ describe('Settings · saving', () => {
     email.unmount();
 
     const join = setup({ data: playerData(false, false), section: 'golf' });
-    await join.user.type(screen.getByLabelText('Invite code'), 'abc123{Enter}');
+    await join.user.type(screen.getByLabelText('Team code'), 'abc123{Enter}');
     await waitFor(() => expect(join.writes.requestJoin).toHaveBeenCalledWith('ABC123', ''));
   });
 });
@@ -1374,7 +1378,7 @@ describe('Settings · a refused save says why; only a save that got no answer sa
 
   it('CH-8018 a refusal with no plain reason keeps the card’s own next step', async () => {
     const { user } = setup({ data: playerData(false, false), section: 'golf', writes: { requestJoin: vi.fn(() => fail('duplicate key value violates unique constraint "golf_team_join_requests_pkey"')) } });
-    await user.type(screen.getByLabelText('Invite code'), 'abc123');
+    await user.type(screen.getByLabelText('Team code'), 'abc123');
     await user.click(screen.getByRole('button', { name: 'Ask to join' }));
     await expectCode('CH-8018', /Check the code with your coach\./);
   });
@@ -2202,7 +2206,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const invite = await screen.findByRole('region', { name: 'Invite players' });
       await user.click(within(invite).getByRole('button', { name: 'New code' }));
       await user.click(within(await openSheet('CH-8503')).getByRole('button', { name: 'Replace code' }));
-      await expectCode('CH-8012', /invite code/);
+      await expectCode('CH-8012', /team code/);
       expect(within(invite).getByText('K7M2Q9XA')).toBeTruthy();
     });
 
@@ -2454,13 +2458,13 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const { user } = phone({ data: { ...coachData(), team: failedRead, scoring: failedRead, joinCode: failedRead, reminders: failedRead } });
       await openRow(user, /^Team/);
       await expectCode('CH-8205', /Team details didn’t load/);
-      await expectCode('CH-8206', /invite code didn’t load/);
+      await expectCode('CH-8206', /team code didn’t load/);
       await expectCode('CH-8207', /Scoring settings didn’t load/);
       await expectCode('CH-8208', /Event reminders didn’t load/);
       expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
     });
 
-    it('81901 CH-8013 CH-8705 Share opens the share sheet; without one it copies the join link, and says how to do it by hand when copying fails', async () => {
+    it('81901 CH-8013 CH-8705 Share opens the share sheet; without one it copies the invite link, and says how to do it by hand when copying fails', async () => {
       const share = vi.fn(() => Promise.resolve());
       Object.defineProperty(navigator, 'share', { configurable: true, value: share });
       const first = phone();
@@ -2540,10 +2544,10 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const { user, writes } = phone({ data: playerData(false, false), writes: { requestJoin: vi.fn(() => fail('That code does not match a team.')) } });
       await openRow(user, /^Golf profile/);
       await expectCode('CH-8302');
-      await user.click(await screen.findByRole('button', { name: /^Invite code/ }));
+      await user.click(await screen.findByRole('button', { name: /^Team code/ }));
       const sheet = dialog('Join a team');
       expect(within(sheet).getByRole('button', { name: 'Send' })).toBeDisabled();
-      await user.type(within(sheet).getByLabelText('Invite code'), 'abc123{Enter}');
+      await user.type(within(sheet).getByLabelText('Team code'), 'abc123{Enter}');
       await waitFor(() => expect(writes.requestJoin).toHaveBeenCalledWith('ABC123', ''));
       await expectCode('CH-8018', /does not match a team/);
     });
@@ -2553,7 +2557,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await openRow(user, /^Golf profile/);
       await expectCode('CH-8303', /Waiting on Wake Forest Golf/);
       expect(within(code('CH-8303') as HTMLElement).getByText(/^Sent /)).toBeTruthy();
-      expect(screen.queryByRole('button', { name: /^Invite code/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Team code/ })).toBeNull();
       await user.click(screen.getByRole('button', { name: 'Cancel' }));
       await waitFor(() => expect(writes.cancelRequest).toHaveBeenCalledWith('rq1'));
       await waitFor(() => expect(code('CH-8303')).toBeNull());

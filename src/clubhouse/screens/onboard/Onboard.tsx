@@ -119,7 +119,7 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
   useEffect(() => {
     if (preview) return;
     if (start !== 'intro') {
-      // After the account: the join code the server put on the URL is the one the join uses.
+      // After the account: the team code the server put on the URL is the one the join uses.
       const joinCode = codeFromSearch(window.location.search);
       if (joinCode) f.up({ code: joinCode });
       return;

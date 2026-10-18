@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, MapPin, TriangleAlert, Users, X } from 'lucide-react';
+import { Check, MapPin, TriangleAlert, UserPlus, Users, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQFormData, ChQFormRoundCourse } from '../../data/qualifiers';
@@ -20,6 +20,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop, usePhoneTabsHidden } from '../../shell/phone-chrome';
 import { PhoneTextAction } from '../../ui/PhoneBar';
+import { rebuiltHref } from '../../shell/nav';
 import { FIELD_ORDER, FORM_HELP, FORM_LEDE, plural, SQUAD_MAX, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
 import { CoursePicker, type ChQPickedCourse } from './CoursePicker';
 import { isPlainClick } from './return-state';
@@ -81,8 +82,13 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
     [v, courses, data.initial, data.roundCourses],
   );
   const doneHref = editing && data.id ? `${LIST}/${data.id}` : LIST;
+  // Opens Roster's invite sheet (Roster reads `?invite=1` once), as Home's Invite players.
+  const inviteHref = rebuiltHref('/golf/dashboard/roster?invite=1');
+  // Nobody on the roster: a qualifier needs an entrant, so Create waits, and the form says so first (CH-09305), not
+  // under Players after ten fields.
+  const noRoster = !data.playersError && data.players.length === 0;
   // Without the players, a save could enter or drop someone by mistake.
-  const blocked = data.playersError;
+  const blocked = data.playersError || noRoster;
 
   // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
   // (which runs the action again) finishes the job too: the new qualifier opens, and nobody is left to create it twice.
@@ -270,6 +276,23 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
         />
       )}
 
+      {noRoster && (
+        <EmptyState
+          compact
+          code="CH-09305"
+          icon={Users}
+          title="No active players on the roster"
+          body="A qualifier needs at least one entrant, so Create waits until players join."
+          action={
+            inviteHref ? (
+              <Button size="sm" variant="primary" leftIcon={UserPlus} href={inviteHref}>
+                Invite players
+              </Button>
+            ) : undefined
+          }
+        />
+      )}
+
       {problems.length > 0 && (
         <InlineNotice
           code="CH-09110"
@@ -416,7 +439,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   <h2>Players</h2>
                   {/* No count while the roster failed: "0 of 0" would read as an empty roster. The line stays, so the head keeps its height. */}
                   <p className="ch-num">
-                    {data.playersError ? '\u00a0' : `${v.playerIds.filter((id) => data.players.some((p) => p.id === id && !p.inactive)).length} of ${activeCount} active players entered`}
+                    {data.playersError ? '\u00a0' : noRoster ? 'Nobody to enter yet' : `${v.playerIds.filter((id) => data.players.some((p) => p.id === id && !p.inactive)).length} of ${activeCount} active players entered`}
                   </p>
                 </div>
                 {!data.playersError && activeIds.length > 0 && (
@@ -427,9 +450,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
               </div>
               {data.playersError ? (
                 <InlineNotice title={editing ? 'The players didn’t load' : 'The roster didn’t load'} covered />
-              ) : data.players.length === 0 ? (
-                <EmptyState compact code="CH-09305" icon={Users} title="No active players on the roster" body="A qualifier needs at least one entrant. Add players to the roster first." />
-              ) : (
+              ) : noRoster ? null : (
                 <div className="ch-qf-players">
                   {data.players.map((p, i) => {
                     const on = v.playerIds.includes(p.id);

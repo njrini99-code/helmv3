@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, ChevronRight, Dna, Lock, Play } from 'lucide-react';
+import { ChevronDown, ChevronRight, Dna, Lock, Plus } from 'lucide-react';
 import { useId } from 'react';
 import type { ChMeasure, ChProfile } from '../../../data/coachhelm-profile-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
@@ -244,7 +244,7 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
             body="CoachHelm reads how you play from the rounds you post. Each measure has its own minimum, so they fill in one at a time. Nothing is estimated before then."
             action={
               startHref ? (
-                <Button variant="primary" leftIcon={Play} href={startHref.href}>
+                <Button variant="primary" leftIcon={Plus} href={startHref.href}>
                   {startHref.label}
                 </Button>
               ) : undefined
@@ -252,7 +252,8 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
           />
           <section className="ch-hg-sec" aria-labelledby="ch-hg-all">
             <h2 id="ch-hg-all">What it will read</h2>
-            <ol className="ch-hg-grid">
+            {/* Every measure is still locked: the compact tiles the loaded view uses for "Still filling in", not seven full cards. */}
+            <ol className="ch-hg-grid is-locked">
               {p.measures.map((m) => (
                 <Measure key={m.id} m={m} />
               ))}

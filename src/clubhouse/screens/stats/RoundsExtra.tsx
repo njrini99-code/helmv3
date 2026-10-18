@@ -77,7 +77,7 @@ export function RoundsExtra({
       ? 'Needs 3 earlier rounds before the newest 10 that match these filters, counting a 9-hole round as half.'
       : isFiltered(filter)
         ? 'Needs 3 earlier 18-hole rounds: fewer than 13 match these filters.'
-        : 'Needs 3 earlier 18-hole rounds: this window has fewer than 13 in the last 12 months.'
+        : 'Comparing starts at 13 rounds: the newest 10 against at least 3 before them.'
     : hasRange(filter)
       ? 'A date range has no earlier window to compare with.'
       : filter.pick?.mode === 'only'

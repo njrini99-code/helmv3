@@ -1,5 +1,40 @@
 # P003 — Roster: changelog
 
+## 2026-10-18 — Wave 10: the empty team and one name for the code
+
+```text
+Design package: none (wave-10 first-run review, rows 5, 15, 19; A, B, C)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-3309 (new), CH-3006, CH-3207, CH-3301, CH-3304, CH-3307
+Actions:        none
+Data impact:    none
+Held items:     whether code and link joins should need approval (owner)
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- One name for each thing: "team code" (what the player types) and
+  "invite link". The invite sheet, the toasts (CH-3006), CH-3207 and CH-3304
+  no longer say "join code".
+- The coach copy says what the app does (decision A, copy only). Sign-up with
+  the team code and the invite link join at once (`golf_join_team_with_code`
+  inserts an active member), so CH-3301 reads "Players who sign up with your
+  team code or open your invite link join right away. You can remove anyone
+  here." The invite sheet says only players already on GolfHelm who enter the
+  code in Settings send a request; the link's help says opening it joins.
+- Invite sheet: the link field drops the scheme and clips from its start, so
+  the code at the end stays in view; Copy and Share still send the full URL.
+- An empty roster's head shows the team and season only: no "0 players ·
+  0 active." (desktop) or "· 0 active" (phone kicker). The player's view drops
+  "0 players" the same way (decision B).
+- Phone: the top bar's invite icon is hidden while nobody is on the roster
+  and the empty state carries Invite players; it stays when the read failed
+  (decision C).
+- Player view: CH-3307 says teammates join with the team code. A roster of
+  one, the player alone on a new team (CH-3309), shows their row and "You’re
+  the first one here. Teammates show up as they join." with no search, layout
+  or sort control.
+
 ## 2026-10-18 — Wave 8: premium details
 
 ```text

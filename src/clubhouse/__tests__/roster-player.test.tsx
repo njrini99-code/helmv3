@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * The player's Roster (docs/clubhouse/catalog/roster.md: CH-3210, CH-3211, CH-3307, CH-3308, CH-3807; contracts 30804
+ * The player's Roster (docs/clubhouse/catalog/roster.md: CH-3210, CH-3211, CH-3307, CH-3308, CH-3309, CH-3807; contracts 30804
  * to 30806): the coach's screen, read-only, over a loader that reads nothing a teammate could not show.
  */
 
@@ -299,8 +299,27 @@ describe('Player roster · desktop', () => {
   it('CH-3307 a team with nobody on it says so, with no action to take', () => {
     wrap({ ...TEAM, players: [] });
     expect(code('CH-3307')!.textContent).toMatch(/No one on the roster yet/);
-    expect(code('CH-3307')!.textContent).toMatch(/Your teammates appear here once your coach adds them\./);
+    expect(code('CH-3307')!.textContent).toMatch(/Teammates show up here as they join with the team code\./);
     expect(code('CH-3307')!.querySelectorAll(CONTROLS)).toHaveLength(0);
+    // Wave 10 (B): no "0 players on the roster."; the team and season stay.
+    expect(document.querySelector('.ch-rs-head p')).toBeNull();
+    expect(screen.getByText('Varsity · Fall 2026')).toBeTruthy();
+  });
+
+  it('CH-3309 a roster of one (the player, on a new team): their row, one quiet line, and no search, layout or sort', () => {
+    wrap({ ...TEAM, players: [mate('theo', 'Theo Marchetti', 'Senior', 2027, -0.8, true)] });
+    expect(within(faces()).getAllByRole('listitem')).toHaveLength(1);
+    expect(code('CH-3309')!.textContent).toBe('You’re the first one here. Teammates show up as they join.');
+    expect(screen.queryByRole('searchbox', { name: 'Search players' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Layout' })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'Sort players' }) ?? screen.queryByRole('radio', { name: 'Class' })).toBeNull();
+    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('1 player on the roster.');
+  });
+
+  it('CH-3309 one teammate who is not you is an ordinary roster, controls and all', () => {
+    wrap({ ...TEAM, players: [mate('ava', 'Ava Lindqvist', 'Junior', 2028, 2.4)] });
+    expect(code('CH-3309')).toBeNull();
+    expect(screen.getByRole('searchbox', { name: 'Search players' })).toBeTruthy();
   });
 
   it('CH-3211 a crash in the list stays in the list: the header and the controls remain', () => {
@@ -418,5 +437,14 @@ describe('Player roster · phone', () => {
     phone({ ...TEAM, players: [] });
     expect(code('CH-3307')).not.toBeNull();
     expect(code('CH-3210')).toBeNull();
+    // Wave 10 (B): the kicker drops "0 players".
+    expect(screen.getByRole('main', { name: 'Roster' }).querySelector('.ch-rsm-kicker')!.textContent).toBe('Varsity');
+  });
+
+  it('CH-3309 a roster of one on the phone: the row and the quiet line, no sort', () => {
+    phone({ ...TEAM, players: [mate('theo', 'Theo Marchetti', 'Senior', 2027, -0.8, true)] });
+    expect(within(screen.getByRole('list', { name: 'Players' })).getAllByRole('listitem')).toHaveLength(1);
+    expect(code('CH-3309')!.textContent).toBe('You’re the first one here. Teammates show up as they join.');
+    expect(screen.queryByRole('radio', { name: 'Class' })).toBeNull();
   });
 });

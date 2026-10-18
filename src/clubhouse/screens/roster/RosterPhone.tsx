@@ -149,20 +149,30 @@ export function RosterPhone({
         title="Roster"
         start
         action={
-          <PhoneIconAction
-            icon={UserPlus}
-            label="Invite players"
-            onClick={() => {
-              onInvite();
-            }}
-          />
+          // One primary per screen: while nobody is on the roster the empty state (CH-3301) carries Invite players.
+          data.playersError || players.length > 0 ? (
+            <PhoneIconAction
+              icon={UserPlus}
+              label="Invite players"
+              onClick={() => {
+                onInvite();
+              }}
+            />
+          ) : undefined
         }
       />
       <div className="ch-rsm-page" inert={open ? true : undefined}>
         <header className="ch-rsm-head">
+          {/* With nobody on the roster the count is 0: the team's name says enough (wave 10). */}
           {!data.playersError && (
             <span className="ch-rsm-kicker">
-              {data.teamName} · <span className="ch-num">{activeCount}</span> active
+              {data.teamName}
+              {players.length > 0 && (
+                <>
+                  {' '}
+                  · <span className="ch-num">{activeCount}</span> active
+                </>
+              )}
             </span>
           )}
           {/* The top bar carries the page's heading; this is the design's large title. */}
@@ -209,7 +219,7 @@ export function RosterPhone({
             code="CH-3301"
             icon={Users}
             title="No players yet"
-            body="Share your team code, then approve requests as they arrive. Players appear here as soon as they join."
+            body="Players who sign up with your team code or open your invite link join right away. You can remove anyone here."
             action={
               <Button variant="primary" leftIcon={UserPlus} onClick={onInvite}>
                 Invite players
@@ -217,7 +227,7 @@ export function RosterPhone({
             }
             secondaryAction={
               data.joinCode ? (
-                <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+                <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                   Copy team code
                 </Button>
               ) : undefined
@@ -549,11 +559,11 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
                 <span>Team code</span>
                 <b className="ch-num">{data.joinCode}</b>
               </span>
-              <Button size="sm" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+              <Button size="sm" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                 Copy
               </Button>
             </div>
-            <p className="ch-rsm-reqs__note">Players join with this code. Approved players see the team calendar and messages.</p>
+            <p className="ch-rsm-reqs__note">Requests come from players already on GolfHelm who enter this code in Settings. Approved players see the team calendar and messages.</p>
           </>
         )}
       </div>

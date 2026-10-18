@@ -300,6 +300,22 @@ describe('Stats team · empty', () => {
     expect(code('CH-4301')).toBeNull();
   });
 
+  it('CH-4310 the server StatsTeam renders the first run through a client file: its icon never crosses as a prop', () => {
+    // StatsTeam is a server component (routes/stats.tsx), and vitest has no RSC renderer. The crash was CH-4310 passing
+    // leftIcon (a function) to the client Button from a file without 'use client', so the file's first statement is
+    // checked, then the server path is rendered with no rounds (here as a client tree, which is what the boundary makes it).
+    const src = readFileSync('src/clubhouse/screens/stats/StatsTeamFirstRun.tsx', 'utf8');
+    expect(src.trimStart().startsWith("'use client';")).toBe(true);
+    wrap(empty({ window: 'season' }));
+    expect(code('CH-4310')).not.toBeNull();
+  });
+
+  it('CH-4310 nobody on the roster yet: the step is Invite players (Roster’s invite sheet), as on Home', () => {
+    wrap(empty({ window: 'season', activeCount: 0 }));
+    expect(screen.getByRole('link', { name: 'Invite players' })).toHaveAttribute('href', '/golf/dashboard/roster?invite=1');
+    expect(screen.queryByRole('link', { name: /View roster/ })).toBeNull();
+  });
+
   it('CH-4302 no qualifier rounds', () => {
     wrap(empty({ window: 'qualifiers' }));
     expect(code('CH-4302')!.textContent).toMatch(/No qualifier rounds this season yet/);
@@ -523,6 +539,17 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     window.matchMedia = real;
   });
 
+  it('CH-4310 on the phone the first run has nothing to switch, so the window switch steps aside; older rounds keep it', () => {
+    const { unmount } = wrap(empty({ window: 'season' }));
+    expect(code('CH-4310')).not.toBeNull();
+    expect(document.querySelector('.ch-stm-controls')).toBeNull();
+    unmount();
+    // Rounds in other seasons: the season's first run keeps the switch, so Last 10 can show them.
+    wrap(empty({ window: 'season', filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 4, courses: [] } }));
+    expect(code('CH-4310')).not.toBeNull();
+    expect(document.querySelector('.ch-stm-controls')).not.toBeNull();
+  });
+
   it('41901 CH-4805 the phone view replaces desktop: one hero figure, its trend with a written reading, the round, legs, players and putting', () => {
     wrap(stats());
     expect(document.querySelector('.ch-st-desk')).toBeNull();
@@ -549,7 +576,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 1\.4 strokes since Aug 30/ })).toBeTruthy();
     expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
     // Sentence case, never tracked: the context line is the team, its active players and its sample.
-    expect(document.querySelector('.ch-stm-head span')!.textContent).toBe('Varsity · 7 active · countable rounds');
+    expect(document.querySelector('.ch-stm-head span')!.textContent).toBe('Varsity · 7 active players · countable rounds only');
   });
 
   it('CH-4703 CH-4805 players sort by scoring average, or by strokes gained; a row opens the player and reads as one link', async () => {

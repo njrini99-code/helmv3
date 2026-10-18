@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -95,6 +95,16 @@ describe('112401 Rounds library, on screen', () => {
     expect(screen.getByRole('group', { name: 'Sep 26, Finley GC, 72 (E)' })).toBeTruthy();
     // Its row is not a link; only the page's own controls (New round, Continue) are.
     expect(screen.queryByRole('link', { name: /Sep 26, Finley GC/ })).toBeNull();
+  });
+
+  it('CH-11304 one primary for one action: with no round in progress the idle card carries Start a round, so the head has no New round', () => {
+    show(PREVIEW_ROUNDS_IDLE);
+    expect(screen.queryByRole('link', { name: 'New round' })).toBeNull();
+    expect(screen.getByRole('link', { name: /Start a round/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    cleanup();
+    // The check for a round in progress failed: that card is a notice with no Start, so the head keeps New round.
+    show(PREVIEW_ROUNDS_UNFINISHED_FAILED);
+    expect(screen.getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
   });
 
   it('CH-11703 New round, and Continue at the next hole with the press haptic', async () => {
@@ -208,7 +218,8 @@ describe('112401 Rounds library, on screen', () => {
 
   it('110107 CH-11302 rounds posted but no countable 18-hole round this season: the season card says how it fills; the round still lists', async () => {
     show(PREVIEW_ROUNDS_NO_SEASON);
-    await expectCode('CH-11302', /Your season starts with your first 18-hole round/);
+    // A non-breaking hyphen (U+2011), so the headline never breaks "18- / hole".
+    await expectCode('CH-11302', /Your season starts with your first 18\u2011hole round/);
     const row = screen.getByRole('link', { name: 'Sep 9, Finley GC, 38 (+2)' });
     expect(within(row).getByText('Holes').nextSibling!.textContent).toBe('9');
     expect(screen.getByText('Since August 1')).toBeTruthy();

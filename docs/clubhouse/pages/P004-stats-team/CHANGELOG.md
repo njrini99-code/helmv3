@@ -1,5 +1,27 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-18 — Wave 10: the first run's next step
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-4310
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- The first run (CH-4310) is a client file ('use client'), so the server
+  StatsTeam no longer passes its icon across the boundary; the real route
+  crashed on desktop with no round all season.
+- With nobody active on the roster, CH-4310's step is Invite players (Roster's
+  invite sheet), as on Home and CoachHelm; View roster stays otherwise.
+- Phone: the eyebrow reads "7 active players · countable rounds only", as the
+  desktop does, and the first run with no round in any window drops the
+  window switch it had nothing to switch to (older rounds keep it).
+
 ## 2026-10-18 — Wave 8: premium details, Filter and Export on the edge
 
 ```text

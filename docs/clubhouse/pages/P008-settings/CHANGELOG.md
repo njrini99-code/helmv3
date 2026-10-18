@@ -1,5 +1,29 @@
 # P008 — Settings: changelog
 
+## 2026-10-18 — Wave 10: team code and what joining does
+
+```text
+Design package: none (wave-10 first-run review, row 5; A)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-8012, CH-8013, CH-8206, CH-8302, CH-8502, CH-8503, CH-8705
+Actions:        none
+Data impact:    none
+Held items:     whether code and link joins should need approval (owner)
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- "Invite code" is now "team code" on Team (desktop and phone), the toasts,
+  the replace confirm and the player's Join a team field; "join link" is
+  "invite link".
+- Team's Invite players card no longer tells the coach they approve every
+  player (decision A, copy only): "Players who sign up with your team code or
+  open your invite link join right away. You can remove anyone from Roster."
+  The phone card's line says the same in one sentence. Join a team (the
+  Settings path, which does send a request) keeps its approval wording.
+- Leave team: "To come back, you’ll need the team code or an invite link
+  from your coach."
+
 ## 2026-10-18 — Wave 8: premium details
 
 ```text

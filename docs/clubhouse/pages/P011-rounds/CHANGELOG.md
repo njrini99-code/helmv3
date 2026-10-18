@@ -1,5 +1,41 @@
 # P011 — Rounds: changelog
 
+## 2026-10-18 — Wave 10: one Start a round in the library
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-11302 CH-11304
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 library)
+
+- The head's New round shows only with a round in progress, or when the check
+  for one failed: otherwise the idle card's Start a round is the one primary
+  (it was two for one action). A full library with nothing in progress loses
+  the head button too.
+- CH-11302's headline keeps "18‑hole" together (a non-breaking hyphen).
+
+## 2026-10-18 — Wave 10: the setup scorecard before a course
+
+```text
+Design package: none (wave-10 first-run review, decision D)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-11309
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 setup)
+
+- Before a course is picked (CH-11309) the placeholder keeps the hole numbers
+  and drops the grey bars beside them, which read as loading: a row of
+  numbers on desktop, the ledger's numbered rows on the phone.
+
 ## 2026-10-18 — Wave 9: on the course
 
 ```text

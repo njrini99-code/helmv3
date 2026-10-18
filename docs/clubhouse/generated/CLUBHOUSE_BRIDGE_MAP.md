@@ -106,7 +106,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | 3 | 2 | 1 | 6 |  | 14 | 6 | 3 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 106 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
-| P003 | 2 | 2 | 3 | 8 | 2 | 19 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 74 |
+| P003 | 2 | 2 | 3 | 9 | 2 | 19 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 19 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
@@ -247,11 +247,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20405 | CH-2305 | 04 Empty | `PLAYERS_BUT_NO_18_HOLE_ROUNDS` | implemented | Players, but no 18-hole rounds |
 | 20406 | CH-2306 | 04 Empty | `A_PLAYER_HAS_FEWER_THAN_THREE_ROUNDS` | implemented | A player has fewer than three rounds |
 | 20407 | CH-2307 | 04 Empty | `A_COACH_WITH_NO_ACTIVE_TEAM` | implemented | A coach with no active team |
-| 20408 | CH-2308 | 04 Empty | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | implemented | A team with nothing yet: no players, no events this week, no rounds, and every read answered |
+| 20408 | CH-2308 | 04 Empty | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | implemented | A team with nobody on it yet: no players, no rounds, and every read answered (events or not: it rests on the people, not the calendar) |
 | 20409 | CH-2309 | 04 Empty | `NOTHING_ON_THE_CALENDAR_AHEAD` | implemented | Nothing on the calendar ahead (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds |
 | 20410 | CH-2310 | 04 Empty | `FEWER_THAN_TWO_18_HOLE_ROUNDS` | implemented | Fewer than two 18-hole rounds (player Home Scoring) |
 | 20411 | CH-2311 | 04 Empty | `NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED` | implemented | No fairways, greens, scrambling or putts logged (player Home) |
-| 20412 | CH-2312 | 04 Empty | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | implemented | A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71) |
+| 20412 | CH-2312 | 04 Empty | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | implemented | A new player: no rounds, every read answered (v2 first-run, D-71) |
 | 20413 | CH-2313 | 04 Empty | `A_PLAYER_ON_NO_ACTIVE_TEAM` | implemented | A player on no active team |
 | 20601 | CH-2201 | 06 Server / system error | `THE_WEEKS_EVENTS_DONT_LOAD` | implemented | The week's events don't load |
 | 20602 | CH-2202 | 06 Server / system error | `SEASON_ROUNDS_DONT_LOAD` | implemented | Season rounds (or the roster behind them) don't load |
@@ -310,11 +310,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30401 | CH-3301 | 04 Empty | `NO_PLAYERS_YET` | implemented | No players yet |
 | 30402 | CH-3302 | 04 Empty | `A_SEARCH_MATCHES_NOBODY` | implemented | A search matches nobody |
 | 30403 | CH-3303 | 04 Empty | `A_STATUS_FILTER_HAS_NOBODY` | implemented | A status filter has nobody |
-| 30404 | CH-3304 | 04 Empty | `THE_TEAM_HAS_NO_JOIN_CODE` | implemented | The team has no join code |
+| 30404 | CH-3304 | 04 Empty | `THE_TEAM_HAS_NO_JOIN_CODE` | implemented | The team has no team code |
 | 30405 | CH-3305 | 04 Empty | `A_PLAYER_HAS_NO_18_HOLE_ROUNDS` | implemented | A player has no 18-hole rounds |
 | 30406 | CH-3306 | 04 Empty | `A_COACH_SIGNED_IN_WITH_NO_ACTIVE` | implemented | A coach signed in with no active team |
 | 30407 | CH-3307 | 04 Empty | `A_PLAYERS_TEAM_HAS_NOBODY_ON_IT` | implemented | A player's team has nobody on it |
 | 30408 | CH-3308 | 04 Empty | `A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE` | implemented | A player signed in with no active team |
+| 30409 | CH-3309 | 04 Empty | `A_PLAYER_ALONE_ON_THEIR_TEAMS_ROSTER` | implemented | A player alone on their team's roster (they are always on it once joined, so this is a new team's first run) |
 | 30501 | CH-3101 | 05 Validation | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | implemented | A coach's note is within 200 characters of its 2,000 limit |
 | 30502 |  | 05 Validation | `EXPORT_CELLS_ARE_TEXT` | implemented | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. |
 | 30601 | CH-3001 | 06 Server / system error | `REMOVING_A_PLAYER_FAILS` | implemented | Removing a player fails |
@@ -322,7 +323,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30603 | CH-3003 | 06 Server / system error | `DECLINING_A_JOIN_REQUEST_FAILS` | implemented | Declining a join request fails |
 | 30604 | CH-3004 | 06 Server / system error | `THE_COACHS_NOTE_DOESNT_SAVE` | implemented | The coach's note doesn't save (on leaving the field) |
 | 30605 | CH-3005 | 06 Server / system error | `THE_BROWSER_BLOCKS_THE_CSV_DOWNLOAD` | implemented | The browser blocks the CSV download |
-| 30606 | CH-3006 | 06 Server / system error | `COPYING_THE_JOIN_CODE_OR_LINK_FAILS` | implemented | Copying the join code or link fails |
+| 30606 | CH-3006 | 06 Server / system error | `COPYING_THE_JOIN_CODE_OR_LINK_FAILS` | implemented | Copying the team code or invite link fails |
 | 30607 | CH-3007 | 06 Server / system error | `APPROVE_ALL_LEAVES_SOME_REQUESTS_UNAPPROVED` | implemented | Approve all (phone requests sheet, D-55) leaves some requests unapproved |
 | 30608 | CH-3201 | 06 Server / system error | `THE_ROSTER_DOESNT_LOAD` | implemented | The roster doesn't load |
 | 30609 | CH-3202 | 06 Server / system error | `SEASON_ROUNDS_DONT_LOAD` | implemented | Season rounds don't load |
@@ -462,7 +463,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50404 | CH-5304 | 04 Empty | `NO_GOALS` | implemented | No goals |
 | 50405 | CH-5305 | 04 Empty | `FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW` | implemented | Fewer than three whole rounds in the window (or under the round filter; a 9-hole round counts as half) |
 | 50406 | CH-5308 | 04 Empty | `THREE_OR_MORE_ROUNDS_IN_THE_WINDOW` | implemented | Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots) |
-| 50407 | CH-5309 | 04 Empty | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | implemented | Phone: no strokes gained in the window (no leg and no total) |
+| 50407 | CH-5309 | 04 Empty | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | implemented | No strokes gained in the window (no leg and no total) |
 | 50408 | CH-5310 | 04 Empty | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | implemented | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
 | 50409 | CH-5311 | 04 Empty | `HOLES_WERE_SCORED_IN_THE_WINDOW_BUT` | implemented | Holes were scored in the window but none has been played three times |
 | 50410 | CH-5312 | 04 Empty | `A_ROUND_TYPE_WITH_NO_ROUNDS_IN` | implemented | A round type with no rounds in the window (practice, qualifying, tournament) |
@@ -787,7 +788,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80609 | CH-8009 | 06 Server / system error | `MUTE_PUSH_MUTE_EMAIL_OR_RESET_DOESNT` | implemented | Mute push, Mute email or Reset doesn't save (player) |
 | 80610 | CH-8010 | 06 Server / system error | `COACHHELM_QUIET_MODE_DOESNT_SAVE` | implemented | CoachHelm quiet mode doesn't save (player) |
 | 80611 | CH-8011 | 06 Server / system error | `SAVING_TEAM_DETAILS_FAILS` | implemented | Saving team details fails |
-| 80612 | CH-8012 | 06 Server / system error | `MAKING_A_NEW_INVITE_CODE_FAILS` | implemented | Making a new invite code fails |
+| 80612 | CH-8012 | 06 Server / system error | `MAKING_A_NEW_INVITE_CODE_FAILS` | implemented | Making a new team code fails |
 | 80613 | CH-8013 | 06 Server / system error | `COPYING_THE_CODE_OR_LINK_FAILS` | implemented | Copying the code or link fails (clipboard blocked) |
 | 80614 | CH-8014 | 06 Server / system error | `SAVING_SCORING_AND_FORMAT_FAILS` | implemented | Saving scoring and format fails |
 | 80615 | CH-8015 | 06 Server / system error | `SAVING_THE_REMINDER_SCHEDULE_FAILS` | implemented | Saving the reminder schedule fails |
@@ -805,7 +806,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80627 | CH-8203 | 06 Server / system error | `COACHHELM_UPDATE_SETTINGS_DONT_LOAD` | implemented | CoachHelm update settings don't load (player) |
 | 80628 | CH-8204 | 06 Server / system error | `THE_WEEKLY_TEAM_EMAIL_SETTING_DOESNT_LOAD` | implemented | The weekly team email setting doesn't load (coach) |
 | 80629 | CH-8205 | 06 Server / system error | `TEAM_DETAILS_DONT_LOAD` | implemented | Team details don't load |
-| 80630 | CH-8206 | 06 Server / system error | `THE_INVITE_CODE_DOESNT_LOAD` | implemented | The invite code doesn't load |
+| 80630 | CH-8206 | 06 Server / system error | `THE_INVITE_CODE_DOESNT_LOAD` | implemented | The team code doesn't load |
 | 80631 | CH-8207 | 06 Server / system error | `SCORING_SETTINGS_DONT_LOAD` | implemented | Scoring settings don't load |
 | 80632 | CH-8208 | 06 Server / system error | `EVENT_REMINDERS_DONT_LOAD` | implemented | Event reminders don't load |
 | 80633 | CH-8209 | 06 Server / system error | `GOLF_DETAILS_DONT_LOAD` | implemented | Golf details don't load (player) |
@@ -836,7 +837,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81003 |  | 10 Warning | `QUIET_MODE_PAUSES_UPDATES` | implemented | With quiet mode on, every update except messages reads Paused by quiet mode and its switches are disabled; the CoachHelm updates card marks round reviews and goals from the coach Always delivered. |
 | 81101 | CH-8501 | 11 Destructive | `DELETE_ACCOUNT` | implemented | Delete account |
 | 81102 | CH-8502 | 11 Destructive | `LEAVE_TEAM` | implemented | Leave team (player) |
-| 81103 | CH-8503 | 11 Destructive | `MAKE_A_NEW_INVITE_CODE` | implemented | Make a new invite code |
+| 81103 | CH-8503 | 11 Destructive | `MAKE_A_NEW_INVITE_CODE` | implemented | Make a new team code |
 | 81104 | CH-8504 | 11 Destructive | `RESET_COACHHELM_UPDATES` | implemented | Reset CoachHelm updates (player) |
 | 81105 | CH-8505 | 11 Destructive | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | implemented | Turn off CoachHelm on your dashboards |
 | 81106 | CH-8509 | 11 Destructive | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | implemented | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes |
@@ -866,7 +867,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81702 | CH-8702 | 17 Haptic | `A_SAVE_LANDS` | implemented | A Save changes that lands |
 | 81703 | CH-8703 | 17 Haptic | `A_SAVE_FAILS_OR_A_PHOTO_IS` | implemented | A save fails or a photo is rejected |
 | 81704 | CH-8704 | 17 Haptic | `OPENING_DELETE_ACCOUNT_OR_PRESSING_UPDATE_PASSWORD` | implemented | Opening Delete account, or pressing Update password with a problem |
-| 81705 | CH-8705 | 17 Haptic | `COPYING_THE_INVITE_CODE_OR_LINK` | implemented | Copying the invite code or link |
+| 81705 | CH-8705 | 17 Haptic | `COPYING_THE_INVITE_CODE_OR_LINK` | implemented | Copying the team code or invite link |
 | 81706 | CH-8706 | 17 Haptic | `PRESSING_A_PRIMARY_BUTTON` | implemented | Pressing a primary button (Save changes) |
 | 81707 | CH-8707 | 17 Haptic | `TURNING_HAPTICS_BACK_ON` | implemented | Turning Haptics back on |
 | 81708 |  | 17 Haptic | `DISCARD_WARNS` | implemented | Discard (a card's edits, Discard changes when leaving a section, Discard and leave when following a link) fires the warning haptic before anything is dropped (D-70). |
@@ -1415,7 +1416,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130210 | CH-13470 | 02 Initial loading / skeleton | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | implemented | Standing: the standing is on its way |
 | 130211 | CH-13480 | 02 Initial loading / skeleton | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | implemented | Deep dive: the insights are on their way |
 | 130212 | CH-13405 | 02 Initial loading / skeleton | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | implemented | Coach: the board is drawn and the program pulse is still on its way |
-| 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet |
+| 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet (the lede reads "One thing to work on each week, from the rounds you post.") |
 | 130402 | CH-13302 | 04 Empty | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | 04 Empty | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | implemented | Player: every insight is a strength |
 | 130404 | CH-13304 | 04 Empty | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | implemented | Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation) |

@@ -28,7 +28,7 @@ import { CourseLocationPhone } from '../course-location';
 import { FieldRow, Group, NavRow, PickerRow, Problem, SliderRow, SwitchRow } from './ui';
 
 /**
- * Team on the phone (coach): the invite code, team details, scoring and reminders. Text edits open a sheet; choices
+ * Team on the phone (coach): the team code, team details, scoring and reminders. Text edits open a sheet; choices
  * open a bottom sheet and save as they are picked (the same writes as desktop's Save).
  */
 export function TeamPhone({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
@@ -51,7 +51,7 @@ function TeamBody({ data, writes }: { data: ChSettingsData; writes: ChSettingsWr
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
       {data.joinCode?.error ? (
         <Group title="Invite players">
-          <ReadFailed bare what="Your invite code" code="CH-8206" onRetry={writes.refresh} covered={covered} />
+          <ReadFailed bare what="Your team code" code="CH-8206" onRetry={writes.refresh} covered={covered} />
         </Group>
       ) : (
         data.joinCode && <InvitePhone code={data.joinCode.value} writes={writes} />
@@ -83,7 +83,7 @@ function TeamBody({ data, writes }: { data: ChSettingsData; writes: ChSettingsWr
 }
 
 /**
- * The invite code with Share, and New code, which asks in an action sheet first (CH-8503). It is Team's one feature card
+ * The team code with Share, and New code, which asks in an action sheet first (CH-8503). It is Team's one feature card
  * (the Mobile clubhouse pass, owner 2026-10-08): the code is what a coach most often opens Team for, so it sits first,
  * on the frame's green, with Share as its action and New code as the quiet way to replace it.
  */
@@ -98,7 +98,7 @@ function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettin
           <span className="ch-feat__kicker" id={labelId}>
             Invite players
           </span>
-          {/* Where the device has no share sheet, Share copies the join link instead. */}
+          {/* Where the device has no share sheet, Share copies the invite link instead. */}
           <button type="button" className="ch-setm-pill is-on-green" onClick={() => void (canShare ? share() : copy('link'))}>
             Share
           </button>
@@ -106,7 +106,7 @@ function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettin
         <b className="ch-feat__title ch-setm-code__v ch-num" aria-live="polite">
           {code}
         </b>
-        <span className="ch-feat__line">Players join with this code, then you approve them from Roster.</span>
+        <span className="ch-feat__line">Players who sign up with this code or open the invite link join right away.</span>
         <span className="ch-feat__foot">
           <button type="button" className="ch-setm-link is-on-green" disabled={regen.pending} onClick={() => setAsking(true)}>
             {regen.pending ? 'Making…' : 'New code'}
@@ -117,7 +117,7 @@ function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettin
         open={asking}
         onClose={() => setAsking(false)}
         code="CH-8503"
-        title="Replace your invite code?"
+        title="Replace your team code?"
         message={`${code} stops working right away. Players who haven’t joined yet will need the new code.`}
         actions={[
           {

@@ -116,6 +116,10 @@ describe('112401 Round setup: picking a course', () => {
   it('110103 CH-11309 before a course, Start waits and the scorecard holds its place', () => {
     setup();
     expect(code('CH-11309')).toHaveTextContent('Your scorecard appears here once you pick a course and tees.');
+    // Wave 10 (D): the hole numbers hold the place, with no grey bars that read as loading.
+    const ghost = code('CH-11309')!.querySelector('.ch-rsu-hc__ghost')!;
+    expect([...ghost.querySelectorAll('b')].map((b) => b.textContent)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9']);
+    expect(ghost.querySelectorAll('i, .ch-skel')).toHaveLength(0);
     expect(dock()).toHaveTextContent('Choose a course to start');
     expect(startBtn()).toBeDisabled();
   });

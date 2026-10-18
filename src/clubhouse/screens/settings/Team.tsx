@@ -30,7 +30,7 @@ import { StaffCards } from './Staff';
 /** Team's reads that failed, for its one section notice (shared with TeamPhone). */
 export const teamReadsFailed = (data: ChSettingsData) =>
   failedReads([
-    [data.joinCode?.error, 'your invite code'],
+    [data.joinCode?.error, 'your team code'],
     [data.team?.error, 'team details'],
     [data.scoring?.error, 'scoring settings'],
     [data.reminders?.error, 'event reminders'],
@@ -49,8 +49,8 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
   return (
     <>
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
-      {/* The invite code first: it is what a coach comes here for most, and Team details ran it under the fold (wave-6 #20). */}
-      {data.joinCode?.error ? <ReadFailed what="Your invite code" code="CH-8206" onRetry={writes.refresh} title="Invite players" description="Players join with this code, then you approve them from Roster." covered={covered} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
+      {/* The team code first: it is what a coach comes here for most, and Team details ran it under the fold (wave-6 #20). */}
+      {data.joinCode?.error ? <ReadFailed what="Your team code" code="CH-8206" onRetry={writes.refresh} title="Invite players" description="Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster." covered={covered} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
       {data.team?.error ? <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} title="Team details" description="Shown to your players, and on invites and exports." covered={covered} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
       <StaffCards coachId={data.coachId} writes={writes} />
       {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} title="Scoring and format" description="Defaults for new rounds and events. The timezone sets when every event and reminder happens." covered={covered} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
@@ -114,8 +114,8 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
   const [confirm, setConfirm] = useState(false);
   useWarnOnOpen(confirm);
   return (
-    <Card id="set-invite" title="Invite players" description="Players join with this code, then you approve them from Roster.">
-      <Row label="Invite code" help="Share it, or send the join link.">
+    <Card id="set-invite" title="Invite players" description="Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster.">
+      <Row label="Team code" help="Share it, or send the invite link.">
         <b className="ch-set-code ch-num" aria-live="polite">
           {code}
         </b>
@@ -143,7 +143,7 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
         code="CH-8503"
         onClose={() => setConfirm(false)}
         icon={RefreshCw}
-        title="Replace your invite code?"
+        title="Replace your team code?"
         description={`${code} stops working as soon as the new code is made. Share the new one with anyone who hasn’t joined yet.`}
         footer={
           <>

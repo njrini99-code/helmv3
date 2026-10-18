@@ -19,9 +19,9 @@ import { CoachAsks, MineBadge } from './CoachAsks';
 import { Countdown } from './Countdown';
 import { eventHref, whenLabel } from './HomePhone';
 import { LatestRound } from './LatestRound';
-import { playerFailedParts } from './model';
+import { noRoundsYet, playerFailedParts } from './model';
 import { PlayerGame } from './PlayerGame';
-import { PlayerHomePhone } from './PlayerHomePhone';
+import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
@@ -44,22 +44,25 @@ export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and 
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = playerFailedParts(data);
   const covered = failed.length > 1;
+  if (noRoundsYet(data)) {
+    // Events but no round yet: the week (Up next inside it) stays, and the welcome stands in for three empty blocks.
+    return (
+      <main className="ch-h-main ch-h-main--desk" data-canopy="">
+        <DeskHead data={data} post={post} />
+        <CoachAsks asks={data.asks} />
+        <PageRefreshNotice parts={failed} />
+        <div className="ch-h-sheet ch-sheet is-solo">
+          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
+            <Week week={data.week} between={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />
+          </SectionBoundary>
+        </div>
+        <NoRoundsYet />
+      </main>
+    );
+  }
   return (
     <main className="ch-h-main ch-h-main--desk" data-canopy="">
-      <header className="ch-h-head" data-canopy-head="">
-        <span className="ch-h-head__date">{data.todayLabel}</span>
-        <h1 className="ch-display">{data.greeting}</h1>
-        <div className="ch-h-head__actions">
-          <Button leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)}>
-            Message coach
-          </Button>
-          {post && (
-            <Button variant="primary" leftIcon={Plus} href={post}>
-              Start a round
-            </Button>
-          )}
-        </div>
-      </header>
+      <DeskHead data={data} post={post} />
       <CoachAsks asks={data.asks} />
       <PageRefreshNotice parts={failed} />
       {/* One continuous surface (owner, 2026-10-06): the week and the latest round, then Scoring under a hairline. */}
@@ -80,6 +83,26 @@ export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and 
         <PlayerGame data={data} part="legs" covered={covered} />
       </SectionBoundary>
     </main>
+  );
+}
+
+/** The framed head: the day, the greeting, Message coach and Start a round. */
+function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
+  return (
+    <header className="ch-h-head" data-canopy-head="">
+      <span className="ch-h-head__date">{data.todayLabel}</span>
+      <h1 className="ch-display">{data.greeting}</h1>
+      <div className="ch-h-head__actions">
+        <Button leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)}>
+          Message coach
+        </Button>
+        {post && (
+          <Button variant="primary" leftIcon={Plus} href={post}>
+            Start a round
+          </Button>
+        )}
+      </div>
+    </header>
   );
 }
 
@@ -106,9 +129,12 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
   );
 }
 
-/** A player with nothing yet: no rounds, nothing on the calendar, and every read answered. */
+/**
+ * A player with nothing yet: no rounds, nothing on the calendar, and every read answered. With events and no round,
+ * the loaded page keeps the week and shows the welcome in place of the rounds (NoRoundsYet).
+ */
 export function isPlayerFirstRun(data: ChPlayerHome): boolean {
-  return !data.week.error && !data.latest.error && !data.next && data.scoring.points.length === 0 && data.week.days.every((d) => d.eventCount === 0);
+  return noRoundsYet(data) && !data.week.error && !data.next && data.week.days.every((d) => d.eventCount === 0);
 }
 
 /** The v2 first-run page empty state (gh-states.jsx, EMPTY.home.player; D-71). */

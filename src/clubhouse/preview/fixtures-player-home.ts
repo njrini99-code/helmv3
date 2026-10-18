@@ -144,6 +144,16 @@ export const PREVIEW_PLAYER_HOME_EMPTY: ChPlayerHome = {
   legs: { rows: PREVIEW_PLAYER_HOME.legs!.rows.map((l) => ({ ...l, value: null, sg: null, trend: [], note: null })), cacheError: false, benchError: false },
 };
 
+/** The team's events, but no round of the player's yet: the week stays, and the welcome stands in for the rounds. */
+export const PREVIEW_PLAYER_HOME_NO_ROUNDS: ChPlayerHome = {
+  ...PREVIEW_PLAYER_HOME,
+  brief: null,
+  latest: { rounds: [], error: false, holesError: false },
+  scoring: { points: [], error: false },
+  sgPerRound: null,
+  legs: PREVIEW_PLAYER_HOME_EMPTY.legs,
+};
+
 /** Rounds, but nothing on the calendar ahead. */
 export const PREVIEW_PLAYER_HOME_NO_EVENTS: ChPlayerHome = {
   ...PREVIEW_PLAYER_HOME,

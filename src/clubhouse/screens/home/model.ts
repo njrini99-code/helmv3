@@ -116,6 +116,15 @@ export function coachFailedParts(data: Pick<ChCoachHome, 'week' | 'latestRounds'
  * The player's (the phone and the desktop draw the same parts). The latest round and the scoring line read the same
  * rounds, so they fail together and are named by their sections, not twice as "rounds".
  */
+/**
+ * A player with no round posted yet, both rounds reads answered: a failed read is never taken for "new" (CH-2312). A
+ * malformed read is not "none" either; it is left to its section's boundary.
+ */
+export function noRoundsYet(data: Pick<ChPlayerHome, 'latest' | 'scoring'>): boolean {
+  const { latest, scoring } = data;
+  return !latest.error && !scoring.error && Array.isArray(scoring.points) && scoring.points.length === 0 && Array.isArray(latest.rounds) && latest.rounds.length === 0;
+}
+
 export function playerFailedParts(data: Pick<ChPlayerHome, 'week' | 'latest' | 'scoring' | 'legs'>): string[] {
   const parts: string[] = [];
   if (data.week.error) parts.push('this week’s schedule');

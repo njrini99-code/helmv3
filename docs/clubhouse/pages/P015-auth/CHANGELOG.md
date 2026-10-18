@@ -1,5 +1,27 @@
 # P015 — Auth: changelog
 
+## 2026-10-18 — Wave 10: a way to sign in on the phone, and first-run words
+
+```text
+Design package: none (wave-10 first-run review, rows 12, 13, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-15302
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- Sign up, phone: the top bar's sign-in pill is hidden at 820px and under,
+  so the intro (the invitation and the two choices) ends with "Already a
+  member? Sign in", which keeps the invite's return path. A returning player
+  who taps an invite link can sign in again.
+- Welcome on a first visit (CH-15302): "Messages, posted rounds and RSVPs
+  land here each time you sign in."
+- Done: "Start your first round", and Turn on notifications opens Settings on
+  Notifications. A failed join asks the coach to "resend" the code.
+
 ## 2026-10-18 — Wave 5: onboarding count and staff finish
 
 ```text

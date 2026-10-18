@@ -449,12 +449,11 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
             // CH-11309: before a course, the scorecard's place is held.
             <section className="ch-rsu-card ch-rsu-hc ch-rsu-hc--empty" data-ch-code="CH-11309">
               <ScorecardHead />
+              {/* The hole numbers alone: grey bars beside them read as loading (wave 10). */}
               <div className="ch-rsu-hc__ghost" aria-hidden="true">
                 {Array.from({ length: 9 }, (_, i) => (
                   <span key={i}>
                     <b>{i + 1}</b>
-                    <i />
-                    <i />
                   </span>
                 ))}
               </div>

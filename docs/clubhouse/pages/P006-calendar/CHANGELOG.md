@@ -1,5 +1,21 @@
 # P006 — Calendar: changelog
 
+## 2026-10-18 — Wave 10: one verb for a new event
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-6309
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- The first run's action (CH-6309) is "New event", the verb Home, the editor
+  and the top bar use, not "Create event".
+
 ## 2026-10-18 — Wave 7: a player's meetings, replies and clashes
 
 ```text

@@ -360,7 +360,8 @@ export function Roster({ data }: { data: ChRoster }) {
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
           <h1 className="ch-display">Your players</h1>
-          {!data.playersError && (
+          {/* With nobody on the roster every count is 0: the team and season above say enough (wave 10). */}
+          {!data.playersError && players.length > 0 && (
             <p>
               <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} &middot;{' '}
               <span className="ch-num">{active.length}</span> active.
@@ -433,7 +434,7 @@ export function Roster({ data }: { data: ChRoster }) {
           code="CH-3301"
           icon={Users}
           title="No players yet"
-          body="Share your team code, then approve requests as they arrive. Players appear here as soon as they join."
+          body="Players who sign up with your team code or open your invite link join right away. You can remove anyone here."
           action={
             <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
               Invite players
@@ -441,7 +442,7 @@ export function Roster({ data }: { data: ChRoster }) {
           }
           secondaryAction={
             data.joinCode ? (
-              <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+              <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                 Copy team code
               </Button>
             ) : undefined
@@ -708,23 +709,24 @@ function InviteModal({
       onClose={onClose}
       icon={UserPlus}
       title="Invite players"
-      description={`Players join ${teamName} with the code or link. You approve each request.`}
+      description={`Players who sign up with the team code or open the invite link join ${teamName} right away. Players already on GolfHelm who enter the code in Settings send a request you approve.`}
       footer={<Button onClick={onClose}>Done</Button>}
     >
       {code ? (
         <div className="ch-rs-inv">
           <div className="ch-rs-inv__code ch-well-soft">
-            <span>Join code</span>
+            <span>Team code</span>
             <b className="ch-num">{code}</b>
-            <Button size="sm" leftIcon={Copy} onClick={() => void copy(code, 'Join code')}>
+            <Button size="sm" leftIcon={Copy} onClick={() => void copy(code, 'Team code')}>
               Copy
             </Button>
           </div>
           {link && (
             <div className="ch-field">
-              <span className="ch-field__label">Or send the link</span>
+              <span className="ch-field__label">Or send the invite link</span>
               <div className="ch-rs-inv__link">
-                <input className="ch-input" readOnly value={link} aria-label="Invite link" onFocus={(e) => e.currentTarget.select()} />
+                {/* The scheme is left off and the field clips from the start (roster.css), so the code at the end stays in view; Copy and Share send the full URL. */}
+                <input className="ch-input" readOnly value={link.replace(/^https?:\/\//, '')} aria-label="Invite link" onFocus={(e) => e.currentTarget.select()} />
                 {typeof navigator !== 'undefined' && 'share' in navigator ? (
                   <Button variant="primary" leftIcon={Share} onClick={() => void share()}>
                     Share
@@ -735,14 +737,14 @@ function InviteModal({
                   </Button>
                 )}
               </div>
-              <span className="ch-field__help">It opens the join request with your team filled in.</span>
+              <span className="ch-field__help">Players who open it join right away, after making an account if they need one.</span>
             </div>
           )}
         </div>
       ) : codeFailed ? (
         <InlineNotice
           code="CH-3207"
-          title="The join code didn’t load"
+          title="The team code didn’t load"
           body="Your code still works for players who have it. Try again to show it here."
           onRetry={onRetry}
         />
@@ -750,7 +752,7 @@ function InviteModal({
         <EmptyState
           code="CH-3304"
           compact
-          title="Your team has no join code yet"
+          title="There’s no team code yet"
           body="Make one in Settings, then invite players here."
           action={
             <Button size="sm" href="/golf/dashboard/settings?section=team">

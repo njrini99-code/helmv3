@@ -44,7 +44,7 @@ export const SAVE_COPY = {
   email: (v: string) => ({ done: `Confirmation sent to ${v}`, failed: "Couldn’t start the email change", code: 'CH-8003' }),
   password: { done: 'Password updated', failed: "Couldn’t update your password", code: 'CH-8004' },
   team: { done: 'Team details saved', failed: "Couldn’t save team details", code: 'CH-8011' },
-  regenerate: { done: 'New invite code ready', failed: "Couldn’t make a new invite code", code: 'CH-8012' },
+  regenerate: { done: 'New team code ready', failed: "Couldn’t make a new team code", code: 'CH-8012' },
   scoring: { done: 'Scoring settings saved', failed: "Couldn’t save scoring settings", code: 'CH-8014' },
   reminders: { done: 'Reminder schedule saved', failed: "Couldn’t save the reminder schedule", code: 'CH-8015' },
   golf: { done: 'Golf details saved', failed: "Couldn’t save your golf details", code: 'CH-8016' },
@@ -192,7 +192,7 @@ export function useCoachHelmPower(initial: ChCoachHelmSettings, writes: ChSettin
   return { coach, team, pending: save.pending, setC, setTeamOn };
 }
 
-/** The invite code: the code on screen, a new one (after the person confirms), copy and share (CH-8012, CH-8013). */
+/** The team code: the code on screen, a new one (after the person confirms), copy and share (CH-8012, CH-8013). */
 export function useInvite(initial: string, writes: ChSettingsWrites) {
   const [code, setCode] = useState(initial);
   // Read after mount: the server has no navigator, and a mismatch would break hydration.
@@ -207,9 +207,9 @@ export function useInvite(initial: string, writes: ChSettingsWrites) {
     chTrail(`settings copy invite ${what}`);
     try {
       await navigator.clipboard.writeText(what === 'code' ? code : link);
-      // CH-8705: copying the invite code or link lands with the success pattern.
+      // CH-8705: copying the team code or invite link lands with the success pattern.
       haptic('success');
-      toast({ title: what === 'code' ? 'Invite code copied' : 'Invite link copied' });
+      toast({ title: what === 'code' ? 'Team code copied' : 'Invite link copied' });
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.invite', action: 'copy', severity: 'low' });

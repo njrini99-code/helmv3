@@ -100,7 +100,7 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 50404 | CH-5304 | `NO_GOALS` | No goals |
 | 50405 | CH-5305 | `FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW` | Fewer than three whole rounds in the window (or under the round filter; a 9-hole round counts as half) |
 | 50406 | CH-5308 | `THREE_OR_MORE_ROUNDS_IN_THE_WINDOW` | Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots) |
-| 50407 | CH-5309 | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | Phone: no strokes gained in the window (no leg and no total) |
+| 50407 | CH-5309 | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | No strokes gained in the window (no leg and no total) |
 | 50408 | CH-5310 | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
 | 50409 | CH-5311 | `HOLES_WERE_SCORED_IN_THE_WINDOW_BUT` | Holes were scored in the window but none has been played three times |
 | 50410 | CH-5312 | `A_ROUND_TYPE_WITH_NO_ROUNDS_IN` | A round type with no rounds in the window (practice, qualifying, tournament) |

@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
@@ -234,10 +234,20 @@ describe('after the account (/golf/player)', () => {
     window.history.replaceState(null, '', '/');
   });
 
+  it('wave 10 the next steps say Start your first round, and Turn on notifications opens Settings on Notifications', async () => {
+    mount(makeWrites(), 'photo', AFTER);
+    fireEvent.click(screen.getByRole('button', { name: /Finish setup/ }));
+    expect(await screen.findByRole('button', { name: /Start your first round/ })).toBeTruthy();
+    expect(screen.queryByText(/Post your first round/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Turn on notifications/ }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/golf/dashboard/settings?section=notifications'), { timeout: 5000 });
+  });
+
   it('a join that failed saves the profile and offers the code again, with no member card issued', async () => {
     mount(makeWrites({ finishPlayer: vi.fn(async () => ({ ok: true as const, joinedTeam: false })) }), 'photo', AFTER);
     fireEvent.click(screen.getByRole('button', { name: /Finish setup/ }));
     expect(await screen.findByText('Your profile is saved, Theo.')).toBeTruthy();
+    expect(screen.getByText(/Ask your coach to resend it, or enter the team code again\./)).toBeTruthy();
     expect(screen.getByRole('link', { name: /Enter a team code/ }).getAttribute('href')).toBe('/golf/join');
     expect(document.querySelector('.ch-ox-mc__stamp')).toBeNull();
   });
@@ -300,11 +310,24 @@ describe('arriving', () => {
     expect(router.replace).toHaveBeenCalledWith('/golf/login');
   });
 
-  it('the sign-in link keeps the invite', () => {
+  it('the sign-in link keeps the invite, in the top bar and in the phone’s line under the invitation (wave 10)', async () => {
     window.history.replaceState(null, '', '/golf/signup?returnTo=%2Fgolf%2Fjoin%2FK7PQX4MN');
     mount(makeWrites(), 'intro');
-    expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/golf/login?returnTo=%2Fgolf%2Fjoin%2FK7PQX4MN');
+    const pill = document.querySelector('.ch-ox-signin') as HTMLElement;
+    expect(within(pill).getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/golf/login?returnTo=%2Fgolf%2Fjoin%2FK7PQX4MN');
+    expect(await screen.findByText('You’ve been invited to a team.')).toBeTruthy();
+    const line = document.querySelector('.ch-ox-signin-m') as HTMLElement;
+    expect(line.textContent).toBe('Already a member? Sign in');
+    expect(within(line).getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/golf/login?returnTo=%2Fgolf%2Fjoin%2FK7PQX4MN');
     window.history.replaceState(null, '', '/');
+  });
+
+  it('wave 10 the intro without an invite has the phone’s sign-in line under the two choices', () => {
+    mount(makeWrites(), 'intro');
+    const line = document.querySelector('.ch-ox-signin-m') as HTMLElement;
+    // After the two choices.
+    expect(screen.getByRole('group', { name: 'How are you joining' }).compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(line).getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/golf/login');
   });
 });
 

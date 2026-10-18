@@ -107,6 +107,10 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
   const filtered = isFiltered(data.filter);
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
+  // The first-run page (CH-4310): no round of either length in the season, or none at all in the default window.
+  const firstRun = noRounds && !filtered && (data.window === 'season' || (data.window !== 'qualifiers' && data.filterOptions.total === 0)) && !nineOnly;
+  // With no round anywhere there is nothing to switch to; older rounds keep the window switch, so Last 10 can show them.
+  const bare = firstRun && data.filterOptions.total === 0;
   // Two or more parts that didn't load are told once, under the head, with one Try again; each keeps its title (CH-1209).
   const failed: string[] = [];
   if (!data.roundsError && !noRounds) {
@@ -137,15 +141,17 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
       <div className="ch-stm is-team">
         <header className="ch-stm-head">
           <span className="ch-num">
-            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active · `}countable rounds
+            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active ${data.activeCount === 1 ? 'player' : 'players'} · `}countable rounds only
           </span>
           <h1>Team stats</h1>
         </header>
         {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
-        <div className="ch-stm-controls">
-          <PhoneWindowSwitch custom={hasRange(data.filter)} />
-          {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
-        </div>
+        {!bare && (
+          <div className="ch-stm-controls">
+            <PhoneWindowSwitch custom={hasRange(data.filter)} />
+            {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+          </div>
+        )}
         {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
         {data.roundsError && (
           <EmptyState
@@ -162,8 +168,8 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
         {noRounds && filtered ? (
           <TeamFilterEmpty />
-        ) : noRounds && (data.window === 'season' || (data.window !== 'qualifiers' && data.filterOptions.total === 0)) && !nineOnly ? (
-          <StatsTeamFirstRun />
+        ) : firstRun ? (
+          <StatsTeamFirstRun invite={data.activeCount === 0} />
         ) : noRounds ? (
           // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
           <EmptyState

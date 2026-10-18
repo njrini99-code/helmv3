@@ -860,10 +860,10 @@ describe('CH-13225 a section that crashes leaves the rest of the page usable', (
 });
 
 describe('the states that stand in for the thread', () => {
-  it('CH-13321 an empty roster is the first-run page with Open roster, the sub-tab strip, and no composer', () => {
+  it('CH-13321 an empty roster is the first-run page with Invite players, the sub-tab strip, and no composer', () => {
     show({ status: 'noRoster', teamName: 'Finley University' });
     expect(code('CH-13321')?.textContent).toMatch(/Add players to ask CoachHelm.*CoachHelm answers from your players’ rounds, stats and schedule\. Once your roster is in, ask about anyone on it\./);
-    expect(screen.getByRole('link', { name: 'Open roster' })).toHaveAttribute('href', '/golf/dashboard/roster');
+    expect(screen.getByRole('link', { name: 'Invite players' })).toHaveAttribute('href', '/golf/dashboard/roster?invite=1');
     expect(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();
   });

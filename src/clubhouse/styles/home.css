@@ -97,6 +97,10 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   margin-top: 28px;
 }
+/* The week alone (a coach with players and no round, where the leaderboard's line says so, or the first run). */
+.ch-h-sheet.is-solo {
+  grid-template-columns: minmax(0, 1fr);
+}
 /* Player Home: the week sheet and Scoring are one surface. The sheet's own margin moves to the wrapper, and Scoring
    drops its card for a seam, so the eye runs straight from the week into the scoring line. */
 .ch-h-flow.ch-sheet {
@@ -2543,6 +2547,13 @@
   .ch-h-main--desk[data-canopy] .ch-h-sheet > .ch-h-pane:first-child {
     padding-right: 32px;
   }
+  /* The week alone runs to the head's edge; on the first run it sits on the same edge as the loaded page's. */
+  .ch-h-main--desk[data-canopy] .ch-h-sheet.is-solo > .ch-h-pane:first-child {
+    padding-right: 0;
+  }
+  .ch-h-main--first[data-canopy] .ch-h-sheet > .ch-h-pane {
+    padding: 22px 0 8px;
+  }
   .ch-h-main--desk[data-canopy] .ch-h-sheet > .ch-h-pane + .ch-h-pane {
     padding-left: 32px;
     box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
@@ -3305,6 +3316,10 @@
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
+  }
+  /* The coach's first run with events: the week strip opens a section under the intro, as on the loaded page. */
+  .ch-h-main--first > .ch-hm-sec {
+    margin-top: 28px;
   }
 }
 

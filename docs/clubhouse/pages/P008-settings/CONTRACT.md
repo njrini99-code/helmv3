@@ -139,7 +139,7 @@ are the shell's (10603 to 10607).
 | 80609 | CH-8009 | `MUTE_PUSH_MUTE_EMAIL_OR_RESET_DOESNT` | Mute push, Mute email or Reset doesn't save (player) |
 | 80610 | CH-8010 | `COACHHELM_QUIET_MODE_DOESNT_SAVE` | CoachHelm quiet mode doesn't save (player) |
 | 80611 | CH-8011 | `SAVING_TEAM_DETAILS_FAILS` | Saving team details fails |
-| 80612 | CH-8012 | `MAKING_A_NEW_INVITE_CODE_FAILS` | Making a new invite code fails |
+| 80612 | CH-8012 | `MAKING_A_NEW_INVITE_CODE_FAILS` | Making a new team code fails |
 | 80613 | CH-8013 | `COPYING_THE_CODE_OR_LINK_FAILS` | Copying the code or link fails (clipboard blocked) |
 | 80614 | CH-8014 | `SAVING_SCORING_AND_FORMAT_FAILS` | Saving scoring and format fails |
 | 80615 | CH-8015 | `SAVING_THE_REMINDER_SCHEDULE_FAILS` | Saving the reminder schedule fails |
@@ -157,7 +157,7 @@ are the shell's (10603 to 10607).
 | 80627 | CH-8203 | `COACHHELM_UPDATE_SETTINGS_DONT_LOAD` | CoachHelm update settings don't load (player) |
 | 80628 | CH-8204 | `THE_WEEKLY_TEAM_EMAIL_SETTING_DOESNT_LOAD` | The weekly team email setting doesn't load (coach) |
 | 80629 | CH-8205 | `TEAM_DETAILS_DONT_LOAD` | Team details don't load |
-| 80630 | CH-8206 | `THE_INVITE_CODE_DOESNT_LOAD` | The invite code doesn't load |
+| 80630 | CH-8206 | `THE_INVITE_CODE_DOESNT_LOAD` | The team code doesn't load |
 | 80631 | CH-8207 | `SCORING_SETTINGS_DONT_LOAD` | Scoring settings don't load |
 | 80632 | CH-8208 | `EVENT_REMINDERS_DONT_LOAD` | Event reminders don't load |
 | 80633 | CH-8209 | `GOLF_DETAILS_DONT_LOAD` | Golf details don't load (player) |
@@ -239,7 +239,7 @@ Five confirms: Delete account (the person types delete), Leave team, Make a new 
 | --- | --- | --- | --- |
 | 81101 | CH-8501 | `DELETE_ACCOUNT` | Delete account |
 | 81102 | CH-8502 | `LEAVE_TEAM` | Leave team (player) |
-| 81103 | CH-8503 | `MAKE_A_NEW_INVITE_CODE` | Make a new invite code |
+| 81103 | CH-8503 | `MAKE_A_NEW_INVITE_CODE` | Make a new team code |
 | 81104 | CH-8504 | `RESET_COACHHELM_UPDATES` | Reset CoachHelm updates (player) |
 | 81105 | CH-8505 | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | Turn off CoachHelm on your dashboards |
 | 81106 | CH-8509 | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes |
@@ -333,7 +333,7 @@ Settings' own haptics (81701 to 81707) on the v2 grammar (D-70), with Discard ad
 | 81702 | CH-8702 | `A_SAVE_LANDS` | A Save changes that lands |
 | 81703 | CH-8703 | `A_SAVE_FAILS_OR_A_PHOTO_IS` | A save fails or a photo is rejected |
 | 81704 | CH-8704 | `OPENING_DELETE_ACCOUNT_OR_PRESSING_UPDATE_PASSWORD` | Opening Delete account, or pressing Update password with a problem |
-| 81705 | CH-8705 | `COPYING_THE_INVITE_CODE_OR_LINK` | Copying the invite code or link |
+| 81705 | CH-8705 | `COPYING_THE_INVITE_CODE_OR_LINK` | Copying the team code or invite link |
 | 81706 | CH-8706 | `PRESSING_A_PRIMARY_BUTTON` | Pressing a primary button (Save changes) |
 | 81707 | CH-8707 | `TURNING_HAPTICS_BACK_ON` | Turning Haptics back on |
 | 81708 | — | `DISCARD_WARNS` | Discard (a card's edits, Discard changes when leaving a section, Discard and leave when following a link) fires the warning haptic before anything is dropped (D-70). |

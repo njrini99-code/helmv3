@@ -177,6 +177,22 @@ export const PREVIEW_HOME_EMPTY: ChCoachHome = {
   phone: { next: null, today: [], form: null, weekNote: null },
 };
 
+/** A new team with its first events but nobody on the roster: still the first run, the week above Invite players. */
+export const PREVIEW_HOME_EVENTS_ONLY: ChCoachHome = {
+  ...PREVIEW_HOME_EMPTY,
+  week: PREVIEW_HOME.week,
+  phone: { ...PREVIEW_HOME.phone, form: null },
+};
+
+/** Players and events, but no round posted yet: the leaderboard's line says so, and the latest round steps aside. */
+export const PREVIEW_HOME_NO_ROUNDS: ChCoachHome = {
+  ...PREVIEW_HOME,
+  subline: null,
+  latestRounds: { rounds: [], error: false, holesError: false },
+  leaderboard: { rows: [], scorecards: 0, rosterSize: 7, error: false },
+  phone: { ...PREVIEW_HOME.phone, form: null },
+};
+
 /** Players and rounds, but nothing on the calendar ahead: the phone's Up next shows how to add the first event. */
 export const PREVIEW_HOME_NO_EVENTS: ChCoachHome = {
   ...PREVIEW_HOME,

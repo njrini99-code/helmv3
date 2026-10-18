@@ -1,5 +1,21 @@
 # Clubhouse changelog
 
+## 2026-10-18 — First run: the empty team and the new player
+
+Coach Home's first run keys on players and rounds, not events, so adding an
+event keeps "Invite players" on screen; a player with events and no rounds
+gets one calm block instead of three empty ones. One name for joining ("team
+code", "invite link"), and the coach copy says what is true: code and link
+joins are instant, only Settings requests need approval. Every "go invite"
+button reads "Invite players" and opens the invite sheet. Empty heads drop
+zero counts; the qualifier form stops a coach with no roster before the
+fields; phone sign-up has "Already a member? Sign in"; team Stats with no
+rounds no longer crashes on desktop (`StatsTeamFirstRun` is a client
+component). Shot card (owner): raised result keys, miss squares, putt chips
+and quick picks; the blocked Next shot button names what is missing instead
+of a line above it. Preview: Home `?state=eventsonly` and `?state=norounds`,
+player Home `?state=norounds`.
+
 ## 2026-10-18 — On the course: tracking and the round review
 
 Tracking: the Undo-shot and Discard-round confirms keep their button ink and

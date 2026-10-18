@@ -1,5 +1,24 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-18 — Wave 10: an early read in plain words
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-5309 CH-5313
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 early read)
+
+- Desktop: with no strokes gained yet, chapter 1 says it in one line
+  (CH-5309, the phone's line) instead of a big dash and four leg rows of
+  dashes under the early-read notice.
+- The Rounds tab's Last 10 reason (CH-5313) reads "Comparing starts at 13
+  rounds: the newest 10 against at least 3 before them."
+
 ## 2026-10-18 — Wave 8: premium details, Filter on the column edge
 
 ```text

@@ -186,7 +186,14 @@ function Who({ d, path }: { d: Draft; path: OnboardPath }) {
 
 // ── Intro ────────────────────────────────────────────────────────────────────
 
-export function Intro({ d, next, hour, dir }: StepProps) {
+/** The phone's way back to sign in (wave 10): the top bar's pill is hidden at phone widths (onboard.css), and a returning player can land here from an invite link. */
+const SignInLine = ({ href }: { href: string }) => (
+  <p className="ch-ox-signin-m">
+    Already a member? <Link href={href}>Sign in</Link>
+  </p>
+);
+
+export function Intro({ d, next, hour, dir, signInHref }: StepProps) {
   // Arrived from an invite link: the code is already here, so the first screen is the invitation.
   if (d.code && d.intent !== 'request') {
     return (
@@ -196,6 +203,7 @@ export function Intro({ d, next, hour, dir }: StepProps) {
             Accept invite
           </Button>
         </div>
+        <SignInLine href={signInHref} />
       </Q>
     );
   }
@@ -231,6 +239,7 @@ export function Intro({ d, next, hour, dir }: StepProps) {
           </button>
         </div>
       </div>
+      <SignInLine href={signInHref} />
     </Q>
   );
 }
@@ -944,9 +953,9 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
 // ── Finished ─────────────────────────────────────────────────────────────────
 
 const NEXT_STEPS: Array<[typeof Flag, string, string, string]> = [
-  [Flag, 'Post your first round', 'Scores feed your stats and CoachHelm', '/golf/dashboard/rounds/new'],
+  [Flag, 'Start your first round', 'Scores feed your stats and CoachHelm', '/golf/dashboard/rounds/new'],
   [BookOpen, 'Add your class schedule', 'Flags travel conflicts early', '/golf/dashboard/classes'],
-  [Bell, 'Turn on notifications', 'Pairings, tee times and team messages', '/golf/dashboard/settings'],
+  [Bell, 'Turn on notifications', 'Pairings, tee times and team messages', '/golf/dashboard/settings?section=notifications'],
 ];
 
 export function Done({ d, finish, dir }: StepProps) {
@@ -966,7 +975,7 @@ export function Done({ d, finish, dir }: StepProps) {
           </>
         }
         title={`Your profile is saved, ${first}.`}
-        sub="We couldn’t add you to your coach’s team with that code. Ask your coach to re-send it, or enter the team code again."
+        sub="We couldn’t add you to your coach’s team with that code. Ask your coach to resend it, or enter the team code again."
       >
         <div className="ch-ox-act">
           <Button variant="primary" size="lg" rightIcon={ArrowRight} href="/golf/join">

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Flag, MessageSquare, Plus } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Flag, GraduationCap, MessageSquare, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ChPlayerHome } from '../../data/player-home';
 import { Button } from '../../ui/Button';
@@ -14,10 +14,11 @@ import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/use-now';
 import { usePhoneHero } from '../../shell/phone-chrome';
+import { rebuiltHref } from '../../shell/nav';
 import { CoachAsks } from './CoachAsks';
 import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
-import { playerFailedParts } from './model';
+import { noRoundsYet, playerFailedParts } from './model';
 import { PlayerGame } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
@@ -107,14 +108,44 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
             <Today list={data.today} now={now} failed={data.week.error} quiet={nothingAhead} canPlan={false} />
           </SectionBoundary>
         )}
-        <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-          <Latest data={data.latest} covered={covered} />
-        </SectionBoundary>
-        <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
-          <PlayerGame data={data} phone covered={covered} />
-        </SectionBoundary>
+        {noRoundsYet(data) ? (
+          <NoRoundsYet />
+        ) : (
+          <>
+            <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
+              <Latest data={data.latest} covered={covered} />
+            </SectionBoundary>
+            <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
+              <PlayerGame data={data} phone covered={covered} />
+            </SectionBoundary>
+          </>
+        )}
       </div>
     </main>
+  );
+}
+
+/**
+ * CH-2312 inside the loaded page (desktop and phone): the team has events but the player has no round yet, so one
+ * welcome stands in for the latest round, scoring and the game. Start a round is the head's; Add classes stays.
+ */
+export function NoRoundsYet() {
+  const classes = rebuiltHref('/golf/dashboard/classes', 'player');
+  return (
+    <EmptyState
+      size="page"
+      code="CH-2312"
+      icon={Flag}
+      title="Welcome to the team"
+      body="Post your first round to start your stats. Your latest round, scoring line and game fill in here."
+      secondaryAction={
+        classes ? (
+          <Button leftIcon={GraduationCap} href={classes}>
+            Add classes
+          </Button>
+        ) : undefined
+      }
+    />
   );
 }
 

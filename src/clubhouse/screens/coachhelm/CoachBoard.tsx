@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, use, useState } from 'react';
-import { Archive, Check, Flag, Sparkles, Users } from 'lucide-react';
+import { Archive, Check, Flag, Sparkles, UserPlus, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { firstName, playersLine, pulseGapsLabel, withoutSignalsLine, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
@@ -27,6 +27,8 @@ import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const coachBoardLinks = {
   roster: () => rebuiltHref('/golf/dashboard/roster', 'coach'),
+  /** Roster with its invite sheet open (Roster reads `?invite=1` once), as Home's Invite players. */
+  invite: () => rebuiltHref('/golf/dashboard/roster?invite=1', 'coach'),
   settings: () => rebuiltHref('/golf/dashboard/settings/coaching-intelligence', 'coach'),
 };
 
@@ -148,6 +150,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   // known, so Assign (and Propose again) are not offered. Dismiss does not depend on any of them and stays.
   const statusUnknown = !mine && !!(data.missing?.assigned || data.missing?.declined || data.missing?.newest);
   const rosterHref = coachBoardLinks.roster();
+  const inviteHref = coachBoardLinks.invite();
 
   const body = data.off ? (
     <EmptyState
@@ -174,11 +177,11 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
       code="CH-13307"
       icon={Users}
       title="Add players to start CoachHelm"
-      body="CoachHelm reads the rounds your players post. Invite players from Roster, and their insights show up here."
+      body="Invite your players. Each one’s insights show up here once they post rounds."
       action={
-        rosterHref ? (
-          <Button variant="primary" leftIcon={Users} href={rosterHref}>
-            Open roster
+        inviteHref ? (
+          <Button variant="primary" leftIcon={UserPlus} href={inviteHref}>
+            Invite players
           </Button>
         ) : undefined
       }

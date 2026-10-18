@@ -50,9 +50,12 @@ the season leaderboard. A player gets Player Home (20102): the date and the
 greeting, with no brief line under it (owner, 2026-10-06); Message coach; the
 week beside Up next with its countdown and Your latest round; then Scoring and
 the four parts of the game. Both are read on the server, so the first paint has
-its data. A team with nothing yet gets the first-run page (20408 for a coach,
-20412 for a player, D-71); the coach first run's Invite players opens Roster
-with its invite sheet (`/golf/dashboard/roster?invite=1`, P003 30102). Every
+its data. A team with nobody on it yet gets the first-run page (20408 for a
+coach, events or not, the week above it once there are some), and a player with
+no round gets it with nothing on the calendar (20412, D-71); with the team's
+events, that player's loaded page keeps the week and shows the welcome in place
+of the rounds. The coach first run's Invite players opens Roster with its invite
+sheet (`/golf/dashboard/roster?invite=1`, P003 30102). Every
 link Home hands out is 20103. Home reads no Clubhouse query parameter: the
 Fairway dashboard's `?range=` is ignored here, and there is no deep link into
 Home.
@@ -100,11 +103,11 @@ First-run states and section empties. Home has no filter or search, so there is 
 | 20405 | CH-2305 | `PLAYERS_BUT_NO_18_HOLE_ROUNDS` | Players, but no 18-hole rounds |
 | 20406 | CH-2306 | `A_PLAYER_HAS_FEWER_THAN_THREE_ROUNDS` | A player has fewer than three rounds |
 | 20407 | CH-2307 | `A_COACH_WITH_NO_ACTIVE_TEAM` | A coach with no active team |
-| 20408 | CH-2308 | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | A team with nothing yet: no players, no events this week, no rounds, and every read answered |
+| 20408 | CH-2308 | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | A team with nobody on it yet: no players, no rounds, and every read answered (events or not: it rests on the people, not the calendar) |
 | 20409 | CH-2309 | `NOTHING_ON_THE_CALENDAR_AHEAD` | Nothing on the calendar ahead (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds |
 | 20410 | CH-2310 | `FEWER_THAN_TWO_18_HOLE_ROUNDS` | Fewer than two 18-hole rounds (player Home Scoring) |
 | 20411 | CH-2311 | `NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED` | No fairways, greens, scrambling or putts logged (player Home) |
-| 20412 | CH-2312 | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71) |
+| 20412 | CH-2312 | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | A new player: no rounds, every read answered (v2 first-run, D-71) |
 | 20413 | CH-2313 | `A_PLAYER_ON_NO_ACTIVE_TEAM` | A player on no active team |
 
 ## 05 — Validation

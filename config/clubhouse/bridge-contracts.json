@@ -1341,7 +1341,7 @@
     "item": 8,
     "name": "A_TEAM_WITH_NOTHING_YET_NO_PLAYERS",
     "chCode": "CH-2308",
-    "meaning": "A team with nothing yet: no players, no events this week, no rounds, and every read answered",
+    "meaning": "A team with nobody on it yet: no players, no rounds, and every read answered (events or not: it rests on the people, not the calendar)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1385,7 +1385,7 @@
     "item": 12,
     "name": "A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON",
     "chCode": "CH-2312",
-    "meaning": "A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71)",
+    "meaning": "A new player: no rounds, every read answered (v2 first-run, D-71)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -2019,7 +2019,7 @@
     "item": 4,
     "name": "THE_TEAM_HAS_NO_JOIN_CODE",
     "chCode": "CH-3304",
-    "meaning": "The team has no join code",
+    "meaning": "The team has no team code",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2064,6 +2064,17 @@
     "name": "A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE",
     "chCode": "CH-3308",
     "meaning": "A player signed in with no active team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30409,
+    "page": "P003",
+    "category": 4,
+    "item": 9,
+    "name": "A_PLAYER_ALONE_ON_THEIR_TEAMS_ROSTER",
+    "chCode": "CH-3309",
+    "meaning": "A player alone on their team's roster (they are always on it once joined, so this is a new team's first run)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2153,7 +2164,7 @@
     "item": 6,
     "name": "COPYING_THE_JOIN_CODE_OR_LINK_FAILS",
     "chCode": "CH-3006",
-    "meaning": "Copying the join code or link fails",
+    "meaning": "Copying the team code or invite link fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -3659,7 +3670,7 @@
     "item": 7,
     "name": "PHONE_NO_STROKES_GAINED_IN_THE_WINDOW",
     "chCode": "CH-5309",
-    "meaning": "Phone: no strokes gained in the window (no leg and no total)",
+    "meaning": "No strokes gained in the window (no leg and no total)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -7198,7 +7209,7 @@
     "item": 12,
     "name": "MAKING_A_NEW_INVITE_CODE_FAILS",
     "chCode": "CH-8012",
-    "meaning": "Making a new invite code fails",
+    "meaning": "Making a new team code fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7396,7 +7407,7 @@
     "item": 30,
     "name": "THE_INVITE_CODE_DOESNT_LOAD",
     "chCode": "CH-8206",
-    "meaning": "The invite code doesn't load",
+    "meaning": "The team code doesn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7768,7 +7779,7 @@
     "item": 3,
     "name": "MAKE_A_NEW_INVITE_CODE",
     "chCode": "CH-8503",
-    "meaning": "Make a new invite code",
+    "meaning": "Make a new team code",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -8112,7 +8123,7 @@
     "item": 5,
     "name": "COPYING_THE_INVITE_CODE_OR_LINK",
     "chCode": "CH-8705",
-    "meaning": "Copying the invite code or link",
+    "meaning": "Copying the team code or invite link",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -14167,7 +14178,7 @@
     "item": 1,
     "name": "PLAYER_NO_ROUND_POSTED_YET",
     "chCode": "CH-13301",
-    "meaning": "Player: no round posted yet",
+    "meaning": "Player: no round posted yet (the lede reads \"One thing to work on each week, from the rounds you post.\")",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

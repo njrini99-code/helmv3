@@ -394,7 +394,8 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
         <span className="ch-rd-k" id="ch-rd-season-k">
           Season scoring
         </span>
-        <b className="ch-rd-season__none">Your season starts with your first 18-hole round</b>
+        {/* A non-breaking hyphen (U+2011), so the line never breaks "18- / hole". */}
+        <b className="ch-rd-season__none">Your season starts with your first {'18\u2011hole'} round</b>
         <span className="ch-rd-season__nonebody">Scoring average, best round, putts and greens fill in here from 18-hole rounds posted since August 1.</span>
       </section>
     );

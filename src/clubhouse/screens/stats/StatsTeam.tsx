@@ -31,6 +31,8 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
   const filtered = isFiltered(data.filter);
   // Nothing to filter before a round exists (the first-run page); a filter already on always shows, so it can be cleared.
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
+  // The first-run page (CH-4310): no round of either length in the season, or none at all in the default window.
+  const firstRun = noRounds && !filtered && (data.window === 'season' || (data.window !== 'qualifiers' && data.filterOptions.total === 0)) && !nineOnly;
   // Two or more parts that didn't load are told once, under the head, with one Try again; each keeps its title (CH-1209).
   const failed: string[] = [];
   if (!data.roundsError && !noRounds) {
@@ -91,8 +93,8 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
 
         {noRounds && filtered ? (
           <TeamFilterEmpty />
-        ) : noRounds && (data.window === 'season' || (data.window !== 'qualifiers' && data.filterOptions.total === 0)) && !nineOnly ? (
-          <StatsTeamFirstRun />
+        ) : firstRun ? (
+          <StatsTeamFirstRun invite={data.activeCount === 0} />
         ) : noRounds ? (
           // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
           <EmptyState

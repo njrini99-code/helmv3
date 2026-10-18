@@ -181,6 +181,12 @@
 .ch-rs-empty {
   padding: 8px;
 }
+/* The player's roster of one (CH-3309): one quiet line under their own row. */
+.ch-rs-solo {
+  margin: 14px 2px 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-tertiary);
+}
 
 /* Layout toggle (handoff .rs-vt) */
 .ch-rs-vt {
@@ -803,6 +809,13 @@
 .ch-rs-inv__link {
   display: flex;
   gap: 8px;
+}
+/* A long link clips at its start, not its end, so the team code stays in view (wave 10). The link is one
+   left-to-right run, so it still reads in order. */
+.ch-rs-inv__link .ch-input {
+  direction: rtl;
+  text-align: left;
+  text-overflow: ellipsis;
 }
 .ch-rs-remove {
   padding: 12px 14px;

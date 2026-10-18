@@ -275,14 +275,26 @@ describe('Home · empty', () => {
     expect(code('CH-2303')!.textContent).toMatch(/Posted as a total/);
   });
 
-  it('CH-2304 no players on the roster', () => {
+  it('CH-2304 no players on the roster: Invite players, and the copy says players join with the team code', () => {
     wrap(<Leaderboard data={{ rows: [], scorecards: 0, rosterSize: 0, error: false }} />);
     expect(code('CH-2304')!.textContent).toMatch(/No players on the roster yet/);
+    expect(code('CH-2304')!.textContent).toMatch(/Share your team code from Roster; players appear here as they join/);
+    expect(code('CH-2304')!.textContent).not.toMatch(/approve/);
+    expect(within(code('CH-2304') as HTMLElement).getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
   });
 
   it('CH-2305 players but no 18-hole rounds', () => {
     wrap(<Leaderboard data={{ rows: [], scorecards: 0, rosterSize: 6, error: false }} />);
+    // The board reads 18-hole rounds only, so a team with only 9-hole rounds is never told "no rounds".
+    expect(code('CH-2305')!.textContent).toMatch(/No 18-hole rounds posted yet this season/);
     expect(code('CH-2305')!.textContent).toMatch(/6 players are on the roster/);
+  });
+
+  it('CH-2305 players and no round: the leaderboard’s line says it once, and the latest round’s pane steps aside', () => {
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { rounds: [], error: false, holesError: false }, leaderboard: { rows: [], scorecards: 0, rosterSize: 7, error: false } }} />);
+    expect(code('CH-2305')).not.toBeNull();
+    expect(code('CH-2302')).toBeNull();
+    expect(document.querySelector('.ch-h-sheet.is-solo')).not.toBeNull();
   });
 
   it('CH-2306 strokes gained is an early read until three rounds', () => {
@@ -505,8 +517,39 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
     wrap(<CoachHome data={empty} />);
     expect(code('CH-2308')!.textContent).toMatch(/Your season starts here/);
     expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
-    expect(screen.getByRole('link', { name: 'Add an event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
-    expect(screen.queryByRole('link', { name: /New event/ })).toBeNull();
+    // The verb every other New event uses (CH-2308's secondary), and the head's own actions (with its N key) step aside.
+    expect(screen.getByRole('link', { name: 'New event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
+    expect(screen.getAllByRole('link', { name: /New event/ })).toHaveLength(1);
+    expect(within(code('CH-2308')!.closest('main')!.querySelector(':scope > header') as HTMLElement).queryByRole('link')).toBeNull();
+  });
+
+  it('CH-2308 the first event keeps the first run: the week sits above Invite players (desktop and phone)', () => {
+    const events: ChCoachHome = {
+      ...PREVIEW_HOME,
+      latestRounds: { rounds: [], error: false, holesError: false },
+      leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },
+      phone: { ...PREVIEW_HOME.phone, form: null },
+    };
+    expect(isFirstRun(events)).toBe(true);
+    const { unmount } = wrap(<CoachHome data={events} />);
+    const first = code('CH-2308')!;
+    expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
+    expect(first.textContent).not.toMatch(/first event/);
+    // The week comes before the first steps, and the full page's empty blocks are not drawn.
+    expect(screen.getByRole('heading', { name: 'This week' }).compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(code('CH-2302')).toBeNull();
+    expect(code('CH-2304')).toBeNull();
+    unmount();
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      wrap(<CoachHome data={events} now={PREVIEW_HOME_NOW} />);
+      expect(code('CH-2308')).not.toBeNull();
+      expect(document.querySelector('.ch-hm-week')).not.toBeNull();
+      expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
+    } finally {
+      window.matchMedia = real;
+    }
   });
 
   it('CH-2308 the first run opens under the same framed head as the loaded page', () => {
@@ -535,6 +578,9 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
     expect(isFirstRun({ ...nothing, leaderboard: { ...nothing.leaderboard, error: true } })).toBe(false);
     expect(isFirstRun({ ...nothing, latestRounds: { ...nothing.latestRounds, error: true } })).toBe(false);
     expect(isFirstRun({ ...nothing, week: { ...nothing.week, error: true } })).toBe(false);
+    // A player on the roster, or a posted round, ends the first run.
+    expect(isFirstRun({ ...nothing, leaderboard: { ...nothing.leaderboard, rosterSize: 1 } })).toBe(false);
+    expect(isFirstRun({ ...nothing, latestRounds: PREVIEW_HOME.latestRounds })).toBe(false);
   });
 });
 

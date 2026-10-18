@@ -727,7 +727,7 @@ describe('Rounds tab · bests and comparison', () => {
     cleanup();
     showPlayer(withExtra({ compare: null }));
     await openTab(/Rounds/);
-    expect(code('CH-5313')!.textContent).toContain('Needs 3 earlier 18-hole rounds');
+    expect(code('CH-5313')!.textContent).toContain('Comparing starts at 13 rounds');
   });
 
   it('CH-5314 the score line needs two rounds, and a window with no rounds shows none of it', async () => {

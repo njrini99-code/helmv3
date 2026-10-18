@@ -104,7 +104,7 @@ in flight it steps back to half strength, and the answer replaces it in place
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-15301 | There is an earlier visit and nothing new since | "You’re all caught up" + "Nothing new since your last visit." under "Since you last signed in" and when that was | `NewsEmpty` | auth.test › CH-15301 |
-| CH-15302 | No earlier visit on record | The header reads "Your first time in" with no time; "Your team’s updates will show up here" + "Messages, posted rounds and RSVPs since your last visit." | `NewsEmpty` | auth.test › CH-15302 |
+| CH-15302 | No earlier visit on record | The header reads "Your first time in" with no time; "Your team’s updates will show up here" + "Messages, posted rounds and RSVPs land here each time you sign in." | `NewsEmpty` | auth.test › CH-15302 |
 | CH-15303 | The name could not be read, or sanitises to nothing | The greeting stands alone ("Good evening.", no second line). Never "Coach Coach" or a bare "Coach" | `resolveWelcomeName`; the `h1` carries the number | auth.test › CH-15303; auth-logic.test › CH-15303 |
 
 ## 154xx Loading

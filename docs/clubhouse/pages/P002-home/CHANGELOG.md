@@ -1,5 +1,40 @@
 # P002 — Home: changelog
 
+## 2026-10-18 — Wave 10: the first run and the empty team
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-2302 CH-2304 CH-2305 CH-2308 CH-2312
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- The coach's first run (CH-2308) rests on the people, not the calendar: no
+  players and no rounds, events or not. Adding the first event no longer
+  drops Invite players for the full page of empty blocks; the week sits above
+  the first steps (the week pane on desktop, the week strip on the phone), and
+  the body drops "and your first event" once there is one.
+- CH-2308's secondary is "New event", the verb used everywhere else.
+- CH-2304 has Invite players (Roster's invite sheet) as a safety net, and its
+  copy is true: "Share your team code from Roster; players appear here as
+  they join." (players who use the code or link join right away).
+- A coach with players and no round reads it once: the leaderboard's CH-2305
+  ("No 18-hole rounds posted yet this season.", the latest round's wording
+  with the length kept, since both read 18-hole rounds only) carries it, and
+  the latest round's pane steps aside, the week taking the sheet
+  (`.ch-h-sheet.is-solo`). Desktop only; the phone has no leaderboard.
+- A player with the team's events but no round (CH-2312) keeps the head with
+  Start a round, Up next and the week, and one "Welcome to the team" with Add
+  classes stands in for Your latest round, Scoring and Your game, which said
+  "No rounds posted yet" three ways (desktop and phone). The page empty state
+  stays for a player with nothing on the calendar.
+- Preview: `home?state=eventsonly`, `home?state=norounds` and
+  `home-player?state=norounds`.
+
 ## 2026-10-18 — Wave 8: premium details on Home
 
 ```text

@@ -1,5 +1,27 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-18 — Wave 10: the lede and a form with nobody to enter
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-09305
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- The coach's lede says what a qualifier is: "Rank players over counted
+  rounds and pick who travels." (it said head-to-head; the format is
+  aggregate stroke play). The skeleton reads the same sentence.
+- A form with nobody on the roster says so first, over the form (CH-09305),
+  with Invite players (Roster's invite sheet); Create (and the phone bar's)
+  is off, and the Players head reads "Nobody to enter yet", not "0 of 0".
+- With no qualifier at all, the list's eyebrow is the name alone, not "0
+  active · 0 concluded"; the phone, whose bar names the page, has none.
+
 ## 2026-10-18 — Wave 7: player qualifiers
 
 ```text
