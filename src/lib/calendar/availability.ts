@@ -12,6 +12,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfEvent, GolfPlayerClass } from '@/lib/types/golf';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { classIdFromDescription, isClassEvent } from '@/lib/calendar/class-events';
+import { hideUninvitedMeetings, isMeetingEvent } from '@/lib/calendar/meeting-visibility';
+import { loadInvitedMeetingIds } from '@/lib/calendar/meeting-invites';
 import { parseSemesterDates } from '@/lib/golf/semester';
 import { todayIsoInZone, wallClockInZone } from '@/lib/golf/timezone';
 import { parseRecurrenceRule, type RecurrenceRule } from '@/lib/golf/recurrence';
@@ -45,7 +47,7 @@ interface WorkingHours {
 
 type TeamEventRow = Pick<
   GolfEvent,
-  'id' | 'title' | 'start_time' | 'end_time' | 'created_by' | 'description' | 'all_day'
+  'id' | 'title' | 'start_time' | 'end_time' | 'created_by' | 'description' | 'all_day' | 'event_type'
 >;
 
 type AttendanceEventRow = Pick<
@@ -372,7 +374,7 @@ export async function getUserBusyPeriodsWithStatus(
     ? fetchAllRows<TeamEventRow>((from, to) =>
         supabase
           .from('golf_events')
-          .select('id, title, start_time, end_time, created_by, description, all_day')
+          .select('id, title, start_time, end_time, created_by, description, all_day, event_type')
           .in('team_id', teamIds)
           .neq('status', 'cancelled')
           .lte('start_time', maxIso)
@@ -499,8 +501,24 @@ export async function getUserBusyPeriodsWithStatus(
     );
   };
 
+  // A meeting is busy time only for the players invited to it (their own
+  // attendance row; meeting-visibility.ts), and its title must not reach a
+  // player who is not: this list feeds the player's own busy overlay and the
+  // conflict inbox. A failed invite read drops the meetings and marks the
+  // result partial, so no one is told they are free on a read that failed.
+  // A coach's own busy time (no player row) is unchanged.
+  let subjectTeamEvents = realTeamEvents;
+  const meetingIds = realTeamEvents.filter(isMeetingEvent).map((event) => event.id);
+  if (player && meetingIds.length > 0) {
+    const invited = await loadInvitedMeetingIds(supabase, player.id, meetingIds, {
+      action: 'calendar.getUserBusyPeriods.meetingInvites',
+    });
+    if (!invited) partial = true;
+    subjectTeamEvents = hideUninvitedMeetings(realTeamEvents, invited);
+  }
+
   // Process team events
-  for (const event of realTeamEvents) {
+  for (const event of subjectTeamEvents) {
     const interval = eventBusyInterval(event, classTimeZone);
     if (!interval || !overlapsWindow(interval, timeMin, timeMax)) continue;
 

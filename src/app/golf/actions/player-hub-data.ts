@@ -29,6 +29,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
 import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 
 /** Matches `dashboard-data.ts:292` — the team zone used when none is stored. */
 const DEFAULT_TEAM_TIME_ZONE = 'America/New_York';
@@ -87,7 +88,8 @@ async function getPlayerHubSummaryDataImpl(
     throw new Error('Unauthorized: no golf session');
   }
 
-  let authorized = session.player?.id === playerId;
+  const viewerIsPlayer = session.player?.id === playerId;
+  let authorized = viewerIsPlayer;
 
   if (!authorized && session.coach) {
     authorized = await validateCoachTeamAccess(
@@ -266,7 +268,20 @@ async function getPlayerHubSummaryDataImpl(
     });
   }
 
-  const events: EventInvite[] = (parsedEvents?.ok ? parsedEvents.rows : []).map((e) => ({
+  // get_player_hub_events is SECURITY DEFINER and lists every team event,
+  // meetings included, until the held migration 20261018120000 re-creates it.
+  // A player sees a meeting only when they are invited to it (their own
+  // attendance row; meeting-visibility.ts); a failed invite read hides every
+  // meeting. A coach's call is unchanged.
+  const hubRows = parsedEvents?.ok ? parsedEvents.rows : [];
+  const visibleRows = viewerIsPlayer
+    ? await filterMeetingsForPlayer(supabase, hubRows, playerId, {
+        action: 'playerHub.summary.meetingInvites',
+        featureArea: 'player_hub',
+      })
+    : hubRows;
+
+  const events: EventInvite[] = visibleRows.map((e) => ({
     id: e.id,
     event_id: e.event_id,
     title: e.title,
