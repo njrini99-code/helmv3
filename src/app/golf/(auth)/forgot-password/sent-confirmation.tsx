@@ -108,8 +108,8 @@ export function SentConfirmation({ onResend }: { onResend: () => Promise<boolean
   return (
     <div>
       <Rise i={1}>
-        <p className="px-2 text-center text-body text-text-secondary">
-          Open the link in the email to choose a new password. It expires in 1&nbsp;hour.
+        <p className="px-2 text-center text-body text-text-secondary [text-wrap:pretty]">
+          Open the link in the email to choose a new password. It expires in 1 hour.
         </p>
       </Rise>
 
