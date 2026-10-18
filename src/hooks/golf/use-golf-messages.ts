@@ -10,6 +10,7 @@ import { isClientDeadlineAbort } from '@/lib/client-deadline-abort';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { isGroupConversation } from '@/components/fairway/pages/messages/conversation-kind';
 import {
   readCachedResource,
@@ -1703,12 +1704,10 @@ export async function loadGolfConversationRail(
           .select('id, user_id, full_name, title, avatar_url')
           .in('user_id', Array.from(otherUserIds))
       : Promise.resolve({ data: [] }),
-    otherUserIds.size > 0
-      ? supabase
-          .from('golf_players')
-          .select('id, user_id, first_name, last_name, graduation_year, avatar_url')
-          .in('user_id', Array.from(otherUserIds))
-      : Promise.resolve({ data: [] }),
+    // Players through golf_player_profiles: a player may no longer read a
+    // teammate's golf_players row (security review S4). Unresolved names fall
+    // back to the participant-identity action below.
+    readGolfPlayerProfiles(supabase, { userIds: Array.from(otherUserIds) }),
   ]);
 
   const coachByUserId = new Map<string, CoachLookup>();
