@@ -19,6 +19,7 @@ import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { isUuid } from '@/lib/utils/uuid';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { describeError } from '@/lib/utils/describe-error';
+import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { dateString, getCoachTeamId } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
@@ -1240,19 +1241,19 @@ async function getQualifierLeaderboardImpl(
       return { success: false, error: "Couldn't load this qualifier. Please try again." };
     }
 
-    // Get all entries with player info
-    const { data: entries, error: entriesError } = await supabase
+    // Get all entries, then the entrants' names and avatars through
+    // golf_player_profiles: a player may no longer read a teammate's
+    // golf_players row (security review S4).
+    const { data: entryRows, error: entryRowsError } = await supabase
       .from('golf_qualifier_entries')
-      .select(`
-        player_id,
-        player:golf_players(
-          id,
-          first_name,
-          last_name,
-          avatar_url
-        )
-      `)
+      .select('player_id')
       .eq('qualifier_id', qualifierId);
+    const entrantProfiles = entryRowsError
+      ? null
+      : await readGolfPlayerProfiles(supabase, { playerIds: (entryRows ?? []).map((e) => e.player_id) });
+    const entriesError = entryRowsError ?? entrantProfiles?.error ?? null;
+    const entrantById = profilesById(entrantProfiles?.data ?? []);
+    const entries = (entryRows ?? []).map((e) => ({ player_id: e.player_id, player: entrantById.get(e.player_id) ?? null }));
 
     // A failed read is not an empty field. Without this branch the early
     // return below answers `success: true, leaderboard: []` — the exact same

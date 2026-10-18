@@ -35,6 +35,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { Database } from '@/lib/types/database';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 
 // ============================================================================
 // TYPES
@@ -655,11 +656,7 @@ async function getAttendanceReportImpl(
             attendance_status,
             checked_in,
             checked_in_at,
-            notes,
-            player:player_id (
-              first_name,
-              last_name
-            )
+            notes
           `)
           .eq('event_id', eventId)
           .order('id', { ascending: true })
@@ -679,6 +676,20 @@ async function getAttendanceReportImpl(
       });
       return { success: false, error: 'Failed to get attendance report. Please try again.' };
     }
+
+    // Names through golf_player_profiles, not an embed: a player may no longer
+    // read a teammate's golf_players row (security review S4). A failed read
+    // fails the report, as a failed embed did.
+    const nameProfiles = await readGolfPlayerProfiles(supabase, { playerIds: (rows ?? []).map((r) => r.player_id) });
+    if (nameProfiles.error) {
+      await logServerError(`getAttendanceReport names read failed: ${nameProfiles.error.message}`, {
+        action: 'getAttendanceReport',
+        featureArea: 'attendance',
+        extra: { eventId },
+      });
+      return { success: false, error: 'Failed to get attendance report. Please try again.' };
+    }
+    const nameById = profilesById(nameProfiles.data);
 
     // Jersey numbers live on golf_team_members (per-team), NOT golf_players —
     // embedding jersey_number in the player join above made every report fail
@@ -714,14 +725,17 @@ async function getAttendanceReportImpl(
     // finding #30) and normalize the mark server-side: attendance_status is
     // authoritative, with persistedMark() covering legacy pre-migration rows
     // so the panel can trust the field without its own fallback logic.
-    const scoped = (rows ?? []).map((row) => ({
-      ...row,
-      attendance_status: persistedMark(row),
-      notes: viewerIsCoach || row.player_id === viewerPlayerId ? row.notes : null,
-      player: row.player
-        ? { ...row.player, jersey_number: jerseyByPlayer.get(row.player_id) ?? null }
-        : row.player,
-    }));
+    const scoped = (rows ?? []).map((row) => {
+      const named = nameById.get(row.player_id);
+      return {
+        ...row,
+        attendance_status: persistedMark(row),
+        notes: viewerIsCoach || row.player_id === viewerPlayerId ? row.notes : null,
+        player: named
+          ? { first_name: named.first_name, last_name: named.last_name, jersey_number: jerseyByPlayer.get(row.player_id) ?? null }
+          : null,
+      };
+    });
 
     // Stable display order by name (pagination above already ordered by id
     // for correctness; this is a presentation sort).

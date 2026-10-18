@@ -1,5 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
 
@@ -35,35 +36,30 @@ export interface ChPlayerRoster {
   playersError: boolean;
 }
 
-type Member = {
-  player: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    graduation_year: number | null;
-    handicap: number | null;
-    handicap_index: number | null;
-  } | null;
-};
-
 export async function loadPlayerRoster(input: { teamId: string; playerId: string }): Promise<ChPlayerRoster> {
   const supabase = await createClient();
   const now = new Date();
 
   const [teamRes, membersRes] = await Promise.all([
     supabase.from('golf_teams').select('name, season').eq('id', input.teamId).maybeSingle(),
-    supabase
-      .from('golf_team_members')
-      .select('player:golf_players(id, first_name, last_name, graduation_year, handicap, handicap_index)')
-      .eq('team_id', input.teamId)
-      .eq('status', 'active'),
+    // Teammates' display columns through golf_player_profiles: a player may no longer read a teammate's golf_players
+    // row (security review S4).
+    (async () => {
+      const [members, profiles] = await Promise.all([
+        supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active'),
+        readGolfPlayerProfiles(supabase, { teamIds: [input.teamId] }),
+      ]);
+      if (members.error) return { data: null, error: members.error };
+      if (profiles.error) return { data: null, error: profiles.error };
+      const active = new Set((members.data ?? []).map((m) => m.player_id));
+      return { data: profiles.data.filter((p) => active.has(p.id)), error: null };
+    })(),
   ]);
 
   if (teamRes.error) chLogServer('roster', 'playerTeam', teamRes.error, 'teams');
   if (membersRes.error) chLogServer('roster', 'playerMembers', membersRes.error, 'teams');
 
-  const players: ChTeammate[] = ((membersRes.error ? [] : (membersRes.data ?? [])) as unknown as Member[])
-    .flatMap((m) => (m.player ? [m.player] : []))
+  const players: ChTeammate[] = (membersRes.error ? [] : (membersRes.data ?? []))
     .map((p) => ({
       id: p.id,
       name: fullName(p),

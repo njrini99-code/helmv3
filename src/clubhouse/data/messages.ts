@@ -1,5 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
@@ -45,12 +46,18 @@ export async function loadMessagesDirectory(input: {
   const [teamRes, settingsRes, membersRes] = await Promise.all([
     supabase.from('golf_teams').select('name, organization_id').eq('id', input.teamId).maybeSingle(),
     supabase.from('golf_team_settings').select('timezone').eq('team_id', input.teamId).maybeSingle(),
-    supabase
-      .from('golf_team_members')
-      .select('player:golf_players(id, user_id, first_name, last_name, graduation_year)')
-      .eq('team_id', input.teamId)
-      .eq('status', 'active')
-      .limit(200),
+    // Players' display columns through golf_player_profiles: a player may no longer read a teammate's golf_players row
+    // (security review S4).
+    (async () => {
+      const [members, profiles] = await Promise.all([
+        supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active').limit(200),
+        readGolfPlayerProfiles(supabase, { teamIds: [input.teamId] }),
+      ]);
+      if (members.error) return { data: null, error: members.error };
+      if (profiles.error) return { data: null, error: profiles.error };
+      const active = new Set((members.data ?? []).map((m) => m.player_id));
+      return { data: profiles.data.filter((p) => active.has(p.id)), error: null };
+    })(),
   ]);
   if (teamRes.error) chLogServer('messages', 'team', teamRes.error, 'teams');
   if (settingsRes.error) chLogServer('messages', 'teamSettings', settingsRes.error, 'messaging');
@@ -67,8 +74,7 @@ export async function loadMessagesDirectory(input: {
     coaches = res.data ?? [];
   }
 
-  type PlayerRow = { id: string; user_id: string | null; first_name: string | null; last_name: string | null; graduation_year: number | null };
-  const players = (membersRes.data ?? []).map((m) => (m as unknown as { player: PlayerRow | null }).player).filter((p): p is PlayerRow => !!p?.user_id);
+  const players = (membersRes.data ?? []).filter((p) => !!p.user_id);
 
   const directory: ChPerson[] = [
     ...coaches
