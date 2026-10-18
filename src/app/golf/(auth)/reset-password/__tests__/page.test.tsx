@@ -27,7 +27,12 @@ function openWith(search: string) {
 }
 
 beforeEach(() => {
-  verifyOtp.mockResolvedValue({ data: { user: { email: 'coach@example.edu' }, session: {} }, error: null });
+  // Like GoTrue: an empty token_hash is rejected, a non-empty one is accepted.
+  verifyOtp.mockImplementation(async ({ token_hash }: { token_hash: string }) =>
+    token_hash
+      ? { data: { user: { email: 'coach@example.edu' }, session: {} }, error: null }
+      : { data: {}, error: { message: 'Verify requires a token_hash', code: 'validation_failed', status: 400 } },
+  );
   exchangeCodeForSession.mockResolvedValue({ data: { session: { user: { email: 'coach@example.edu' } } }, error: null });
   updateUser.mockResolvedValue({ data: {}, error: null });
   signOut.mockResolvedValue({ error: null });

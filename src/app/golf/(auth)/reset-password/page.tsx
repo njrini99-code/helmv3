@@ -73,17 +73,22 @@ export default function ResetPasswordPage() {
       try {
         const url = new URL(window.location.href);
         const code = url.searchParams.get('code');
-        const tokenHash = url.searchParams.get('token_hash');
-        const type = url.searchParams.get('type');
 
+        // Supabase sends either a PKCE `?code=` or a `?token_hash=`. There is
+        // deliberately no branch that skips verification: a link with neither
+        // goes to verifyOtp with an empty hash, which Supabase rejects, so a
+        // missing or tampered parameter can only ever land on "expired".
         let email: string | undefined;
-        let ok = false;
+        let ok: boolean;
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           ok = !error;
           email = data?.session?.user?.email ?? data?.user?.email ?? undefined;
-        } else if (tokenHash && type === 'recovery') {
-          const { data, error } = await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
+        } else {
+          const { data, error } = await supabase.auth.verifyOtp({
+            type: 'recovery',
+            token_hash: url.searchParams.get('token_hash') ?? '',
+          });
           ok = !error;
           email = data?.user?.email ?? data?.session?.user?.email ?? undefined;
         }
