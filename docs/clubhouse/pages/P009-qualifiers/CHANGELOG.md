@@ -1,5 +1,37 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-17 — Polish: score column, dark board words, ranges
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Selection rows: the score holds a "+10" width, right-aligned, so the rounds
+  column before it stays put for −3, E or +10 (`qualifiers.css`).
+- Dark mode: the board's status words ("Qualifying", "Bubble") and the Live
+  stamp stay words; the dark tone fills had drawn a tight box behind them
+  (`qualifiers.css`).
+- A range outside this year says its year once: "Sep 22 – Oct 1, 2026", not
+  "Sep 22, 2026 – Oct 1, 2026"; across a new year both dates keep theirs
+  (`model.ts` `rangeLabel`).
+- Tabular figures come back on 31 rules in `qualifiers.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
 ## 2026-10-17 — Standings checked against production
 
 Parity pass on the standings (which rounds count, the score, ties, the cut, the

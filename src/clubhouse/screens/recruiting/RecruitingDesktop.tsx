@@ -73,7 +73,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
               <SectionBoundary surface="recruiting.list" label="The prospect list" code="CH-14203">
                 <section className="ch-rec-list" aria-label="Prospects">
                   <div className="ch-rec-bar">
-                    <SearchField className="ch-rec-search" value={c.query} onChange={c.setQuery} placeholder="Search" label="Search prospects" />
+                    <SearchField className="ch-rec-search" value={c.query} onChange={c.setQuery} placeholder="Search prospects" label="Search prospects" />
                     {c.rows.length > 0 && (
                       <Segmented size="sm" label="Sort prospects" value={c.sort} onChange={c.setSort} options={c.sorts.map((s) => ({ value: s.value, label: s.label }))} />
                     )}

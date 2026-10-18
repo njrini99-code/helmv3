@@ -331,6 +331,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     setScrub(best);
   };
   const yRef = ref != null ? y(ref) : null;
+  // A team ending on the reference puts its end figure where the reference's label sits: the label moves to the left end.
+  const refLabelLeft = yRef != null && tLast != null && Math.abs(y(tLast.v) - yRef) < 16;
   // The wash reaches full strength at the team's furthest week from the reference, so it reads at any scale.
   const reach = (side: 'up' | 'down') => {
     const ys = team.flatMap((v) => (v == null ? [] : [y(v)]));
@@ -492,7 +494,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {yRef != null && (
                 <g aria-hidden="true">
                   <line x1={padL} x2={w - padR} y1={yRef} y2={yRef} stroke="var(--ch-champagne-500)" strokeDasharray="4 4" />
-                  <text x={w - padR} y={yRef - 7} textAnchor="end" className="ch-tick ch-sgt__reflab">
+                  <text x={refLabelLeft ? padL : w - padR} y={yRef - 7} textAnchor={refLabelLeft ? 'start' : 'end'} className="ch-tick ch-sgt__reflab">
                     {isSg ? baseline.noun.charAt(0).toUpperCase() + baseline.noun.slice(1) : 'Par'}
                   </text>
                 </g>

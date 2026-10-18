@@ -1,5 +1,26 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-17 — Polish: tabular figures in rows
+
+```text
+Design package: none (polish review row 18; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tabular figures come back on 2 rules in `coachhelm.css` whose `font` shorthand
+  reset `.ch-num` (the row figures and the player chips).
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check` and
+  `typecheck:fast` pass. The WebKit pass is the coordinator's.
+
 ## 2026-10-17 — Wiring checked against production; moved links open their Clubhouse screen
 
 ```text

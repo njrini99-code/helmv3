@@ -67,7 +67,8 @@ export function RosterRequests({
             <Button size="sm" variant="ghost" disabled={busy != null} onClick={() => void decide(r, false)}>
               Decline
             </Button>
-            <Button size="sm" variant="primary" disabled={busy != null} onClick={() => void decide(r, true)} feel={null}>
+            {/* Secondary, as on the phone (P003 #5): Invite players stays the screen's one primary. */}
+            <Button size="sm" variant="secondary" disabled={busy != null} onClick={() => void decide(r, true)} feel={null}>
               Approve
             </Button>
           </div>

@@ -1,5 +1,32 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-17 — Polish: straight RSVP seams on the phone
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone RSVPs: rows are square, so the seam between two rows runs straight to
+  both ends; the desktop's 12px hover radius bent it up at each end
+  (`hub.css`).
+- Tabular figures come back on 20 rules in `hub.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
 ## 2026-10-17 — Wiring checked against production, and fixed
 
 ```text

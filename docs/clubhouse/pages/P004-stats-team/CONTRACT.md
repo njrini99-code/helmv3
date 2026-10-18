@@ -32,7 +32,7 @@ Team stats opens for the coach's own team on the last 10 rounds per player, with
 Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
 
 - Last 10 is each player's ten newest countable rounds in any season, read
-  from a rolling 12 months back, with "vs. previous 10" the ten before them.
+  from a rolling 12 months back, with "vs previous 10" the ten before them.
   Season and Qualifiers are this season only.
 - A round posted as a total only (18 holes, no nines, no holes) counts in the
   scoring figures, and in no hole-level one (greens, putts, scrambling,

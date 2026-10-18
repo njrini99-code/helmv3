@@ -831,6 +831,20 @@
   outline-offset: 0;
   color: var(--ch-text-tertiary);
 }
+/* "Create an account" is a line of text: its hit area reaches 44px tall without moving it. On the phone the legal
+   links sit 8px under it and keep their own 44px on top where the two meet. */
+.ch-au-foot > span:not(.ch-au-legal) a {
+  position: relative;
+}
+.ch-au-foot > span:not(.ch-au-legal) a::after {
+  content: '';
+  position: absolute;
+  inset: -14px -8px;
+}
+.ch-au-legal a {
+  position: relative;
+  z-index: 1;
+}
 .ch-au-hsl {
   display: flex;
   align-items: center;

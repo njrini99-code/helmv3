@@ -840,13 +840,24 @@ async function updateGolfEventImpl(
     // failure comes back beside `success` so the caller can say so.
     let invitationsError: string | undefined;
     if (inviteIds.length > 0) {
-      const { data: attendanceRows } = await supabase
+      const { data: attendanceRows, error: attendanceError } = await supabase
         .from('golf_event_attendance')
         .select('player_id')
         .eq('event_id', eventId);
 
+      // A failed read used to look like nobody was invited, so every invitee went back through the invitation upsert,
+      // which writes status 'pending': one transient error reset the whole roster's replies. Invite nobody instead.
+      if (attendanceError) {
+        invitationsError = "The changes were saved, but the new invitations didn't go out.";
+        await logServerError(
+          `[updateGolfEvent] attendance read failed for event ${eventId}; skipped inviting: ${describeError(attendanceError)}`,
+          { action: 'golf.updateGolfEvent.invitations', featureArea: 'calendar', extra: { eventId } },
+          'error',
+        );
+      }
+
       const existingIds = new Set((attendanceRows || []).map(row => row.player_id));
-      const toAdd = inviteIds.filter((id) => !existingIds.has(id));
+      const toAdd = attendanceError ? [] : inviteIds.filter((id) => !existingIds.has(id));
 
       if (toAdd.length > 0) {
         try {
@@ -2189,7 +2200,12 @@ async function getEventRSVPImpl(eventId: string): Promise<ActionResult<RSVPStats
 
     return { success: true, data: stats };
 
-  } catch {
+  } catch (err) {
+    await logServerError(`getEventRSVP failed for event ${eventId}: ${describeError(err)}`, {
+      action: 'golf.getEventRSVP',
+      featureArea: 'calendar',
+      extra: { eventId },
+    }, 'warning');
     return { success: false, error: 'Failed to fetch RSVP data' };
   }
 }

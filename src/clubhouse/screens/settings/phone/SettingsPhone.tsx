@@ -74,7 +74,7 @@ function PushPage({ ref, sub, way, reduced, children }: { ref?: Ref<HTMLDivEleme
 
 /** What each row on the list says about its section (the design's short summaries). */
 const SUMMARY: Record<'coach' | 'player', Partial<Record<ChSettingsSection, string>>> = {
-  coach: { account: 'Profile, email', notifications: 'Email, Push', team: 'Scoring, invites', coachhelm: 'Priorities, alerts', preferences: 'Motion, units' },
+  coach: { account: 'Profile, email', notifications: 'Email, push', team: 'Scoring, invites', coachhelm: 'Priorities, alerts', preferences: 'Motion, units' },
   player: { account: 'Profile, email', golf: 'Handicap, team', notifications: 'Push, CoachHelm', preferences: 'Motion, units' },
 };
 

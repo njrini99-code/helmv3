@@ -287,6 +287,7 @@
 .ch-navitem__count {
   margin-left: auto;
   font: 500 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-champagne-300);
 }
 .ch-sidebar__foot {
@@ -333,6 +334,7 @@
 }
 .ch-next__m {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-next__bar {
@@ -1513,6 +1515,7 @@ button.ch-more__row[disabled] {
   background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-bg-page);
   font: 600 10px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
 }
 .ch-bellp {
@@ -3133,6 +3136,7 @@ html[data-fw-theme='dark'] .ch-offline {
     background: var(--ch-champagne-300);
     color: var(--ch-frame);
     font: 650 12px/14px var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     text-align: center;
   }
   .ch-strip__sep {
@@ -3879,6 +3883,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     background: var(--ch-hero-mint);
     color: var(--ch-green-800);
     font: 600 9.5px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     box-shadow: 0 0 0 1.5px var(--ch-shell);
     animation: ch-rail-count var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8) both;
   }

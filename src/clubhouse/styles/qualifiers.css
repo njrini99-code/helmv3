@@ -40,6 +40,7 @@
 .ch-qf-head p {
   max-width: 72ch;
   font: var(--ch-type-body-l);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -53,6 +54,7 @@
   align-items: center;
   gap: 10px;
   font: 500 13.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-qf-back {
@@ -185,6 +187,7 @@
   justify-content: space-between;
   padding: 2px 2px 8px;
   font: 500 12.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-qf-lead__r {
@@ -550,6 +553,7 @@
 }
 .ch-qf-panel__head p {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-qf-panel > .ch-empty,
@@ -758,6 +762,7 @@
 }
 .ch-qf-sc__h span {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-qf-sc__none {
@@ -841,6 +846,14 @@
   color: var(--ch-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
+/* A row's score holds a "+10" wide, right-aligned, so the rounds before it stay put whether it reads −3, E or +10. */
+.ch-qf-list li > .ch-qf-tp,
+.ch-qfs-opt > .ch-qf-tp {
+  display: inline-block;
+  flex: none;
+  min-width: 3ch;
+  text-align: right;
+}
 .ch-qf-list__slot {
   display: grid;
   place-items: center;
@@ -908,6 +921,7 @@
 }
 .ch-qf-fs__h p {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-qf-2 {
@@ -968,6 +982,7 @@
 .ch-qf-readout {
   padding: 12px 14px;
   font: 400 13.5px/1.5 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-qf-readout b {
@@ -1184,6 +1199,7 @@
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px var(--ch-border-control);
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-qfs-steps li.is-now .ch-qfs-steps__n,
 .ch-qfs-steps li.is-done .ch-qfs-steps__n {
@@ -1229,6 +1245,7 @@
 }
 .ch-qfs-pick__who small {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-qfs-pick .ch-qf-why {
@@ -1353,6 +1370,7 @@
   /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-qf--list .ch-qf-eyebrow {
     font: 500 12px/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1365,6 +1383,7 @@
   }
   .ch-qf--list .ch-qf-head p {
     font: 400 14.5px/1.5 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
   .ch-qf--list .ch-qf-head__act .ch-btn {
@@ -1533,6 +1552,7 @@
     justify-content: flex-start;
     padding: 6px 0 4px;
     font: 400 12px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-qf-lead__h span:first-child,
   .ch-qf-lead__th {
@@ -1646,6 +1666,7 @@
   }
   .ch-qfm-head__k > .ch-num {
     font: 500 12px/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1719,6 +1740,7 @@
   }
   .ch-qfm-facts dd {
     font: 600 22px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     color: var(--ch-text-primary);
   }
@@ -1932,6 +1954,7 @@
     background: none;
     color: var(--ch-text-secondary);
     font: 500 13px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
     cursor: pointer;
     touch-action: manipulation;
@@ -1975,6 +1998,7 @@
     align-items: center;
     justify-content: space-between;
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-qfm-rdh b {
@@ -1983,6 +2007,7 @@
   }
   .ch-qfm-muted {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
 
@@ -2006,6 +2031,7 @@
   .ch-qf--form .ch-qf-eyebrow,
   .ch-qfs .ch-qf-eyebrow {
     font: 500 12px/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -2020,6 +2046,7 @@
   .ch-qf--form .ch-qf-head p,
   .ch-qfs .ch-qf-head p {
     font: 400 14.5px/1.5 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
   .ch-qf--form .ch-qf-form,
@@ -2488,6 +2515,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   .ch-qf[data-canopy] .ch-qf-eyebrow {
     gap: 10px;
     font: 500 11px/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -2911,6 +2939,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   top: 6px;
   transform: translateX(-50%);
   font: 500 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-ink-500);
 }
 .ch-qf-sp__tip {
@@ -2933,6 +2962,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 }
 .ch-qf-sp__tip span {
   font: 500 12px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-stage-ink-soft);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3029,6 +3059,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 }
 .ch-qf-board .ch-badge--warning {
   color: var(--ch-ledger-eyebrow);
+}
+/* Dark mode gives each tone its fill back at (0,2,1) (ui.css), which drew a tight box round "Qualifying", "Bubble" and the
+   Live stamp; on the board they stay words. */
+html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
+  background: none;
+  box-shadow: none;
 }
 .ch-qf-board .ch-qf-line {
   color: var(--ch-green-700);
@@ -3328,6 +3364,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   background: rgb(255 255 255 / 0.1);
   box-shadow: inset 0 0 0 1px rgb(159 224 182 / 0.35);
   font: 700 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-qf-prounds__big {
@@ -3344,6 +3381,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
 }
 .ch-qf-prounds__big span {
   font: 500 13px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-qf-prounds__list {
@@ -3402,6 +3440,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
 }
 .ch-qf-prounds__m small {
   font: 500 12px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-qf-prounds__r.is-best .ch-qf-prounds__m small {
@@ -3413,6 +3452,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
 }
 .ch-qf-prounds__s {
   font: 700 24px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
 }
@@ -3518,6 +3558,7 @@ button.ch-qf-prounds__r.is-open {
 }
 .ch-qf-rv__hole small {
   font: 500 10px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-qf-rv__sum {
@@ -3526,6 +3567,7 @@ button.ch-qf-prounds__r.is-open {
   gap: 3px;
   min-width: 34px;
   font: 700 17px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-qf-rv__sum small {
@@ -3594,10 +3636,12 @@ button.ch-qf-prounds__r.is-open {
 }
 .ch-qf-rv__fieldhead b {
   font: 700 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-qf-rv__fieldhead span {
   font: 500 12.5px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-qf-rv__strip {
@@ -3647,6 +3691,7 @@ button.ch-qf-prounds__r.is-open {
   display: flex;
   justify-content: space-between;
   font: 500 11px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 /* On the phone the showcase runs the page's width between the facts and the board. */

@@ -124,13 +124,13 @@ state, finding #6), the recruiting calendar line (CH-14808, below) and Add
 prospect. Under it the pipeline: four stages joined by a line, each a dot with
 its name and count (the "% of list" line is gone, finding #4); with next steps
 the head adds "1 visit this month · 1 decision due". Below, two columns: the list
-(a search box, placeholder "Search", and a sort above a table of Prospect with
-its monogram, Class, Hometown, Stage, Next step when the columns exist, and
-Updated) and the open prospect's panel (name, class and hometown, Edit and an
-overflow menu holding Delete prospect (finding #3), the stage control with the
-gilt Committed rule, contact rows with Email and Call, the next step, notes,
-documents with Upload, and the added and updated dates). A narrow canvas
-(container under 860px) drops the panel beneath the list and narrows the
+(a search box, placeholder "Search prospects", and a sort above a table of
+Prospect with its monogram, Class, Hometown, Stage, Next step when the columns
+exist, and Updated) and the open prospect's panel (name, class and hometown,
+Edit and an overflow menu holding Delete prospect (finding #3), the stage
+control with the gilt Committed rule, contact rows with Email and Call, the next
+step, notes, documents with Upload, and the added and updated dates). A narrow
+canvas (container under 860px) drops the panel beneath the list and narrows the
 columns; with a Next step column, Class and Hometown move under the name below
 820px of list. Add and Edit open a dialog; Delete asks in another.
 

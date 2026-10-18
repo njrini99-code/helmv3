@@ -65,7 +65,7 @@ export async function runFairway(fx: ParityFixture): Promise<Standing[]> {
         total: num(td[4]!),
         toPar: toParOf(td[5]!),
         avg: td[3] === '—' ? null : td[3]!,
-        cut: !scored ? null : badge === 'In lineup' || badge === 'Selected' ? 'in' : badge === 'Bubble' ? 'bubble' : 'out',
+        cut: !scored ? null : badge === 'In lineup' || badge === 'Selected' ? 'in' : badge === 'Bubble' ? 'bubble' : badge === 'Tie at cut' ? 'tie' : 'out',
       });
     }
     // With nobody scored Fairway draws no table, only "Awaiting first round": every entrant is unscored.

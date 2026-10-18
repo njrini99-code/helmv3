@@ -161,7 +161,7 @@ rail page: a different screen over the same data, writes and catalog numbers
   Terms of service, Try again) has no value or chevron, so its label takes the
   green of a value that opens something.
 - **Notifications.** This device (push on this device, the weekly team email);
-  Email and push (one row per kind, each showing "Email, Push" and opening a
+  Email and push (one row per kind, each showing "Email, push" and opening a
   sheet of Email and Push switches, then Quiet mode); for a player, CoachHelm
   updates (Rounds and reviews, Goals, Insights, each opening a sheet of In app,
   Push and Email, then Quiet mode). A kind spans several updates (Goals is

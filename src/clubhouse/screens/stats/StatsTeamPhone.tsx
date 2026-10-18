@@ -218,7 +218,7 @@ function toneClass(f: ChFigure): string {
 const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`);
 
 /**
- * The one hero figure: the scoring average, its change and what the change is against ("vs. previous 10"). A window with
+ * The one hero figure: the scoring average, its change and what the change is against ("vs previous 10"). A window with
  * no comparison keeps the line, empty and hidden from assistive technology, so the trend below never moves.
  */
 /** Finds its own figure, so a malformed list crashes inside the figures' boundary, not the phone page (CH-4204). */

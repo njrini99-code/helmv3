@@ -1,5 +1,35 @@
 # P012 — Classes: changelog
 
+## 2026-10-17 — Polish: aligned Today titles and overlap codes
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Today: the time column is a fixed width with tabular figures, so every
+  row's title starts at the same x (it was `auto`, 82 to 96px)
+  (`classes.css`).
+- Overlaps: a class's department key holds a four-letter width and its time
+  draws tabular figures, so the code beside it lines up row to row
+  (`classes.css`).
+- Tabular figures come back on 9 rules in `classes.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
 ## 2026-10-17 — Parity with production: large photos, coach-only meetings
 
 ```text

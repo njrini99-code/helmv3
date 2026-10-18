@@ -432,6 +432,7 @@ a.ch-th-rank__name::after {
 }
 .ch-th-tile__value {
   font: 600 22px/1.15 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-th-tile[data-tone='loss'] .ch-th-tile__value {
   color: var(--ch-chart-loss-on-tint);

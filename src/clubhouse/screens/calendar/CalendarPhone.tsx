@@ -298,7 +298,8 @@ function DayPage({
                     </span>
                     <span className="ch-calm-ev__b">
                       <b>{eventTitle(e, people)}</b>
-                      <span>{block ? (e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [e.title, e.location].filter(Boolean).join(' · ')) : (e.location ?? '')}</span>
+                      {/* A class's code is already in its title ("Priya · STAT 201"), so its line names only the room. */}
+                      <span>{block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : (e.location ?? '')}</span>
                     </span>
                     {flagged.has(e.id) ? (
                       <span className="ch-calm-ev__w" aria-hidden="true">

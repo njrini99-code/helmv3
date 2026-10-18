@@ -132,7 +132,7 @@ describe('Stats team · reads that fail', () => {
     await expectCode('CH-4201', /Team rounds didn’t load/);
     expect(code('CH-4301')).toBeNull();
     // A roster that did not load is not "0 active players".
-    expect(document.querySelector('.ch-hero .ch-hero__line')!.textContent).toBe('Varsity · countable rounds only');
+    expect(document.querySelector('.ch-hero .ch-hero__line')!.textContent).toBe('Countable rounds only');
     expect(document.querySelector('.ch-hero')!.textContent).not.toMatch(/\b0 active/);
   });
 
@@ -526,7 +526,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(hero.querySelector('.ch-stm-hero__v')!.textContent).toBe('73.6');
     // Drawn against par, as the stat line's gauge drew it (no bare numbers).
     expect(hero.querySelector('.ch-stm-hero__par')!.textContent).toBe('+1.6 to par');
-    expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 vs. previous 10');
+    expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 vs previous 10');
     // Scoring down 0.9 is better (green); putts up 0.3 is worse (amber).
     expect(hero.querySelector('.ch-stm-hero__c b')!.className).toMatch(/ch-gain/);
     const rows = [...document.querySelectorAll('.ch-stm-figrow')];
@@ -1086,7 +1086,7 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     expect(fig('Putts per round')).toBe(30.5);
   });
 
-  // Q-112 (owner, 2026-10-01): "vs. previous 10" compares the same players. Theo shot 72 in both windows; Jonah's three 80s
+  // Q-112 (owner, 2026-10-01): "vs previous 10" compares the same players. Theo shot 72 in both windows; Jonah's three 80s
   // have no previous ten, so they raise the window's average but not the change.
   it('Q-112 the change compares only players with a previous ten', async () => {
     const theo = Array.from({ length: 13 }, (_, i) => round(`t${i}`, 'p1', i + 1, 72, 0));

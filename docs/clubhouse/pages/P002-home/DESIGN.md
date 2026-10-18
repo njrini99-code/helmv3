@@ -107,7 +107,7 @@ All 25 (CONTRACT.md). Eight are N/A with a reason: validation, success, warning,
 
 ## Motion intent
 
-Paging the latest round slides the card 12px out and the next in from that side, or fades when motion is reduced (CH-2601); a leaderboard row lifts on hover and shrinks on press (CH-2602). Everything uses the v2 tokens (D-64). The player's countdown ticks in place. There is no count-up and no stagger beyond the shell's first-paint reveal.
+Paging the latest round slides the card 12px out and the next in from that side, or fades when motion is reduced (CH-2601); a leaderboard row lifts on hover and shrinks on press (CH-2602). Everything uses the v2 tokens (D-64). The player's countdown shows its two largest units ("1d 18h", "18h 02m") and ticks its seconds in place only inside the last hour. There is no count-up and no stagger beyond the shell's first-paint reveal.
 
 ## Haptic intent
 

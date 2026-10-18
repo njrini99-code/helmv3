@@ -6140,73 +6140,73 @@
           "name": "--ch-au-inl",
           "value": "0px",
           "scope": ".ch-au[data-phase='opening'] .ch-au-photo > .ch-au-scene",
-          "line": 858
+          "line": 872
         },
         {
           "name": "--ch-au-inr",
           "value": "0px",
           "scope": ".ch-au[data-phase='opening'] .ch-au-photo > .ch-au-scene",
-          "line": 859
+          "line": 873
         },
         {
           "name": "--ch-au-inl",
           "value": "0px",
           "scope": ".ch-au--welcome .ch-au-photo > .ch-au-scene",
-          "line": 909
+          "line": 923
         },
         {
           "name": "--ch-au-inr",
           "value": "0px",
           "scope": ".ch-au--welcome .ch-au-photo > .ch-au-scene",
-          "line": 910
+          "line": 924
         },
         {
           "name": "--ch-au-kb-top",
           "value": "calc(env(safe-area-inset-top) + 64px)",
           "scope": "@media (max-width: 820px) → .ch-au",
-          "line": 1182
+          "line": 1196
         },
         {
           "name": "--ch-au-kb-lift",
           "value": "calc(clamp(200px, 42svh, 352px) - var(--ch-au-kb-top))",
           "scope": "@media (max-width: 820px) → .ch-au",
-          "line": 1183
+          "line": 1197
         },
         {
           "name": "--ch-au-phone-sheet-top",
           "value": "clamp(200px, 42svh, 352px)",
           "scope": "@media (max-width: 820px) → .ch-au-panel,\n  .ch-au-veil,\n  .ch-au-say,\n  .ch-au-photo > .ch-au-poster,\n  .ch-au-photo > .ch-au-scene",
-          "line": 1190
+          "line": 1204
         },
         {
           "name": "--ch-au-phone-window",
           "value": "calc(var(--ch-au-phone-sheet-top) + 40px)",
           "scope": "@media (max-width: 820px) → .ch-au-panel,\n  .ch-au-veil,\n  .ch-au-say,\n  .ch-au-photo > .ch-au-poster,\n  .ch-au-photo > .ch-au-scene",
-          "line": 1191
+          "line": 1205
         },
         {
           "name": "--ch-au-inl",
           "value": "0px",
           "scope": "@media (max-width: 820px) → .ch-au-photo > .ch-au-poster,\n  .ch-au-photo > .ch-au-scene",
-          "line": 1216
+          "line": 1230
         },
         {
           "name": "--ch-au-inr",
           "value": "0px",
           "scope": "@media (max-width: 820px) → .ch-au-photo > .ch-au-poster,\n  .ch-au-photo > .ch-au-scene",
-          "line": 1217
+          "line": 1231
         },
         {
           "name": "--ch-au-phone-sheet-top",
           "value": "var(--ch-au-kb-top)",
           "scope": "@media (max-width: 820px) → .ch-au[data-kb='up'] :is(.ch-au-panel, .ch-au-veil, .ch-au-say, .ch-au-photo > .ch-au-poster, .ch-au-photo > .ch-au-scene)",
-          "line": 1279
+          "line": 1293
         },
         {
           "name": "--ch-au-hb",
           "value": "calc(env(safe-area-inset-top, 0px) + var(--ch-phone-topbar-h))",
           "scope": "@media (max-width: 820px) → .ch-au",
-          "line": 1496
+          "line": 1510
         }
       ]
     },
@@ -6532,37 +6532,37 @@
           "name": "--ch-plate",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-in__plate",
-          "line": 1487
+          "line": 1490
         },
         {
           "name": "--ch-plate",
           "value": "var(--ch-green-fill-600)",
           "scope": ".ch-in__plate[data-tone='green']",
-          "line": 1498
+          "line": 1501
         },
         {
           "name": "--ch-plate",
           "value": "var(--ch-green-800)",
           "scope": ".ch-in__plate[data-tone='forest']",
-          "line": 1501
+          "line": 1504
         },
         {
           "name": "--ch-plate",
           "value": "var(--ch-info-600)",
           "scope": ".ch-in__plate[data-tone='slate']",
-          "line": 1504
+          "line": 1507
         },
         {
           "name": "--ch-plate",
           "value": "color-mix(in oklab, var(--ch-champagne-500) 55%, var(--ch-ink-900))",
           "scope": ".ch-in__plate[data-tone='champagne']",
-          "line": 1507
+          "line": 1510
         },
         {
           "name": "--ch-plate",
           "value": "color-mix(in oklab, var(--ch-warning-600) 80%, var(--ch-ink-900))",
           "scope": ".ch-in__plate[data-tone='amber']",
-          "line": 1510
+          "line": 1513
         }
       ]
     },
@@ -6772,103 +6772,103 @@
           "name": "--ch-cl-t",
           "value": "#232c2e",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-mist",
-          "line": 1759
+          "line": 1775
         },
         {
           "name": "--ch-cl-tf",
           "value": "#b9cacd",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-mist",
-          "line": 1760
+          "line": 1776
         },
         {
           "name": "--ch-cl-tb",
           "value": "#3b494c",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-mist",
-          "line": 1761
+          "line": 1777
         },
         {
           "name": "--ch-cl-t",
           "value": "#30261f",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-clay",
-          "line": 1764
+          "line": 1780
         },
         {
           "name": "--ch-cl-tf",
           "value": "#e2c1af",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-clay",
-          "line": 1765
+          "line": 1781
         },
         {
           "name": "--ch-cl-tb",
           "value": "#503e33",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-clay",
-          "line": 1766
+          "line": 1782
         },
         {
           "name": "--ch-cl-t",
           "value": "#2d2818",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-sand",
-          "line": 1769
+          "line": 1785
         },
         {
           "name": "--ch-cl-tf",
           "value": "#dccb9c",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-sand",
-          "line": 1770
+          "line": 1786
         },
         {
           "name": "--ch-cl-tb",
           "value": "#4c432a",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-sand",
-          "line": 1771
+          "line": 1787
         },
         {
           "name": "--ch-cl-t",
           "value": "#292824",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-stone",
-          "line": 1774
+          "line": 1790
         },
         {
           "name": "--ch-cl-tf",
           "value": "#d0cabe",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-stone",
-          "line": 1775
+          "line": 1791
         },
         {
           "name": "--ch-cl-tb",
           "value": "#47443c",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-stone",
-          "line": 1776
+          "line": 1792
         },
         {
           "name": "--ch-cl-t",
           "value": "#222c24",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-sage",
-          "line": 1779
+          "line": 1795
         },
         {
           "name": "--ch-cl-tf",
           "value": "#bdd0c0",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-sage",
-          "line": 1780
+          "line": 1796
         },
         {
           "name": "--ch-cl-tb",
           "value": "#3b4b3d",
           "scope": "html[data-fw-theme='dark'] .ch-cl-t-sage",
-          "line": 1781
+          "line": 1797
         },
         {
           "name": "--ch-cl-codew",
           "value": "116px",
           "scope": "@media (min-width: 821px) → .ch-cl[data-canopy]",
-          "line": 2106
+          "line": 2123
         },
         {
           "name": "--ch-cl-codew",
           "value": "92px",
           "scope": "@media (min-width: 821px) → @container chcl (max-width: 640px) → .ch-cl[data-canopy] .ch-cl-deck",
-          "line": 2493
+          "line": 2512
         }
       ]
     },
@@ -7655,121 +7655,121 @@
           "name": "--ch-hl-pulse-h",
           "value": "202px",
           "scope": "@media (min-width: 821px) → .ch-hl[data-canopy]",
-          "line": 985
+          "line": 987
         },
         {
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1774
+          "line": 1776
         },
         {
           "name": "--ch-ink-600",
           "value": "#2b2a26",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1775
+          "line": 1777
         },
         {
           "name": "--ch-ink-500",
           "value": "#3a3833",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1776
+          "line": 1778
         },
         {
           "name": "--ch-ink-400",
           "value": "#55524b",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1777
+          "line": 1779
         },
         {
           "name": "--ch-ink-300",
           "value": "#7c786f",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1778
+          "line": 1780
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-950)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1779
+          "line": 1781
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1780
+          "line": 1782
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-700)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1781
+          "line": 1783
         },
         {
           "name": "--ch-border-hairline",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1782
+          "line": 1784
         },
         {
           "name": "--ch-border-subtle",
           "value": "rgb(28 25 18 / 0.22)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1783
+          "line": 1785
         },
         {
           "name": "--ch-border-control",
           "value": "rgb(28 25 18 / 0.34)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1784
+          "line": 1786
         },
         {
           "name": "--ch-border-strong",
           "value": "rgb(28 25 18 / 0.5)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1785
+          "line": 1787
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(28 25 18 / 0.26)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1786
+          "line": 1788
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1787
+          "line": 1789
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double rgb(28 25 18 / 0.36)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1788
+          "line": 1790
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-green-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1789
+          "line": 1791
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "var(--ch-text-secondary)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1790
+          "line": 1792
         },
         {
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1791
+          "line": 1793
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-hl .ch-scoreboard",
-          "line": 1808
+          "line": 1810
         }
       ]
     },
@@ -7864,25 +7864,25 @@
           "name": "--ch-modal-max-h",
           "value": "calc(100dvh - 48px)",
           "scope": ".ch-modal__panel",
-          "line": 331
+          "line": 332
         },
         {
           "name": "--ch-modal-max-h",
           "value": "92dvh",
           "scope": "@media (max-width: 820px) → .ch-modal",
-          "line": 425
+          "line": 426
         },
         {
           "name": "--ch-modal-max-h",
           "value": "92dvh",
           "scope": "@media (max-width: 820px) → .ch-modal__panel",
-          "line": 431
+          "line": 432
         },
         {
           "name": "--ch-modal-max-h",
           "value": "calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px)",
           "scope": "@media (max-width: 820px) → body.keyboard-open .ch-modal__panel",
-          "line": 515
+          "line": 516
         }
       ]
     },
@@ -8181,19 +8181,19 @@
           "name": "--ch-spark",
           "value": "var(--ch-ink-400)",
           "scope": ".ch-ph-spark",
-          "line": 2001
+          "line": 2037
         },
         {
           "name": "--ch-spark",
           "value": "var(--ch-chart-gain)",
           "scope": ".ch-ph-spark.is-gain",
-          "line": 2004
+          "line": 2040
         },
         {
           "name": "--ch-spark",
           "value": "var(--ch-chart-loss)",
           "scope": ".ch-ph-spark.is-loss",
-          "line": 2007
+          "line": 2043
         }
       ]
     },
@@ -8458,13 +8458,13 @@
           "name": "--ch-av-size",
           "value": "44px",
           "scope": ".ch-ms-row .ch-avatar",
-          "line": 269
+          "line": 271
         },
         {
           "name": "--ch-notice-fill",
           "value": "var(--ch-sheet-bg)",
           "scope": ".ch-ms-comp > .ch-notice",
-          "line": 2559
+          "line": 2573
         }
       ]
     },
@@ -9224,31 +9224,31 @@
           "name": "--ch-ox-mc-s",
           "value": "0.9",
           "scope": "@media (max-width: 1400px) → .ch-ox-mcw",
-          "line": 1620
+          "line": 1621
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.72",
           "scope": "@media (max-width: 1200px) → .ch-ox-mcw",
-          "line": 1629
+          "line": 1630
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.64",
           "scope": "@media (max-width: 1000px) → .ch-ox-mcw",
-          "line": 1641
+          "line": 1642
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.92",
           "scope": "@media (max-width: 820px) → .ch-ox-mcw",
-          "line": 1791
+          "line": 1792
         },
         {
           "name": "--ch-ox-ink",
           "value": "var(--ch-text-primary)",
           "scope": "html[data-fw-theme='dark'] .ch-ox",
-          "line": 2094
+          "line": 2095
         }
       ]
     },
@@ -9466,115 +9466,115 @@
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3207
+          "line": 3243
         },
         {
           "name": "--ch-ink-600",
           "value": "#2b2a26",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3208
+          "line": 3244
         },
         {
           "name": "--ch-ink-500",
           "value": "#3a3833",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3209
+          "line": 3245
         },
         {
           "name": "--ch-ink-400",
           "value": "#55524b",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3210
+          "line": 3246
         },
         {
           "name": "--ch-ink-300",
           "value": "#7c786f",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3211
+          "line": 3247
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-950)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3212
+          "line": 3248
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3213
+          "line": 3249
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-700)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3214
+          "line": 3250
         },
         {
           "name": "--ch-border-hairline",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3215
+          "line": 3251
         },
         {
           "name": "--ch-border-subtle",
           "value": "rgb(28 25 18 / 0.22)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3216
+          "line": 3252
         },
         {
           "name": "--ch-border-control",
           "value": "rgb(28 25 18 / 0.34)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3217
+          "line": 3253
         },
         {
           "name": "--ch-border-strong",
           "value": "rgb(28 25 18 / 0.5)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3218
+          "line": 3254
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(28 25 18 / 0.26)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3219
+          "line": 3255
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3220
+          "line": 3256
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double rgb(28 25 18 / 0.36)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3221
+          "line": 3257
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-green-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3222
+          "line": 3258
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "var(--ch-text-secondary)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3223
+          "line": 3259
         },
         {
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3224
+          "line": 3260
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-qf .ch-scoreboard,\n.ch-qfm .ch-scoreboard",
-          "line": 3701
+          "line": 3746
         }
       ]
     },
@@ -9705,43 +9705,43 @@
           "name": "--ch-rec-ring",
           "value": "var(--ch-ivory-400)",
           "scope": ".ch-rec-pipe__dot",
-          "line": 136
+          "line": 138
         },
         {
           "name": "--ch-rec-ring",
           "value": "color-mix(in oklab, var(--ch-green-400) 60%, var(--ch-ivory-25))",
           "scope": ".ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot",
-          "line": 143
+          "line": 145
         },
         {
           "name": "--ch-rec-ring",
           "value": "var(--ch-green-400)",
           "scope": ".ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot",
-          "line": 148
+          "line": 150
         },
         {
           "name": "--ch-rec-ring",
           "value": "var(--ch-green-800)",
           "scope": ".ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot",
-          "line": 153
+          "line": 155
         },
         {
           "name": "--ch-rec-ring",
           "value": "var(--ch-ivory-400)",
           "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__dot",
-          "line": 2130
+          "line": 2138
         },
         {
           "name": "--ch-rec-ring",
           "value": "#3d7a56",
           "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot",
-          "line": 2134
+          "line": 2142
         },
         {
           "name": "--ch-rec-ring",
           "value": "var(--ch-green-400)",
           "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot",
-          "line": 2137
+          "line": 2145
         }
       ]
     },
@@ -10360,181 +10360,181 @@
           "name": "--ch-notice-ink",
           "value": "var(--ch-notice-on-green-ink)",
           "scope": "@media (max-width: 820px) → .ch-rd.is-phone .ch-rd-unf .ch-notice--danger",
-          "line": 1649
+          "line": 1667
         },
         {
           "name": "--ch-notice-icon",
           "value": "var(--ch-notice-on-green-ink)",
           "scope": "@media (max-width: 820px) → .ch-rd.is-phone .ch-rd-unf .ch-notice--danger",
-          "line": 1650
+          "line": 1668
         },
         {
           "name": "--ch-notice-body",
           "value": "var(--ch-notice-on-green-body)",
           "scope": "@media (max-width: 820px) → .ch-rd.is-phone .ch-rd-unf .ch-notice--danger",
-          "line": 1651
+          "line": 1669
         },
         {
           "name": "--ch-rd-under-a",
           "value": "#ff9d8e",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3602
+          "line": 3630
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#d0574a",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3603
+          "line": 3631
         },
         {
           "name": "--ch-rd-over-a",
           "value": "rgb(244 238 221 / 0.36)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3604
+          "line": 3632
         },
         {
           "name": "--ch-rd-over-b",
           "value": "rgb(244 238 221 / 0.9)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3605
+          "line": 3633
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-stage-ink)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3606
+          "line": 3634
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-stage-ink-soft)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3607
+          "line": 3635
         },
         {
           "name": "--ch-rd-rule",
           "value": "var(--ch-stage-rule)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3608
+          "line": 3636
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(244 238 221 / 0.58)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3609
+          "line": 3637
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3610
+          "line": 3638
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3611
+          "line": 3639
         },
         {
           "name": "--ch-rd-chip",
           "value": "rgb(231 184 102 / 0.16)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3612
+          "line": 3640
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(231 184 102 / 0.5)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3613
+          "line": 3641
         },
         {
           "name": "--ch-rd-under-ink",
           "value": "var(--ch-stage-red)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3614
+          "line": 3642
         },
         {
           "name": "--ch-rd-delay",
           "value": "min(calc(var(--ch-i, 0) * var(--ch-dur-press) / 3), var(--ch-dur-reveal))",
           "scope": ".ch-rd .ch-rd-rib__bar",
-          "line": 3743
+          "line": 3771
         },
         {
           "name": "--ch-rd-under-a",
           "value": "#d9665a",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3823
+          "line": 3851
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#a8372b",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3824
+          "line": 3852
         },
         {
           "name": "--ch-rd-over-a",
           "value": "var(--ch-ink-400)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3825
+          "line": 3853
         },
         {
           "name": "--ch-rd-over-b",
           "value": "var(--ch-ink-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3826
+          "line": 3854
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3827
+          "line": 3855
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-text-secondary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3828
+          "line": 3856
         },
         {
           "name": "--ch-rd-rule",
           "value": "rgb(110 98 62 / 0.14)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3829
+          "line": 3857
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(28 27 24 / 0.5)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3830
+          "line": 3858
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-champagne-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3831
+          "line": 3859
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-green-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3832
+          "line": 3860
         },
         {
           "name": "--ch-rd-chip",
           "value": "var(--ch-green-50)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3833
+          "line": 3861
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(21 90 57 / 0.25)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3834
+          "line": 3862
         },
         {
           "name": "--ch-rd-delay",
           "value": "0s",
           "scope": "@media (prefers-reduced-motion: reduce) → .ch-rd .ch-rd-rib__bar",
-          "line": 4062
+          "line": 4094
         }
       ]
     },
@@ -10923,151 +10923,151 @@
           "name": "--ch-medallion-bg",
           "value": "var(--ch-green-800)",
           "scope": ".ch-empty-page",
-          "line": 477
+          "line": 479
         },
         {
           "name": "--ch-medallion-ink",
           "value": "var(--ch-on-green-plate)",
           "scope": ".ch-empty-page",
-          "line": 478
+          "line": 480
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(21 90 57 / 0.1)",
           "scope": ".ch-empty-page",
-          "line": 479
+          "line": 481
         },
         {
           "name": "--ch-medallion-bg",
           "value": "linear-gradient(180deg, #8d4235 0%, #74352b 100%)",
           "scope": ".ch-empty-page--danger",
-          "line": 590
+          "line": 592
         },
         {
           "name": "--ch-medallion-ink",
           "value": "#f8ede8",
           "scope": ".ch-empty-page--danger",
-          "line": 591
+          "line": 593
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(126 59 48 / 0.12)",
           "scope": ".ch-empty-page--danger",
-          "line": 592
+          "line": 594
         },
         {
           "name": "--ch-notice-on-green-ink",
           "value": "#f2c3b6",
           "scope": ".ch-notice",
-          "line": 686
+          "line": 688
         },
         {
           "name": "--ch-notice-on-green-body",
           "value": "var(--ch-on-green-ink-soft)",
           "scope": ".ch-notice",
-          "line": 687
+          "line": 689
         },
         {
           "name": "--ch-notice-rule",
           "value": "var(--ch-ledger-rule)",
           "scope": ".ch-notice",
-          "line": 688
+          "line": 690
         },
         {
           "name": "--ch-notice-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-notice",
-          "line": 689
+          "line": 691
         },
         {
           "name": "--ch-notice-icon",
           "value": "var(--ch-notice-ink)",
           "scope": ".ch-notice",
-          "line": 690
+          "line": 692
         },
         {
           "name": "--ch-notice-body",
           "value": "var(--ch-text-secondary)",
           "scope": ".ch-notice",
-          "line": 691
+          "line": 693
         },
         {
           "name": "--ch-notice-fill",
           "value": "none",
           "scope": ".ch-notice",
-          "line": 692
+          "line": 694
         },
         {
           "name": "--ch-notice-icon",
           "value": "var(--ch-danger-600)",
           "scope": ".ch-notice--danger",
-          "line": 700
+          "line": 702
         },
         {
           "name": "--ch-notice-ink",
           "value": "var(--ch-on-green-ink)",
           "scope": ".ch-feat .ch-notice--danger",
-          "line": 763
+          "line": 765
         },
         {
           "name": "--ch-notice-icon",
           "value": "var(--ch-notice-on-green-ink)",
           "scope": ".ch-feat .ch-notice--danger",
-          "line": 764
+          "line": 766
         },
         {
           "name": "--ch-notice-body",
           "value": "var(--ch-notice-on-green-body)",
           "scope": ".ch-feat .ch-notice--danger",
-          "line": 765
+          "line": 767
         },
         {
           "name": "--ch-type-serif-l",
           "value": "600 32px/1.1 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 2060
+          "line": 2063
         },
         {
           "name": "--ch-type-serif-m",
           "value": "600 22px/1.15 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 2061
+          "line": 2064
         },
         {
           "name": "--ch-type-serif-s",
           "value": "600 19px/1.2 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 2062
+          "line": 2065
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "var(--ch-frame)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 2271
+          "line": 2274
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(107 187 140 / 0.12)",
           "scope": "html[data-fw-theme='dark'] .ch-empty-page",
-          "line": 2517
+          "line": 2520
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(239 133 118 / 0.12)",
           "scope": "html[data-fw-theme='dark'] .ch-empty-page--danger",
-          "line": 2520
+          "line": 2523
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "var(--ch-frame)",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] body [data-ui='clubhouse']",
-          "line": 2555
+          "line": 2558
         },
         {
           "name": "--ch-sidebar-w",
           "value": "var(--ch-rail-w)",
           "scope": "@media (min-width: 821px) → .ch-app[data-ch-rail='folded']",
-          "line": 3724
+          "line": 3728
         }
       ]
     },
@@ -11494,295 +11494,295 @@
           "name": "--ch-fg-h",
           "value": "208px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
-          "line": 1918
+          "line": 1949
         },
         {
           "name": "--ch-st-mean-rule",
           "value": "rgb(28 25 18 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3915
+          "line": 3978
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "#fbf8ef",
           "scope": "[data-ui='clubhouse']",
-          "line": 3916
+          "line": 3979
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "rgb(154 101 18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3917
+          "line": 3980
         },
         {
           "name": "--ch-st-team-line",
           "value": "var(--ch-green-800)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3918
+          "line": 3981
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-300)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3919
+          "line": 3982
         },
         {
           "name": "--ch-st-mean-rule",
           "value": "rgb(237 231 216 / 0.4)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3922
+          "line": 3985
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "var(--ch-chart-paper)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3923
+          "line": 3986
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "var(--ch-warning-600)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3924
+          "line": 3987
         },
         {
           "name": "--ch-st-team-line",
           "value": "#b4dfc4",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3926
+          "line": 3989
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-400)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3927
+          "line": 3990
         },
         {
           "name": "--ch-stm-inset",
           "value": "64px",
           "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-list",
-          "line": 4495
+          "line": 4564
         },
         {
           "name": "--ch-ivory-0",
           "value": "#ffffff",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4768
+          "line": 4843
         },
         {
           "name": "--ch-ivory-25",
           "value": "#fdfcf8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4769
+          "line": 4844
         },
         {
           "name": "--ch-ivory-50",
           "value": "#f9f7f1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4770
+          "line": 4845
         },
         {
           "name": "--ch-ivory-100",
           "value": "#f4f2ea",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4771
+          "line": 4846
         },
         {
           "name": "--ch-ivory-150",
           "value": "#eeebe2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4772
+          "line": 4847
         },
         {
           "name": "--ch-ivory-200",
           "value": "#e7e3d8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4773
+          "line": 4848
         },
         {
           "name": "--ch-ivory-300",
           "value": "#dcd6c8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4774
+          "line": 4849
         },
         {
           "name": "--ch-ivory-400",
           "value": "#c9c2b1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4775
+          "line": 4850
         },
         {
           "name": "--ch-ink-950",
           "value": "#141412",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4776
+          "line": 4851
         },
         {
           "name": "--ch-ink-900",
           "value": "#1c1b18",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4777
+          "line": 4852
         },
         {
           "name": "--ch-ink-700",
           "value": "#3a3833",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4778
+          "line": 4853
         },
         {
           "name": "--ch-ink-600",
           "value": "#46433d",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4779
+          "line": 4854
         },
         {
           "name": "--ch-ink-500",
           "value": "#5f5c55",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4780
+          "line": 4855
         },
         {
           "name": "--ch-ink-400",
           "value": "#8f8b81",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4781
+          "line": 4856
         },
         {
           "name": "--ch-ink-300",
           "value": "#b3afa5",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4782
+          "line": 4857
         },
         {
           "name": "--ch-green-25",
           "value": "#f5f9f6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4783
+          "line": 4858
         },
         {
           "name": "--ch-green-50",
           "value": "#eef5f0",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4784
+          "line": 4859
         },
         {
           "name": "--ch-green-100",
           "value": "#ddebe1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4785
+          "line": 4860
         },
         {
           "name": "--ch-green-200",
           "value": "#bcd6c4",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4786
+          "line": 4861
         },
         {
           "name": "--ch-green-400",
           "value": "#4f8a64",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4787
+          "line": 4862
         },
         {
           "name": "--ch-green-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4788
+          "line": 4863
         },
         {
           "name": "--ch-green-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4789
+          "line": 4864
         },
         {
           "name": "--ch-green-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4790
+          "line": 4865
         },
         {
           "name": "--ch-green-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4791
+          "line": 4866
         },
         {
           "name": "--ch-green-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4792
+          "line": 4867
         },
         {
           "name": "--ch-forest-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4793
+          "line": 4868
         },
         {
           "name": "--ch-forest-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4794
+          "line": 4869
         },
         {
           "name": "--ch-green-fill-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4795
+          "line": 4870
         },
         {
           "name": "--ch-green-fill-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4796
+          "line": 4871
         },
         {
           "name": "--ch-green-fill-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4797
+          "line": 4872
         },
         {
           "name": "--ch-champagne-100",
           "value": "#efe6d2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4798
+          "line": 4873
         },
         {
           "name": "--ch-champagne-300",
           "value": "#dccda6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4799
+          "line": 4874
         },
         {
           "name": "--ch-champagne-500",
           "value": "#b09560",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4800
+          "line": 4875
         },
         {
           "name": "--ch-well-bg",
           "value": "linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4802
+          "line": 4877
         },
         {
           "name": "--ch-control-bg",
           "value": "linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4803
+          "line": 4878
         },
         {
           "name": "--ch-stage-up",
           "value": "var(--ch-green-200)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5278
+          "line": 5355
         },
         {
           "name": "--ch-stage-down",
           "value": "var(--ch-champagne-300)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5279
+          "line": 5356
         }
       ]
     },
@@ -15394,91 +15394,91 @@
           "name": "--ch-av-bg",
           "value": "#2f2e29",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='stone']",
-          "line": 1009
+          "line": 1012
         },
         {
           "name": "--ch-av-fg",
           "value": "#d8d1c1",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='stone']",
-          "line": 1010
+          "line": 1013
         },
         {
           "name": "--ch-av-ring",
           "value": "rgb(216 209 193 / 0.16)",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='stone']",
-          "line": 1011
+          "line": 1014
         },
         {
           "name": "--ch-av-bg",
           "value": "#25322a",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='sage']",
-          "line": 1014
+          "line": 1017
         },
         {
           "name": "--ch-av-fg",
           "value": "#c6dacb",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='sage']",
-          "line": 1015
+          "line": 1018
         },
         {
           "name": "--ch-av-ring",
           "value": "rgb(198 218 203 / 0.16)",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='sage']",
-          "line": 1016
+          "line": 1019
         },
         {
           "name": "--ch-av-bg",
           "value": "#243034",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='mist']",
-          "line": 1019
+          "line": 1022
         },
         {
           "name": "--ch-av-fg",
           "value": "#c4d5da",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='mist']",
-          "line": 1020
+          "line": 1023
         },
         {
           "name": "--ch-av-ring",
           "value": "rgb(196 213 218 / 0.16)",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='mist']",
-          "line": 1021
+          "line": 1024
         },
         {
           "name": "--ch-av-bg",
           "value": "#352a23",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='clay']",
-          "line": 1024
+          "line": 1027
         },
         {
           "name": "--ch-av-fg",
           "value": "#e4c9b8",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='clay']",
-          "line": 1025
+          "line": 1028
         },
         {
           "name": "--ch-av-ring",
           "value": "rgb(228 201 184 / 0.16)",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='clay']",
-          "line": 1026
+          "line": 1029
         },
         {
           "name": "--ch-av-bg",
           "value": "var(--ch-avatar-neutral-bg)",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-avatar[data-tone]",
-          "line": 1030
+          "line": 1033
         },
         {
           "name": "--ch-av-fg",
           "value": "var(--ch-avatar-neutral-fg)",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-avatar[data-tone]",
-          "line": 1031
+          "line": 1034
         },
         {
           "name": "--ch-av-ring",
           "value": "var(--ch-avatar-neutral-ring)",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-avatar[data-tone]",
-          "line": 1032
+          "line": 1035
         }
       ]
     }

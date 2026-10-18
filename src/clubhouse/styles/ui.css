@@ -557,6 +557,7 @@
   box-shadow: 0 0 0 1px var(--ch-border-hairline);
   table-layout: fixed;
   font: 500 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-nine th,
@@ -808,6 +809,7 @@
 .ch-fgr dd {
   margin: 0;
   font: 600 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   color: var(--ch-text-primary);
 }
@@ -919,6 +921,7 @@ button.ch-feat {
 /* 12px, the phone text floor (F09): PageIntro opens a page on the phone (lead, 2026-10-08). */
 .ch-intro__eyebrow {
   font: 500 13px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
   color: var(--ch-ledger-eyebrow);
 }

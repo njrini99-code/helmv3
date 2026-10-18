@@ -1,5 +1,40 @@
 # P002 — Home: changelog
 
+## 2026-10-17 — Polish: a countdown in two units, greens in points, no seam
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Player Home's countdown shows its two largest units, the leading one never
+  zero-padded: "1d 18h" a day or more out, "18h 02m" inside a day, and the
+  seconds only inside the last hour ("4m 09s"), where it was "01d 18h 02m 00s"
+  for an event days away (owner item E). The timer's name follows: "Starts in
+  1 day and 18 hours" (`Countdown.tsx`, the well's two columns in `home.css`).
+- Coach Home's form strip: the greens change reads "+3 pts" beside "61%", as
+  it is a change in percentage points (`TeamForm.tsx`, `HomePhone.tsx`).
+- Phone: Home paints no flat fill of its own, so the canvas's parchment and
+  light carry to the tab bar and a short page (a failed load) has no seam
+  where its content ends (`home.css`).
+- Tabular figures restored (review row 18): 39 rules in `home.css` that set
+  `font` on a figure (`.ch-num` or inside one: week days, agenda times,
+  leaderboard, rail, form strip, countdown, player figures) now set
+  `font-variant-numeric: tabular-nums` after it, since the shorthand reset what
+  `.ch-num` gives. Hero numerals of 40px and over keep proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Wiring checked against production
 
 One change: the coach first run's Invite players (desktop and phone) links

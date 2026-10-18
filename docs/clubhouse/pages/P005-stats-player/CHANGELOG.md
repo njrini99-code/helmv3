@@ -1,5 +1,35 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-17 — Polish: the trend names scoring; vs previous 10
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone figures: the third figure's label is "Scoring trend", so an amber "up
+  2.1" reads as scores rising rather than as a gain. The review asked for the
+  value to read "Scoring up 2.1"; at 390px that cell measures roughly 106px on
+  the review's screenshot (an estimate) and "Scoring down 1.4" would likely
+  wrap, so the word went on the label
+  (`StatsPlayerPhone.tsx`).
+- "vs. previous 10" reads "vs previous 10", as Home says it (the shared
+  `data/stats-common.ts`).
+- Tabular figures restored (review row 18) in the shared `stats.css`, as the
+  P004 entry lists; the player's figures, ladders and round rows included.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Figures checked against production on the same rounds; putts with none recorded fixed
 
 The profile's figures were run beside production's on the same round ids:

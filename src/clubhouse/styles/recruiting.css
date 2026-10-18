@@ -61,6 +61,7 @@
 }
 .ch-rec-pipe__sum span {
   font: 400 13px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-rec-pipe__all {
@@ -132,6 +133,7 @@
   height: 56px;
   border-radius: 50%;
   font: 600 21px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   --ch-rec-ring: var(--ch-ivory-400);
   background: var(--ch-ivory-25);
@@ -572,6 +574,7 @@
   flex: 1;
   min-width: 0;
   font: 400 14px/1.4 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 .ch-rec-row__a {
@@ -976,6 +979,7 @@
   }
   .ch-recm-count > span {
     font: 500 13px/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   /* The sort's trigger tints under the finger over the press beat, as a row does (CH-14604). */
@@ -1679,6 +1683,7 @@
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
   }
   .ch-rec[data-canopy] .ch-rec-pipe__all {
     margin-right: -10px;
@@ -2023,6 +2028,7 @@
   border-radius: 6px;
   box-shadow: inset 0 0 0 1px var(--ch-champagne-rule);
   font: 500 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;
 }
@@ -2054,6 +2060,7 @@
 }
 .ch-rec-tb .is-next {
   font: 400 13.5px/1.4 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;
 }
@@ -2102,6 +2109,7 @@
   .ch-recm-row__b .ch-rec-plate {
     margin-top: 5px;
     font: 500 12px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
   .ch-recm-stagerow > .ch-rec-commit {

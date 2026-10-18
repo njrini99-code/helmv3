@@ -23,8 +23,11 @@ vi.mock('@/components/ui/sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+const rsvpHook = vi.hoisted(() => ({
+  state: { rsvpSummary: null, isLoading: false, error: null as string | null, refetch: (() => Promise.resolve()) as () => Promise<void> },
+}));
 vi.mock('@/hooks/useRSVP', () => ({
-  useRSVP: () => ({ rsvpSummary: null, isLoading: false, error: null }),
+  useRSVP: () => rsvpHook.state,
   usePlayerEventRSVP: () => ({ status: 'pending', isLoading: false, respond: vi.fn() }),
 }));
 
@@ -126,6 +129,7 @@ const playerToggle = (name: RegExp) => screen.getByRole('button', { name });
 
 beforeEach(() => {
   vi.clearAllMocks();
+  rsvpHook.state = { rsvpSummary: null, isLoading: false, error: null, refetch: () => Promise.resolve() };
   checkScheduleConflicts.mockResolvedValue({ success: true, data: { hasConflict: false, conflicts: [], suggestions: [] } });
 });
 
@@ -290,5 +294,28 @@ describe('EventDetailModal — cancelled events', () => {
     expect(screen.getByRole('button', { name: /cancel event/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /cancel event/i }));
     expect(screen.getByRole('button', { name: /confirm cancellation/i })).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RSVP summary read failure — an error with a retry, never an empty "0 invited" roster
+// ---------------------------------------------------------------------------
+
+describe('EventDetailModal — RSVP summary read failure', () => {
+  it('shows the error with Retry instead of the roster, and Retry refetches', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult(['p1']));
+    const refetch = vi.fn(() => Promise.resolve());
+    rsvpHook.state = { rsvpSummary: null, isLoading: false, error: 'Failed to fetch RSVP data', refetch };
+    renderModal({ event: makeEvent({ requires_rsvp: true }) });
+    expect(await screen.findByText('Failed to fetch RSVP data')).toBeInTheDocument();
+    expect(screen.queryByTestId('rsvp-status')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the roster when the read succeeds', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult(['p1']));
+    renderModal({ event: makeEvent({ requires_rsvp: true }) });
+    expect(await screen.findByTestId('rsvp-status')).toBeInTheDocument();
   });
 });

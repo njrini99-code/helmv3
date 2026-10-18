@@ -37,6 +37,7 @@
 }
 .ch-hb-muted {
   font: 400 13px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-tabs {
@@ -121,6 +122,7 @@
   align-items: center;
   gap: 6px;
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
 .ch-hb-iconbtn {
@@ -173,6 +175,7 @@
 }
 .ch-hb-rsvp__d b {
   font: 500 18px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-hb-rsvp__b {
@@ -192,6 +195,7 @@
 }
 .ch-hb-rsvp__b > span {
   font: 400 12.5px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-req {
@@ -254,6 +258,7 @@
 }
 .ch-hb-rsvp__c em {
   font: 500 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
   white-space: nowrap;
@@ -328,6 +333,7 @@
 /* The byline's meta, not the avatar (a span too, whose colour this used to override). */
 .ch-hb-ann__h > div span {
   font: 400 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-ann__f {
@@ -344,6 +350,7 @@
   display: grid;
   gap: 6px;
   font: 400 13px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-hb-ann__files-t,
 .ch-hb-ann__files-retry {
@@ -357,6 +364,7 @@
   background: none;
   color: var(--ch-text-secondary);
   font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
 .ch-hb-ann__files-retry {
@@ -397,6 +405,7 @@
 .ch-hb-ann__file em {
   flex: none;
   font: 600 11px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -426,6 +435,7 @@
   align-items: center;
   gap: 10px;
   font: 500 12.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-hb-reads__t {
@@ -535,6 +545,7 @@
 .ch-hb-pass__f dd {
   margin: 0;
   font: 500 14px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-hb-pass__stub {
   position: relative;
@@ -680,6 +691,7 @@
 }
 .ch-hb-task > div span {
   font: 400 12px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-task em {
@@ -751,6 +763,7 @@
   border-radius: 50%;
   background: var(--ch-ivory-25);
   font: 700 8.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Documents */
@@ -873,6 +886,7 @@
 }
 .ch-hb-file__b span {
   font: 400 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 
@@ -1024,6 +1038,7 @@
 }
 .ch-hb-dp__b span {
   font: 400 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-dp__ck {
@@ -1184,6 +1199,7 @@
   }
   .ch-hb-h .ch-hb-muted {
     font: 500 12px/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1233,6 +1249,7 @@
   }
   .ch-hb-card__h .ch-hb-muted {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
   }
   /* A failed part with no heading of its own (the latest post, the next trip) stands on its own double rule. */
   .ch-hb-part {
@@ -1258,6 +1275,10 @@
   .ch-hb-rsvp__list li + li {
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
+  /* Square rows, so a seam runs straight to both ends (the desktop's 12px hover radius bent it up). */
+  .ch-hb .ch-hb-rsvp__list li {
+    border-radius: 0;
+  }
   .ch-hb-rsvp__d {
     border-radius: 10px;
     background: none;
@@ -1277,6 +1298,7 @@
   }
   .ch-hb-rsvp__b > span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
   }
 
   /* The latest announcement: the screen's one green feature card (ui.css .ch-feat, in the announcement's own markup so
@@ -1291,6 +1313,7 @@
   }
   .ch-hb-ann.is-featured .ch-hb-eyebrow {
     font: 500 12.5px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink-muted);
   }
   .ch-hb-ann.is-featured h3 {
@@ -1548,6 +1571,7 @@
   }
   .ch-hb-file__b span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -2178,6 +2202,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     display: block;
     width: 100px;
     font: 500 12.5px/1.35 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-older:first-of-type .ch-hb-ann__margin,
@@ -2206,6 +2231,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   }
   .ch-hb-margin__n {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
 }

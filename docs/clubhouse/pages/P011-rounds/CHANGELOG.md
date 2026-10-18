@@ -1,5 +1,36 @@
 # P011 — Rounds: changelog
 
+## 2026-10-17 — Polish: setup segments reach 44px
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Round lifecycle parity: Fairway's back-nine start now numbers its hole setup
+  1 to 9 as Clubhouse's does (shared engine fix), so the parity test asserts
+  the two starts send identical hole configs.
+- Phone setup: Round type and Holes segments are drawn 38px inside the
+  well; their hit area now reaches 44px without moving them
+  (`rounds-setup.css`).
+- Tabular figures restored (review row 18): 29 rules across `rounds.css`,
+  `rounds-setup.css`, `rounds-track.css` and `rounds-recover.css` that set
+  `font` on a figure (scorecard nines, figures, season cards, the match card)
+  now set `font-variant-numeric: tabular-nums` after it. The 84px and
+  46px hero numerals keep proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Add a course draws the chosen photo itself
 
 The photo chosen in Add a course is drawn on a canvas from the file's own

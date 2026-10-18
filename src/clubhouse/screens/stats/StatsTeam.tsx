@@ -45,7 +45,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
     <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhone data={data} />}>
       <SectionGroup>
         <PageHero
-          eyebrow="Team / Performance"
+          eyebrow={[data.teamName, data.season].filter(Boolean).join(' · ')}
           title="Team stats"
           figures={
             data.roundsError
@@ -61,15 +61,14 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
             <TeamHeadActions filter={data.filter} teamName={data.teamName} grid={data.roundsError ? null : data.grid} />
           }
         >
-          {data.teamName}
-          {/* A roster that did not load is not "0 active players". */}
-          {!data.roundsError && (
+          {/* The team is the eyebrow. A roster that did not load is not "0 active players". */}
+          {data.roundsError ? (
+            'Countable rounds only'
+          ) : (
             <>
-              {' '}
-              &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'}
+              <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'} &middot; countable rounds only
             </>
-          )}{' '}
-          &middot; countable rounds only
+          )}
         </PageHero>
 
         {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} />}

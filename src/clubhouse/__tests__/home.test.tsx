@@ -614,7 +614,7 @@ describe('Home · the team’s form (teamForm)', () => {
     // The same rounds Stats' team loader reads (roundsInFilter per player, Last 10).
     const stats = [...groupByPlayer(full).values()].flatMap((list) => roundsInFilter(list, filterFor('last10')));
     expect(f.avg).toBe(weightedMean(stats, (x) => x.total_score));
-    // busy's five before their newest ten are the previous window (quiet has none), as Stats' "vs. previous 10" reads it.
+    // busy's five before their newest ten are the previous window (quiet has none), as Stats' "vs previous 10" reads it.
     const statsPrev = [...groupByPlayer(full).values()].flatMap((list) => previousInFilter(list, filterFor('last10')) ?? []);
     expect(statsPrev).toHaveLength(5);
     // Q-112 (owner, 2026-10-01): the change compares the same players. busy shot 70 in both windows, so the team is
@@ -637,6 +637,13 @@ describe('Home · the team’s form (teamForm)', () => {
     const form = document.querySelector('.ch-hm-form')!;
     expect(form.querySelector('.ch-hm-form__basis')!.textContent).toBe(formBasis(f.basis));
     expect(form.textContent).not.toMatch(/vs previous 10/);
+  });
+
+  it('the greens change is in percentage points: "+3 pts", never a bare "+3" beside "61%"', () => {
+    const f = { ...PREVIEW_HOME.phone.form!, gir: { pct: 61, delta: 3 } };
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
+    const gir = [...document.querySelectorAll('.ch-hm-form__figs > div')][1]!;
+    expect([...gir.querySelectorAll('dd')].map((d) => d.textContent)).toEqual(['61%', '+3 pts']);
   });
 
   it('§10-1 a figure resting on fewer rounds than the average says how many', () => {

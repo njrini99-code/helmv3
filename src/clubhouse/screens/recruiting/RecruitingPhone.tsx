@@ -69,7 +69,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
           />
         ) : (
           <>
-            <SearchField className="ch-recm-search" value={c.query} onChange={c.setQuery} placeholder="Search" label="Search prospects" />
+            <SearchField className="ch-recm-search" value={c.query} onChange={c.setQuery} placeholder="Search prospects" label="Search prospects" />
             <SectionBoundary surface="recruiting.pipeline" label="The pipeline" code="CH-14203">
               <Pipeline compact counts={c.counts} total={c.total} stage={c.stage} onPick={c.setStage} />
             </SectionBoundary>

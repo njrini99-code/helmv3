@@ -226,6 +226,7 @@
 .ch-set-count {
   flex: none;
   font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
 
@@ -260,6 +261,7 @@
 }
 .ch-set-code {
   font: 600 calc(18 * var(--ch-type-k))/1 var(--ch-font-mono);
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0.1em;
   color: var(--ch-forest-800);
 }
@@ -504,6 +506,7 @@
   background: #e3ede5;
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
   font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
 .ch-set-rank__txt {
@@ -709,6 +712,7 @@
   .ch-setm-page > .ch-setm-lead {
     margin: -26px 0 0;
     font: 400 calc(14.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
   .ch-setm-lead.is-failed {
@@ -886,6 +890,7 @@
     max-width: 55%;
     overflow: hidden;
     font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1012,6 +1017,7 @@
   }
   .ch-setm-row.is-slider .ch-slider__v {
     font: 600 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
   }
   .ch-setm-row.is-slider .ch-slider input {
@@ -1145,6 +1151,7 @@
   }
   .ch-setm-invite__c b {
     font: 600 calc(24 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.08em;
     overflow-wrap: anywhere;
   }
@@ -1298,6 +1305,7 @@
     flex: none;
     width: 18px;
     font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-green-600);
   }
   .ch-setm-rank__txt {

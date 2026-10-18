@@ -67,6 +67,10 @@ Player opens hub
 
 ## Business Rules
 
+- Home leaves cancelled events (`cancelled_at` set) out of the player's Today
+  and Upcoming and the coach's upcoming count (2026-10-17); held migration
+  `20261017111000` does the same in `get_coach_today_schedule` and
+  `get_player_hub_events`. The hub's trips carry `event_id`.
 - Player Hub must only show data for the authenticated player's team and assignments.
 - RSVP actions update event attendance, not generic task state.
 - Task completion truth must match the write path used by `completeTask()`.

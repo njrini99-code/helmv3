@@ -193,6 +193,7 @@
 .ch-ms-row__top > span {
   flex: none;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-ms-row__bot {
@@ -234,6 +235,7 @@
   border-radius: 999px;
   background: var(--ch-green-fill-600);
   font: 600 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
 }
 /* The conversation list (owner, 2026-10-08: "too card heavy"): a flat list on the rail, thin dividers inset to the text,
@@ -391,6 +393,7 @@
   display: block;
   overflow: hidden;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -706,6 +709,7 @@
   border: 0;
   border-radius: 999px;
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
 /* A reaction is the opposite colour of the message it sits under (owner, 2026-10-08): ivory under a green bubble, a
@@ -802,6 +806,7 @@
   border-radius: 999px;
   background: rgb(255 255 255 / 0.18);
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rx__list {
   display: flex;
@@ -847,6 +852,7 @@
 .ch-ms-msg__t {
   padding: 0 6px;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-ms-msg__fail {
@@ -1605,6 +1611,7 @@
     background: transparent;
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
     font: 500 13.5px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
     cursor: pointer;
     transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
@@ -1713,6 +1720,7 @@
   }
   .ch-msp .ch-ms-row__top > span {
     font: 400 12.5px/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-msp .ch-ms-row__bot > span:first-child {
     display: -webkit-box;
@@ -1905,6 +1913,7 @@
   .ch-msp-composer { flex: none; min-width: 0; }
   .ch-msp-thread .ch-ms-msg__t {
     font: 500 12px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-msp-thread .ch-ms-msg__who {
     font: 600 13px/1 var(--ch-font-sans);
@@ -2040,6 +2049,7 @@
   .ch-msp-prof p {
     margin: 0;
     font: 400 14px/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
   .ch-msp-tiles {
@@ -2124,6 +2134,7 @@
   }
   .ch-msp-count {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-msp-row {
@@ -2198,6 +2209,7 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-msp-row__ic {
@@ -2278,6 +2290,7 @@
   .ch-msp-set__note {
     padding-bottom: 10px;
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-msp-danger {
@@ -2383,6 +2396,7 @@
     margin: 0;
     padding: 0;
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
 
@@ -2759,6 +2773,7 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
   white-space: nowrap;
   text-overflow: ellipsis;
   font: 400 13px/1.25 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-ms-fold__chev {

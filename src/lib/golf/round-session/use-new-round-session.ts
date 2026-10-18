@@ -1640,7 +1640,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       yardage: h.yardage,
       score: null,
     }));
-    const persisted = await persistRoundStart(initialHoles, configs);
+    // The start write numbers its hole setup as the engine does (a back nine is
+    // 1..9, not the course's 10..18); the catalog contribution below keeps the
+    // course's own numbers.
+    const persisted = await persistRoundStart(initialHoles, configs.map((h, idx) => ({ ...h, holeNumber: idx + 1 })));
     if (!persisted.ok) {
       setIsStartingRound(false);
       return;

@@ -33,7 +33,7 @@ A profile opens on Overview, or the tab the address names, for the window the ad
 Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
 
 - Last 10 is the player's ten newest countable rounds in any season, read
-  from a rolling 12 months back, with "vs. previous 10" the ten before them.
+  from a rolling 12 months back, with "vs previous 10" the ten before them.
   Season and Qualifiers are this season only.
 - A round posted as a total only (18 holes, no nines, no holes) counts in the
   scores (average, to par, trend, form, the Rounds table, the personal best

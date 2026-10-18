@@ -1463,7 +1463,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('button', { name: 'Maya Reyes Head coach · Varsity' })).toBeTruthy();
     const rows = within(list()).getAllByRole('button');
     expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Notifications', 'Team', 'CoachHelm', 'Preferences']);
-    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Email, Push', 'Scoring, invites', 'Priorities, alerts', 'Motion, units']);
+    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Email, push', 'Scoring, invites', 'Priorities, alerts', 'Motion, units']);
     expect(screen.getByRole('button', { name: 'Report a problem' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe('/privacy');
     expect(screen.getByRole('link', { name: 'Terms of service' }).getAttribute('href')).toBe('/terms');
@@ -1533,7 +1533,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     const updates = await screen.findByRole('region', { name: 'CoachHelm updates' });
     const kinds = within(updates).getAllByRole('button');
     // Round reviews and goals your coach assigned are on for push; the rest of each kind isn't: "(some)".
-    expect(kinds.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['In app, Push (some)', 'In app, Push (some), Email (some)', 'In app']);
+    expect(kinds.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['In app, push (some)', 'In app, push (some), email (some)', 'In app']);
     await user.click(within(updates).getByRole('button', { name: /^Insights/ }));
     const sheet = dialog('Insights');
     expect(within(sheet).getByRole('switch', { name: 'In app' })).toBeChecked();
@@ -1548,7 +1548,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(sent.coach_assigned_goal).toEqual({ push: true, email: true, in_app: true });
     expect(within(dialog('Insights')).getByRole('switch', { name: 'Push' })).toBeChecked();
     await user.click(within(sheet).getByRole('button', { name: 'Done' }));
-    await waitFor(() => expect(within(updates).getByRole('button', { name: /^Insights/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('In app, Push'));
+    await waitFor(() => expect(within(updates).getByRole('button', { name: /^Insights/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('In app, push'));
   });
 
   it('81901 CH-8005 CH-8203 a switch in a kind sheet that fails flips back and says so; a failed read says so with Try again', async () => {
@@ -1556,7 +1556,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     const { user, writes } = phone({ writes: { setDelivery } });
     await openRow(user, /^Notifications/);
     const mail = await screen.findByRole('region', { name: 'Email and push' });
-    expect(within(mail).getByRole('button', { name: /^Messages/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('Email, Push');
+    expect(within(mail).getByRole('button', { name: /^Messages/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('Email, push');
     expect(within(mail).getByRole('button', { name: /^Events & reminders/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('Email');
     await user.click(within(mail).getByRole('button', { name: /^Messages/ }));
     const sheet = dialog('Messages');

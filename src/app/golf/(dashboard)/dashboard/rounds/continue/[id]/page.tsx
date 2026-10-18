@@ -676,7 +676,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
 
     // Which slots this player's OTHER rounds already hold. Excludes THIS round
     // so a round already sitting in a slot does not read its own as taken.
-    const { data: takenRows } = entered.length
+    const { data: takenRows, error: takenError } = entered.length
       ? await supabase
           .from('golf_rounds')
           .select('qualifier_id, qualifier_round_number')
@@ -684,9 +684,21 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
           .in('qualifier_id', entered.map((q) => q.id))
           .neq('status', 'abandoned')
           .neq('id', id)
-      : { data: [] as Array<{ qualifier_id: string | null; qualifier_round_number: number | null }> };
+      : { data: [] as Array<{ qualifier_id: string | null; qualifier_round_number: number | null }>, error: null };
 
-    liveQualifierOptions = entered.map((q) => ({
+    // An unread slot list is not "every slot free": offering slots then would
+    // default the picker to one this player may already hold. Offer no
+    // qualifier and say the read failed (the editor's reload dead end).
+    if (takenError) {
+      liveQualifierReadFailed = true;
+      void logServerError(
+        `[continue round] taken qualifier slots read failed for round ${id}; the type editor will offer no qualifier: ${takenError.message}`,
+        { action: 'continueRound.takenSlots', featureArea: 'rounds', roundId: id },
+        'warning',
+      );
+    }
+
+    liveQualifierOptions = takenError ? [] : entered.map((q) => ({
       id: q.id,
       name: q.name ?? 'Qualifier',
       numRounds: q.num_rounds ?? 1,

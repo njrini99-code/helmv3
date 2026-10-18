@@ -1,5 +1,28 @@
 # P015 — Auth: changelog
 
+## 2026-10-17 — Polish: Create an account reaches 44px
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- "Create an account" under the sign-in form was a 17px line of text to tap;
+  its hit area now reaches 44px tall without moving it. On the phone the legal
+  links under it keep their own 44px on top where the two meet (`auth.css`).
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Sign in drops its subtitle
 
 Owner: "get rid of the words under sign in". The heading now stands alone

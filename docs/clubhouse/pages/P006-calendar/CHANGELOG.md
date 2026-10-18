@@ -1,5 +1,35 @@
 # P006 — Calendar: changelog
 
+## 2026-10-17 — Polish: editor times on the phone, class lines
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- New event on the phone: the date takes its own line and the two times share
+  the one under it; three across left each time 99px and clipped "07:00 AM"
+  to "07:00 AV" (`calendar.css`).
+- Phone agenda: a class row's second line names only its room; the code was
+  already in its title ("Priya · STAT 201", then "STAT 201 · Hanes Hall 120")
+  (`CalendarPhone.tsx`).
+- Tabular figures come back on 10 rules in `calendar.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
 ## 2026-10-17 — Production's event actions, live updates, linked trips, team replies, the whole window
 
 ```text

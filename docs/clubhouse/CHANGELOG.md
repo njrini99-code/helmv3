@@ -1,5 +1,20 @@
 # Clubhouse changelog
 
+## 2026-10-17 — Figures in rows keep tabular digits
+
+A page rule that sets type with the `font` shorthand resets
+`font-variant-numeric`, so `.ch-num` lost its tabular digits wherever such a
+rule styled the same element, and columns of scores, counts and times drifted
+from row to row. The rules that style figures now set
+`font-variant-numeric: tabular-nums` right after their `font`: about 310 rules
+across the page sheets, plus the shared ones in `shell.css` (sidebar and dock
+counts, the next-event line, the strip count), `ui.css` (`.ch-intro__eyebrow`,
+`.ch-nine`, `.ch-fgr dd`) and `controls.css` (`.ch-pill`). Display numerals
+(40px and up, and `.ch-serif-num`) stay proportional, as `base.css` intends. A
+WebKit sweep of the preview screens at 390px and 1280px finds no small `.ch-num`
+figure left proportional apart from the Classes term tile's week figure (a
+display figure) and the Team Hub's message times.
+
 ## 2026-10-17 — New shadows use the depth tokens; the rail's small parts move by translate
 
 The CSS quality gate (`npm run clubhouse:css`) found 18 new blur shadows

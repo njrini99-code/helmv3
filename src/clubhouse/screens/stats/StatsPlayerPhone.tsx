@@ -246,7 +246,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
           </dd>
         </div>
         <div>
-          <dt>Trend</dt>
+          <dt>Scoring trend</dt>
           <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${form < 0 ? 'down' : 'up'} ${Math.abs(form).toFixed(1)}`}</dd>
           <dd>{form == null ? 'After three rounds' : 'Newer rounds'}</dd>
         </div>

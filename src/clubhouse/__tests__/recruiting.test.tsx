@@ -1518,7 +1518,7 @@ describe('Recruiting · findings (P014 #1, #6, #7)', () => {
   it('the Add form’s short fields carry hints, not plausible values; the search names state; the privacy line moved to first run', async () => {
     const user = userEvent.setup();
     wrap();
-    expect(screen.getByRole('searchbox', { name: 'Search prospects' }).getAttribute('placeholder')).toBe('Search');
+    expect(screen.getByRole('searchbox', { name: 'Search prospects' }).getAttribute('placeholder')).toBe('Search prospects');
     // The search covers state too, and the no-match line says so (P014 finding #7).
     await user.type(screen.getByRole('searchbox', { name: 'Search prospects' }), 'zz');
     expect(code('CH-14302')?.textContent).toContain('names, hometowns, states, email and notes');

@@ -364,7 +364,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 21 rounds this season · 3.9 hcp');
     const figs = document.querySelector('.ch-stm-figs')!;
     // The board's three (m-stats.jsx Player): the trend in words, green when scores come down, amber when they rise (F-54).
-    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Trend']);
+    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Scoring trend']);
     const trend = figs.querySelector('dd.is-words')!;
     expect(trend.textContent).toMatch(/^(down|up) \d+\.\d$|^level$|^—$/);
     if (trend.textContent!.startsWith('down')) expect(trend.classList.contains('ch-gain')).toBe(true);
@@ -491,7 +491,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(caveat.textContent).toMatch(/Early read\. .+ averages and trends will move a lot\. Strokes gained shows once there are three/);
     expect(caveat.getAttribute('data-ch-code')).toBe('CH-5305');
     expect(within(overview as HTMLElement).getByText('SG / round')).toBeTruthy();
-    expect(within(overview as HTMLElement).getByText('Trend')).toBeTruthy();
+    expect(within(overview as HTMLElement).getByText('Scoring trend')).toBeTruthy();
     cleanup();
     phone(player());
     const enough = document.querySelector('.ch-stm-overview')!;

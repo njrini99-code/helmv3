@@ -1,5 +1,31 @@
 # P008 — Settings: changelog
 
+## 2026-10-17 — Polish: notification summaries in sentence case
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone: the Notifications row and each kind's summary read in sentence
+  case, "Email, push" and "In app, push (some)", where the second channel was
+  capitalized mid-list (`SettingsPhone.tsx`, `NotificationsPhone.tsx`).
+- Tabular figures restored (review row 18): 8 rules in `settings.css` that set
+  `font` on a figure (counts, codes, ranks, row values, the slider value) now
+  set `font-variant-numeric: tabular-nums` after it.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Wiring checked against production: reminders off out of order, the request after Ask to join
 
 ```text

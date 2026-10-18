@@ -166,6 +166,7 @@
 }
 .ch-rd-unf__f b {
   font: 600 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-on-fill-100);
 }
 .ch-rd-unf__acts {
@@ -285,6 +286,7 @@
 }
 .ch-rd-fig__v {
   font: 500 24px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
   color: var(--ch-text-primary);
 }
@@ -525,6 +527,7 @@
 }
 .ch-rd-more em {
   font: 400 12.5px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -662,6 +665,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__date b {
   font: 600 23px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
 .ch-rd-sc__date em {
@@ -767,6 +771,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__grid b {
   font: 600 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rd-sc__grid .is-tot {
   background: var(--ch-ivory-100);
@@ -801,6 +806,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rd-meter b {
   text-align: right;
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-ink-950);
   white-space: nowrap;
 }
@@ -835,11 +841,13 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__s b {
   font: 500 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
   color: var(--ch-ink-950);
 }
 .ch-rd-sc__s em {
   font: 500 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -1049,6 +1057,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-hero__s em {
   font: 600 18px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: #e7b866;
 }
@@ -1090,11 +1099,13 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-figs dd {
   margin: 0;
   font: 500 28px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
 }
 .ch-rv-figs dd + dd {
   letter-spacing: normal;
   font: 400 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-rv-card {
@@ -1120,6 +1131,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-card__h span {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-rv-nosg {
@@ -1137,6 +1149,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-sg__tot b {
   font: 500 32px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   font-variation-settings: 'wdth' 92;
 }
@@ -1173,6 +1186,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-sg__r b {
   text-align: right;
   font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-rv-sg .is-gain {
@@ -1222,6 +1236,7 @@ a.ch-rd-sc:focus-visible {
   background: #fff;
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
   font: 500 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rv-nine th,
 .ch-rv-nine td {
@@ -1239,6 +1254,7 @@ a.ch-rd-sc:focus-visible {
   padding-left: 10px;
   text-align: left;
   font: 500 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-rv-nine thead th:first-child {
@@ -1292,6 +1308,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-nine b {
   font: 700 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rv-nine .is-warn {
   color: var(--ch-warning-600);
@@ -1460,6 +1477,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-dist__r b {
   text-align: right;
   font: 600 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-ink-950);
 }
 .ch-rv-dist__t {
@@ -1822,6 +1840,7 @@ a.ch-rd-sc:focus-visible {
   }
   .ch-rv.is-phone .ch-rv-figs dd + dd {
     font: 400 12px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: normal;
   }
   .ch-rv.is-phone .ch-rv-card {
@@ -2377,6 +2396,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   width: 30px;
   height: 30px;
   font: 600 17px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   font-variation-settings: 'wdth' 88;
 }
 .ch-rv .ch-rv-nine .is-score b {
@@ -2913,6 +2933,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   border-radius: 50%;
   background: var(--ch-bg-inset);
   font: 700 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rv .ch-rzcost__t {
   font: 600 15px/1.2 var(--ch-font-sans);
@@ -2926,10 +2947,12 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 .ch-rv .ch-rzcost b {
   text-align: right;
   font: 600 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rv .ch-rzcost em {
   text-align: right;
   font: 700 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-warning-600);
 }
@@ -2994,6 +3017,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 }
 .ch-rv .ch-rzpair b {
   font: 600 36px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   color: var(--ch-forest-800);
 }
@@ -3020,6 +3044,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 }
 .ch-rv .ch-rzpt__c b {
   font: 700 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-rv .ch-rzpt__c i {
@@ -3054,6 +3079,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 .ch-rv .ch-rzsplit b {
   margin-right: 7px;
   font: 700 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-rv .ch-rzsplit .is-warn b {
@@ -3090,6 +3116,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 .ch-rv .ch-rzrow b {
   text-align: right;
   font: 700 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 .ch-rv .ch-rztrail {
@@ -3490,6 +3517,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 /* ---- The season: the average, then three figures that are each drawn ---- */
 .ch-rd .ch-rd-fig__v {
   font: 600 27px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
   font-variation-settings: 'wdth' 92;
 }
@@ -3877,11 +3905,13 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 }
 .ch-rd[data-canopy] .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
   font: 600 26px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
   font-variation-settings: 'wdth' 92;
 }
 .ch-rd.is-phone .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
   font: 600 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 92;
 }
@@ -3956,6 +3986,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   }
   .ch-rd[data-canopy] .ch-rd-sc__date b {
     font: 600 27px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.04em;
     font-variation-settings: 'wdth' 90;
   }
@@ -4019,6 +4050,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   }
   .ch-rd[data-canopy] .ch-rd-sc__s b {
     font: 600 25px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.035em;
     font-variation-settings: 'wdth' 92;
   }

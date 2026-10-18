@@ -249,6 +249,7 @@ button.ch-rt-strip__h {
   height: 52px;
   border-radius: 14px;
   font: 600 24px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
@@ -270,6 +271,7 @@ button.ch-rt-strip__h {
 .ch-rt-hmeta b {
   width: 100%;
   font: 600 17px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 .ch-rt-hmeta i {
@@ -1251,6 +1253,7 @@ button.ch-rt-strip__h {
 }
 .ch-rt-exitc > div > span {
   font: 400 12.5px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: rgb(244 241 232 / 0.72);
 }
 .ch-rt-exitc__n {
@@ -1346,6 +1349,7 @@ button.ch-rt-strip__h {
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
   font: 500 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rt-mc th,
 .ch-rt-mc td {
@@ -1384,6 +1388,7 @@ button.ch-rt-strip__h {
 }
 .ch-rt-mc b {
   font: 700 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Round complete */
@@ -2315,6 +2320,7 @@ button.ch-rt-strip__h {
   }
   .ch-rt-hmeta i {
     font: 500 14px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink);
   }
   .ch-rt-hmeta i::before {
@@ -2516,6 +2522,7 @@ button.ch-rt-strip__h {
     height: 52px;
     text-align: left;
     font: 600 28px/52px var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     background: var(--ch-ivory-25);
     box-shadow: inset 0 0 0 1.5px var(--ch-ink-900);
   }
@@ -2543,6 +2550,7 @@ button.ch-rt-strip__h {
     min-width: 0;
     border-radius: 10px;
     font: 600 13px/44px var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     background: var(--ch-ivory-200);
     color: var(--ch-ink-700);
     box-shadow: none;

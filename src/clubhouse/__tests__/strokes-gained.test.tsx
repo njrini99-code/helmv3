@@ -424,7 +424,7 @@ describe('team loader', () => {
     // Ten newest at +2, five before them at +0.5: the change is +1.5.
     tables.current = teamTables('men', [...many(10, 2, 1), ...many(5, 0.5, 11)]);
     const last10 = await loadTeamStats({ teamId: 't1', window: 'last10' });
-    expect(last10.figures[0]).toMatchObject({ delta: 1.5, context: 'vs. previous 10' });
+    expect(last10.figures[0]).toMatchObject({ delta: 1.5, context: 'vs previous 10' });
     expect(last10.figures[0]!.state).toBeUndefined();
     // Ten rounds and nothing before them.
     tables.current = teamTables('men', many(10, 2, 1));
@@ -442,7 +442,7 @@ describe('team loader', () => {
 
 describe('the change against the previous window', () => {
   it('a change, or the honest reason; nothing to say for the season or for no strokes gained', () => {
-    expect(sgChange(1, 0.4, 'last10', 12)).toEqual({ delta: 0.6, context: 'vs. previous 10' });
+    expect(sgChange(1, 0.4, 'last10', 12)).toEqual({ delta: 0.6, context: 'vs previous 10' });
     expect(sgChange(1, null, 'last10', 0)).toEqual({ delta: null, context: 'No earlier rounds' });
     expect(sgChange(1, null, 'last10', 2)).toEqual({ delta: null, context: 'Too few earlier rounds with shots' });
     expect(sgChange(1, null, 'season', 40)).toEqual({ delta: null, context: '' });
@@ -518,7 +518,7 @@ describe('player loader', () => {
   it('CH-5310 the change against the previous 10: a value with three earlier rounds with shots, or why there is none', async () => {
     const at = (n: number, sg: number, from: number) => Array.from({ length: n }, (_, i) => rnd(`c${from}${i}`, 'p1', from + i, sg, [sg, 0, 0, 0]));
     tables.current = profileTables([...at(10, 2, 1), ...at(5, 0.5, 11)]);
-    expect((await load('coach'))!.sgChange).toEqual({ delta: 1.5, context: 'vs. previous 10' });
+    expect((await load('coach'))!.sgChange).toEqual({ delta: 1.5, context: 'vs previous 10' });
     tables.current = profileTables(at(10, 2, 1));
     expect((await load('coach'))!.sgChange).toEqual({ delta: null, context: 'No earlier rounds' });
     tables.current = profileTables([...at(10, 2, 1), ...at(2, 0.5, 11)]);
@@ -557,7 +557,7 @@ describe('player profile · desktop', () => {
     const chip = hero.querySelector('.ch-delta')!;
     expect(chip.textContent).toBe('−1.3');
     expect(chip.className).toContain('is-bad');
-    expect(hero.textContent).toContain('vs. previous 10');
+    expect(hero.textContent).toContain('vs previous 10');
   });
 
   it('CH-5310 no earlier rounds: the hero says so instead of a chip', () => {
@@ -697,7 +697,7 @@ describe('player profile · phone', () => {
     const change = footer.querySelector('.ch-sgchg')!;
     expect(change.querySelector('.ch-delta')!.textContent).toBe('−1.3');
     // P005-D6: away from the SG figure, the chip names what it measures.
-    expect(change.lastElementChild!.textContent).toBe('SG a round vs. previous 10');
+    expect(change.lastElementChild!.textContent).toBe('SG a round vs previous 10');
     const rows = [...document.querySelectorAll('.ch-spm-round')];
     expect(rows[0]!.querySelector('.ch-loss')!.textContent).toBe('−1.1 SG');
     expect(rows[1]!.querySelector('.ch-gain')!.textContent).toBe('+0.6 SG');

@@ -1,5 +1,40 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-17 — Polish: the team in the eyebrow, the baseline label clear
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads golf_teams.season (an existing column, as Roster reads it)
+Held items:     none
+```
+
+### Changed
+
+- The head's eyebrow is the team and its season ("Varsity · Fall 2026"), as
+  Roster's, where it was "Team / Performance": it repeated the breadcrumb in a
+  slash used nowhere else. The line under the title drops the team name it now
+  repeats ("7 active players · countable rounds only"); `loadTeamStats` reads
+  `golf_teams.season`.
+- Desktop trend: when the team's line ends on the baseline, the baseline's
+  label moves to the left end, so "The Tour baseline" is no longer printed
+  under the end figure (`StatsTeamIslands.tsx`).
+- "vs. previous 10" reads "vs previous 10", as Home says it
+  (`data/stats-team.ts`, `data/stats-common.ts`).
+- Tabular figures restored (review row 18): 69 rules in the shared
+  `stats.css` that set `font` on a figure (tape, legs, board, filter counts,
+  phone figure rows) now set `font-variant-numeric: tabular-nums` after it,
+  since the shorthand reset what `.ch-num` gives. The 64px heroes keep
+  proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Figures checked against production on the same rounds; birdies and putts fixed
 
 Every Team stats figure was run beside the Fairway Team stats page over the same

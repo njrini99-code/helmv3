@@ -1,5 +1,36 @@
 # P003 — Roster: changelog
 
+## 2026-10-17 — Polish: steady figure column, one primary
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone rows: each row's figure and its caption draw tabular figures again
+  (the `font` shorthand had reset `.ch-num`), and the caption holds a "10.2
+  hcp" width, so the sparkline column no longer drifts row to row
+  (`roster.css`).
+- Desktop join requests: each row's Approve is secondary, as on the phone (P003
+  #5), so Invite players stays the screen's one primary
+  (`RosterRequests.tsx`).
+- Tabular figures come back on 18 rules in `roster.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
 ## 2026-10-17 — Wiring checked against production
 
 Every Roster control and read was checked end to end against Fairway's roster

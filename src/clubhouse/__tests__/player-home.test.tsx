@@ -106,10 +106,12 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     show();
     const next = screen.getByRole('link', { name: /Up next · Qualifier/ });
     expect(next.getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-16&event=q1');
-    // 14 Oct 18:40Z to 16 Oct 12:42Z: 1 day, 18 hours, 2 minutes.
-    const timer = within(next).getByRole('timer', { name: 'Starts in 1 day, 18 hours and 2 minutes' });
-    // The digits, the ticking seconds included, are hidden from a screen reader: it hears the timer's name once.
-    expect(timer.querySelectorAll('[aria-hidden="true"]')).toHaveLength(4);
+    // 14 Oct 18:40Z to 16 Oct 12:42Z: 1 day, 18 hours, 2 minutes. A day or more out it reads days and hours, the days
+    // never zero-padded and no seconds ticking (owner item E).
+    const timer = within(next).getByRole('timer', { name: 'Starts in 1 day and 18 hours' });
+    expect(timer.textContent).toBe('1d18h');
+    // The digits are hidden from a screen reader: it hears the timer's name once.
+    expect(timer.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
     expect([...timer.children].every((c) => c.getAttribute('aria-hidden') === 'true')).toBe(true);
   });
 
@@ -570,19 +572,37 @@ describe('Player Home · the page’s own contracts (desktop)', () => {
 
   it('21807 the timer’s name says one day, hour or minute in the singular', () => {
     wrap(<Countdown to="2026-10-14T19:41:30Z" frozen="2026-10-14T18:40:00Z" />);
-    expect(screen.getByRole('timer', { name: 'Starts in 0 days, 1 hour and 1 minute' })).toBeTruthy();
+    expect(screen.getByRole('timer', { name: 'Starts in 1 hour and 1 minute' })).toBeTruthy();
+    cleanup();
+    wrap(<Countdown to="2026-10-15T19:41:30Z" frozen="2026-10-14T18:40:00Z" />);
+    expect(screen.getByRole('timer', { name: 'Starts in 1 day and 1 hour' })).toBeTruthy();
   });
 
-  it('20301 the countdown ticks every second and is gone once the event has started', () => {
+  it('owner item E: two units, the leading one unpadded; hours and minutes inside a day, seconds only inside the hour', () => {
+    const shown = (to: string) => {
+      cleanup();
+      wrap(<Countdown to={to} frozen="2026-10-14T18:40:00Z" />);
+      return screen.getByRole('timer').textContent;
+    };
+    expect(shown('2026-10-16T12:42:00Z')).toBe('1d18h');
+    expect(shown('2026-10-24T20:40:00Z')).toBe('10d02h');
+    expect(shown('2026-10-15T12:42:00Z')).toBe('18h02m');
+    expect(shown('2026-10-14T19:40:00Z')).toBe('1h00m');
+    expect(shown('2026-10-14T19:39:59Z')).toBe('59m59s');
+    expect(shown('2026-10-14T18:40:09Z')).toBe('0m09s');
+    expect(screen.getByRole('timer', { name: 'Starts in less than a minute' })).toBeTruthy();
+  });
+
+  it('20301 inside the hour the countdown ticks every second and is gone once the event has started', () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
     wrap(<Countdown to="2026-10-14T18:41:30Z" />);
     const digits = () => [...screen.getByRole('timer').querySelectorAll('b')].map((b) => b.textContent).join(':');
-    expect(digits()).toBe('00:00:01:30');
+    expect(digits()).toBe('1:30');
     act(() => {
       vi.advanceTimersByTime(1000);
     });
-    expect(digits()).toBe('00:00:01:29');
+    expect(digits()).toBe('1:29');
     act(() => {
       vi.advanceTimersByTime(89_000);
     });

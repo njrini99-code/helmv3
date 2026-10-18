@@ -13,8 +13,8 @@
  * rounds, name), the same order the selection workspace and the squad
  * confirmation use. Two scored players tie only when to par and total
  * strokes both match; ties share a position shown with a T. Fairway's live
- * leaderboard numbers ties 1, T2 and counts test rounds; that is not this
- * rule (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
+ * leaderboard uses the same round set and order since 2026-10-17
+ * (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
  */
 
 import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
@@ -379,9 +379,13 @@ const asDate = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00Z`);
 export function dayLabel(d: string): string {
   return DAY.format(asDate(d));
 }
-/** "Sep 22, 2026 – Oct 1, 2026", or one date when it starts and ends the same day. */
+/**
+ * "Sep 22 – Oct 1, 2026", the year said once; "Dec 28, 2026 – Jan 3, 2027" across a new year; one date when it starts
+ * and ends the same day. Built by hand rather than with formatRange, whose spacing differs between engines.
+ */
 export function rangeLabel(start: string, end: string | null): string {
-  return !end || end === start ? DAY_YEAR.format(asDate(start)) : `${DAY_YEAR.format(asDate(start))} – ${DAY_YEAR.format(asDate(end))}`;
+  if (!end || end === start) return DAY_YEAR.format(asDate(start));
+  return `${yearOf(start) === yearOf(end) ? dayLabel(start) : DAY_YEAR.format(asDate(start))} – ${DAY_YEAR.format(asDate(end))}`;
 }
 /** "Sep 22 – Oct 1" without the year, for the facts strip. */
 export function shortRange(start: string, end: string | null): string {

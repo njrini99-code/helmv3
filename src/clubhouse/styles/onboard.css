@@ -1530,6 +1530,7 @@
    15px. */
 .ch-ox-mc__f > div > span {
   font: 500 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: #7a6a47;
 }
 .ch-ox-mc__f b {

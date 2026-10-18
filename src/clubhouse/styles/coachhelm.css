@@ -442,6 +442,7 @@
 }
 .ch-hl-row__v {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-hl-row svg {
   color: var(--ch-text-tertiary);
@@ -661,6 +662,7 @@
   display: grid;
   place-items: center;
   font: 600 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   background: var(--ch-ivory-150);
   color: var(--ch-text-secondary);
 }

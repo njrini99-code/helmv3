@@ -1,5 +1,31 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-17 — Polish: the search names what it searches
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The search placeholder reads "Search prospects" on desktop and phone, where
+  it was a bare "Search" (the premium pass's #7 choice; the no-match line
+  still names the fields) (`RecruitingDesktop.tsx`, `RecruitingPhone.tsx`).
+- Tabular figures restored (review row 18): 7 rules in `recruiting.css` that
+  set `font` on a figure (pipeline counts, row values, next-step plates and
+  column) now set `font-variant-numeric: tabular-nums` after it.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Wiring checked against production (no change)
 
 ```text
