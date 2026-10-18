@@ -41,7 +41,7 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
           <InlineNotice
             code="CH-3210"
             title="The roster didn’t load"
-            body="Your team is safe. Try again, and if it keeps happening the error has already been reported."
+            body="Your team is safe. Try again; the error has been reported."
             onRetry={onRetry}
           />
         ) : data.players.length === 0 ? (

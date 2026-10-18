@@ -1764,8 +1764,8 @@
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
     padding: 24px 20px 24px;
     border-radius: 22px;
-    background: linear-gradient(180deg, #fff 0%, var(--ch-bg-surface) 42%, var(--ch-ivory-50) 100%);
-    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.55), inset 0 1px 0 #fff, inset 0 -3px 0 rgb(28 25 18 / 0.05), var(--ch-elevation-face);
+    background: linear-gradient(180deg, var(--ch-ivory-0) 0%, var(--ch-bg-surface) 42%, var(--ch-ivory-50) 100%);
+    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.55), inset 0 1px 0 var(--ch-light-rim), inset 0 -3px 0 rgb(28 25 18 / 0.05), var(--ch-elevation-face);
     transition:
       box-shadow var(--ch-dur-base) var(--ch-ease),
       transform var(--ch-dur-base) var(--ch-ease),

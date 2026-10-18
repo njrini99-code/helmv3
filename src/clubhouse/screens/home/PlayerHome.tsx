@@ -146,6 +146,8 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
 
 /** A player on no active team: nothing to show yet, and how that changes. */
 export function PlayerHomeNoTeam() {
+  // Joining a team lives in Settings' Golf profile (CH-8302).
+  const settings = rebuiltHref('/golf/dashboard/settings?section=golf', 'player');
   return (
     <main className="ch-h-main">
       <EmptyState
@@ -154,6 +156,13 @@ export function PlayerHomeNoTeam() {
         icon={Users}
         title="You aren’t on a team yet"
         body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats."
+        action={
+          settings ? (
+            <Button variant="primary" href={settings}>
+              Open team settings
+            </Button>
+          ) : undefined
+        }
       />
     </main>
   );

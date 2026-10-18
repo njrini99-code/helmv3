@@ -825,10 +825,13 @@ describe('Team Hub · coach', () => {
     session.current = { userId: 'u1', coach: { id: 'c1', full_name: 'Maya Reyes' }, player: null };
     render(await ClubhouseHubRoute({}));
     expect(code('CH-10309')!.textContent).toMatch(/Once your team is set up/);
+    expect(within(code('CH-10309') as HTMLElement).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
     document.body.innerHTML = '';
     session.current = { userId: 'u2', coach: null, player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } };
     render(await ClubhouseHubRoute({}));
     expect(code('CH-10309')!.textContent).toMatch(/Ask your coach for your team’s code/);
+    // A player joins a team from Golf profile (CH-8302).
+    expect(within(code('CH-10309') as HTMLElement).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
   });
 
   it('100102 ?tab= opens a tab the role has, else Home', () => {

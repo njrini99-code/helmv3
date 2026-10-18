@@ -259,11 +259,11 @@ describe('the coach’s board, loaded', () => {
     heads([[jonah.id, slope(jonah.id)]]);
     const d = await load([slope(jonah.id)]);
     const top = d.players.list.find((p) => p.id === jonah.id)!.top;
-    expect(top.lede).toMatch(/^Inside 4-6 ft Jonah is making 58%/);
-    expect(top.why).toContain("Jonah's bag");
+    expect(top.lede).toMatch(/^Inside 4–6 ft Jonah is making 58%/);
+    expect(top.why).toContain("Jonah’s bag");
     // What is drawn is about Jonah; only what a focus area is saved with (assignAs) stays the insight's own, in the second person.
     expect(JSON.stringify({ ...top, assignAs: undefined })).not.toMatch(/\byou('re)?\b/i);
-    expect(top.assignAs.description).toMatch(/^Inside 4-6 ft you're making 58%/);
+    expect(top.assignAs.description).toMatch(/^Inside 4–6 ft you’re making 58%/);
   });
 
   it('CH13-13 a player with no name on file keeps the text as written', async () => {
@@ -406,13 +406,13 @@ describe('the cards, on screen', () => {
     const top = chTop(slope(jonah.id), { viewer: { role: 'coach', first: 'Jonah' } });
     render(wrap(<CoachBoard data={coachData(top)} writes={w} />));
     // The coach reads it about Jonah; the focus area, which Jonah reads, is the insight's own claim.
-    expect(focus().getByText(/Inside 4-6 ft Jonah is making 58%/)).toBeTruthy();
+    expect(focus().getByText(/Inside 4–6 ft Jonah is making 58%/)).toBeTruthy();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Assign as focus' }));
     expect(w.assign).toHaveBeenCalledWith(
       expect.objectContaining({
         playerId: jonah.id,
         title: 'Downhill putts inside 4-6 ft: a real penalty',
-        description: "Inside 4-6 ft you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level).",
+        description: "Inside 4–6 ft you’re making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level).",
       }),
     );
   });

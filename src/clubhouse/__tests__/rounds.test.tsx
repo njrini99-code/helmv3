@@ -638,6 +638,13 @@ describe('Rounds route', () => {
     expect(screen.getByRole('main', { name: 'Loading your rounds' }).getAttribute('aria-busy')).toBe('true');
   });
 
+  it('CH-11401 the desktop skeleton draws the season pane with its vs-par stage, and the first month under its heading (2026-10-18)', () => {
+    render(<RoundsSkeleton />);
+    const desk = code('CH-11401')!.querySelector('.ch-rd-sk-desk')!;
+    expect(desk.querySelector('.ch-rd-hero > .ch-rd-sk-pane > .ch-rd-sk-stage')).not.toBeNull();
+    expect(desk.querySelector('.ch-rd-grp > .ch-rd-grp__h + .ch-rd-book')).not.toBeNull();
+  });
+
   it('the fixture in progress is the board’s: Finley GC, Blue, holes 1 to 3', () => {
     expect(PREVIEW_UNFINISHED.played.map((h) => h.score)).toEqual([4, 6, 3]);
   });

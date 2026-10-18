@@ -169,6 +169,7 @@ are the shell's (10603 to 10607).
 | 80639 | CH-8028 | `MAKING_A_STAFF_INVITE_FAILS` | Making a staff invite fails (head coach) |
 | 80640 | CH-8213 | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | The assistant coach requests don't load (head coach) |
 | 80641 | CH-8029 | `SEND_A_TEST_PUSH_FAILS` | Send a test push fails (P008-C3, D1-6) |
+| 80642 | CH-8214 | `EVERY_READ_FAILS` | Every read fails (phone list) |
 
 ## 07 — Network / offline
 

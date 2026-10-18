@@ -6,10 +6,10 @@ import { EmptyState } from '../../ui/States';
 /**
  * A player on no team: the whole page says so (CH-12305). Classes are saved with
  * the team they go on the calendar of, so there is nothing to add or import
- * until they join one. Joining lives in Settings, which is rebuilt.
+ * until they join one. Joining lives in Settings' Golf profile (CH-8302); a player has no Team section.
  */
 export function ClassesNoTeam() {
-  const settings = rebuiltHref('/golf/dashboard/settings?section=team', 'player');
+  const settings = rebuiltHref('/golf/dashboard/settings?section=golf', 'player');
   return (
     <main className="ch-cl is-noteam" aria-labelledby="ch-cl-title" data-canopy="">
       <header className="ch-cl-h" data-canopy-head="">

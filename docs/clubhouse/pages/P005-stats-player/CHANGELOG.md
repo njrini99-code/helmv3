@@ -1,5 +1,33 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-18 — Polish: the profile skeleton takes the wide layout
+
+```text
+Design package: none (wave-2 states review row 2)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- At 1280 and wider the profile's skeleton (CH-5403, aria-busy) takes the
+  loaded page's layout too, the four figures beside the name: the rules in
+  `stats.css` key on `.ch-st:is(.is-desk, [aria-busy='true'])`.
+- The strokes gained figure's change line keeps its loaded width (about
+  140px), so a coach's three actions wrap to two rows beside it as they do
+  when the page lands (`StatsSkeleton.tsx`).
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures), tabs top skeleton vs
+  loaded: 1280 422 vs 422 (was 568 vs 422); 1440 378 vs 378; 1100 568 vs
+  568.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
 ## 2026-10-17 — Polish: the trend names scoring; vs previous 10
 
 ```text

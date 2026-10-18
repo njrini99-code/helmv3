@@ -474,7 +474,7 @@ describe('the Deep dive screen', () => {
     expect(screen.getByRole('region', { name: /CoachHelm has 4 reads on your game/ })).toBeTruthy();
     expect(within(rail()).getByRole('region', { name: 'Needs work' })).toBeTruthy();
     expect(within(rail()).getByRole('region', { name: 'Working' })).toBeTruthy();
-    expect(screen.getByRole('article', { name: 'Downhill putts inside 4-6 ft: a real penalty' })).toBeTruthy();
+    expect(screen.getByRole('article', { name: 'Downhill putts inside 4–6 ft: a real penalty' })).toBeTruthy();
     for (const part of ['What was measured', 'How it has moved', 'The rounds behind it', 'Why CoachHelm thinks so', 'Where this goes']) {
       expect(within(article()).getByRole('region', { name: part })).toBeTruthy();
     }
@@ -493,7 +493,7 @@ describe('the Deep dive screen', () => {
     show();
     const needs = within(rail()).getByRole('region', { name: 'Needs work' });
     const rows = within(needs).getAllByRole('button');
-    expect(rows.map((r) => r.querySelector('b')!.textContent)).toEqual(['Downhill putts inside 4-6 ft: a real penalty', 'Penalty strokes: 1.1 per round', 'Putting break: under-reading left-to-right (10-20 ft)']);
+    expect(rows.map((r) => r.querySelector('b')!.textContent)).toEqual(['Downhill putts inside 4–6 ft: a real penalty', 'Penalty strokes: 1.1 per round', 'Putting break: under-reading left-to-right (10–20 ft)']);
     expect(rows[0]!.textContent).toContain('Putting · Worth closing');
     expect(rows[1]!.textContent).toContain('Course management · Priority');
     expect(rows[0]!.querySelector('.ch-hd-it__v')!.textContent).toBe('23 pts');

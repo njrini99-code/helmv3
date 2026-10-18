@@ -767,12 +767,8 @@ export function Calendar({
           view={view}
           flagged={flagged}
           selId={selId}
-          notices={
-            <>
-              {notices}
-              {data.eventsError && <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} />}
-            </>
-          }
+          notices={notices}
+          eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} /> : null}
           onView={go}
           onStep={step}
           onOpen={open}

@@ -85,7 +85,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7211 | An announcement crashes | "This announcement couldn't be shown." … | `SectionBoundary messages.announcement` | messages.test › CH-7211 |
 | CH-7212 | The thread crashes | "This conversation couldn't be shown." …; the rail stays | `SectionBoundary messages.thread` | messages.test › CH-7212 |
 | CH-7213 | Details crash | "Details couldn't be shown." … | `SectionBoundary messages.details` | messages.test › CH-7213 |
-| CH-7214 | The shared files don't load (Details) | "Files didn’t load" + "Your messages are fine…" Try again | `FilesPanel`, `FilesSection` | messages.test › CH-7214 |
+| CH-7214 | The shared files don't load (Details) | "Files didn’t load" + "Your messages are safe…" Try again | `FilesPanel`, `FilesSection` | messages.test › CH-7214 |
 | CH-7215 | The Add sheet's team list doesn't load | "The team list didn’t load" Try again | `AddMembersModal` | messages.test › CH-7215 |
 | CH-7216 | A conversation's messages don't refresh while an earlier copy is shown | The messages stay; above them "This conversation may be out of date" + "It didn’t refresh…" Try again | `Thread`, `PhoneThread` | messages.test › CH-7216 |
 | CH-7217 | Pending attachment recovery cannot be checked | "Couldn’t check a pending send" + "Try again before sending another message." Try again; ordinary Send stays locked | `Composer` | messages.test › CH-7217 |
@@ -101,7 +101,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7305 | Nothing open | "Start your first conversation" / "Pick a conversation" | `MessagesView` | messages.test › CH-7305 |
 | CH-7306 | Nothing has been shared in the conversation (Details) | "No files shared yet." | `FilesPanel`, `FilesSection` | messages.test › CH-7306 |
 | CH-7307 | Everyone on the team is already in the group (Add) | "Everyone on the team is already in this group." | `AddMembersModal` | messages.test › CH-7307 |
-| CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren’t on a team yet" + "Messages open once you’re on a team roster, with your coaches and teammates." | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
+| CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren’t on a team yet" + "Messages open once you’re on a team roster, with your coaches and teammates." + Open team settings (a coach's Team, a player's Golf profile; the route passes the role) | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
 | CH-7309 | Nothing at all yet: no conversation and no announcement (D-71) | The page empty state: "No conversations yet" + (coach) "Start a thread with the whole team or message a player directly." / (player) "Message a coach or a teammate. Team announcements show up here too." + New message; the rail and thread empties (CH-7301, CH-7305) show only once something is listed | `MessagesFirstRun` (desktop and phone) | messages.test › CH-7309 |
 
 ## 74xx Loading

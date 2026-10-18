@@ -679,11 +679,18 @@
 .ch-root .ch-h-lb__go:focus-visible {
   outline: none;
 }
+/* The name keeps to one line (ellipsis), so a long one never stacks the row three lines deep. */
+.ch-h-lb__who > span {
+  min-width: 0;
+}
 .ch-h-lb__name {
   display: block;
+  overflow: hidden;
   font: 600 14.5px/1.25 var(--ch-font-sans);
   letter-spacing: -0.01em;
   color: var(--ch-text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .ch-h-lb__meta {
   display: block;
@@ -771,6 +778,17 @@
     box-shadow: var(--ch-seam-x);
   }
 }
+/* The narrowest desktop canvas (a window just over the phone's 820px): the board drops its Last 7 rounds drawing, so
+   the name and its class and form line have the room the drawing had (they wrapped to three lines in a 93px column at
+   821, WebKit 2026-10-18). */
+@container (max-width: 640px) {
+  .ch-h-lb__row {
+    grid-template-columns: 20px minmax(0, 1fr) 48px 52px 68px;
+  }
+  .ch-h-lb__row > :nth-child(3) {
+    display: none;
+  }
+}
 @media (max-width: 820px) {
   .ch-h-main {
     padding: 28px 16px 48px;
@@ -791,10 +809,10 @@
 
 /* Home's route skeleton on a phone (F-37), in the Mobile clubhouse pass (2026-10-08): the loaded page's shape on the
    parchment sheet, so the hand-off changes nothing but the words. The hero is the reader's own (SkeletonPhoneHero,
-   from the shell's role): the coach's brief as three lines and Up next as the coach's card; the player's Up next with
-   its countdown directly under the greeting, and the two keys under it. The card, the keys and the first section land
-   within half a pixel of their bars (WebKit 390, 2026-10-08; a coach's brief of other than three lines moves only the
-   card, by its lines). */
+   from the shell's role): the coach's brief as three lines and Up next as the coach's day card (its invitees and its
+   action); the player's Up next with its countdown directly under the greeting, and the two keys under it. The card,
+   the keys and the first section land within a pixel of their bars (WebKit 390, 2026-10-18; a coach's brief of other
+   than three lines moves only the card, by its lines, and a card with no invitees or action is shorter). */
 .ch-hm-skel {
   display: none;
 }
@@ -841,7 +859,7 @@
     flex-direction: column;
     gap: 12px;
     box-sizing: border-box;
-    height: 172px;
+    height: 238px;
     margin-top: 18px;
     padding: 18px;
     border-radius: 14px;
@@ -853,6 +871,14 @@
     max-width: 100%;
     border-radius: var(--ch-radius-xs);
     background: rgb(244 241 232 / 0.12);
+  }
+  /* The invitees' avatars on their line, and the card's action at its foot. */
+  .ch-hm-skel__people {
+    margin-top: 15px;
+  }
+  .ch-hm-skel__act {
+    margin-top: auto;
+    border-radius: 12px;
   }
   /* The player's hero: no brief, so Up next sits on the greeting's own margin, and Message coach and Post a round
      under it, as `.ch-hm--player .ch-ph-acts` sets them. */
@@ -869,7 +895,7 @@
   .ch-hm-skel__body {
     display: flex;
     flex-direction: column;
-    padding: 30px 20px;
+    padding: 12px 20px 30px;
   }
   .ch-hm-skel__sec {
     display: flex;
@@ -1485,9 +1511,13 @@
     gap: 3px;
     min-width: 0;
   }
+  /* A long name keeps to one line (ellipsis), so the row keeps its height and its course and date line. */
   .ch-hm-rd__b b {
+    overflow: hidden;
     font: 600 14.5px/1.2 var(--ch-font-sans);
     color: var(--ch-text-primary);
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
   .ch-hm-rd__b span {
     overflow: hidden;
@@ -1495,6 +1525,18 @@
     color: var(--ch-text-tertiary);
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  /* The course gives way (ellipsis) and the date after it keeps its width; `pre` keeps the space before its dot. */
+  .ch-hm-rd__b .ch-hm-rd__m {
+    display: flex;
+    min-width: 0;
+  }
+  .ch-hm-rd__m > span {
+    min-width: 0;
+  }
+  .ch-hm-rd__m > span + span {
+    flex-shrink: 0;
+    white-space: pre;
   }
   .ch-hm-score {
     display: flex;
@@ -3891,4 +3933,19 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     grid-template-columns: minmax(0, 1fr);
     gap: 18px;
   }
+}
+/* The form in waiting (SkeletonDeskHead): translucent bars on the stage, each in a box its loaded line's height. */
+.ch-h-form__ln {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.ch-h-form__bar {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--ch-radius-xs);
+  background: rgb(244 241 232 / 0.12);
+}
+html[data-fw-theme='dark'] .ch-h-form__bar {
+  background: rgb(244 241 232 / 0.1);
 }

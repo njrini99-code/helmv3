@@ -300,6 +300,10 @@
   font: 500 12.5px/1 var(--ch-font-sans);
   color: var(--ch-ink-600);
 }
+.ch-rsu-field > .ch-rsu-field__hint {
+  font: 400 12.5px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
 .ch-rsu-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -322,7 +326,8 @@
   font-size: 18px;
   line-height: 50px;
 }
-.ch-rsu-in:focus-visible {
+/* :focus, not :focus-visible: WebKit never matches :focus-visible on a date field (as .ch-input in controls.css). */
+.ch-rsu-in:focus {
   outline: none;
   box-shadow:
     0 0 0 1px var(--ch-green-600),
@@ -361,6 +366,11 @@
 .ch-rsu-seg button:disabled {
   cursor: default;
   opacity: 0.45;
+}
+@media (hover: hover) {
+  .ch-rsu-seg button:not([aria-checked='true']):not(:disabled):hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-rsu-seg--sm {
   flex: none;
@@ -1570,7 +1580,7 @@ html[data-fw-theme='dark'] .ch-rsu-yds input {
   background: var(--ch-bg-inset);
   box-shadow: 0 0 0 1px var(--ch-border-control);
 }
-html[data-fw-theme='dark'] .ch-rsu-in:focus-visible,
+html[data-fw-theme='dark'] .ch-rsu-in:focus,
 html[data-fw-theme='dark'] .ch-rsu-search:focus-within,
 html[data-fw-theme='dark'] .ch-rsu-yds input:focus-visible {
   box-shadow:

@@ -68,6 +68,8 @@ export function Menu({
       // Native fields may horizontally scroll their text on blur without moving the anchor.
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea, select')) return;
       if (list.current && e.target instanceof Node && list.current.contains(e.target)) return;
+      // A scroll that closes the list while focus is in it would drop focus to <body>: hand it back to the trigger.
+      if (list.current?.contains(document.activeElement)) btn.current?.focus({ preventScroll: true });
       close(false);
     };
     const keyboardChanges = new MutationObserver(place);

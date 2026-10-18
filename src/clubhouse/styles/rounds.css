@@ -2792,6 +2792,22 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
     gap: 8px;
     margin: 0;
   }
+  /* The season pane in waiting: its head's block, then the vs-par stage at the chart's own proportion (640 by about
+     220, under the stage's 18px padding, its 43px key and 8px), so the pane, and the tools under the hero, land where
+     the loaded chart puts them at any width (WebKit 1280, 2026-10-18). */
+  .ch-rd-sk-pane {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .ch-rd-sk-stage {
+    margin-top: 30px;
+    padding: 69px 22px 8px;
+  }
+  .ch-rd-sk-stage > span {
+    display: block;
+    aspect-ratio: 640 / 220;
+  }
 }
 
 /* P011-A1: one sun for the round. The green feature cards (the round in progress, the review's hero on the phone) take

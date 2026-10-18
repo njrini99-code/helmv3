@@ -838,7 +838,11 @@
   .ch-ev--practice:hover,
   .ch-ev--workout:hover,
   .ch-ev--meeting:hover,
-  .ch-ev--other:hover {
+  .ch-ev--other:hover,
+  .ch-ev--tournament:hover,
+  .ch-ev--qualifier:hover,
+  .ch-ev--travel:hover,
+  .ch-ev-bar:hover {
     box-shadow: var(--ch-elevation-chip-hover);
   }
 }
@@ -898,7 +902,9 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
+  transition:
+    transform var(--ch-dur-quick) var(--ch-ease),
+    box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ev-bar span {
   overflow: hidden;
@@ -1340,9 +1346,10 @@
 .ch-in__need:first-child {
   border-top: 0;
 }
+/* Inset: the inbox scroller clips a ring drawn outside the row. */
 .ch-in__need:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 2px;
+  outline-offset: -2px;
   border-radius: 8px;
 }
 .ch-in__need .ch-in__ic {

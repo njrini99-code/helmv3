@@ -366,12 +366,12 @@ describe('Calendar parity · realtime: the page follows the team’s events (Fai
 });
 
 describe('Calendar parity · the trip linked to an event (Fairway’s "View itinerary")', () => {
-  it('an event with a linked trip links to Travel with that trip open, for coach and player', async () => {
+  it('an event with a linked trip links to Team Hub’s Travel with that trip named, for coach and player', async () => {
     freezeClock();
     trip.get.mockResolvedValue({ success: true, data: { id: 'trip-1', event_name: 'Fall Invitational', destination: 'Pinehurst' } });
     const view = wrap(cal(TOUR), 'inv');
     const link = await screen.findByRole('link', { name: /View itinerary · Pinehurst/ });
-    expect(link.getAttribute('href')).toBe('/golf/dashboard/travel?trip=trip-1');
+    expect(link.getAttribute('href')).toBe('/golf/dashboard/team-hub?tab=travel&trip=trip-1');
     expect(trip.get).toHaveBeenCalledWith('inv');
     view.unmount();
     wrap(cal(TOUR, { role: 'player', viewerPlayerId: 'sofia' }), 'inv');

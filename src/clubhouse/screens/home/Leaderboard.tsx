@@ -139,7 +139,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
         <RefreshNotice
           code="CH-2204"
           title="The leaderboard didn’t load"
-          body="Scores are safe. Try again, and if it keeps happening the error has already been reported."
+          body="Scores are safe. Try again; the error has been reported."
           covered={covered}
         />
       ) : data.rosterSize === 0 ? (

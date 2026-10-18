@@ -1,5 +1,27 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-18 — Polish: putting distances keep their unit
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- The putting note joins each distance to its unit with a no-break space
+  ("5–10 ft", "3 to 5 feet"), so a narrow line never strands "ft" (`notes.ts`).
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
 ## 2026-10-17 — Polish: the team in the eyebrow, the baseline label clear
 
 ```text

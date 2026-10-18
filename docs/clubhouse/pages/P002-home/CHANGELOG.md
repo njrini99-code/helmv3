@@ -1,5 +1,70 @@
 # P002 — Home: changelog
 
+## 2026-10-18 — Polish: Home loads in the reader's shape, names on one line
+
+```text
+Design package: none (wave-2 states review rows 1, 6, 7, 10, 13)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading and long names)
+
+- Desktop skeleton (CH-2401): a coach's head is followed by the team scoring
+  form's band on its green stage (bars only; the plot is left empty), so the
+  sheet lands where its bars were. A player's head drops the coach's brief
+  (`SkeletonDeskHead.tsx`, `home.css`).
+- Phone skeleton: the coach's Up next card is the day card's 238px, with bars
+  for the invitees and the action, and the first section sits 12px under the
+  hero, as loaded (`SkeletonPhoneHero.tsx`, `home.css`).
+- Phone Latest rounds: a long name keeps to one line with an ellipsis instead
+  of wrapping to three lines, and the course gives way to the date: a long
+  course ends in an ellipsis and the date keeps its place (`HomePhone.tsx`).
+- Desktop leaderboard: a name keeps to one line. On the narrowest desktop
+  canvas (a window just over 820px) the board drops its Last 7 rounds drawing,
+  so the name and form line fit where they wrapped to three lines.
+
+### Verification (2026-10-18, loading and long names)
+
+- WebKit (Playwright, dev server, preview fixtures), skeleton top against
+  loaded top: coach sheet at 1280 497 vs 499 (was 303 vs 499); player sheet
+  at 1280 254 vs 256 (was 303 vs 256); phone Up next 238 vs 238 tall (was
+  172) and the first section 516 vs 517 (coach) and 444 vs 445 (player).
+- Leaderboard rows are 64px at 821, 900 and 1000 with the preview's names and
+  with long ones (the preview's names made 81-99px rows at 821 before); phone
+  Latest rounds rows are 70px with long names.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: a way out of no team, one notice sentence
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- No team (CH-2307, CH-2313): the page empty offers "Open team settings", as
+  Classes and Recruiting do. A coach goes to Team, a player to Golf profile,
+  where joining a team lives (CH-8302).
+- The leaderboard and latest round notices end "Try again; the error has been
+  reported.", the sentence every other notice uses.
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
 ## 2026-10-17 — Polish: a countdown in two units, greens in points, no seam
 
 ```text

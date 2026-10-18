@@ -1014,7 +1014,8 @@
         "ClassesSkeleton"
       ],
       "styles": [
-        "src/clubhouse/styles/classes.css"
+        "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1724,6 +1725,18 @@
         "GirViz",
         "PuttsViz",
         "SgViz"
+      ],
+      "styles": [
+        "src/clubhouse/styles/home.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/home/SkeletonDeskHead.tsx",
+      "group": "screens",
+      "exports": [
+        "SkeletonDeskHead"
       ],
       "styles": [
         "src/clubhouse/styles/home.css"
@@ -2926,9 +2939,18 @@
         "RoundsSkeleton"
       ],
       "styles": [
+        "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-profile.css",
+        "src/clubhouse/styles/coachhelm-standing.css",
+        "src/clubhouse/styles/coachhelm-views.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-recover.css",
+        "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6532,37 +6554,37 @@
           "name": "--ch-plate",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-in__plate",
-          "line": 1490
+          "line": 1497
         },
         {
           "name": "--ch-plate",
           "value": "var(--ch-green-fill-600)",
           "scope": ".ch-in__plate[data-tone='green']",
-          "line": 1501
+          "line": 1508
         },
         {
           "name": "--ch-plate",
           "value": "var(--ch-green-800)",
           "scope": ".ch-in__plate[data-tone='forest']",
-          "line": 1504
+          "line": 1511
         },
         {
           "name": "--ch-plate",
           "value": "var(--ch-info-600)",
           "scope": ".ch-in__plate[data-tone='slate']",
-          "line": 1507
+          "line": 1514
         },
         {
           "name": "--ch-plate",
           "value": "color-mix(in oklab, var(--ch-champagne-500) 55%, var(--ch-ink-900))",
           "scope": ".ch-in__plate[data-tone='champagne']",
-          "line": 1510
+          "line": 1517
         },
         {
           "name": "--ch-plate",
           "value": "color-mix(in oklab, var(--ch-warning-600) 80%, var(--ch-ink-900))",
           "scope": ".ch-in__plate[data-tone='amber']",
-          "line": 1513
+          "line": 1520
         }
       ]
     },
@@ -6957,109 +6979,109 @@
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1132
+          "line": 1150
         },
         {
           "name": "--ch-ink-600",
           "value": "#2b2a26",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1133
+          "line": 1151
         },
         {
           "name": "--ch-ink-500",
           "value": "#3a3833",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1134
+          "line": 1152
         },
         {
           "name": "--ch-ink-400",
           "value": "#55524b",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1135
+          "line": 1153
         },
         {
           "name": "--ch-ink-300",
           "value": "#7c786f",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1136
+          "line": 1154
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-950)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1137
+          "line": 1155
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1138
+          "line": 1156
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-700)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1139
+          "line": 1157
         },
         {
           "name": "--ch-border-hairline",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1140
+          "line": 1158
         },
         {
           "name": "--ch-border-subtle",
           "value": "rgb(28 25 18 / 0.22)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1141
+          "line": 1159
         },
         {
           "name": "--ch-border-control",
           "value": "rgb(28 25 18 / 0.34)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1142
+          "line": 1160
         },
         {
           "name": "--ch-border-strong",
           "value": "rgb(28 25 18 / 0.5)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1143
+          "line": 1161
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(28 25 18 / 0.26)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1144
+          "line": 1162
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1145
+          "line": 1163
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double rgb(28 25 18 / 0.36)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1146
+          "line": 1164
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-green-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1147
+          "line": 1165
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "var(--ch-text-secondary)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1148
+          "line": 1166
         },
         {
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1149
+          "line": 1167
         }
       ]
     },
@@ -7882,7 +7904,7 @@
           "name": "--ch-modal-max-h",
           "value": "calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px)",
           "scope": "@media (max-width: 820px) → body.keyboard-open .ch-modal__panel",
-          "line": 516
+          "line": 520
         }
       ]
     },
@@ -7964,6 +7986,7 @@
         "ch-h-flag",
         "ch-h-flow",
         "ch-h-form",
+        "ch-h-form__bar",
         "ch-h-form__basis",
         "ch-h-form__big",
         "ch-h-form__delta",
@@ -7972,6 +7995,7 @@
         "ch-h-form__grid",
         "ch-h-form__lead",
         "ch-h-form__line",
+        "ch-h-form__ln",
         "ch-h-form__plot",
         "ch-h-form__s0",
         "ch-h-form__s1",
@@ -8072,6 +8096,7 @@
         "ch-hm-rail",
         "ch-hm-rd",
         "ch-hm-rd__b",
+        "ch-hm-rd__m",
         "ch-hm-rd__spark",
         "ch-hm-score",
         "ch-hm-sec",
@@ -8080,6 +8105,7 @@
         "ch-hm-since__c",
         "ch-hm-since__fig",
         "ch-hm-skel",
+        "ch-hm-skel__act",
         "ch-hm-skel__bar",
         "ch-hm-skel__body",
         "ch-hm-skel__card",
@@ -8088,6 +8114,7 @@
         "ch-hm-skel__hero",
         "ch-hm-skel__keys",
         "ch-hm-skel__line",
+        "ch-hm-skel__people",
         "ch-hm-skel__row",
         "ch-hm-skel__sec",
         "ch-hm-stack",
@@ -8181,19 +8208,19 @@
           "name": "--ch-spark",
           "value": "var(--ch-ink-400)",
           "scope": ".ch-ph-spark",
-          "line": 2037
+          "line": 2079
         },
         {
           "name": "--ch-spark",
           "value": "var(--ch-chart-gain)",
           "scope": ".ch-ph-spark.is-gain",
-          "line": 2040
+          "line": 2082
         },
         {
           "name": "--ch-spark",
           "value": "var(--ch-chart-loss)",
           "scope": ".ch-ph-spark.is-loss",
-          "line": 2043
+          "line": 2085
         }
       ]
     },
@@ -9194,61 +9221,61 @@
           "name": "--ch-ox-mc-s",
           "value": "1",
           "scope": ".ch-ox-mcw",
-          "line": 1380
+          "line": 1386
         },
         {
           "name": "--ch-av-size",
           "value": "55px",
           "scope": ".ch-ox-mc__coin .ch-avatar",
-          "line": 1479
+          "line": 1485
         },
         {
           "name": "--ch-av-bg",
           "value": "#ede4cc",
           "scope": ".ch-ox-mc__coin .ch-avatar[data-tone]",
-          "line": 1485
+          "line": 1491
         },
         {
           "name": "--ch-av-fg",
           "value": "var(--ch-ox-felt)",
           "scope": ".ch-ox-mc__coin .ch-avatar[data-tone]",
-          "line": 1486
+          "line": 1492
         },
         {
           "name": "--ch-av-ring",
           "value": "transparent",
           "scope": ".ch-ox-mc__coin .ch-avatar[data-tone]",
-          "line": 1487
+          "line": 1493
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.9",
           "scope": "@media (max-width: 1400px) → .ch-ox-mcw",
-          "line": 1621
+          "line": 1627
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.72",
           "scope": "@media (max-width: 1200px) → .ch-ox-mcw",
-          "line": 1630
+          "line": 1636
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.64",
           "scope": "@media (max-width: 1000px) → .ch-ox-mcw",
-          "line": 1642
+          "line": 1648
         },
         {
           "name": "--ch-ox-mc-s",
           "value": "0.92",
           "scope": "@media (max-width: 820px) → .ch-ox-mcw",
-          "line": 1792
+          "line": 1798
         },
         {
           "name": "--ch-ox-ink",
           "value": "var(--ch-text-primary)",
           "scope": "html[data-fw-theme='dark'] .ch-ox",
-          "line": 2095
+          "line": 2101
         }
       ]
     },
@@ -9434,6 +9461,7 @@
         "ch-qfm-held--viz",
         "ch-qfm-lb",
         "ch-qfm-lb__n",
+        "ch-qfm-lb__nm",
         "ch-qfm-lb__row",
         "ch-qfm-lb__sub",
         "ch-qfm-lb__thru",
@@ -9466,115 +9494,115 @@
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3243
+          "line": 3270
         },
         {
           "name": "--ch-ink-600",
           "value": "#2b2a26",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3244
+          "line": 3271
         },
         {
           "name": "--ch-ink-500",
           "value": "#3a3833",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3245
+          "line": 3272
         },
         {
           "name": "--ch-ink-400",
           "value": "#55524b",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3246
+          "line": 3273
         },
         {
           "name": "--ch-ink-300",
           "value": "#7c786f",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3247
+          "line": 3274
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-950)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3248
+          "line": 3275
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3249
+          "line": 3276
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-700)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3250
+          "line": 3277
         },
         {
           "name": "--ch-border-hairline",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3251
+          "line": 3278
         },
         {
           "name": "--ch-border-subtle",
           "value": "rgb(28 25 18 / 0.22)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3252
+          "line": 3279
         },
         {
           "name": "--ch-border-control",
           "value": "rgb(28 25 18 / 0.34)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3253
+          "line": 3280
         },
         {
           "name": "--ch-border-strong",
           "value": "rgb(28 25 18 / 0.5)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3254
+          "line": 3281
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(28 25 18 / 0.26)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3255
+          "line": 3282
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3256
+          "line": 3283
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double rgb(28 25 18 / 0.36)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3257
+          "line": 3284
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-green-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3258
+          "line": 3285
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "var(--ch-text-secondary)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3259
+          "line": 3286
         },
         {
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-qf",
-          "line": 3260
+          "line": 3287
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-qf .ch-scoreboard,\n.ch-qfm .ch-scoreboard",
-          "line": 3746
+          "line": 3773
         }
       ]
     },
@@ -9729,19 +9757,19 @@
           "name": "--ch-rec-ring",
           "value": "var(--ch-ivory-400)",
           "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__dot",
-          "line": 2138
+          "line": 2142
         },
         {
           "name": "--ch-rec-ring",
           "value": "#3d7a56",
           "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot",
-          "line": 2142
+          "line": 2146
         },
         {
           "name": "--ch-rec-ring",
           "value": "var(--ch-green-400)",
           "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot",
-          "line": 2145
+          "line": 2149
         }
       ]
     },
@@ -9962,6 +9990,7 @@
         "ch-rsu-dock",
         "ch-rsu-dock__s",
         "ch-rsu-field",
+        "ch-rsu-field__hint",
         "ch-rsu-foot-note",
         "ch-rsu-form",
         "ch-rsu-grow",
@@ -10030,7 +10059,7 @@
           "name": "--ch-modal-max-h",
           "value": "min(680px, calc(100dvh - 48px))",
           "scope": "@media (min-width: 821px) → .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel",
-          "line": 793
+          "line": 803
         }
       ]
     },
@@ -10246,10 +10275,12 @@
         "ch-rd-sk-h",
         "ch-rd-sk-hero",
         "ch-rd-sk-new",
+        "ch-rd-sk-pane",
         "ch-rd-sk-phone",
         "ch-rd-sk-row",
         "ch-rd-sk-season",
         "ch-rd-sk-sec",
+        "ch-rd-sk-stage",
         "ch-rd-sk-title",
         "ch-rd-stage",
         "ch-rd-stage__h",
@@ -10378,163 +10409,163 @@
           "name": "--ch-rd-under-a",
           "value": "#ff9d8e",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3630
+          "line": 3646
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#d0574a",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3631
+          "line": 3647
         },
         {
           "name": "--ch-rd-over-a",
           "value": "rgb(244 238 221 / 0.36)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3632
+          "line": 3648
         },
         {
           "name": "--ch-rd-over-b",
           "value": "rgb(244 238 221 / 0.9)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3633
+          "line": 3649
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-stage-ink)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3634
+          "line": 3650
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-stage-ink-soft)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3635
+          "line": 3651
         },
         {
           "name": "--ch-rd-rule",
           "value": "var(--ch-stage-rule)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3636
+          "line": 3652
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(244 238 221 / 0.58)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3637
+          "line": 3653
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3638
+          "line": 3654
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3639
+          "line": 3655
         },
         {
           "name": "--ch-rd-chip",
           "value": "rgb(231 184 102 / 0.16)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3640
+          "line": 3656
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(231 184 102 / 0.5)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3641
+          "line": 3657
         },
         {
           "name": "--ch-rd-under-ink",
           "value": "var(--ch-stage-red)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3642
+          "line": 3658
         },
         {
           "name": "--ch-rd-delay",
           "value": "min(calc(var(--ch-i, 0) * var(--ch-dur-press) / 3), var(--ch-dur-reveal))",
           "scope": ".ch-rd .ch-rd-rib__bar",
-          "line": 3771
+          "line": 3787
         },
         {
           "name": "--ch-rd-under-a",
           "value": "#d9665a",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3851
+          "line": 3867
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#a8372b",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3852
+          "line": 3868
         },
         {
           "name": "--ch-rd-over-a",
           "value": "var(--ch-ink-400)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3853
+          "line": 3869
         },
         {
           "name": "--ch-rd-over-b",
           "value": "var(--ch-ink-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3854
+          "line": 3870
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3855
+          "line": 3871
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-text-secondary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3856
+          "line": 3872
         },
         {
           "name": "--ch-rd-rule",
           "value": "rgb(110 98 62 / 0.14)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3857
+          "line": 3873
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(28 27 24 / 0.5)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3858
+          "line": 3874
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-champagne-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3859
+          "line": 3875
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-green-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3860
+          "line": 3876
         },
         {
           "name": "--ch-rd-chip",
           "value": "var(--ch-green-50)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3861
+          "line": 3877
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(21 90 57 / 0.25)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3862
+          "line": 3878
         },
         {
           "name": "--ch-rd-delay",
           "value": "0s",
           "scope": "@media (prefers-reduced-motion: reduce) → .ch-rd .ch-rd-rib__bar",
-          "line": 4094
+          "line": 4110
         }
       ]
     },
@@ -11025,49 +11056,49 @@
           "name": "--ch-type-serif-l",
           "value": "600 32px/1.1 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 2063
+          "line": 2068
         },
         {
           "name": "--ch-type-serif-m",
           "value": "600 22px/1.15 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 2064
+          "line": 2069
         },
         {
           "name": "--ch-type-serif-s",
           "value": "600 19px/1.2 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 2065
+          "line": 2070
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "var(--ch-frame)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 2274
+          "line": 2279
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(107 187 140 / 0.12)",
           "scope": "html[data-fw-theme='dark'] .ch-empty-page",
-          "line": 2520
+          "line": 2529
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(239 133 118 / 0.12)",
           "scope": "html[data-fw-theme='dark'] .ch-empty-page--danger",
-          "line": 2523
+          "line": 2532
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "var(--ch-frame)",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] body [data-ui='clubhouse']",
-          "line": 2558
+          "line": 2567
         },
         {
           "name": "--ch-sidebar-w",
           "value": "var(--ch-rail-w)",
           "scope": "@media (min-width: 821px) → .ch-app[data-ch-rail='folded']",
-          "line": 3728
+          "line": 3738
         }
       ]
     },
@@ -11776,13 +11807,13 @@
           "name": "--ch-stage-up",
           "value": "var(--ch-green-200)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5355
+          "line": 5356
         },
         {
           "name": "--ch-stage-down",
           "value": "var(--ch-champagne-300)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5356
+          "line": 5357
         }
       ]
     },

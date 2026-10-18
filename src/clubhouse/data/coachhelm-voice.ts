@@ -81,10 +81,23 @@ function toSecondPerson(text: string): string {
     .replace(/\b(The|the) player\b/g, (_m, the: string) => (the === 'The' ? 'You' : 'you'));
 }
 
-/** `text` as the viewer reads it: the player's first name for a coach, "you" for the player, as it is with no viewer. */
+/**
+ * The stored text is typed on a keyboard; the page sets it in the type the rest of Clubhouse uses: curly apostrophes and
+ * quotes, and an en dash between the two ends of a number range ("4-6 ft" reads "4–6 ft"; a date or a chain is left).
+ */
+function typeset(text: string): string {
+  return text
+    .replace(/(^|[^\d-])(\d{1,3}(?:\.\d+)?)-(\d{1,3}(?:\.\d+)?)(?![\d-])/g, '$1$2–$3')
+    .replace(/(^|[\s([{])"/g, '$1“')
+    .replace(/"/g, '”')
+    .replace(/(^|[\s([{])'/g, '$1‘')
+    .replace(/'/g, '’');
+}
+
+/** `text` as the viewer reads it, typeset: the player's first name for a coach, "you" for the player; as it is with no viewer. */
 export function speak(text: string, viewer: ChViewer | undefined): string {
   if (!text || !viewer) return text;
-  if (viewer.role === 'player') return toSecondPerson(text);
+  if (viewer.role === 'player') return typeset(toSecondPerson(text));
   const first = viewer.first.trim();
-  return first ? toThirdPerson(text, first) : text;
+  return typeset(first ? toThirdPerson(text, first) : text);
 }

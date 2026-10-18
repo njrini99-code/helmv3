@@ -114,6 +114,7 @@ are the "Settings · phone" group in `settings.test.tsx`.
 | CH-8211 | CoachHelm settings don't load (coach) | "Your CoachHelm settings didn’t load" | `ReadFailed` | settings.test › CH-8211 |
 | CH-8212 | A section crashes while drawing | "Account couldn't be shown." (the section named) + "The rest of the page is fine. This has been reported automatically.", Try again | `SectionBoundary` | settings.test › CH-8212 |
 | CH-8213 | The assistant coach requests don't load (head coach) | "Requests didn’t load" + "Nothing was changed. Try again; the error has been reported." with Try again (a card on desktop, a group on the phone). An assistant's refused read is not this: it is the answer, so an assistant sees the staff but no requests and no invite card. A staff list that doesn't load leaves its card out and is reported at low severity, never "no staff" | `StaffCards`, `StaffPhone` (`useCoachingStaff`) → `listPendingAssistantCoaches` | settings-staff.test › CH-8213 |
+| CH-8214 | Every read fails (phone list) | "Settings didn’t load" + "Nothing was changed. Try again; the error has been reported." with Try again, above the identity row, so the list never stands silent over sections that each hold only a notice. One or some reads failing leaves the list as it is; each section says so in its place | `InlineNotice` in `SettingsPhone` (`everyReadFailed`) | settings.test › CH-8214 |
 
 ## 83xx Empty
 

@@ -850,7 +850,7 @@ describe('CoachHelm for the coach, on screen', () => {
       playerId: 'pl-jonah',
       insightId: 'in-slope',
       title: 'Downhill putts inside 4-6 ft: a real penalty',
-      description: "Inside 4-6 ft you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level).",
+      description: "Inside 4–6 ft you’re making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level).",
       areaType: 'putting',
       targetMetric: 'putt_slope_downhill_penalty_pct',
       // CH13-22: the player's value now is the focus's starting point.
@@ -1835,7 +1835,7 @@ describe('CoachHelm route', () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     teamOf.current = null;
     render(wrap(await resolved(await ClubhouseCoachHelmRoute())));
-    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+    expect(focusHeading()).toBe('Downhill putts inside 4–6 ft: a real penalty');
   });
 
   const noView = { searchParams: Promise.resolve({}) };

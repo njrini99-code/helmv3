@@ -248,6 +248,12 @@
 .ch-ask-hist__new svg {
   color: var(--ch-accent);
 }
+@media (hover: hover) {
+  /* The ledger's row tint over the key's own face, so it stays a key on the rail. */
+  .ch-ask-hist__new:hover {
+    background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-bg-surface);
+  }
+}
 .ch-ask-hist__scroll {
   flex: 1;
   min-height: 0;
@@ -268,14 +274,14 @@
   font: 500 12px/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* A block, not a flex row: an ellipsis on a flex container cuts a long title mid-letter. The line height centres it. */
 .ch-ask-hist__row {
-  display: flex;
-  align-items: center;
+  display: block;
   height: 36px;
   padding: 0 10px;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
-  font: 400 14px/1.2 var(--ch-font-sans);
+  font: 400 14px/36px var(--ch-font-sans);
   color: var(--ch-text-primary);
   text-decoration: none;
   text-overflow: ellipsis;
@@ -290,6 +296,10 @@
 .ch-ask-hist__row.is-on {
   background: var(--ch-bg-inset);
   font-weight: 500;
+}
+/* Inset: the history scroller clips a ring drawn outside the row. */
+.ch-ask-hist__row:focus-visible {
+  outline-offset: -2px;
 }
 .ch-ask-hist__nomatch {
   margin: 0;
@@ -629,6 +639,13 @@
   color: var(--ch-accent);
   box-shadow: 0 0 0 1px var(--ch-green-ring);
 }
+@media (hover: hover) {
+  .ch-ask-cmp__chip:not(.is-set):hover,
+  .ch-ask-cmp__round:hover {
+    box-shadow: 0 0 0 1px var(--ch-border-strong);
+    color: var(--ch-text-primary);
+  }
+}
 .ch-ask-cmp__send {
   display: grid;
   flex: none;
@@ -869,6 +886,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 .ch-ask-drawer .ch-ask-hist__row {
   min-height: 44px;
   font-size: 16px;
+  line-height: 44px;
 }
 .ch-ask-drawer .ch-ask-hist__group {
   font-size: 12.5px;

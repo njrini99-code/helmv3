@@ -1334,6 +1334,21 @@ button.ch-rt-strip__h {
 .ch-rt-xopt.is-danger b {
   color: var(--ch-danger-600);
 }
+/* Desktop hover: the face takes the ledger's row tint; the green and red choices also step their ring. */
+@media (hover: hover) {
+  .ch-rt-xopt:not(:disabled):not(.is-primary):hover {
+    background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-ivory-0);
+  }
+  .ch-rt-xopt.is-danger:not(:disabled):hover {
+    box-shadow: var(--ch-elevation-control), 0 0 0 1px color-mix(in srgb, var(--ch-danger-600) 35%, transparent);
+  }
+  .ch-rt-xopt.is-primary:not(:disabled):hover {
+    box-shadow: 0 0 0 1.5px rgb(21 90 57 / 0.55);
+  }
+  :where(html[data-fw-theme='dark']) .ch-rt-xopt.is-primary:not(:disabled):hover {
+    box-shadow: 0 0 0 1.5px rgb(107 187 140 / 0.6);
+  }
+}
 
 /* Scorecard */
 .ch-rt-mcw {

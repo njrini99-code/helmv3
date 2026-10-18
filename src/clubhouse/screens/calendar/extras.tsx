@@ -132,7 +132,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
 
 /**
  * The trip linked to an event (golf_travel_itineraries.event_id), as Fairway's event drawer shows it: "View itinerary"
- * with the destination, to Travel with that trip open. Read when the event opens, for every viewer (RLS scopes it to the
+ * with the destination, to Team Hub's Travel with that trip scrolled to. Read when the event opens, for every viewer (RLS scopes it to the
  * team). Nothing is drawn while it reads, when there is no trip, or when the read fails (reported, never shown as a trip).
  */
 export function LinkedTrip({ eventId, preview }: { eventId: string; preview?: boolean }) {
@@ -159,7 +159,9 @@ export function LinkedTrip({ eventId, preview }: { eventId: string; preview?: bo
     <div className="ch-in__fact">
       <Icon icon={Plane} size={15} />
       <div>
-        <Link className="ch-in__trip" href={`/golf/dashboard/travel?trip=${trip.id}`}>
+        {/* Team Hub's Travel with the trip scrolled to: /travel redirects there in Clubhouse, and a layout's redirect
+            can't carry `?trip=`. */}
+        <Link className="ch-in__trip" href={`/golf/dashboard/team-hub?tab=travel&trip=${encodeURIComponent(trip.id)}`}>
           View itinerary · <b>{trip.destination || trip.event_name || 'the trip'}</b>
           <Icon icon={ArrowRight} size={13} />
         </Link>

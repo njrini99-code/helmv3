@@ -1,5 +1,31 @@
 # P008 — Settings: changelog
 
+## 2026-10-18 — Polish: the phone list says when nothing loaded
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-8214
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- Phone: when every read fails, the list opens with "Settings didn’t load"
+  and Try again above the identity row (CH-8214, `everyReadFailed`), where it
+  stood silent over sections that each held only a notice. One or some
+  failures leave the list as it is; each section says so in its place.
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+- WebKit (Playwright, dev preview, 390px): `?state=failed` shows CH-8214
+  with Try again above the identity row; `?state=partial` does not.
+
 ## 2026-10-17 — Polish: notification summaries in sentence case
 
 ```text

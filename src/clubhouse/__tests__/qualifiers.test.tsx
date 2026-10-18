@@ -610,7 +610,7 @@ describe('Qualifiers · list', () => {
 
   it('a player sees where they stand on each card', () => {
     wrap(<QualifiersList data={list('player')} />);
-    expect(screen.getByText('You’re 3 · +4 · 2 of 3 rounds')).toBeTruthy();
+    expect(screen.getByText('You’re 3rd · +4 · 2 of 3 rounds')).toBeTruthy();
     expect(screen.getAllByText('You’re entered · no rounds in yet').length).toBeGreaterThan(0);
   });
 
@@ -2051,6 +2051,8 @@ describe('Qualifiers · loading', () => {
     const detailSk = code('CH-09402') as HTMLElement;
     expect(detailSk.querySelector('.ch-qf-head .ch-qf-head__act')!.children).toHaveLength(3);
     for (const f of detailSk.querySelectorAll('.ch-qf-facts > div')) expect(f.children).toHaveLength(4);
+    // The phone's two figures (Rounds in, Spots) in their two columns: a third wrapped to a second row, 62px (2026-10-18).
+    expect(detailSk.querySelector('.ch-qfm-skel .ch-qfm-facts')!.children).toHaveLength(2);
   });
 });
 

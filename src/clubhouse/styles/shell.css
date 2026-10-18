@@ -2042,13 +2042,18 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn {
     border-radius: 8px;
   }
+  /* The hairline steps aside for the focus ring, which this selector would otherwise outrank (ui.css). */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
     background: rgb(255 254 250 / 0.45);
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:not(:focus-visible) {
     box-shadow: 0 0 0 1px rgb(110 98 62 / 0.2);
   }
   @media (hover: hover) {
     [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
       background: rgb(255 254 250 / 0.8);
+    }
+    [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled):not(:focus-visible) {
       box-shadow: 0 0 0 1px rgb(110 98 62 / 0.32);
     }
   }
@@ -2498,11 +2503,15 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
     background: rgb(237 231 216 / 0.05);
+  }
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:not(:focus-visible) {
     box-shadow: 0 0 0 1px var(--ch-border-control);
   }
   @media (hover: hover) {
     html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
       background: rgb(237 231 216 / 0.09);
+    }
+    html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled):not(:focus-visible) {
       box-shadow: 0 0 0 1px var(--ch-border-strong);
     }
   }
@@ -2986,9 +2995,10 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-sw:active {
     opacity: 0.62;
   }
+  /* Inset: the title row clips anything drawn outside it. */
   .ch-sw:focus-visible {
     outline: 2px solid var(--ch-champagne-300);
-    outline-offset: 2px;
+    outline-offset: -2px;
     border-radius: 8px;
   }
   .ch-sw__track {

@@ -1,5 +1,29 @@
 # P015 — Auth: changelog
 
+## 2026-10-18 — Polish: Sign in pill hover
+
+```text
+Design package: none (wave-2 interaction review rows 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Onboarding: the Sign in pill steps to the primary key's hover face on
+  desktop hover.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
 ## 2026-10-17 — Polish: Create an account reaches 44px
 
 ```text

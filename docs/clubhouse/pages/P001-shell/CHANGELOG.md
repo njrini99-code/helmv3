@@ -1,5 +1,58 @@
 # P001 — Shell: changelog
 
+## 2026-10-18 — Polish: focus rings on page-head keys and the switcher; 44px phone fields
+
+```text
+Design package: none (wave-2 interaction review rows 1, 3, 5, 15)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Desktop page-head secondary keys (Calendar's More, every
+  `[data-canopy-head] .ch-btn--secondary`) draw the shared focus ring: their
+  hairline and hover ring now skip `:focus-visible` (light and dark).
+- The phone section switcher's title ring is drawn inside the button, where
+  the title row no longer clips it.
+- A menu closed by a scroll while focus is in it hands focus back to its
+  trigger instead of dropping it to the page (`ui/Menu.tsx`).
+- Phone `.ch-input` fields are drawn 44px tall (base 38px).
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: one bell empty line
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- The bell's empty feed on the stacks reads "Messages, events, reminders and
+  CoachHelm updates show up here.", the list's own words (CH-1302), where it
+  said they "land here first" (`BellStacks.tsx`).
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
 ## 2026-10-17 — The sidebar folds to an icon rail; three new nav icons
 
 Owner: "a little circle that collapses the sidebar and just shows the golfhelm

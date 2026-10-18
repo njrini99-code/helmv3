@@ -201,6 +201,12 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
+/* Hover steps the pill down to the primary key's hover face (ui.css). */
+@media (hover: hover) {
+  .ch-ox .ch-ox-signin a:hover {
+    background: linear-gradient(180deg, #124b2e 0%, #0d3f28 100%);
+  }
+}
 .ch-ox-seal {
   position: absolute;
   z-index: 7;

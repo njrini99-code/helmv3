@@ -767,7 +767,7 @@ function FilesPanel({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
       action={files && files.length > 0 ? <span className="ch-msp-count ch-num">{files.length}</span> : undefined}
     >
       {failed ? (
-        <InlineNotice code="CH-7214" title="Files didn’t load" body="Your messages are fine. Try again; the error has been reported." onRetry={retry} />
+        <InlineNotice code="CH-7214" title="Files didn’t load" body="Your messages are safe. Try again; the error has been reported." onRetry={retry} />
       ) : !files ? (
         <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7409">
           <Skeleton height={36} />

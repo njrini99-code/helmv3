@@ -328,17 +328,23 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
                   </div>
                 </div>
               </div>
-              {played.length > 0 && (
-                <div className="ch-rsu-field">
-                  <label htmlFor="ch-rsu-start">Starting hole</label>
+              {/* Always shown so a shotgun start is findable; it waits for the card's holes before it can be set. */}
+              <div className="ch-rsu-field">
+                <label htmlFor="ch-rsu-start">Starting hole</label>
+                {played.length > 0 ? (
                   <Select
                     id="ch-rsu-start"
                     value={String(startHole ?? played[0]!.n)}
                     options={played.map((h) => ({ value: String(h.n), label: `Hole ${h.n}` }))}
                     onChange={(v) => set({ start: Number(v) })}
                   />
-                </div>
-              )}
+                ) : (
+                  <>
+                    <Select id="ch-rsu-start" value="1" options={[{ value: '1', label: 'Hole 1' }]} onChange={() => {}} disabled />
+                    {!p && <span className="ch-rsu-field__hint">Shotgun start? Pick a course, then choose your first hole.</span>}
+                  </>
+                )}
+              </div>
               {form.type === 'qualifier' &&
                 (qualifiers === null ? (
                   <InlineNotice code="CH-11211" title="Your qualifiers didn’t load" body="Play it as a practice round, or come back in a moment." />
@@ -435,8 +441,9 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
         <span className="ch-rsu-dock__s" id="ch-rsu-dock-s" role="status" aria-live="polite">
           {p && !blocker ? (
             <>
-              <b>{p.courseName}</b> · {p.teeName} · {played.length} holes · Par {parOf(played)}
-              {startAt > 1 && startHole != null ? ` · Starts on hole ${startHole}` : ''}
+              {/* No-break spaces keep "Par 72" and "18 holes" whole when the phone dock wraps. */}
+              <b>{p.courseName}</b> · {p.teeName} · {played.length}&nbsp;holes · Par&nbsp;{parOf(played)}
+              {startAt > 1 && startHole != null ? ` · Starts on hole\u00a0${startHole}` : ''}
             </>
           ) : (
             blocker

@@ -43,7 +43,8 @@ export function CalendarSkeleton() {
           their seams. Switched in CSS, since this renders on the server. */}
       <div className="ch-calm-skel">
         <div className="ch-intro ch-calm-head">
-          <SkelLine line={13} bar={9} width={124} />
+          {/* The eyebrow's 13px type at its 15.6px line, so the title row lands where it loads. */}
+          <SkelLine line={15.6} bar={9} width={124} />
           <span className="ch-intro__row">
             <SkelLine line={34} bar={26} width={150} />
             <Skeleton width={160} height={40} radius={12} />

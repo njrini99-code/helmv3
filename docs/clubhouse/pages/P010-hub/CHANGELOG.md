@@ -1,5 +1,57 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-18 — Polish: tab rings and hover
+
+```text
+Design package: none (wave-2 interaction review rows 4, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- The tabs' scroller carries 4px of room (taken back by its margins, so the
+  row does not move), so a focused tab's ring is no longer clipped. The
+  desktop skeleton's strip grows to 42px to match. On the phone, where the
+  full-height tabs leave no room, the ring is drawn inside the tab.
+- An unselected tab darkens to primary ink on hover (desktop).
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: Travel scrolls to the trip a link names; no-team way out
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- `?tab=travel&trip=<id>` (Calendar's View itinerary) scrolls that trip's
+  pass into view once, as `?task=` does for a task; the page passes `trip`
+  through `ClubhouseHubRoute`. A trip not in the rows is left alone.
+- No team (CH-10309): the page empty offers "Open team settings"; a coach
+  goes to Team, a player to Golf profile (CH-8302).
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
 ## 2026-10-17 — Polish: straight RSVP seams on the phone
 
 ```text

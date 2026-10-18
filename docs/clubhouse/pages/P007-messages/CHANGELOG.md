@@ -1,5 +1,29 @@
 # P007 — Messages: changelog
 
+## 2026-10-18 — Polish: a way out of no team; messages are safe
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- No team (CH-7308): the page empty offers "Open team settings"; a coach goes
+  to Team, a player to Golf profile (CH-8302). The route passes the role.
+- The files notice (CH-7214) says "Your messages are safe.", as the others
+  do, where it said "are fine".
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
 ## 2026-10-17 — Polish: tabular figures in rows
 
 ```text

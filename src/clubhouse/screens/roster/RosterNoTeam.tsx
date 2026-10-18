@@ -1,4 +1,6 @@
 import { Users } from 'lucide-react';
+import { rebuiltHref } from '../../shell/nav';
+import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import '../../styles/roster.css';
 
@@ -7,6 +9,13 @@ import '../../styles/roster.css';
  * Not `.ch-rs`: under 820px that class stays hidden until the phone view takes over, and this page has none.
  */
 export function RosterNoTeam({ viewer = 'coach' }: { viewer?: 'coach' | 'player' }) {
+  // A coach sets up the team in Team; a player joins one from Golf profile (CH-8302).
+  const settings = rebuiltHref(`/golf/dashboard/settings?section=${viewer === 'player' ? 'golf' : 'team'}`, viewer);
+  const action = settings ? (
+    <Button variant="primary" href={settings}>
+      Open team settings
+    </Button>
+  ) : undefined;
   return (
     // The canopy's material, as on Roster itself (P003 #1); the title is the page's h1.
     <main className="ch-rs-none" data-canopy="">
@@ -18,6 +27,7 @@ export function RosterNoTeam({ viewer = 'coach' }: { viewer?: 'coach' | 'player'
           icon={Users}
           title="You aren’t on a team yet"
           body="Your teammates appear here once your coach approves your request to join."
+          action={action}
         />
       ) : (
         <EmptyState
@@ -26,6 +36,7 @@ export function RosterNoTeam({ viewer = 'coach' }: { viewer?: 'coach' | 'player'
           icon={Users}
           title="You aren’t on a team yet"
           body="Your players appear here once your team is set up."
+          action={action}
         />
       )}
     </main>

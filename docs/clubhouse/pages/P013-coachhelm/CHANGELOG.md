@@ -1,5 +1,60 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-18 — Polish: typeset insight text; Ask hovers; chip @ on Escape
+
+```text
+Design package: none (wave-2 interaction review rows 6, 11, 12, 17)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Insight text spoken for a viewer is typeset: curly apostrophes and
+  quotes, and an en dash in number ranges ("4–6 ft"). Text with no viewer is
+  left as stored. A focus area's saved description is the typeset text.
+- Ask: New chat, the + key and the Players/Any dates chips have desktop
+  hovers; history rows draw their focus ring inside the scroller.
+- Ask: Escape on a picker the Players chip (or the `@` key) opened takes
+  back the `@` it added; an `@` the coach typed, or the Add player
+  starter's, stays.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: history titles end in a clean ellipsis
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- Ask's history rows are blocks centred by their line height, not flex rows,
+  so a long title ends in an ellipsis instead of being cut mid-letter
+  (`coachhelm-ask.css`, the drawer's 44px rows too).
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+- WebKit (Playwright, dev preview, 1280px): a 72-letter history title is
+  a 36px block row ending in an ellipsis.
+
 ## 2026-10-17 — Polish: tabular figures in rows
 
 ```text

@@ -458,7 +458,7 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
                   <Avatar name={r.playerName} size={38} />
                   <span className="ch-hm-rd__b">
                     <b>{r.playerName}</b>
-                    <span>{r.meta.split(' · ').slice(0, 2).join(' · ')}</span>
+                    <RoundMeta meta={r.meta} />
                   </span>
                   {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
                     <span className="ch-hm-rd__spark" aria-hidden="true">
@@ -476,6 +476,20 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * A latest round's course and date: the course gives way (ellipsis) and the date keeps its place, so a long course name
+ * never pushes the date out of the row. The same words as one line ("Oakmont CC · Sun 12 Oct").
+ */
+function RoundMeta({ meta }: { meta: string }) {
+  const [lead, ...rest] = meta.split(' · ').slice(0, 2);
+  return (
+    <span className="ch-hm-rd__m">
+      <span>{lead}</span>
+      {rest.length > 0 && <span>{` · ${rest.join(' · ')}`}</span>}
+    </span>
   );
 }
 

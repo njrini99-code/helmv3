@@ -111,6 +111,7 @@ function HomeFirstRun({ data }: { data: ChCoachHome }) {
 
 /** A coach with no active team: nothing to summarise yet, and one clear next step. */
 export function CoachHomeNoTeam() {
+  const settings = rebuiltHref('/golf/dashboard/settings?section=team', 'coach');
   return (
     <main className="ch-h-main">
       <EmptyState
@@ -119,6 +120,13 @@ export function CoachHomeNoTeam() {
         icon={Users}
         title="You aren’t on a team yet"
         body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard."
+        action={
+          settings ? (
+            <Button variant="primary" href={settings}>
+              Open team settings
+            </Button>
+          ) : undefined
+        }
       />
     </main>
   );

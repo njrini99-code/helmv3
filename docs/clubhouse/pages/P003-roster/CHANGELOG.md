@@ -1,5 +1,82 @@
 # P003 — Roster: changelog
 
+## 2026-10-18 — Polish: no white band on dark roster tiles
+
+```text
+Design package: none (wave-2 interaction review rows 2)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Desktop roster tiles start their gradient and lit top edge from
+  `--ch-ivory-0` and `--ch-light-rim`, so the dark theme loses the white band.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: the skeleton draws the actions and the spread
+
+```text
+Design package: none (wave-2 states review row 4)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- Desktop skeleton (CH-3401): the head draws Export and Invite players at
+  their loaded widths, and Where the team sits is drawn in its own frame (the
+  heading's two lines and a one-lane plot) before the toolbar
+  (`RosterSkeleton.tsx`).
+- Join requests and Needs a look are drawn only when there are some, so the
+  skeleton leaves them out; with the preview's two requests and three
+  players to look at, the toolbar still lands 282px lower when they come.
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures) at 1280: the head and its
+  actions match (108 and 190); the toolbar 536 vs 818 (was 298 vs 818), the
+  whole remainder being the requests and Needs a look.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-18 — Polish: a way out of no team, one notice sentence
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- No team (CH-3306, CH-3308): the page empty offers "Open team settings"; a
+  coach goes to Team, a player to Golf profile (CH-8302).
+- The roster, team and pending-request notices (desktop and phone) end "Try
+  again; the error has been reported.", the majority sentence.
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
 ## 2026-10-17 — Polish: steady figure column, one primary
 
 ```text

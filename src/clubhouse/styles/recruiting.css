@@ -664,6 +664,10 @@
     color: var(--ch-text-primary);
   }
 }
+/* Inset: the panel's scroller clips a ring drawn outside a row at its edge (as .ch-lgr__row in ui.css). */
+.ch-rec-panel__body :is(.ch-rec-row, .ch-rec-link, .ch-rec-doc__x):focus-visible {
+  outline-offset: -2px;
+}
 .ch-rec-note {
   font: 400 12px/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);

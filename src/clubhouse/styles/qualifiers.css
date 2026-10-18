@@ -1883,6 +1883,15 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  /* The name clips on its own box: an ellipsis on the flex row above cuts a long name mid-letter. "You" stays whole. */
+  .ch-qfm-lb__nm {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ch-qfm-lb__n b .ch-qf-you {
+    flex: none;
+  }
   .ch-qfm-lb__sub {
     display: flex;
     flex-wrap: wrap;
@@ -3232,6 +3241,24 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
   }
   .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-card h3 {
     font-size: 15px;
+  }
+}
+
+/* A canvas of 800px or less (821–1040px windows with the full sidebar): three columns left the name as little as 93px
+   beside its status, so the name and status take the row with the link at its end, and the dates sit under them. */
+@media (min-width: 821px) {
+  @container (max-width: 800px) {
+    .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-card {
+      grid-template-columns: minmax(0, 1fr) auto;
+      row-gap: 10px;
+    }
+    .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-cta,
+    .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-cta {
+      grid-area: 1 / 2;
+    }
+    .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-meta {
+      grid-template-columns: repeat(2, minmax(0, max-content));
+    }
   }
 }
 

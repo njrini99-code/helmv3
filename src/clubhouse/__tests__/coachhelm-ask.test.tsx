@@ -361,6 +361,21 @@ describe('the composer', () => {
     expect(chat.calls.send).not.toHaveBeenCalled();
   });
 
+  it('Escape takes back the @ the Players chip put in the text, never one the coach typed', async () => {
+    show();
+    await userEvent.type(box(), 'Compare');
+    await userEvent.click(screen.getByRole('button', { name: /Players/ }));
+    expect(box().value).toBe('Compare @');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box().value).toBe('Compare');
+    await userEvent.type(box(), ' @');
+    expect(picker()).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box().value).toBe('Compare @');
+  });
+
   it('CH-13821 a roster with nobody says so instead of drawing an empty list', async () => {
     show(ready({ players: [] }));
     await userEvent.type(box(), '@');

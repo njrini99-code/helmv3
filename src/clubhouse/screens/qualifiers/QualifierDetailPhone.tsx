@@ -323,7 +323,7 @@ function Board({
               <Pos position={r.position} tied={r.tied} move={r.move} />
               <span className="ch-qfm-lb__n">
                 <b>
-                  {r.name}
+                  <span className="ch-qfm-lb__nm">{r.name}</span>
                   {me && <span className="ch-qf-you">You</span>}
                 </b>
                 {(r.state || note) && (
@@ -378,7 +378,9 @@ function Board({
             <div className={'ch-qfm-lb__row is-static is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')}>
               <Pos position={null} tied={false} move={null} />
               <span className="ch-qfm-lb__n">
-                <b>{r.name}</b>
+                <b>
+                  <span className="ch-qfm-lb__nm">{r.name}</span>
+                </b>
                 <span className="ch-qfm-lb__sub">No rounds submitted</span>
               </span>
               <span className="ch-qf-dash">—</span>

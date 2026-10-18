@@ -7467,6 +7467,17 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 80642,
+    "page": "P008",
+    "category": 6,
+    "item": 42,
+    "name": "EVERY_READ_FAILS",
+    "chCode": "CH-8214",
+    "meaning": "Every read fails (phone list)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
     "id": 80701,
     "page": "P008",
     "category": 7,

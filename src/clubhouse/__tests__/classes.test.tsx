@@ -537,7 +537,7 @@ describe('Classes route and page', () => {
     teamOf.current = null;
     inProviders((await ClubhouseClassesRoute())!);
     await expectCode('CH-12305', /You aren’t on a team yet/);
-    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
     expect(screen.queryByRole('button', { name: /Add|Import/ })).toBeNull();
   });
 
@@ -573,7 +573,10 @@ describe('Classes route and page', () => {
     render(<ClassesSkeleton />);
     await expectCode('CH-12401');
     expect(screen.getByRole('main', { name: 'Loading your classes' }).getAttribute('aria-busy')).toBe('true');
-    expect(document.querySelectorAll('.ch-cl-deck .ch-skel')).toHaveLength(4);
+    // Four rows, under Your classes' heading and the week's days once (2026-10-18: the first row landed 82px lower without them).
+    expect(document.querySelectorAll('.ch-cl-deck > .ch-skel')).toHaveLength(4);
+    expect(document.querySelector('.ch-cl-sk-desk .ch-cl-sec > .ch-sec__head + .ch-cl-deck > .ch-cl-tthead:first-child')).not.toBeNull();
+    expect(document.querySelectorAll('.ch-cl-sk-desk .ch-cl-tthead__days > span')).toHaveLength(5);
   });
 
   it('the no-team page draws without the router (it is a server component)', () => {

@@ -2542,12 +2542,12 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
     margin-bottom: 10.8px;
   }
   .ch-cl[data-ch-code='CH-12401'][data-canopy] .ch-cl-deck {
-    gap: 10px;
     margin-inline: 0;
   }
-  /* Each is a row's box; the shared skeleton draws it as a ruled row (shell.css, .ch-skel--block), so it takes no radius. */
+  /* Each is a row's box at the loaded row's height (94.4px in WebKit at 1280, 2026-10-18), on the rows' own seams; the
+     shared skeleton draws it as a ruled row (shell.css, .ch-skel--block), so it takes no radius. */
   .ch-cl[data-ch-code='CH-12401'][data-canopy] .ch-cl-deck > .ch-skel {
-    height: 76px !important;
+    height: 94.4px !important;
   }
 }
 

@@ -244,6 +244,8 @@ describe('Player Home · desktop (Player - Home.html)', () => {
   it('CH-2313 a player on no team', () => {
     wrap(<PlayerHomeNoTeam />);
     expect(code('CH-2313')!.textContent).toMatch(/aren’t on a team yet/);
+    // A player joins a team from Golf profile (CH-8302).
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
   });
 });
 

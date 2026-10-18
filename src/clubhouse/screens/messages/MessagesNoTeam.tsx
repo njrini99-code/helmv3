@@ -1,4 +1,6 @@
 import { Users } from 'lucide-react';
+import { rebuiltHref } from '../../shell/nav';
+import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 
 /**
@@ -16,7 +18,9 @@ export function MessagesHead({ brief }: { brief?: string }) {
 }
 
 /** Signed in, but on no team yet: the whole page says so (CH-7308). */
-export function MessagesNoTeam() {
+export function MessagesNoTeam({ coach }: { coach: boolean }) {
+  // A coach sets up the team in Team; a player joins one from Golf profile (CH-8302).
+  const settings = rebuiltHref(`/golf/dashboard/settings?section=${coach ? 'team' : 'golf'}`, coach ? 'coach' : 'player');
   return (
     <main className="ch-ms ch-ms--first" data-canopy="">
       <MessagesHead />
@@ -26,6 +30,13 @@ export function MessagesNoTeam() {
         icon={Users}
         title="You aren’t on a team yet"
         body="Messages open once you’re on a team roster, with your coaches and teammates."
+        action={
+          settings ? (
+            <Button variant="primary" href={settings}>
+              Open team settings
+            </Button>
+          ) : undefined
+        }
       />
     </main>
   );

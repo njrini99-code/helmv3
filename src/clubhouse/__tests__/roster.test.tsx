@@ -419,6 +419,7 @@ describe('Roster · empty', () => {
     expect(el.classList.contains('ch-empty-page')).toBe(true);
     expect(within(el).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/Your players appear here once your team is set up/);
+    expect(within(el).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
     expect(el.textContent).not.toMatch(/Home/);
     expect(code('CH-2307')).toBeNull();
     // Not `.ch-rs`, which the stylesheet hides under 820px until the phone view takes over.
@@ -447,6 +448,13 @@ describe('Roster · loading, haptics, accessibility', () => {
   it('CH-3401 the route skeleton is busy', () => {
     render(<RosterSkeleton />);
     expect(code('CH-3401')!.getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('CH-3401 the desktop skeleton draws the head\'s two actions and where the team sits before the toolbar (2026-10-18)', () => {
+    render(<RosterSkeleton />);
+    const desk = code('CH-3401')!.querySelector('.ch-rs-skel-desk')!;
+    expect(desk.querySelector('.ch-rs-head .ch-rs-head__act')!.children).toHaveLength(2);
+    expect([...desk.children].map((c) => c.className.split(' ')[0])).toEqual(['ch-rs-head', 'ch-rs-sp', 'ch-rs-bar', 'ch-rs-faces']);
   });
 
   it('CH-3402 removing shows its progress and cannot be pressed twice', async () => {

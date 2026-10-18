@@ -4,6 +4,7 @@ import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { Bell, ChevronRight, Flag, SlidersVertical, Sparkle, UserRound, Users, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { Icon } from '../../../ui/Icon';
+import { InlineNotice } from '../../../ui/Notices';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { chTween } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
@@ -253,6 +254,12 @@ export function SettingsPhone({
   );
 }
 
+/** CH-8214: every read Settings made failed, so the list would stand silent over sections that each hold only a notice. */
+export function everyReadFailed(data: ChSettingsData): boolean {
+  const reads = [data.profile, data.delivery, data.playerRouting, data.digest, data.scoring, data.reminders, data.team, data.joinCode, data.golf, data.membership, data.coachhelm];
+  return reads.every((r) => !r || r.error);
+}
+
 /** The list: who you are, the sections, help and legal, and Sign out. */
 function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; writes: ChSettingsWrites; onOpen: (id: ChSettingsSection) => void; onProfile: () => void }) {
   const { report, opening } = useReportProblem();
@@ -267,6 +274,7 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
     : ['Player', data.teamName, hcp ? `HCP ${hcp}` : null].filter(Boolean).join(' · ');
   return (
     <>
+      {everyReadFailed(data) && <InlineNotice code="CH-8214" title="Settings didn’t load" body="Nothing was changed. Try again; the error has been reported." onRetry={writes.refresh} />}
       {/* A profile that didn't load opens Account, where the notice and Try again are. */}
       <button type="button" className="ch-setm-id" onClick={profile ? onProfile : () => onOpen('account')}>
         <span className={'ch-setm-coin' + (coach ? '' : ' is-player')} aria-hidden="true">

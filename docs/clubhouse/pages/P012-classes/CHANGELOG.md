@@ -1,5 +1,55 @@
 # P012 — Classes: changelog
 
+## 2026-10-18 — Polish: the desktop skeleton draws Your classes' head
+
+```text
+Design package: none (wave-2 states review row 21)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- Desktop skeleton (CH-12401): Your classes' heading and the week's days
+  once over the rows, on the loaded page's classes; the rows are the loaded
+  rows' 94.4px on their seams (no gap), and the term overview's block is its
+  loaded 146px (`ClassesSkeleton.tsx`, the skeleton rules in `classes.css`).
+- A team event's name under its day is drawn only when it loads, so a week
+  with one moves the rows down by its line (about 23px) when it lands.
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures) at 1280, skeleton vs
+  loaded: the heading 444 vs 444, the days' row 485 vs 485, the first row 515
+  vs 538 (was about 456; the preview's week has a team event).
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-18 — Polish: no team opens Golf profile
+
+```text
+Design package: none (wave-2 states review; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- No team (CH-12305): Open team settings goes to `?section=golf`, where a
+  player joins a team (CH-8302). `?section=team` has no player section, so
+  it fell back to Account.
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on classes.test, `clubhouse:check`, `typecheck:fast`
+  and eslint pass.
+
 ## 2026-10-17 — Polish: aligned Today titles and overlap codes
 
 ```text

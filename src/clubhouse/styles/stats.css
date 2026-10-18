@@ -5326,26 +5326,27 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 
 /* P005: on a wide canvas the four figures sit beside the name instead of under it, so the trend stage opens in view
-   ("that's up very large": the page head had grown to over 500px). */
+   ("that's up very large": the page head had grown to over 500px). The route skeleton (aria-busy, no is-desk) takes
+   the same layout, so the tabs land where its bars were. */
 @media (min-width: 1280px) {
-  .ch-st.is-desk[data-canopy] .ch-pf-hero {
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero {
     grid-template-columns: auto minmax(0, 1fr) auto;
     column-gap: 22px;
     row-gap: 0;
     align-items: end;
     padding-top: 14px;
   }
-  .ch-st.is-desk[data-canopy] .ch-pf-hero__figs {
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs {
     grid-row: 1;
     grid-column: 3;
     grid-template-columns: repeat(4, minmax(92px, auto));
     padding: 0 0 6px;
     box-shadow: none;
   }
-  .ch-st.is-desk[data-canopy] .ch-pf-hero__figs div {
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs div {
     padding: 4px 16px;
   }
-  .ch-st.is-desk[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
 .ch-pf-hero__chg) {
     font-size: 24px;
   }

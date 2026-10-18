@@ -96,7 +96,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
         <InlineNotice
           code="CH-09201"
           title="The qualifiers didn’t load"
-          body="Nothing has changed. Try again, and if it keeps happening the error has already been reported."
+          body="Nothing has changed. Try again; the error has been reported."
           onRetry={refresh}
           retrying={refreshing}
         />
@@ -234,13 +234,21 @@ export function QualifiersList({ data }: { data: ChQList }) {
   );
 }
 
+/** A standing as the Hub says it: "3" reads "3rd", a tie "T3" reads "tied 3rd". */
+const placeOf = (position: string | null) => {
+  const m = /^(T?)(\d+)$/.exec(position ?? '');
+  if (!m) return position;
+  const n = Number(m[2]);
+  return `${m[1] ? 'tied ' : ''}${n}${['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : n % 10] ?? 'th'}`;
+};
+
 function Mine({ item }: { item: ChQListItem }) {
   if (!item.mine) return null;
   if (!item.mine.entered) return <span className="ch-qf-mine is-out">You aren’t entered</span>;
   if (!item.mine.played) return <span className="ch-qf-mine">You’re entered · no rounds in yet</span>;
   return (
     <span className="ch-qf-mine">
-      You’re {item.mine.position} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {item.numRounds === 1 ? 'round' : 'rounds'}
+      You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {item.numRounds === 1 ? 'round' : 'rounds'}
     </span>
   );
 }

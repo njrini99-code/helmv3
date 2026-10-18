@@ -472,6 +472,10 @@
     height: 36px;
     line-height: 36px;
   }
+  /* A text field is drawn at the full 44px touch height on the phone (base 38px). */
+  .ch-root .ch-input {
+    height: 44px;
+  }
   /* Every control's hit area reaches 44 x 44 on the phone without changing how it is drawn (a 26px
      segment, a 30px small button, a 36px pill). Zero specificity, so a page's own hit area wins. */
   :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg, .ch-search__x) {

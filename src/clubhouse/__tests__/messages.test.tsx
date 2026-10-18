@@ -1435,10 +1435,15 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
 
 describe('Messages · no team', () => {
   it('CH-7308 a coach or player with no team gets the v2 page empty state', () => {
-    render(<MessagesNoTeam />);
+    const { unmount } = render(<MessagesNoTeam coach />);
     const el = code('CH-7308')!;
     expect(el.classList.contains('ch-empty-page')).toBe(true);
     expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: "You aren’t on a team yet" })).toBeTruthy();
+    expect(within(el as HTMLElement).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
+    unmount();
+    // A player joins a team from Golf profile (CH-8302).
+    render(<MessagesNoTeam coach={false} />);
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
   });
 });
 

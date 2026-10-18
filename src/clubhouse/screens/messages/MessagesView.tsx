@@ -2080,7 +2080,7 @@ function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
         <InlineNotice
           code="CH-7214"
           title="Files didn’t load"
-          body="Your messages are fine. Try again; the error has been reported."
+          body="Your messages are safe. Try again; the error has been reported."
           onRetry={retry}
         />
       ) : !files ? (

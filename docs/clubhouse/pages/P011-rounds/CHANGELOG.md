@@ -1,5 +1,63 @@
 # P011 — Rounds: changelog
 
+## 2026-10-18 — Polish: setup focus, hover, dock wrap and shotgun start
+
+```text
+Design package: none (wave-2 interaction review rows 7, 9, 10, 14, 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Setup: the Date field draws its ring on `:focus` (WebKit never matches
+  `:focus-visible` on a date input), light and dark.
+- Setup: Round type and Holes segments darken on hover (desktop).
+- Setup dock: "N holes", "Par N" and "hole N" keep a no-break space, so the
+  phone dock never breaks "Par / 72".
+- Setup: Starting hole is always shown. Before a course is picked it is
+  disabled under "Shotgun start? Pick a course, then choose your first
+  hole."; once the card's holes load it behaves as before.
+- Round entry dialogs: option rows take the ledger row tint on hover; the
+  primary and danger rows also step their ring.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: the skeleton holds the season chart's height
+
+```text
+Design package: none (wave-2 states review row 3)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- Desktop skeleton (CH-11401): the season pane draws its head and then the
+  vs-par stage at the chart's proportion, so the hero is the loaded one's
+  height at any width; the first month is drawn under its heading
+  (`RoundsSkeleton.tsx`, skeleton-scoped rules in `rounds.css`).
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures), the tools row's top
+  skeleton vs loaded: 1280 778 vs 782 (was 548 vs 782); 1100 1193 vs 1202;
+  1440 812 vs 802. The first month's rounds 878 vs 887 at 1280.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
 ## 2026-10-17 — Polish: setup segments reach 44px
 
 ```text

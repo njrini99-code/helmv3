@@ -43,8 +43,10 @@
 .ch-hb-tabs {
   display: flex;
   gap: 22px;
-  max-width: 100%;
-  margin-top: -10px;
+  /* Room inside the scroller for the focus ring, taken back by the margins so the row doesn't move. */
+  max-width: calc(100% + 8px);
+  margin: -14px -4px -4px;
+  padding: 4px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -78,6 +80,11 @@
 }
 .ch-hb-tabs button {
   transition: color var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-hb-tabs button:not([aria-selected='true']):hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-hb-tabs button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -1694,6 +1701,10 @@
     min-width: 44px;
     height: 44px;
   }
+  /* The phone strip has no ring room above and below its full-height tabs: the ring is drawn inside. */
+  .ch-hb-tabs button:focus-visible {
+    outline-offset: -2px;
+  }
   .ch-hb-rsvp__b {
     min-height: 44px;
     justify-content: center;
@@ -1927,7 +1938,8 @@
     padding: 0;
   }
   .ch-hb[aria-busy='true'][data-canopy] .ch-hb-tabs {
-    height: 34px;
+    /* The 34px tabs plus the strip's 4px ring room above and below. */
+    height: 42px;
     align-items: center;
   }
 

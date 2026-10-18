@@ -1,5 +1,84 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-18 — Polish: your place reads as the Hub says it
+
+```text
+Design package: none (wave-2 interaction review rows 8)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- My qualifiers: "You're 3" reads "You're 3rd" and a tie "T4" reads
+  "tied 4th", as the Team Hub's standings line does.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: the phone skeleton draws two figures
+
+```text
+Design package: none (wave-2 states review row 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- Phone qualifier skeleton (CH-09402): two figures (Rounds in, Spots) as the
+  page has since 2026-10-16; a third wrapped to a second row of the two
+  columns (`QualifiersSkeleton.tsx`).
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures) at 390: the figures 88px
+  tall as loaded (was 151) and the leaderboard at 370 vs 370 (was 432).
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-18 — Polish: whole names in the ellipsis, the ledger at 821–1000px
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- Phone leaderboard: the name clips on its own span, so a long name ends in
+  an ellipsis instead of being cut mid-letter by the flex row; "You" stays
+  whole (`QualifierDetailPhone.tsx`, `qualifiers.css`).
+- Desktop list on a canvas of 800px or less (821–1040px windows): a ledger
+  row puts the name and status across the row with its link at the end, and
+  the dates under them, where three columns left the name 93px.
+- The list's notice ends "Try again; the error has been reported.".
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+- WebKit (Playwright, dev preview): the list at 821, 900, 1000, 1024, 1100
+  and 1280px; every title on one line, two columns up to 1024px, three from
+  1100px. A 44-letter name on the phone board ends in an ellipsis on its
+  span.
+
 ## 2026-10-17 — Polish: score column, dark board words, ranges
 
 ```text

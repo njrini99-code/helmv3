@@ -1,5 +1,29 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-18 — Polish: panel rings inside the scroller
+
+```text
+Design package: none (wave-2 interaction review rows 6)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- The prospect panel's rows, links and document Remove keys draw their
+  focus ring inside, where the panel's scroller no longer clips it.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
 ## 2026-10-17 — Polish: the search names what it searches
 
 ```text

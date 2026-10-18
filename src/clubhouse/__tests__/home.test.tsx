@@ -294,6 +294,8 @@ describe('Home · empty', () => {
   it('CH-2307 a coach with no team', () => {
     wrap(<CoachHomeNoTeam />);
     expect(code('CH-2307')!.textContent).toMatch(/You aren’t on a team yet/);
+    // The way out Classes and Recruiting give: Team settings.
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
   });
 });
 
@@ -415,6 +417,13 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     wrap(<CoachHome data={{ ...PREVIEW_HOME, leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } }} now={PREVIEW_HOME_NOW} />);
     expect(document.querySelector('.ch-hm-rd__spark')).toBeNull();
     expect(screen.getByRole('button', { name: /Theo Marchetti/ })).toBeTruthy();
+  });
+
+  it('P002 a latest round’s course and date are two parts, so a long course gives way and the date stays (2026-10-18)', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    const meta = document.querySelector('.ch-hm-list .ch-hm-rd__m')!;
+    expect(meta.textContent).toBe('Oakmont CC · Sun 12 Oct');
+    expect([...meta.children].map((c) => c.textContent)).toEqual(['Oakmont CC', ' · Sun 12 Oct']);
   });
 
   it('CH-2303 a round posted as a total says so in its sheet', async () => {

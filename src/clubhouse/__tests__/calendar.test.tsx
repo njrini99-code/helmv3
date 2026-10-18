@@ -866,9 +866,12 @@ describe('Calendar · no team', () => {
     expect(el.classList.contains('ch-empty-page')).toBe(true);
     expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/once your team is set up/);
+    expect(within(el as HTMLElement).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
     unmount();
     render(<CalendarNoTeam coach={false} />);
     expect(code('CH-6307')!.textContent).toMatch(/once a coach adds you/);
+    // A player joins a team from Golf profile (CH-8302).
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
   });
 });
 
@@ -1089,6 +1092,14 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     wrap(cal({ eventsError: true, events: [] }));
     expect(code('CH-6201')).not.toBeNull();
     expect(code('CH-6308')).toBeNull();
+    // The strip and the week arrows need no events, so they stay to move the page; the notice stands where the day's
+    // list goes, and nothing claims a day has no events.
+    const strip = screen.getByRole('list', { name: 'This week' });
+    expect(within(strip).getAllByRole('button')).toHaveLength(7);
+    expect(within(strip).queryByRole('button', { name: /events?$/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Previous week' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Next week' })).toBeTruthy();
+    expect(strip.compareDocumentPosition(code('CH-6201')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('61901 60802 a player sees their team events and only their own class', () => {

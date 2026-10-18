@@ -1590,6 +1590,18 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(writes.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it('CH-8214 every read failing says so on the list, with one Try again; one failed read leaves the list to its section', async () => {
+    const all = { ...coachData(), profile: failedRead, delivery: failedRead, digest: failedRead, scoring: failedRead, reminders: failedRead, team: failedRead, joinCode: failedRead, coachhelm: failedRead };
+    const { user, writes, unmount } = phone({ data: all });
+    await expectCode('CH-8214', /Settings didn’t load/);
+    await user.click(within(code('CH-8214') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(writes.refresh).toHaveBeenCalledTimes(1);
+    unmount();
+    phone({ data: { ...coachData(), profile: failedRead } });
+    expect(screen.getByRole('button', { name: /^maya\.reyes@unc\.edu/ })).toBeTruthy();
+    expect(code('CH-8214')).toBeNull();
+  });
+
   it('81901 CH-8201 a profile that did not load opens Account from the identity row, with the notice and no edit sheet', async () => {
     const { user } = phone({ data: { ...coachData(), profile: failedRead } });
     await user.click(screen.getByRole('button', { name: /^maya\.reyes@unc\.edu/ }));

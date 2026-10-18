@@ -110,6 +110,7 @@ export function TeamHub({
   initialTab,
   viewerName,
   focusTask,
+  focusTrip,
 }: {
   data: ChTeamHub;
   writes?: ChHubWrites;
@@ -117,6 +118,8 @@ export function TeamHub({
   viewerName: string;
   /** A task a notification named (`?task=`): its row scrolls into view and is lit once. */
   focusTask?: string | null;
+  /** A trip Calendar's View itinerary named (`?tab=travel&trip=`): Travel scrolls it into view once. */
+  focusTrip?: string | null;
 }) {
   const router = useRouter();
   const phone = useChPhone();
@@ -126,13 +129,16 @@ export function TeamHub({
   const [taskToFocus, setTaskToFocus] = useState<string | null>(focusTask ?? null);
   // A new address on the same page (a notification's ?tab=tasks&task= while Team Hub is open) re-renders the route
   // without remounting it, so the tab and the task follow the address; the page stood on its first tab (2026-10-14).
-  const [seenAddress, setSeenAddress] = useState({ initialTab, focusTask });
-  if (seenAddress.initialTab !== initialTab || seenAddress.focusTask !== focusTask) {
-    setSeenAddress({ initialTab, focusTask });
+  const [tripToFocus, setTripToFocus] = useState<string | null>(focusTrip ?? null);
+  const [seenAddress, setSeenAddress] = useState({ initialTab, focusTask, focusTrip });
+  if (seenAddress.initialTab !== initialTab || seenAddress.focusTask !== focusTask || seenAddress.focusTrip !== focusTrip) {
+    setSeenAddress({ initialTab, focusTask, focusTrip });
     if (initialTab && initialTab !== seenAddress.initialTab) setTab(initialTab);
     if (focusTask && focusTask !== seenAddress.focusTask) setTaskToFocus(focusTask);
+    if (focusTrip && focusTrip !== seenAddress.focusTrip) setTripToFocus(focusTrip);
   }
   const taskFocused = () => setTaskToFocus(null);
+  const tripFocused = () => setTripToFocus(null);
   // The underline moves on the press (CH-10602); the panel renders just behind it.
   const shownTab = useDeferredValue(tab);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -585,11 +591,11 @@ export function TeamHub({
                   <EmptyState compact code="CH-10308" icon={Plane} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 ) : (
                   <>
-                    {nextTrip && <TripPass t={nextTrip} big role={data.role} {...tripActions} />}
+                    {nextTrip && <TripPass t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}
                     {tripRows
                       .filter((t) => t !== nextTrip)
                       .map((t) => (
-                        <TripPass key={t.id} t={t} later role={data.role} {...tripActions} />
+                        <TripPass key={t.id} t={t} later role={data.role} focus={tripToFocus === t.id} onFocused={tripFocused} {...tripActions} />
                       ))}
                   </>
                 )}

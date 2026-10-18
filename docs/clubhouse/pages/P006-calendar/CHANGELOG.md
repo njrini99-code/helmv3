@@ -1,5 +1,84 @@
 # P006 — Calendar: changelog
 
+## 2026-10-18 — Polish: week bars lift on hover; inbox rows keep their ring
+
+```text
+Design package: none (wave-2 interaction review rows 6, 13)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Desktop week: tournament, qualifier and travel blocks and the all-day bars
+  lift on hover like practice and meeting blocks.
+- Needs your reply rows draw their focus ring inside the row, where the
+  inbox scroller no longer clips it.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: the phone skeleton's eyebrow line
+
+```text
+Design package: none (wave-2 states review row 8)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- Phone skeleton (CH-6401): the eyebrow's bar sits in its loaded 15.6px line
+  (13px type), so the title row lands where it loads (`CalendarSkeleton.tsx`).
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures) at 390: the title row at
+  119 vs 119 (was 116).
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-18 — Polish: no-team way out, the itinerary lands on the trip
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- No team (CH-6307): the page empty offers "Open team settings"; a coach goes
+  to Team, a player to Golf profile (CH-8302).
+- View itinerary links to `/golf/dashboard/team-hub?tab=travel&trip=<id>`.
+  It went to `/travel?trip=`, whose Clubhouse redirect (a layout, which can't
+  read search params) dropped the trip.
+- Phone, events failed (CH-6201): Day keeps its week strip, without event
+  counts, and the week arrows, so the page still moves; the notice stands
+  where the day's list goes, where the whole view was blank under it.
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+- WebKit (Playwright, dev preview, 390px): `?state=failed` keeps the 7-day
+  strip and both week arrows over CH-6201; Next week moves the day 7 on.
+
 ## 2026-10-17 — Polish: editor times on the phone, class lines
 
 ```text

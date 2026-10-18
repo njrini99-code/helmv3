@@ -1,5 +1,26 @@
 # Clubhouse changelog
 
+## 2026-10-18 — Interaction review: focus, menus, phone fields, loading shapes
+
+`shell.css`: page-head secondary keys keep the shared focus ring (their
+hairline and hover ring skip `:focus-visible`, light and dark), and the phone
+section switcher draws its ring inside the title row that clipped it.
+`controls.css`: phone `.ch-input` fields are 44px tall (base 38px).
+`ui/Menu.tsx`: a menu closed by a scroll while focus is in it returns focus to
+its trigger instead of `<body>`. Page skeletons (Home, Stats, Rounds, Roster,
+Qualifiers, Calendar, Classes) now match their loaded layout, so content lands
+within a few pixels of where the skeleton drew it.
+
+## 2026-10-18 — States polish: no-team actions, settings failure, one notice voice
+
+No-team pages (Home, Roster, Calendar, Messages) offer Open team settings, as
+Classes and Recruiting do (coaches to the Team section, players to Golf
+profile). Settings' phone list says when every read failed (CH-8214, new).
+Notice copy is unified on "Try again; the error has been reported.", and
+Messages says "safe" like the rest. The phone bell's empty line matches the
+desktop's. Calendar's View itinerary lands on the trip in Team Hub
+(`?tab=travel&trip=`).
+
 ## 2026-10-17 — Figures in rows keep tabular digits
 
 A page rule that sets type with the `font` shorthand resets

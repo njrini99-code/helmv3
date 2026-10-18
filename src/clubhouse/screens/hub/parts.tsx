@@ -367,6 +367,8 @@ export function TripPass({
   role,
   onEdit,
   onDelete,
+  focus = false,
+  onFocused,
 }: {
   t: ChHubTrip;
   big?: boolean;
@@ -376,7 +378,19 @@ export function TripPass({
   /** A coach's Edit and Delete; a player's pass has neither. */
   onEdit?: (t: ChHubTrip) => void;
   onDelete?: (t: ChHubTrip) => void;
+  /** Calendar's View itinerary named this trip (`?trip=`): it scrolls into view once, as a notification's task does. */
+  focus?: boolean;
+  onFocused?: () => void;
 }) {
+  const pass = useRef<HTMLElement>(null);
+  const reduced = useChReducedMotion();
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!focus || scrolled.current) return;
+    scrolled.current = true;
+    pass.current?.scrollIntoView?.({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+    onFocused?.();
+  }, [focus, reduced, onFocused]);
   const manage = role === 'coach' && (onEdit || onDelete);
   const plan = [
     t.depart && ([t.depart, `${TRANSPORT[t.transport ?? ''] ?? 'Leave'}${t.from ? ` from ${t.from}` : ''}`] as const),
@@ -385,7 +399,7 @@ export function TripPass({
   ].filter((x): x is readonly [string, string] => !!x);
   return (
     // P010-A1: the next trip is the page's one paper object (hub.css `.is-next`); the trips after it stay flat rows.
-    <article className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
+    <article ref={pass} className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
         <div className="ch-hb-pass__top">
           <span className="ch-hb-eyebrow ch-num">

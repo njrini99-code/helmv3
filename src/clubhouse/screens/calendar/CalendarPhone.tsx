@@ -43,6 +43,7 @@ export function CalendarPhone({
   flagged,
   selId,
   notices,
+  eventsNotice,
   onView,
   onStep,
   onOpen,
@@ -59,6 +60,8 @@ export function CalendarPhone({
   selId: string | null;
   /** The failed-read notices, shared with desktop. */
   notices: ReactNode;
+  /** CH-6201, when the events didn't load: Day keeps its week strip and arrows and shows this where the day's list goes. */
+  eventsNotice?: ReactNode;
   onView: (view: ChCalView, anchor: string) => void;
   /** The Calendar's step (its arrow keys): one day, week or month on from where the page is headed, with a tick. */
   onStep: (dir: 1 | -1) => void;
@@ -101,6 +104,12 @@ export function CalendarPhone({
         </span>
       </header>
       {notices}
+      {data.eventsError &&
+        (pv === 'day' ? (
+          <DayView anchor={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} range={data.range} failed={eventsNotice} />
+        ) : (
+          eventsNotice
+        ))}
       {!data.eventsError && (
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
@@ -136,6 +145,7 @@ function DayView({
   onOpen,
   coach,
   range,
+  failed,
 }: {
   anchor: string;
   events: ChCalEvent[];
@@ -148,6 +158,9 @@ function DayView({
   coach: boolean;
   /** The dates the page has loaded: a neighbouring day outside it waits for its week instead of reading as empty. */
   range: { from: string; to: string };
+  /** The events didn't load (CH-6201): the strip and the week arrows still move the page, with no counts and no swipe,
+   * and this notice stands where the day's list goes. */
+  failed?: ReactNode;
 }) {
   const week = weekDates(anchor);
   // The day on show and the way it went: a later day comes in from the right, an earlier one from the left. A swipe has
@@ -176,7 +189,7 @@ function DayView({
                 type="button"
                 className={'ch-calm-week__d' + (d === anchor ? ' is-on' : '') + (d === now.date ? ' is-today' : '')}
                 aria-pressed={d === anchor}
-                aria-label={`${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}, ${n} ${n === 1 ? 'event' : 'events'}`}
+                aria-label={`${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}${failed ? '' : `, ${n} ${n === 1 ? 'event' : 'events'}`}`}
                 onClick={() => {
                   if (d !== anchor) haptic('select');
                   swiped.current = false;
@@ -195,19 +208,23 @@ function DayView({
           );
         })}
       </ol>
-      <DayPager
-        anchor={anchor}
-        onSettle={(d) => {
-          swiped.current = true;
-          onDay(d);
-        }}
-        prev={page(addDays(anchor, -1), false)}
-        next={page(addDays(anchor, 1), false)}
-      >
-        <Swap swapKey={day.slide} kind="slide" dir={day.dir} className="ch-calm-dayswap">
-          {page(anchor, true)}
-        </Swap>
-      </DayPager>
+      {failed ? (
+        <DayPage date={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} onWeek={(dir) => onDay(addDays(anchor, 7 * dir))} failed={failed} />
+      ) : (
+        <DayPager
+          anchor={anchor}
+          onSettle={(d) => {
+            swiped.current = true;
+            onDay(d);
+          }}
+          prev={page(addDays(anchor, -1), false)}
+          next={page(addDays(anchor, 1), false)}
+        >
+          <Swap swapKey={day.slide} kind="slide" dir={day.dir} className="ch-calm-dayswap">
+            {page(anchor, true)}
+          </Swap>
+        </DayPager>
+      )}
     </>
   );
 }
@@ -223,6 +240,7 @@ function DayPage({
   onOpen,
   coach,
   onWeek,
+  failed,
 }: {
   date: string;
   events: ChCalEvent[];
@@ -233,6 +251,8 @@ function DayPage({
   onOpen: (id: string, date: string) => void;
   coach: boolean;
   onWeek?: (dir: 1 | -1) => void;
+  /** The events didn't load: the heading and arrows stay, no count, and the notice in the list's place. */
+  failed?: ReactNode;
 }) {
   const anchor = date;
   const list = events.filter((e) => e.date === anchor).sort(byStart);
@@ -253,10 +273,12 @@ function DayPage({
         <h3>
           {dowOf(anchor)} {dayNum(anchor)} {monthName(anchor)}
         </h3>
-        <span className="ch-num">
-          {team.length} {team.length === 1 ? 'event' : 'events'}
-          {blocks > 0 ? ` · ${blocks} ${coach ? (blocks === 1 ? 'class or busy block' : 'classes or busy blocks') : blocks === 1 ? 'class' : 'classes'}` : ''}
-        </span>
+        {!failed && (
+          <span className="ch-num">
+            {team.length} {team.length === 1 ? 'event' : 'events'}
+            {blocks > 0 ? ` · ${blocks} ${coach ? (blocks === 1 ? 'class or busy block' : 'classes or busy blocks') : blocks === 1 ? 'class' : 'classes'}` : ''}
+          </span>
+        )}
         {/* P006 D5, B2: the week before and after without going through Month; the same reach a swipe gives, for
             VoiceOver and the keyboard. */}
         {onWeek && (
@@ -266,7 +288,9 @@ function DayPage({
           </span>
         )}
       </div>
-      {!list.length ? (
+      {failed ? (
+        failed
+      ) : !list.length ? (
         <EmptyState compact code="CH-6308" icon={CalendarDays} title="Nothing on this day" body={coach ? 'Tap + to plan something for the team.' : 'Events your coach invites you to show here.'} />
       ) : (
         <ol className="ch-calm-agenda">

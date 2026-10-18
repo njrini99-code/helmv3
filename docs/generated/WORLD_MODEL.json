@@ -3638,7 +3638,7 @@
       },
       {
         "id": "get_coach_today_schedule",
-        "definedIn": "supabase/migrations/20260806020100_coach_today_schedule_excludes_classes.sql"
+        "definedIn": "supabase/migrations/20261017111000_golf_home_event_rpcs_skip_cancelled.sql"
       },
       {
         "id": "get_crm_coach_stage_history",
@@ -3683,6 +3683,10 @@
       {
         "id": "get_platform_health_stats",
         "definedIn": "supabase/migrations/20260708020000_gate_admin_telemetry_rpcs_pii.sql"
+      },
+      {
+        "id": "get_player_hub_events",
+        "definedIn": "supabase/migrations/20261017111000_golf_home_event_rpcs_skip_cancelled.sql"
       },
       {
         "id": "get_qualifier_leaderboard",
@@ -3998,7 +4002,7 @@
       },
       {
         "id": "recompute_golf_round_totals",
-        "definedIn": "supabase/migrations/20260606190000_fix_fairway_denominator.sql"
+        "definedIn": "supabase/migrations/20261017110000_golf_round_totals_null_putts.sql"
       },
       {
         "id": "recompute_team_sg",
@@ -20445,6 +20449,18 @@
           "kind": "rpc_call",
           "path": "src/app/golf/actions/dashboard-data.ts",
           "anchor": "get_coach_today_schedule"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "get_player_hub_events",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/golf/actions/player-hub-data.ts",
+          "anchor": "get_player_hub_events"
         }
       ]
     },

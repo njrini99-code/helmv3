@@ -164,6 +164,8 @@ describe('Player roster · who gets it (30804)', () => {
     );
     expect(code('CH-3308')!.textContent).toMatch(/You aren’t on a team yet/);
     expect(code('CH-3308')!.textContent).toMatch(/Your teammates appear here once your coach approves your request to join\./);
+    // A player joins a team from Golf profile (CH-8302).
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
   });
 
   it('the Roster is rebuilt for players: a sidebar entry under Team and a row in the phone More sheet, not a tab', () => {
