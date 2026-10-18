@@ -1,5 +1,22 @@
 # P007 — Messages: changelog
 
+## 2026-10-18 — Wave 7: player Messages preview
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, preview)
+
+- `messages-player` shows Jonah's own inbox: the team and travel threads,
+  his 1:1 with Maya and a note from Dan, never Maya's threads with other
+  players.
+
 ## 2026-10-18 — Wave 5: Messages feedback fixes
 
 ```text

@@ -337,7 +337,7 @@ describe('CH13-20 the Ask address respects the CoachHelm switch, as the board do
     vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(jonah.id)]);
     tables.current = { golf_team_members: { data: null }, golf_drills: { data: [] }, golf_player_focus_areas: { data: [] } };
     render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'ask' }))));
-    expect(screen.getByText('Player')).toBeTruthy();
+    expect(screen.getByText('One thing to work on this week, based on the rounds you’ve posted.')).toBeTruthy();
     expect(isCoachHelmEnabledForCoach).not.toHaveBeenCalled();
   });
 

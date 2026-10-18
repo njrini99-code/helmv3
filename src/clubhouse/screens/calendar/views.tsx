@@ -40,11 +40,14 @@ export interface ChNow {
   ms?: number;
 }
 
-/** What a block says. A class shown as Busy never leaks its title or room. */
-export function eventTitle(e: ChCalEvent, people: Map<string, ChCalPerson>): string {
+/**
+ * What a block says. A class shown as Busy never leaks its title or room. A class is named for whose it is ("Priya ·
+ * STAT 201"), except the viewer's own (`viewerId`): a player's own class is just "ECON 101".
+ */
+export function eventTitle(e: ChCalEvent, people: Map<string, ChCalPerson>, viewerId?: string | null): string {
   if (e.type === 'busy') return `Busy · ${e.title}`;
   if (e.type !== 'class') return e.title;
-  const first = e.owner ? people.get(e.owner)?.name.split(' ')[0] : null;
+  const first = e.owner && e.owner !== viewerId ? people.get(e.owner)?.name.split(' ')[0] : null;
   if (e.busyOnly) return first ? `${first} · Busy` : 'Busy';
   return first ? `${first} · ${e.title}` : e.title;
 }
@@ -90,6 +93,7 @@ function EventBlock({
   sel,
   flagged,
   people,
+  viewerId,
   onSelect,
   from,
   to,
@@ -103,6 +107,8 @@ function EventBlock({
   sel: boolean;
   flagged: boolean;
   people: Map<string, ChCalPerson>;
+  /** The signed-in player: their own class is titled without their name. */
+  viewerId?: string | null;
   onSelect: (id: string) => void;
   /** The grid's first and last hour. */
   from: number;
@@ -125,7 +131,7 @@ function EventBlock({
   const step = lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0;
   const left = step * lane;
   const shared = lanes > 1;
-  const title = eventTitle(e, people);
+  const title = eventTitle(e, people, viewerId);
   // The time in parts, each kept whole: the block shows as many as fit on its one line (calendar.css, .ch-ev__m--fit),
   // so a narrow block reads "8:00 AM" and a narrower one "8:00", never a cut "8:00 – 9:…" or a bare start where AM or PM
   // fits. The start carries its half, so a range reads "8:00 AM – 9:30 AM". A short block gives only its start; a day
@@ -193,10 +199,13 @@ export function TimeGrid({
   onMove,
   daylight,
   coach = false,
+  viewerId,
 }: {
   dates: string[];
   events: ChCalEvent[];
   people: Map<string, ChCalPerson>;
+  /** The signed-in player: their own class is titled without their name. */
+  viewerId?: string | null;
   now: ChNow;
   selId: string | null;
   flagged: Set<string>;
@@ -318,7 +327,7 @@ export function TimeGrid({
                     }}
                   >
                     <Icon icon={TYPE_ICON[e.type]} size={12} />
-                    <span>{eventTitle(e, people)}</span>
+                    <span>{eventTitle(e, people, viewerId)}</span>
                   </button>
                 ))}
             </div>
@@ -355,6 +364,7 @@ export function TimeGrid({
                     sel={selId === g.id}
                     flagged={flagged.has(g.id)}
                     people={people}
+                    viewerId={viewerId}
                     onSelect={onSelect}
                     from={from}
                     to={to}
@@ -366,7 +376,7 @@ export function TimeGrid({
                 );
               })}
               {drag && drag.to.date === d && (
-                <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} onSelect={() => {}} from={from} to={to} state="ghost" />
+                <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} viewerId={viewerId} onSelect={() => {}} from={from} to={to} state="ghost" />
               )}
               {d === now.date && nowVisible && (
                 <div className="ch-wk__now" /* CH-6603: the current time, a line across today */ style={{ top: (now.hour - from) * CAL_HH }} role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
@@ -463,6 +473,7 @@ export function AgendaView({
   selId,
   flagged,
   onSelect,
+  viewerId,
 }: {
   events: ChCalEvent[];
   people: Map<string, ChCalPerson>;
@@ -470,6 +481,8 @@ export function AgendaView({
   selId: string | null;
   flagged: Set<string>;
   onSelect: (id: string) => void;
+  /** The signed-in player: their own class is titled without their name. */
+  viewerId?: string | null;
 }) {
   const [early, setEarly] = useState(false);
   const days = [...new Set(events.map((e) => e.date))].sort();
@@ -518,7 +531,7 @@ export function AgendaView({
               </span>
               <span className={`ch-ag__dot ch-dot-${e.type}`} aria-hidden="true" />
               <span style={{ minWidth: 0 }}>
-                <span className="ch-ag__a">{e.type === 'class' && e.owner && people.get(e.owner) ? `${people.get(e.owner)!.name} · ${e.title}` : e.type === 'busy' ? e.title : eventTitle(e, people)}</span>
+                <span className="ch-ag__a">{e.type === 'class' && e.owner && e.owner !== viewerId && people.get(e.owner) ? `${people.get(e.owner)!.name} · ${e.title}` : e.type === 'busy' ? e.title : eventTitle(e, people, viewerId)}</span>
                 <span className="ch-ag__b">
                   {e.type === 'busy' ? 'Your busy time · only you see it' : TYPE_LABEL[e.type]}
                   {e.location && !e.busyOnly ? ` · ${e.location}` : ''}

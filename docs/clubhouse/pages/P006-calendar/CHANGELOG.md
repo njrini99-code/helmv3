@@ -1,5 +1,37 @@
 # P006 — Calendar: changelog
 
+## 2026-10-18 — Wave 7: a player's meetings, replies and clashes
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (the attendance read is unchanged)
+Held items:     works before and after 20261017102000 (HELD.md)
+```
+
+### Fixed (2026-10-18, meeting privacy)
+
+- Decision B: a player's Calendar holds a meeting only when they are on its
+  invite list (their own attendance row), so a teammate's 1:1 or a captains'
+  meeting no longer shows its title or room to everyone. When the attendance
+  read fails, D2-8 decides from the counts; when that fails too, no meeting
+  is shown (fail closed). The preview player calendar is
+  built the same way (no Parent call, no teammate's reply).
+
+### Changed (2026-10-18, player Calendar)
+
+- Phone Day: an event still waiting on the player's reply has a Reply badge,
+  "needs your reply" in its label, and an amber dot on its day in the strip
+  (`playerReplyNeeded`, the same rule as Needs your reply).
+- A player sees their own clashes: the day's panel lists them ("Overlaps
+  your ECON 101 class 1:00–2:15 PM") and the event says so with Message
+  coach. Moving or keeping it stays the coach's Overlap panel. A class that
+  starts after the team event it clashes with is now found too (for coaches
+  as well); it was missed before.
+- A player's own class is titled "ECON 101", not "Jonah · ECON 101".
+
 ## 2026-10-18 — Wave 5: the empty phone day has New event
 
 ```text

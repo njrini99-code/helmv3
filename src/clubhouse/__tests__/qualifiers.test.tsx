@@ -307,10 +307,40 @@ describe('Qualifiers · the loader', () => {
     tables.current = { golf_qualifiers: { data: [other, Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds } };
     const all = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'all' });
     expect(all.items.map((i) => i.id)).toEqual(['q1', 'q2']);
-    expect(all.items[0]!.mine).toEqual({ entered: true, position: '2', toPar: 2, played: 1 });
+    // Live, so the next round (2, at the qualifier's course with none set for it); the squad confirmed, and Bea not on it.
+    expect(all.items[0]!.mine).toEqual({ entered: true, position: '2', toPar: 2, played: 1, next: { round: 2, course: 'Finley GC' }, squad: false });
     expect(all.items[1]!.mine?.entered).toBe(false);
     const mine = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
     expect(mine.items.map((i) => i.id)).toEqual(['q1']);
+  });
+
+  it('CH-09906 CH-09907 wave 7: a player’s own squad result, their next round at its own course, and "You" on the leaders; a failed read is the plain line', async () => {
+    const asked: Array<Array<[string, unknown[]]>> = [];
+    tables.current = {
+      golf_qualifiers: { data: [Q] },
+      golf_qualifier_entries: { data: entries },
+      golf_rounds: { data: rounds },
+      golf_qualifier_round_courses: { data: [{ qualifier_id: 'q1', round_number: 2, course_name: 'Hope Valley CC' }] },
+      golf_qualifier_selections: (f) => {
+        asked.push(f);
+        return { data: [{ qualifier_id: 'q1' }] };
+      },
+    };
+    const list = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    expect(list.items[0]!.mine).toMatchObject({ next: { round: 2, course: 'Hope Valley CC' }, squad: true });
+    // Only their own row is asked for, never the squad.
+    expect(asked[0]!.find(([k, a]) => k === 'eq' && a[0] === 'player_id')?.[1][1]).toBe('p2');
+    expect(list.items[0]!.leaders.find((l) => l.playerId === 'p2')?.isYou).toBe(true);
+    expect(list.items[0]!.leaders.find((l) => l.playerId === 'p1')?.isYou).toBeUndefined();
+    tables.current = { ...tables.current, golf_qualifier_selections: { error: { message: 'boom' } }, golf_qualifier_round_courses: { error: { message: 'boom' } } };
+    const failed = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    // Unknown, never "not selected"; the course falls back to the qualifier's.
+    expect(failed.items[0]!.mine).toMatchObject({ next: { round: 2, course: 'Finley GC' }, squad: null });
+    expect(logServer).toHaveBeenCalledWith('qualifiers', 'ownSelections', expect.anything(), 'qualifiers');
+    // A coach is never asked for theirs.
+    const coach = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' });
+    expect(coach.items[0]!.mine).toBeNull();
+    expect(coach.items[0]!.leaders.some((l) => l.isYou)).toBe(false);
   });
 
   it('90806 90807 a player gets only their own scorecards and never the pick reasoning', async () => {
@@ -614,6 +644,28 @@ describe('Qualifiers · list', () => {
     expect(screen.getAllByText('You’re entered · no rounds in yet').length).toBeGreaterThan(0);
   });
 
+  it('CH-09906 CH-09907 wave 7: the live card offers your next round (outside the card’s own link), marks you on the leaders, and a confirmed squad says if you made it', () => {
+    wrap(<QualifiersList data={list('player')} />);
+    const play = screen.getByRole('link', { name: 'Play round 3 · Hope Valley CC' });
+    expect(play.getAttribute('href')).toBe('/golf/dashboard/rounds/new?qualifier=10000000-0000-4000-8000-000000000001');
+    // Never a link inside the card's link.
+    expect(play.closest('.ch-qf-hero, .ch-qf-card')).toBeNull();
+    expect(code('CH-09906')).not.toBeNull();
+    const me = document.querySelector('.ch-qf-lead__r.is-me')!;
+    expect(me.textContent).toMatch(/Jonah Okafor\s*You/);
+    expect(document.querySelectorAll('.ch-qf-lead__r.is-me')).toHaveLength(1);
+    // The Fall invitational's squad is confirmed with Jonah on it.
+    expect(screen.getByText(/^You made the squad · /)).toBeTruthy();
+    cleanup();
+    const base = list('player');
+    wrap(<QualifiersList data={{ ...base, items: base.items.map((i) => (i.mine?.squad === true ? { ...i, mine: { ...i.mine, squad: false } } : i)) }} />);
+    expect(screen.getByText(/^You’re .* · not selected$/)).toBeTruthy();
+    cleanup();
+    // Unknown (the read failed): the plain standing.
+    wrap(<QualifiersList data={{ ...base, items: base.items.map((i) => (i.mine?.squad === true ? { ...i, mine: { ...i.mine, squad: null } } : i)) }} />);
+    expect(screen.queryByText(/made the squad|not selected/)).toBeNull();
+  });
+
   it('CH-09211 a crash stays inside the list', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const data = list();
@@ -743,6 +795,25 @@ describe('Qualifiers · one qualifier', () => {
     await user.click(screen.getByRole('button', { name: 'Show your scorecards' }));
     expect(screen.getByRole('table', { name: /Round 2 scorecard/ })).toBeTruthy();
     expect(screen.getAllByText('You').length).toBeGreaterThan(0);
+  });
+
+  it('CH-09906 wave 7: your next round in a live qualifier is a link to round setup on it; one tie for best is marked once; a coach and an ended qualifier get no link', () => {
+    const { unmount } = wrap(<QualifierDetail data={detail('live', 'player')} writes={fakeWrites()} live={false} />);
+    const rounds = screen.getByRole('region', { name: 'Your rounds' });
+    // Round 3 is at Hope Valley, not the qualifier's Finley GC: the round's own course, from the streamed part.
+    const play = within(rounds).getByRole('link', { name: /^Play round 3\W*Hope Valley CC$/ });
+    expect(play.getAttribute('href')).toBe('/golf/dashboard/rounds/new?qualifier=10000000-0000-4000-8000-000000000001');
+    expect(within(rounds).queryByText('Still to play')).toBeNull();
+    unmount();
+    // Past its last day it has ended: no way into a round.
+    const ended = wrap(<QualifierDetail data={detail('live', 'player', { today: '2026-10-09' })} writes={fakeWrites()} live={false} />);
+    expect(screen.queryByRole('link', { name: /Play round/ })).toBeNull();
+    ended.unmount();
+    // Two rounds level on the best total: only the first is the best round.
+    const d = detail('live', 'player');
+    const tied = { ...d, board: { ...d.board!, rows: d.board!.rows.map((r) => (r.playerId === PLAYER_ID.jonah ? { ...r, rounds: r.rounds.map((rd) => ({ ...rd, total: 72 })) } : r)) } };
+    wrap(<QualifierDetail data={tied} writes={fakeWrites()} live={false} />);
+    expect(screen.getAllByText(/Best round/)).toHaveLength(1);
   });
 
   it('CH-09205 CH-09308 scorecards that do not load, and a round with no card', async () => {

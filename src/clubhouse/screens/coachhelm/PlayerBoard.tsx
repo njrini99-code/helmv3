@@ -53,6 +53,8 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
   const { focus, also, working } = useMemo(() => partitionInsights(list, picked?.id), [list, picked]);
   const gone = picked && focus && focus.id !== picked.id ? picked : null;
   const startHref = coachHelmLinks.startRound();
+  // How many rounds CoachHelm still waits for (the miner's floor less the rounds in its window), when known and some are still to come.
+  const short = data.roundsToGo != null && data.roundsToGo > 0 ? data.roundsToGo : null;
   const pick = (ins: ChInsight) => {
     setPicked({ id: ins.id, title: ins.title });
     // On the phone the focus sits above the lists, so bring it into view.
@@ -65,7 +67,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Player" phone={phone} aside={!phone ? tabs : undefined}>
+      <Head phone={phone} aside={!phone ? tabs : undefined}>
         One thing to work on this week, based on the rounds you’ve posted.
       </Head>
 
@@ -94,7 +96,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
             code="CH-13301"
             icon={Sparkles}
             title="Post a round to start CoachHelm"
-            body="CoachHelm reads the rounds you post. Once there is enough to go on, one thing to work on this week shows up here."
+            body={`CoachHelm reads the rounds you post. ${short != null ? `After ${short} ${short === 1 ? 'round' : 'rounds'}` : 'Once there is enough to go on'}, one thing to work on this week shows up here.`}
             action={
               startHref ? (
                 <Button variant="primary" leftIcon={Play} href={startHref.href}>
@@ -109,7 +111,11 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
             code="CH-13302"
             icon={Sparkles}
             title="No insights yet"
-            body={`${data.rounds ? `You’ve posted ${data.rounds} ${data.rounds === 1 ? 'round' : 'rounds'}. ` : ''}CoachHelm needs enough rounds to find a pattern worth acting on. Every round you post sharpens the read.`}
+            body={
+              short != null
+                ? `Post ${short} more ${short === 1 ? 'round' : 'rounds'} and CoachHelm starts reading your game.`
+                : `${data.rounds ? `You’ve posted ${data.rounds} ${data.rounds === 1 ? 'round' : 'rounds'}. ` : ''}CoachHelm needs enough rounds to find a pattern worth acting on. Every round you post sharpens the read.`
+            }
             action={
               startHref ? (
                 <Button variant="primary" leftIcon={Play} href={startHref.href}>
@@ -135,7 +141,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
                   code="CH-13303"
                   icon={Sparkles}
                   title="Nothing needs work right now"
-                  body="CoachHelm found nothing to fix in the rounds you’ve posted. What is working is listed beside this."
+                  body={`CoachHelm found nothing to fix in the rounds you’ve posted. What is working is listed ${phone ? 'below' : 'beside this'}.`}
                 />
               )}
             </SectionBoundary>

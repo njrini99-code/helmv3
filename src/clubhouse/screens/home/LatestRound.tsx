@@ -56,7 +56,7 @@ function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
 const statsHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
 
 /**
- * `mine`: the player's Home ("My latest round", Player - Home.html): a flag in
+ * `mine`: the player's Home ("Your latest round", Player - Home.html): a flag in
  * place of the avatar, and My stats in place of the player's stats.
  */
 /**
@@ -79,7 +79,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
     <section className="ch-h-pane" aria-labelledby="ch-round-title">
       {lead}
       <div className="ch-h-pane__head">
-        <h2 id="ch-round-title">{mine ? 'My latest round' : 'Latest round'}</h2>
+        <h2 id="ch-round-title">{mine ? 'Your latest round' : 'Latest round'}</h2>
         {rounds.length > 1 && (
           <div className="ch-h-pager ch-well-soft">
             <span className="ch-num" aria-live="polite">

@@ -6,7 +6,7 @@ import { Skeleton } from '../../ui/States';
 /**
  * The phone skeleton's opening and tab strip in the role's own shape (CH-10405): the shell knows who is signed in
  * before the page is read, so a coach's skeleton carries New announcement under the role chip and five tabs, and a
- * player's has no button and four tabs. The page then lands where its skeleton stood, for either role.
+ * player's has no chip, no button and four tabs. The page then lands where its skeleton stood, for either role.
  */
 export function HubSkeletonTop() {
   const coach = useClubhouseRole() === 'coach';
@@ -14,7 +14,7 @@ export function HubSkeletonTop() {
     <>
       <div className="ch-hb-h">
         <div>
-          <Skeleton width={96} height={24} radius={12} />
+          {coach && <Skeleton width={96} height={24} radius={12} />}
           <Skeleton width={128} height={10} />
         </div>
         {coach && <Skeleton width="100%" height={44} radius={10} />}
@@ -26,6 +26,17 @@ export function HubSkeletonTop() {
           </span>
         ))}
       </div>
+    </>
+  );
+}
+
+/** The desktop skeleton's role chip, a coach's only (a player's page has none, wave 7), with the gap under it. */
+export function HubSkeletonChip() {
+  if (useClubhouseRole() !== 'coach') return null;
+  return (
+    <>
+      <Skeleton width={96} height={24} radius={12} />
+      <div style={{ height: 4 }} />
     </>
   );
 }

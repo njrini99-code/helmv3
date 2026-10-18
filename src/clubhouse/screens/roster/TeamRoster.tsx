@@ -82,6 +82,8 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
         </div>
       </header>
 
+      <TeamCoaches coaches={data.coaches} />
+
       {data.playersError ? (
         <InlineNotice
           code="CH-3210"
@@ -138,6 +140,37 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
         </>
       )}
     </main>
+  );
+}
+
+/**
+ * The team's coaches above the players (wave 7): name and role in the roster's own Ledger, plain text like every row here
+ * (CH-3808). Left out when the staff didn't load (logged) or the team has none on record.
+ */
+function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
+  if (!coaches?.length) return null;
+  return (
+    <div className="ch-rs-list ch-rs-list--team ch-rs-coaches ch-sheet" role="table" aria-label="Coaches" data-ch-code="CH-3808">
+      <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
+        <span role="columnheader">Coach</span>
+        <span role="columnheader">Role</span>
+      </div>
+      {coaches.map((c) => (
+        <div key={c.id} role="row" className="ch-rs-row">
+          <span role="cell" className="ch-rs-who__cell">
+            <span className="ch-rs-who ch-rs-who--static">
+              <Avatar name={c.name} size={40} />
+              <span>
+                <b>{c.name}</b>
+              </span>
+            </span>
+          </span>
+          <span role="cell" className="ch-rs-num2">
+            {c.role}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 

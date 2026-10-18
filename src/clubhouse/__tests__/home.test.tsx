@@ -424,7 +424,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     const meta = document.querySelector('.ch-hm-list .ch-hm-rd__m')!;
     // The dot between them is drawn by the stylesheet (wave 4), so a large Text Size can drop it when the date moves under
     // the course.
-    expect([...meta.children].map((c) => c.textContent)).toEqual(['Oakmont CC', 'Sun 12 Oct']);
+    expect([...meta.children].map((c) => c.textContent)).toEqual(['Oakmont CC', 'Mon 12 Oct']);
     const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/home.css'), 'utf8');
     expect(css).toMatch(/\.ch-hm-rd__when::before \{\s*content: ' · ';/);
   });

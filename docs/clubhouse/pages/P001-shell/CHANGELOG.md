@@ -1,5 +1,28 @@
 # P001 — Shell: changelog
 
+## 2026-10-18 — Wave 7: a player's next event
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (the player's own attendance rows)
+Held items:     works before and after 20261017102000 (HELD.md)
+```
+
+### Fixed (2026-10-18, next event)
+
+- Decision B: a player's next-event card never counts down to a meeting
+  they aren't invited to (their own attendance row decides; when it doesn't
+  load, D2-8 from the counts; when that fails too, no meeting). It reads ten
+  upcoming events, not five, so passed-over meetings don't leave it empty.
+
+### Changed (2026-10-18, next event)
+
+- A player's card shows "Reply needed" while their own reply is still owed,
+  by Home's rule (`playerMine`), an event open to the whole team included.
+
 ## 2026-10-18 — Wave 5: toasts close, replace and hold an Undo
 
 ```text

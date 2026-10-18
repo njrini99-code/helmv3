@@ -22,7 +22,7 @@ export function GolfSection({ data, writes }: { data: ChSettingsData; writes: Ch
   return (
     <>
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
-      {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} title="Golf details" description="Your coaches see these on the roster." covered={covered} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
+      {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} title="Golf details" description="Your coaches and teammates see your handicap and class on the roster." covered={covered} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
       {data.membership?.error ? <ReadFailed what="Your team membership" code="CH-8210" onRetry={writes.refresh} title="Team" description="The team you play for on GolfHelm." covered={covered} /> : data.membership && <MembershipCard m={data.membership.value} writes={writes} />}
     </>
   );
@@ -37,7 +37,7 @@ function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSe
     <Card
       id="set-golf"
       title="Golf details"
-      description="Your coaches see these on the roster."
+      description="Your coaches and teammates see your handicap and class on the roster."
       foot={
         <SaveBar
           dirty={f.dirty}

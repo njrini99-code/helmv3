@@ -166,7 +166,8 @@ Only data the app has (the fidelity notes in PROGRESS.md, Q-68):
 - The scoring chart has no Season best marker and no par meta; both wait for season-best and course-par
   data per window.
 - Strokes gained by leg is the design system's StrokesGainedRoute, and the Rounds count is its tab pill.
-- On the phone, the board's trend phrase ("Down 1.2") is the signed change, labelled "Newer rounds".
+- On the phone, the board's trend phrase ("Down 1.2") is the change in words ("1.2 lower"), over the halves it
+  compares ("Newest 5 vs first 5"; wave 7).
 
 ### Strokes gained (2026-09-30)
 

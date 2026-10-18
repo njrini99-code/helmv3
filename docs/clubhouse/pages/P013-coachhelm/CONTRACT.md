@@ -69,7 +69,7 @@ The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
 | 130202 | CH-13402 | `THE_COACHS_PAGE_IS_ON_ITS_WAY` | The coach's page is on its way |
 | 130203 | CH-13403 | `ASSIGN_OR_DISMISS_IS_SAVING` | Assign or Dismiss is saving |
 | 130204 | — | `THE_ROUTE_SKELETON_TAKES_THE_ROLES_SHAPE` | The route's loading.tsx draws the Clubhouse skeleton only inside the Clubhouse shell (Fairway's skeleton everywhere else), in the shape of the signed-in role's page: the coach's program pulse, then the players beside the focus card; the player's focus card beside a short list. The player's shape is used until the role is known. |
-| 130205 | CH-13404 | `A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING` | A player's Accept or Decline is being sent |
+| 130205 | CH-13404 | `A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING` | A player's Accept is being sent |
 | 130206 | CH-13420 | `ASK_THE_CHAT_PAGE_LOADS` | Ask: The chat page loads |
 | 130207 | CH-13421 | `ASK_A_REPLY_IS_STREAMING` | Ask: A reply is streaming |
 | 130208 | CH-13450 | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | Ask: An action was confirmed and is being carried out |
@@ -159,7 +159,7 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130607 | CH-13204 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
 | 130608 | — | `A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF` | The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Found in this pass, not fixed: on a coach's gate failure the pulse is not read, and the board draws its empty line 'Nothing is flagged in the pulse right now.' beside the CH-13202 notice. |
 | 130609 | CH-13004 | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | A player's Accept of a proposed focus area fails |
-| 130610 | CH-13005 | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | A player's Decline of a proposed focus area fails |
+| 130610 | CH-13005 | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | A player's Decline of a proposed focus area fails (written when its Undo toast goes, CH-13912) |
 | 130611 | CH-13205 | `THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD` | The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read) |
 | 130612 | CH-13050 | `ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER` | Ask: An action CoachHelm proposed fails after Confirm |
 | 130613 | CH-13051 | `ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD` | Ask: Copy is refused by the clipboard |
@@ -218,6 +218,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130720 | CH-13910 | `DEEP_DIVE_THE_READ_THAT_WAS_OPEN` | Deep dive: the read that was open is no longer on the page after a refresh |
 | 130721 | CH-13911 | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
 | 130722 | CH-13924 | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | Ask: coming back to the page after leaving it |
+| 130723 | CH-13912 | `PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED` | Player: a proposed focus area is declined (wave 7, decision C) |
 
 ## 08 — Permission / authorization
 

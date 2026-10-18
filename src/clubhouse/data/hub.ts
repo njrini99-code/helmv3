@@ -326,7 +326,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         error: !summary,
       },
       tasks: {
-        rows: (summary?.tasks ?? []).map((t) => ({
+        rows: taskOrder((summary?.tasks ?? []).map((t) => ({
           id: t.id,
           title: t.title,
           detail: t.category ?? firstLine(t.description),
@@ -334,7 +334,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           due: t.due_date ? f.due(t.due_date, today) : null,
           status: t.status as ChHubTask['status'],
           done: null,
-        })),
+        }))),
         error: !summary,
       },
     };
@@ -386,7 +386,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   if (eventsRes.error) log('events', eventsRes.error);
 
   const trips = (tripsRes.data ?? []) as unknown as TripRow[];
-  // Shown soonest due first, the undated last.
+  // Soonest due first, the undated last; the rows are put in their shown order (`taskOrder`) once their status is known.
   const tasks = (tasksRes.data ?? []).slice().sort((a, b) => (a.due_date ?? '\uffff').localeCompare(b.due_date ?? '\uffff'));
   const events = eventsRes.data ?? [];
   const tripEvents = tripEventsRes.data ?? [];
@@ -453,7 +453,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       error: !!tripsRes.error,
     },
     tasks: {
-      rows: tasks.map((t) => {
+      rows: taskOrder(tasks.map((t) => {
         const a = assignments.byTask.get(t.id);
         return {
           id: t.id,
@@ -464,7 +464,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           status: a && a.total > 0 && a.done === a.total ? 'completed' : t.due_date && isGolfTaskOverdueInZone(t.due_date, tz) ? 'overdue' : 'pending',
           done: assignments.error || !a ? null : [a.done, a.total],
         };
-      }),
+      })),
       error: !!tasksRes.error,
       total: tasksRes.count ?? null,
     },
@@ -739,6 +739,12 @@ export function bytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/** The order a task list is shown in: the open ones first, then soonest due, the undated last (wave 7: a done task never sits above an open one). */
+export function taskOrder(rows: ChHubTask[]): ChHubTask[] {
+  const open = (t: ChHubTask) => (t.status === 'completed' ? 1 : 0);
+  return [...rows].sort((a, b) => open(a) - open(b) || (a.dueDate ?? '\uffff').localeCompare(b.dueDate ?? '\uffff'));
 }
 
 function firstLine(s: string | null): string | null {

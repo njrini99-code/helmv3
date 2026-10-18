@@ -1485,7 +1485,8 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
 
   it('81901 the player root has Golf profile in place of Team and CoachHelm, and the handicap on the identity row', () => {
     phone({ data: playerData(true) });
-    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · HCP 2.4' })).toBeTruthy();
+    // The index (2.1) wins over the handicap (2.4), as on the roster (displayHandicap).
+    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · HCP 2.1' })).toBeTruthy();
     const rows = within(list()).getAllByRole('button');
     expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Golf profile', 'Notifications', 'Preferences']);
     expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Handicap, team', 'Push, CoachHelm', 'Motion, units']);

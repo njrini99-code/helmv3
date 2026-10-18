@@ -3971,3 +3971,38 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 html[data-fw-theme='dark'] .ch-h-form__bar {
   background: rgb(244 241 232 / 0.1);
 }
+
+/* Wave 7: the player's own reply on Up next (CoachAsks.tsx, MineBadge), held to its own width in the card's column. */
+.ch-hm-next > .ch-badge,
+.ch-ph-next > .ch-badge {
+  align-self: flex-start;
+}
+
+/* Wave 7: "From your coach" under the player's hero (CoachAsks.tsx): one quiet row that opens Team Hub. */
+.ch-ph-asks {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+  color: var(--ch-text-secondary);
+  text-decoration: none;
+}
+.ch-ph-asks__k {
+  flex: none;
+  font: 600 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-ph-asks__v {
+  flex: 1;
+  min-width: 0;
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+}
+.ch-ph-asks > svg {
+  flex: none;
+  color: var(--ch-text-tertiary);
+}

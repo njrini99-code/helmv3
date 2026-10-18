@@ -1,5 +1,22 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-18 — Wave 7: player stats trend
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, phone scoring trend)
+
+- The phone hero's Scoring trend reads "2.1 higher", "2.1 lower" or "level",
+  over "Newest 5 vs first 5" (the halves the change compares), in place of
+  "up 2.1 · Newer rounds".
+
 ## 2026-10-18 — Wave 5: pending labels end in “…”
 
 ```text

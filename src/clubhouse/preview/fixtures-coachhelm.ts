@@ -264,7 +264,7 @@ export const PREVIEW_HELM_PLAYER_PROPOSED: ChPlayerHelm = {
   proposals: {
     list: [
       { id: 'fa-ladder', title: 'Downhill putts inside 6 ft', from: 'Downhill putts from 4–6 ft: a real penalty' },
-      { id: 'fa-lag', title: 'Lag putting from 30 ft', from: null },
+      { id: 'fa-lag', title: 'Lag putting from 30 ft', from: null, coachUserId: 'u-maya' },
     ],
     error: false,
   },

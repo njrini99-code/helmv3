@@ -1210,7 +1210,7 @@
     "category": 1,
     "item": 2,
     "name": "PLAYER_HOME_READY",
-    "meaning": "Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901).",
+    "meaning": "Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and Your latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901).",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/data/player-home.ts#loadPlayerHome",
     "tests": [
@@ -1671,7 +1671,7 @@
     "category": 8,
     "item": 6,
     "name": "CONTROLS_STAY_WITH_THEIR_ROLE",
-    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Post a round or countdown.",
+    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Start a round or countdown.",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/screens/home/CoachHome.tsx#CoachHome",
     "tests": [
@@ -1846,7 +1846,7 @@
     "category": 19,
     "item": 1,
     "name": "PHONE_HOME",
-    "meaning": "At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, My latest round, Scoring and the parts of the game; wider canvases get the desktop Home.",
+    "meaning": "At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, Your latest round, Scoring and the parts of the game; wider canvases get the desktop Home.",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/HomePhone.tsx#HomePhone; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/lib/use-phone.ts#useChPhone",
     "tests": [
@@ -2681,6 +2681,17 @@
     "name": "THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT",
     "chCode": "CH-3807",
     "meaning": "The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31808,
+    "page": "P003",
+    "category": 18,
+    "item": 8,
+    "name": "THE_PLAYERS_ROSTER_NAMES_THE_COACHES",
+    "chCode": "CH-3808",
+    "meaning": "The player's roster names the coaches (wave 7, decision D): a \"Coaches\" group above the players: name and role (\"Head coach\" first, else their title, else \"Coach\"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then \"Players\". Left out when the staff read failed (logged `playerCoaches`) or none is on record",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -9218,6 +9229,28 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90705,
+    "page": "P009",
+    "category": 7,
+    "item": 5,
+    "name": "PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND",
+    "chCode": "CH-09906",
+    "meaning": "Player: a live qualifier with a round still to play, before its last day",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90706,
+    "page": "P009",
+    "category": 7,
+    "item": 6,
+    "name": "PLAYER_THE_SQUAD_IS_CONFIRMED",
+    "chCode": "CH-09907",
+    "meaning": "Player: the squad is confirmed",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90801,
     "page": "P009",
     "category": 8,
@@ -14046,7 +14079,7 @@
     "item": 5,
     "name": "A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING",
     "chCode": "CH-13404",
-    "meaning": "A player's Accept or Decline is being sent",
+    "meaning": "A player's Accept is being sent",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14567,7 +14600,7 @@
     "item": 10,
     "name": "A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS",
     "chCode": "CH-13005",
-    "meaning": "A player's Decline of a proposed focus area fails",
+    "meaning": "A player's Decline of a proposed focus area fails (written when its Undo toast goes, CH-13912)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15110,6 +15143,17 @@
     "chCode": "CH-13924",
     "meaning": "Ask: coming back to the page after leaving it",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130723,
+    "page": "P013",
+    "category": 7,
+    "item": 23,
+    "name": "PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED",
+    "chCode": "CH-13912",
+    "meaning": "Player: a proposed focus area is declined (wave 7, decision C)",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

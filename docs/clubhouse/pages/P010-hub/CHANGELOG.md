@@ -1,5 +1,25 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-18 — Wave 7: player Team Hub
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, player Team Hub)
+
+- Tasks are listed open first, then soonest due, the undated last, for
+  coach and player (`taskOrder`); a done task no longer sits above an open
+  one. The coach's capped read still keeps the latest due.
+- A player's phone Home shows Your tasks before Updates.
+- A player sees no role chip ("Player view" is gone); the coach keeps
+  "Coach view". The skeletons draw the chip for a coach only.
+
 ## 2026-10-18 — Wave 6: coach forms, who hasn't acknowledged
 
 ```text

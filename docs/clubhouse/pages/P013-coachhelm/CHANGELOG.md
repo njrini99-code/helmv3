@@ -1,5 +1,32 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-18 — Wave 7: player CoachHelm
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (the miner's floor and window, the proposing coach)
+Held items:     none
+```
+
+### Changed (2026-10-18, player CoachHelm)
+
+- Decision C: Decline is held under a toast with Undo (CH-13912) and
+  written when the toast goes, or at once when the page is left; Undo
+  writes nothing. The declined row offers "Tell coach why", which opens
+  Messages to the coach who proposed it. A failed write puts Accept and
+  Decline back with CH-13005.
+- The empty board says how many rounds are still to come ("Post 2 more
+  rounds and CoachHelm starts reading your game."), counted as the pattern
+  miner counts them: its floor (the coach's `min_rounds_for_signal`, never
+  under the miner's minimum) less the countable rounds in its window.
+- No "Player" eyebrow over a player's CoachHelm or its views (skeletons
+  match); the coach keeps "Coach".
+- "What is working is listed below" on the phone; "beside this" stays on
+  the desktop, where it is.
+
 ## 2026-10-18 — Wave 6: honest projections, units and words
 
 ```text

@@ -27,7 +27,7 @@ export const PREVIEW_PLAYER: GolfUserData = {
 };
 
 export const PREVIEW_SHELL: ChShellData = {
-  nextEvent: { id: 'e-pinehurst', title: 'Pinehurst qualifier', whenLabel: 'In 2 days', metaLabel: 'Thu, Oct 16 · 8:42 AM · Pinehurst No. 2', ready: { accepted: 5, invited: 6 } },
+  nextEvent: { id: 'e-pinehurst', title: 'Pinehurst qualifier', whenLabel: 'In 2 days', metaLabel: 'Fri, Oct 16 · 8:42 AM · Pinehurst No. 2', ready: { accepted: 5, invited: 6 } },
   pendingJoinRequests: 2,
   timezone: 'America/New_York',
   askAvailable: true,
@@ -58,18 +58,19 @@ const LEADERS: ChCoachHome['leaderboard']['rows'] = [
 export const PREVIEW_HOME: ChCoachHome = {
   greeting: 'Good morning, Maya.',
   teamChatId: 'c-team',
-  subline: homeSubline(LEADERS, { roundsError: false, nextCompetition: { title: 'Qualifier · Pinehurst No. 2', when: 'Thursday' } }),
-  todayLabel: 'Tuesday, 14 October',
+  subline: homeSubline(LEADERS, { roundsError: false, nextCompetition: { title: 'Qualifier · Pinehurst No. 2', when: 'Friday' } }),
+  todayLabel: 'Wednesday 14 October',
   week: {
     error: false,
     days: [
-      ['Mon', 13, 2, false],
-      ['Tue', 14, 4, false],
-      ['Wed', 15, 2, false],
-      ['Thu', 16, 1, true],
-      ['Fri', 17, 1, false],
-      ['Sat', 18, 0, false],
-      ['Sun', 19, 0, false],
+      // The week of Wednesday 14 October 2026: every weekday is its date's own.
+      ['Mon', 12, 2, false],
+      ['Tue', 13, 2, false],
+      ['Wed', 14, 4, false],
+      ['Thu', 15, 2, false],
+      ['Fri', 16, 1, true],
+      ['Sat', 17, 1, false],
+      ['Sun', 18, 0, false],
     ].map(([weekday, dayOfMonth, eventCount, hasCompetition]) => ({
       date: `2026-10-${dayOfMonth}`,
       weekday: weekday as string,
@@ -83,16 +84,16 @@ export const PREVIEW_HOME: ChCoachHome = {
       { id: 'a2', timeLabel: '4:45', title: '1:1 with Jonah', detail: 'Range bay 4', isNext: false, isCompetition: false, when: 'today' },
       { id: 'a3', timeLabel: '5:30', title: 'Putting ladder', detail: 'Green 2 · Priya, Ava', isNext: false, isCompetition: false, when: 'today' },
       { id: 'a4', timeLabel: '6:00', title: 'Parent call', detail: 'Natarajan family', isNext: false, isCompetition: false, when: 'today' },
-      { id: 'a5', timeLabel: 'Thu', title: 'Qualifier · Pinehurst No. 2', detail: 'First tee 8:42 · 5 of 6 going', isNext: false, isCompetition: true, when: 'later' },
+      { id: 'a5', timeLabel: 'Fri', title: 'Qualifier · Pinehurst No. 2', detail: 'First tee 8:42 · 5 of 6 going', isNext: false, isCompetition: true, when: 'later' },
     ],
   },
   latestRounds: {
     error: false,
     holesError: false,
     rounds: [
-      { id: 'r1', playerId: 'theo', playerName: 'Theo Marchetti', meta: 'Oakmont CC · Sun 12 Oct · Member tees', score: total(r1), toPar: total(r1) - 72, holes: r1, gir: '14/18', putts: 28, sg: 2.4 },
-      { id: 'r2', playerId: 'sofia', playerName: 'Sofia Alvarez', meta: 'Oakmont CC · Sun 12 Oct · Member tees', score: total(r2), toPar: total(r2) - 72, holes: r2, gir: '12/18', putts: 30, sg: 1.2 },
-      { id: 'r3', playerId: 'jonah', playerName: 'Jonah Okafor', meta: 'Pine Needles · Sat 11 Oct · Back tees', score: total(r3), toPar: total(r3) - 72, holes: null, gir: '8/18', putts: 31, sg: -1.6 },
+      { id: 'r1', playerId: 'theo', playerName: 'Theo Marchetti', meta: 'Oakmont CC · Mon 12 Oct · Member tees', score: total(r1), toPar: total(r1) - 72, holes: r1, gir: '14/18', putts: 28, sg: 2.4 },
+      { id: 'r2', playerId: 'sofia', playerName: 'Sofia Alvarez', meta: 'Oakmont CC · Mon 12 Oct · Member tees', score: total(r2), toPar: total(r2) - 72, holes: r2, gir: '12/18', putts: 30, sg: 1.2 },
+      { id: 'r3', playerId: 'jonah', playerName: 'Jonah Okafor', meta: 'Pine Needles · Sun 11 Oct · Back tees', score: total(r3), toPar: total(r3) - 72, holes: null, gir: '8/18', putts: 31, sg: -1.6 },
     ],
   },
   leaderboard: {
@@ -148,11 +149,11 @@ export const PREVIEW_HOME: ChCoachHome = {
       gir: { pct: 61, delta: 3 },
       putts: { avg: 30.4, delta: 0.3 },
     },
-    weekNote: { weekday: 'Thursday', title: 'Qualifier · Pinehurst No. 2' },
+    weekNote: { weekday: 'Friday', title: 'Qualifier · Pinehurst No. 2' },
   },
 };
 
-/** The preview's frozen clock: Tuesday 14 October, 2:40 PM Eastern, as the phone boards draw it. */
+/** The preview's frozen clock: Wednesday 14 October, 2:40 PM Eastern, as the phone boards draw it. */
 export const PREVIEW_HOME_NOW = '2026-10-14T18:40:00Z';
 
 /** Failure and empty variants, so every state can be seen without breaking anything. */

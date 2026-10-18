@@ -313,9 +313,12 @@ describe('Calendar parity · a player’s reply locks when the server locks it (
     const open = ev({ id: 'op', title: 'Team dinner', date: '2026-10-16', startIso: '2026-10-16T23:00:00Z', people: ['sofia'] });
     const late = ev({ id: 'lt', title: 'Film session', date: '2026-10-16', startIso: '2026-10-16T21:00:00Z', people: ['sofia'], rsvpDeadline: '2026-10-14T16:00:00Z' });
     wrap(cal([open, late], player));
-    const sec = (await screen.findByText('Needs your reply')).closest('.ch-in__sec') as HTMLElement;
-    expect(within(sec).getByText(/Team dinner/)).toBeTruthy();
-    expect(within(sec).queryByText(/Film session/)).toBeNull();
+    // The two overlap for her (wave 7: a player is shown her own clash), so the section is her attention, not only
+    // replies; the clash row ("Team dinner · Overlaps Film session …") is not a reply row.
+    const sec = (await screen.findByText('Needs your attention')).closest('.ch-in__sec') as HTMLElement;
+    const rows = within(sec).getAllByRole('button').map((b) => b.textContent ?? '');
+    expect(rows.filter((t) => !t.includes('Overlaps'))).toEqual([expect.stringMatching(/^Team dinnerFri 16 · /)]);
+    expect(rows.some((t) => t.startsWith('Film session'))).toBe(false);
   });
 
   it('before the deadline the reply is open', async () => {

@@ -26,6 +26,7 @@ import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
 import { roundHref } from './player-links';
 import { leaderPeek } from './Leaderboard';
+import { MineBadge } from './CoachAsks';
 import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
 import { useLightPlace } from '../../shell/light';
 
@@ -173,6 +174,8 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
           <Icon icon={ChevronRight} size={17} />
         </span>
       )}
+      {/* A player's own reply (their Home only; a coach's card never carries `mine`). */}
+      <MineBadge mine={e.mine} />
       {children}
       <LinkPending />
     </Link>

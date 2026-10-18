@@ -120,6 +120,13 @@ export interface ChQBoard {
   submitted: number;
 }
 
+/** The first scheduled round with no score in (the one a player plays next), or null when every round is in. */
+export function nextRoundNumber(rounds: ReadonlyArray<{ number: number }>, numRounds: number): number | null {
+  const played = new Set(rounds.map((r) => r.number));
+  for (let n = 1; n <= numRounds; n++) if (!played.has(n)) return n;
+  return null;
+}
+
 /** "T3", "4", or a dash for someone with no round in. */
 export function positionLabel(row: Pick<ChQRow, 'position' | 'tied'>): string {
   if (row.position == null) return '—';

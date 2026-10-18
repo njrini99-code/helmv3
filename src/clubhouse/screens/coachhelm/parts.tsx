@@ -250,11 +250,12 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
  *  structure instead of a title block over a separate strip. */
 /** `phone`: the shell's top bar already carries the page's h1 ("CoachHelm"), so the large title here is the same words set as
  *  text, still labelling the main landmark: one h1 per screen (P013 D8). */
-export function Head({ who, children, aside, phone = false }: { who: 'Player' | 'Coach'; children: ReactNode; aside?: ReactNode; phone?: boolean }) {
+/** `who`: the coach's role line. A player's page has none (wave 7: a player is never told their own role). */
+export function Head({ who, children, aside, phone = false }: { who?: 'Coach'; children: ReactNode; aside?: ReactNode; phone?: boolean }) {
   const Title = phone ? 'p' : 'h1';
   return (
     <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
-      <span className="ch-hl-role">{who}</span>
+      {who && <span className="ch-hl-role">{who}</span>}
       <Title id="ch-hl-title" className="ch-hl-h__t">
         CoachHelm
       </Title>

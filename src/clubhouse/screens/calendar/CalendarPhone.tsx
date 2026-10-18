@@ -14,7 +14,7 @@ import { Swap } from '../../ui/Swap';
 import { haptic } from '../../lib/haptics';
 import { EventPeek } from './peek';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { addDays, dayNum, dowOf, fmtHour, monthName, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
+import { addDays, dayNum, dowOf, fmtHour, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 import { MonthGrid } from './month';
 
@@ -70,6 +70,8 @@ export function CalendarPhone({
   onSubscribe: () => void;
 }) {
   const coach = data.role === 'coach';
+  // A player's own class is titled without their name; their replies still owed are marked (P006, wave 7).
+  const viewerId = coach ? null : data.viewerPlayerId;
   const pv = phoneViewOf(view);
   const setPv = (v: ChCalPhoneView) => onView(desktopViewOf(v), anchor);
 
@@ -106,7 +108,7 @@ export function CalendarPhone({
       {notices}
       {data.eventsError &&
         (pv === 'day' ? (
-          <DayView anchor={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} range={data.range} failed={eventsNotice} />
+          <DayView anchor={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} failed={eventsNotice} />
         ) : (
           eventsNotice
         ))}
@@ -114,11 +116,11 @@ export function CalendarPhone({
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
           <Swap swapKey={pv}>
-            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} range={data.range} onNew={onNew} />}
+            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} />}
             {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />}
             {pv === 'list' &&
               (events.some((e) => e.date >= now.date) ? (
-                <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} />
+                <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} viewerId={viewerId} />
               ) : (
                 <EmptyState code="CH-6301" icon={CalendarDays} title="Nothing on the calendar in this range" body={coach ? 'Events you publish show here, with any overlaps and replies.' : 'Events your coach invites you to show here.'} />
               ))}
@@ -144,6 +146,7 @@ function DayView({
   onDay,
   onOpen,
   coach,
+  viewerId,
   range,
   failed,
   onNew,
@@ -157,6 +160,8 @@ function DayView({
   onDay: (date: string) => void;
   onOpen: (id: string, date: string) => void;
   coach: boolean;
+  /** The signed-in player (null for a coach): their own class titles, and the replies they still owe. */
+  viewerId: string | null;
   /** New event on a day (coach): the empty day's action. */
   onNew?: (date: string) => void;
   /** The dates the page has loaded: a neighbouring day outside it waits for its week instead of reading as empty. */
@@ -179,20 +184,22 @@ function DayView({
         </h3>
       </div>
     ) : (
-      <DayPage date={date} events={events} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined} onNew={live ? onNew : undefined} />
+      <DayPage date={date} events={events} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined} onNew={live ? onNew : undefined} />
     );
   return (
     <>
       <ol className="ch-calm-week" aria-label="This week" style={{ ['--ch-calm-at' as string]: Math.max(0, week.indexOf(anchor)) }}>
         {week.map((d) => {
           const n = events.filter((e) => e.date === d && e.type !== 'class' && e.type !== 'busy').length;
+          // A player's reply still owed that day: one amber dot beside the day's own (wave 7).
+          const reply = !failed && events.some((e) => e.date === d && playerReplyNeeded(e, viewerId, now));
           return (
             <li key={d}>
               <button
                 type="button"
                 className={'ch-calm-week__d' + (d === anchor ? ' is-on' : '') + (d === now.date ? ' is-today' : '')}
                 aria-pressed={d === anchor}
-                aria-label={`${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}${failed ? '' : `, ${n} ${n === 1 ? 'event' : 'events'}`}`}
+                aria-label={`${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}${failed ? '' : `, ${n} ${n === 1 ? 'event' : 'events'}`}${reply ? ', needs your reply' : ''}`}
                 onClick={() => {
                   if (d !== anchor) haptic('select');
                   swiped.current = false;
@@ -205,6 +212,7 @@ function DayView({
                   {Array.from({ length: Math.min(3, n) }, (_, j) => (
                     <span key={j} />
                   ))}
+                  {reply && <span className="is-reply" />}
                 </i>
               </button>
             </li>
@@ -212,7 +220,7 @@ function DayView({
         })}
       </ol>
       {failed ? (
-        <DayPage date={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} onWeek={(dir) => onDay(addDays(anchor, 7 * dir))} failed={failed} />
+        <DayPage date={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onWeek={(dir) => onDay(addDays(anchor, 7 * dir))} failed={failed} />
       ) : (
         <DayPager
           anchor={anchor}
@@ -242,6 +250,7 @@ function DayPage({
   selId,
   onOpen,
   coach,
+  viewerId,
   onWeek,
   failed,
   onNew,
@@ -254,6 +263,7 @@ function DayPage({
   selId: string | null;
   onOpen: (id: string, date: string) => void;
   coach: boolean;
+  viewerId: string | null;
   onWeek?: (dir: 1 | -1) => void;
   /** The events didn't load: the heading and arrows stay, no count, and the notice in the list's place. */
   failed?: ReactNode;
@@ -318,6 +328,9 @@ function DayPage({
             const past = isToday && !e.allDay && (e.end ?? 0) <= now.hour;
             const live = isToday && !e.allDay && (e.start ?? 0) <= now.hour && (e.end ?? 0) > now.hour;
             const block = e.type === 'class' || e.type === 'busy';
+            // The player's reply is still owed (and the server would take it): marked as Team Hub marks one.
+            const reply = playerReplyNeeded(e, viewerId, now);
+            const title = eventTitle(e, people, viewerId);
             return (
               <li key={`${e.id}${e.date}`}>
                 {i === nowAt && nowLine}
@@ -326,7 +339,7 @@ function DayPage({
                   <button
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
-                    aria-label={`${eventTitle(e, people)}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e) : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}`}
+                    aria-label={`${title}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e) : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}`}
                     onClick={() => {
                       haptic('select');
                       onOpen(e.id, e.date);
@@ -341,11 +354,14 @@ function DayPage({
                       <i className={`ch-dot-${e.type}`} />
                     </span>
                     <span className="ch-calm-ev__b">
-                      <b>{eventTitle(e, people)}</b>
+                      <b>{title}</b>
                       {/* A class's code is already in its title ("Priya · STAT 201"), so its line names only the room. */}
                       <span>{block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : (e.location ?? '')}</span>
                     </span>
-                    {flagged.has(e.id) ? (
+                    {reply ? (
+                      // The reply is the action on this row; an overlap still reads in its label and on the event.
+                      <Badge tone="warning">Reply</Badge>
+                    ) : flagged.has(e.id) ? (
                       <span className="ch-calm-ev__w" aria-hidden="true">
                         <Icon icon={TriangleAlert} size={13} />
                       </span>

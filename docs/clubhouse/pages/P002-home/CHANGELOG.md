@@ -1,5 +1,39 @@
 # P002 — Home: changelog
 
+## 2026-10-18 — Wave 7: player Home privacy, replies and coach asks
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (own attendance rows, Team Hub's player reads)
+Held items:     works before and after 20261017102000 (HELD.md)
+```
+
+### Fixed (2026-10-18, meeting privacy)
+
+- Decision B: a player's week (day counts, agenda, Today, Up next) holds a
+  meeting only when they are on its invite list (their own attendance row,
+  read before and after migration 20261017102000). Up next moves on to the
+  next event they can see. When their own replies don't load, D2-8 decides
+  from the counts; when that fails too, no meeting is shown (fail closed;
+  `home.ownReplies` and `home.meetingInvites` are logged).
+
+### Changed (2026-10-18, player Home)
+
+- "From your coach" under the hero: replies owed, posts to acknowledge and
+  tasks due within a week, counted as Team Hub lists them; it opens Team Hub
+  and hides when nothing waits or a read fails (`loadPlayerAsks`).
+- Up next says "You're going" or "Reply needed" from the player's own reply.
+- "Start a round" replaces "Post a round"; "Your latest round" replaces "My
+  latest round"; a clean sweep reads "Your last ten rounds were all 71 or
+  better."
+- Preview: the player and coach weeks' weekdays are their dates' own (Wed 14
+  Oct; the Pinehurst qualifier is Friday 16).
+- P002 CONTRACT, PAGE, DESIGN and the bridge contracts say "Start a round"
+  and "Your latest round".
+
 ## 2026-10-18 — Wave 5: Start a round icons
 
 ```text

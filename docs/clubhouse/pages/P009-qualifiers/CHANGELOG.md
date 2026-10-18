@@ -1,5 +1,30 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-18 — Wave 7: player qualifiers
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (own selection rows, round courses)
+Held items:     none
+```
+
+### Changed (2026-10-18, player qualifiers)
+
+- A live qualifier's next round for the player is a link to round setup with
+  the qualifier chosen (`?qualifier=`): the dashed tile on the detail reads
+  "Play round 3" with the round's own course, and the list adds "Play round
+  3 · Hope Valley CC" under the live card, outside its link (CH-09906). None
+  once the qualifier is past its last day.
+- The list's standings mark the player: their row is lighter, with "You".
+- Once the coach confirms the squad, the player's line says "You made the
+  squad · 4th · +6" or "You're 4th · +6 · not selected" (CH-09907), from
+  their own selection row. A failed read keeps the plain standing (logged
+  as `ownSelections`).
+- Two rounds tied on the best total: only the first is "Best round".
+
 ## 2026-10-18 — Wave 6: qualifier form and selections
 
 ```text

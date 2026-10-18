@@ -217,13 +217,15 @@ export function StatsPlayerPhone({
 
 /**
  * The board's three figures (m-stats.jsx Player, m.css .m-figs): scoring average, strokes gained a round in green or
- * amber, and the trend in words ("down 1.4", lower scores are better). The shared metadata footer holds the sample caveat or comparison without moving the figures.
+ * amber, and the trend in words ("1.4 lower", lower scores are better). The shared metadata footer holds the sample caveat or comparison without moving the figures.
  */
 function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: ReactNode }) {
   const w = data.win;
   const sgTone = w.sgPerRound == null ? '' : w.sgPerRound >= 0 ? ' ch-gain' : ' ch-loss';
   const form = w.formChange;
   const flat = form != null && Math.abs(form) < 0.05;
+  // The rounds in each half of the trend the change compares (summarizeWindow's own split).
+  const half = Math.floor(w.trend.length / 2);
   const formTone = form == null || flat ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
   const d = data.sgChange.delta;
   // The scoring average against par, per 18 holes over the window's rounds that carry a par (owner, 2026-10-07: no bare numbers).
@@ -247,8 +249,9 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
         </div>
         <div>
           <dt>Scoring trend</dt>
-          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${form < 0 ? 'down' : 'up'} ${Math.abs(form).toFixed(1)}`}</dd>
-          <dd>{form == null ? 'After three rounds' : 'Newer rounds'}</dd>
+          {/* Scores, so "higher" is worse (amber) and "lower" better; the sub-line names the halves compared (summarizeWindow). */}
+          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${Math.abs(form).toFixed(1)} ${form < 0 ? 'lower' : 'higher'}`}</dd>
+          <dd>{form == null ? 'After three rounds' : half === 1 ? 'Newest round vs first' : `Newest ${half} vs first ${half}`}</dd>
         </div>
       </dl>
       {/* Each figure drawn against its reference (decorative; the figures say it): scoring from par, strokes gained from

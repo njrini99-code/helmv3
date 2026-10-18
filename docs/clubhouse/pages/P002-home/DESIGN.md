@@ -54,7 +54,7 @@ brief, Up next as the one green card, then Today, the team's scoring, This week
 and Latest rounds flush under engraved double rules, each round opening a card
 in a sheet. Player desktop: header (date, greeting, brief, Message coach); the
 sheet with the week (Up next and its countdown between the days and the agenda)
-beside My latest round; Scoring; By part of the game. Player phone: the hero
+beside Your latest round; Scoring; By part of the game. Player phone: the hero
 with Up next, its countdown and the two actions, then This week, Today, My
 latest round (paged, its card inline), Scoring and the parts of the game.
 
@@ -152,18 +152,18 @@ The player's phone follows `Player - Home - Mobile.html` (`m-player-home.jsx`,
 `m-player-home.css`), not the coach's, in the Mobile clubhouse pass (owner,
 2026-10-08; the Coach Home board's round 3 carried over): the page is the
 parchment sheet, Up next with its countdown is the one green feature card,
-Message coach and Post a round under it are the shared buttons (Post a round the
-primary), and every section below sits flush under an engraved double rule with
-its title in the bold condensed sans, with no white cards. This week draws today
-as the solid green key and a competition day as a soft green tint with its flag.
-Today is a small label inside This week, with no Calendar link (the week's days
-open it); its rows sit on the section's edge and tint on press: the row under
-way reads Now, with none under way the next one reads Next, and a row that has
-passed keeps its ink with only its time stepping back. My latest round keeps its
-green scorecard; its GIR, putts and SG are the Ledger's figure row between
-hairlines. Scoring and Your game each have their title and one-line meta in the
-section's head; Scoring opens on the full-width Last 5 / Last 10 / Last 20
-picker (always all three), then the line, the four figures two by two between
+Message coach and Start a round under it are the shared buttons (Start a round
+the primary), and every section below sits flush under an engraved double rule
+with its title in the bold condensed sans, with no white cards. This week draws
+today as the solid green key and a competition day as a soft green tint with its
+flag. Today is a small label inside This week, with no Calendar link (the week's
+days open it); its rows sit on the section's edge and tint on press: the row
+under way reads Now, with none under way the next one reads Next, and a row that
+has passed keeps its ink with only its time stepping back. Your latest round
+keeps its green scorecard; its GIR, putts and SG are the Ledger's figure row
+between hairlines. Scoring and Your game each have their title and one-line meta
+in the section's head; Scoring opens on the full-width Last 5 / Last 10 / Last
+20 picker (always all three), then the line, the four figures two by two between
 hairlines (22px bold sans, green when the average fell or strokes gained is at
 or above zero, amber when worse, plain when it rounds to zero; the grey line
 under each only states the change), and the italic note. The four parts of the

@@ -4,8 +4,9 @@ import { PREVIEW_HOME } from './fixtures';
 
 /**
  * Player Home sample data: Theo, as design/handoff/Player - Home.html draws
- * him (the week of Tuesday 14 October, a qualifier on Thursday). The week is
- * the coach preview's, without who else is invited.
+ * him (Wednesday 14 October 2026, a qualifier on Friday). The week is the
+ * coach preview's, without who else is invited, and without the meetings he
+ * isn't invited to (Decision B): every weekday here is the date's own.
  */
 
 const PAR = [4, 4, 3, 4, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5];
@@ -34,6 +35,23 @@ const leg = (key: ChPlayerLeg['key'], label: string, stat: string, value: number
 });
 
 const { invitees: _i, going: _g, awaiting: _a, inviteeIds: _ids, ...nextEvent } = PREVIEW_HOME.phone.next!;
+const WEEK: Array<[string, number, number, boolean]> = [
+  ['Mon', 12, 2, false],
+  ['Tue', 13, 2, false],
+  ['Wed', 14, 2, false],
+  ['Thu', 15, 1, false],
+  ['Fri', 16, 1, true],
+  ['Sat', 17, 0, false],
+  ['Sun', 18, 0, false],
+];
+const DAYS: ChPlayerHome['week']['days'] = WEEK.map(([weekday, dayOfMonth, eventCount, hasCompetition]) => ({
+  date: `2026-10-${dayOfMonth}`,
+  weekday,
+  dayOfMonth,
+  isToday: dayOfMonth === 14,
+  eventCount,
+  hasCompetition,
+}));
 void _i;
 void _g;
 void _a;
@@ -41,15 +59,16 @@ void _ids;
 
 export const PREVIEW_PLAYER_HOME: ChPlayerHome = {
   greeting: 'Good afternoon, Theo.',
-  todayLabel: 'Tuesday, 14 October',
+  todayLabel: 'Wednesday 14 October',
   brief: 'Your last three rounds average 69.7. Off the tee is gaining you 0.8 strokes a round.',
   coachUserId: 'coach-maya',
   week: {
     ...PREVIEW_HOME.week,
+    days: DAYS,
     agenda: [
       { id: 'a1', timeLabel: '3:30', title: 'Short-game block', detail: 'Practice green', isNext: true, isCompetition: false, when: 'today' },
       { id: 'a3', timeLabel: '5:30', title: 'Team dinner', detail: 'Carolina Inn', isNext: false, isCompetition: false, when: 'today' },
-      { id: 'a5', timeLabel: 'Thu', title: 'Qualifier · Pinehurst No. 2', detail: 'First tee 8:42', isNext: false, isCompetition: true, when: 'later' },
+      { id: 'a5', timeLabel: 'Fri', title: 'Qualifier · Pinehurst No. 2', detail: 'First tee 8:42', isNext: false, isCompetition: true, when: 'later' },
     ],
   },
   next: {
@@ -65,16 +84,19 @@ export const PREVIEW_PLAYER_HOME: ChPlayerHome = {
     location: 'Your tee time · Bus leaves 6:15',
     invitees: null,
     going: null,
+    mine: 'going',
   },
   today: PREVIEW_HOME.phone.today.filter((e) => e.id === 'a1' || e.id === 'a3').map((e) => (e.id === 'a3' ? { ...e, title: 'Team dinner', type: 'other' as const, location: 'Carolina Inn' } : e)),
-  weekNote: PREVIEW_HOME.phone.weekNote,
+  weekNote: { weekday: 'Friday', title: 'Qualifier · Pinehurst No. 2' },
+  // As the player's Team Hub preview has it (fixtures-hub.ts): two replies owed, one post to acknowledge, two tasks due this week.
+  asks: { rsvps: 2, acks: 1, tasksDue: 2 },
   latest: {
     error: false,
     holesError: false,
     rounds: [
-      { id: 'p1', playerId: 'theo', playerName: 'Theo', meta: 'Oakmont CC · Sun 12 Oct · Member tees', score: total(oak), toPar: total(oak) - 72, holes: oak, gir: '14/18', putts: 28, sg: 2.4 },
-      { id: 'p2', playerId: 'theo', playerName: 'Theo', meta: 'Pine Needles · Sat 11 Oct · Back tees', score: total(pine), toPar: total(pine) - 72, holes: pine, gir: '13/18', putts: 27, sg: 3.1 },
-      { id: 'p3', playerId: 'theo', playerName: 'Theo', meta: 'Finley GC · Sat 4 Oct · Blue tees', score: 71, toPar: -1, holes: null, gir: '12/18', putts: 29, sg: 1.2 },
+      { id: 'p1', playerId: 'theo', playerName: 'Theo', meta: 'Oakmont CC · Mon 12 Oct · Member tees', score: total(oak), toPar: total(oak) - 72, holes: oak, gir: '14/18', putts: 28, sg: 2.4 },
+      { id: 'p2', playerId: 'theo', playerName: 'Theo', meta: 'Pine Needles · Sun 11 Oct · Back tees', score: total(pine), toPar: total(pine) - 72, holes: pine, gir: '13/18', putts: 27, sg: 3.1 },
+      { id: 'p3', playerId: 'theo', playerName: 'Theo', meta: 'Finley GC · Sun 4 Oct · Blue tees', score: 71, toPar: -1, holes: null, gir: '12/18', putts: 29, sg: 1.2 },
     ],
   },
   scoring: { error: false, points: SCORES.map(([label, score], i) => ({ id: `s${i}`, label, score, par: 72 })) },
@@ -99,6 +121,7 @@ export const PREVIEW_PLAYER_HOME_FAILED: ChPlayerHome = {
   week: { ...PREVIEW_PLAYER_HOME.week, error: true },
   next: null,
   today: [],
+  asks: null,
   latest: { rounds: [], error: true, holesError: false },
   scoring: { points: [], error: true },
   legs: null,
@@ -108,10 +131,11 @@ export const PREVIEW_PLAYER_HOME_FAILED: ChPlayerHome = {
 export const PREVIEW_PLAYER_HOME_EMPTY: ChPlayerHome = {
   ...PREVIEW_PLAYER_HOME,
   brief: null,
-  week: { error: false, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
+  week: { error: false, agenda: [], days: DAYS.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
   next: null,
   today: [],
   weekNote: null,
+  asks: null,
   latest: { rounds: [], error: false, holesError: false },
   scoring: { points: [], error: false },
   sgPerRound: null,
@@ -121,7 +145,7 @@ export const PREVIEW_PLAYER_HOME_EMPTY: ChPlayerHome = {
 /** Rounds, but nothing on the calendar ahead. */
 export const PREVIEW_PLAYER_HOME_NO_EVENTS: ChPlayerHome = {
   ...PREVIEW_PLAYER_HOME,
-  week: { error: false, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
+  week: { error: false, agenda: [], days: DAYS.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
   next: null,
   today: [],
   weekNote: null,

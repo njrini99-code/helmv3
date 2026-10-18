@@ -22,10 +22,9 @@ function Chrome({ label, code, chained, brief = 2, children }: { label: string; 
       <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && tabs}
       {phone ? (
-        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the eyebrow, the 31px title and the brief under
+        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the 31px title (a player's page has no role eyebrow) and the brief under
         // the double rule, in the lines the view's own brief takes at the phone's width (`brief`: the Deep dive's runs to three).
         <header className="ch-hl-h" data-canopy-head="">
-          <Line h={14.4} w={56} sh={11} />
           <Line h={33.5} w={176} sh={28} r={8} />
           <span className="ch-hl-sk__line is-two" style={brief === 3 ? { height: 65.25 } : undefined}>
             <Skeleton width="92%" height={13} />
@@ -35,7 +34,6 @@ function Chrome({ label, code, chained, brief = 2, children }: { label: string; 
         </header>
       ) : (
         <header className="ch-hl-h has-aside" data-canopy-head="">
-          <Skeleton width={62} height={24} radius={12} />
           <Skeleton width={190} height={44} radius={10} />
           <Skeleton width={360} height={14} />
           <div className="ch-hl-h__aside">{tabs}</div>

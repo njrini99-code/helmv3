@@ -471,7 +471,9 @@ export function Calendar({
     () => (sel.length ? placed.filter((e) => (e.type === 'class' ? e.owner != null && sel.includes(e.owner) : e.people.some((p) => sel.includes(p)))) : placed),
     [placed, sel],
   );
-  const overlaps = useMemo(() => (coach ? findOverlaps(data.events.filter((e) => !e.cancelled)) : []), [coach, data.events]);
+  // A player's own clashes too (wave 7): their payload holds only their classes and the events they're on, so these are
+  // theirs alone. The coach's Overlap panel (move, keep) stays the coach's; a player is told, and can message the coach.
+  const overlaps = useMemo(() => findOverlaps(data.events.filter((e) => !e.cancelled)), [data.events]);
   const flagged = useMemo(() => new Set(overlaps.map((o) => o.eventId)), [overlaps]);
 
   const go = useCallback(
@@ -908,7 +910,7 @@ export function Calendar({
               <Swap swapKey={view}>
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} daylight={daylight} coach={coach} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
                   )}
                   {view === 'month' && (
                     <MonthView
@@ -927,7 +929,7 @@ export function Calendar({
                   )}
                   {view === 'agenda' &&
                     (events.some((e) => e.date >= now.date) || events.length ? (
-                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} />
+                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} viewerId={data.viewerPlayerId} />
                     ) : (
                       <div className="ch-cal-surface">
                         <EmptyState

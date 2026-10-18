@@ -1528,7 +1528,7 @@ describe('Calendar · the loader', () => {
   beforeEach(freezeClock);
   afterEach(() => vi.useRealTimers());
 
-  it('D2-8 a meeting with no invitees is the coach’s own: players never get it, unless the invite list failed to load', async () => {
+  it('D2-8 a meeting with no invitees is the coach’s own: players never get it; when the invite list failed to load, no meeting at all (fail closed)', async () => {
     const rows = { data: [eventRow('e1'), eventRow('m-private', { event_type: 'meeting', title: 'Parent call' }), eventRow('m-team', { event_type: 'meeting' })] };
     const replies = { data: [replyRow('e1', 'p2', 'accepted'), replyRow('m-team', 'p2', null)] };
     serve({ ...healthy(), golf_events: rows, golf_event_attendance: replies });
@@ -1537,8 +1537,9 @@ describe('Calendar · the loader', () => {
     const ids = (await load(asPlayer('p2'))).events.map((e) => e.id);
     expect(ids).toContain('m-team');
     expect(ids).not.toContain('m-private');
+    // Their own rows failed, and there is no count function to fall back on (before migration 20261017102000).
     serve({ ...healthy(), golf_events: rows, golf_event_attendance: { error: { message: 'boom' } } });
-    expect((await load(asPlayer('p2'))).events.map((e) => e.id)).toContain('m-private');
+    expect((await load(asPlayer('p2'))).events.map((e) => e.id)).toEqual(['e1']);
   });
 
   it('CH-6309 the loader counts the team’s events for a coach: none ever is the first run; any, a failed count, or a player is not', async () => {
@@ -1784,12 +1785,14 @@ describe('Calendar · what each role is given', () => {
     coach.unmount();
     wrap(PREVIEW_CALENDAR_PLAYER);
     expect(title()).toBe('Oct 11 – 17');
-    expect(document.querySelector('.ch-cal-sub')!.textContent).toBe('14 team events this week · Eastern time');
-    expect(screen.getByText('Needs your reply')).toBeTruthy();
+    // Not the coach's Parent call, which invites no one (D2-8; Decision B: a player sees only meetings they're on).
+    expect(document.querySelector('.ch-cal-sub')!.textContent).toBe('13 team events this week · Eastern time');
+    // Jonah's 1:1 overlaps the short-game block, so his panel names his attention, not only his replies (wave 7).
+    expect(screen.getByText('Needs your attention')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /New event/ })).toBeNull();
   });
 
-  it('60801 a player has no planning tools: no New event or N key, no editor from ?new=1, no busy time, people filter, overlaps, responses, attendance, edit or cancel; a coach has them', async () => {
+  it('60801 a player has no planning tools: no New event or N key, no editor from ?new=1, no busy time, people filter, overlap panel, responses, attendance, edit or cancel; a coach has them', async () => {
     const user = userEvent.setup();
     const seeded = { initialNew: true, initialWith: 'jonah', initialEvent: 'e9' };
     const player = wrap(PREVIEW_CALENDAR_PLAYER, seeded);
@@ -1798,7 +1801,10 @@ describe('Calendar · what each role is given', () => {
     await user.keyboard('n');
     expect(dialogOpen()).toBe(false);
     expect(screen.queryByRole('button', { name: /^People:/ })).toBeNull();
-    expect(screen.queryAllByRole('button', { name: /schedule overlap/ })).toHaveLength(0);
+    // Wave 7: a player sees their own clashes flagged (Jonah's 1:1 and the short-game block), but has no Overlap panel
+    // to move or keep them: no Review here, and no Overlaps item under More (below).
+    expect(screen.queryAllByRole('button', { name: /schedule overlap/ }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
     // The panel: a reply, but no responses, attendance, edit, attach or remove.
     expect(screen.getByRole('radiogroup', { name: 'Your reply' })).toBeTruthy();
     expect(screen.queryByText('Responses')).toBeNull();
@@ -2188,5 +2194,79 @@ describe('Calendar · attendees peek (P003-C1)', () => {
     await waitFor(() => expect(document.querySelectorAll('.ch-in__person').length).toBeGreaterThan(0));
     const rows = [...document.querySelectorAll('.ch-in__person')];
     expect(rows.every((r) => r.parentElement?.classList.contains('ch-peek-target'))).toBe(true);
+  });
+});
+
+describe('Calendar · a player’s own week (wave 7)', () => {
+  // The preview's day: Wednesday 14 October, 2:40 PM Eastern.
+  beforeEach(freezeClock);
+  afterEach(() => vi.useRealTimers());
+
+  it('Decision B, the preview as the loader builds it: no meeting the player isn’t on, and no teammate’s reply or place', () => {
+    const payload = JSON.stringify(PREVIEW_CALENDAR_PLAYER);
+    expect(payload).not.toMatch(/Parent call|Natarajan family/);
+    for (const e of PREVIEW_CALENDAR_PLAYER.events) {
+      expect(e.people.every((p) => p === 'jonah'), e.id).toBe(true);
+      expect(Object.keys(e.rsvp).every((p) => p === 'jonah'), e.id).toBe(true);
+    }
+    expect(PREVIEW_CALENDAR_PLAYER.events.some((e) => e.id === 'e5')).toBe(true);
+  });
+
+  it('item 15: the player’s own class is titled without their own name; a coach still sees whose it is', () => {
+    const player = wrap(PREVIEW_CALENDAR_PLAYER);
+    expect(screen.getAllByText('ECON 101').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Jonah · ECON 101/)).toBeNull();
+    player.unmount();
+    wrap(cal());
+    expect(screen.getAllByText(/Jonah · ECON 101/).length).toBeGreaterThan(0);
+  });
+
+  it('item 4: a player is told their own clash, with Message coach, and is never offered the coach’s move or keep', async () => {
+    const user = userEvent.setup();
+    wrap(PREVIEW_CALENDAR_PLAYER);
+    // The day's panel lists it under their attention, and opens the event, not an Overlap panel.
+    const sec = screen.getByText('Needs your attention').closest('.ch-in__sec') as HTMLElement;
+    const row = within(sec).getByRole('button', { name: /^1:1 with Jonah.*Overlaps Short-game block 4:45–5:00 PM · Wed/ });
+    await user.click(row);
+    await screen.findByRole('heading', { name: '1:1 with Jonah' });
+    const warn = document.querySelector('.ch-cal-warn') as HTMLElement | null;
+    expect(warn!.textContent).toMatch(/Schedule overlap.*Overlaps Short-game block 4:45–5:00 PM\./);
+    expect(within(warn!).getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages');
+    expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
+  });
+
+  describe('on the phone', () => {
+    const real = window.matchMedia;
+    beforeEach(() => {
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    });
+    afterEach(() => {
+      window.matchMedia = real;
+    });
+
+    it('item 2: the reply still owed is marked: a Reply badge, “needs your reply” in its label, and an amber dot on its day', async () => {
+      const user = userEvent.setup();
+      wrap(PREVIEW_CALENDAR_PLAYER);
+      const strip = screen.getByRole('list', { name: 'This week' });
+      const sat = within(strip).getByRole('button', { name: /^Sat 17/ });
+      expect(sat.getAttribute('aria-label')).toMatch(/, needs your reply$/);
+      expect(sat.querySelector('.is-reply')).not.toBeNull();
+      const wed = within(strip).getByRole('button', { name: /^Wed 14/ });
+      expect(wed.getAttribute('aria-label')).not.toMatch(/reply/);
+      expect(wed.querySelector('.is-reply')).toBeNull();
+      // The player's own class, on the phone, without their own name.
+      expect(screen.getByRole('button', { name: /^ECON 101, / })).toBeTruthy();
+      await user.click(sat);
+      const row = screen.getByRole('button', { name: /^Round review, .*needs your reply/ });
+      expect(within(row).getByText('Reply')).toBeTruthy();
+      // A reply already given (a maybe, here) is not asked for again.
+      expect(within(screen.getByRole('button', { name: /^Recovery nine/ })).queryByText('Reply')).toBeNull();
+    });
+
+    it('a coach’s strip and rows never carry a player’s reply mark', () => {
+      wrap(cal());
+      expect(document.querySelector('.ch-calm-week .is-reply')).toBeNull();
+      expect(screen.queryByText('Reply')).toBeNull();
+    });
   });
 });

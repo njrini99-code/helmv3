@@ -15,6 +15,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
+import { CoachAsks, MineBadge } from './CoachAsks';
 import { Countdown } from './Countdown';
 import { eventHref, whenLabel } from './HomePhone';
 import { LatestRound } from './LatestRound';
@@ -28,7 +29,8 @@ import '../../styles/home.css';
 
 /**
  * Player Home (design/handoff/Player - Home.html): the day, a sentence from
- * the player's own rounds, Message coach and Post a round; the week with Up
+ * the player's own rounds, Message coach and Start a round, and what the coach
+ * is waiting on (CoachAsks); the week with Up
  * next and its countdown beside the latest round; then the player's scoring
  * and the four parts of the game. The phone is PlayerHomePhone (v2 board).
  */
@@ -53,11 +55,12 @@ export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and 
           </Button>
           {post && (
             <Button variant="primary" leftIcon={Plus} href={post}>
-              Post a round
+              Start a round
             </Button>
           )}
         </div>
       </header>
+      <CoachAsks asks={data.asks} />
       <PageRefreshNotice parts={failed} />
       {/* One continuous surface (owner, 2026-10-06): the week and the latest round, then Scoring under a hairline. */}
       <div className="ch-h-flow ch-sheet">
@@ -96,6 +99,7 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
       </span>
       <span className="ch-ph-next__t">{e.title}</span>
       <span className="ch-ph-next__m ch-num">{[e.rangeLabel, e.location].filter(Boolean).join(' · ')}</span>
+      <MineBadge mine={e.mine} />
       {!e.allDay && <Countdown to={e.startIso} frozen={frozen} />}
       <LinkPending />
     </Link>

@@ -1,5 +1,19 @@
 # Clubhouse changelog
 
+## 2026-10-18 — The player's side: privacy, asks and replies
+
+A player sees a meeting only when they are on its invite list (own attendance
+row), on Calendar, Home, the sidebar and Classes; when the invite reads fail,
+meetings are hidden rather than shown (`screens/calendar/model.ts`
+`playerSeesMeeting`, `data/attendance-counts.ts` `loadOwnRows` /
+`loadInvitedCounts`). Player Home carries a quiet "From your coach" row
+(replies, acknowledgements, tasks due) and every surface shows the player's own
+reply ("You're going" / "Reply needed"). Players see their own class clashes.
+Qualifier rounds to play link to setup; the squad result reads from the
+player's own selection row; one handicap rule (`displayHandicap`); no role
+labels for players; CoachHelm Decline holds with Undo; the player Roster names
+the coaches.
+
 ## 2026-10-18 — One Optional tag; placeholders that read as hints
 
 `controls.css` adds `.ch-field__opt`, the one "Optional" tag every form uses

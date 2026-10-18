@@ -92,14 +92,14 @@ beforeEach(() => {
 const stopNavigation = (e: Event) => e.preventDefault();
 
 describe('Player Home · desktop (Player - Home.html)', () => {
-  it('20102 20103 the day, no brief line, Message coach to the coach’s thread; Post a round opens round entry', () => {
+  it('20102 20103 the day, no brief line, Message coach to the coach’s thread; Start a round opens round entry', () => {
     show();
     expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo.' })).toBeTruthy();
     // Owner, 2026-10-06: the CoachHelm brief no longer sits under the greeting.
     expect(screen.queryByText(/Off the tee is gaining you 0\.8 strokes a round/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages?user=coach-maya');
     // Round entry is rebuilt for players (P011), so the button leads there.
-    expect(screen.getByRole('link', { name: 'Post a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    expect(screen.getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
   });
 
   it('20103 21807 Up next sits in the week with a countdown to the tee time', () => {
@@ -121,17 +121,17 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(screen.queryByRole('timer')).toBeNull();
   });
 
-  it('20103 My latest round opens its review (Open recap) once the round has a real id', () => {
+  it('20103 Your latest round opens its review (Open recap) once the round has a real id', () => {
     const [first, ...others] = PREVIEW_PLAYER_HOME.latest.rounds;
     show(home({ latest: { ...PREVIEW_PLAYER_HOME.latest, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }));
     expect(screen.getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
     expect(screen.queryByRole('link', { name: 'My stats' })).toBeNull();
   });
 
-  it('20103 My latest round: the course, a flag not an avatar, and My stats', async () => {
+  it('20103 Your latest round: the course, a flag not an avatar, and My stats', async () => {
     const user = userEvent.setup();
     show();
-    expect(screen.getByRole('heading', { level: 2, name: 'My latest round' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Your latest round' })).toBeTruthy();
     expect(document.querySelector('.ch-h-round__name')!.textContent).toBe('Oakmont CC');
     expect(document.querySelector('.ch-h-round .ch-h-flag')).not.toBeNull();
     expect(screen.getByRole('link', { name: 'My stats' }).getAttribute('href')).toBe('/golf/dashboard/stats');
@@ -272,7 +272,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     expect(screen.queryByRole('timer')).toBeNull();
   });
 
-  it('20103 on the phone My latest round opens its review once the round has a real id', () => {
+  it('20103 on the phone Your latest round opens its review once the round has a real id', () => {
     const [first, ...others] = PREVIEW_PLAYER_HOME.latest.rounds;
     show(home({ latest: { ...PREVIEW_PLAYER_HOME.latest, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }));
     expect(screen.getByRole('link', { name: /Open recap/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
@@ -297,10 +297,10 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     expect(screen.queryByRole('link', { name: 'Plan' })).toBeNull();
   });
 
-  it('21703 My latest round pages inline, with a selection tick', async () => {
+  it('21703 Your latest round pages inline, with a selection tick', async () => {
     const user = userEvent.setup();
     show();
-    const sec = screen.getByRole('heading', { level: 2, name: 'My latest round' }).closest('section')!;
+    const sec = screen.getByRole('heading', { level: 2, name: 'Your latest round' }).closest('section')!;
     expect(within(sec).getByText('Oakmont CC')).toBeTruthy();
     expect(within(sec).getAllByRole('table')).toHaveLength(2);
     await user.click(within(sec).getByRole('button', { name: 'Next round' }));
@@ -391,6 +391,11 @@ describe('Player Home · the loader', () => {
     const pts = [70, 71, 72, 69, 75].map((score, i) => ({ id: `${i}`, label: '', score, par: 72 }));
     expect(scoringNote(pts)).toBe('Four of your last five are 72 or better.');
   });
+
+  it('scoringNote: a clean sweep says so, never "Ten of your last ten"', () => {
+    const pts = [70, 71, 69, 70, 71, 70, 69, 71, 70, 71].map((score, i) => ({ id: `${i}`, label: '', score, par: 72 }));
+    expect(scoringNote(pts)).toBe('Your last ten rounds were all 71 or better.');
+  });
 });
 
 type Filters = Array<[string, unknown[]]>;
@@ -418,9 +423,15 @@ describe('Player Home · what the loader reads and whom it names', () => {
     });
     await loadPlayerHome(player);
     expect([...new Set(seen.map((s) => s.table))].sort()).toEqual(
-      ['golf_coaches', 'golf_events', 'golf_holes', 'golf_pga_standards', 'golf_players', 'golf_round_stats_cache', 'golf_rounds', 'golf_team_settings', 'golf_teams'].sort(),
+      ['golf_coaches', 'golf_event_attendance', 'golf_events', 'golf_holes', 'golf_pga_standards', 'golf_players', 'golf_round_stats_cache', 'golf_rounds', 'golf_task_assignments', 'golf_team_settings', 'golf_teams', 'rpc:get_player_hub_events'].sort(),
     );
     const filtersOf = (table: string) => seen.filter((s) => s.table === table).flatMap((s) => s.filters);
+    // Their own replies (which meetings are theirs, Decision B) and their own tasks (From your coach): never a teammate's.
+    for (const table of ['golf_event_attendance', 'golf_task_assignments']) {
+      for (const read of seen.filter((s) => s.table === table)) expect(read.filters).toContainEqual(['eq', ['player_id', 'p1']]);
+    }
+    // Team Hub's own player events read (SECURITY DEFINER, the player's own reply on each), for the replies owed.
+    expect(filtersOf('rpc:get_player_hub_events')).toContainEqual(['args', [expect.objectContaining({ p_team_id: 't1', p_player_id: 'p1' })]]);
     expect(filtersOf('golf_rounds')).toContainEqual(['in', ['player_id', ['p1']]]);
     expect(filtersOf('golf_players')).toContainEqual(['eq', ['id', 'p1']]);
     expect(filtersOf('golf_holes')).toContainEqual(['in', ['round_id', ['r0', 'r1']]]);
@@ -547,7 +558,7 @@ describe('Player Home · the page’s own contracts (desktop)', () => {
     vi.restoreAllMocks();
   });
 
-  it('20102 Player Home opens with its header, the week beside Up next and My latest round, and Scoring and the parts of the game', () => {
+  it('20102 Player Home opens with its header, the week beside Up next and Your latest round, and Scoring and the parts of the game', () => {
     show();
     expect(screen.getByRole('heading', { level: 1, name: PREVIEW_PLAYER_HOME.greeting })).toBeTruthy();
     expect(document.body.textContent).toContain(PREVIEW_PLAYER_HOME.todayLabel);
@@ -555,7 +566,7 @@ describe('Player Home · the page’s own contracts (desktop)', () => {
     // Up next opens the latest round's pane, so the two columns balance.
     expect(document.querySelector('[aria-labelledby="ch-round-title"] > .ch-ph-next:first-child')).not.toBeNull();
     const headings = [...document.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings).toEqual(['This week', 'My latest round', 'Scoring', 'Your game']);
+    expect(headings).toEqual(['This week', 'Your latest round', 'Scoring', 'Your game']);
     // The phone Home is not drawn on a wide canvas.
     expect(document.querySelector('.ch-hm')).toBeNull();
   });
@@ -637,7 +648,7 @@ describe('Player Home · the phone, the page’s own contracts', () => {
     const main = document.querySelector('main.ch-hm')!;
     expect(main.getAttribute('aria-label')).toBe('Home');
     const headings = [...main.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings.filter((h) => ['This week', 'Today', 'My latest round', 'Scoring', 'Your game'].includes(h!))).toEqual(['This week', 'Today', 'My latest round', 'Scoring', 'Your game']);
+    expect(headings.filter((h) => ['This week', 'Today', 'Your latest round', 'Scoring', 'Your game'].includes(h!))).toEqual(['This week', 'Today', 'Your latest round', 'Scoring', 'Your game']);
     expect(document.querySelector('.ch-h-main')).toBeNull();
   });
 
@@ -662,3 +673,41 @@ describe('Player Home · the phone, the page’s own contracts', () => {
 });
 
 void waitFor;
+
+describe('Player Home · what the coach is waiting on, and the player’s own reply (wave 7)', () => {
+  it('item 1: one quiet row under the head, From your coach and the counts, opening Team Hub; none when nothing waits or it didn’t load', () => {
+    const view = show();
+    const row = screen.getByRole('link', { name: /^From your coach/ });
+    expect(row.textContent).toMatch(/From your coach2 replies · 1 to acknowledge · 2 tasks due/);
+    expect(row.getAttribute('href')).toBe('/golf/dashboard/team-hub');
+    view.unmount();
+    for (const asks of [null, { rsvps: 0, acks: 0, tasksDue: 0 }]) {
+      const again = show(home({ asks }));
+      expect(screen.queryByRole('link', { name: /^From your coach/ })).toBeNull();
+      again.unmount();
+    }
+    show(home({ asks: { rsvps: 1, acks: 0, tasksDue: 1 } }));
+    expect(screen.getByRole('link', { name: /^From your coach/ }).textContent).toMatch(/1 reply · 1 task due$/);
+  });
+
+  it('item 8: Up next says You’re going, or Reply needed, from the player’s own reply; nothing when unknown', () => {
+    const view = show();
+    expect(within(screen.getByRole('link', { name: /Up next · Qualifier/ })).getByText('You’re going')).toBeTruthy();
+    view.unmount();
+    const needed = show(home({ next: { ...PREVIEW_PLAYER_HOME.next!, mine: 'needed' } }));
+    expect(within(screen.getByRole('link', { name: /Up next · Qualifier/ })).getByText('Reply needed')).toBeTruthy();
+    needed.unmount();
+    show(home({ next: { ...PREVIEW_PLAYER_HOME.next!, mine: null } }));
+    const next = screen.getByRole('link', { name: /Up next · Qualifier/ });
+    expect(within(next).queryByText('You’re going')).toBeNull();
+    expect(within(next).queryByText('Reply needed')).toBeNull();
+  });
+
+  it('item 22a: the preview week’s weekdays are their dates’ own (14 October 2026 is a Wednesday)', () => {
+    const long = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' });
+    expect(PREVIEW_PLAYER_HOME.todayLabel).toBe(long.format(new Date('2026-10-14T12:00:00Z')));
+    const short = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
+    for (const d of PREVIEW_PLAYER_HOME.week.days) expect(d.weekday, d.date).toBe(short.format(new Date(`${d.date}T12:00:00Z`)));
+    expect(short.format(new Date(`${PREVIEW_PLAYER_HOME.next!.date}T12:00:00Z`))).toBe(PREVIEW_PLAYER_HOME.week.agenda.find((r) => r.when === 'later')!.timeLabel);
+  });
+});

@@ -24615,6 +24615,18 @@
     },
     {
       "source": "team_operations",
+      "target": "get_player_hub_events",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/data/player-home.ts",
+          "anchor": "get_player_hub_events"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [

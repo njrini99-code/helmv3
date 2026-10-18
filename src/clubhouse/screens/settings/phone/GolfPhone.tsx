@@ -46,7 +46,7 @@ function DetailsPhone({ details, writes }: { details: ChGolfDetails; writes: ChS
   const [editing, setEditing] = useState(false);
   return (
     <>
-      <Group title="Golf details" note="Your coaches see these on the roster.">
+      <Group title="Golf details" note="Your coaches and teammates see your handicap and class on the roster.">
         {FIELDS.map((f) => (
           <NavRow key={f.key} label={f.label} value={details[f.key] || 'Not set'} onClick={() => setEditing(true)} />
         ))}
@@ -73,7 +73,7 @@ function GolfSheet({ open, onClose, details, writes }: { open: boolean; onClose:
       dirty={dirty}
       actionDisabled={!dirty || !!invalid}
       onAction={() => void save.run(draft)}
-      note="Your coaches see these on the roster."
+      note="Your coaches and teammates see your handicap and class on the roster."
     >
       <div className="ch-setm-card">
         <FieldRow id="set-hcp-v" label="Handicap" inline inputMode="decimal" placeholder="5.2" value={draft.handicap} onChange={set('handicap')} />

@@ -366,9 +366,11 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     // The board's three (m-stats.jsx Player): the trend in words, green when scores come down, amber when they rise (F-54).
     expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Scoring trend']);
     const trend = figs.querySelector('dd.is-words')!;
-    expect(trend.textContent).toMatch(/^(down|up) \d+\.\d$|^level$|^—$/);
-    if (trend.textContent!.startsWith('down')) expect(trend.classList.contains('ch-gain')).toBe(true);
-    if (trend.textContent!.startsWith('up')) expect(trend.classList.contains('ch-loss')).toBe(true);
+    expect(trend.textContent).toMatch(/^\d+\.\d (lower|higher)$|^level$|^—$/);
+    if (trend.textContent!.endsWith('lower')) expect(trend.classList.contains('ch-gain')).toBe(true);
+    if (trend.textContent!.endsWith('higher')) expect(trend.classList.contains('ch-loss')).toBe(true);
+    // The sub-line names the halves it compares (wave 7, item 7).
+    if (trend.textContent !== '—') expect(trend.nextElementSibling!.textContent).toMatch(/^Newest (\d+ vs first \d+|round vs first)$/);
     // Drawn against their references under the figures: scoring from par, strokes gained from the Tour's zero; the trend is words.
     const gauges = document.querySelector('.ch-stm-overview .ch-stm-gauges')!;
     expect(gauges.getAttribute('aria-hidden')).toBe('true');

@@ -203,6 +203,12 @@ describe('calendar model', async () => {
     expect(found[0]).toMatchObject({ eventId: 'prep', withId: 'lab', who: 'eli', from: 15.5, to: 16.25 });
   });
 
+  it('finds a class that starts after the team event too, still on the team event (wave 7: a 3:30 practice over a 4:00 class)', () => {
+    const found = M.findOverlaps([ev('prep', 15.5, 17.5, { people: ['jonah'] }), ev('econ', 16, 17, { type: 'class', owner: 'jonah' })]);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ eventId: 'prep', withId: 'econ', who: 'jonah', from: 16, to: 17 });
+  });
+
   it('offers open times that avoid everyone’s busy blocks', () => {
     const events = [ev('lab', 7, 16.25, { type: 'class', owner: 'eli' })];
     const open = M.openTimes(events, ['eli'], '2026-10-14', 1, undefined, 15.5);

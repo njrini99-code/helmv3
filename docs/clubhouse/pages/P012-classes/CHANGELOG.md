@@ -1,5 +1,24 @@
 # P012 — Classes: changelog
 
+## 2026-10-18 — Wave 7: only the meetings the player is on
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (the player's own attendance rows)
+Held items:     works before and after 20261017102000 (HELD.md)
+```
+
+### Fixed (2026-10-18, meeting privacy)
+
+- Decision B, as the player's Calendar has it: the week's team events hold a
+  meeting only when the player is on its invite list, so no class is said to
+  meet over a teammate's 1:1 and its title is never on the page. When their
+  own rows don't load, D2-8 decides from the counts; when that fails too,
+  every meeting is left out (`classes.ownInvites`, `classes.meetingInvites`).
+
 ## 2026-10-18 — Wave 6: class form and import
 
 ```text

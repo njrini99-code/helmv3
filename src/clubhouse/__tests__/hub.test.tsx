@@ -320,7 +320,9 @@ describe('Team Hub · player', () => {
   it('100101 Home: RSVPs, the post waiting on them, the next trip, updates and tasks', () => {
     show(PREVIEW_HUB_PLAYER);
     expect(screen.getByRole('heading', { level: 1, name: 'Team Hub' })).toBeTruthy();
-    expect(screen.getByText('Player view')).toBeTruthy();
+    // A player is never shown their own role (wave 7); the coach keeps "Coach view" (100101 below).
+    expect(screen.queryByText('Player view')).toBeNull();
+    expect(document.querySelector('.ch-hb-role')).toBeNull();
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements', 'Travel', 'Documents']);
     expect(screen.getByText('2 need a reply')).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'Going', checked: true })).toBeTruthy();

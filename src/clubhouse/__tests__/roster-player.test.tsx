@@ -85,7 +85,7 @@ describe('Player roster · what the loader reads (30805)', () => {
     { status: 'active', player: null },
   ];
 
-  it('asks only for the team row and the team\'s active members, with no coach read, join code, request, note or round', async () => {
+  it('asks only for the team row, the team\'s active members and its coaches\' names and roles, with no join code, request, note or round', async () => {
     const asked: string[] = [];
     const filters: Record<string, Array<[string, unknown[]]>> = {};
     const answer = (table: string, data: unknown) => (f: Array<[string, unknown[]]>) => {
@@ -96,9 +96,24 @@ describe('Player roster · what the loader reads (30805)', () => {
     tables.current = {
       golf_teams: answer('golf_teams', { name: 'Varsity', season: 'Fall 2026', join_code: 'JOINME', head_coach_notes: 'private' }),
       golf_team_members: answer('golf_team_members', MEMBER_ROWS),
+      golf_team_coach_staff: answer('golf_team_coach_staff', [
+        { role: 'assistant', is_primary: false, coach: { id: 'c2', full_name: 'Dan Whitfield', title: 'Assistant coach', email: 'dan@school.edu' } },
+        { role: 'head_coach', is_primary: true, coach: { id: 'c1', full_name: 'Maya Reyes', title: null } },
+        { role: 'assistant', is_primary: false, coach: { id: 'c3', full_name: 'Ben Ortiz', title: null } },
+        { role: 'assistant', is_primary: false, coach: { id: 'c4', full_name: ' ', title: null } },
+      ]),
     };
     const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
-    expect([...new Set(asked)].sort()).toEqual(['golf_team_members', 'golf_teams']);
+    expect([...new Set(asked)].sort()).toEqual(['golf_team_coach_staff', 'golf_team_members', 'golf_teams']);
+    // Wave 7 (decision D): the staff of this team, by name and role, head coach first; a coach with no name is left out.
+    expect(String(filters['golf_team_coach_staff']!.find(([k]) => k === 'select')![1][0])).toBe('role, is_primary, coach:golf_coaches(id, full_name, title)');
+    expect(filters['golf_team_coach_staff']).toContainEqual(['eq', ['team_id', 't1']]);
+    expect(data.coaches).toEqual([
+      { id: 'c1', name: 'Maya Reyes', role: 'Head coach' },
+      { id: 'c3', name: 'Ben Ortiz', role: 'Coach' },
+      { id: 'c2', name: 'Dan Whitfield', role: 'Assistant coach' },
+    ]);
+    expect(JSON.stringify(data)).not.toContain('dan@school.edu');
     expect(teamActions.requests).not.toHaveBeenCalled();
     // The selects name the columns shown and no others: no email, phone, avatar, hometown, join code or notes.
     const selected = (t: string) => String(filters[t]!.find(([k]) => k === 'select')![1][0]);
@@ -117,6 +132,14 @@ describe('Player roster · what the loader reads (30805)', () => {
     expect(Object.keys(data.players[0]!).sort()).toEqual(['classYear', 'gradYear', 'handicap', 'id', 'isYou', 'name']);
     expect(data.teamName).toBe('Varsity');
     expect(data.season).toBe('Fall 2026');
+  });
+
+  it('CH-3808 a coaching staff read that fails leaves the Coaches group out, never "no coaches", and is logged; the players stand', async () => {
+    tables.current = { golf_teams: { data: { name: 'Varsity', season: null } }, golf_team_members: { data: MEMBER_ROWS }, golf_team_coach_staff: { error: { message: 'boom' } } };
+    const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
+    expect(data.coaches).toBeNull();
+    expect(data.players).toHaveLength(2);
+    expect(logServer).toHaveBeenCalledWith('roster', 'playerCoaches', expect.anything(), 'teams');
   });
 
   it('CH-3210 a members read that fails is a failed roster, never an empty team, and is logged', async () => {
@@ -178,6 +201,23 @@ describe('Player roster · who gets it (30804)', () => {
 });
 
 describe('Player roster · desktop', () => {
+  it('CH-3808 wave 7: the coaches head the page as plain text (name and role), and are left out when their read failed', () => {
+    const coaches = [
+      { id: 'c1', name: 'Maya Reyes', role: 'Head coach' },
+      { id: 'c2', name: 'Dan Whitfield', role: 'Assistant coach' },
+    ];
+    const { unmount } = wrap({ ...TEAM, coaches });
+    const table = screen.getByRole('table', { name: 'Coaches' });
+    expect(within(table).getAllByRole('row').slice(1).map((r) => r.textContent)).toEqual(['MRMaya ReyesHead coach', 'DWDan WhitfieldAssistant coach']);
+    expect(table.querySelectorAll(CONTROLS)).toHaveLength(0);
+    // Above the players.
+    expect(table.compareDocumentPosition(faces()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    unmount();
+    wrap({ ...TEAM, coaches: null });
+    expect(screen.queryByRole('table', { name: 'Coaches' })).toBeNull();
+    expect(code('CH-3808')).toBeNull();
+  });
+
   it('is the coach\'s page header with the player\'s words: Your team, the count, no invite, export or requests', () => {
     wrap(TEAM);
     expect(screen.getByRole('heading', { level: 1, name: 'Your team.' })).toBeTruthy();
@@ -317,6 +357,14 @@ describe('Player roster · phone', () => {
         </ToastProvider>
       </LazyMotion>,
     );
+
+  it('CH-3808 wave 7: the coaches are a plain group above the players', () => {
+    phone({ ...TEAM, coaches: [{ id: 'c1', name: 'Maya Reyes', role: 'Head coach' }] });
+    const list = screen.getByRole('list', { name: 'Coaches' });
+    expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['MRMaya ReyesHead coach']);
+    expect(list.querySelectorAll(CONTROLS)).toHaveLength(0);
+    expect(screen.getByRole('heading', { level: 2, name: 'Players' })).toBeTruthy();
+  });
 
   it('the top bar is the section title Roster with no back link and no action, and the page names the team and the count', () => {
     phone(TEAM);

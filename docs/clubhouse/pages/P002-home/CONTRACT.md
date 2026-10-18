@@ -48,18 +48,19 @@ on gets Coach Home (20101): the date, the greeting and a one-sentence brief;
 Message team and New event; the week beside the latest round in one sheet; and
 the season leaderboard. A player gets Player Home (20102): the date and the
 greeting, with no brief line under it (owner, 2026-10-06); Message coach; the
-week beside Up next with its countdown and My latest round; then Scoring and the
-four parts of the game. Both are read on the server, so the first paint has its
-data. A team with nothing yet gets the first-run page (20408 for a coach, 20412
-for a player, D-71); the coach first run's Invite players opens Roster with its
-invite sheet (`/golf/dashboard/roster?invite=1`, P003 30102). Every link Home hands out is 20103. Home reads no Clubhouse
-query parameter: the Fairway dashboard's `?range=` is ignored here, and there is
-no deep link into Home.
+week beside Up next with its countdown and Your latest round; then Scoring and
+the four parts of the game. Both are read on the server, so the first paint has
+its data. A team with nothing yet gets the first-run page (20408 for a coach,
+20412 for a player, D-71); the coach first run's Invite players opens Roster
+with its invite sheet (`/golf/dashboard/roster?invite=1`, P003 30102). Every
+link Home hands out is 20103. Home reads no Clubhouse query parameter: the
+Fairway dashboard's `?range=` is ignored here, and there is no deep link into
+Home.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 20101 | — | `COACH_HOME_READY` | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
-| 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
+| 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and Your latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
 | 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), and the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
@@ -159,7 +160,7 @@ No team. A coach with no organisation or no active team gets "You aren't on a te
 
 What a player sees of others. Player Home reads the player's own rounds only (20803): rounds filtered to their player id, their own player row and the D1 benchmarks. It reads no roster, no teammate's rounds and no leaderboard, and the strokes gained and the parts of the game are set against D1, never against teammates. The team's week comes through the loader Coach Home uses, but a player's copy is given no names (20804): an agenda row reads at most a count ("Green 2 · 2 players", "First tee 8:42 · 1 of 2 going"), and no teammate's name or id is in what the page receives. Whether the policies on `golf_event_attendance` would hand a player the other players' replies was not checked; the screen never has a name to draw.
 
-Controls (20806). Each role's Home draws its own role's controls only. A player has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread; a coach has no Message coach, Post a round or countdown. Post a round and Add classes are not drawn for a player until round entry and Classes are rebuilt (Q-69), so a control never leads to a screen the player's Clubhouse does not have.
+Controls (20806). Each role's Home draws its own role's controls only. A player has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread; a coach has no Message coach, Start a round or countdown. Start a round and Add classes are not drawn for a player until round entry and Classes are rebuilt (Q-69), so a control never leads to a screen the player's Clubhouse does not have.
 
 Message coach (20805). It opens Messages on `?user=<the coach's user id>`: the coach who created the team (`golf_teams.created_by` is a `golf_coaches.id`, not a user id, which the first version got wrong), else a coach of the organisation who has an account (the query sets no order, so which one is not fixed), else Messages plain. Messages then opens the thread only for someone in the team directory, which is the program's coaches and the team's players: anyone else gets "Couldn't open that conversation" (CH-7001, 70801, that page's contract). Home and the directory read the organisation's coaches from the same table with the same limit of 50, so the coach Home names is in the directory unless a program has more than 50 coaches; that edge was not tested end to end.
 
@@ -170,7 +171,7 @@ Message coach (20805). It opens Messages on `?user=<the coach's user id>`: the c
 | 20803 | — | `PLAYER_READS_ONLY_OWN_ROUNDS` | Player Home asks only for the signed-in player's own rounds (golf_rounds filtered to their player id) and their own player row, reads no roster or teammate's figures, and sets the player against D1 benchmarks, never against teammates. |
 | 20804 | — | `PLAYER_WEEK_NAMES_NO_ONE` | A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 going), and no teammate's name or id is in what the page receives. |
 | 20805 | — | `MESSAGE_COACH_FINDS_THE_TEAMS_COACH` | Message coach opens Messages on ?user=<the coach's user id>: the coach who created the team (golf_teams.created_by is a golf_coaches.id) if they have an account, else a coach of the organisation who has one (the query sets no order, so which one is not fixed), else plain Messages; Messages itself opens the thread only for someone in the team directory (CH-7001, 70801). |
-| 20806 | — | `CONTROLS_STAY_WITH_THEIR_ROLE` | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Post a round or countdown. |
+| 20806 | — | `CONTROLS_STAY_WITH_THEIR_ROLE` | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Start a round or countdown. |
 
 From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
@@ -284,7 +285,7 @@ At 820px and below both roles get the phone Home (21901, `useChPhone`); wider ca
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 21901 | — | `PHONE_HOME` | At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, My latest round, Scoring and the parts of the game; wider canvases get the desktop Home. |
+| 21901 | — | `PHONE_HOME` | At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, Your latest round, Scoring and the parts of the game; wider canvases get the desktop Home. |
 
 From the shell (P001): 11901 PHONE_CHROME.
 

@@ -1,5 +1,23 @@
 # P008 — Settings: changelog
 
+## 2026-10-18 — Wave 7: player Settings
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Golf profile)
+
+- Golf details say "Your coaches and teammates see your handicap and class
+  on the roster."
+- The phone's identity line shows the handicap the roster shows: the index
+  when set, else the handicap.
+
 ## 2026-10-18 — Wave 6: Team settings
 
 ```text

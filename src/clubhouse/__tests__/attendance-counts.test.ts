@@ -43,6 +43,19 @@ const counts = (rows: Array<{ event_id: string; invited: number; accepted: numbe
   data: rows.map((r) => ({ declined: 0, pending: 0, ...r })),
 });
 
+/**
+ * The attendance table as a player's query meets it, in both states of migration 20261017102000: before it, RLS returns
+ * teammates' rows too (unless the query asks for one player's); after it, only the player's own (p1).
+ */
+type AttRow = { id?: string; event_id: string; player_id: string; status: string | null; notified_at?: string | null };
+const attendance = (rows: AttRow[], applied: boolean) => (filters: Filters) => {
+  const pid = filters.find(([k, a]) => k === 'eq' && a[0] === 'player_id')?.[1][1];
+  const visible = applied ? rows.filter((r) => r.player_id === 'p1') : rows;
+  return { data: pid ? visible.filter((r) => r.player_id === pid) : visible };
+};
+/** Every attendance read a player's loader made asked for their own rows only. */
+const ownOnly = (reads: Filters[] | undefined) => (reads ?? []).every((f) => f.some(([k, a]) => k === 'eq' && a[0] === 'player_id' && a[1] === 'p1'));
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-14T16:00:00Z'));
@@ -94,26 +107,27 @@ describe('Shell next-event card', () => {
   const next = { data: [{ id: 'e1', title: 'Qualifier', start_time: '2026-10-16T14:00:00Z', all_day: false, location: 'Pines', event_type: 'qualifier', requires_rsvp: true }] };
   const rows = { data: [{ status: 'accepted' }, { status: 'accepted' }, { status: 'pending' }] };
 
-  it('a player: the confirmed count comes from the function, and no attendance row is read', async () => {
+  it('a player: the confirmed count comes from the function, and the only attendance read is their own reply', async () => {
     const asked = serve({ golf_events: next, golf_event_attendance: rows, 'rpc:golf_event_attendance_counts': counts([{ event_id: 'e1', invited: 6, accepted: 5 }]) });
     const shell = await loadClubhouseShell('t1', 'p1', null);
     expect(shell.nextEvent?.ready).toEqual({ accepted: 5, invited: 6 });
-    expect(asked.golf_event_attendance).toBeUndefined();
+    expect(asked.golf_event_attendance).toHaveLength(1);
+    expect(ownOnly(asked.golf_event_attendance)).toBe(true);
   });
 
-  it('a player, before the migration: the rows are read as before', async () => {
+  it('a player, before the migration: the rows are read as before, beside their own reply', async () => {
     const asked = serve({ golf_events: next, golf_event_attendance: rows });
     const shell = await loadClubhouseShell('t1', 'p1', null);
     expect(shell.nextEvent?.ready).toEqual({ accepted: 2, invited: 3 });
-    expect(asked.golf_event_attendance).toHaveLength(1);
+    expect(asked.golf_event_attendance).toHaveLength(2);
   });
 
-  it('a player whose count fails: no confirmed line, logged, and no fallback read', async () => {
+  it('a player whose count fails: no confirmed line, logged, and no fallback read of the rows', async () => {
     const asked = serve({ golf_events: next, golf_event_attendance: rows, 'rpc:golf_event_attendance_counts': { error: { code: '57014', message: 'timeout' } } });
     const shell = await loadClubhouseShell('t1', 'p1', null);
     expect(shell.nextEvent?.ready).toBeNull();
     expect(logServer).toHaveBeenCalledWith('shell', 'nextEventAttendance', expect.anything(), 'calendar');
-    expect(asked.golf_event_attendance).toBeUndefined();
+    expect(ownOnly(asked.golf_event_attendance)).toBe(true);
   });
 
   it('a coach keeps the direct read even when the function exists', async () => {
@@ -151,6 +165,13 @@ describe('Player Home week', () => {
     const asked = serve({ golf_events: events, golf_event_attendance: rows, 'rpc:golf_event_attendance_counts': fnCounts });
     const after = await week();
     expect(asked.golf_event_attendance).toBeUndefined();
+    // With the player's id (as player Home passes it) the only attendance read is their own replies.
+    const own = serve({ golf_events: events, golf_event_attendance: rows, 'rpc:golf_event_attendance_counts': fnCounts });
+    const mine = await loadHomeWeek(await createClient(), { teamId: 't1', tz: 'America/New_York', now: new Date(), names: new Map(), viewer: 'player', playerId: 'p1' });
+    expect(ownOnly(own.golf_event_attendance)).toBe(true);
+    expect(mine.week.agenda).toEqual(after.week.agenda);
+    // p1 said yes to the practice; nobody answered for them on the qualifier, which the coach invited others to.
+    expect([mine.todayEvents[0]!.mine, mine.next!.mine]).toEqual(['going', 'going']);
     expect(after.week.agenda).toEqual(before.week.agenda);
     expect(after.week.agenda.map((r) => r.detail)).toEqual(['Range · 3 players', 'First tee 9:00 · 1 of 2 going']);
     const phone = after.todayEvents[0]!;
@@ -177,13 +198,24 @@ describe('Player Home week', () => {
     expect(res.todayEvents[0]!.awaiting).toEqual([{ id: 'p2', name: 'Bo Fox' }]);
   });
 
-  describe('D2-8 on player Home: a meeting with no invitees is the coach’s own', () => {
+  describe('Decision B on player Home: a player sees only the meetings they are invited to', () => {
+    // Wednesday 14 Oct, noon in New York (16:00Z). The teammates' captains meeting comes first, the player's own 1:1 after.
     const meetings = {
       data: [
-        { id: 'm-private', title: 'Parent call', event_type: 'meeting', start_time: '2026-10-14T19:00:00Z', end_time: '2026-10-14T19:30:00Z', all_day: false, location: null, requires_rsvp: false },
-        { id: 'm-team', title: 'Captains', event_type: 'meeting', start_time: '2026-10-14T20:00:00Z', end_time: '2026-10-14T20:30:00Z', all_day: false, location: null, requires_rsvp: false },
+        { id: 'm-private', title: 'Parent call', event_type: 'meeting', start_time: '2026-10-14T17:00:00Z', end_time: '2026-10-14T17:30:00Z', all_day: false, location: 'Phone', requires_rsvp: false },
+        { id: 'm-team', title: 'Captains', event_type: 'meeting', start_time: '2026-10-14T18:00:00Z', end_time: '2026-10-14T18:30:00Z', all_day: false, location: 'Team room', requires_rsvp: false },
+        { id: 'm-mine', title: '1:1 with Ada', event_type: 'meeting', start_time: '2026-10-14T20:00:00Z', end_time: '2026-10-14T20:30:00Z', all_day: false, location: 'Range bay 4', requires_rsvp: true },
       ],
     };
+    const inviteRows: AttRow[] = [
+      { id: 'a1', event_id: 'm-team', player_id: 'p2', status: null, notified_at: '2026-10-10T12:00:00Z' },
+      { id: 'a2', event_id: 'm-mine', player_id: 'p1', status: 'pending', notified_at: '2026-10-10T12:00:00Z' },
+    ];
+    const fn = counts([
+      { event_id: 'm-private', invited: 0, accepted: 0 },
+      { event_id: 'm-team', invited: 1, accepted: 0, pending: 1, coach_invited: 1 },
+      { event_id: 'm-mine', invited: 1, accepted: 0, pending: 1, coach_invited: 1 },
+    ]);
     const home = (extra: import('./supabase-fake').ChFakeTables) =>
       serve({
         golf_team_settings: { data: { timezone: 'America/New_York' } },
@@ -197,30 +229,50 @@ describe('Player Home week', () => {
         golf_coaches: { data: [{ id: 'c1', user_id: 'u1' }] },
         ...extra,
       });
+    const load = () => loadPlayerHome({ teamId: 't1', playerId: 'p1', firstName: 'Ada' });
 
-    it('with the function: hidden only when nobody is invited, even though the player reads no teammate row', async () => {
-      // After the migration the player's own read would return nothing for a meeting they aren't on.
-      home({ golf_event_attendance: { data: [] }, 'rpc:golf_event_attendance_counts': counts([{ event_id: 'm-private', invited: 0, accepted: 0 }, { event_id: 'm-team', invited: 2, accepted: 0, pending: 2 }]) });
-      const res = await loadPlayerHome({ teamId: 't1', playerId: 'p1', firstName: 'Ada' });
-      expect(res.today.map((e) => e.id)).toEqual(['m-team']);
-      expect(res.today[0]).not.toHaveProperty('inviteeIds');
+    it('before and after the migration: only their own meeting, in Today, Up next, the agenda and the day’s count, and no other title anywhere', async () => {
+      const states: import('./supabase-fake').ChFakeTables[] = [{ golf_event_attendance: attendance(inviteRows, false) }, { golf_event_attendance: attendance(inviteRows, true), 'rpc:golf_event_attendance_counts': fn }];
+      for (const extra of states) {
+        home(extra);
+        const res = await load();
+        expect(res.today.map((e) => e.id)).toEqual(['m-mine']);
+        // Up next moves on past the hidden meetings to the next one the player is on.
+        expect(res.next?.id).toBe('m-mine');
+        expect(res.next?.mine).toBe('needed');
+        expect(res.week.agenda.map((r) => r.id)).toEqual(['m-mine']);
+        expect(res.week.days.find((d) => d.isToday)?.eventCount).toBe(1);
+        expect(JSON.stringify(res)).not.toMatch(/Parent call|Captains|Team room|Phone/);
+        expect(res.today[0]).not.toHaveProperty('inviteeIds');
+      }
     });
 
-    it('before the migration: the rows decide, as before', async () => {
-      home({ golf_event_attendance: { data: [{ id: 'a1', event_id: 'm-team', player_id: 'p2', status: null }] } });
-      const res = await loadPlayerHome({ teamId: 't1', playerId: 'p1', firstName: 'Ada' });
-      expect(res.today.map((e) => e.id)).toEqual(['m-team']);
+    it('their own replies failed to load: D2-8 alone, from the counts, as before (logged)', async () => {
+      home({ golf_event_attendance: { error: { code: '57014', message: 'timeout' } }, 'rpc:golf_event_attendance_counts': fn });
+      const res = await load();
+      expect(res.today.map((e) => e.id)).toEqual(['m-team', 'm-mine']);
+      expect(res.today.every((e) => e.mine === null)).toBe(true);
+      expect(logServer).toHaveBeenCalledWith('home', 'ownReplies', expect.anything());
     });
 
-    it('a failed count never hides a meeting', async () => {
-      home({ golf_event_attendance: { data: [] }, 'rpc:golf_event_attendance_counts': { error: { code: '57014', message: 'timeout' } } });
-      const res = await loadPlayerHome({ teamId: 't1', playerId: 'p1', firstName: 'Ada' });
-      expect(res.today.map((e) => e.id)).toEqual(['m-private', 'm-team']);
+    it('their own replies and the count both failed: no meeting at all (fail closed), and both are logged', async () => {
+      home({ golf_event_attendance: { error: { code: '57014', message: 'timeout' } }, 'rpc:golf_event_attendance_counts': { error: { code: '57014', message: 'timeout' } } });
+      const res = await load();
+      expect(res.today).toEqual([]);
+      expect(res.next).toBeNull();
+      expect(JSON.stringify(res)).not.toMatch(/Parent call|Captains|1:1 with Ada/);
+      expect(logServer).toHaveBeenCalledWith('home', 'ownReplies', expect.anything());
+      expect(logServer).toHaveBeenCalledWith('home', 'meetingInvites', expect.anything());
+    });
+
+    it('the count failed but their own replies loaded: their replies still decide', async () => {
+      home({ golf_event_attendance: attendance(inviteRows, true), 'rpc:golf_event_attendance_counts': { error: { code: '57014', message: 'timeout' } } });
+      expect((await load()).today.map((e) => e.id)).toEqual(['m-mine']);
     });
   });
 });
 
-describe('Player Calendar: D2-8 meetings', () => {
+describe('Player Calendar: Decision B and D2-8 meetings', () => {
   const eventRow = (id: string, over: Record<string, unknown> = {}) => ({
     id,
     title: `Event ${id}`,
@@ -247,7 +299,7 @@ describe('Player Calendar: D2-8 meetings', () => {
   // After the migration the player's read returns only their own row.
   const ownRows = { data: [{ id: 'r1', event_id: 'm-mine', player_id: 'p1', status: 'accepted' }] };
 
-  it('with the function: a meeting that invites teammates but not the player still shows; one with no invitees does not', async () => {
+  it('with the function: a meeting that invites teammates but not the player is not shown (Decision B), nor one with no invitees', async () => {
     const asked = serve({
       ...base,
       golf_event_attendance: ownRows,
@@ -259,25 +311,38 @@ describe('Player Calendar: D2-8 meetings', () => {
       ]),
     });
     const res = await load();
-    expect(res.events.map((e) => e.id).sort()).toEqual(['e1', 'm-mine', 'm-others']);
+    expect(res.events.map((e) => e.id).sort()).toEqual(['e1', 'm-mine']);
+    expect(JSON.stringify(res)).not.toMatch(/Parent call|Event m-others/);
     // Meetings are counted, and so is an event that asks for replies (e1: invited by no one, so open to the team); the
     // player's own place and reply still come from their row.
     expect(asked['rpc:golf_event_attendance_counts']![0]).toEqual([['args', [{ p_event_ids: ['m-private', 'm-others', 'm-mine', 'e1'] }]]]);
     expect(res.events.find((e) => e.id === 'e1')!.openReply).toBe(true);
-    expect(res.events.find((e) => e.id === 'm-others')!.openReply).toBe(false);
     const mine = res.events.find((e) => e.id === 'm-mine')!;
     expect([mine.people, mine.rsvp]).toEqual([['p1'], { p1: 'accepted' }]);
   });
 
-  it('before the migration: the rows decide, as before', async () => {
+  it('before the migration: the player’s own row decides, though the read returns teammates’ rows too', async () => {
     serve({ ...base, golf_event_attendance: { data: [...ownRows.data, { id: 'r2', event_id: 'm-others', player_id: 'p2', status: null }] } });
-    expect((await load()).events.map((e) => e.id).sort()).toEqual(['e1', 'm-mine', 'm-others']);
+    const res = await load();
+    expect(res.events.map((e) => e.id).sort()).toEqual(['e1', 'm-mine']);
+    expect(JSON.stringify(res)).not.toMatch(/Parent call|Event m-others|"p2"/);
   });
 
-  it('a failed count never hides a meeting', async () => {
+  it('a failed count: the player’s own rows still decide (logged)', async () => {
     serve({ ...base, golf_event_attendance: ownRows, 'rpc:golf_event_attendance_counts': { error: { code: '57014', message: 'timeout' } } });
-    expect((await load()).events.map((e) => e.id).sort()).toEqual(['e1', 'm-mine', 'm-others', 'm-private']);
+    expect((await load()).events.map((e) => e.id).sort()).toEqual(['e1', 'm-mine']);
     expect(logServer).toHaveBeenCalledWith('calendar', 'meetingInvites', expect.anything(), 'calendar');
+  });
+
+  it('the attendance read failed: D2-8 alone, from the counts; both failed: no meeting shown (fail closed)', async () => {
+    const failed = { error: { code: '57014', message: 'timeout' } };
+    serve({ ...base, golf_event_attendance: failed, 'rpc:golf_event_attendance_counts': counts([{ event_id: 'm-private', invited: 0, accepted: 0 }, { event_id: 'm-others', invited: 2, accepted: 1, coach_invited: 2 }, { event_id: 'm-mine', invited: 1, accepted: 1, coach_invited: 1 }]) });
+    expect((await load()).events.map((e) => e.id).sort()).toEqual(['e1', 'm-mine', 'm-others']);
+    serve({ ...base, golf_event_attendance: failed, 'rpc:golf_event_attendance_counts': failed });
+    expect((await load()).events.map((e) => e.id).sort()).toEqual(['e1']);
+    // Before the migration (no function) the rows are the count, and they failed: the same.
+    serve({ ...base, golf_event_attendance: failed });
+    expect((await load()).events.map((e) => e.id).sort()).toEqual(['e1']);
   });
 
   it('a coach never calls the function', async () => {

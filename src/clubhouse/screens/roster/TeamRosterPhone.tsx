@@ -37,6 +37,8 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
           </p>
         </header>
 
+        <TeamCoachesPhone coaches={data.coaches} />
+
         {data.playersError ? (
           <InlineNotice
             code="CH-3210"
@@ -75,6 +77,34 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
         )}
       </div>
     </main>
+  );
+}
+
+/** The team's coaches above the players (wave 7): name and role, plain rows. Left out when the staff didn't load or there is none. */
+function TeamCoachesPhone({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
+  if (!coaches?.length) return null;
+  return (
+    <>
+      <h2 className="ch-rsm-sec is-first" id="ch-rsm-coaches">
+        Coaches
+      </h2>
+      <ul className="ch-rsm-panel ch-rsm-list" aria-labelledby="ch-rsm-coaches" data-ch-code="CH-3808">
+        {coaches.map((c) => (
+          <li key={c.id}>
+            <div className="ch-rsm-row ch-rsm-row--static">
+              <Avatar name={c.name} size={40} />
+              <span className="ch-rsm-row__b">
+                <b>{c.name}</b>
+                <span>{c.role}</span>
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <h2 className="ch-rsm-sec" id="ch-rsm-players">
+        Players
+      </h2>
+    </>
   );
 }
 

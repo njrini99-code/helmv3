@@ -268,7 +268,8 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
   const profile = data.profile.error ? null : data.profile.value;
   const name = profile?.fullName || data.email || 'Your profile';
   const head = data.coachhelm && !data.coachhelm.error ? !!data.coachhelm.value.team?.isHeadCoach : false;
-  const hcp = data.golf && !data.golf.error ? data.golf.value.handicap.trim() : '';
+  // The handicap the roster shows (data/season.ts displayHandicap): the index when set, else the handicap.
+  const hcp = data.golf && !data.golf.error ? data.golf.value.handicapIndex.trim() || data.golf.value.handicap.trim() : '';
   const line = coach
     ? [head ? 'Head coach' : 'Coach', data.teamName].filter(Boolean).join(' · ')
     : ['Player', data.teamName, hcp ? `HCP ${hcp}` : null].filter(Boolean).join(' · ');

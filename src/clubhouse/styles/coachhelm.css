@@ -943,6 +943,13 @@
   .ch-hl-prop__r .ch-hl-done {
     flex: 1;
   }
+  /* Declined (wave 7): the chip on its own line, "Tell coach why" under it, so neither is squeezed to three lines. */
+  .ch-hl-prop__a.is-answered {
+    flex-direction: column;
+  }
+  .ch-hl-prop__a.is-answered > * {
+    flex: none;
+  }
 }
 
 /* Phone: the skeleton's fixed-width bars never run past the screen. */

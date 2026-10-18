@@ -1,9 +1,9 @@
 import type { ChCalendarData } from '../data/calendar';
-import type { ChCalEvent, ChCalType, ChRsvp } from '../screens/calendar/model';
+import { playerSeesMeeting, type ChCalEvent, type ChCalType, type ChRsvp } from '../screens/calendar/model';
 
 /**
  * The handoff's calendar sample (design/handoff/cal-data.js): October 2026,
- * the week of Sun 12 – Sat 18, today Tue 14 at 2:40 PM, Eastern time.
+ * the week of Mon 12 – Sun 18, today Wed 14 at 2:40 PM, Eastern time.
  */
 const people = [
   { id: 'theo', name: 'Theo Marchetti', year: 'Senior' },
@@ -130,14 +130,23 @@ export const PREVIEW_CALENDAR: ChCalendarData = {
   settingsError: false,
 };
 
-/** Jonah's view: team events he's invited to, only his own class, no roster tools. */
+/**
+ * Jonah's view, as the loader builds it (data/calendar.ts): the team's events, only the meetings he is invited to
+ * (Decision B: not the Parent call, nobody's, nor a teammate's 1:1), only his own class, only his own place on an
+ * invite list and his own reply, and no roster tools.
+ */
 export const PREVIEW_CALENDAR_PLAYER: ChCalendarData = {
   ...PREVIEW_CALENDAR,
   role: 'player',
   viewerPlayerId: 'jonah',
   events: events
     .filter((e) => (e.type === 'class' ? e.owner === 'jonah' : e.type !== 'busy'))
-    .map((e) => ({ ...e, canEdit: false, rsvp: e.id === 'e13' ? { ...e.rsvp, jonah: 'pending' } : e.rsvp })),
+    .filter((e) => e.type !== 'meeting' || playerSeesMeeting(e.people.includes('jonah'), e.people.length))
+    .map((e): ChCalEvent => {
+      const mine = e.people.includes('jonah');
+      const reply: ChRsvp | undefined = e.id === 'e13' ? 'pending' : e.rsvp.jonah;
+      return { ...e, canEdit: false, people: mine ? ['jonah'] : [], rsvp: mine && reply ? { jonah: reply } : {}, openReply: false };
+    }),
   people: people.filter((p) => p.id === 'jonah'),
 };
 

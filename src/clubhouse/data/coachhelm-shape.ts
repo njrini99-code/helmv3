@@ -146,6 +146,8 @@ export interface ChProposal {
   title: string;
   /** The title of the insight it was made from, when that insight is on this page. */
   from: string | null;
+  /** The proposing coach's user id, for "Tell coach why" after a decline; null when unknown, and then the link is not offered. */
+  coachUserId?: string | null;
 }
 
 /**
@@ -182,6 +184,11 @@ export interface ChPlayerHelm {
   insights: { list: ChInsight[]; error: boolean };
   /** Countable rounds posted, read only when there are no insights, so the empty state can say what to do; null when unknown. */
   rounds: number | null;
+  /**
+   * Rounds still to post before the pattern miner reads this player: its floor (the coach's `min_rounds_for_signal`, never under
+   * the miner's own minimum) less the countable rounds in its lookback window. 0 once there are enough; null or absent when unknown.
+   */
+  roundsToGo?: number | null;
   /** What the cards were drawn without because a read beside them failed. */
   missing?: ChBoardMissing;
 }

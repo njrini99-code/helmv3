@@ -1,5 +1,24 @@
 # P003 — Roster: changelog
 
+## 2026-10-18 — Wave 7: player Roster coaches
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (team coaching staff)
+Held items:     none
+```
+
+### Changed (2026-10-18, player Roster)
+
+- Decision D: a player's Roster opens with the team's coaches (name and
+  role, head coach first) as plain text, above the players (CH-3808). A
+  failed staff read leaves the group out and is logged (`playerCoaches`).
+- Handicaps go through one rule everywhere (`displayHandicap`: the index
+  when set, else the handicap).
+
 ## 2026-10-18 — Wave 5: pending labels and the remove question
 
 ```text

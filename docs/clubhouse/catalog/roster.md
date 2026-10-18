@@ -22,7 +22,7 @@ can't click") is the same route for a player: `TeamRoster` and
 `TeamRosterPhone`, loader `src/clubhouse/data/roster-player.ts`, tests
 `src/clubhouse/__tests__/roster-player.test.tsx`, preview
 `/clubhouse-preview/roster-player` (`?state=empty|failed|noteam|loading`). CH-3210,
-CH-3211, CH-3307, CH-3308 and CH-3807 are its own; CH-3302 is shared.
+CH-3211, CH-3307, CH-3308, CH-3807 and CH-3808 are its own; CH-3302 is shared.
 
 Success toasts sit next to their error. Every save goes through `useAction`, so
 offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
@@ -120,3 +120,4 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3805 | No axe violations in any preview state, both layouts, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-3806 | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration | `RosterPhoneRow` `aria-label`, spark `aria-hidden` | roster.test › CH-3806 |
 | CH-3807 | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed | `TeamRoster`, `TeamRosterPhone` (`ch-rs-face--static`, `ch-rsm-row--static`) | roster-player.test › CH-3807 |
+| CH-3808 | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record | `TeamRoster`, `TeamRosterPhone`; `loadPlayerRoster` (`golf_team_coach_staff` with `golf_coaches(full_name, title)`) | roster-player.test › CH-3808 |

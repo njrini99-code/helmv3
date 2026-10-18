@@ -60,6 +60,7 @@ import {
   type ChRsvp,
 } from './model';
 import type { ChNow } from './views';
+import { messageCoachHref } from '../home/player-links';
 import { BusyDetail, EventFiles, LinkedTrip } from './extras';
 import { courseParts } from './class-group';
 
@@ -135,6 +136,13 @@ function Warn({ title, children, action }: { title: string; children: ReactNode;
 
 const find = (events: ChCalEvent[], id: string, date?: string) => events.find((e) => e.id === id && (!date || e.date === date)) ?? events.find((e) => e.id === id);
 
+/** A player's own clash, in their words: "Overlaps your ECON 101 class 3:00–4:00 PM" (or another event they're on). */
+function playerOverlapLine(events: ChCalEvent[], o: ChCalOverlap): string {
+  const w = find(events, o.withId);
+  const what = !w ? 'another of your events' : w.type === 'class' ? `your ${w.title} class` : w.title;
+  return `Overlaps ${what} ${fmtHour(o.from, false)}–${fmtHour(o.to)}`;
+}
+
 /* Nothing selected: today, what needs attention, where the data comes from. */
 export function Summary({ ctx }: { ctx: InspCtx }) {
   const { now, events, overlaps, people, role } = ctx;
@@ -197,7 +205,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
 
       <div className="ch-in__sec">
         <div className="ch-in__sechead">
-          <b>{role === 'coach' ? 'Needs attention' : 'Needs your reply'}</b>
+          <b>{role === 'coach' ? 'Needs attention' : weekOverlaps.length ? 'Needs your attention' : 'Needs your reply'}</b>
           <span>Next 7 days</span>
         </div>
         {ctx.rsvpError && (
@@ -221,6 +229,25 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                       <b>{e.title}</b>
                       <span>
                         {first(people.get(o.who)?.name)} overlaps · {dowOf(e.date)} {fmtHour(o.from, false)}–{fmtHour(o.to)}
+                      </span>
+                    </span>
+                    <Icon icon={ChevronRight} size={14} />
+                  </button>
+                );
+              })}
+            {/* A player's own clash opens the event, where it says what to do (message the coach); it has no Overlap panel. */}
+            {role === 'player' &&
+              weekOverlaps.map((o) => {
+                const e = find(events, o.eventId)!;
+                return (
+                  <button key={o.id} type="button" className="ch-in__need" onClick={() => ctx.go({ kind: 'event', id: e.id, date: e.date })}>
+                    <span className="ch-in__ic">
+                      <Icon icon={TriangleAlert} size={14} />
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <b>{e.title}</b>
+                      <span>
+                        {playerOverlapLine(events, o)} · {dowOf(e.date)}
                       </span>
                     </span>
                     <Icon icon={ChevronRight} size={14} />
@@ -465,6 +492,19 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           }
         >
           {first(ctx.people.get(overlap.who)?.name)} is busy {fmtHour(overlap.from, false)}–{fmtHour(overlap.to)}.
+        </Warn>
+      )}
+      {/* A player's own clash: told plainly, with the way to raise it. Moving or keeping the event is the coach's. */}
+      {!coach && overlap && (
+        <Warn
+          title="Schedule overlap"
+          action={
+            <Button size="sm" variant="ghost" href={messageCoachHref(null)}>
+              Message coach
+            </Button>
+          }
+        >
+          {playerOverlapLine(ctx.events, overlap)}.
         </Warn>
       )}
       {/* Owner, 2026-10-08: a player answers only an event that asks for replies; any other shows no reply control. */}

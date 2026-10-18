@@ -3504,6 +3504,45 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   color: var(--ch-text-secondary);
 }
 
+/* Your next round in a live qualifier (wave 7): the dashed tile of a round still to play, as a link to round setup with
+   the qualifier chosen, an arrow at its end. */
+a.ch-qf-prounds__r.is-play {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  color: var(--ch-hero-mint);
+  text-decoration: none;
+  outline-color: rgb(159 224 182 / 0.5);
+  touch-action: manipulation;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+a.ch-qf-prounds__r.is-play .ch-qf-prounds__m b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+@media (hover: hover) {
+  a.ch-qf-prounds__r.is-play:hover {
+    background: rgb(255 255 255 / 0.08);
+  }
+}
+a.ch-qf-prounds__r.is-play:active {
+  background: rgb(255 255 255 / 0.14);
+  transition-duration: var(--ch-dur-press);
+}
+a.ch-qf-prounds__r.is-play:focus-visible {
+  outline: 2px solid var(--ch-hero-mint);
+  outline-offset: 2px;
+}
+/* The list's way to the same round, under the live qualifier's card. */
+.ch-qf-play {
+  display: flex;
+}
+/* You on the live leaders: the board's mint on your name's tag, and the row a shade lighter. */
+.ch-scoreboard .ch-qf-lead__r.is-me {
+  background: rgb(255 255 255 / 0.06);
+}
+.ch-scoreboard .ch-qf-you {
+  color: var(--ch-hero-mint);
+}
+
 /* A round's tile is a button that opens its visuals in place. */
 .ch-qf-prounds__list > li {
   display: grid;

@@ -3992,3 +3992,8 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     animation: none;
   }
 }
+
+/* Wave 7: a player's reply still owed on the sidebar's next event (NextEventCard), held to its own width. */
+.ch-next > .ch-badge {
+  align-self: flex-start;
+}

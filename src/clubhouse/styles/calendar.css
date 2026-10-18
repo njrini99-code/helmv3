@@ -3271,3 +3271,9 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   font-weight: 600;
   color: var(--ch-text-primary);
 }
+
+/* Wave 7: a player's reply still owed that day (CalendarPhone's week strip): one amber dot after the day's own. */
+.ch-calm-week__d i span.is-reply,
+.ch-calm-week__d.is-on i span.is-reply {
+  background: var(--ch-warning-600);
+}

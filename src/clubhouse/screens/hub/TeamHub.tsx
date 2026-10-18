@@ -1,6 +1,6 @@
 'use client';
 
-import { ClipboardList, Megaphone, Plane, Plus, User, UsersRound } from 'lucide-react';
+import { ClipboardList, Megaphone, Plane, Plus, UsersRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
@@ -455,16 +455,25 @@ export function TeamHub({
           ? { label: 'Assign a task', icon: Plus, run: () => setAssign(true) }
           : null;
 
+  const yourTasks = (
+    <SectionBoundary surface="hub.tasks" label="Your tasks" code="CH-10205">
+      <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
+    </SectionBoundary>
+  );
+
   return (
     <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
       {phone && !coach && <PhoneTop start title="Team Hub" heading={false} />}
       {phone && coach && <PhoneTop title="Team Hub" start heading={false} />}
       <header className="ch-hb-h" data-canopy-head="">
         <div>
-          <span className="ch-hb-role">
-            <Icon icon={coach ? ClipboardList : User} size={12} />
-            {coach ? 'Coach view' : 'Player view'}
-          </span>
+          {/* Coach only (wave 7): a player is never told their own role. */}
+          {coach && (
+            <span className="ch-hb-role">
+              <Icon icon={ClipboardList} size={12} />
+              Coach view
+            </span>
+          )}
           <h1 id="ch-hb-title" className={phone ? 'ch-sr-only' : undefined}>
             Team Hub
           </h1>
@@ -561,14 +570,12 @@ export function TeamHub({
                   </SectionBoundary>
                 </div>
                 <div className="ch-hb-col">
+                  {/* A player's phone puts their tasks before Updates: the column stacks under the first, and Updates ran long enough to hide them (wave 7). */}
+                  {!coach && phone && yourTasks}
                   <SectionBoundary surface="hub.updates" label="Updates" code="CH-10205">
                     <Updates data={data.updates} covered={covered} read={readUpdates} onOpen={onOpenUpdate} />
                   </SectionBoundary>
-                  {!coach && (
-                    <SectionBoundary surface="hub.tasks" label="Your tasks" code="CH-10205">
-                      <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
-                    </SectionBoundary>
-                  )}
+                  {!coach && !phone && yourTasks}
                 </div>
               </div>
             ))}

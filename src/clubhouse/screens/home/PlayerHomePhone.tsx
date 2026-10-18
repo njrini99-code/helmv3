@@ -14,6 +14,7 @@ import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/use-now';
 import { usePhoneHero } from '../../shell/phone-chrome';
+import { CoachAsks } from './CoachAsks';
 import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
 import { playerFailedParts } from './model';
@@ -25,7 +26,8 @@ import { GirViz, PuttsViz, SgViz } from './RoundViz';
  * The player's phone Home (v2, design/handoff/Player - Home - Mobile.html,
  * m-player-home.jsx), in the Mobile clubhouse pass (owner, 2026-10-08): on the
  * parchment sheet, the day, the greeting, Up next with its countdown as the one
- * green feature card, and Message coach / Post a round; then, flush under
+ * green feature card, and Message coach / Start a round, and what the coach is
+ * waiting on (CoachAsks); then, flush under
  * engraved rules, the week with today's timeline, the latest round (paged, its
  * scorecard inline), scoring and the parts of the game. Same loader and
  * catalog as desktop.
@@ -75,7 +77,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
             </div>
           )}
         </SectionBoundary>
-        {/* On the parchment the hero's two keys are the shared buttons: Post a round the one primary, Message coach
+        {/* On the parchment the hero's two keys are the shared buttons: Start a round the one primary, Message coach
             the quiet one beside it (both tap lightly, D-70). */}
         <div className="ch-ph-acts">
           <Button size="lg" leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)} feel="press">
@@ -83,10 +85,11 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
           </Button>
           {post && (
             <Button size="lg" variant="primary" leftIcon={Plus} href={post}>
-              Post a round
+              Start a round
             </Button>
           )}
         </div>
+        <CoachAsks asks={data.asks} />
       </header>
 
       <div className="ch-hm-body">
@@ -118,7 +121,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
 /** `changeTone`'s class as FigureRow's tone: a strokes gained that rounds to zero stays plain. */
 const figureTone = (t: string) => (t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : undefined);
 
-/** My latest round (board "Latest"): paged through the last three, the scorecard inline. */
+/** Your latest round (board "Latest"): paged through the last three, the scorecard inline. */
 function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: boolean }) {
   const [i, setI] = useState(0);
   const r = data.rounds[i];
@@ -130,7 +133,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-ph-latest">
       <div className="ch-hm-sec__h ch-ph-sec__h">
-        <h2 id="ch-ph-latest">My latest round</h2>
+        <h2 id="ch-ph-latest">Your latest round</h2>
         {data.rounds.length > 1 && (
           <span className="ch-ph-pg">
             {/* Keys: they shrink when pressed, as every button does (`data-ch-press`, CH-1606), and tint (home.css). */}
