@@ -222,21 +222,48 @@ set up, hole 1, Save for later, Continue from Rounds, holes 2 to 18, Submit.
 It then checks the database: one completed round, 18 scored holes, total 54.
 
 It runs only when `NEXT_PUBLIC_SUPABASE_URL` is 127.0.0.1 or localhost, and
-skips everywhere else, CI included. There is no staging project, and this
-suite has written rounds to production before. It seeds its own user, team,
-membership and course through the local service role
-(`e2e/helpers/clubhouse-local-seed.ts`), and deletes all of it afterwards
-through the local database (`SUPABASE_DB_URL`, default the stack's port
-54322).
+skips everywhere else. There is no staging project, and this suite has written
+rounds to production before. It seeds its own user, team, membership and
+course through the local service role (`e2e/helpers/clubhouse-local-seed.ts`),
+and deletes all of it afterwards through the local database
+(`SUPABASE_DB_URL`, default the stack's port 54322). It runs with the write
+journeys below, on their config.
+
+## Clubhouse write journeys, local stack only (2026-10-16)
+
+`e2e/clubhouse-journeys.spec.ts` drives what a coach and a player write, through
+the screens they use, and checks each write in the database: a Calendar event
+published to the whole team and then edited, a qualifier's coach's pick and
+the confirmed squad, a Team Hub announcement that asks for acknowledgement and
+a player's Got it, a name saved in Settings by each role, and a message to the
+team chat and a player's reply. It seeds a coach, six players, a team chat, a
+week of events and a closed qualifier (`seedClubhouseTeam`), and after the run
+removes the seed and checks that no row the journeys made, or anything
+referring to one, is left (`e2e/helpers/clubhouse-journey.ts`).
+
+`playwright.clubhouse-journeys.config.ts` runs it and the round spec on
+Chromium and WebKit, one worker, no retries, and never loads `.env.local`.
+Nightly in CI: `.github/workflows/clubhouse-journeys.yml`, against a stack
+started on the runner.
 
 1. `npx supabase start` (or `db reset`).
-2. Start `next dev` with `NEXT_PUBLIC_SUPABASE_URL`,
-   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-   `SUPABASE_SECRET_KEY` and `SUPABASE_SERVICE_ROLE_KEY` set from
-   `npx supabase status -o env`, for example on port 3100.
+2. Start `next dev --webpack` with `HELM_DEV_KEEP_ROUTES=1` and
+   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` and
+   `SUPABASE_SERVICE_ROLE_KEY` set from `npx supabase status -o env`, for
+   example on port 3100. `.env.local` points at production: every variable you
+   do not set comes from it, so blank the outside services (mail, push, queues,
+   Sentry) as `npm run clubhouse:perf` does.
 3. With the same variables:
-   `PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test
-   e2e/clubhouse-round.spec.ts --project=chromium`
+   `CH_BASE=http://127.0.0.1:3100 npx playwright test --config
+   playwright.clubhouse-journeys.config.ts`. Without `CH_BASE` the config
+   starts `next dev` on 3100 itself from the current environment.
+
+The journeys spec compiles every route it visits before the first write
+(`warmRoutes`), and `HELM_DEV_KEEP_ROUTES=1` (next.config.mjs) keeps them
+compiled: by default `next dev` disposes a route idle for 60 seconds, and each
+compile sends a hot update that can reload a page open in the browser in the
+middle of a step.
 
 ## Clubhouse team switch, local stack only (2026-10-01)
 

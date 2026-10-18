@@ -12,6 +12,7 @@ on:
       - 'src/app/clubhouse-preview/**'
       - 'e2e/clubhouse-quality.spec.ts'
       - 'e2e/clubhouse-playground.spec.ts'
+      - 'e2e/clubhouse-quality.setup.ts'
       - 'playwright.clubhouse.config.ts'
       - 'next.config.mjs'
       - 'src/lib/security/clubhouse-preview-headers.mjs'
