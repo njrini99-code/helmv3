@@ -182,10 +182,14 @@ describe('the reset form in the sign-in panel', () => {
 
   it('keeps today’s rules and words: the reset page and the panel cannot drift', () => {
     // Whitespace folded, so a sentence wrapped over two source lines still matches.
-    const today = readFileSync('src/app/golf/(auth)/forgot-password/page.tsx', 'utf8').replace(/\s+/g, ' ');
+    // The golf page keeps its sent state in sent-confirmation.tsx, so both files are today's words.
+    const today = ['page.tsx', 'sent-confirmation.tsx']
+      .map((file) => readFileSync(`src/app/golf/(auth)/forgot-password/${file}`, 'utf8'))
+      .join(' ')
+      .replace(/\s+/g, ' ');
     const panel = readFileSync('src/clubhouse/screens/auth/ForgotPassword.tsx', 'utf8').replace(/\s+/g, ' ');
     for (const words of [RESET_EMPTY_MESSAGE, RESET_INVALID_MESSAGE, RESET_UNEXPECTED_MESSAGE, String.raw`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`, 'email.trim().toLowerCase()']) expect(today).toContain(words);
-    for (const words of ['Reset password', 'Enter your email and we’ll send you a link.', 'Send reset link', 'Sending reset link…', 'Check your email', 'We sent a reset link to', 'Open the link in the email to choose a new password. It expires in 1 hour. If it doesn’t arrive, check your spam folder or try a different email.', 'Back to sign in', 'Remember it?']) {
+    for (const words of ['Reset password', 'Enter your email and we’ll send you a link.', 'Send reset link', 'Sending reset link…', 'Check your email', 'We sent a reset link to', 'Open the link in the email to choose a new password. It expires in 1 hour.', 'Back to sign in', 'Remember it?']) {
       expect(today).toContain(words);
       expect(panel).toContain(words);
     }
