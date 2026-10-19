@@ -1025,3 +1025,10 @@ main[data-canopy] .ch-hg-hero.is-second,
     0 0 0 4.5px color-mix(in srgb, var(--ch-hg-tone) 45%, transparent),
     var(--ch-elevation-mark-ink);
 }
+
+/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
+@media (hover: hover) {
+  .ch-hg-m__how summary:hover svg {
+    color: var(--ch-text-primary);
+  }
+}
