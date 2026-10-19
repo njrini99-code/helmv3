@@ -1325,7 +1325,7 @@ describe('Messages · desktop Schedule and shared files (clickables 10, 13)', ()
     await user.click(screen.getAllByRole('button', { name: /Dana Cole/ })[0]!);
     await screen.findByRole('textbox', { name: /Message Dana$/ });
     expect(await schedule()).toBe('/golf/dashboard/calendar?new=1');
-    expect(screen.getByRole('link', { name: 'Schedule' }).getAttribute('title')).toBe('Schedule');
+    expect(screen.getByRole('link', { name: 'Schedule' })).not.toHaveAttribute('title'); // its tip is the Tooltip's, not a second native one
   });
 
   it('a player has no Schedule link in a thread header', async () => {

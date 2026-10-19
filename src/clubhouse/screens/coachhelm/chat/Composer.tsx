@@ -20,6 +20,7 @@ import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
 import { Menu } from '../../../ui/Menu';
 import { useToast } from '../../../ui/Toast';
+import { Tooltip } from '../../../ui/Tooltip';
 import { useAskDraft } from './drafts';
 
 /** The text box grows with its text and stops here; past it the box scrolls (a taller one hides the answer it is about). */
@@ -317,21 +318,27 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
         },
       }))}
       trigger={(t) => (
-        <button type="button" className="ch-ask-cmp__round" aria-label="Add to your question" data-ch-press="" {...t}>
-          <Icon icon={Plus} size={18} />
-        </button>
+        <Tooltip>
+          <button type="button" className="ch-ask-cmp__round" aria-label="Add to your question" data-ch-press="" {...t}>
+            <Icon icon={Plus} size={18} />
+          </button>
+        </Tooltip>
       )}
     />
   );
 
   const send = busy ? (
-    <button type="button" className="ch-ask-cmp__send is-stop" aria-label="Stop generating" data-ch-code="CH-13421" onClick={onStop}>
-      <Icon icon={Square} size={14} />
-    </button>
+    <Tooltip>
+      <button type="button" className="ch-ask-cmp__send is-stop" aria-label="Stop generating" data-ch-code="CH-13421" onClick={onStop}>
+        <Icon icon={Square} size={14} />
+      </button>
+    </Tooltip>
   ) : (
-    <button type="button" className="ch-ask-cmp__send" aria-label="Send" disabled={!canSend} onClick={submit}>
-      <Icon icon={ArrowUp} size={18} />
-    </button>
+    <Tooltip>
+      <button type="button" className="ch-ask-cmp__send" aria-label="Send" disabled={!canSend} onClick={submit}>
+        <Icon icon={ArrowUp} size={18} />
+      </button>
+    </Tooltip>
   );
 
   // A fragment that matches nothing keeps one quiet line (in the Players group) rather than an empty panel. Without a
@@ -392,17 +399,19 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           )}
           <span className="ch-ask-cmp__grow" />
           {(!hero || phone) && (
-            <button
-              type="button"
-              className="ch-ask-cmp__round is-quiet"
-              aria-label="Mention a player or stat"
-              data-ch-press=""
-              // The text box keeps the focus, so a phone keyboard that is up stays up.
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => openPlayers(true)}
-            >
-              <Icon icon={AtSign} size={18} />
-            </button>
+            <Tooltip>
+              <button
+                type="button"
+                className="ch-ask-cmp__round is-quiet"
+                aria-label="Mention a player or stat"
+                data-ch-press=""
+                // The text box keeps the focus, so a phone keyboard that is up stays up.
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => openPlayers(true)}
+              >
+                <Icon icon={AtSign} size={18} />
+              </button>
+            </Tooltip>
           )}
           {send}
         </div>

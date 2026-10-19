@@ -26,6 +26,7 @@ import { TripEditSheet } from './trip-edit';
 import { uploadRefusal } from './upload-rules';
 import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
 import { useToast } from '../../ui/Toast';
+import { useHScroll } from '../../ui/use-hscroll';
 import '../../styles/hub.css';
 
 // The tabs and their `?tab=` parser live in a plain module so the server route can call the parser.
@@ -142,6 +143,7 @@ export function TeamHub({
   // The underline moves on the press (CH-10602); the panel renders just behind it.
   const shownTab = useDeferredValue(tab);
   const tabsRef = useRef<HTMLDivElement>(null);
+  const tabsEdges = useHScroll<HTMLDivElement>(tabsRef);
   const reduced = useChReducedMotion();
   useSlidePlate(tabsRef, '[aria-selected="true"] > .ch-hb-tabs__bar', tab, { reduced, kind: 'smooth' });
   const [replies, setReplies] = useState(() => new Map<string, ChRsvp>());
@@ -496,7 +498,7 @@ export function TeamHub({
       )}
 
       {/* CH-10801: real tabs, each controlling its panel. */}
-      <div ref={tabsRef} className="ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
+      <div ref={tabsEdges} className="ch-hscroll ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
         {HUB_TABS[data.role].map(([k, l]) => (
           <button
             key={k}

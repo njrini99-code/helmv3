@@ -139,7 +139,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
               </div>
 
               {r.holes ? (
-                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}’s scorecard`} className="ch-h-card ch-scoreboard">
+                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}’s scorecard`} className="ch-h-card ch-scoreboard" fade={false}>
                   <Nine label="Out" holes={r.holes.slice(0, 9)} />
                   <Nine label="In" holes={r.holes.slice(9)} />
                 </ScrollRegion>

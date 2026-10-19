@@ -1881,3 +1881,29 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     width: calc(60% - var(--ch-es-i) * 10%);
   }
 }
+
+/* A row or table that scrolls sideways shows there is more (ui/use-hscroll.ts sets data-start / data-end): only the clipped
+   edge fades, over --ch-hs-fade, and nothing at rest. The mask is the element's own alpha, so it reads the same on any
+   surface and in dark; it clips the element's own shadow, so a scroller that draws one fades an inner row instead.
+   Forced colors draws no fade. */
+.ch-hscroll {
+  --ch-hs-fade: 14px;
+}
+.ch-hscroll[data-start='true'],
+.ch-hscroll[data-end='true'] {
+  -webkit-mask-image: linear-gradient(90deg, var(--ch-hs-l, black) 0, black var(--ch-hs-fade), black calc(100% - var(--ch-hs-fade)), var(--ch-hs-r, black) 100%);
+  mask-image: linear-gradient(90deg, var(--ch-hs-l, black) 0, black var(--ch-hs-fade), black calc(100% - var(--ch-hs-fade)), var(--ch-hs-r, black) 100%);
+}
+.ch-hscroll[data-start='true'] {
+  --ch-hs-l: transparent;
+}
+.ch-hscroll[data-end='true'] {
+  --ch-hs-r: transparent;
+}
+@media (forced-colors: active) {
+  .ch-hscroll[data-start='true'],
+  .ch-hscroll[data-end='true'] {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}

@@ -41,7 +41,7 @@ export function ReloadBanner({ reloading = false, onReload }: { reloading?: bool
       <span>
         <b>This round was updated on another device.</b> Saving is paused here so this device can’t overwrite the newer round. Reload to continue.
       </span>
-      <Button variant="secondary" size="sm" disabled={reloading} onClick={onReload}>
+      <Button variant="secondary" size="sm" busy={reloading} onClick={onReload}>
         {reloading ? 'Reloading…' : 'Reload'}
       </Button>
     </div>

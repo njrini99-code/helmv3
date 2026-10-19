@@ -19,6 +19,7 @@ import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
+import { Tooltip } from '../../ui/Tooltip';
 import { isOffline, normalise, useAction } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
 import { newRequestId } from '../../data/recruiting-shape';
@@ -239,7 +240,7 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
           </Button>
           <Button
             variant="primary"
-            disabled={save.pending}
+            busy={save.pending}
             onClick={() => {
               setTouched(true);
               if (bad) {
@@ -421,9 +422,11 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
                 <span>{[fileSize(f.size), f.note].filter(Boolean).join(' · ')}</span>
               </a>
               {canEdit ? (
-                <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Remove ${f.title}`} onClick={() => void detach(f)}>
-                  <Icon icon={X} size={14} />
-                </button>
+                <Tooltip>
+                  <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Remove ${f.title}`} onClick={() => void detach(f)}>
+                    <Icon icon={X} size={14} />
+                  </button>
+                </Tooltip>
               ) : (
                 <span />
               )}
@@ -517,7 +520,8 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
           </Button>
           <Button
             variant="primary"
-            disabled={!pick || attach.pending}
+            busy={attach.pending}
+            disabled={!pick}
             onClick={() => {
               if (pick) void attach.run(pick);
             }}

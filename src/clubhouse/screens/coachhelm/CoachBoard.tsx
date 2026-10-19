@@ -23,6 +23,7 @@ import { BoardPartial, FocusCard, Head, PulseList } from './parts';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
+import { SideScroll } from '../../ui/SideScroll';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const coachBoardLinks = {
@@ -223,7 +224,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
           {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} />}
           <div className="ch-hl-cgrid">
             <SectionBoundary surface="coachhelm.players" label="Your players" code="CH-13204">
-              <section className="ch-hl-plist" aria-labelledby="ch-hl-plist-h">
+              <SideScroll as="section" className="ch-hl-plist" aria-labelledby="ch-hl-plist-h">
                 <h2 id="ch-hl-plist-h">By player</h2>
                 {players.map((p, i) => {
                   const on = p.id === cur.id;
@@ -249,7 +250,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                     </button>
                   );
                 })}
-              </section>
+              </SideScroll>
             </SectionBoundary>
             {/* CH-13805: the focus is a polite live region, so choosing another player is announced. */}
             <div className="ch-hl-cmain" aria-live="polite">
@@ -265,7 +266,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                     <span>
                       <b>Insight dismissed.</b> It no longer shows on your board or on {firstName(cur.name)}’s. Undo brings it back.
                     </span>
-                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => void undo.run(cur)}>
+                    <Button size="sm" variant="ghost" busy={here('undo')} disabled={busy && !here('undo')} onClick={() => void undo.run(cur)}>
                       {here('undo') ? <span data-ch-code="CH-13403">Undoing…</span> : 'Undo'}
                     </Button>
                   </div>
@@ -294,14 +295,15 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                             body={`${focusStatusSaid(data.missing, firstName(cur.name))} Dismiss still works. Try again in a moment.`}
                           />
                         ) : stale ? null : (
-                          <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
+                          <Button variant="primary" leftIcon={Flag} busy={here('assign')} disabled={busy && !here('assign')} onClick={() => void assign.run(cur)}>
                             {here('assign') ? <span data-ch-code="CH-13403">Assigning…</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
                           </Button>
                         )}
                         <Button
                           variant="ghost"
                           leftIcon={Archive}
-                          disabled={busy}
+                          busy={here('dismiss')}
+                          disabled={busy && !here('dismiss')}
                           onClick={() => {
                             // CH-13703: the warning comes before the write, as before any destructive tap (D-70).
                             haptic('warning');

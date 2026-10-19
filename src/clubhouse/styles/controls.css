@@ -1180,6 +1180,50 @@
   filter: none;
   cursor: progress;
 }
+/* Its label and icons stay (they size the key and are what VoiceOver reads) but give way to the ring, which sits over them. */
+.ch-btn[aria-busy='true'] > :not(.ch-btn__spin) {
+  opacity: 0;
+}
+.ch-btn__spin {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+
+/* The one spinner (ui/Spinner.tsx): a ring whose lit quarter turns once per sweep token. Every wait in Clubhouse draws this,
+   in a Button or alone, so the loop reads the same on every page. The duration is --ch-dur-sweep until tokens.css carries a
+   --ch-dur-spin of its own; it is 0 under reduced motion and Animations off, which leaves the ring still. */
+.ch-spinner {
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-top-color: currentColor;
+  animation: ch-spinner-turn var(--ch-dur-sweep) linear infinite;
+}
+.ch-spinner--sm {
+  width: 12px;
+  height: 12px;
+}
+.ch-spinner--lg {
+  width: 54px;
+  height: 54px;
+  border-width: 3px;
+}
+.ch-spinner--green {
+  color: var(--ch-green-600);
+}
+.ch-spinner--mint {
+  color: var(--ch-hero-mint);
+}
+@keyframes ch-spinner-turn {
+  to {
+    rotate: 360deg;
+  }
+}
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept

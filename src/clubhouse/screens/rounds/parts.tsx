@@ -11,6 +11,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { withPointSpan } from '../../ui/point-span';
 import type { ContextMenuBind } from '../../ui/ContextMenu';
 import { Icon } from '../../ui/Icon';
+import { Tooltip } from '../../ui/Tooltip';
 
 import { dateOf, TYPE_LABEL } from './labels';
 
@@ -173,9 +174,11 @@ export function UnfinishedCard({
           )}
         </span>
         <span className="ch-rd-unf__acts">
-          <button type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
-            <Icon icon={Trash2} size={14} />
-          </button>
+          <Tooltip>
+            <button type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
+              <Icon icon={Trash2} size={14} />
+            </button>
+          </Tooltip>
           {continueHref && (
             <Link href={continueHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
               {cta}

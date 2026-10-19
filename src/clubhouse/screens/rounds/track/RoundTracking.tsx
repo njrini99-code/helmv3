@@ -12,6 +12,7 @@ import { haptic } from '../../../lib/haptics';
 import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
+import { Spinner } from '../../../ui/Spinner';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { CourseView } from './CourseView';
 import { HoleReview } from './HoleReview';
@@ -232,7 +233,7 @@ export function RoundTracking(props: RoundTrackingProps) {
                     ) : saveState === 'device' || saveState === 'syncing' ? (
                       <Icon icon={Smartphone} size={13} />
                     ) : (
-                      <span className="ch-rt-spin ch-rt-spin--sm" aria-hidden="true" />
+                      <Spinner size="sm" />
                     )}
                     <span>{SAVE_WORDS[saveState]}</span>
                   </p>

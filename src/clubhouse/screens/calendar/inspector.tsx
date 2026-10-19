@@ -39,6 +39,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { PillGroup, Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
+import { Tooltip } from '../../ui/Tooltip';
 import { normalise, useAction } from '../../lib/use-action';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
@@ -459,9 +460,11 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
               : []),
           ]}
           trigger={(p) => (
-            <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="More actions" {...p}>
-              <Icon icon={Ellipsis} size={15} />
-            </button>
+            <Tooltip>
+              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="More actions" {...p}>
+                <Icon icon={Ellipsis} size={15} />
+              </button>
+            </Tooltip>
           )}
         />
       </div>
@@ -773,7 +776,8 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
           <div className="ch-in__sec ch-in__foot">
             <Button
               variant="primary"
-              disabled={!changed.length || save.pending}
+              busy={save.pending}
+              disabled={!changed.length}
               onClick={() => {
                 chTrail('calendar attendance save');
                 void save.run();

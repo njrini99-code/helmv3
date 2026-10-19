@@ -15,6 +15,7 @@ interface TriggerProps {
   onBlur?: (e: FocusEvent<HTMLElement>) => void;
   onKeyDown?: (e: KeyboardEvent<HTMLElement>) => void;
   'aria-keyshortcuts'?: string;
+  'aria-label'?: string;
 }
 
 /** A mouse or pen resting over a control; never a finger (touch has no hover, and a tap would flash a tip as the press lands). */
@@ -45,8 +46,8 @@ export function Tooltip({
   ariaKeys,
   children,
 }: {
-  /** What the control is called: its accessible name. */
-  label: string;
+  /** What the control is called: its accessible name. Left out, the control's own `aria-label` is used, so the two cannot differ. */
+  label?: string;
   /** Its shortcut, one string per key ("⌘", "\\"), drawn as key caps. */
   shortcut?: readonly string[];
   /** The same shortcut for assistive tech (aria-keyshortcuts: "Meta+Backslash Control+Backslash"). */
@@ -85,6 +86,7 @@ export function Tooltip({
   }, [open, hide]);
 
   const own = child.props;
+  const words = label ?? own['aria-label'];
   const props: TriggerProps = {
     onPointerEnter: (e) => {
       own.onPointerEnter?.(e);
@@ -121,7 +123,7 @@ export function Tooltip({
   return (
     <>
       {cloneElement(child, props)}
-      {open && trigger.current && <TipPlate anchor={trigger.current} label={label} shortcut={shortcut} />}
+      {open && trigger.current && words && <TipPlate anchor={trigger.current} label={words} shortcut={shortcut} />}
     </>
   );
 }

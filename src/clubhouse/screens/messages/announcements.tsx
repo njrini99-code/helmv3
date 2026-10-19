@@ -221,7 +221,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
               <Button
                 variant="primary"
                 leftIcon={Check}
-                disabled={busy === 'ack'}
+                busy={busy === 'ack'}
                 onClick={async () => {
                   setBusy('ack');
                   await api.acknowledge(a.id);
@@ -272,7 +272,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
                         ) : (
                           <Button
                             size="sm"
-                            disabled={busy === t.taskId}
+                            busy={busy === t.taskId}
                             onClick={async () => {
                               setBusy(t.taskId);
                               await api.completeTask(a.id, t.taskId);

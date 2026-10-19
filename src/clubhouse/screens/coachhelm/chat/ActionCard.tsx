@@ -131,7 +131,7 @@ export function AskActionCard({
               <Button variant="ghost" disabled={status === 'preparing' || deciding} onClick={() => answer(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" disabled={status === 'preparing' || deciding} onClick={() => answer(true)}>
+              <Button variant="primary" busy={deciding} disabled={status === 'preparing'} onClick={() => answer(true)}>
                 Confirm
               </Button>
             </>

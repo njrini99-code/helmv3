@@ -371,7 +371,7 @@ export function ComposeSheet({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={pending} feel={null} onClick={() => void submit()}>
+          <Button variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
             {pending ? edit ? <span data-ch-code="CH-10406">Saving…</span> : <span data-ch-code="CH-10402">Posting…</span> : edit ? 'Save changes' : 'Post'}
           </Button>
         </>
@@ -641,7 +641,7 @@ export function TripSheet({
             </Button>
           )}
           {last ? (
-            <Button variant="primary" disabled={pending} feel={null} onClick={() => void submit()}>
+            <Button variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
               {pending ? <span data-ch-code="CH-10403">Saving…</span> : savedId ? 'Update travelers' : 'Publish'}
             </Button>
           ) : (
@@ -866,7 +866,7 @@ export function AssignSheet({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={pending} feel={null} onClick={() => void submit()}>
+          <Button variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
             {pending ? <span data-ch-code="CH-10404">Assigning…</span> : 'Assign'}
           </Button>
         </>
@@ -941,7 +941,7 @@ export function ConfirmDelete({
           <Button variant="ghost" onClick={onCancel}>
             Keep it
           </Button>
-          <Button variant="danger" disabled={pending} feel={null} onClick={onConfirm}>
+          <Button variant="danger" busy={pending} feel={null} onClick={onConfirm}>
             {pending ? 'Deleting…' : 'Delete'}
           </Button>
         </>

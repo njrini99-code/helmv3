@@ -12,6 +12,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { FormLine } from '../../ui/FormLine';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
+import { SideScroll } from '../../ui/SideScroll';
 
 const STATUS: Record<ChLeaderRow['status'], string> = {
   improving: 'Improving',
@@ -171,7 +172,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
           />
         </div>
       ) : (
-        <div className="ch-h-lb ch-sheet" role="table" aria-labelledby="ch-lb-title">
+        <SideScroll className="ch-h-lb ch-sheet" role="table" aria-labelledby="ch-lb-title">
           <div className="ch-h-lb__row ch-h-lb__head" role="row">
             <span role="columnheader">
               <span className="ch-sr-only">Position</span>
@@ -186,7 +187,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
             const places = leaderPlaces(data.rows);
             return data.rows.map((p, i) => <Row key={p.playerId} p={p} pos={places[i]!} rounds={rounds} />);
           })()}
-        </div>
+        </SideScroll>
       )}
     </section>
   );

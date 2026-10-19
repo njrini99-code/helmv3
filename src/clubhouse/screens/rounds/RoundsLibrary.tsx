@@ -22,6 +22,7 @@ import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
+import { Tooltip } from '../../ui/Tooltip';
 import { monthLabel, MonthSpark, RoundRow, SeasonCard, shortDay, UnfinishedCard } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
@@ -220,9 +221,11 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                           {r.submitUnchecked ? ' · couldn’t check if posted' : ''}
                         </em>
                       </span>
-                      <button type="button" className="ch-rd-more__discard" onClick={() => askDiscard(r)} aria-label={`Discard the round at ${r.course}`}>
-                        <Icon icon={Trash2} size={14} />
-                      </button>
+                      <Tooltip>
+                        <button type="button" className="ch-rd-more__discard" onClick={() => askDiscard(r)} aria-label={`Discard the round at ${r.course}`}>
+                          <Icon icon={Trash2} size={14} />
+                        </button>
+                      </Tooltip>
                       {href && (
                         <Link href={href} className="ch-rd-more__go" onClick={() => haptic('press')}>
                           {r.readyToSubmit ? 'Post' : 'Continue'}
@@ -311,7 +314,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
             <Button variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
-            <Button variant="danger" disabled={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
+            <Button variant="danger" busy={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
               {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>

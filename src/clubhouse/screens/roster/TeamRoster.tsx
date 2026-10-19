@@ -12,6 +12,7 @@ import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Tooltip } from '../../ui/Tooltip';
 import { haptic } from '../../lib/haptics';
 import { NO_DATA } from '../../lib/format';
 import { useChPhone } from '../../lib/use-phone';
@@ -19,6 +20,7 @@ import { formatHcp } from './format';
 import { TeamRosterPhone } from './TeamRosterPhone';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 import '../../styles/roster.css';
+import { SideScroll } from '../../ui/SideScroll';
 
 type View = 'faces' | 'list';
 // The same key as the coach's roster: the layout is a preference for this screen on this device.
@@ -117,19 +119,20 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
                     ['list', List, 'List view'],
                   ] as const
                 ).map(([v, icon, label]) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className="ch-rs-vt__b"
-                    aria-pressed={view === v}
-                    aria-label={label}
-                    onClick={() => {
-                      if (view !== v) haptic('select');
-                      changeView(v);
-                    }}
-                  >
-                    <Icon icon={icon} size={15} />
-                  </button>
+                  <Tooltip key={v}>
+                    <button
+                      type="button"
+                      className="ch-rs-vt__b"
+                      aria-pressed={view === v}
+                      aria-label={label}
+                      onClick={() => {
+                        if (view !== v) haptic('select');
+                        changeView(v);
+                      }}
+                    >
+                      <Icon icon={icon} size={15} />
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
               <Segmented<TeamSort>
@@ -162,7 +165,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
 function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
   if (!coaches?.length) return null;
   return (
-    <div className="ch-rs-list ch-rs-list--team ch-rs-coaches ch-sheet" role="table" aria-label="Coaches" data-ch-code="CH-3808">
+    <SideScroll className="ch-rs-list ch-rs-list--team ch-rs-coaches ch-sheet" role="table" aria-label="Coaches" data-ch-code="CH-3808">
       <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
         <span role="columnheader">Coach</span>
         <span role="columnheader">Role</span>
@@ -182,7 +185,7 @@ function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
           </span>
         </div>
       ))}
-    </div>
+    </SideScroll>
   );
 }
 
@@ -221,7 +224,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
     );
   }
   return (
-    <div className="ch-rs-list ch-rs-list--team ch-sheet" role="table" aria-label="Roster" data-ch-code="CH-3807">
+    <SideScroll className="ch-rs-list ch-rs-list--team ch-sheet" role="table" aria-label="Roster" data-ch-code="CH-3807">
       <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
         <span role="columnheader">Player</span>
         <span role="columnheader">Class</span>
@@ -248,6 +251,6 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
           </span>
         </div>
       ))}
-    </div>
+    </SideScroll>
   );
 }

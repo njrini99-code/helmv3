@@ -1063,7 +1063,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                       <Button size="sm" variant="ghost" onClick={() => setAsking(null)}>
                         Keep link
                       </Button>
-                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} disabled={busy} onClick={() => confirm(r.type, asking.kind)}>
+                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} busy={busy} onClick={() => confirm(r.type, asking.kind)}>
                         {ask.go}
                       </Button>
                     </div>

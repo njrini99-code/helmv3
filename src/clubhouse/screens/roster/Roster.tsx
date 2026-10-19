@@ -35,10 +35,12 @@ import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
 import { PlayerPeek } from '../../ui/PlayerPeek';
+import { Tooltip } from '../../ui/Tooltip';
 import { RosterSpread } from './RosterSpread';
 import { earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
+import { SideScroll } from '../../ui/SideScroll';
 
 type Sort = 'avg' | 'hcp' | 'rounds' | 'name';
 type Show = 'active' | 'inactive' | 'all';
@@ -315,7 +317,7 @@ export function Roster({ data }: { data: ChRoster }) {
             </Button>
             <Button
               variant="danger"
-              disabled={remove.pending}
+              busy={remove.pending}
               feel="warning"
               onClick={() => {
                 if (removing) void remove.run(removing);
@@ -481,19 +483,20 @@ export function Roster({ data }: { data: ChRoster }) {
                     ['list', List, 'List view'],
                   ] as const
                 ).map(([v, icon, label]) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className="ch-rs-vt__b"
-                    aria-pressed={view === v}
-                    aria-label={label}
-                    onClick={() => {
-                      if (view !== v) haptic('select');
-                      changeView(v);
-                    }}
-                  >
-                    <Icon icon={icon} size={15} />
-                  </button>
+                  <Tooltip key={v}>
+                    <button
+                      type="button"
+                      className="ch-rs-vt__b"
+                      aria-pressed={view === v}
+                      aria-label={label}
+                      onClick={() => {
+                        if (view !== v) haptic('select');
+                        changeView(v);
+                      }}
+                    >
+                      <Icon icon={icon} size={15} />
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
               <Segmented<Sort>
@@ -617,7 +620,7 @@ function RosterList({
           ))}
         </div>
       ) : (
-        <div className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
+        <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
           <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
             <span role="columnheader">Player</span>
             <span role="columnheader">Status</span>
@@ -671,15 +674,17 @@ function RosterList({
                   label={`Actions for ${p.name}`}
                   items={menuFor(p)}
                   trigger={(t) => (
-                    <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
-                      <Icon icon={Ellipsis} size={15} />
-                    </button>
+                    <Tooltip>
+                      <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
+                        <Icon icon={Ellipsis} size={15} />
+                      </button>
+                    </Tooltip>
                   )}
                 />
               </span>
             </div>
           ))}
-        </div>
+        </SideScroll>
       )}
     </>
   );

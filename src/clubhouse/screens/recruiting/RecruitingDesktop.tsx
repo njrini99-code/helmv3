@@ -11,6 +11,7 @@ import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
 import { EmptyState } from '../../ui/States';
+import { Tooltip } from '../../ui/Tooltip';
 import type { RecCtx } from './ctx';
 import { Documents } from './Documents';
 import { CalendarLine, CommitRule, ContactSection, MetaLine, NextStepPlate, NextStepSection, NextStepSrPrefix, NotesSection, ProspectAvatar, StageChip, isStrong } from './parts';
@@ -203,9 +204,11 @@ function ProspectPanel({ p, c }: { p: ChProspect; c: RecCtx }) {
             align="end"
             items={[{ label: 'Delete prospect', icon: Trash2, danger: true, onSelect: () => c.askDelete(p) }]}
             trigger={(t) => (
-              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`More for ${p.name}`} {...t}>
-                <Icon icon={Ellipsis} size={18} />
-              </button>
+              <Tooltip>
+                <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`More for ${p.name}`} {...t}>
+                  <Icon icon={Ellipsis} size={18} />
+                </button>
+              </Tooltip>
             )}
           />
         </div>

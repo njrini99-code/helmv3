@@ -110,6 +110,7 @@ import { fileMeta, fileSize, useConversationFiles } from "./files";
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { MessagesHead } from "./MessagesNoTeam";
+import { Tooltip } from '../../ui/Tooltip';
 
 /** The thread's glide, longer than the page's (a conversation is read down a long column). */
 const THREAD_SCROLL_DUR = 1.2;
@@ -470,15 +471,16 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
       <div className="ch-ms-rail__head">
         <div className="ch-ms-rail__title">
           <h1>Messages</h1>
-          <button
-            type="button"
-            className="ch-btn ch-btn--secondary ch-iconbtn"
-            aria-label="New message"
-            title="New message"
-            onClick={onNew}
-          >
-            <Icon icon={SquarePen} size={16} />
-          </button>
+          <Tooltip>
+            <button
+              type="button"
+              className="ch-btn ch-btn--secondary ch-iconbtn"
+              aria-label="New message"
+              onClick={onNew}
+            >
+              <Icon icon={SquarePen} size={16} />
+            </button>
+          </Tooltip>
         </div>
         <SearchField
           value={q}
@@ -992,21 +994,25 @@ export function Bubble({
           )}
           {!m.failed && !onActions && (
             <div className="ch-ms-msg__tools">
-              <button
-                ref={reactBtn}
-                type="button"
-                className="ch-ms-tool"
-                aria-label="React"
-                aria-haspopup="menu"
-                aria-expanded={picking}
-                onClick={() => setPicking(!picking)}
-              >
-                <Icon icon={SmilePlus} size={15} />
-              </button>
-              {onReply && (
-                <button type="button" className="ch-ms-tool" aria-label="Reply" onClick={onReply}>
-                  <Icon icon={Reply} size={15} />
+              <Tooltip>
+                <button
+                  ref={reactBtn}
+                  type="button"
+                  className="ch-ms-tool"
+                  aria-label="React"
+                  aria-haspopup="menu"
+                  aria-expanded={picking}
+                  onClick={() => setPicking(!picking)}
+                >
+                  <Icon icon={SmilePlus} size={15} />
                 </button>
+              </Tooltip>
+              {onReply && (
+                <Tooltip>
+                  <button type="button" className="ch-ms-tool" aria-label="Reply" onClick={onReply}>
+                    <Icon icon={Reply} size={15} />
+                  </button>
+                </Tooltip>
               )}
               {m.mine && (
                 <Menu
@@ -1023,14 +1029,16 @@ export function Bubble({
                     },
                   ]}
                   trigger={(p) => (
-                    <button
-                      type="button"
-                      className="ch-ms-tool"
-                      aria-label="More message actions"
-                      {...p}
-                    >
-                      <Icon icon={Ellipsis} size={15} />
-                    </button>
+                    <Tooltip>
+                      <button
+                        type="button"
+                        className="ch-ms-tool"
+                        aria-label="More message actions"
+                        {...p}
+                      >
+                        <Icon icon={Ellipsis} size={15} />
+                      </button>
+                    </Tooltip>
                   )}
                 />
               )}
@@ -1055,22 +1063,23 @@ export function Bubble({
                 {REACTIONS.map((r, i) => {
                   const on = reacts.some((x) => x.key === r.key && x.mine);
                   return (
-                    <button
-                      key={r.key}
-                      type="button"
-                      role="menuitem"
-                      tabIndex={i === 0 ? 0 : -1}
-                      className={"ch-ms-reactbar__b" + (on ? " is-on" : "")}
-                      aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
-                      onClick={() => {
-                        haptic("select");
-                        api.react(m.id, r.key, !on);
-                        // Focus goes back to React, not to <body> as the bar leaves.
-                        closeBar(true);
-                      }}
-                    >
-                      <Icon icon={r.icon} size={16} />
-                    </button>
+                    <Tooltip key={r.key}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        tabIndex={i === 0 ? 0 : -1}
+                        className={"ch-ms-reactbar__b" + (on ? " is-on" : "")}
+                        aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                        onClick={() => {
+                          haptic("select");
+                          api.react(m.id, r.key, !on);
+                          // Focus goes back to React, not to <body> as the bar leaves.
+                          closeBar(true);
+                        }}
+                      >
+                        <Icon icon={r.icon} size={16} />
+                      </button>
+                    </Tooltip>
                   );
                 })}
               </M.div>
@@ -1209,14 +1218,16 @@ export function AttachChips({
         <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name}>
           <Icon icon={FileText} size={13} />
           <span className="ch-ms-to__n">{f.name}</span>
-          <button
-            type="button"
-            aria-label={`Remove ${f.name}`}
-            disabled={disabled}
-            onClick={() => onRemove(i)}
-          >
-            <Icon icon={X} size={12} />
-          </button>
+          <Tooltip>
+            <button
+              type="button"
+              aria-label={`Remove ${f.name}`}
+              disabled={disabled}
+              onClick={() => onRemove(i)}
+            >
+              <Icon icon={X} size={12} />
+            </button>
+          </Tooltip>
         </span>
       ))}
     </div>
@@ -1486,7 +1497,7 @@ export function Composer({
         </div>
       )}
       {resumed && !files.length && <div className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
-      {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></span>)}</div>}
+      {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
       <AttachChips
         disabled={unconfirmed || checking || checkFailed || unavailable}
         files={files}
@@ -1519,15 +1530,17 @@ export function Composer({
           maxLength={MESSAGE_MAX}
           enterKeyHint={phone ? "enter" : "send"}
         />
-        <button
-          type="button"
-          className={"ch-ms-send" + (ready ? " is-ready" : "")}
-          onClick={() => void send()}
-          disabled={!ready}
-          aria-label={unconfirmed ? "Retry send" : "Send"}
-        >
-          <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={17} />
-        </button>
+        <Tooltip>
+          <button
+            type="button"
+            className={"ch-ms-send" + (ready ? " is-ready" : "")}
+            onClick={() => void send()}
+            disabled={!ready}
+            aria-label={unconfirmed ? "Retry send" : "Send"}
+          >
+            <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={17} />
+          </button>
+        </Tooltip>
       </div>
       {unavailable ? (
         <span className="ch-ms-comp__hint">
@@ -1697,31 +1710,33 @@ function Thread({
         </div>
         <div className="ch-ms-th__act">
           {calendarHref && api.viewer.role === "coach" && (
-            <a
-              className="ch-btn ch-btn--ghost ch-iconbtn"
-              href={calendarHref}
-              aria-label="Schedule"
-              title="Schedule"
-            >
-              <Icon icon={CalendarPlus} size={16} />
-            </a>
+            <Tooltip>
+              <a
+                className="ch-btn ch-btn--ghost ch-iconbtn"
+                href={calendarHref}
+                aria-label="Schedule"
+              >
+                <Icon icon={CalendarPlus} size={16} />
+              </a>
+            </Tooltip>
           )}
-          <button
-            type="button"
-            className={
-              "ch-btn ch-iconbtn " +
-              (detailsOpen ? "ch-btn--secondary" : "ch-btn--ghost")
-            }
-            aria-label="Details"
-            aria-pressed={detailsOpen}
-            title="Details"
-            onClick={() => {
-              haptic("select");
-              setDetails(!detailsOpen);
-            }}
-          >
-            <Icon icon={conv.group ? Users : Info} size={16} />
-          </button>
+          <Tooltip>
+            <button
+              type="button"
+              className={
+                "ch-btn ch-iconbtn " +
+                (detailsOpen ? "ch-btn--secondary" : "ch-btn--ghost")
+              }
+              aria-label="Details"
+              aria-pressed={detailsOpen}
+              onClick={() => {
+                haptic("select");
+                setDetails(!detailsOpen);
+              }}
+            >
+              <Icon icon={conv.group ? Users : Info} size={16} />
+            </button>
+          </Tooltip>
         </div>
       </header>
       <div
@@ -1849,7 +1864,8 @@ export function EditMessageModal({ api, message, onClose }: { api: ChMessagesApi
           </Button>
           <Button
             variant="primary"
-            disabled={busy || !text.trim() || same}
+            busy={busy}
+            disabled={!text.trim() || same}
             onClick={async () => {
               if (!message || same) return;
               setBusy(true);
@@ -1894,7 +1910,7 @@ export function DeleteMessageModal({ api, message, onClose }: { api: ChMessagesA
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy}
+            busy={busy}
             onClick={async () => {
               if (!message) return;
               setBusy(true);
@@ -1937,7 +1953,7 @@ export function LeaveGroupModal({ api, conv, open, onClose, onLeft }: { api: ChM
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy}
+            busy={busy}
             onClick={async () => {
               setBusy(true);
               const ok = await api.leave();
@@ -1975,7 +1991,7 @@ export function DeleteConversationModal({ api, conv, open, onClose, onDeleted }:
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy}
+            busy={busy}
             onClick={async () => {
               setBusy(true);
               const ok = (await api.deleteConversation?.()) ?? false;
@@ -2019,7 +2035,8 @@ export function RemoveMemberModal({ api, conv, member, onClose }: { api: ChMessa
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy || !api.removeMember}
+            busy={busy}
+            disabled={!api.removeMember}
             onClick={async () => {
               if (!member || !api.removeMember) return;
               setBusy(true);
@@ -2356,7 +2373,7 @@ function MuteControl({ api }: { api: ChMessagesApi }) {
           </span>
           <Button
             size="sm"
-            disabled={busy}
+            busy={busy}
             onClick={() => void set(false, null)}
           >
             Unmute
@@ -2497,7 +2514,7 @@ function NewMessage({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={busy} onClick={() => void go()}>
+          <Button variant="primary" busy={busy} onClick={() => void go()}>
             {busy
               ? announce
                 ? "Posting…"
@@ -2627,13 +2644,15 @@ function NewMessage({
                     <span key={id} className="ch-ms-to__c">
                       <Avatar name={p?.name ?? "Member"} size={20} />
                       {firstName(p?.name ?? "Member")}
-                      <button
-                        type="button"
-                        aria-label={`Remove ${p?.name ?? "member"}`}
-                        onClick={() => toggle(id)}
-                      >
-                        <Icon icon={X} size={12} />
-                      </button>
+                      <Tooltip>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${p?.name ?? "member"}`}
+                          onClick={() => toggle(id)}
+                        >
+                          <Icon icon={X} size={12} />
+                        </button>
+                      </Tooltip>
                     </span>
                   );
                 })}

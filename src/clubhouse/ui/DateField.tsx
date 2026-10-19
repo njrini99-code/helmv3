@@ -8,6 +8,7 @@ import {
   DOW_SHORT, addMonths, clampDate, formatDate, formatMonth, localToday, monthGrid, moveDay, outOfRange, parseDateInput, parseIso,
 } from './date-time';
 import { PickerField } from './PickerHost';
+import { Tooltip } from './Tooltip';
 
 export interface DateFieldProps {
   /** `yyyy-mm-dd`, or empty for none: the same string the `<input type="date">` it replaces held. */
@@ -150,35 +151,39 @@ export function MonthGrid({
   return (
     <div className={'ch-df-cal' + (phone ? ' is-phone' : '')}>
       <div className="ch-df-cal__head">
-        <button
-          type="button"
-          className="ch-df-nav"
-          aria-label="Previous month"
-          disabled={prevDisabled}
-          onClick={() => {
-            haptic('select');
-            wantFocus.current = false;
-            setCursor(clampDate(addMonths(cursor, -1), min, max));
-          }}
-        >
-          <Icon icon={ChevronLeft} size={16} />
-        </button>
+        <Tooltip>
+          <button
+            type="button"
+            className="ch-df-nav"
+            aria-label="Previous month"
+            disabled={prevDisabled}
+            onClick={() => {
+              haptic('select');
+              wantFocus.current = false;
+              setCursor(clampDate(addMonths(cursor, -1), min, max));
+            }}
+          >
+            <Icon icon={ChevronLeft} size={16} />
+          </button>
+        </Tooltip>
         <div className="ch-df-cal__month" aria-live="polite">
           {formatMonth(cursor)}
         </div>
-        <button
-          type="button"
-          className="ch-df-nav"
-          aria-label="Next month"
-          disabled={nextDisabled}
-          onClick={() => {
-            haptic('select');
-            wantFocus.current = false;
-            setCursor(clampDate(addMonths(cursor, 1), min, max));
-          }}
-        >
-          <Icon icon={ChevronRight} size={16} />
-        </button>
+        <Tooltip>
+          <button
+            type="button"
+            className="ch-df-nav"
+            aria-label="Next month"
+            disabled={nextDisabled}
+            onClick={() => {
+              haptic('select');
+              wantFocus.current = false;
+              setCursor(clampDate(addMonths(cursor, 1), min, max));
+            }}
+          >
+            <Icon icon={ChevronRight} size={16} />
+          </button>
+        </Tooltip>
       </div>
       {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus -- the day buttons are the tab stop; the grid only routes keys */}
       <div ref={grid} role="grid" aria-label={formatMonth(cursor)} className="ch-df-cal__grid" onKeyDown={onKey}>

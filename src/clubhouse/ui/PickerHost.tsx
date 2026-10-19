@@ -10,6 +10,7 @@ import { useChReducedMotion } from '../lib/reduced-motion';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from './Icon';
 import { Modal } from './Modal';
+import { Tooltip } from './Tooltip';
 
 /** What a picker's body is given to work with. */
 export interface PickerPanelApi {
@@ -325,18 +326,20 @@ export function PickerField(p: PickerFieldProps) {
               if (!open) openPicker(true);
             }}
           />
-          <button
-            ref={trigger}
-            type="button"
-            className="ch-df__open"
-            tabIndex={-1}
-            disabled={p.disabled}
-            aria-label={p.pickLabel}
-            aria-expanded={open}
-            onClick={() => (open ? closePicker() : openPicker())}
-          >
-            <Icon icon={p.icon} size={16} />
-          </button>
+          <Tooltip>
+            <button
+              ref={trigger}
+              type="button"
+              className="ch-df__open"
+              tabIndex={-1}
+              disabled={p.disabled}
+              aria-label={p.pickLabel}
+              aria-expanded={open}
+              onClick={() => (open ? closePicker() : openPicker())}
+            >
+              <Icon icon={p.icon} size={16} />
+            </button>
+          </Tooltip>
         </span>
       )}
       {bad && !phone && (

@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode, MouseEvent } from 'react';
 import { Icon } from './Icon';
 import { haptic, type ChHaptic } from '../lib/haptics';
+import { Spinner } from './Spinner';
 import { Tooltip } from './Tooltip';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'ink' | 'danger';
@@ -46,6 +47,9 @@ export function Button(props: ButtonProps) {
       {/* The hint is visual: VoiceOver read "New event, N" as the name (audit A-10); the shortcut is announced through
           aria-keyshortcuts on the control instead. */}
       {kbd && <kbd className="ch-btn__kbd" aria-hidden="true">{kbd}</kbd>}
+      {/* In flight the ring sits over the label (which keeps its width, so the key does not jump) and the label stays in
+          the accessibility tree: it is the name VoiceOver reads, with aria-busy saying it is on its way. */}
+      {props.href === undefined && props.busy && <Spinner size={size === 'sm' ? 'sm' : 'md'} tone="current" className="ch-btn__spin" />}
     </>
   );
   if (props.href !== undefined) {

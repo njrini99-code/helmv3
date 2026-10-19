@@ -3,6 +3,8 @@
 import { Circle, CircleCheck, Eye, EyeOff } from 'lucide-react';
 import type { InputHTMLAttributes, ReactNode, Ref } from 'react';
 import { Icon } from '../../ui/Icon';
+import { Spinner } from '../../ui/Spinner';
+import { Tooltip } from '../../ui/Tooltip';
 import { passwordRules, passwordScore } from '../onboard/logic';
 import { AuthKeyLabel } from './AuthKey';
 
@@ -59,10 +61,12 @@ export function PasswordInput({
       autoCorrect="off"
       spellCheck={false}
       trailing={
-        <button type="button" className="ch-au-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} aria-controls={props.id} onClick={onToggle}>
-          <Icon icon={Eye} size={16} className="ch-au-eye__show" />
-          <Icon icon={EyeOff} size={16} className="ch-au-eye__hide" />
-        </button>
+        <Tooltip>
+          <button type="button" className="ch-au-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} aria-controls={props.id} onClick={onToggle}>
+            <Icon icon={Eye} size={16} className="ch-au-eye__show" />
+            <Icon icon={EyeOff} size={16} className="ch-au-eye__hide" />
+          </button>
+        </Tooltip>
       }
     />
   );
@@ -116,7 +120,7 @@ export function GateChecking({ title, line, rows = 2, code }: { title: string; l
     <div className="ch-au-form" role="status" aria-live="polite" data-ch-code={code}>
       <h1>{title}</h1>
       <p className="ch-au-sub ch-au-checking">
-        <span className="ch-au-spin" aria-hidden="true" />
+        <Spinner tone="current" />
         {line}
       </p>
       <div className="ch-au-fields ch-au-ghost" aria-hidden="true">
