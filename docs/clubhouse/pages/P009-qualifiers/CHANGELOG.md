@@ -1,5 +1,20 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-19 — Qualifiers: eyebrow, step strip, tracking, leaderboard, print
+
+```text
+Design package: none (complete-and-elevate plan, lane L6b)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-19, L6b)
+
+- The list's eyebrow is the page's name alone. The filter pills already carry the active and concluded counts, so the eyebrow no longer repeats them, and when the counts failed to load it no longer reads "— active · — concluded" (the failure notice says so).
+
 ## 2026-10-18 — Pickers and controls: start and end date
 
 ```text
