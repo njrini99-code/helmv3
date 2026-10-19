@@ -12164,6 +12164,61 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110715,
+    "page": "P011",
+    "category": 7,
+    "item": 15,
+    "name": "A_POSTED_ROUND_WITH_ITS_HOLES_HAS",
+    "chCode": "CH-11920",
+    "meaning": "A posted round with its holes has a scorecard to keep, under the hero",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110716,
+    "page": "P011",
+    "category": 7,
+    "item": 16,
+    "name": "SHARE_CARD_IS_PRESSED",
+    "chCode": "CH-11921",
+    "meaning": "Share card is pressed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110717,
+    "page": "P011",
+    "category": 7,
+    "item": 17,
+    "name": "SAVE_IMAGE_DOWNLOADED_THE_PICTURE",
+    "chCode": "CH-11922",
+    "meaning": "Save image downloaded the picture",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110718,
+    "page": "P011",
+    "category": 7,
+    "item": 18,
+    "name": "SHARING_THE_CARD_FAILS",
+    "chCode": "CH-11923",
+    "meaning": "Sharing the card fails (not closing the share sheet, not a refused share)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110719,
+    "page": "P011",
+    "category": 7,
+    "item": 19,
+    "name": "THE_REVIEW_IS_OPENED_STRAIGHT_FROM_POST",
+    "chCode": "CH-11924",
+    "meaning": "The review is opened straight from Post round (`?just=submitted`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110801,
     "page": "P011",
     "category": 8,

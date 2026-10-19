@@ -114,7 +114,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 2 | 8 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 133 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 6 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 136 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
-| P011 | 16 | 12 |  | 17 | 11 | 39 | 14 | 5 | 2 |  | 22 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 182 |
+| P011 | 16 | 12 |  | 17 | 11 | 39 | 19 | 5 | 2 |  | 22 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 187 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
 | P013 | 7 | 12 |  | 29 | 1 | 37 | 23 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 158 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
@@ -1233,6 +1233,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110712 | CH-11911 | 07 Network / offline | `OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH` | implemented | Opened from a submit that couldn't reach the server (`?from=submit`) |
 | 110713 | CH-11912 | 07 Network / offline | `BACK_FROM_A_ROUND_TO_THE_LIBRARY` | implemented | Back from a round to the library |
 | 110714 | CH-11913 | 07 Network / offline | `THE_BALL_IS_ON_THE_GREEN_AND` | implemented | The ball is on the green and the putt result is not picked yet |
+| 110715 | CH-11920 | 07 Network / offline | `A_POSTED_ROUND_WITH_ITS_HOLES_HAS` | implemented | A posted round with its holes has a scorecard to keep, under the hero |
+| 110716 | CH-11921 | 07 Network / offline | `SHARE_CARD_IS_PRESSED` | implemented | Share card is pressed |
+| 110717 | CH-11922 | 07 Network / offline | `SAVE_IMAGE_DOWNLOADED_THE_PICTURE` | implemented | Save image downloaded the picture |
+| 110718 | CH-11923 | 07 Network / offline | `SHARING_THE_CARD_FAILS` | implemented | Sharing the card fails (not closing the share sheet, not a refused share) |
+| 110719 | CH-11924 | 07 Network / offline | `THE_REVIEW_IS_OPENED_STRAIGHT_FROM_POST` | implemented | The review is opened straight from Post round (`?just=submitted`) |
 | 110801 |  | 08 Permission / authorization | `LIBRARY_IS_FOR_PLAYERS` | implemented | /golf/dashboard/rounds is Clubhouse only for a player: a coach session renders nothing from the Clubhouse route and the Fairway page keeps the coach (v2 has no coach Rounds library), and the shell does not list the library as rebuilt for a coach. A player's rounds are theirs with or without a team (the team only sets the time zone that decides today). |
 | 110802 |  | 08 Permission / authorization | `REVIEW_IS_FOR_THE_PLAYER_AND_THEIR_COACHES` | implemented | A round's review opens for the player who played it and for a coach of a team the player is an active member of. Anyone else, a missing round and a test round get the same "This round isn't here" page, so it never confirms that someone else's round exists (CH-11307). A failed access check is not a permission answer: a round or a coach's membership read that fails gives "This round didn't load" with Try again (CH-11206), never "not found". |
 | 110803 |  | 08 Permission / authorization | `LIBRARY_HOLDS_ONLY_THE_PLAYERS_OWN_ROUNDS` | reserved | The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Read in this pass, not run: no test asserts the player filter. |

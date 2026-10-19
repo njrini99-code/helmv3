@@ -356,6 +356,15 @@ before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P011__round__player__1280__eighteen-holes__before__b2e6dd9.png` | before | b2e6dd9 | The round review before the card (taken before the card was built), 1280px light; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__1280__eighteen-holes__after__b2e6dd9.png` | after | b2e6dd9 | The round card, one wide table, 1280px light; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__1280__eighteen-holes-dark__after__b2e6dd9.png` | after | b2e6dd9 | The round card, 1280px dark (html data-fw-theme); /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__390__eighteen-holes__after__b2e6dd9.png` | after | b2e6dd9 | The round card, two bands of nine, 390px light; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__390__eighteen-holes-dark__after__b2e6dd9.png` | after | b2e6dd9 | The round card, 390px dark; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__390__just-submitted__after__b2e6dd9.png` | after | b2e6dd9 | The card with its quiet line under it, opened from Post round, 390px, reduced motion; /clubhouse-preview/round?just=submitted, synthetic preview fixture, headless WebKit |
+| `P011__round-card-share__player__390__share-sheet-dark__after__b2e6dd9.png` | after | b2e6dd9 | The Share this card sheet with its preview and two switches, 390px dark; synthetic preview fixture, headless WebKit |
+| `P011__round-card-export__player__1200__exported-png__after__b2e6dd9.png` | after | b2e6dd9 | The exported PNG itself (the file the Save image download produced), 1200px wide; synthetic preview fixture, headless WebKit |
+| `P011__round-card-print__player__1000__print-emulation__after__b2e6dd9.png` | after | b2e6dd9 | Print media emulation: the card alone, ink on white; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
 | `P011__track__player__1440__approach__after__cee8548.png` | after | cee8548 | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
 | `P011__track__player__1440__approach__baseline__ee5976d.png` | baseline | ee5976d | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
 | `P011__track__player__1440__approach__before__4e01c43.png` | before | 4e01c43 | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |

@@ -228,6 +228,11 @@ did not load, with Try again (CH-11208 to CH-11210).
 | 110712 | CH-11911 | `OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH` | Opened from a submit that couldn't reach the server (`?from=submit`) |
 | 110713 | CH-11912 | `BACK_FROM_A_ROUND_TO_THE_LIBRARY` | Back from a round to the library |
 | 110714 | CH-11913 | `THE_BALL_IS_ON_THE_GREEN_AND` | The ball is on the green and the putt result is not picked yet |
+| 110715 | CH-11920 | `A_POSTED_ROUND_WITH_ITS_HOLES_HAS` | A posted round with its holes has a scorecard to keep, under the hero |
+| 110716 | CH-11921 | `SHARE_CARD_IS_PRESSED` | Share card is pressed |
+| 110717 | CH-11922 | `SAVE_IMAGE_DOWNLOADED_THE_PICTURE` | Save image downloaded the picture |
+| 110718 | CH-11923 | `SHARING_THE_CARD_FAILS` | Sharing the card fails (not closing the share sheet, not a refused share) |
+| 110719 | CH-11924 | `THE_REVIEW_IS_OPENED_STRAIGHT_FROM_POST` | The review is opened straight from Post round (`?just=submitted`) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
@@ -263,16 +268,16 @@ A discard that lands says "Round discarded" in a toast with the success haptic (
 because the round opening is the confirmation. A submitted round says "Round posted" over the screen and links its
 review (110902); using a course you typed in closes its sheet with the success haptic.
 
-| Bridge ID | Code | Name | Meaning |
-| --- | --- | --- | --- |
-| 110901 | — | `DISCARD_LANDED` | A discard that lands says so in a toast ("Round discarded") with the success haptic, and the card leaves and the idle card ("No round in progress") takes its place, whether the discard came from the question or from the toast's Retry. |
-| 110902 | — | `ROUND_POSTED_SAYS_SO` | A submitted round says "Round posted" with the course, names the coach ("Coach Reyes can see it now.", else "Your coach can see it now.") and links View round review (the round screen ticks the success haptic once and opens it after two and a half seconds). While it submits it names the real shot count, not timed steps, and a failed submit says so with Try again (CH-11005). |
-
 A posted round opens its review with `?just=submitted` (the submit path's own navigation and its link). The review's
 round card (CH-11920 to CH-11924, `screens/rounds/card/`) settles in once on the smooth spring and says one quiet line
 about the round, using only figures the page shows; the success haptic was fired by the submit path and the card fires
 none. The parameter is taken out of the address after it is read, so a reload does not replay it. Share draws the card
 as a 1200px picture on the device (Canvas 2D) and hands it to the share sheet, or downloads it; nothing goes to a server.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 110901 | — | `DISCARD_LANDED` | A discard that lands says so in a toast ("Round discarded") with the success haptic, and the card leaves and the idle card ("No round in progress") takes its place, whether the discard came from the question or from the toast's Retry. |
+| 110902 | — | `ROUND_POSTED_SAYS_SO` | A submitted round says "Round posted" with the course, names the coach ("Coach Reyes can see it now.", else "Your coach can see it now.") and links View round review (the round screen ticks the success haptic once and opens it after two and a half seconds). While it submits it names the real shot count, not timed steps, and a failed submit says so with Try again (CH-11005). |
 
 From the shell (P001): 10901 CHANGE_LANDED.
 
