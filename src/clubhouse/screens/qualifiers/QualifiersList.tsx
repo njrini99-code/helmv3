@@ -39,7 +39,6 @@ export function QualifiersList({ data }: { data: ChQList }) {
   const coach = data.role === 'coach';
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
   const mineUnknown = data.mode === 'mine' && !!data.entriesError;
-  const unread = data.listError || mineUnknown;
   // The filter and the search come back when the coach returns to the list (Back from a qualifier, the sidebar, a tab): the shell keeps
   // them for this tab under the page and the team (`useChSessionState`), and the list's place comes back through RouteFrame (owner rule 8).
   const [filter, setFilter] = useChSessionState<Filter>('filter', 'all');
