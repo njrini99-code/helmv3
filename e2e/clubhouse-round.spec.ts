@@ -74,7 +74,8 @@ test('a player sets up a round, saves it for later, continues it and submits all
     await page.getByRole('button', { name: 'Exit' }).click();
     await page.getByRole('dialog', { name: 'Exit round' }).getByRole('button', { name: /Save for later/ }).click();
     await page.waitForURL(/\/golf\/dashboard\/rounds(\?|$)/, { timeout: 60_000 });
-    await expect(page.getByText(seed.courseName)).toBeVisible();
+    // The library's unfinished-round card names the course; the shell's resume strip and next-up link name it too.
+    await expect(page.locator('#ch-content .ch-rd-unf__c', { hasText: seed.courseName })).toBeVisible();
     // Tapped as soon as it shows: a Save for later that refreshed the library after navigating there used to pull a
     // quick Continue back to it (swap audit F-59).
     await page.getByRole('link', { name: 'Continue at hole 2' }).click();

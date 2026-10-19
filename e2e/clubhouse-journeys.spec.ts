@@ -88,7 +88,7 @@ test('Calendar: a coach publishes an event for the team, then edits it', async (
     [team.teamId, title],
   );
   expect(event, 'the published event is in golf_events').toBeTruthy();
-  expect(event).toMatchObject({ start: `${today} 10:00`, end: '11:00', status: 'scheduled' });
+  expect(event).toMatchObject({ start: `${today} 10:00`, end: '11:00', status: 'confirmed' }); // F042: every new event is stamped 'confirmed' (calendar-events.ts)
   const invited = await sql<{ n: number }>('select count(*)::int as n from golf_event_attendance where event_id = $1', [event!.id]);
   expect(invited[0]!.n, 'every player is invited').toBe(team.players.length);
 

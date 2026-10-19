@@ -262,10 +262,12 @@ function entityTables(ids: SeededTeam): Array<[string, string[]]> {
   ];
 }
 
+/** Tables with a uuid column of this name (a text column of the same name, e.g. crm_unmatched_inbound.message_id, is
+ *  not a reference and cannot be compared with uuid[]). */
 export async function tablesWith(db: PgClient, col: string): Promise<string[]> {
   const res = await db.query(
     `select c.table_name from information_schema.columns c join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
-     where c.table_schema = 'public' and c.column_name = $1 and t.table_type = 'BASE TABLE'`,
+     where c.table_schema = 'public' and c.column_name = $1 and c.data_type = 'uuid' and t.table_type = 'BASE TABLE'`,
     [col],
   );
   return res.rows.map((r) => r.table_name as string);
