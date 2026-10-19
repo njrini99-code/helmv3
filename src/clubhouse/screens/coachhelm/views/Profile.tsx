@@ -273,9 +273,13 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
                 measures as full cards, the locked ones as compact tiles that say what each still needs. */}
             {ready.length > 0 && (
               <>
-                <h3 className="ch-hg-grp">
-                  With a read <span className="ch-num">{ready.length}</span>
-                </h3>
+                {/* The split is only news when both halves are there: with nothing still filling in, a lone "With a read"
+                    under "Every measure" read as a tab with nothing beside it (2026-10-19). */}
+                {locked.length > 0 && (
+                  <h3 className="ch-hg-grp">
+                    With a read <span className="ch-num">{ready.length}</span>
+                  </h3>
+                )}
                 <ol className="ch-hg-grid">
                   {ready.map((m) => (
                     <Measure key={m.id} m={m} />
