@@ -424,7 +424,7 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the team 
     expect(par?.kind).toBe('par');
     expect(par?.kind === 'par' ? par.toPar : null).toBeCloseTo(70.2 - 72, 10);
     expect(figure(d, 'Greens in regulation').gauge).toEqual({ kind: 'rate', ref: 67 });
-    expect(figure(d, 'Scrambling').gauge).toEqual({ kind: 'rate' });
+    expect(figure(d, 'Scrambling').gauge).toEqual({ kind: 'rate', ref: null });
   });
 
   it('Qualifiers: two rounds and no hole stats; the scoring and the player row are the totals', async () => {

@@ -646,7 +646,7 @@ describe('Game detail · states', () => {
   it('CH-5316 a proximity band under 10 shots says how many it has and is not graded; no approaches at all says so', async () => {
     showPlayer(player());
     await openTab(/Game detail/);
-    expect(code('CH-5316')!.textContent).toBe('175+ yards: 7 shots, under 10');
+    expect(code('CH-5316')!.textContent).toContain('175+ yards: 7 shots, under 10');
     expect(panel('Proximity against the Tour').querySelectorAll('.ch-lad__fill')).toHaveLength(2);
     cleanup();
     showPlayer(bare());

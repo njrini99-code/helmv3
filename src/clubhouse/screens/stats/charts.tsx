@@ -8,6 +8,7 @@ import { SerifText } from '../../ui/SerifText';
 import { monotonePath } from '../../lib/chart';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgScale, sgShare } from '../../lib/sg';
+import { EmptyState } from '../../ui/States';
 import { Swap } from '../../ui/Swap';
 
 /**
@@ -203,7 +204,7 @@ export function SgChangeChip({ change, code }: { change: ChSgChange; code?: stri
 
 /** Scoring trend on a scoreboard: a smooth line (lower scores sit higher) over to-par tiles. */
 export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; score: number; toPar: number | null }> }) {
-  if (rounds.length === 0) return <p className="ch-gm-p__empty">No rounds in this window.</p>;
+  if (rounds.length === 0) return <EmptyState compact code="CH-5302" title="No rounds in this window." />;
   const w = 690;
   const h = 176;
   const padX = w / (rounds.length * 2);

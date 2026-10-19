@@ -1,3 +1,4 @@
+import { EmptyState } from '../../ui/States';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 
 export type StageRound = { label: string; score: number; toPar: number | null; holes: number };
@@ -16,7 +17,7 @@ export function PlayerStage({ rounds, first, coach, teamAvg, meta, note }: { rou
   if (n === 0) {
     return (
       <section className="ch-fm" aria-label="Scoring form">
-        <p className="ch-fm__empty">No rounds in this window.</p>
+        <EmptyState compact code="CH-5302" title="No rounds in this window." />
       </section>
     );
   }

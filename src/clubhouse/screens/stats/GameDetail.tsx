@@ -11,6 +11,7 @@ import type { ChHoles } from '../../data/stats-filter';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
+import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { NO_DATA } from '../../lib/format';
 import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, MakeRows, ParTiles, ScoreMix } from './charts';
@@ -384,7 +385,7 @@ export function GameDetail({
           {s.fairwayOpportunities > 0 ? (
             <FairwayStrip opportunities={s.fairwayOpportunities} hit={s.fairwaysHit} left={s.missLeftCount} right={s.missRightCount} />
           ) : (
-            <p className="ch-gm-p__empty">No drive results logged.</p>
+            <EmptyState compact code="CH-5317" title="No drive results logged." />
           )}
         </Panel>
         <Panel title="Distance by club">
@@ -444,12 +445,15 @@ export function GameDetail({
               <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit={'′'} label="Yards to the pin" invert phone={phone} code="CH-5316" />
               {/* On a phone each band's own row says it ("Needs 10", with its shots); a screen says it in a line under the chart. */}
               {!phone && tourProx.some((b) => b.value == null) && (
-                <p className="ch-gm-p__empty" data-ch-code="CH-5316">
-                  {tourProx
+                <EmptyState
+                  compact
+                  code="CH-5316"
+                  title="Some distances need more shots."
+                  body={tourProx
                     .filter((b) => b.value == null)
                     .map((b) => `${b.band} yards: ${b.n ? `${b.n} ${b.n === 1 ? 'shot' : 'shots'}, under ${b.floor}` : 'no shots'}`)
                     .join(' · ')}
-                </p>
+                />
               )}
             </>
           ) : (
@@ -478,7 +482,7 @@ export function GameDetail({
               }}
             />
           ) : (
-            <p className="ch-gm-p__empty">No missed-green directions logged.</p>
+            <EmptyState compact code="CH-5317" title="No missed-green directions logged." />
           )}
         </Panel>
         <Panel title="Greens hit by lie" note="Counts are approaches from each lie.">
@@ -589,21 +593,21 @@ export function GameDetail({
               m={{ left: s.puttMissLeftPct, right: s.puttMissRightPct, short: s.puttMissShortPct, long: s.puttMissLongPct, low: s.puttMissLowPct, high: s.puttMissHighPct }}
             />
           ) : (
-            <p className="ch-gm-p__empty">No missed-putt directions logged.</p>
+            <EmptyState compact code="CH-5317" title="No missed-putt directions logged." />
           )}
         </Panel>
         <Panel title="Lag leave">
           {lag.length ? (
             <Compare unit=" ft" max={8} rows={lag.map(([b, v]) => ({ label: `From ${b.replace('_plus', '+').replace('_', '–')} ft`, value: v, sub: 'Left for the next putt' }))} />
           ) : (
-            <p className="ch-gm-p__empty">No long first putts logged.</p>
+            <EmptyState compact code="CH-5317" title="No long first putts logged." />
           )}
         </Panel>
         <Panel title="Make rate by break" note={brk.some((r) => r.value != null) ? 'Putts inside 10 feet.' : undefined}>
           {brk.some((r) => r.value != null) ? (
             <Compare unit="%" max={100} rows={brk} />
           ) : (
-            <p className="ch-gm-p__empty">No putts inside 10 feet have a break logged yet.</p>
+            <EmptyState compact code="CH-5317" title="No putts inside 10 feet have a break logged yet." />
           )}
         </Panel>
       </Sec>
