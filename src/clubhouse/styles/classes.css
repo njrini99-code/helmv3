@@ -2141,7 +2141,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   }
   /* The day tab is a fixed 52 by 46 tile: its letters keep their size under Dynamic Type. */
   .ch-cl-rv__tab {
-    font-size: calc(12 * var(--ch-type-k));
+    font-size: 12px;
   }
 }
 
