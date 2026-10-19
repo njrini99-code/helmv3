@@ -337,6 +337,8 @@ describe('Toast onExpire, replace and dismiss (wave 5)', () => {
     const capture = (fn: typeof show) => { show = fn; };
     const outerKey = vi.fn();
     render(
+      // A test harness that records keys bubbling out of the toast; nothing here is a control.
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
       <div onKeyDown={(e) => outerKey(e.key)}>
         <button type="button">Before</button>
         <ToastProvider><CaptureToast capture={capture} /></ToastProvider>
