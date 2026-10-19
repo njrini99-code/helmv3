@@ -16,6 +16,7 @@ Held items:     none
 - The list's eyebrow is the page's name alone. The filter pills already carry the active and concluded counts, so the eyebrow no longer repeats them, and when the counts failed to load it no longer reads "— active · — concluded" (the failure notice says so).
 - Manage selections' step strip reads as progress, not a segmented control: numbered steps joined by a rule, finished steps checked with a green rule behind them, the current step ringed with its name in bold, the steps ahead plain outlines. The well and the raised chip are gone. On the phone only the current step keeps its visible name (the others stay named for a screen reader), so the strip is one row at 390px.
 - The tracked eyebrows (the list, the form and Manage selections heads, and the standings head's key) no longer carry letter-spacing.
+- Leaderboard on desktop: the column heads stay under the top bar while the field scrolls past (sticky), figures are right-aligned and tabular throughout, and row hover tints only where a pointer hovers (`@media (hover: hover)`). The columns moved from an inline style to the board's stylesheet and follow the board's own width: below 780px (the board beside Selections at 1280) Avg steps aside so a name keeps 150px; before, names cut to "El…" and the sample note wrapped over four lines.
 
 ## 2026-10-18 — Pickers and controls: start and end date
 

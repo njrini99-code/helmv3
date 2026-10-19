@@ -3856,3 +3856,32 @@ button.ch-qf-prounds__r.is-open {
 .ch-qfm .ch-scoreboard {
   --ch-ledger-ink: var(--ch-text-primary);
 }
+
+/* The leaderboard's columns live here (not inline) so they can follow the board's own width. Below 780px the board is a column beside
+   Selections: Avg steps aside (Total and the scorecards carry it) so a name keeps 150px instead of cutting to "El…". */
+.ch-qf-board {
+  container: ch-lb / inline-size;
+  font-variant-numeric: tabular-nums;
+}
+.ch-qf-lbrow {
+  grid-template-columns: 56px minmax(0, 1fr) 48px 52px 52px 64px 108px 28px;
+}
+@container ch-lb (max-width: 780px) {
+  .ch-qf-lbrow {
+    grid-template-columns: 44px minmax(150px, 1fr) 52px 44px 60px 84px 28px;
+    gap: 8px;
+  }
+  .ch-qf-lbrow > :nth-child(4) {
+    display: none;
+  }
+}
+/* Desktop: the column heads stay under the top bar while the field scrolls past. The sticky element is the header's row group (a row
+   alone would only stick inside its own wrapper); the board keeps overflow visible so the page's scroller is the one it sticks in. */
+@media (min-width: 821px) {
+  .ch-qf-board .ch-qf-table > [role='rowgroup']:first-child {
+    position: sticky;
+    top: var(--ch-topbar-h);
+    z-index: 2;
+    background: var(--ch-bg-surface);
+  }
+}

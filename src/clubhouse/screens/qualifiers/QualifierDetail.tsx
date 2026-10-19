@@ -342,7 +342,6 @@ function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
 }
 
 /** Pos, Player, Thru, Avg, Total, To par (the plate), Status, the scorecards' chevron (P009-A1, C2). */
-const LB_COLS = '56px minmax(0, 1fr) 48px 52px 52px 64px 108px 28px';
 
 function Leaderboard({
   data,
@@ -439,7 +438,7 @@ function Leaderboard({
       <StandingsSpread rows={b.rows} topScore={b.topScore} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">
-          <div className="ch-qf-row ch-qf-row--head" role="row" style={{ gridTemplateColumns: LB_COLS }}>
+          <div className="ch-qf-row ch-qf-row--head ch-qf-lbrow" role="row">
             <span role="columnheader">Pos</span>
             <span role="columnheader">Player</span>
             <span role="columnheader" className="r">
@@ -477,10 +476,9 @@ function Leaderboard({
                   {/* The row is a mouse target too; the keyboard path is the scorecards button in its last cell (44pt on touch). */}
                   {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
                   <div
-                    className={'ch-qf-row' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
+                    className={'ch-qf-row ch-qf-lbrow' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
                     data-state={r.state ?? undefined}
                     role="row"
-                    style={{ gridTemplateColumns: LB_COLS }}
                     onClick={openable ? () => toggle(r) : undefined}
                   >
                     <span role="cell">
@@ -560,7 +558,7 @@ function Leaderboard({
             );
           })}
           {b.unscored.map((r) => (
-            <div key={r.playerId} className={'ch-qf-row is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')} role="row" style={{ gridTemplateColumns: LB_COLS }}>
+            <div key={r.playerId} className={'ch-qf-row ch-qf-lbrow is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')} role="row">
               <span role="cell">
                 <Pos position={null} tied={false} move={null} />
               </span>
