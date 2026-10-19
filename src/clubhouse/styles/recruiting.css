@@ -2214,3 +2214,17 @@
 .ch-rec-pipe__seg {
   transition: background var(--ch-dur-base) var(--ch-ease);
 }
+
+/* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
+@media (max-width: 820px) {
+  .ch-rec-link,
+  .ch-rec-doc__x {
+    position: relative;
+  }
+  .ch-rec-link::after,
+  .ch-rec-doc__x::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}
