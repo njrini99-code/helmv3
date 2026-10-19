@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-19 — Date fields drop this year's year
+
+- ui/DateField shows a date in the current year as "Tue 22 Sep" (iOS's habit), and keeps the year for any other year.
+  Two half-width fields on the phone (qualifier start and end) no longer cut the date to "Tue 22 Sep 20…". The value,
+  the month grid's day names and typing are unchanged; the server render keeps the year (the year is read on the
+  client, so no time zone is guessed).
+
 ## 2026-10-19 — The iPad tier of the shell
 
 `shell.css` (end block "W4c tablet tier"): between 821 and 1180px the sidebar is 208px (was 240px) and the page gutter 28px (was 40px), and the next-event card in the sidebar narrows with it. An iPad portrait with the sidebar open went from a 586px canvas to 618px, a 1024px Pro from 776px to 808px; the folded rail and everything from 1181px up are unchanged. Page-level tablet fixes are in each page's own changelog. Lane W4c.

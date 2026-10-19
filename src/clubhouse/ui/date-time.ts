@@ -76,11 +76,12 @@ export function dayOfWeek(iso: string): number {
   return p ? noon(p).getUTCDay() : 0;
 }
 
-/** "Thu 15 Oct 2026". */
-export function formatDate(iso: string | null | undefined): string {
+/** "Thu 15 Oct 2026"; "Thu 15 Oct" with `omitYear` (a field showing a date in this year, as iOS does, so a half-width field keeps the day). */
+export function formatDate(iso: string | null | undefined, { omitYear = false }: { omitYear?: boolean } = {}): string {
   const p = parseIso(iso);
   if (!p) return '';
-  return `${DOW_SHORT[dayOfWeek(toIso(p))]} ${p.d} ${MONTHS_SHORT[p.m - 1]!.replace(/^./, (c) => c.toUpperCase())} ${p.y}`;
+  const day = `${DOW_SHORT[dayOfWeek(toIso(p))]} ${p.d} ${MONTHS_SHORT[p.m - 1]!.replace(/^./, (c) => c.toUpperCase())}`;
+  return omitYear ? day : `${day} ${p.y}`;
 }
 
 /** "October 2026". */

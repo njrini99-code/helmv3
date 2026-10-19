@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, useSyncExternalStore } from 'react';
 import { haptic } from '../lib/haptics';
 import { Icon } from './Icon';
 import {
@@ -41,6 +41,8 @@ export interface DateFieldProps {
 
 const HINT = 'Try 10/15, oct 15 or tomorrow.';
 
+const noSubscribe = () => () => {};
+
 /**
  * A date as the app writes it ("Thu 15 Oct 2026"), typable on desktop and chosen from a month on both: a popover under the
  * field on desktop, a bottom sheet on the phone. In place of `<input type="date">` and its browser chrome; the value, min and
@@ -49,13 +51,15 @@ const HINT = 'Try 10/15, oct 15 or tomorrow.';
 export function DateField(props: DateFieldProps) {
   const { value, min, max } = props;
   const [today, setToday] = useState(props.today ?? '');
+  // This year's dates drop the year once the client knows today; the server's render (and hydration) keeps it: no zone guess.
+  const year = useSyncExternalStore(noSubscribe, () => (props.today ?? localToday()).slice(0, 4), () => '');
   return (
     <PickerField
       value={value}
       onChange={props.onChange}
       label={props.label}
       icon={CalendarDays}
-      format={(v) => formatDate(v)}
+      format={(v) => formatDate(v, { omitYear: v.slice(0, 4) === year })}
       parse={(t) => parseDateInput(t, { today: props.today ?? localToday(), min, max })}
       isMachine={(t) => /^\d{4}-\d{2}-\d{2}$/.test(t)}
       hint={HINT}

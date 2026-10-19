@@ -25,7 +25,7 @@ import { StatsTeam } from '../screens/stats/StatsTeam';
 import { CrumbProvider } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
-import { formatDate } from '../ui/date-time';
+import { formatDate, localToday } from '../ui/date-time';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_PLAYER_NOMATCH, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
@@ -472,7 +472,7 @@ describe('Team stats · the filter sheet', () => {
     await user.click(screen.getByRole('button', { name: /^Filter/ }));
     const d = inDialog();
     expect(d.getByRole('button', { name: 'Practice' }).getAttribute('aria-pressed')).toBe('true');
-    expect((d.getByLabelText('From') as HTMLInputElement).value).toBe(formatDate(RANGE.from));
+    expect((d.getByLabelText('From') as HTMLInputElement).value).toBe(formatDate(RANGE.from, { omitYear: RANGE.from.slice(0, 4) === localToday().slice(0, 4) }));
     expect((within(d.getByRole('group', { name: 'Course' })).getByRole('checkbox', { name: /Finley GC/ }) as HTMLInputElement).checked).toBe(true);
     await user.click(d.getByRole('button', { name: 'Done' }));
     expect(router.push).not.toHaveBeenCalled();

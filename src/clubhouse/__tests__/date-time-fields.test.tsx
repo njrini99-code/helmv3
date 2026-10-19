@@ -47,7 +47,12 @@ afterEach(() => vi.restoreAllMocks());
 describe('DateField on the desktop', () => {
   it('shows the day in the app voice and keeps the form string', () => {
     render(<DateHarness initial="2026-10-15" />);
-    expect(input('Date').value).toBe('Thu 15 Oct 2026');
+    expect(input('Date').value).toBe('Thu 15 Oct');
+  });
+
+  it('keeps the year for a date outside this year', () => {
+    render(<DateHarness initial="2027-01-08" />);
+    expect(input('Date').value).toBe('Fri 8 Jan 2027');
   });
 
   it('reads what is typed on blur, and a complete ISO at once', async () => {
@@ -59,7 +64,7 @@ describe('DateField on the desktop', () => {
     expect(seen).not.toHaveBeenCalled(); // half-typed text does not reach the form
     await user.tab();
     expect(seen).toHaveBeenLastCalledWith('2026-10-20');
-    expect(input('Date').value).toBe('Tue 20 Oct 2026');
+    expect(input('Date').value).toBe('Tue 20 Oct');
     fireEvent.change(input('Date'), { target: { value: '2026-11-02' } });
     expect(seen).toHaveBeenLastCalledWith('2026-11-02');
     fireEvent.change(input('Date'), { target: { value: '' } });
@@ -89,7 +94,7 @@ describe('DateField on the desktop', () => {
     );
     await user.click(input('Date'));
     await user.type(input('Date'), 'tomorrow{Enter}');
-    expect(input('Date').value).toBe('Fri 16 Oct 2026');
+    expect(input('Date').value).toBe('Fri 16 Oct');
     expect(submit).not.toHaveBeenCalled();
     await user.click(input('Date'));
     await user.keyboard('{Enter}');
@@ -125,7 +130,7 @@ describe('DateField on the desktop', () => {
     expect(seen).toHaveBeenLastCalledWith('2026-11-23');
     expect(screen.queryByRole('dialog', { name: 'Pick date' })).toBeNull();
     expect(document.activeElement).toBe(input('Date')); // focus returns to the field
-    expect(input('Date').value).toBe('Mon 23 Nov 2026');
+    expect(input('Date').value).toBe('Mon 23 Nov');
   });
 
   it('closes on Escape without that Escape reaching the dialog the field sits in', async () => {
@@ -161,7 +166,7 @@ describe('DateField on the desktop', () => {
     expect((within(cal).getByRole('button', { name: 'Sun 18 Oct 2026' }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(cal).getByRole('button', { name: 'Mon 19 Oct 2026' }) as HTMLButtonElement).disabled).toBe(false);
     await user.click(within(cal).getByRole('button', { name: 'Wed 21 Oct 2026' }));
-    expect(input('End date').value).toBe('Wed 21 Oct 2026');
+    expect(input('End date').value).toBe('Wed 21 Oct');
     // An optional end can be cleared from the picker.
     await user.click(screen.getAllByRole('button', { name: 'Pick a date' })[1]!);
     await user.click(within(await screen.findByRole('dialog', { name: 'Pick end date' })).getByRole('button', { name: 'Clear' }));
@@ -195,7 +200,7 @@ describe('opening from the text field', () => {
     await user.type(input('Date'), '12/25/2026');
     await user.tab();
     expect(screen.queryByRole('dialog', { name: 'Pick date' })).toBeNull(); // tabbing on closes it
-    expect(input('Date').value).toBe('Fri 25 Dec 2026');
+    expect(input('Date').value).toBe('Fri 25 Dec');
     await user.click(screen.getByRole('button', { name: 'Pick a date' }));
     expect(within(await screen.findByRole('dialog', { name: 'Pick date' })).getByText('December 2026')).toBeTruthy();
     void cal;
@@ -301,13 +306,13 @@ describe('on the phone', () => {
     const user = userEvent.setup();
     const seen = vi.fn();
     render(<DateHarness initial="2026-10-15" onValue={seen} label="Start date" />);
-    const key = screen.getByRole('button', { name: 'Start date, Thu 15 Oct 2026' });
+    const key = screen.getByRole('button', { name: 'Start date, Thu 15 Oct' });
     expect(screen.queryByRole('textbox')).toBeNull();
     await user.click(key);
     const sheet = await screen.findByRole('dialog', { name: 'Start date' });
     await user.click(within(sheet).getByRole('button', { name: 'Sat 17 Oct 2026' }));
     expect(seen).toHaveBeenLastCalledWith('2026-10-17');
-    expect(screen.getByRole('button', { name: 'Start date, Sat 17 Oct 2026' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start date, Sat 17 Oct' })).toBeTruthy();
   });
 
   it('lists times in the sheet', async () => {
