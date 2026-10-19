@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import type { ChRole } from '../nav';
@@ -52,7 +52,9 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
   const live = useRef({ palette, help, role, router });
   live.current = { palette, help, role, router };
 
-  useEffect(() => setPeopleScope(teamId), [teamId]);
+  // A layout effect: every layout effect runs before any passive one, so a team switch empties the old team's names before the
+  // page (the Roster) publishes the new team's in its own effect, never after it.
+  useLayoutEffect(() => setPeopleScope(teamId), [teamId]);
   useEffect(() => {
     setRecent(noteVisit(userId, role, pathname));
   }, [userId, role, pathname]);
@@ -124,8 +126,10 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
           break;
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // Capture, so the layer sees a key before a page's own handler and a jump it takes is marked used (defaultPrevented): Calendar
+    // binds a bare T (today) and skips a key already used, so G then T leaves it alone rather than doing both.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [desktop, openPalette]);
   useEffect(() => () => window.clearTimeout(waitTimer.current), []);
 

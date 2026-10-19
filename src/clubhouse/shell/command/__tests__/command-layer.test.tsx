@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { useEffect } from 'react';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../../../__tests__/dialog-polyfill';
@@ -144,6 +145,34 @@ describe('the palette (Cmd or Ctrl K)', () => {
   });
 });
 
+describe('people across a team switch', () => {
+  /** A page that publishes the players it loaded, in an effect, as the Roster does. */
+  function Page({ names }: { names: string[] }) {
+    useEffect(() => publishPeople(names.map((n, i) => ({ id: `p${i}`, name: n }))), [names]);
+    return null;
+  }
+  const tree = (teamId: string, names: string[]) => (
+    <LazyMotion features={domAnimation}>
+      <div className="ch-root" data-ui="clubhouse">
+        <Page names={names} />
+        <CommandLayer role="coach" pathname="/golf/dashboard/roster" userId="u1" teamId={teamId} />
+      </div>
+    </LazyMotion>
+  );
+
+  it('drops the old team\'s names when the team changes, and keeps the new team\'s page publish', () => {
+    const one = ['Jonah Okafor'];
+    const two = ['Priya Natarajan'];
+    const { rerender } = render(tree('t1', one));
+    rerender(tree('t2', two));
+    key('k', { metaKey: true });
+    search('pri');
+    expect(options()).toContain('Priya Natarajan');
+    search('jon');
+    expect(options()).not.toContain('Jonah Okafor');
+  });
+});
+
 describe('G then a letter, / and ?', () => {
   it('G then R goes to Roster for a coach, and G then O to Rounds for a player only', () => {
     mount('coach');
@@ -160,6 +189,22 @@ describe('G then a letter, / and ?', () => {
     key('g');
     key('o');
     expect(push).toHaveBeenCalledWith('/golf/dashboard/rounds', { scroll: false });
+  });
+
+  it('takes its letter before a page\'s own handler, which skips a key already used (Calendar binds a bare T)', () => {
+    const page = vi.fn((e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      e.preventDefault();
+      page.mock.results.push({ type: 'return', value: 'today' });
+    });
+    window.addEventListener('keydown', page);
+    mount('coach');
+    key('g');
+    key('t');
+    window.removeEventListener('keydown', page);
+    expect(push).toHaveBeenCalledWith('/golf/dashboard/team-hub', { scroll: false });
+    // The page saw both keys; it acted on the G (not used by anyone) and not on the T that went to Team hub.
+    expect(page.mock.results.filter((r) => r.value === 'today')).toHaveLength(1);
   });
 
   it('lets the sequence lapse after a second', () => {
