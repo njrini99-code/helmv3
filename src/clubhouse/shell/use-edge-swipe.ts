@@ -125,10 +125,16 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       const curve = chSpringCurve('smooth', spring);
       handUnderlaySpring(spring);
       exit.current.holding = true;
-      for (const n of [el, ...covered]) n.style.transition = `translate ${curve.ms}ms ${curve.linear}`;
+      el.style.transition = `translate ${curve.ms}ms ${curve.linear}`;
       el.style.translate = `${width}px 0`;
-      // The screen beneath comes home as the one above leaves (its own pop then carries its transform home too).
-      for (const c of covered) c.style.translate = '0px 0';
+      // The screen beneath comes home as the one above leaves. Its own pop carries its transform home on the plain smooth
+      // spring, so the translate it was given follows the same one (no throw in it): the two add up to one movement
+      // toward rest, never a step back.
+      const plain = chSpringCurve('smooth');
+      for (const c of covered) {
+        c.style.transition = `translate ${plain.ms}ms ${plain.linear}`;
+        c.style.translate = '0px 0';
+      }
       let done = false;
       const finish = () => {
         if (done) return;
