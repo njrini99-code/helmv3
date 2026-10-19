@@ -199,6 +199,8 @@ button.ch-rt-strip__h {
 }
 .ch-rt-strip__tot em {
   font: 500 10px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: rgb(244 241 232 / 0.66);
 }
@@ -292,10 +294,13 @@ button.ch-rt-strip__h {
   align-items: baseline;
   gap: 8px;
   font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
 .ch-rt-hero__shot em {
   font: 400 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -308,6 +313,8 @@ button.ch-rt-strip__h {
 }
 .ch-rt-hero__dist > em {
   font: 500 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-ink-600);
 }
@@ -2440,10 +2447,13 @@ button.ch-rt-strip__h {
     width: 100%;
     gap: 0;
     font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-champagne-300);
   }
   .ch-rt-hero__shot em {
     font: inherit;
+
+    font-variant-numeric: tabular-nums;
     color: inherit;
   }
   .ch-rt-hero__shot em::before {
@@ -2451,12 +2461,16 @@ button.ch-rt-strip__h {
   }
   .ch-rt-hero__dist b {
     font: 600 52px/0.95 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     font-variation-settings: 'wdth' 86;
     letter-spacing: -0.05em;
     color: var(--ch-on-green-ink);
   }
   .ch-rt-hero__dist > em {
     font: 400 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink-soft);
   }
   .ch-rt-hero__done {
