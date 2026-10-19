@@ -1166,3 +1166,33 @@ html:not([data-fw-theme='dark']) .ch-ask {
   --ch-ledger-eyebrow: var(--ch-text-secondary);
   --ch-champagne-rule: rgb(28 25 18 / 0.2);
 }
+
+/* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
+@media (max-width: 820px) {
+  .ch-ask-head__btn,
+  .ch-ask-hist__iconbtn,
+  .ch-ask-pill,
+  .ch-ask-cmp__chip {
+    position: relative;
+  }
+  .ch-ask-head__btn::after,
+  .ch-ask-hist__iconbtn::after,
+  .ch-ask-pill::after,
+  .ch-ask-cmp__chip::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+  /* The history rows clip their own overflow, so their reach is drawn rather than borrowed. */
+  .ch-ask-hist__row {
+    height: 44px;
+    line-height: 44px;
+  }
+}
+
+/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
+@media (hover: hover) {
+  .ch-ask-find__link:hover {
+    color: var(--ch-text-primary);
+  }
+}
