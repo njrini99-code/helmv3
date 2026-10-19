@@ -584,9 +584,9 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
     view.again(fakeSession({ submitting: true, completedRoundId: 'r-77' }));
     act(() => void vi.advanceTimersByTime(POSTED_OPEN_MS + 10));
     expect(mocks.router.push).toHaveBeenCalledTimes(1);
-    expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds/r-77');
+    expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds/r-77?just=submitted');
     expect(mocks.haptic.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
-    expect(screen.getByRole('link', { name: /View round review/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/r-77');
+    expect(screen.getByRole('link', { name: /View round review/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/r-77?just=submitted');
   });
 
   it('CH-11909 saving for over 15 seconds says it is slow and names the way out; a quicker one says nothing', () => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { CourseLocationCard } from './course-location';
-import { Copy, Link2, RefreshCw, Share2 } from 'lucide-react';
+import { Check, Copy, Link2, RefreshCw, Share2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
@@ -24,7 +24,7 @@ import {
   type ChTeamInfo,
 } from './model';
 import { SAVE_COPY, useInvite } from './hooks';
-import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
+import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 import { StaffCards } from './Staff';
 
 /** Team's reads that failed, for its one section notice (shared with TeamPhone). */
@@ -78,16 +78,7 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
       id="set-team"
       title="Team details"
       description="Shown to your players, and on invites and exports."
-      foot={
-        <SaveBar
-          dirty={f.dirty}
-          pending={save.pending}
-          invalid={invalid}
-          savedAt={f.savedAt}
-          onReset={f.reset}
-          onSave={() => void save.run(f.draft)}
-        />
-      }
+      save={{ dirty: f.dirty, pending: save.pending, invalid, savedAt: f.savedAt, onReset: f.reset, onSave: () => void save.run(f.draft) }}
     >
       <div className="ch-set-grid">
         <Field id="set-team-name" label="Team name" error={errorAt('set-team-name')} value={f.draft.name} onChange={(e) => f.setDraft((d) => ({ ...d, name: e.target.value }))} />
@@ -110,31 +101,35 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
 }
 
 function InviteCard({ code: initial, writes }: { code: string; writes: ChSettingsWrites }) {
-  const { code, canShare, regen, copy, share } = useInvite(initial, writes);
+  const { code, canShare, regen, copy, copied, share } = useInvite(initial, writes);
   const [confirm, setConfirm] = useState(false);
   useWarnOnOpen(confirm);
   return (
     <Card id="set-invite" title="Invite players" description="Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster.">
-      <Row label="Team code" help="Share it, or send the invite link.">
-        <b className="ch-set-code ch-num" aria-live="polite">
-          {code}
-        </b>
-      </Row>
-      <div className="ch-set-acts">
-        <Button size="sm" leftIcon={Copy} onClick={() => void copy('code')}>
-          Copy code
-        </Button>
-        <Button size="sm" leftIcon={Link2} onClick={() => void copy('link')}>
-          Copy link
-        </Button>
-        {canShare && (
-          <Button size="sm" leftIcon={Share2} onClick={() => void share()}>
-            Share
+      {/* One code style for the app: large, tabular, Instrument Sans (.ch-set-code), with its Copy beside it. */}
+      <div className="ch-inset ch-set-codebox">
+        <div className="ch-set-codebox__c">
+          <span>Team code</span>
+          <b className="ch-set-code ch-num" aria-live="polite">
+            {code}
+          </b>
+        </div>
+        <div className="ch-set-codebox__acts">
+          <Button size="sm" variant="primary" leftIcon={copied === 'code' ? Check : Copy} onClick={() => void copy('code')}>
+            {copied === 'code' ? 'Copied' : 'Copy code'}
           </Button>
-        )}
+          <Button size="sm" leftIcon={copied === 'link' ? Check : Link2} onClick={() => void copy('link')}>
+            {copied === 'link' ? 'Copied' : 'Copy link'}
+          </Button>
+          {canShare && (
+            <Button size="sm" leftIcon={Share2} onClick={() => void share()}>
+              Share
+            </Button>
+          )}
+        </div>
       </div>
       <Row label="New code" help="Stops the current code from working right away. Anyone mid-join will need the new one.">
-        <Button size="sm" variant="secondary" leftIcon={RefreshCw} disabled={regen.pending} onClick={() => setConfirm(true)}>
+        <Button size="sm" variant="secondary" leftIcon={RefreshCw} busy={regen.pending} onClick={() => setConfirm(true)}>
           {regen.pending ? 'Making…' : 'Make a new code'}
         </Button>
       </Row>
@@ -182,15 +177,7 @@ function ScoringCard({ scoring, writes }: { scoring: ChScoring; writes: ChSettin
       id="set-scoring"
       title="Scoring and format"
       description="Defaults for new rounds and events. The timezone sets when every event and reminder happens."
-      foot={
-        <SaveBar
-          dirty={f.dirty}
-          pending={save.pending}
-          savedAt={f.savedAt}
-          onReset={f.reset}
-          onSave={() => void save.run(f.draft)}
-        />
-      }
+      save={{ dirty: f.dirty, pending: save.pending, savedAt: f.savedAt, onReset: f.reset, onSave: () => void save.run(f.draft) }}
     >
       <Row label="Scoring format">
         <Segmented
@@ -229,16 +216,7 @@ function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: 
       id="set-reminders"
       title="Event reminders"
       description="Players who haven’t replied get a nudge before each event."
-      foot={
-        <SaveBar
-          dirty={f.dirty}
-          pending={save.pending}
-          invalid={invalid}
-          savedAt={f.savedAt}
-          onReset={f.reset}
-          onSave={() => void save.run(f.draft)}
-        />
-      }
+      save={{ dirty: f.dirty, pending: save.pending, invalid, savedAt: f.savedAt, onReset: f.reset, onSave: () => void save.run(f.draft) }}
     >
       <Row label="Send reminders">
         <SettingSwitch label="Send reminders" hideLabel checked={f.draft.enabled} onChange={(v) => f.setDraft((d) => ({ ...d, enabled: v }))} />

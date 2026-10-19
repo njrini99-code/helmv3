@@ -7,6 +7,7 @@ import { useDialogLifetime } from '../lib/dialog-lifetime';
 import { useSheetDrag } from '../lib/sheet-drag';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from './Icon';
+import { Tooltip } from './Tooltip';
 
 /**
  * Dialog on the native <dialog> top layer: focus is trapped and Esc closes
@@ -89,9 +90,11 @@ export function Modal({
               {description && <p id={descriptionId}>{description}</p>}
             </div>
             {action && <div className="ch-modal__action">{action}</div>}
-            <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={onClose}>
-              <Icon icon={X} size={15} />
-            </button>
+            <Tooltip label="Close" shortcut={['Esc']}>
+              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={onClose}>
+                <Icon icon={X} size={15} />
+              </button>
+            </Tooltip>
           </header>
           {children && <div className="ch-modal__body">{children}</div>}
           {footer && <footer className="ch-modal__foot">{footer}</footer>}

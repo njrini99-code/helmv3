@@ -7,7 +7,7 @@
   flex-direction: column;
   gap: 22px;
   padding: 32px 34px 30px;
-  border-radius: 22px;
+  border-radius: var(--ch-radius-xl);
   overflow: hidden;
   color: var(--ch-text-primary);
   background: var(--ch-sheet-bg);
@@ -45,7 +45,7 @@
 }
 .ch-hg-stand__c {
   padding: 16px 18px 6px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
@@ -98,13 +98,15 @@
 }
 .ch-hg-stand__v {
   font: 600 15px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-on-fill-50);
 }
 
 /* Early read: some measures have enough rounds, the rest do not yet. */
 .ch-hg-early {
   padding: 14px 18px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-champagne-100);
   box-shadow: inset 0 0 0 1px var(--ch-champagne-ring);
   font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
@@ -153,7 +155,7 @@
   gap: 10px;
   min-width: 0;
   padding: 22px 24px 18px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -216,11 +218,15 @@
 }
 .ch-hg-m__fig b {
   font: 600 20px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--ch-hg-ink);
 }
 .ch-hg-m__fig span {
   font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hg-m__edge {
@@ -348,6 +354,7 @@
   justify-content: space-between;
   gap: 12px;
   font: 400 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 
@@ -364,7 +371,7 @@
   gap: 18px;
   min-height: 322px;
   padding: 32px 34px 30px;
-  border-radius: 22px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -385,7 +392,7 @@
   gap: 12px;
   min-height: 330px;
   padding: 22px 24px 18px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -403,7 +410,7 @@
   .ch-hg-hero {
     gap: 16px;
     padding: 20px 20px 18px;
-    border-radius: 18px;
+    border-radius: var(--ch-radius-xl);
   }
   .ch-hg-hero h2 {
     font-size: calc(24 * var(--ch-type-k));
@@ -415,7 +422,7 @@
   .ch-hg-sk__hero {
     min-height: 330px;
     padding: 20px;
-    border-radius: 18px;
+    border-radius: var(--ch-radius-xl);
   }
   .ch-hg-sk__stand {
     grid-template-columns: minmax(0, 1fr);
@@ -428,7 +435,7 @@
   }
   .ch-hg-m {
     padding: 18px 18px 14px;
-    border-radius: 16px;
+    border-radius: var(--ch-radius-lg);
   }
   .ch-hg-m__word {
     font-size: calc(24 * var(--ch-type-k));
@@ -557,7 +564,7 @@
   .ch-hg-hero {
     gap: 14px;
     padding: 18px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     color: var(--ch-on-green-ink);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
@@ -770,7 +777,7 @@ main[data-canopy] .ch-hg-hero.ch-scoreboard .ch-hg-hero__k,
 main[data-canopy] .ch-hg-hero.ch-scoreboard .ch-hg-stand__c,
 .ch-hg-hero.ch-scoreboard .ch-hg-stand__c {
   padding: 14px 16px 4px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(255 255 255 / 0.07);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
 }
@@ -824,6 +831,7 @@ main[data-canopy] .ch-hg-hero.ch-scoreboard .ch-hg-stand__c,
   gap: 8px;
   margin: 26px 0 10px;
   font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
 .ch-hg-grp span {
@@ -835,6 +843,7 @@ main[data-canopy] .ch-hg-hero.ch-scoreboard .ch-hg-stand__c,
   border-radius: 999px;
   background: var(--ch-green-fill-600);
   font: 700 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-on-fill-50);
 }
 .ch-hg-grp.is-locked span {
@@ -856,7 +865,7 @@ main[data-canopy] .ch-hg-grid.is-locked > .ch-hg-m:nth-child(n),
 .ch-hg-grid.is-locked > .ch-hg-m {
   gap: 6px;
   padding: 16px 18px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: color-mix(in srgb, var(--ch-green-100) 45%, var(--ch-bg-surface));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 18%, transparent);
 }
@@ -926,7 +935,7 @@ html[data-fw-theme='dark'] .ch-hg-grid.is-locked > .ch-hg-m {
 }
 .ch-hg-sees__c {
   padding: 14px 8px 6px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(255 255 255 / 0.07);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
 }
@@ -952,7 +961,7 @@ html[data-fw-theme='dark'] .ch-hg-grid.is-locked > .ch-hg-m {
   align-items: center;
   gap: 12px;
   padding: 12px 8px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   color: var(--ch-text-primary);
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -993,7 +1002,7 @@ main[data-canopy] .ch-hg-hero.is-second,
 @media (max-width: 820px) {
   .ch-hg-sees {
     padding: 18px 16px;
-    border-radius: 18px;
+    border-radius: var(--ch-radius-xl);
   }
   [data-ui='clubhouse'] .ch-hg-sees h2 {
     font-size: calc(24 * var(--ch-type-k));
@@ -1007,7 +1016,7 @@ main[data-canopy] .ch-hg-hero.is-second,
   box-shadow: inset 0 1px 2px rgb(11 58 37 / 0.12);
 }
 [data-ui='clubhouse'] .ch-hg-sc__f {
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   opacity: 0.9;
 }
 [data-ui='clubhouse'] .ch-hg-sc__a {
@@ -1024,4 +1033,11 @@ main[data-canopy] .ch-hg-hero.is-second,
     0 0 0 3px var(--ch-ivory-25),
     0 0 0 4.5px color-mix(in srgb, var(--ch-hg-tone) 45%, transparent),
     var(--ch-elevation-mark-ink);
+}
+
+/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
+@media (hover: hover) {
+  .ch-hg-m__how summary:hover svg {
+    color: var(--ch-text-primary);
+  }
 }

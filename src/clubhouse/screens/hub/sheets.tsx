@@ -6,6 +6,7 @@ import type { ChHubAnnouncement, ChHubFile, ChTeamHub } from '../../data/hub';
 import { tripWindow } from '../../data/hub-shape';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
+import { DateField } from '../../ui/DateField';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { RefreshNotice } from '../../ui/RefreshNotice';
@@ -370,7 +371,7 @@ export function ComposeSheet({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={pending} feel={null} onClick={() => void submit()}>
+          <Button variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
             {pending ? edit ? <span data-ch-code="CH-10406">Saving…</span> : <span data-ch-code="CH-10402">Posting…</span> : edit ? 'Save changes' : 'Post'}
           </Button>
         </>
@@ -640,7 +641,7 @@ export function TripSheet({
             </Button>
           )}
           {last ? (
-            <Button variant="primary" disabled={pending} feel={null} onClick={() => void submit()}>
+            <Button variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
               {pending ? <span data-ch-code="CH-10403">Saving…</span> : savedId ? 'Update travelers' : 'Publish'}
             </Button>
           ) : (
@@ -865,7 +866,7 @@ export function AssignSheet({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={pending} feel={null} onClick={() => void submit()}>
+          <Button variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
             {pending ? <span data-ch-code="CH-10404">Assigning…</span> : 'Assign'}
           </Button>
         </>
@@ -880,7 +881,7 @@ export function AssignSheet({
         </Field>
         <Field label="Due" id={`${id}-due`} optional>
           {/* The picker starts at today: a task isn't due in the past. */}
-          <input id={`${id}-due`} className="ch-input" type="date" value={due} min={localToday()} onChange={(e) => setDue(e.target.value)} />
+          <DateField id={`${id}-due`} label="Due" value={due} min={localToday()} clearable onChange={setDue} />
         </Field>
         <div className="ch-field">
           <div className="ch-hb-fhead">
@@ -940,7 +941,7 @@ export function ConfirmDelete({
           <Button variant="ghost" onClick={onCancel}>
             Keep it
           </Button>
-          <Button variant="danger" disabled={pending} feel={null} onClick={onConfirm}>
+          <Button variant="danger" busy={pending} feel={null} onClick={onConfirm}>
             {pending ? 'Deleting…' : 'Delete'}
           </Button>
         </>

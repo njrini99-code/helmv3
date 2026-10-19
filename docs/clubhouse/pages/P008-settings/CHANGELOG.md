@@ -1,5 +1,81 @@
 # P008 — Settings: changelog
 
+## 2026-10-19 — Settings on an iPad: every section in view
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (821 to 1180px, end block of `settings.css`): on a canvas under 861px the section strip wraps onto a second line instead of scrolling sideways with "Preferences" cut in half.
+
+### Why
+
+- The strip's scrollbar is hidden, so nothing said there was more; a tablet has the height.
+
+### Verification
+
+- WebKit, touch, 834 and 1024: the strip's scrollWidth equals its clientWidth at 834; one row at 1024; the side rail at 1180 is unchanged.
+
+## 2026-10-19 — Settings saves one way, reads at a measure, and ends with its danger zone
+
+```text
+Design package: none (complete-and-elevate plan, lane L7: Settings that feel like the rest of the app)
+PR/commit:      lane L7 commits on agent/clubhouse-complete
+Contract IDs:   80303, 80901, 80902, CH-8405
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Desktop layout: the section navigator (208px, 10px radius, tighter rows, still sticky and `?section=` addressed) and a 640px column sit together at the centre of the canvas under the page head, instead of a 1000px column that put every switch far from its label.
+- Saving, one pattern. A card that needs an explicit save (profile, email change, password, team details, scoring, reminders, golf details, asking to join) shows its save bar only while there is something to save: "Unsaved changes" with Discard and Save changes; the button is busy while the save is out; a landed save gives the success haptic and the bar says Saved for 1.8 seconds at the same height, then goes. The bar sits at the foot of the view while its card is taller than the view. Cmd or Ctrl+S saves the card; Enter still saves only the email change and the join request (82001). The disabled grey button is gone.
+- Autosaving settings (every switch, segment and slider on Notifications and CoachHelm, quiet mode, the weekly email) say Saved in their own row for 1.8 seconds, inside the label's line so nothing moves. Sliders and the priority list say it in their card's head. The line "Changes save as you make them" over the CoachHelm title is gone on desktop (the phone keeps its line under the title). A failed save still puts the control back and toasts.
+- The team code is one style: 28px tabular Instrument Sans, set in an inset well with Copy code, Copy link and Share beside it; Copy says Copied for 1.8 seconds. The phone's code card, the staff invite code and the desktop card share the same rule (the old tracked JetBrains Mono code is gone). The phone card gains Copy code.
+- Hit areas: the priority reorder arrows (30px) and the setting segments (26px, such as alert sensitivity) now reach 44px, and the arrows sit 14px apart so their reaches do not overlap.
+- Phone Account: the Profile group's one row is now "Name and photo" with the group's caption under it, so it no longer repeats its own heading or leaves an empty gap before Sign in.
+- Danger zone: Account ends with Session (Sign out, plain) and then a Danger zone card holding Delete account alone, in red; a player's Team card is plain and Leave team sits in its own Danger zone card after it. The confirmations are unchanged.
+
+### Why
+
+- A coach edits a form here once or twice a season, so the page has to say plainly whether something is saved; the old pattern showed a disabled button, a status line far from what changed, and three code styles.
+
+### Verification
+
+- `settings-save-bar.test.tsx` (9 tests: the bar appears only when dirty, Discard, busy then Saved, invalid, Cmd+S, Enter, password, Danger zone last, row Saved, Copy code); `settings.test.tsx`, `settings-staff.test.tsx`, `settings-server.test.tsx`, `wiring-p008-settings.test.tsx` updated where they asserted the disabled button or the status line.
+- WebKit captures, 1280 and 390, light and dark, of every section and a dirty form, before and after, in the lane scratch folder; looked at.
+
+## 2026-10-19 — Sign out is not drawn red
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   81901
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- On the phone Settings list, Sign out uses the standard row ink. Red is kept for destructive actions, and signing out is not one.
+
+### Why
+
+- Red means under par, the pin or a destructive action; signing out ends a session and loses nothing.
+
+### Verification
+
+- `settings.test.tsx` (the button keeps no danger class); captured after only on `/clubhouse-preview/settings?state=player`, phone, light (the row reads in the standard ink); no before capture.
+
 ## 2026-10-18 — Wave 10: team code and what joining does
 
 ```text

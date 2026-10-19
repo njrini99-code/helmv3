@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { HOLES_ADJ, hasPrevious, hasRange, isFiltered, type ChFilter } from '../../data/stats-filter';
 import type { ChBests } from '../../data/stats-figures';
 import type { ChProfileExtra } from '../../data/stats-player';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { DataTable, Empty, RoundLine, Rule, Tiles } from './detail';
 import { BestCardShare } from './BestCard';
 import { bestCardFields } from './best-card-fields';
@@ -45,7 +45,7 @@ function BestTiles({ b, at, label }: { b: ChBests; at: (v: { course: string; dat
       items={[
         { label: 'Best score', value: b.score ? String(b.score.value) : NO_DATA, sub: at(b.score) },
         { label: 'Best to par', value: b.toPar ? formatToPar(b.toPar.value, 0) : NO_DATA, sub: at(b.toPar) },
-        { label: 'Best GIR', value: b.gir ? `${b.gir.value.toFixed(1)}%` : NO_DATA, sub: at(b.gir) },
+        { label: 'Best GIR', value: formatPct(b.gir?.value), sub: at(b.gir) },
         { label: 'Fewest putts', value: b.putts ? String(b.putts.value) : NO_DATA, sub: at(b.putts) },
       ]}
     />

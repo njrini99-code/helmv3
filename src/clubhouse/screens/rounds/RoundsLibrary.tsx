@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Flag, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Flag, Plus, ScrollText, Trash2, TriangleAlert } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsLibrary, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
@@ -15,12 +15,14 @@ import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { useContextMenu } from '../../ui/ContextMenu';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
+import { Tooltip } from '../../ui/Tooltip';
 import { monthLabel, MonthSpark, RoundRow, SeasonCard, shortDay, UnfinishedCard } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
@@ -104,6 +106,30 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
     if (!r) return;
     await discard.run(r);
   };
+  // Right-click (desktop) on an unfinished round: what its row offers, Continue or Post and Discard, the same handlers.
+  // A posted round opens its review or goes straight to its scorecard (#ch-rcard, P011); Shift+right-click keeps the browser's own menu (open in a new tab).
+  const ctx = useContextMenu<ChUnfinishedRound>({
+    label: (r) => `Actions for the round at ${r.course}`,
+    items: (r) => {
+      const href = roundsLinks.continueRound(r.id);
+      return [
+        ...(href ? [{ label: r.readyToSubmit ? 'Post round' : 'Continue', icon: ArrowRight, href }, { kind: 'separator' as const }] : []),
+        { label: 'Discard round', icon: Trash2, danger: true, onSelect: () => askDiscard(r) },
+      ];
+    },
+  });
+  const postedCtx = useContextMenu<ChLibraryRound>({
+    label: (r) => `Actions for the round at ${r.course}`,
+    items: (r) => {
+      const href = roundsLinks.review(r.id);
+      if (!href) return [];
+      const note = () => noteOpenedFromLibrary(r.id);
+      return [
+        { label: 'Open round', icon: ArrowRight, href, onSelect: note },
+        { label: 'Scorecard', icon: ScrollText, href: `${href}#ch-rcard`, onSelect: note },
+      ];
+    },
+  });
 
   // Empty copy only on a verified empty: both reads landed and nothing is held back (an unscored round is a round, just not a row).
   const unscored = data.rounds.error ? 0 : (data.rounds.unscored ?? 0);
@@ -166,6 +192,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 onRetry={refresh}
                 retrying={refreshing}
                 onDiscard={askDiscard}
+                menu={current ? ctx.bind(current) : undefined}
               />
             </SectionBoundary>
             {data.rounds.error ? (
@@ -186,7 +213,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 {more.map((r) => {
                   const href = roundsLinks.continueRound(r.id);
                   return (
-                    <li key={r.id}>
+                    <li key={r.id} {...ctx.bind(r)}>
                       <span>
                         <b>{r.course}</b>
                         <em className="ch-num">
@@ -194,9 +221,11 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                           {r.submitUnchecked ? ' · couldn’t check if posted' : ''}
                         </em>
                       </span>
-                      <button type="button" className="ch-rd-more__discard" onClick={() => askDiscard(r)} aria-label={`Discard the round at ${r.course}`}>
-                        <Icon icon={Trash2} size={14} />
-                      </button>
+                      <Tooltip>
+                        <button type="button" className="ch-rd-more__discard" onClick={() => askDiscard(r)} aria-label={`Discard the round at ${r.course}`}>
+                          <Icon icon={Trash2} size={14} />
+                        </button>
+                      </Tooltip>
                       {href && (
                         <Link href={href} className="ch-rd-more__go" onClick={() => haptic('press')}>
                           {r.readyToSubmit ? 'Post' : 'Continue'}
@@ -252,7 +281,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                       </div>
                       <div className="ch-rd-book">
                         {g.rounds.map((r) => (
-                          <RoundRow key={r.id} r={r} href={roundsLinks.review(r.id)} onOpen={() => noteOpenedFromLibrary(r.id)} />
+                          <RoundRow key={r.id} r={r} href={roundsLinks.review(r.id)} onOpen={() => noteOpenedFromLibrary(r.id)} bind={postedCtx.bind(r)} />
                         ))}
                       </div>
                     </section>
@@ -271,6 +300,8 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
         </>
       )}
 
+      {ctx.menu}
+      {postedCtx.menu}
       <Modal
         open={!!asking}
         onClose={() => setAsking(null)}
@@ -283,7 +314,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
             <Button variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
-            <Button variant="danger" disabled={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
+            <Button variant="danger" busy={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
               {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>

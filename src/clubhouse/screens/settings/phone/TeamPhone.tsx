@@ -83,12 +83,12 @@ function TeamBody({ data, writes }: { data: ChSettingsData; writes: ChSettingsWr
 }
 
 /**
- * The team code with Share, and New code, which asks in an action sheet first (CH-8503). It is Team's one feature card
+ * The team code with Share, Copy code and New code, which asks in an action sheet first (CH-8503). It is Team's one feature card
  * (the Mobile clubhouse pass, owner 2026-10-08): the code is what a coach most often opens Team for, so it sits first,
  * on the frame's green, with Share as its action and New code as the quiet way to replace it.
  */
 function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettingsWrites }) {
-  const { code, canShare, regen, copy, share } = useInvite(initial, writes);
+  const { code, canShare, regen, copy, copied, share } = useInvite(initial, writes);
   const [asking, setAsking] = useState(false);
   const labelId = useId();
   return (
@@ -108,6 +108,9 @@ function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettin
         </b>
         <span className="ch-feat__line">Players who sign up with this code or open the invite link join right away.</span>
         <span className="ch-feat__foot">
+          <button type="button" className="ch-setm-link is-on-green" onClick={() => void copy('code')}>
+            {copied === 'code' ? 'Copied' : 'Copy code'}
+          </button>
           <button type="button" className="ch-setm-link is-on-green" disabled={regen.pending} onClick={() => setAsking(true)}>
             {regen.pending ? 'Making…' : 'New code'}
           </button>

@@ -2,11 +2,11 @@
 
 import { validateAccessCode } from '@/app/golf/actions/access-code';
 import { signupAction } from '@/app/golf/actions/auth';
-import { completePlayerOnboarding } from '@/app/golf/actions/onboarding';
+import { completeCoachOnboarding, completePlayerOnboarding } from '@/app/golf/actions/onboarding';
 import { submitDemoRequest } from '@/app/actions/demo-request';
 import { createClient } from '@/lib/supabase/client';
 import { chReport } from '../../lib/track';
-import { REQUEST_INTEREST, requestMessage, type CodeKind, type RequestDetails } from './logic';
+import { REQUEST_INTEREST, requestMessage, type CodeKind, type ProgramDetails, type RequestDetails } from './logic';
 
 /**
  * Every server call sign-up makes. These are today's actions, called the way
@@ -127,5 +127,34 @@ export async function sendRequest(d: RequestDetails): Promise<{ ok: true } | { o
   } catch (e) {
     if (!offlineLike(e)) chReport(e, { surface: 'onboard.request', severity: 'medium' });
     return { ok: false, error: 'Unable to reach the server. Your details are still here. Check your connection and try again.' };
+  }
+}
+
+export type CoachResult = { ok: true; joinCode: string | null } | { ok: false; error: string };
+
+/**
+ * Makes a new head coach's program: the same action and fields as today's /golf/coach (organization, team, then the
+ * coach on it, rolled back together if any step fails). It answers with the team's join code, which the last screen
+ * hands to the coach to share.
+ */
+export async function finishCoach(p: ProgramDetails, name: string, title: string, avatarUrl: string | null): Promise<CoachResult> {
+  try {
+    const r = await completeCoachOnboarding({
+      orgName: p.org.trim(),
+      division: p.division || undefined,
+      conference: p.conference.trim() || undefined,
+      city: p.city.trim() || undefined,
+      state: p.state || undefined,
+      teamName: p.team.trim() || undefined,
+      gender: p.gender,
+      fullName: name.trim(),
+      title: title.trim() || undefined,
+      avatarUrl: avatarUrl || undefined,
+    });
+    if (!r.success) return { ok: false, error: ('error' in r && r.error) || 'Couldn’t finish setting up your program. Give it another go.' };
+    return { ok: true, joinCode: ('data' in r && r.data?.joinCode) || null };
+  } catch (e) {
+    if (!offlineLike(e)) chReport(e, { surface: 'onboard.coach', severity: 'high' });
+    return { ok: false, error: offlineLike(e) ? 'Unable to reach the server. Please check your internet connection and try again.' : 'Something threw us off. Give it another go.' };
   }
 }

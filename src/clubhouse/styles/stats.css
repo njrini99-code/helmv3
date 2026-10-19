@@ -1017,12 +1017,12 @@
   stroke: rgb(28 25 18 / 0.35);
   stroke-width: 1;
 }
-.ch-pg-lbl {
+.ch-pg-band,
+.ch-pg-pct {
   font: 500 12px var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
 .ch-pg-band {
-  font-style: italic;
   fill: var(--ch-ink-600);
 }
 .ch-pg-pct {
@@ -5530,6 +5530,29 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   background: var(--ch-green-50);
   color: var(--ch-green-600);
 }
+/* Reading a round: the ribbon takes a drag across it (a finger scrolls the page up and down, never sideways here) and the arrow keys. */
+.ch-st[data-canopy] .ch-fm__bars {
+  touch-action: pan-y;
+  cursor: default;
+}
+.ch-st[data-canopy] .ch-fm__bars:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 8px;
+  border-radius: 10px;
+}
+.ch-st[data-canopy] .ch-fm__head p.ch-fm__read {
+  font: 600 14px/1.45 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-fm__c.is-read {
+  border-radius: 10px;
+  background: rgb(176 149 96 / 0.12);
+}
+.ch-st[data-canopy] .ch-fm__c.is-read .ch-fm__d {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
 .ch-st[data-canopy] .ch-fm__key {
   display: flex;
   flex-wrap: wrap;
@@ -5803,6 +5826,10 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
 .ch-st[data-canopy] .ch-zmixkey i.is-par {
   background: var(--ch-ivory-300);
   color: var(--ch-ink-900);
+}
+/* The par swatch is parchment on parchment: a hairline ring keeps it a swatch, not a gap. */
+.ch-st[data-canopy] .ch-zmixkey i.is-par {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
 }
 .ch-st[data-canopy] .ch-zmix .is-bogey,
 .ch-st[data-canopy] .ch-zmixkey i.is-bogey {
@@ -6130,10 +6157,46 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
 .ch-st[data-canopy] .ch-zt {
   min-width: 0;
 }
+.ch-st[data-canopy] .ch-zt {
+  container: ch-rounds / inline-size;
+}
 .ch-st[data-canopy] .ch-zt .ch-tr {
-  grid-template-columns: minmax(160px, 1.4fr) 64px 52px 52px 56px 52px 68px repeat(4, minmax(72px, 1fr));
-  gap: 10px;
+  grid-template-columns: minmax(150px, 1fr) 56px 46px 46px 52px 46px 60px repeat(4, minmax(56px, 72px));
+  gap: 8px;
   min-width: 0;
+}
+/* the rounds table fits the canvas it is in (880px at a 1280 window, more at 1440): where the canvas is narrower, GIR and putts
+   (both on Game detail) leave before anything scrolls, and the course keeps its line with an ellipsis */
+@container ch-rounds (max-width: 820px) {
+  .ch-st[data-canopy] .ch-zt .ch-tr {
+    grid-template-columns: minmax(120px, 1fr) 52px 44px 44px 56px repeat(4, minmax(52px, 64px));
+  }
+  .ch-st[data-canopy] .ch-zt .ch-tr > .ch-tr__x {
+    display: none;
+  }
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__course {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__course .ch-gx-type {
+  flex: none;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h):hover {
+    background: rgb(176 149 96 / 0.1);
+  }
+}
+.ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h) {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 
 /* Development: each focus area or goal as a track from where it started to its target, with the current value marked on it. */
@@ -6282,5 +6345,125 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
   }
   .ch-st[data-canopy] .ch-zmix i:hover {
     filter: brightness(1.12);
+  }
+}
+
+/* Print: one clean page of the figures. The shell already drops the sidebar, top bar and strip (shell.css); here the page's own
+   controls go, the page takes the paper's width, rules and fills keep their ink, and nothing that reads as one row or one card is
+   cut across two sheets. PrintHead puts GolfHelm, the subject and the day at the top. */
+.ch-st-print {
+  display: none;
+}
+@media print {
+  .ch-st-print {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12pt;
+    margin: 0 0 4pt;
+    padding-bottom: 6pt;
+    border-bottom: 1pt solid gray;
+    font: 500 9.5pt/1.2 var(--ch-font-sans);
+    color: black;
+  }
+  .ch-st-print b {
+    font-weight: 700;
+  }
+  /* Paper is under the phone breakpoint, which hides the desktop tree until the phone view takes over; on paper the desktop tree is the page. */
+  .ch-st-desk,
+  .ch-st.is-desk > * {
+    visibility: visible;
+  }
+  .ch-st,
+  .ch-st * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-st {
+    max-width: none;
+    padding: 0;
+    opacity: 1;
+    transition: none;
+  }
+  .ch-st .ch-hero__actions,
+  .ch-st .ch-st-back,
+  .ch-st .ch-pf-hero__act,
+  .ch-st .ch-pf-tabs,
+  .ch-st .ch-sf,
+  .ch-st .ch-gd__nav,
+  .ch-st .ch-st-updating {
+    display: none !important;
+  }
+  /* A plain page: white paper, and the shell's "Skip to content" (fixed, so it would print on every sheet) stays on screen. */
+  html:has(.ch-st),
+  html:has(.ch-st) body,
+  html:has(.ch-st) .ch-root,
+  html:has(.ch-st) .ch-app,
+  html:has(.ch-st) .ch-canvas {
+    background: white !important;
+  }
+  html:has(.ch-st) .ch-skip {
+    display: none !important;
+  }
+  .ch-st .ch-tbl {
+    overflow: visible;
+  }
+  .ch-st .ch-tr {
+    min-width: 0;
+  }
+  .ch-st .ch-tr,
+  .ch-st .ch-zrow,
+  .ch-st .ch-lb__r,
+  .ch-st .ch-ft tr,
+  .ch-st .ch-tp__c,
+  .ch-st .ch-fm,
+  .ch-st .ch-st-card,
+  .ch-st .ch-sgm,
+  .ch-st .ch-dv,
+  .ch-st .ch-best__r,
+  .ch-st .ch-par3__t,
+  .ch-st .ch-gm-p,
+  .ch-st .ch-lg {
+    break-inside: avoid;
+  }
+  .ch-st h2,
+  .ch-st h3 {
+    break-after: avoid;
+  }
+}
+
+/* -- W4c tablet tier (a canvas under 861px: an iPad portrait with the sidebar open leaves 618px) --------------------
+   Team stats was tuned from a canvas of about 860px up. Two things broke below it. The tape's five 110px cards put the
+   figure on top of its change and the label under the next card, so it takes two rows (three, then two) with the seam
+   between them. The leg grid forced 760px of minimum width, which scrolled sideways when the canvas could hold it with
+   narrower leg columns. The container is the canvas (shell.css). The media query keeps it to a tablet on screen: the
+   phone has its own tree, 1181px and wider is untouched, and paper keeps the desktop view as it is. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 720px) {
+    .ch-st[data-canopy] .ch-tp {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c {
+      grid-column: span 2;
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(n + 4) {
+      grid-column: span 3;
+      box-shadow: inset 0 1px 0 rgb(176 149 96 / 0.34);
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(4) {
+      padding-left: 22px;
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(5) {
+      box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.34), inset 0 1px 0 rgb(176 149 96 / 0.34);
+    }
+  }
+  @container (max-width: 860px) {
+    .ch-lg__r {
+      grid-template-columns: minmax(160px, 1.6fr) repeat(4, minmax(56px, 1fr)) 48px 60px;
+      min-width: 0;
+    }
+    .ch-lg__r .c {
+      padding: 0 8px;
+    }
   }
 }

@@ -58,7 +58,7 @@ export function InlineNotice({
         </div>
         {!covered && onRetry && (
           <div className="ch-notice__act">
-            <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={retry} disabled={retrying}>
+            <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={retry} busy={retrying}>
               {retrying ? 'Trying again…' : 'Try again'}
             </Button>
           </div>
@@ -217,7 +217,7 @@ export function RouteErrorView({
             <p className="ch-empty-page__note">{retryCount === 1 ? 'Tried again once.' : `Tried again ${retryCount} times.`}</p>
           )}
           <div className="ch-empty-page__a">
-            <Button variant="primary" leftIcon={RotateCw} onClick={onRetry} disabled={isRetrying} feel="commit">
+            <Button variant="primary" leftIcon={RotateCw} onClick={onRetry} busy={isRetrying} feel="commit">
               {isRetrying ? 'Trying again…' : reload ? 'Reload' : 'Try again'}
             </Button>
             {homePath && (

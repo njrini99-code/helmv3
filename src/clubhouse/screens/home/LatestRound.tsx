@@ -101,7 +101,8 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
       ) : !r ? (
         <EmptyState
           code="CH-2302"
-          icon={Flag}
+          shape="rows"
+          shapeCount={2}
           title="No rounds posted yet this season."
           body={mine ? 'Your newest 18-hole round appears here, hole by hole, as soon as you post it.' : 'The newest 18-hole round appears here as soon as a player posts it.'}
         />
@@ -138,7 +139,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
               </div>
 
               {r.holes ? (
-                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}’s scorecard`} className="ch-h-card ch-scoreboard">
+                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}’s scorecard`} className="ch-h-card ch-scoreboard" fade={false}>
                   <Nine label="Out" holes={r.holes.slice(0, 9)} />
                   <Nine label="In" holes={r.holes.slice(9)} />
                 </ScrollRegion>

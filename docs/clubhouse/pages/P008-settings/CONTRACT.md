@@ -64,13 +64,13 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 Status: DEFINED
 
-There is no polling, realtime or pull to refresh. What runs in the background is work the person started: a form saving (80301: the button reads Saving… and cannot be pressed twice), a photo uploading (80302, a state tested in the preview only) and the CoachHelm autosave, whose status line reads Saving… and then All changes saved (80303). After a save that changes what the server renders the page reads again (81501).
+There is no polling, realtime or pull to refresh. What runs in the background is work the person started: a form saving (80301: the button reads Saving… and cannot be pressed twice), a photo uploading (80302, a state tested in the preview only) and the CoachHelm autosave, whose row says Saved once it lands (80303; the phone keeps its line under the title). After a save that changes what the server renders the page reads again (81501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 80301 | CH-8402 | `A_FORM_IS_SAVING` | A form is saving |
 | 80302 | CH-8404 | `A_PHOTO_IS_UPLOADING` | A photo is uploading |
-| 80303 | CH-8405 | `COACHHELM_SETTINGS_ARE_SAVING` | CoachHelm settings are saving |
+| 80303 | CH-8405 | `COACHHELM_SETTINGS_ARE_SAVING` | A setting that saves as it changes has saved |
 
 ## 04 — Empty
 
@@ -207,7 +207,7 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_S
 
 Status: DEFINED
 
-A save that lands says so by name and fires the success haptic (80901); a card with a Save button also says Saved for about two seconds. A switch, segment, slider or CoachHelm autosave that lands says nothing (80902, D-70): its selection tick was the feedback, and CoachHelm's status line reads All changes saved. Deleting the account has its own hand-over (80903). Copying the invite code or link toasts and fires the success haptic (81705).
+A save that lands says so by name and fires the success haptic (80901); a card with a Save button keeps its inline bar for about two seconds to say Saved, then lets it go (the bar is there only while the card has something to save, and Cmd or Ctrl+S saves it). A switch, segment, slider or CoachHelm autosave that lands says nothing loud (80902, D-70): its selection tick was the feedback, and its own row (or its card's head, for a group of sliders) says Saved for about two seconds. There is no line over the CoachHelm title. Deleting the account has its own hand-over (80903). Copying the invite code or link toasts and fires the success haptic (81705).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

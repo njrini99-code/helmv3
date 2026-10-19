@@ -12,6 +12,7 @@ import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
 import { centerLine, holeShape, plotShots, pointAlong, ringRadius, type ChHoleFrame } from './hole-geometry';
 import { distanceText, roundSoFar, shotFinish, shotLine, shotTitle } from './labels';
+import { useHScroll } from '../../../ui/use-hscroll';
 
 /** A one-of-several choice (radiogroup, CH-11806: named for what it chooses). A `rare` option is drawn quieter; `note` is its small second line. */
 export function Seg<T extends string>({
@@ -86,6 +87,7 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
   const soFar = roundSoFar(holes);
   const reduced = useChReducedMotion();
   const stripRef = useRef<HTMLDivElement>(null);
+  const stripEdges = useHScroll<HTMLDivElement>(stripRef);
   const placedRef = useRef(false);
   // A strip wider than the screen (18 holes, a round resumed on the back nine) brings the current hole to the middle:
   // placed before the first paint (a layout effect, so a round resumed on the back nine never flashes hole 1), eased
@@ -101,7 +103,7 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
     else strip.scrollLeft = left;
   }, [current, reduced]);
   return (
-    <div ref={stripRef} className="ch-rt-strip" style={{ ['--ch-rt-holes' as string]: holes.length }}>
+    <div ref={stripEdges} className="ch-hscroll ch-rt-strip" style={{ ['--ch-rt-holes' as string]: holes.length }}>
       {holes.map((h, i) => {
         const score = h.score;
         const cls = 'ch-rt-strip__h' + (i === current ? ' is-cur' : '') + (score != null ? ' is-done' : '') + (score != null && score < h.par ? ' is-under' : '');

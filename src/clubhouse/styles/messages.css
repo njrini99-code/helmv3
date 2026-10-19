@@ -216,6 +216,11 @@
   font-style: normal;
   color: var(--ch-text-secondary);
 }
+/* Urgent is a word on the row, in the amber of the mark beside it (the letter's head says it the same way). */
+.ch-ms-row__bot em.is-urgent {
+  font-weight: 600;
+  color: var(--ch-warning-600);
+}
 .ch-ms-row.is-unread .ch-ms-row__top b {
   font-weight: 700;
 }
@@ -248,7 +253,7 @@
   grid-template-columns: 44px minmax(0, 1fr);
   gap: 13px;
   padding: 12px 12px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: transparent;
   box-shadow: none;
 }
@@ -327,12 +332,6 @@
 .ch-ms-row.is-sel .ch-ms-count {
   background: var(--ch-ivory-50);
   color: var(--ch-forest-800);
-}
-.ch-ms-empty {
-  padding: 30px 12px;
-  font: var(--ch-type-body-s);
-  color: var(--ch-text-tertiary);
-  text-align: center;
 }
 
 /* CH-7605: the thread pane's swap (ui/Swap) fills the grid cell at every level, so the thread keeps its own
@@ -425,7 +424,7 @@
   width: min(280px, 100%);
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-green-100);
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08);
 }
@@ -527,7 +526,7 @@
 }
 .ch-ms-bub {
   padding: 10px 14px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-bubble);
   font: 400 calc(14.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
@@ -648,7 +647,7 @@
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: transparent;
   color: var(--ch-text-tertiary);
   cursor: pointer;
@@ -785,7 +784,7 @@
   width: 248px;
   max-height: min(60vh, 360px);
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.16), var(--ch-elevation-overlay);
 }
@@ -828,7 +827,7 @@
   align-items: center;
   gap: 10px;
   padding: 7px 8px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   font: 500 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-ink-900);
 }
@@ -885,7 +884,7 @@
   align-self: flex-start;
   gap: 4px;
   padding: 13px 14px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   border-bottom-left-radius: 6px;
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-bubble);
@@ -936,7 +935,7 @@
   align-items: flex-end;
   gap: 6px;
   padding: 6px 6px 6px 8px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-floating);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -1133,7 +1132,7 @@
   margin: 0 -8px;
   padding: 6px 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -1311,7 +1310,7 @@
   max-width: 680px;
   margin: 12px auto 24px;
   padding: 24px 28px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -1343,7 +1342,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-green-50);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16);
   font: var(--ch-type-body-s);
@@ -1676,7 +1675,7 @@
   .ch-msp .ch-ms-sec.is-date > .ch-ms-sec__l {
     padding-top: 13px;
     font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-    letter-spacing: 0.12em;
+    letter-spacing: 0.01em;
     font-variation-settings: normal;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1783,11 +1782,6 @@
     font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-600);
   }
-  /* Nothing unread, no match: a quiet line at the list's edge, not a centred island. */
-  .ch-msp .ch-ms-empty {
-    padding: 14px 0;
-    text-align: left;
-  }
 
   /* Pushed screens: a thread, details, a new message */
   .ch-msp-who {
@@ -1832,7 +1826,7 @@
     flex: 0 1 auto;
     padding: 0 10px 0 4px;
     margin-left: -4px;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
   .ch-msp-who:active {
@@ -2044,7 +2038,7 @@
     justify-content: space-between;
     gap: 4px;
     padding: 6px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-shadow-sm);
   }
@@ -2093,7 +2087,7 @@
     min-height: 56px;
     padding: 10px 0;
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     background: transparent;
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
     font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
@@ -2242,7 +2236,7 @@
     place-items: center;
     width: 36px;
     height: 36px;
-    border-radius: 10px;
+    border-radius: var(--ch-radius-md);
     background: var(--ch-ledger-row-hover);
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule-soft);
     color: var(--ch-text-secondary);
@@ -2265,7 +2259,7 @@
     margin-right: -10px;
     padding: 0;
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     background: none;
     color: var(--ch-text-secondary);
     cursor: pointer;
@@ -2586,7 +2580,7 @@
   display: -webkit-box;
   margin: 0;
   padding: 10px 14px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-inset);
   font: var(--ch-type-body);
   color: var(--ch-text-secondary);
@@ -2649,7 +2643,7 @@
   min-width: 0;
   max-width: 100%;
   padding: 10px 14px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-floating);
   color: var(--ch-text-secondary);
@@ -2679,7 +2673,7 @@
 .ch-ms-comp > .ch-notice {
   --ch-notice-fill: var(--ch-sheet-bg);
   padding: 10px 12px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   box-shadow: var(--ch-elevation-floating);
 }
 .ch-ms-comp .ch-ms-to__c {
@@ -2695,7 +2689,7 @@
 .ch-ms-comp .ch-ms-to__c button { flex: none; }
 .ch-msp-acts__preview {
   padding: 12px 14px;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-bubble);
 }
@@ -2827,7 +2821,7 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
 .ch-ms-sec.is-ann {
   margin: 10px -4px 4px;
   padding: 4px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: color-mix(in srgb, var(--ch-green-100) 55%, var(--ch-bg-surface));
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 22%, transparent),
@@ -2844,7 +2838,7 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
   width: 100%;
   padding: 10px 12px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: transparent;
   text-align: left;
   color: var(--ch-text-primary);

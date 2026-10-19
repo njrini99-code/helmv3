@@ -49,7 +49,7 @@
 /* Join requests */
 .ch-rs-req {
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -64,10 +64,14 @@
 }
 .ch-rs-req__head b {
   font: 600 14px/1.3 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-forest-800);
 }
 .ch-rs-req__head > span:last-child {
   font: var(--ch-type-body-s);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-rs-req__ic {
@@ -178,9 +182,6 @@
 .ch-rs-body.has-peek {
   grid-template-columns: minmax(0, 1fr) 340px;
 }
-.ch-rs-empty {
-  padding: 8px;
-}
 /* The player's roster of one (CH-3309): one quiet line under their own row. */
 .ch-rs-solo {
   margin: 14px 2px 0;
@@ -203,7 +204,7 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   background: transparent;
   color: var(--ch-text-tertiary);
   cursor: pointer;
@@ -306,8 +307,17 @@
   font-size: 24px;
 }
 .ch-rs-face__name {
+  display: -webkit-box;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
   font: 600 16px/1.2 var(--ch-font-sans);
   letter-spacing: -0.01em;
+  /* A long name wraps to a second line and ends in an ellipsis; it never pushes the card wider (the row's label carries the full name). */
+  overflow-wrap: anywhere;
+  text-align: center;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .ch-rs-face__meta {
   font: var(--ch-type-caption);
@@ -326,7 +336,7 @@
   align-self: stretch;
   margin-top: 4px;
   padding: 10px 0;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
@@ -472,7 +482,7 @@
   min-width: 820px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--ch-border-hairline);
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rs-row:last-child {
@@ -590,7 +600,7 @@
   gap: 18px;
   padding: 0 0 20px;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -646,7 +656,7 @@
   margin-top: 0;
   margin-bottom: 0;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-100);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
 }
@@ -819,7 +829,7 @@
 }
 .ch-rs-remove {
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
   font: var(--ch-type-body-s);
@@ -1678,11 +1688,15 @@
   }
   .ch-rs[data-canopy] .ch-rs-req__head b {
     font: 600 19px/1.2 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.022em;
     color: var(--ch-ledger-ink);
   }
   .ch-rs[data-canopy] .ch-rs-req__head > span:last-child {
     font: var(--ch-type-caption);
+
+    font-variant-numeric: tabular-nums;
   }
   .ch-rs[data-canopy] .ch-rs-req__row {
     padding: 14px 0;
@@ -1706,9 +1720,6 @@
   .ch-rs[data-canopy] .ch-rs-body,
   .ch-rs[data-canopy] .ch-rs-bar + .ch-rs-faces {
     margin-top: -18px;
-  }
-  .ch-rs[data-canopy] .ch-rs-empty {
-    padding: 28px 0 8px;
   }
 
   /* Faces: portraits on a ruled page. Hairlines run only between the cells (each face draws the line to its left and
@@ -1781,7 +1792,7 @@
   .ch-rs[data-canopy] .ch-rs-face,
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
     padding: 24px 20px 24px;
-    border-radius: 22px;
+    border-radius: var(--ch-radius-xl);
     background: linear-gradient(180deg, var(--ch-ivory-0) 0%, var(--ch-bg-surface) 42%, var(--ch-ivory-50) 100%);
     box-shadow: 0 0 0 1px rgb(176 149 96 / 0.55), inset 0 1px 0 var(--ch-light-rim), inset 0 -3px 0 rgb(28 25 18 / 0.05), var(--ch-elevation-face);
     transition:
@@ -1809,7 +1820,7 @@
     position: absolute;
     inset: 7px;
     border: 1px solid rgb(176 149 96 / 0.6);
-    border-radius: 16px;
+    border-radius: var(--ch-radius-lg);
     box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.06);
     content: '';
     pointer-events: none;
@@ -2057,7 +2068,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   gap: 14px;
   margin: 8px 0 22px;
   padding: 22px 24px 8px;
-  border-radius: 18px;
+  overflow-x: clip;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow: inset 0 3px 0 var(--ch-champagne-500), 0 0 0 1px rgb(176 149 96 / 0.3), var(--ch-elevation-plate);
 }
@@ -2076,7 +2088,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   margin: 0 22px;
 }
 /* The team line and the coins sit on still, full-width rows that are their size containers; each moves along its row by
-   `translate` in container units (--ch-sp-x, 0 to 100), so a change glides on the compositor and nothing overflows the plot. */
+   `translate` in container units (--ch-sp-x, 0 to 100), so a change glides on the compositor. WebKit kept a translated
+   coin's old position in the canvas's scrollable overflow when the window shrank (an iPad turned to portrait scrolled the
+   page sideways until reload), so the panel clips sideways overflow (.ch-rs-sp, overflow-x: clip): its padding and the
+   plot's margin leave room for a coin at either end. */
 .ch-rs-sp__team {
   position: absolute;
   top: 0;
@@ -2108,6 +2123,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   /* Dark ink on the gold in both themes: the gold stays light at night, where --ch-ink-950 turns ivory (1.9:1). */
   color: #141412;
   font: 700 12px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .ch-rs-sp__coins {
@@ -2180,5 +2196,112 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 @media (prefers-reduced-motion: reduce) {
   .ch-rs-sp__coins button {
     transition-delay: 0s;
+  }
+}
+
+/* Print (the roster): one clean sheet of the list, in ink on white whatever the theme. A letter sheet is narrower than the phone
+   breakpoint, so the page prints in its phone layout (.ch-rsm; useChPhone reads the print width); .ch-rs is the desktop one. The shell
+   hides its chrome; here the sort, the join banner and the invite action go too, "GolfHelm" joins the head, the ledger rules are kept
+   (print-color-adjust: exact) and a row never splits across pages. The app-wide print sheet hides every button, and the rows are
+   buttons, so they are put back here. */
+@media print {
+  .ch-rsm,
+  .ch-rs {
+    --ch-text-primary: black;
+    --ch-text-secondary: dimgray;
+    --ch-text-tertiary: dimgray;
+    --ch-ledger-ink: black;
+    --ch-ledger-rule: gray;
+    --ch-ledger-rule-soft: silver;
+    --ch-ledger-rule-double: 3px double gray;
+    --ch-ledger-eyebrow: dimgray;
+    --ch-ink-950: black;
+    --ch-ink-900: black;
+    --ch-ink-700: dimgray;
+    --ch-ink-600: dimgray;
+    --ch-ink-500: dimgray;
+    --ch-score-under: firebrick;
+    --ch-chart-gain: darkgreen;
+    --ch-chart-loss: sienna;
+    --ch-green-700: darkgreen;
+    background: white;
+    color: black;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-root:has(.ch-rsm),
+  .ch-app:has(.ch-rsm),
+  .ch-canvas:has(.ch-rsm),
+  .ch-root:has(.ch-rs),
+  .ch-app:has(.ch-rs),
+  .ch-canvas:has(.ch-rs) {
+    background: white !important;
+  }
+  .ch-rsm .ch-rsm-sort,
+  .ch-rsm .ch-rsm-banner,
+  .ch-rsm .ch-avatar,
+  .ch-rs .ch-rs-head__act,
+  .ch-rs .ch-rs-req,
+  .ch-rs .ch-rs-attn,
+  .ch-rs .ch-rs-sp,
+  .ch-rs .ch-rs-bar,
+  .ch-rs .ch-rs-peek {
+    display: none !important;
+  }
+  .ch-rsm .ch-rsm-row,
+  .ch-rs .ch-rs-who__cell button {
+    display: flex !important;
+  }
+  .ch-rsm .ch-rsm-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 16pt;
+    margin-bottom: 12pt;
+    padding-bottom: 8pt;
+    border-bottom: 1.5pt solid black;
+  }
+  .ch-rsm .ch-rsm-head > * {
+    grid-column: 1;
+  }
+  .ch-rsm .ch-rsm-head::after {
+    content: 'GolfHelm';
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    font: 700 16pt/1.15 var(--ch-font-sans);
+    color: black;
+  }
+  .ch-rsm .ch-rsm-list {
+    box-shadow: none;
+  }
+  .ch-rsm .ch-rsm-list > li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-top: 0.5pt solid silver;
+    box-shadow: none;
+  }
+  .ch-rsm .ch-rsm-row {
+    min-height: 0;
+    padding-block: 6pt;
+    background: none;
+  }
+  .ch-rs .ch-rs-row {
+    min-width: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-bottom: 0.5pt solid silver;
+    background: none;
+  }
+}
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   Where the team sits is laid out in lanes by the share of the axis between two coins (6.5%). On a plot of 494px (an
+   iPad portrait with the sidebar open) that is 32px, under the 38px coin, so neighbours overlapped. The coins shrink a
+   sixth there (the label under each keeps its size); the lane rule itself is in RosterSpread.tsx. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 560px) {
+    .ch-rs-sp__coins .ch-avatar {
+      scale: 0.84;
+    }
   }
 }

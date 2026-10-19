@@ -1,4 +1,3 @@
-import { Users } from 'lucide-react';
 import { rebuiltHref } from '../../shell/nav';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -24,7 +23,7 @@ export function RosterNoTeam({ viewer = 'coach' }: { viewer?: 'coach' | 'player'
         <EmptyState
           size="page"
           code="CH-3308"
-          icon={Users}
+          shape="people"
           title="You aren’t on a team yet"
           body="Your teammates appear here once your coach approves your request to join."
           action={action}
@@ -33,7 +32,7 @@ export function RosterNoTeam({ viewer = 'coach' }: { viewer?: 'coach' | 'player'
         <EmptyState
           size="page"
           code="CH-3306"
-          icon={Users}
+          shape="people"
           title="You aren’t on a team yet"
           body="Your players appear here once your team is set up."
           action={action}

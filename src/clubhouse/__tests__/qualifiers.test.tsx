@@ -69,6 +69,10 @@ import { isRebuilt } from '../shell/nav';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
+import { formatDate, localToday } from '../ui/date-time';
+
+/** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
+const fieldDate = (iso: string) => formatDate(iso, { omitYear: iso.slice(0, 4) === localToday().slice(0, 4) });
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -411,7 +415,7 @@ describe('Qualifiers · the loader', () => {
     wrap(<QualifierForm data={previewEditForm()} writes={fakeWrites()} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Pinehurst qualifier' })).toBeTruthy();
     expect((screen.getByLabelText('Qualifier name') as HTMLInputElement).value).toBe('Pinehurst qualifier');
-    expect((screen.getByLabelText('Start date') as HTMLInputElement).value).toBe('2026-09-22');
+    expect((screen.getByLabelText('Start date') as HTMLInputElement).value).toBe(fieldDate('2026-09-22'));
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy();
   });
 
@@ -500,7 +504,9 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
     wrap(<QualifiersList data={data} />);
     await expectCode('CH-09222', /Your qualifiers didn’t load/);
     expect(code('CH-09306')).toBeNull();
-    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers · — active · — concluded');
+    // The counts failed: the eyebrow is the name alone, never dashes (the pills carry the counts, and there are none to show).
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers');
+    expect(document.body.textContent).not.toMatch(/— active|— concluded/);
     router.refresh.mockClear();
     await user.click(within(code('CH-09222') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
@@ -593,7 +599,10 @@ describe('Qualifiers · list', () => {
     const data = list();
     wrap(<QualifiersList data={data} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Lineup decisions' })).toBeTruthy();
-    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers · 2 active · 3 concluded');
+    // The pills carry the counts; the eyebrow does not repeat them.
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
+    expect(screen.getByRole('button', { name: /^Active\s*2$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Concluded\s*3$/ })).toBeTruthy();
     expect(screen.getByText('Rank players over counted rounds and pick who travels.')).toBeTruthy();
     expect([...document.querySelectorAll('.ch-qf-pill')].map((b) => b.textContent)).toEqual(['All5', 'Active2', 'Concluded3']);
     expect(screen.getByRole('link', { name: 'Create qualifier' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers/new');
@@ -614,7 +623,7 @@ describe('Qualifiers · list', () => {
     expect(within(code('CH-09301') as HTMLElement).getByRole('link', { name: 'Create qualifier' })).toBeTruthy();
     // One primary per screen: the header's Create qualifier steps aside (D-71).
     expect(screen.getAllByRole('link', { name: 'Create qualifier' })).toHaveLength(1);
-    // Every count would be 0, so the eyebrow is the name alone (the phone, whose bar names the page, hides it).
+    // The eyebrow is the name alone (the phone, whose bar names the page, hides it).
     expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
     expect(document.querySelector('.ch-qf-eyebrow')!.classList.contains('is-bare')).toBe(true);
     unmount();
@@ -1723,7 +1732,7 @@ describe('Qualifiers · create and edit', () => {
     expect(screen.getByText('Players who make the trip, up to 12.')).toBeTruthy();
     expect(screen.getAllByText('Choose one, or set the qualifier’s course above')).toHaveLength(3);
     expect(screen.queryByText('Uses the qualifier’s course')).toBeNull();
-    expect((document.getElementById('qf-end') as HTMLInputElement).min).toBe('2026-10-19');
+    expect((document.getElementById('qf-end') as HTMLInputElement).dataset.min).toBe('2026-10-19');
   });
 
   it('CH-09404 a create in flight reads Creating and cannot be sent twice', async () => {
@@ -2202,6 +2211,10 @@ describe('Qualifiers · Manage selections', () => {
     unmount();
     wrap(<QualifierSelection data={previewSelection('picking')} writes={selWrites()} />);
     expect(steps().map((s) => s.getAttribute('aria-current'))).toEqual([null, 'step', null]);
+    // Progress, not a switch: the step before is done (checked, no number), the one you are on is marked, the one ahead is plain.
+    expect(steps().map((s) => s.className)).toEqual(['is-done', 'is-now', '']);
+    expect(steps().map((s) => s.querySelector('.ch-qfs-steps__n')!.querySelector('svg') !== null)).toEqual([true, false, false]);
+    expect(steps().map((s) => s.querySelector('.ch-qfs-steps__l')!.textContent)).toEqual(['Standings', 'Coach’s picks', 'Squad confirmed']);
     expect(screen.getByText('Choose a player and say why')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Confirm squad' })).toBeTruthy();
   });
@@ -2622,7 +2635,9 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     await expectCode('CH-09101', /Give the qualifier a name/);
     expect(writes.create).not.toHaveBeenCalled();
     await user.type(screen.getByLabelText('Qualifier name'), 'Conference qualifier');
-    await user.type(screen.getByLabelText('Start date'), '2026-10-19');
+    // On the phone the date is chosen, not typed: the field opens its sheet, and Today is in it.
+    await user.click(screen.getByLabelText('Start date'));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Start date' })).getByRole('button', { name: 'Today' }));
     await user.click(within(top).getByRole('button', { name: 'Cancel' }));
     await expectCode('CH-09502', /Discard your changes/);
     await user.click(inDialog('CH-09502', 'Keep editing'));

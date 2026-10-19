@@ -1,6 +1,5 @@
 'use client';
 
-import { Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ChPlayerRoster, ChTeammate } from '../../data/roster-player';
 import { Avatar } from '../../ui/Avatar';
@@ -56,7 +55,7 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
             onRetry={onRetry}
           />
         ) : data.players.length === 0 ? (
-          <EmptyState size="page" code="CH-3307" icon={Users} title="No one on the roster yet" body="Teammates show up here as they join with the team code." />
+          <EmptyState size="page" code="CH-3307" shape="people" title="No one on the roster yet" body="Teammates show up here as they join with the team code." />
         ) : (
           <>
             {!solo && (

@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
 import { formatToPar, NO_DATA } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
-import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useDialogLifetime } from '../../../lib/dialog-lifetime';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { ScoreMark } from '../../../ui/ScoreMark';
+import { Spinner } from '../../../ui/Spinner';
 
 /**
  * The round's own sheets, around the shot screen: Exit (save for later, keep
@@ -340,7 +340,6 @@ export function SubmitOverlay({
   /** Closing (Go back after a failure) fades the card out on the dialog lifetime rather than unmounting it (A-18). */
   open?: boolean;
 }) {
-  const reduced = useChReducedMotion();
   // D6/D7: a real modal dialog on the top layer, so the round behind it is inert and can't be reached or read through;
   // it can't be dismissed (Esc does nothing): each state names its own way on. Focus moves to the state's title.
   const { ref, retainContent } = useDialogLifetime(open, { direction: 'center', surfaceSelector: '.ch-rt-subm' });
@@ -354,7 +353,7 @@ export function SubmitOverlay({
       <div className="ch-rt-subm" role={state === 'failed' ? 'alert' : 'status'} aria-live="polite">
         {state === 'saving' && (
           <>
-            <span className={'ch-rt-spin ch-rt-spin--lg' + (reduced ? ' is-still' : '')} aria-hidden="true" />
+            <Spinner size="lg" tone="mint" />
             <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1}>
               Posting round
             </h2>

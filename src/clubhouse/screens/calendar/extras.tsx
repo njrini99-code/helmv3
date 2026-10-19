@@ -10,6 +10,8 @@ import { getDocuments } from '@/app/golf/actions/documents';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
+import { DateField } from '../../ui/DateField';
+import { TimeField } from '../../ui/TimeField';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
@@ -17,6 +19,7 @@ import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
+import { Tooltip } from '../../ui/Tooltip';
 import { isOffline, normalise, useAction } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
 import { newRequestId } from '../../data/recruiting-shape';
@@ -118,7 +121,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
             <Button
               variant="danger"
               feel="warning"
-              disabled={remove.pending}
+              busy={remove.pending}
               onClick={() => void remove.run()}
             >
               {remove.pending ? 'Removing…' : 'Remove'}
@@ -237,7 +240,7 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
           </Button>
           <Button
             variant="primary"
-            disabled={save.pending}
+            busy={save.pending}
             onClick={() => {
               setTouched(true);
               if (bad) {
@@ -263,9 +266,9 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
           )}
         </label>
         <div className="ch-ed__row">
-          <input className="ch-input" type="date" aria-label="Date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
-          <input className="ch-input" type="time" aria-label="Start time" step={900} disabled={allDay} value={toHHMM(win[0])} onChange={(e) => e.target.value && setWin([fromHHMM(e.target.value), Math.max(fromHHMM(e.target.value) + 0.25, win[1])])} />
-          <input className="ch-input" type="time" aria-label="End time" step={900} disabled={allDay} value={toHHMM(win[1])} onChange={(e) => e.target.value && setWin([win[0], fromHHMM(e.target.value)])} />
+          <DateField label="Date" row value={date} onChange={(v) => v && setDate(v)} />
+          <TimeField label="Start time" disabled={allDay} value={toHHMM(win[0])} onChange={(v) => v && setWin([fromHHMM(v), Math.max(fromHHMM(v) + 0.25, win[1])])} />
+          <TimeField label="End time" disabled={allDay} min={toHHMM(win[0] + 0.25)} value={toHHMM(win[1])} onChange={(v) => v && setWin([win[0], fromHHMM(v)])} />
         </div>
         {touched && !allDay && win[1] <= win[0] && (
           <span className="ch-field__help is-error" data-ch-code="CH-6104">
@@ -288,10 +291,10 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
             ]}
           />
           {repeat === 'weekly' && (
-            <label className="ch-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <div className="ch-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <span className="ch-field__label">Until</span>
-              <input className="ch-input" type="date" value={until} min={date} onChange={(e) => e.target.value && setUntil(e.target.value)} />
-            </label>
+              <DateField label="Until" value={until} min={date} onChange={(v) => v && setUntil(v)} />
+            </div>
           )}
         </div>
       </div>
@@ -419,9 +422,11 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
                 <span>{[fileSize(f.size), f.note].filter(Boolean).join(' · ')}</span>
               </a>
               {canEdit ? (
-                <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Remove ${f.title}`} onClick={() => void detach(f)}>
-                  <Icon icon={X} size={14} />
-                </button>
+                <Tooltip>
+                  <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Remove ${f.title}`} onClick={() => void detach(f)}>
+                    <Icon icon={X} size={14} />
+                  </button>
+                </Tooltip>
               ) : (
                 <span />
               )}
@@ -515,7 +520,8 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
           </Button>
           <Button
             variant="primary"
-            disabled={!pick || attach.pending}
+            busy={attach.pending}
+            disabled={!pick}
             onClick={() => {
               if (pick) void attach.run(pick);
             }}

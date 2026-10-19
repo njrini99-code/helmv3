@@ -1,6 +1,6 @@
 'use client';
 
-import { Flag, GraduationCap, MessageSquare, Plus, Users } from 'lucide-react';
+import { GraduationCap, MessageSquare, Plus } from 'lucide-react';
 import Link from 'next/link';
 import type { ChHomeEvent } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
@@ -152,9 +152,9 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
       <EmptyState
         size="page"
         code="CH-2312"
-        icon={Flag}
+        shape="rows"
         title="Welcome to the team"
-        body="Post your first round to start your stats. Team updates and your schedule show up here too."
+        body="Your stats start with the first round you post. Your coach’s team updates and your schedule show up here too."
         action={
           start ? (
             <Button variant="primary" leftIcon={Plus} href={start}>
@@ -183,7 +183,7 @@ export function PlayerHomeNoTeam() {
       <EmptyState
         size="page"
         code="CH-2313"
-        icon={Users}
+        shape="rows"
         title="You aren’t on a team yet"
         body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats."
         action={

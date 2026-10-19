@@ -725,7 +725,7 @@ describe('Team Hub · coach', () => {
     expect(t.getByText(/of/, { selector: '.ch-field__label' }).textContent).toBe('For 0 of 6');
     await user.click(t.getByRole('button', { name: 'Select all' }));
     expect(t.getByText(/of/, { selector: '.ch-field__label' }).textContent).toBe('For 6 of 6');
-    expect((t.getByLabelText('Due Optional') as HTMLInputElement).min).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect((t.getByLabelText('Due Optional') as HTMLInputElement).dataset.min).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     await user.click(t.getByRole('button', { name: 'Clear all' }));
     await user.type(t.getByRole('textbox', { name: 'Task' }), 'Book physicals');
     await user.click(t.getByRole('button', { name: 'Assign' }));

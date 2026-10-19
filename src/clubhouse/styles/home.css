@@ -197,7 +197,7 @@
 /* Today: a frosted key lifted out of the well (owner, 2026-10-06: more contrast and blur). A bright translucent face
    over a backdrop blur, a crisp edge, a lit top and a real lift; radius concentric with the well's 4px inset. */
 .ch-h-day--today {
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: linear-gradient(180deg, rgb(255 255 255 / 0.94), rgb(251 249 244 / 0.8));
   -webkit-backdrop-filter: blur(14px) saturate(1.4);
   backdrop-filter: blur(14px) saturate(1.4);
@@ -309,9 +309,16 @@
   gap: 12px;
   min-width: 0;
 }
+.ch-h-round__who > div {
+  min-width: 0;
+}
 .ch-h-round__name {
+  overflow: hidden;
   font: 600 15px/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
+  /* A long name ends in an ellipsis rather than pushing the score off the card. */
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ch-h-round__meta {
   font: var(--ch-type-caption);
@@ -324,6 +331,8 @@
 }
 .ch-h-round__score > span:first-child {
   font: var(--ch-type-figure-l);
+
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-text-primary);
@@ -367,6 +376,7 @@
 .ch-h-nine__holes {
   height: 20px;
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-h-nine__par {
@@ -378,6 +388,8 @@
 }
 .ch-h-nine__par {
   font: 500 12px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 /* Plain scores (par) read as ink, the same weight as the marks beside them. */
@@ -649,7 +661,7 @@
   box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-h-lb__pos.is-tie {
-  font-size: 11px;
+  font-size: calc(11 * var(--ch-type-k));
   letter-spacing: -0.02em;
 }
 .ch-h-lb__pos.is-lead {
@@ -862,7 +874,7 @@
     height: 238px;
     margin-top: 18px;
     padding: 18px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
   }
@@ -878,7 +890,7 @@
   }
   .ch-hm-skel__act {
     margin-top: auto;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
   }
   /* The player's hero: no brief, so Up next sits on the greeting's own margin, and Message coach and Post a round
      under it, as `.ch-hm--player .ch-ph-acts` sets them. */
@@ -1063,7 +1075,7 @@
     width: 48px;
     height: 48px;
     border: 1px dashed rgb(159 224 182 / 0.35);
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: rgb(255 255 255 / 0.06);
     color: var(--ch-hero-mint);
   }
@@ -1287,7 +1299,7 @@
     align-items: center;
     gap: 12px;
     padding: 14px 16px;
-    border-radius: 16px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-reading);
   }
@@ -1309,7 +1321,7 @@
   }
   .ch-hm-form {
     padding: 16px 16px 14px;
-    border-radius: 18px;
+    border-radius: var(--ch-radius-xl);
     background: linear-gradient(180deg, var(--ch-ivory-25), #f6f9f6);
     box-shadow: 0 0 0 1px rgb(21 90 57 / 0.12), 0 10px 24px -18px rgb(11 58 37 / 0.35);
   }
@@ -1331,6 +1343,8 @@
   }
   .ch-hm-form__top b {
     font: 500 44px/0.9 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     /* -0.035em, not tighter: the decimal point touched the 3 ("73.4" read "734"); the hero figures share it. */
     letter-spacing: -0.035em;
     font-variation-settings: 'wdth' 92;
@@ -1420,7 +1434,7 @@
     align-items: center;
     gap: 6px;
     padding: 10px 0 9px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     color: inherit;
     text-decoration: none;
   }
@@ -1479,7 +1493,7 @@
   }
   .ch-hm-list {
     overflow: hidden;
-    border-radius: 16px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-reading);
     list-style: none;
@@ -1608,7 +1622,7 @@
     color: var(--ch-text-primary);
   }
   .ch-hm-strip dd span {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
     color: var(--ch-text-tertiary);
   }
   .ch-hm-muted {
@@ -2146,6 +2160,7 @@
   justify-content: space-between;
   margin-top: 8px;
   font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-ph-spark__word {
@@ -2336,7 +2351,7 @@
   box-shadow: var(--ch-seam-x), var(--ch-seam-y);
 }
 .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
-  font-size: 26px;
+  font-size: calc(26 * var(--ch-type-k));
 }
 .ch-ph-game.is-phone .ch-ph-note {
   align-items: flex-start;
@@ -2378,7 +2393,7 @@
   margin-top: 0;
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg__v > span {
-  font-size: 30px;
+  font-size: calc(30 * var(--ch-type-k));
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg__v em {
   font-size: calc(12.5 * var(--ch-type-k));
@@ -2646,7 +2661,7 @@
     right:0;
     top:100px;
     height:16px;
-    border-radius:18px 18px 0 0;
+    border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
     background:radial-gradient(70% 220px at 0% 0,rgb(11 58 37/.11),rgb(11 58 37/.035) 55%,transparent 80%),var(--ch-workspace);
     pointer-events:none;
   }
@@ -2667,7 +2682,7 @@
   }
   .ch-hm-next {
     padding:16px;
-    border-radius:12px;
+    border-radius: var(--ch-radius-lg);
     background:var(--ch-ivory-0);
     box-shadow:0 0 0 1px var(--ch-ledger-rule);
     color:var(--ch-ink-900);
@@ -2688,7 +2703,7 @@
   }
   .ch-hm-next__when {
     padding:5px 8px;
-    border-radius:6px;
+    border-radius: var(--ch-radius-sm);
     background:rgb(110 98 62/.06);
     color:#3F3C35;
   }
@@ -2719,7 +2734,7 @@
     background:rgb(110 98 62/.04);
     box-shadow:none;
     border:1px dashed rgb(110 98 62/.3);
-    border-radius:10px;
+    border-radius: var(--ch-radius-md);
   }
   .ch-hm-none h2 {
     color:var(--ch-ink-900);
@@ -2728,7 +2743,7 @@
     color:#6E6A60;
   }
   .ch-hm-none__chip {
-    border-radius:8px;
+    border-radius: var(--ch-radius-sm);
     color:#3F3C35;
     background:transparent;
     box-shadow:inset 0 0 0 1px rgb(110 98 62/.2);
@@ -2737,7 +2752,7 @@
     color:var(--ch-green-600);
   }
   .ch-hm-none__add {
-    border-radius:10px;
+    border-radius: var(--ch-radius-md);
     color:#fff;
     background:linear-gradient(180deg,#1A6542,#145838);
     box-shadow:0 0 0 1px #0E462C,inset 0 1px 0 rgb(255 255 255/.1);
@@ -2750,14 +2765,14 @@
     color:var(--ch-green-600);
   }
   .ch-hm-count {
-    border-radius:6px;
+    border-radius: var(--ch-radius-sm);
     background:rgb(21 90 57/.08);
   }
   .ch-hm-tl,
   .ch-hm-list,
   .ch-hm-need,
   .ch-hm-empty {
-    border-radius:12px;
+    border-radius: var(--ch-radius-lg);
     background:var(--ch-ivory-0);
     box-shadow:0 0 0 1px var(--ch-ledger-rule);
   }
@@ -2771,16 +2786,16 @@
     background:linear-gradient(90deg,rgb(21 90 57/.05),transparent);
   }
   .ch-hm-now {
-    border-radius:6px;
+    border-radius: var(--ch-radius-sm);
   }
   .ch-hm-need__a .ch-btn {
-    border-radius:8px;
+    border-radius: var(--ch-radius-sm);
     background:transparent;
     color:var(--ch-green-600);
     box-shadow:inset 0 0 0 1px rgb(21 90 57/.25);
   }
   .ch-hm-form {
-    border-radius:12px;
+    border-radius: var(--ch-radius-lg);
     background:var(--ch-ivory-0);
     box-shadow:0 0 0 1px var(--ch-ledger-rule);
   }
@@ -2791,7 +2806,7 @@
     border-left-color:rgb(110 98 62/.12);
   }
   .ch-hm-week__d {
-    border-radius:8px;
+    border-radius: var(--ch-radius-sm);
   }
   .ch-hm-list {
     position:relative;
@@ -2807,7 +2822,7 @@
     background:var(--ch-green-fill-600);
   }
   .ch-hm-score {
-    border-radius:8px;
+    border-radius: var(--ch-radius-sm);
     background:rgb(110 98 62/.04);
     box-shadow:inset 0 0 0 1px rgb(110 98 62/.08);
   }
@@ -2899,11 +2914,11 @@
     padding:6px;
     gap:2px;
     background:var(--ch-ivory-0);
-    border-radius:12px;
+    border-radius: var(--ch-radius-lg);
     box-shadow:0 0 0 1px var(--ch-ledger-rule);
   }
   .ch-hm-week__d {
-    border-radius:8px;
+    border-radius: var(--ch-radius-sm);
     padding:10px 0 9px;
   }
   .ch-hm-week__n {
@@ -2932,7 +2947,7 @@
   .ch-hm-next {
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
-    border-radius:14px;
+    border-radius: var(--ch-radius-lg);
     color:#F4F1E8;
     padding:18px;
   }
@@ -3054,7 +3069,7 @@
     display:none;
   }
   .ch-hm-form__top b {
-    font-size:56px;
+    font-size: calc(56 * var(--ch-type-k));
     letter-spacing:-.035em;
   }
   .ch-hm-form__top>span:first-child::after {
@@ -3421,6 +3436,8 @@
   }
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
     font: 600 22px/1 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     font-variation-settings: normal;
   }
@@ -3706,7 +3723,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     gap: 8px;
     min-height: 48px;
     padding: 0 14px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: rgb(244 238 221 / 0.12);
     color: var(--ch-on-green-ink);
     font: 500 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
@@ -3786,7 +3803,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     white-space: nowrap;
   }
   .ch-hm-since__fig em {
-    font-size: 13px;
+    font-size: calc(13 * var(--ch-type-k));
     font-style: normal;
     letter-spacing: 0;
     color: var(--ch-text-secondary);
@@ -3837,7 +3854,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   gap: 32px;
   margin: 4px 0 20px;
   padding: 22px 28px;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   background:
     radial-gradient(90% 140% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
     var(--ch-stage-bg);
@@ -3858,6 +3875,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 .ch-h-form .ch-h-form__big {
   color: var(--ch-stage-ink);
   font: 600 64px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.045em;
 }
 .ch-h-form__delta {
@@ -4042,4 +4060,26 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-ph-asks > svg {
   flex: none;
   color: var(--ch-text-tertiary);
+}
+
+/* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
+@media (max-width: 820px) {
+  .ch-hm-none__chip {
+    position: relative;
+  }
+  .ch-hm-none__chip::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}
+
+/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
+@media (hover: hover) {
+  .ch-ph-asks:hover {
+    background: var(--ch-bg-hover);
+  }
+  .ch-ph-next:hover {
+    background: radial-gradient(120% 140% at 90% -30%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-green-fill-700);
+  }
 }

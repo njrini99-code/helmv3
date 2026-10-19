@@ -14,7 +14,7 @@ import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
-import { formatToPar, NO_DATA } from '../../lib/format';
+import { formatToPar } from '../../lib/format';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { ctaLabel, endedLive, listLede } from './model';
 import { Meta, Pos, StatusPill, ToParPlate } from './parts';
@@ -39,7 +39,6 @@ export function QualifiersList({ data }: { data: ChQList }) {
   const coach = data.role === 'coach';
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
   const mineUnknown = data.mode === 'mine' && !!data.entriesError;
-  const unread = data.listError || mineUnknown;
   // The filter and the search come back when the coach returns to the list (Back from a qualifier, the sidebar, a tab): the shell keeps
   // them for this tab under the page and the team (`useChSessionState`), and the list's place comes back through RouteFrame (owner rule 8).
   const [filter, setFilter] = useChSessionState<Filter>('filter', 'all');
@@ -47,7 +46,6 @@ export function QualifiersList({ data }: { data: ChQList }) {
 
   const act = data.items.filter(isActive);
   const con = data.items.filter((i) => !isActive(i));
-  const none = !unread && data.items.length === 0;
   const { active, concluded } = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const match = (i: ChQListItem) => !needle || [i.name, i.description ?? '', i.course ?? ''].join(' ').toLowerCase().includes(needle);
@@ -75,15 +73,10 @@ export function QualifiersList({ data }: { data: ChQList }) {
       <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} start />
       <header className="ch-qf-head" data-canopy-head="">
         <div>
-          {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). Counts that
-              didn't load are a dash, never 0 and never a blank line (states audit c14). With no qualifier at all the
-              counts are only zeros, so the eyebrow is the name alone, and the phone (whose bar names the page) has none. */}
-          <span className={'ch-qf-eyebrow ch-num' + (none ? ' is-bare' : '')}>
-            <span className="ch-qf-eyebrow__k">
-              {data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}
-              {none ? '' : ' · '}
-            </span>
-            {none ? null : unread ? `${NO_DATA} active · ${NO_DATA} concluded` : `${act.length} active · ${con.length} concluded`}
+          {/* The filter pills below carry the active and concluded counts, so the eyebrow is the page's name alone (no second copy
+              of the counts, and no dashes when they failed to load). The phone's top bar already names the page, so it has none. */}
+          <span className="ch-qf-eyebrow ch-num is-bare">
+            <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}</span>
           </span>
           <h1>{title}</h1>
           <p>{lede}</p>

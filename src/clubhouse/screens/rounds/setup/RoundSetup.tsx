@@ -5,9 +5,12 @@ import Link from 'next/link';
 import { ArrowRight, ChartColumn, ChevronLeft, MapPin, Medal, Search } from 'lucide-react';
 import type { ChRoundType } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
+import { roving } from '../../../ui/use-roving';
+import { Segmented } from '../../../ui/Segmented';
 import { useAction } from '../../../lib/use-action';
 import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
+import { DateField } from '../../../ui/DateField';
 import { InlineNotice } from '../../../ui/Notices';
 import { Select } from '../../../ui/Select';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
@@ -302,55 +305,40 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
             <div className="ch-rsu-form">
               <div className="ch-rsu-field">
                 <span>Round type</span>
-                <div className="ch-rsu-seg" role="radiogroup" aria-label="Round type">
-                  {TYPES.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      role="radio"
-                      aria-checked={form.type === t}
-                      onClick={() => {
-                        haptic('select');
-                        set({ type: t, ...(t !== 'qualifier' ? { qualifierId: null, qualifierRound: null } : {}) });
-                      }}
-                    >
-                      {TYPE_LABEL[t]}
-                    </button>
-                  ))}
-                </div>
+                <Segmented<ChRoundType>
+                  block
+                  label="Round type"
+                  value={form.type}
+                  options={TYPES.map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
+                  onChange={(t) => set({ type: t, ...(t !== 'qualifier' ? { qualifierId: null, qualifierRound: null } : {}) })}
+                />
               </div>
               <div className="ch-rsu-2">
-                <label className="ch-rsu-field">
+                <div className="ch-rsu-field">
                   <span>Date</span>
-                  <input
-                    type="date"
+                  <DateField
+                    label="Date"
                     className="ch-rsu-in"
                     value={form.date}
                     max={today}
+                    today={today}
                     aria-invalid={form.date > today || undefined}
                     data-ch-code={form.date > today ? 'CH-11109' : undefined}
-                    onChange={(e) => set({ date: e.target.value })}
+                    onChange={(d) => set({ date: d })}
                   />
-                </label>
+                </div>
                 <div className="ch-rsu-field">
                   <span>Holes</span>
-                  <div className="ch-rsu-seg" role="radiogroup" aria-label="Holes">
-                    {([9, 18] as const).map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        role="radio"
-                        aria-checked={form.count === n}
-                        disabled={n === 18 && form.holes.length > 0 && form.holes.length < 18}
-                        onClick={() => {
-                          haptic('select');
-                          set({ count: n });
-                        }}
-                      >
-                        {n} holes
-                      </button>
-                    ))}
-                  </div>
+                  <Segmented<'9' | '18'>
+                    block
+                    label="Holes"
+                    value={`${form.count}` as '9' | '18'}
+                    options={[
+                      { value: '9', label: '9 holes' },
+                      { value: '18', label: '18 holes', disabled: form.holes.length > 0 && form.holes.length < 18 },
+                    ]}
+                    onChange={(n) => set({ count: Number(n) as 9 | 18 })}
+                  />
                   {/* Why 18 is off: the card the tees came with has nine. */}
                   {form.holes.length > 0 && form.holes.length < 18 && <span className="ch-rsu-field__hint">These tees have 9 holes</span>}
                 </div>
@@ -381,7 +369,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
                     No qualifier is open for you right now. Your coach opens one when it&rsquo;s time; until then, play a practice or tournament round.
                   </p>
                 ) : (
-                  <div className="ch-rsu-opts" role="radiogroup" aria-label="Qualifier">
+                  <div className="ch-rsu-opts" role="radiogroup" aria-label="Qualifier" {...roving}>
                     {qualifiers.map((q) => (
                       <button key={q.id} type="button" role="radio" aria-checked={form.qualifierId === q.id} disabled={q.nextRound == null} className="ch-rsu-opt" onClick={() => playQualifier(q)}>
                         <span className="ch-rsu-radio" aria-hidden="true" />

@@ -135,9 +135,9 @@ export function NoRoundsYet() {
     <EmptyState
       size="page"
       code="CH-2312"
-      icon={Flag}
+      shape="rows"
       title="Welcome to the team"
-      body="Post your first round to start your stats. Your latest round, scoring line and game fill in here."
+      body="Your stats start with the first round you post. Your latest round, scoring line and game fill in here."
       secondaryAction={
         classes ? (
           <Button leftIcon={GraduationCap} href={classes}>

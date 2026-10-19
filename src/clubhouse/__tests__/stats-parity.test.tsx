@@ -434,12 +434,12 @@ describe('the profile’s extra figures', () => {
 /* ─── Game detail: More detail ─── */
 
 describe('Game detail · More detail', () => {
-  it('each section has one, open on the desktop, a native disclosure with its own panels', async () => {
+  it('each section has one, closed to start, a native disclosure with its own panels', async () => {
     showPlayer(player());
     await openTab(/Game detail/);
     const more = [...document.querySelectorAll('details.ch-gx-more')] as HTMLDetailsElement[];
     expect(more).toHaveLength(5);
-    expect(more.every((d) => d.open && d.querySelector('summary')!.textContent === 'More detail')).toBe(true);
+    expect(more.every((d) => !d.open && d.querySelector('summary')!.textContent === 'More detail')).toBe(true);
     expect([...document.querySelectorAll('.ch-gm')].every((s) => s.querySelector('.ch-gx-rule')!.textContent!.includes('18 holes only'))).toBe(true);
   });
 
@@ -550,7 +550,7 @@ describe('Game detail · More detail', () => {
     expect(cells(rowOf(panel('Short, low and high misses by break'), 'Straight'))).toEqual(['40%', '40%', '20%']);
     const tour = panel('Against the Tour');
     expect(tour.querySelectorAll('tbody tr')).toHaveLength(5);
-    expect(cells(rowOf(tour, '3–5 ft'))).toEqual(['63%', '90.5%', '38', 'Below the Tour']);
+    expect(cells(rowOf(tour, '3–5 ft'))).toEqual(['63%', '91%', '38', 'Below the Tour']);
     expect(panel('Putts by round').querySelector('svg.ch-gx-line')).not.toBeNull();
   });
 
@@ -646,7 +646,7 @@ describe('Game detail · states', () => {
   it('CH-5316 a proximity band under 10 shots says how many it has and is not graded; no approaches at all says so', async () => {
     showPlayer(player());
     await openTab(/Game detail/);
-    expect(code('CH-5316')!.textContent).toBe('175+ yards: 7 shots, under 10');
+    expect(code('CH-5316')!.textContent).toContain('175+ yards: 7 shots, under 10');
     expect(panel('Proximity against the Tour').querySelectorAll('.ch-lad__fill')).toHaveLength(2);
     cleanup();
     showPlayer(bare());
@@ -705,7 +705,7 @@ describe('Rounds tab · bests and comparison', () => {
     expect(tile(bests, 'Best score').textContent).toContain('72');
     expect(tile(bests, 'Best score').textContent).toContain('Pinehurst No. 8 · Sep 9');
     expect(tile(bests, 'Best to par').querySelector('dd')!.textContent).toBe('E');
-    expect(tile(bests, 'Best GIR').querySelector('dd')!.textContent).toBe('83.3%');
+    expect(tile(bests, 'Best GIR').querySelector('dd')!.textContent).toBe('83%');
     expect(tile(bests, 'Fewest putts').textContent).toContain('Oakmont CC · Oct 12');
     const cmp = card('rx-compare');
     expect(cmp.querySelector('th[scope="col"]:nth-child(2)')!.textContent).toBe('Latest 10');

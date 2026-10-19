@@ -14,11 +14,11 @@ import { SceneMount } from '../auth/SceneMount';
 import { isDarkSky } from '../auth/scene-sky';
 import { useLocalHour, useSkyHour } from '../auth/use-hour';
 import { dropHandoffCurtain } from '../../lib/handoff';
-import { useFlow, type Draft } from './flow';
+import { isCoachStart, useFlow, type Draft } from './flow';
 import { FULL_STEPS, codeFromSearch, railOf, zoomOf, type OnboardStep } from './logic';
 import { MemberCard, cardOf, seasonLabel } from './MemberCard';
 import { Rail } from './Rail';
-import { STEPS } from './Steps';
+import { STEPS } from './steps-map';
 import '../../styles/onboard-tokens.css';
 import '../../styles/onboard.css';
 
@@ -93,7 +93,8 @@ function Turn({ turn, reduced, children }: { turn: boolean; reduced: boolean; ch
  * Sign up and onboarding, full screen: one question at a time on a stationery
  * pane over the painted course, with the member card filling in beside it.
  *
- * `start` is 'intro' on /golf/signup, and 'game' on /golf/player, where a new
+ * `start` is 'intro' on /golf/signup, 'cprogram' on /golf/coach (a new head coach, signed in already, makes the program
+ * and the team), and 'game' on /golf/player, where a new
  * player lands after the account is made (the session exists from then on, and
  * the sign-up route bounces a signed-in visitor). `seed` is what the server
  * already knows about that player.
@@ -118,6 +119,8 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
   // Today's sign-up behaviour, kept: the iOS app is for existing members, and an invite link's code is carried in.
   useEffect(() => {
     if (preview) return;
+    // A new head coach is signed in already and has no team code to carry.
+    if (isCoachStart(start)) return;
     if (start !== 'intro') {
       // After the account: the team code the server put on the URL is the one the join uses.
       const joinCode = codeFromSearch(window.location.search);
@@ -187,7 +190,7 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
   const next = useCallback((patch?: Partial<Draft>, to?: OnboardStep) => flowNext(patch, to, step), [flowNext, step]);
   const full = FULL_STEPS.has(step);
   const dark = full && skyHour !== null && isDarkSky(skyHour);
-  const issued = (step === 'done' || step === 'staffdone' || step === 'sent') && f.d.joinedTeam !== false;
+  const issued = (step === 'done' || step === 'staffdone' || step === 'sent' || step === 'cdone') && f.d.joinedTeam !== false;
   const request = f.path === 'request';
   const rail = railOf(f.path, step);
   const Step = STEPS[step];

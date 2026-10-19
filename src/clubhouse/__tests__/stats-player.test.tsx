@@ -394,7 +394,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.queryByRole('heading', { level: 2, name: 'Scoring' })).toBeNull();
     expect(screen.getByText('Proximity against the Tour')).toBeTruthy();
     expect(screen.getByText('Finish when the green is hit')).toBeTruthy();
-    // More detail is closed on the phone (and open on the desktop): the disclosure is a real details element.
+    // More detail is closed to start on every screen: the disclosure is a real details element.
     const more = document.querySelector('details.ch-gx-more') as HTMLDetailsElement;
     expect(more.open).toBe(false);
     hapticSpy.mockClear();

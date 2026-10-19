@@ -42,6 +42,7 @@ import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
 import { PlayerStage } from './PlayerStage';
+import { PrintHead, usePrinting } from './PrintHead';
 import { OverviewZones } from './OverviewZones';
 import { Zone, ZoneBig as Big, Zones } from '../../ui/Zone';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
@@ -67,7 +68,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const toast = useToast();
   const delayedToast = useDelayedToast();
   const reduced = useChReducedMotion();
-  const phone = useChPhone();
+  const printing = usePrinting();
+  const phone = useChPhone() && !printing;
   // The tab comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1); an address that names one (Roster's "All N" opens
   // `?tab=rounds`, D-53) wins until a tab is chosen.
   const [keptTab, setKeptTab] = useChSessionState<Tab>('profile-tab', 'overview');
@@ -190,6 +192,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   return (
     <>
       <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
+        <PrintHead subject={`${data.name} · Player stats`} />
         {coach && (
           <div className="ch-st-back">
             <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
@@ -374,7 +377,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 /** Memoised: the seven zones are the page's heaviest read, and the tab's own state (the focus sheet, a transition) must not recompute them. */
 const Overview = memo(function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const first = data.firstName;
-  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
+  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, course: r.course, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   // Seven zones, one per stat area; the last holds the scoring-form ribbon. Every figure is read from the profile (see OverviewZones).
   return (
     <OverviewZones
@@ -382,7 +385,7 @@ const Overview = memo(function Overview({ data, coach }: { data: ChPlayerProfile
       coach={coach}
       ribbon={
         <PlayerStage
-          rounds={trendRounds.map((r) => ({ label: r.label, score: r.score, toPar: r.toPar, holes: r.holes }))}
+          rounds={trendRounds.map((r) => ({ label: r.label, course: r.course, score: r.score, toPar: r.toPar, holes: r.holes }))}
           first={first}
           coach={coach}
           teamAvg={data.teamAvg}
@@ -408,8 +411,8 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
               <span role="columnheader">Date</span>
               <span role="columnheader" className="r">Score</span>
               <span role="columnheader" className="r">To par</span>
-              <span role="columnheader" className="r">GIR</span>
-              <span role="columnheader" className="r">Putts</span>
+              <span role="columnheader" className="r ch-tr__x">GIR</span>
+              <span role="columnheader" className="r ch-tr__x">Putts</span>
               <span role="columnheader" className="r">SG total</span>
               {LEGS_LIST.map((l) => (
                 <span key={l} role="columnheader" className="r">
@@ -424,11 +427,13 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                   {(() => {
                     const href = rebuiltHref(`/golf/dashboard/rounds/${r.id}`, role);
                     return href ? (
-                      <Link href={href} className="ch-tr__link" aria-label={`${r.course}, ${r.date}: open the round`}>
+                      <Link href={href} className="ch-tr__link ch-tr__name" title={r.course} aria-label={`${r.course}, ${r.date}: open the round`}>
                         {r.course}
                       </Link>
                     ) : (
-                      r.course
+                      <span className="ch-tr__name" title={r.course}>
+                        {r.course}
+                      </span>
                     );
                   })()}
                   {r.holes === 9 && <em className="ch-gx-type">9 holes</em>}
@@ -437,8 +442,8 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                 <span role="cell" className="ch-n2">{r.date}</span>
                 <span role="cell" className="r ch-num ch-n">{r.score}</span>
                 <span role="cell" className={'r ch-num ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-                <span role="cell" className="r ch-num ch-n2">{r.gir ?? NO_DATA}</span>
-                <span role="cell" className="r ch-num ch-n2">{r.putts ?? NO_DATA}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.gir ?? NO_DATA}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.putts ?? NO_DATA}</span>
                 <span role="cell" className={'r ch-num ch-n2' + (r.sg == null ? '' : r.sg >= 0 ? ' ch-gain' : ' ch-loss')}>{formatSigned(r.sg)}</span>
                 {r.sgLegs.map((v, i) => (
                   <span key={i} role="cell" className={'r ch-num ch-n2' + (v == null ? '' : v >= 0 ? ' ch-gain' : ' ch-loss')}>

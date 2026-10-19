@@ -8,6 +8,7 @@ import { SerifText } from '../../ui/SerifText';
 import { monotonePath } from '../../lib/chart';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgScale, sgShare } from '../../lib/sg';
+import { EmptyState } from '../../ui/States';
 import { Swap } from '../../ui/Swap';
 
 /**
@@ -203,7 +204,7 @@ export function SgChangeChip({ change, code }: { change: ChSgChange; code?: stri
 
 /** Scoring trend on a scoreboard: a smooth line (lower scores sit higher) over to-par tiles. */
 export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; score: number; toPar: number | null }> }) {
-  if (rounds.length === 0) return <p className="ch-gm-p__empty">No rounds in this window.</p>;
+  if (rounds.length === 0) return <EmptyState compact code="CH-5302" title="No rounds in this window." />;
   const w = 690;
   const h = 176;
   const padX = w / (rounds.length * 2);
@@ -428,18 +429,22 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
       <path d={`M${cx} ${cy - 30} l14 5 -14 5z`} className="ch-pg-flag" />
       {shown.map((b, i) => {
         const pct = b.attempts ? Math.round((b.made / b.attempts) * 100) : null;
+        // Every dot sits on one ray to the right of the cup, nearest ring first, and the labels step down in the same order, so no two
+        // leaders cross and none runs through another label.
         const rm = i ? (radii[i]! + radii[i - 1]!) / 2 : radii[0]! / 2 + 3;
-        const px = cx + rm * Math.cos(-0.6);
-        const py = cy + rm * Math.sin(-0.6) - (4 - i) * 4;
+        const px = cx + rm;
+        const py = cy;
         const ly = 26 + i * 24;
         const below = pct != null && b.bench != null && b.attempts >= 10 && pct < b.bench;
         return (
           <g key={b.label}>
             <circle cx={px} cy={py} r={2.5} fill="var(--ch-ink-900)" />
             <polyline points={`${px},${py} ${W - 96},${ly} ${W - 90},${ly}`} className="ch-pg-leader" />
-            <text x={W - 86} y={ly} dy=".34em" className="ch-pg-lbl">
-              <tspan className="ch-pg-band">{b.label}</tspan>{' '}
-              <tspan className={`ch-pg-pct${below ? ' is-below' : ''}`}>{pct == null ? NO_DATA : `${pct}%`}</tspan>
+            <text x={W - 86} y={ly} dy=".34em" className="ch-pg-band">
+              {b.label}
+            </text>
+            <text x={W} y={ly} dy=".34em" textAnchor="end" className={`ch-pg-pct${below ? ' is-below' : ''}`}>
+              {pct == null ? NO_DATA : `${pct}%`}
             </text>
           </g>
         );

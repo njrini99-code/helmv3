@@ -79,7 +79,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
         <EmptyState
           size="page"
           code="CH-13304"
-          icon={Sparkles}
+          kind="restricted"
           title="CoachHelm is off for your team"
           body={
             data.off.reason
@@ -94,7 +94,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
           <EmptyState
             size="page"
             code="CH-13301"
-            icon={Sparkles}
+            shape="rows"
             title="Post a round to start CoachHelm"
             body={`CoachHelm reads the rounds you post. ${short != null ? `After ${short} ${short === 1 ? 'round' : 'rounds'}` : 'Once there is enough to go on'}, one thing to work on this week shows up here.`}
             action={
@@ -109,7 +109,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
           <EmptyState
             size="page"
             code="CH-13302"
-            icon={Sparkles}
+            shape="rows"
             title="No insights yet"
             body={
               short != null

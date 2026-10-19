@@ -29,6 +29,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { PillGroup } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
+import { Tooltip } from '../../ui/Tooltip';
 import { EmptyRow, SecHeading, type RecSecLevel } from './parts';
 import type { RecInitialUpload } from './ctx';
 import type { ChRecruitingWrites } from './writes';
@@ -283,17 +284,19 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
                   <span className="ch-rec-doc__t">{d.title}</span>
                   <span className="ch-rec-tag">{categoryLabel(d.category)}</span>
                 </button>
-                <button
-                  type="button"
-                  className="ch-rec-doc__x"
-                  aria-label={`Remove ${d.title}`}
-                  onClick={() => {
-                    haptic('warning');
-                    setAsking(d);
-                  }}
-                >
-                  <Icon icon={Trash2} size={15} />
-                </button>
+                <Tooltip>
+                  <button
+                    type="button"
+                    className="ch-rec-doc__x"
+                    aria-label={`Remove ${d.title}`}
+                    onClick={() => {
+                      haptic('warning');
+                      setAsking(d);
+                    }}
+                  >
+                    <Icon icon={Trash2} size={15} />
+                  </button>
+                </Tooltip>
               </li>
             ))}
           </ul>
@@ -333,7 +336,7 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
             </Button>
             <Button
               variant="danger"
-              disabled={remove.pending}
+              busy={remove.pending}
               feel="warning"
               onClick={() => {
                 if (asking) void remove.run(asking);
@@ -393,7 +396,7 @@ function UploadDialog({
             <Button variant="ghost" disabled={busy} onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={busy || !staged} onClick={() => staged && onUpload(staged)}>
+            <Button variant="primary" busy={busy} disabled={!staged} onClick={() => staged && onUpload(staged)}>
               {busy ? <span data-ch-code="CH-14404">{progress === null ? 'Uploading…' : `Uploading… ${progress}%`}</span> : 'Upload'}
             </Button>
           </>

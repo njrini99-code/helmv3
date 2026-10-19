@@ -1,3 +1,5 @@
+import { Spinner } from '../../ui/Spinner';
+
 /**
  * CH-15607: a primary key's two labels held in one cell, so going in flight never reflows the key: the word leaves
  * upward as the working label and its spinner rise in (auth.css). The label not showing is hidden from assistive
@@ -10,7 +12,7 @@ export function AuthKeyLabel({ busy, idle, working }: { busy: boolean; idle: str
         {idle}
       </span>
       <span className="ch-au-key__busy" aria-hidden={!busy || undefined}>
-        <span className="ch-au-spin" aria-hidden="true" />
+        <Spinner tone="current" />
         {working}
       </span>
     </span>

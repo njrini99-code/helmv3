@@ -1,5 +1,63 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-19 — Qualifier leaderboard on an iPad: fits its column at 1180px
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (end block of `qualifiers.css`): under 560px the leaderboard keeps a 110px name and tighter gaps and numbers, so it no longer scrolls sideways by 34px in the 500px column beside Selections at 1180px with the sidebar open. The round-by-round table still scrolls by design (its columns follow the round count).
+
+### Why
+
+- The narrow template wanted 534px of a 498px column.
+
+### Verification
+
+- WebKit, touch, 1180 and 1024 (open and folded): the leaderboard's scrollWidth equals its clientWidth.
+
+## 2026-10-19 — Qualifiers: eyebrow, step strip, tracking, leaderboard, print
+
+```text
+Design package: none (complete-and-elevate plan, lane L6b)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-19, L6b)
+
+- The list's eyebrow is the page's name alone. The filter pills already carry the active and concluded counts, so the eyebrow no longer repeats them, and when the counts failed to load it no longer reads "— active · — concluded" (the failure notice says so).
+- Manage selections' step strip reads as progress, not a segmented control: numbered steps joined by a rule, finished steps checked with a green rule behind them, the current step ringed with its name in bold, the steps ahead plain outlines. The well and the raised chip are gone. On the phone only the current step keeps its visible name (the others stay named for a screen reader), so the strip is one row at 390px.
+- The tracked eyebrows (the list, the form and Manage selections heads, and the standings head's key) no longer carry letter-spacing.
+- Leaderboard on desktop: the column heads stay under the top bar while the field scrolls past (sticky), figures are right-aligned and tabular throughout, and row hover tints only where a pointer hovers (`@media (hover: hover)`). The columns moved from an inline style to the board's stylesheet and follow the board's own width: below 780px (the board beside Selections at 1280) Avg steps aside so a name keeps 150px; before, names cut to "El…" and the sample note wrapped over four lines.
+- Print: the qualifier page prints one clean sheet. A small head (qualifier, team, dates, "GolfHelm" and the day printed) sits over the leaderboard alone, in ink on white whatever the theme; the head, facts, side column and app chrome stay off the paper, the ledger rules are kept (`print-color-adjust: exact`), and a row never splits across pages. A letter sheet is narrower than the phone breakpoint, so the page prints in its phone layout; the sheet is set for both layouts, and the phone's leaderboard rows carry `data-print-visible` because the app-wide print sheet hides buttons.
+
+## 2026-10-18 — Pickers and controls: start and end date
+
+```text
+Design package: none (complete-and-elevate plan, lane L2)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, L2 pickers and controls)
+
+- The browser's own date and time inputs are gone. Start date and End date (optional, with Clear; it opens on the start and cannot be picked before it) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+- Create qualifier stays lit while it works (Button's `busy`: aria-busy and no second press) instead of going unlit like a button that is unavailable.
+
 ## 2026-10-18 — Wave 10: the lede and a form with nobody to enter
 
 ```text

@@ -310,7 +310,7 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
       </Group>
 
       <div className="ch-setm-group is-end">
-        <button type="button" className="ch-setm-signout is-danger" disabled={signingOut} onClick={() => void signOut()}>
+        <button type="button" className="ch-setm-signout" disabled={signingOut} onClick={() => void signOut()}>
           {signingOut ? 'Signing out…' : 'Sign out'}
         </button>
       </div>

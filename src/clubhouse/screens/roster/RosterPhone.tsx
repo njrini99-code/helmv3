@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
+import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import NumberFlow from '@number-flow/react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -217,9 +217,9 @@ export function RosterPhone({
           <EmptyState
             size="page"
             code="CH-3301"
-            icon={Users}
+            shape="people"
             title="No players yet"
-            body="Players who sign up with your team code or open your invite link join right away. You can remove anyone here."
+            body="Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here."
             action={
               <Button variant="primary" leftIcon={UserPlus} onClick={onInvite}>
                 Invite players
@@ -517,7 +517,7 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
       }
       footer={
         n > 0 || jr.approvingAll ? (
-          <Button variant="primary" size="lg" leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.approveAll()}>
+          <Button variant="primary" size="lg" leftIcon={Check} busy={jr.approvingAll} disabled={jr.busy != null && !jr.approvingAll} feel={null} onClick={() => void jr.approveAll()}>
             {jr.approvingAll ? <span data-ch-code="CH-3403">Approving…</span> : `Approve all ${n}`}
           </Button>
         ) : undefined

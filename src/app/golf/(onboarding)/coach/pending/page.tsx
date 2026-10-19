@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { isClubhouseFrontDoor } from '@/clubhouse/gate';
+import { ClubhouseCoachPendingRoute } from '@/clubhouse/routes/auth';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
@@ -95,6 +97,9 @@ export default async function CoachPendingPage() {
     // failed — but the failure is now logged rather than silently cosmetic.
     programName = org?.name ?? null;
   }
+
+  // golf_clubhouse_front_door chooses the page that is drawn; every read and redirect above is the same.
+  if (isClubhouseFrontDoor()) return <ClubhouseCoachPendingRoute programName={programName} />;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-16">

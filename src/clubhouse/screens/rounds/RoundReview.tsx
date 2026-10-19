@@ -28,10 +28,15 @@ import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
 import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from './round-insights';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
+import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
 import { checkedRecap } from './recap-check';
+import { hasCard } from './card/card-model';
+import { useJustSubmitted } from './card/just-submitted';
+import { RoundCard } from './card/RoundCard';
 import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
+import { SideScroll } from '../../ui/SideScroll';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -246,13 +251,17 @@ function HoleCard({
           </span>
         </div>
         <div className="ch-rv-step">
-          <button type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
-            <Icon icon={ChevronLeft} size={16} />
-          </button>
+          <Tooltip>
+            <button type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
+              <Icon icon={ChevronLeft} size={16} />
+            </button>
+          </Tooltip>
           <ScoreMark score={hole.score} par={hole.par} />
-          <button type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
-            <Icon icon={ChevronRight} size={16} />
-          </button>
+          <Tooltip>
+            <button type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
+              <Icon icon={ChevronRight} size={16} />
+            </button>
+          </Tooltip>
         </div>
       </div>
       {/* The shots slide in the direction of travel (CH-11604). */}
@@ -349,6 +358,7 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
 export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null }) {
   const phone = useChPhone();
   const reduced = useChReducedMotion();
+  const justSubmitted = useJustSubmitted();
   const router = useRouter();
   const { refresh, refreshing } = useRefresh();
   const r = review;
@@ -446,6 +456,8 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           <span>{r.score == null ? 'Score not recorded' : r.holesPlayed === 9 ? 'Strokes · 9 holes' : 'Strokes'}</span>
         </div>
       </header>
+
+      {hasCard(r) && <RoundCard review={r} phone={phone} just={justSubmitted} settle={justSubmitted && !reduced} />}
 
       <dl className="ch-rv-figs">
         {figs.map(([k, v, m]) => (
@@ -729,10 +741,10 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                       <span>{phone ? 'Tap a hole to see every shot' : 'Select a hole to see every shot'}</span>
                     </div>
                   </div>
-                  <div className="ch-rv-cardw">
+                  <SideScroll className="ch-rv-cardw">
                     <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={pick} />
                     <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={pick} />
-                  </div>
+                  </SideScroll>
                 </section>
               </SectionBoundary>
               <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">

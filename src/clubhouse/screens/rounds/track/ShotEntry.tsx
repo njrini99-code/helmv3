@@ -19,6 +19,7 @@ import {
 import type { ApproachMissDirection, PuttMissTag, RoundHole, ShotRecord } from '@/lib/types/golf';
 import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
+import { roving } from '../../../ui/use-roving';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
 import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, isDistanceText, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
@@ -212,7 +213,7 @@ export function ShotEntry(p: ShotEntryProps) {
           <Sec label="Miss direction">
             <div className="ch-rt-amissw">
               <span className="ch-rt-amiss__k">Behind the green</span>
-              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green">
+              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green" {...roving}>
                 {APPROACH_GRID.map(([v, l]) =>
                   v === null ? (
                     <span key="green" className="ch-rt-amiss__g" aria-hidden="true">

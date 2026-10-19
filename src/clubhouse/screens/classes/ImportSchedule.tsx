@@ -29,6 +29,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
+import { Tooltip } from '../../ui/Tooltip';
 import { screenFile, type ChReadFail, type ChReadResult, type ChReadSource } from './import-read';
 
 type Step = 'pick' | 'reading' | 'review' | 'error';
@@ -237,7 +238,7 @@ export function ImportSchedule({
               <Button variant="ghost" feel={askFirst ? 'warning' : null} onClick={() => (askFirst ? setRestarting(true) : startOver())}>
                 Start over
               </Button>
-              <Button variant="primary" leftIcon={Check} disabled={!rows.length || importing} onClick={() => void onImport(rows)}>
+              <Button variant="primary" leftIcon={Check} busy={importing} disabled={!rows.length} onClick={() => void onImport(rows)}>
                 {importing ? 'Importing…' : `Import ${rows.length} ${rows.length === 1 ? 'class' : 'classes'}`}
               </Button>
             </>
@@ -355,9 +356,11 @@ export function ImportSchedule({
                             </em>
                           )}
                         </span>
-                        <button type="button" className="ch-cl-rv__x" aria-label={`Remove ${r.code || r.name}`} onClick={() => setRows((xs) => xs.filter((x) => x.key !== r.key))}>
-                          <Icon icon={Trash2} size={14} />
-                        </button>
+                        <Tooltip>
+                          <button type="button" className="ch-cl-rv__x" aria-label={`Remove ${r.code || r.name}`} onClick={() => setRows((xs) => xs.filter((x) => x.key !== r.key))}>
+                            <Icon icon={Trash2} size={14} />
+                          </button>
+                        </Tooltip>
                       </li>
                     );
                   })}

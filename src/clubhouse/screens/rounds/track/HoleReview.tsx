@@ -8,6 +8,7 @@ import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import { haptic } from '../../../lib/haptics';
 import { isOffline } from '../../../lib/use-action';
 import { Icon } from '../../../ui/Icon';
+import { Spinner } from '../../../ui/Spinner';
 import { shotLine, shotTitle } from './labels';
 import { lieClass } from './parts';
 import { UndoConfirm } from './ShotEntry';
@@ -62,7 +63,7 @@ export function HoleReview({
       </div>
       {saving && (
         <p className="ch-rt-note ch-rt-note--flat is-saving" role="status" data-ch-code="CH-11402">
-          <span className="ch-rt-spin" aria-hidden="true" />
+          <Spinner />
           <span>Saving hole {hole.number}…</span>
         </p>
       )}

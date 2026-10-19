@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GraduationCap, Plus, Trash2, TriangleAlert, Upload } from 'lucide-react';
+import { Plus, Trash2, TriangleAlert, Upload } from 'lucide-react';
 import { classNameOf, conflictsOf, dayToken, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
@@ -367,7 +367,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
         <EmptyState
           size="page"
           code="CH-12301"
-          icon={GraduationCap}
+          shape="week"
           title="Add your class schedule"
           body="Import a screenshot of your schedule and we’ll read it so you can check each class. Your coach can see when you’re busy, so practice and travel get planned around class."
           action={
@@ -473,7 +473,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             </Button>
             <Button
               variant="danger"
-              disabled={remove.pending}
+              busy={remove.pending}
               feel={null}
               onClick={() => {
                 if (asking) void remove.run(asking);
@@ -502,7 +502,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             <Button variant="ghost" disabled={removeAll.pending} onClick={() => setAskingAll(false)}>
               Keep them
             </Button>
-            <Button variant="danger" disabled={removeAll.pending || classes.length === 0} feel={null} onClick={() => void removeAll.run(classes.map((c) => c.id))}>
+            <Button variant="danger" busy={removeAll.pending} disabled={classes.length === 0} feel={null} onClick={() => void removeAll.run(classes.map((c) => c.id))}>
               {removeAll.pending ? 'Deleting…' : 'Delete all classes'}
             </Button>
           </>

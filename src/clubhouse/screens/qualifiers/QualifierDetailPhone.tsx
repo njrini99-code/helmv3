@@ -18,6 +18,7 @@ import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { bubbleNote, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
+import { PrintHead } from './PrintHead';
 import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
@@ -101,6 +102,7 @@ export function QualifierDetailPhone({
 
   return (
     <main className="ch-qfm" aria-label={data.name}>
+      <PrintHead data={data} />
       <PhoneTop
         heading={false}
         title="Qualifier"
@@ -345,6 +347,7 @@ function Board({
               {canOpen(r) ? (
                 <button
                   type="button"
+                  data-print-visible=""
                   className={'ch-qfm-lb__row' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
                   data-state={r.state ?? undefined}
                   aria-label={`${label}. Show ${me ? 'your' : 'their'} rounds`}

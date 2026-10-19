@@ -97,7 +97,6 @@ function ProposalRow({ p, writes, quiet = false }: { p: ChProposal; writes: ChPl
       },
     });
   };
-  const pending = accept.pending || decline.pending;
   return (
     <li className="ch-hl-prop__r">
       <span className="ch-hl-prop__t">
@@ -122,10 +121,10 @@ function ProposalRow({ p, writes, quiet = false }: { p: ChProposal; writes: ChPl
         </span>
       ) : (
         <span className="ch-hl-prop__a" role="group" aria-label={`Answer ${p.title}`}>
-          <Button size="sm" variant={quiet ? 'secondary' : 'primary'} feel="press" disabled={pending} onClick={() => void accept.run()}>
+          <Button size="sm" variant={quiet ? 'secondary' : 'primary'} feel="press" busy={accept.pending} disabled={decline.pending} onClick={() => void accept.run()}>
             {accept.pending ? <span data-ch-code="CH-13404">Accepting…</span> : 'Accept'}
           </Button>
-          <Button size="sm" variant="ghost" disabled={pending} onClick={holdDecline}>
+          <Button size="sm" variant="ghost" busy={decline.pending} disabled={accept.pending} onClick={holdDecline}>
             {decline.pending ? <span data-ch-code="CH-13404">Declining…</span> : 'Decline'}
           </Button>
         </span>

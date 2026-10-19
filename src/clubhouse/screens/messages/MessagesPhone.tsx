@@ -37,6 +37,7 @@ import {
 } from "react";
 import { Avatar } from "../../ui/Avatar";
 import { EmptyState, Skeleton } from "../../ui/States";
+import { RailEmpty } from "./RailEmpty";
 import { Icon } from "../../ui/Icon";
 import { InlineNotice } from "../../ui/Notices";
 import { Modal } from "../../ui/Modal";
@@ -85,7 +86,6 @@ import {
   REACTIONS,
   RemoveMemberModal,
   ThreadBelow,
-  emptyListCopy,
   muteLabel,
   personOf,
   useAddAttachments,
@@ -328,11 +328,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
               </section>
             );
           })}
-          {!list.length && (
-            <div className="ch-ms-empty" data-ch-code="CH-7302">
-              {emptyListCopy(filter, q)}
-            </div>
-          )}
+          {!list.length && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
           {/* Messages first; the team's announcements fold under them (owner, 2026-10-16). */}
           {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
           <MessageHits api={api} q={q} />
@@ -453,9 +449,7 @@ function PhoneThread({
                 <Skeleton width="38%" height={40} radius={18} />
               </div>
             ) : !api.msgs.length ? (
-              <div className="ch-ms-empty" data-ch-code="CH-7304">
-                No messages yet. Say hello to {conv.group ? "the group" : firstName(conv.title)}.
-              </div>
+              <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
             ) : (
               items.map((it) =>
                 it.kind === "day" ? (
@@ -505,6 +499,7 @@ function PhoneThread({
         api={api}
         conv={conv}
         phone
+        unavailable={api.msgsError}
         initialDraft={firstMessage?.text}
         initialFiles={firstMessage?.files}
         autoSend={!!firstMessage}

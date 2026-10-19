@@ -1163,31 +1163,41 @@
 .ch-qfs .ch-qf-panel > .ch-qf-list {
   padding: 0 20px 10px;
 }
+/* Progress, not a switch: numbered steps joined by a rule. The step you are on is ringed, finished steps are checked and their rule
+   is green, the steps ahead are an outline. Nothing here is pressable, so nothing is drawn as a control. */
 .ch-qfs-steps {
   display: flex;
-  gap: 6px;
-  padding: 4px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-well-soft-bg);
-  box-shadow: var(--ch-well-soft-shadow);
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
   list-style: none;
 }
 .ch-qfs-steps li {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 38px;
-  padding: 0 12px;
-  border-radius: var(--ch-radius-md);
+  min-height: 32px;
   font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+.ch-qfs-steps li:last-child {
+  flex: none;
+}
+.ch-qfs-steps li:not(:last-child)::after {
+  content: '';
+  flex: 1 1 16px;
+  min-width: 16px;
+  height: 1px;
+  margin-left: 2px;
+  background: var(--ch-ledger-rule);
+}
+.ch-qfs-steps li.is-done:not(:last-child)::after {
+  background: var(--ch-green-rule);
+}
 .ch-qfs-steps li.is-now {
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
   font-weight: 600;
-  color: var(--ch-green-700);
+  color: var(--ch-text-primary);
 }
 .ch-qfs-steps li.is-done {
   color: var(--ch-text-secondary);
@@ -1196,8 +1206,8 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px var(--ch-border-control);
   font: 600 12px/1 var(--ch-font-sans);
@@ -1208,6 +1218,9 @@
   background: var(--ch-green-fill-600);
   box-shadow: none;
   color: var(--ch-on-fill-25);
+}
+.ch-qfs-steps li.is-now .ch-qfs-steps__n {
+  box-shadow: 0 0 0 3px var(--ch-green-ring);
 }
 .ch-qfs-picks {
   display: flex;
@@ -1308,13 +1321,22 @@
   .ch-qfs .ch-qf-head__act {
     display: none;
   }
-  /* A large Text Size can outgrow one row: the last step wraps under the others instead of running off the well. */
+  /* A large Text Size can outgrow one row: the last step wraps under the others instead of running off the page. */
   .ch-qfs-steps {
     flex-wrap: wrap;
   }
   .ch-qfs-steps li {
-    padding: 0 8px;
     font-size: calc(12 * var(--ch-type-k));
+  }
+  /* Three labels and two rules do not fit 390px: only the step you are on keeps its name on the phone (the others are still named
+     for a screen reader), so the strip stays one row of circles joined by rules. */
+  .ch-qfs-steps li:not(.is-now) .ch-qfs-steps__l {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .ch-qfs-foot {
     display: flex;
@@ -1377,7 +1399,7 @@
   .ch-qf--list .ch-qf-eyebrow {
     font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.14em;
+    letter-spacing: normal;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-qf--list .ch-qf-head h1 {
@@ -1677,7 +1699,7 @@
   .ch-qfm-head__k > .ch-num {
     font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.14em;
+    letter-spacing: normal;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-qfm .ch-qfm-head h1 {
@@ -2051,7 +2073,7 @@
   .ch-qfs .ch-qf-eyebrow {
     font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.14em;
+    letter-spacing: normal;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-qf--form .ch-qf-head h1,
@@ -2544,7 +2566,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     gap: 10px;
     font: 500 11px/1.3 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.14em;
+    letter-spacing: normal;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-qf--list[data-canopy] .ch-qf-eyebrow {
@@ -3833,4 +3855,207 @@ button.ch-qf-prounds__r.is-open {
 .ch-qf .ch-scoreboard,
 .ch-qfm .ch-scoreboard {
   --ch-ledger-ink: var(--ch-text-primary);
+}
+
+/* The leaderboard's columns live here (not inline) so they can follow the board's own width. Below 780px the board is a column beside
+   Selections: Avg steps aside (Total and the scorecards carry it) so a name keeps 150px instead of cutting to "El…". */
+.ch-qf-board {
+  container: ch-lb / inline-size;
+  font-variant-numeric: tabular-nums;
+}
+.ch-qf-lbrow {
+  grid-template-columns: 56px minmax(0, 1fr) 48px 52px 52px 64px 108px 28px;
+}
+@container ch-lb (max-width: 780px) {
+  .ch-qf-lbrow {
+    grid-template-columns: 44px minmax(150px, 1fr) 52px 44px 60px 84px 28px;
+    gap: 8px;
+  }
+  .ch-qf-lbrow > :nth-child(4) {
+    display: none;
+  }
+}
+/* Desktop: the column heads stay under the top bar while the field scrolls past. The sticky element is the header's row group (a row
+   alone would only stick inside its own wrapper); the board keeps overflow visible so the page's scroller is the one it sticks in. */
+@media (min-width: 821px) {
+  .ch-qf-board .ch-qf-table > [role='rowgroup']:first-child {
+    position: sticky;
+    top: var(--ch-topbar-h);
+    z-index: 2;
+    background: var(--ch-bg-surface);
+  }
+}
+
+/* Print (the qualifier's page): one clean sheet. The app's chrome is hidden by the shell; here the qualifier's own head, facts and side
+   column step aside for a small head (qualifier, dates, team, GolfHelm) over the leaderboard, in ink on white whatever the theme (the
+   page's tokens are re-pointed to plain colours so a night page does not print a dark sheet). The ledger rules are kept
+   (print-color-adjust: exact) and a row, with the cut line above it, never splits across pages. */
+.ch-qf-printhead {
+  display: none;
+}
+/* Printing a page narrower than the phone breakpoint (a letter sheet is 720px) switches the page to its phone layout (useChPhone reads
+   the print width), so the sheet is set for both layouts: .ch-qf--detail is the desktop one, .ch-qfm the phone's. */
+@media print {
+  .ch-qf--detail,
+  .ch-qfm {
+    --ch-text-primary: black;
+    --ch-text-secondary: dimgray;
+    --ch-text-tertiary: dimgray;
+    --ch-ink-950: black;
+    --ch-ink-900: black;
+    --ch-ink-800: black;
+    --ch-ink-700: dimgray;
+    --ch-ink-600: dimgray;
+    --ch-ink-500: dimgray;
+    --ch-ink-400: gray;
+    --ch-ink-300: gray;
+    --ch-border-strong: gray;
+    --ch-green-500: darkgreen;
+    --ch-green-600: darkgreen;
+    --ch-warning-600: saddlebrown;
+    --ch-warning-700: saddlebrown;
+    --ch-ink-rule: gray;
+    --ch-ledger-rule: gray;
+    --ch-ledger-rule-soft: silver;
+    --ch-bg-surface: white;
+    --ch-score-under: firebrick;
+    --ch-chart-loss: sienna;
+    --ch-chart-gain: darkgreen;
+    --ch-ledger-eyebrow: dimgray;
+    --ch-green-700: darkgreen;
+    --ch-forest-800: black;
+    max-width: none;
+    padding: 0;
+    background: white;
+    color: black;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-qf--detail > :not(.ch-qf-printhead, .ch-qf-body),
+  .ch-qfm > :not(.ch-qf-printhead, .ch-qf-board) {
+    display: none !important;
+  }
+  .ch-qf-printhead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16pt;
+    margin-bottom: 14pt;
+    padding-bottom: 8pt;
+    border-bottom: 1.5pt solid black;
+  }
+  .ch-qf-printhead > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3pt;
+  }
+  .ch-qf-printhead > div:last-child {
+    align-items: flex-end;
+    text-align: right;
+  }
+  .ch-qf-printhead b {
+    font: 700 16pt/1.15 var(--ch-font-sans);
+    color: black;
+  }
+  .ch-qf-printhead span {
+    font: 500 10pt/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: dimgray;
+  }
+  .ch-qf--detail .ch-qf-body {
+    display: block;
+  }
+  .ch-qf--detail .ch-qf-body > .ch-qf-col:not(:first-child),
+  .ch-qf--detail .ch-qf-col > .ch-qf-panel:not(.ch-qf-board),
+  .ch-qf-board .ch-qf-sp,
+  .ch-qf-board .ch-qf-feed,
+  .ch-qf-board .ch-qf-open,
+  .ch-qf-board [id^='ch-qf-tray-'],
+  .ch-qf-board .ch-qf-lbrow > :nth-child(8) {
+    display: none !important;
+  }
+  .ch-qf-board {
+    border-radius: 0;
+    background: white;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-qf-board .ch-qf-lbrow {
+    grid-template-columns: 36pt minmax(0, 1fr) 44pt 40pt 40pt 48pt 70pt;
+    gap: 8pt;
+    min-height: 0;
+    padding-top: 6pt;
+    padding-bottom: 6pt;
+  }
+  .ch-qf-board .ch-qf-lbrow > :nth-child(4) {
+    display: block;
+  }
+  .ch-qf-board .ch-qf-table > [role='rowgroup']:first-child {
+    position: static;
+    background: none;
+  }
+  .ch-qf-board .ch-qf-table > [role='rowgroup'] > div,
+  .ch-qf-board .ch-qf-lbrow {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .ch-qf-board .ch-qf-row {
+    border-bottom: 0.5pt solid silver;
+    background: none;
+  }
+  .ch-qfm-lb > li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-bottom: 0.5pt solid silver;
+  }
+  /* Dark mode gives each status tone its own ink at higher specificity; on paper they are plain. */
+  .ch-qf-board .ch-badge--warning {
+    color: saddlebrown !important;
+  }
+  .ch-qf-board .ch-badge--positive,
+  .ch-qf-board .ch-badge--accent {
+    color: darkgreen !important;
+  }
+  /* The shell paints the phone's canvas in its own colours (shell.css gives the print sheet no white of its own at phone width). */
+  .ch-root:has(.ch-qf-printhead),
+  .ch-app:has(.ch-qf-printhead),
+  .ch-canvas:has(.ch-qf-printhead) {
+    background: white !important;
+  }
+  /* Everything on the sheet starts at the same left edge as the print head. */
+  .ch-qf-board {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .ch-qf-board .ch-qf-panel__head {
+    padding: 0 0 10pt;
+  }
+  .ch-qf-board .ch-qf-table {
+    margin-inline: 0;
+  }
+  .ch-qf-board .ch-qf-lbrow {
+    padding-inline: 0;
+  }
+  .ch-qf-board .ch-qf-lbrow::after {
+    right: 0;
+    left: 0;
+  }
+  .ch-qf-board .ch-qf-cap {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   The leaderboard is a column beside Selections from a canvas of about 940px. Its narrow template (names keep 150px)
+   still wants 534px, and the column is 500px at 1180px with the sidebar open, so the table scrolled sideways by 34px.
+   Under 560px the name keeps 110px and the gaps and numbers tighten, which is enough for the 498px column. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container ch-lb (max-width: 560px) {
+    .ch-qf-lbrow {
+      grid-template-columns: 40px minmax(110px, 1fr) 48px 40px 56px 76px 24px;
+      gap: 6px;
+    }
+  }
 }

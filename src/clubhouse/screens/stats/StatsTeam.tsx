@@ -12,6 +12,7 @@ import { PageHero } from '../../ui/PageHero';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { PuttingRings, YardagePage } from './charts';
+import { PrintHead } from './PrintHead';
 import { TeamTape } from './TeamTape';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
@@ -46,6 +47,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
     // One group per rendered tree (the phone view groups its own): sections that crash together are told once (CH-1210).
     <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhone data={data} />}>
       <SectionGroup>
+        <PrintHead subject={[data.teamName, data.season, 'Team stats'].filter(Boolean).join(' · ')} />
         <PageHero
           eyebrow={[data.teamName, data.season].filter(Boolean).join(' · ')}
           title="Team stats"

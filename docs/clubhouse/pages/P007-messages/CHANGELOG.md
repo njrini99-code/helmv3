@@ -1,5 +1,104 @@
 # P007 — Messages: changelog
 
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (messages.css)
+
+- Radii on the 5, 7, 10, 14, 20 scale (pills, circles and bars that are half their height stay).
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — In-flight actions are busy; icon buttons have tooltips
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Save an edit, Delete message, Leave, Delete conversation, Remove member, Unmute and Post are busy while they run instead of disabled. The three mute durations stay disabled while one runs (the screen does not know which was pressed).
+- Every icon-only button (New message, React, Reply, More message actions, Schedule, Details, Send, attachment and member removes) shows its name on hover and focus. The native title on New message and Schedule is gone so the tip is not drawn twice.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — Failed thread turns the composer off; empty lists are told apart; urgent reads the same everywhere
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-7202, CH-7302, CH-7303, CH-7304, CH-7308, CH-7309
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- A conversation that did not load (CH-7202) now switches its composer off and says why (a read-only box, Send and Attach disabled, one line under it) on desktop and phone. A thread that only failed to refresh keeps its composer.
+- The list's empty (CH-7302) is told by why: a name search that matches nothing offers Clear search, Unread with nothing unread offers Show all, Groups with no group only says so. "No messages mention" (CH-7303) and "No messages yet" (CH-7304) use the shared state; `.ch-ms-empty` is gone.
+- First-run (CH-7309) and no-team (CH-7308) draw portrait rows under the sentence.
+- Urgent announcements: one mark (the amber alert triangle, as the letter's head had) on the rail row, the fold and the thread header, and the word Urgent on the row.
+- The phone's conversation dates no longer carry 0.12em tracking.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `messages.test.tsx` (CH-7202 composer, the urgent row, the rail empties) and `states.test.tsx`; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/messages?state=empty` and `thread-failed` (the thread opens on desktop only, so the composer-off state was captured on desktop; the phone path has no capture or test); a search miss was captured after only (phone light, desktop light).
+
+## 2026-10-19 — Right-click on a conversation
+
+```text
+Design package: none (complete-and-elevate plan, lane L1, desktop command layer)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no new read: the palette lists what the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Right-click (or Shift F10) on a conversation in the list offers Open conversation, the row's one action. Mute, Leave and Delete
+  work on the open conversation only, so they are not offered on a row that may not be it. Desktop only; the phone inbox is
+  unchanged.
+
+### Why
+
+- The same gesture works on every list a coach lives in.
+
+### Verification
+
+- `screens/messages/__tests__/conv-context-menu.test.tsx`.
+
 ## 2026-10-18 — Wave 8: premium details
 
 ```text

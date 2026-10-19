@@ -133,7 +133,7 @@ are the "Settings · phone" group in `settings.test.tsx`.
 | CH-8402 | A form is saving | The button reads "Saving…" (or "Sending…", "Updating…", "Deleting…", "Leaving…") and can't be pressed twice | `useAction.pending` | settings.test › CH-8402 |
 | CH-8403 | A switch is saving | The switch holds its new position and can't be flipped again until it lands | `Switch busy` | settings.test › CH-8403 |
 | CH-8404 | A photo is uploading | The photo dims and the button reads "Uploading…" | `ProfileCard` | preview |
-| CH-8405 | CoachHelm settings are saving | The line above the cards reads "Saving…", then "All changes saved" (or "A change didn't save") | `usePhilosophy` status | settings.test › CH-8405 |
+| CH-8405 | A setting that saves as it changes has saved | A check and "Saved" beside its row for about two seconds (desktop; on the phone CoachHelm keeps its line under the title, "Saving…" then "All changes saved"); a failed save puts the control back and toasts CH-8022 instead | `SavedMark`, `useSavedKeys`, `usePhilosophy` | settings.test › CH-8405, settings-save-bar.test |
 
 ## 85xx Confirm
 

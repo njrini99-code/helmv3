@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutGrid, List, Users } from 'lucide-react';
+import { LayoutGrid, List } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import type { ChPlayerRoster, ChTeammate } from '../../data/roster-player';
@@ -12,6 +12,7 @@ import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Tooltip } from '../../ui/Tooltip';
 import { haptic } from '../../lib/haptics';
 import { NO_DATA } from '../../lib/format';
 import { useChPhone } from '../../lib/use-phone';
@@ -19,6 +20,7 @@ import { formatHcp } from './format';
 import { TeamRosterPhone } from './TeamRosterPhone';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 import '../../styles/roster.css';
+import { SideScroll } from '../../ui/SideScroll';
 
 type View = 'faces' | 'list';
 // The same key as the coach's roster: the layout is a preference for this screen on this device.
@@ -94,7 +96,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
           onRetry={() => router.refresh()}
         />
       ) : players.length === 0 ? (
-        <EmptyState size="page" code="CH-3307" icon={Users} title="No one on the roster yet" body="Teammates show up here as they join with the team code." />
+        <EmptyState size="page" code="CH-3307" shape="people" title="No one on the roster yet" body="Teammates show up here as they join with the team code." />
       ) : solo ? (
         <>
           {/* Nothing to search, sort or lay out for one row. */}
@@ -117,19 +119,20 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
                     ['list', List, 'List view'],
                   ] as const
                 ).map(([v, icon, label]) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className="ch-rs-vt__b"
-                    aria-pressed={view === v}
-                    aria-label={label}
-                    onClick={() => {
-                      if (view !== v) haptic('select');
-                      changeView(v);
-                    }}
-                  >
-                    <Icon icon={icon} size={15} />
-                  </button>
+                  <Tooltip key={v}>
+                    <button
+                      type="button"
+                      className="ch-rs-vt__b"
+                      aria-pressed={view === v}
+                      aria-label={label}
+                      onClick={() => {
+                        if (view !== v) haptic('select');
+                        changeView(v);
+                      }}
+                    >
+                      <Icon icon={icon} size={15} />
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
               <Segmented<TeamSort>
@@ -162,7 +165,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
 function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
   if (!coaches?.length) return null;
   return (
-    <div className="ch-rs-list ch-rs-list--team ch-rs-coaches ch-sheet" role="table" aria-label="Coaches" data-ch-code="CH-3808">
+    <SideScroll className="ch-rs-list ch-rs-list--team ch-rs-coaches ch-sheet" role="table" aria-label="Coaches" data-ch-code="CH-3808">
       <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
         <span role="columnheader">Coach</span>
         <span role="columnheader">Role</span>
@@ -182,7 +185,7 @@ function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
           </span>
         </div>
       ))}
-    </div>
+    </SideScroll>
   );
 }
 
@@ -190,18 +193,13 @@ function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
 function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; view: View; q: string; onClearSearch: () => void }) {
   if (rows.length === 0) {
     return (
-      <div className="ch-rs-empty ch-sheet">
-        <EmptyState
-          compact
-          code="CH-3302"
-          title={`No players match “${q.trim()}”`}
-          action={
-            <Button size="sm" onClick={onClearSearch}>
-              Show everyone
-            </Button>
-          }
-        />
-      </div>
+      <EmptyState
+        kind="filtered"
+        code="CH-3302"
+        title={`No players match “${q.trim()}”`}
+        body="Search matches player names."
+        action={<Button onClick={onClearSearch}>Show everyone</Button>}
+      />
     );
   }
   if (view === 'faces') {
@@ -226,7 +224,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
     );
   }
   return (
-    <div className="ch-rs-list ch-rs-list--team ch-sheet" role="table" aria-label="Roster" data-ch-code="CH-3807">
+    <SideScroll className="ch-rs-list ch-rs-list--team ch-sheet" role="table" aria-label="Roster" data-ch-code="CH-3807">
       <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
         <span role="columnheader">Player</span>
         <span role="columnheader">Class</span>
@@ -253,6 +251,6 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
           </span>
         </div>
       ))}
-    </div>
+    </SideScroll>
   );
 }

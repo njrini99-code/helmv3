@@ -38,7 +38,7 @@
 .ch-ox-canvas {
   position: absolute;
   inset: 8px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   overflow: hidden;
   background: var(--ch-bg-page);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12);
@@ -256,7 +256,7 @@
   align-items: center;
   overflow: hidden;
   padding: clamp(28px, 5vh, 56px) clamp(32px, 4vw, 64px);
-  border-radius: 22px;
+  border-radius: var(--ch-radius-xl);
   /* Opaque paper (P015 D1): the course never shows through the fields and the password rules; glass stays on the step
      pill and the mark only. */
   background: var(--ch-ox-grain), linear-gradient(170deg, rgb(250 248 241), rgb(245 241 231) 55%, rgb(241 236 223));
@@ -271,7 +271,7 @@
 }
 .ch-ox-stage::before {
   inset: 12px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   box-shadow: none;
 }
 .ch-ox-stage::after {
@@ -313,7 +313,7 @@
   justify-content: center;
   gap: 22px;
   padding: 46px 18px 30px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-xl);
   /* The felt tray holds the card and its caption and nothing else: it fits them rather than running the pane's full
      height, with a pool of light where the card rests. */
   background: radial-gradient(62% 50% at 50% 41%, rgb(255 255 255 / 0.085), transparent 72%), var(--ch-ox-grain), linear-gradient(170deg, #11462d, var(--ch-ox-felt) 60%, #093220);
@@ -381,7 +381,7 @@
 .ch-ox-back:focus-visible,
 .ch-ox-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
 }
 .ch-ox-eyebrow {
   display: inline-flex;
@@ -432,8 +432,8 @@
 .ch-ox-act .ch-btn--lg {
   min-height: 50px;
   padding: 0 20px 0 24px;
-  border-radius: 12px;
-  font-size: 15px;
+  border-radius: var(--ch-radius-md);
+  font-size: calc(15 * var(--ch-type-k));
 }
 .ch-ox-act .ch-btn--primary {
   min-width: 170px;
@@ -448,7 +448,7 @@
 }
 .ch-ox-enter kbd {
   padding: 3px 6px;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   font: 500 11px/1 var(--ch-font-mono);
   color: var(--ch-text-secondary);
   background: var(--ch-raised-bg);
@@ -522,7 +522,7 @@
   gap: 12px;
   min-height: 200px;
   padding: 20px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-xl);
   color: var(--ch-ox-ivory);
   background: radial-gradient(110% 120% at 88% -10%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-ox-grain), linear-gradient(162deg, #165c3b, var(--ch-ox-felt) 68%, #093220);
   /* The primary button's green raised material: a lit top edge and a firm drop on the ivory pane. A hover lifts it
@@ -633,7 +633,7 @@
   width: 100%;
   height: 100%;
   opacity: 0;
-  font-size: 16px;
+  font-size: max(16px, calc(16 * var(--ch-type-k)));
   cursor: text;
 }
 .ch-ox-slots {
@@ -641,7 +641,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr)) 14px repeat(var(--ch-ox-rest, 4), minmax(0, 1fr));
   gap: 8px;
   padding: 8px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-well-bg);
   box-shadow: var(--ch-well-shadow);
 }
@@ -657,7 +657,7 @@
   display: grid;
   place-items: center;
   height: 72px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: rgb(255 255 255 / 0.3);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.07);
   font: 600 32px/1 var(--ch-font-sans);
@@ -742,7 +742,7 @@
   gap: 16px;
   align-items: center;
   padding: 16px 18px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
   animation: chOxCard var(--ch-ox-t-card) var(--ch-ox-ease) both;
@@ -752,7 +752,7 @@
   place-items: center;
   width: 56px;
   height: 56px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: radial-gradient(120% 120% at 30% 10%, #1e6a45, var(--ch-ox-felt) 70%);
   box-shadow: 0 0 0 1px #082b1c, inset 0 0 0 3px var(--ch-ox-felt), inset 0 0 0 4px rgb(220 205 166 / 0.4), 0 10px 20px -12px rgb(11 58 37 / 0.8);
   color: var(--ch-ox-ivory);
@@ -762,7 +762,7 @@
 .ch-ox-crest[data-size='s'] {
   width: 22px;
   height: 22px;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
   font-size: 9px;
   box-shadow: none;
 }
@@ -836,7 +836,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 16px 18px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
   transition: background var(--ch-ox-t-quick), box-shadow var(--ch-ox-t-quick), transform var(--ch-ox-t-quick) var(--ch-ox-out);
@@ -913,7 +913,7 @@
   display: flex;
   align-items: center;
   min-height: 48px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   box-shadow: inset 0 0 0 1px var(--ch-border-control);
   transition: box-shadow var(--ch-ox-t-quick);
@@ -940,7 +940,7 @@
   flex: 1;
   min-width: 0;
   padding: 12px 14px;
-  font: 400 16px/1.35 var(--ch-font-sans);
+  font: 400 max(16px, calc(16 * var(--ch-type-k)))/1.35 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ox-input input:focus-visible,
@@ -967,7 +967,7 @@
 }
 .ch-ox-eye:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
 }
 .ch-ox-help {
   font: 400 12.5px/1.4 var(--ch-font-sans);
@@ -1027,7 +1027,7 @@
 
 .ch-ox-hcp {
   padding: 20px 22px 16px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -1077,7 +1077,7 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-raised-bg);
   box-shadow: var(--ch-raised-shadow);
   color: var(--ch-text-primary);
@@ -1094,6 +1094,13 @@
   margin: 14px 0 0;
   background: transparent;
   cursor: pointer;
+}
+@media (max-width: 820px) {
+  /* The slider's reach is 44px; the track and thumb keep their drawing and the page below does not move. */
+  .ch-ox-range {
+    height: 44px;
+    margin: 7px 0 -7px;
+  }
 }
 .ch-ox-range::-webkit-slider-runnable-track {
   height: 8px;
@@ -1256,7 +1263,7 @@
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -1292,7 +1299,7 @@
   max-width: 440px;
   padding: 6px;
   list-style: none;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -1314,7 +1321,7 @@
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
   color: var(--ch-green-700);
@@ -1342,7 +1349,7 @@
   width: 100%;
   min-height: 56px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   color: var(--ch-text-tertiary);
   transition: background var(--ch-ox-t-quick) var(--ch-ox-out);
 }
@@ -1371,7 +1378,7 @@
 .ch-ox-sum {
   margin-top: 26px;
   max-width: 440px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   overflow: hidden;
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
@@ -1389,7 +1396,7 @@
   box-shadow: inset 0 1px 0 var(--ch-border-hairline);
 }
 .ch-ox-sum > div > span {
-  font-size: 13px;
+  font-size: calc(13 * var(--ch-type-k));
   color: var(--ch-text-tertiary);
 }
 
@@ -1412,7 +1419,7 @@
   flex-direction: column;
   overflow: hidden;
   padding: 22px 24px 0;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   color: var(--ch-ox-felt);
   background: var(--ch-ox-grain), radial-gradient(120% 90% at 30% 20%, #fbf7ec, #f2ebd8 70%, #eae1ca);
   /* A card lifted off the green: the Frame's gilt edge and contact shadow, over the overlay's soft fall. */
@@ -1422,7 +1429,7 @@
   content: '';
   position: absolute;
   inset: 9px 9px 43px;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
   pointer-events: none;
   box-shadow: none;
 }
@@ -1757,7 +1764,7 @@
   }
   .ch-ox-lock {
     padding: 6px 12px 6px 6px;
-    font-size: 16px;
+    font-size: calc(16 * var(--ch-type-k));
   }
   .ch-ox-lock img {
     width: 24px;
@@ -1807,7 +1814,7 @@
     aspect-ratio: auto;
   }
   .ch-ox-mc__f b {
-    font-size: 13px;
+    font-size: calc(13 * var(--ch-type-k));
   }
   .ch-ox-mcw {
     --ch-ox-mc-s: 0.92;
@@ -1822,13 +1829,13 @@
     animation: chOxCard var(--ch-ox-t-card) var(--ch-ox-ease) both;
   }
   .ch-ox-h1 {
-    font-size: 30px;
+    font-size: calc(30 * var(--ch-type-k));
   }
   .ch-ox--full .ch-ox-h1 {
-    font-size: 40px;
+    font-size: calc(40 * var(--ch-type-k));
   }
   .ch-ox-sub {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
   }
   .ch-ox-choice,
   .ch-ox-choice[data-n='3'] {
@@ -1860,7 +1867,7 @@
   }
   .ch-ox-slot {
     height: 52px;
-    font-size: 22px;
+    font-size: calc(22 * var(--ch-type-k));
     border-radius: var(--ch-radius-md);
   }
   .ch-ox-names {
@@ -1868,10 +1875,10 @@
     gap: 14px;
   }
   .ch-ox-big input {
-    font-size: 30px;
+    font-size: calc(30 * var(--ch-type-k));
   }
   .ch-ox-tile b {
-    font-size: 24px;
+    font-size: calc(24 * var(--ch-type-k));
   }
   .ch-ox-photo {
     grid-template-columns: minmax(0, 1fr);
@@ -1885,7 +1892,7 @@
     height: 160px;
   }
   .ch-ox-hcp__val {
-    font-size: 52px;
+    font-size: calc(52 * var(--ch-type-k));
   }
   .ch-ox-hcp__row {
     flex-wrap: wrap;
@@ -2097,11 +2104,15 @@
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
 @media (max-width: 820px) {
   .ch-ox-enter kbd,
-  .ch-ox-crest[data-size='s'],
-  .ch-ox-scale,
   .ch-ox-mc__tag,
   .ch-ox-mc__f > div > span,
   .ch-ox-mc__stamp {
+    font-size: calc(12 * var(--ch-type-k));
+  }
+  /* The crest's letter sits in a 22px tile and the handicap scale's marks are placed along the slider by percentage:
+     both keep their size. */
+  .ch-ox-crest[data-size='s'],
+  .ch-ox-scale {
     font-size: 12px;
   }
 }
@@ -2268,5 +2279,73 @@ html[data-fw-theme='dark'] .ch-ox[data-phase='fold'] {
   }
   html[data-fw-theme='dark'] .ch-ox-stage {
     background: linear-gradient(165deg, rgb(27 32 28), rgb(22 27 23));
+  }
+}
+
+/* ── A new coach: the program's questions and the code to share (P015, front-door completion) ─────────────────── */
+
+/* Division and team are choices, so their tiles are the graduation tiles at a smaller size: three to a row, two for the team. */
+.ch-ox-tiles--sm .ch-ox-tile {
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--ch-radius-lg);
+}
+.ch-ox-tiles--sm .ch-ox-tile b {
+  font-size: calc(22 * var(--ch-type-k));
+}
+.ch-ox-tiles--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* The profile's photo: one row, the picture, what it is for, and the two words that act on it. */
+.ch-ox-avrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ch-ox-avrow > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ch-ox-avrow b {
+  font: 600 14px/1.25 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-ox-avrow span {
+  font: 400 13px/1.35 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-ox-avrow .ch-ox-av {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.ch-ox-avrow .ch-ox-link {
+  flex: none;
+  min-height: 44px;
+}
+/* The team code, issued: its eight boxes laid in the raised key style, and two ways to hand it on. */
+.ch-ox-teamcode {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ch-ox-teamcode .ch-ox-slot {
+  font-variant-numeric: tabular-nums;
+}
+.ch-ox-teamcode__act {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 820px) {
+  .ch-ox-tiles--sm .ch-ox-tile b {
+    font-size: calc(19 * var(--ch-type-k));
+  }
+  .ch-ox-tiles--sm .ch-ox-tile span {
+    font-size: calc(12.5 * var(--ch-type-k));
   }
 }

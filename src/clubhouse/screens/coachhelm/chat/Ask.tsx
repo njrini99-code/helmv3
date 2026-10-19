@@ -10,6 +10,7 @@ import { useChPhone } from '../../../lib/use-phone';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
+import { Tooltip } from '../../../ui/Tooltip';
 import { PhoneTop, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { AskComposer, useRefuseOffline } from './Composer';
 import { askDraftKey, useAskKept } from './drafts';
@@ -280,9 +281,11 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
             lead
             title={
               <>
-                <button type="button" className="ch-pbar__icon" aria-label="Chats" onClick={() => setDrawer(true)}>
-                  <Icon icon={MessagesSquare} size={20} />
-                </button>
+                <Tooltip>
+                  <button type="button" className="ch-pbar__icon" aria-label="Chats" onClick={() => setDrawer(true)}>
+                    <Icon icon={MessagesSquare} size={20} />
+                  </button>
+                </Tooltip>
                 <span className="ch-ask-ph__title">{showHome && !gone ? 'CoachHelm' : heading}</span>
               </>
             }
@@ -306,12 +309,16 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
             <header className="ch-ask-head">
               {!chatsShown && (
                 <>
-                  <button type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={showChats}>
-                    <Icon icon={PanelLeftOpen} size={19} />
-                  </button>
-                  <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" onClick={newChat}>
-                    <Icon icon={SquarePen} size={19} />
-                  </button>
+                  <Tooltip>
+                    <button type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={showChats}>
+                      <Icon icon={PanelLeftOpen} size={19} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip>
+                    <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" onClick={newChat}>
+                      <Icon icon={SquarePen} size={19} />
+                    </button>
+                  </Tooltip>
                 </>
               )}
               <h1 className="ch-ask-head__t">{heading}</h1>

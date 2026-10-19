@@ -10,6 +10,7 @@ import { rebuiltHref } from '../../../shell/nav';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Segmented } from '../../../ui/Segmented';
+import { useHScroll } from '../../../ui/use-hscroll';
 
 const VIEWS: readonly PlayerHelmView[] = ['board', 'profile', 'standing', 'deep-dive'];
 
@@ -28,6 +29,7 @@ const VIEWS: readonly PlayerHelmView[] = ['board', 'profile', 'standing', 'deep-
 export function PlayerHelmTabs({ active, onGo }: { active: PlayerHelmView; onGo: (view: PlayerHelmView) => void }) {
   const phone = useChPhone();
   const row = useRef<HTMLDivElement>(null);
+  const rowEdges = useHScroll<HTMLDivElement>(row);
   const development = rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');
 
   // The chip row is wider than the screen: start with the current chip in view, without moving the page.
@@ -40,7 +42,7 @@ export function PlayerHelmTabs({ active, onGo }: { active: PlayerHelmView; onGo:
   if (phone) {
     return (
       <div className="ch-hv-tabs is-phone" data-ch-code="CH-13930">
-        <div ref={row} className="ch-hv-chips" role="group" aria-label="CoachHelm view">
+        <div ref={rowEdges} className="ch-hscroll ch-hv-chips" role="group" aria-label="CoachHelm view">
           {VIEWS.map((v) => (
             <button
               key={v}

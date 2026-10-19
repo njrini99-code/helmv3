@@ -13,6 +13,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { SerifText } from '../../ui/SerifText';
+import { Tooltip } from '../../ui/Tooltip';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { radioKeys, rovingRadios } from './radio';
@@ -256,9 +257,11 @@ export function Announcement({
               { label: 'Delete announcement', icon: Trash2, danger: true, onSelect: () => onDelete(a) },
             ]}
             trigger={(p) => (
-              <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
-                <Icon icon={MoreHorizontal} size={16} />
-              </button>
+              <Tooltip>
+                <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
+                  <Icon icon={MoreHorizontal} size={16} />
+                </button>
+              </Tooltip>
             )}
           />
         )}
@@ -441,9 +444,11 @@ export function TripPass({
                 ...(onDelete ? [{ label: 'Delete trip', icon: Trash2, danger: true, onSelect: () => onDelete(t) }] : []),
               ]}
               trigger={(p) => (
-                <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
-                  <Icon icon={MoreHorizontal} size={16} />
-                </button>
+                <Tooltip>
+                  <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
+                    <Icon icon={MoreHorizontal} size={16} />
+                  </button>
+                </Tooltip>
               )}
             />
           )}
@@ -694,9 +699,11 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
           align="end"
           items={[{ label: 'Delete task', icon: Trash2, danger: true, onSelect: () => onDelete(t) }]}
           trigger={(p) => (
-            <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
-              <Icon icon={MoreHorizontal} size={16} />
-            </button>
+            <Tooltip>
+              <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
+                <Icon icon={MoreHorizontal} size={16} />
+              </button>
+            </Tooltip>
           )}
         />
       )}
@@ -777,7 +784,7 @@ export function Documents({
       {data.error ? (
         <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
       ) : !data.folders.length ? (
-        <EmptyState compact code="CH-10304" icon={Folder} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
+        <EmptyState code="CH-10304" shape="rows" shapeCount={3} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
       ) : (
         data.folders.map((f) => (
           <section key={f.name} className="ch-hb-card ch-hb-folder" aria-labelledby={`ch-hb-f-${f.name}`}>
@@ -808,9 +815,11 @@ export function Documents({
                       align="end"
                       items={[{ label: 'Delete file', icon: Trash2, danger: true, onSelect: () => onDelete(d) }]}
                       trigger={(p) => (
-                        <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
-                          <Icon icon={MoreHorizontal} size={16} />
-                        </button>
+                        <Tooltip>
+                          <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
+                            <Icon icon={MoreHorizontal} size={16} />
+                          </button>
+                        </Tooltip>
                       )}
                     />
                   )}

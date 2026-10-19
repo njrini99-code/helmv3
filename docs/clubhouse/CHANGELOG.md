@@ -1,5 +1,58 @@
 # Clubhouse changelog
 
+## 2026-10-19 — A toast in a dialog no longer covers its Save on desktop
+
+- CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's footer: after Publish, the "Published"
+  toast covered the Edit event dialog's Save changes and took its clicks (found by the write journeys on a production
+  build). Inside a dialog the toasts now sit at the top on desktop as they already did on the phone (ui.css), pinned
+  by a shell test.
+
+## 2026-10-19 — Date fields drop this year's year
+
+- ui/DateField shows a date in the current year as "Tue 22 Sep" (iOS's habit), and keeps the year for any other year.
+  Two half-width fields on the phone (qualifier start and end) no longer cut the date to "Tue 22 Sep 20…". The value,
+  the month grid's day names and typing are unchanged; the server render keeps the year (the year is read on the
+  client, so no time zone is guessed).
+
+## 2026-10-19 — The iPad tier of the shell
+
+`shell.css` (end block "W4c tablet tier"): between 821 and 1180px the sidebar is 208px (was 240px) and the page gutter 28px (was 40px), and the next-event card in the sidebar narrows with it. An iPad portrait with the sidebar open went from a 586px canvas to 618px, a 1024px Pro from 776px to 808px; the folded rail and everything from 1181px up are unchanged. Page-level tablet fixes are in each page's own changelog. Lane W4c.
+
+## 2026-10-19 — Hero tone titles follow the iPhone's text size
+
+`hero-tones.css` (shared): the scorecard and board tone titles (34px and 30px) are set in `calc(N * var(--ch-type-k))`, and their radii sit on the scale. Lane W4b.
+
+## 2026-10-19 — Complete and elevate: shared pieces
+
+The shared primitives behind the complete-and-elevate pass
+([COMPLETION_PLAN_2026-10-18.md](COMPLETION_PLAN_2026-10-18.md)); each page's
+own changelog says what changed on it.
+
+- **Date and time fields** (`ui/DateField.tsx`, `ui/TimeField.tsx`, with
+  `ui/PickerHost.tsx` and `ui/date-time.ts` underneath) replace every native
+  date and time input. Values are unchanged (`yyyy-mm-dd`, `HH:mm`); the field
+  reads "Thu 15 Oct 2026" and "3:30 PM". Phone: a sheet with a month grid or a
+  snapping 15-minute list. Desktop: a popover under the field that stays
+  typable ("10/15", "oct 15", "tomorrow", "fri", "3p", "1530"), with an inline
+  note when it can't read the text. Out-of-range days and times are disabled;
+  end pickers can't precede their start.
+- **Busy buttons:** `Button busy` sets `aria-busy`, blocks a second press and
+  keeps the lit look, so a primary that is saving no longer turns into the
+  grey unavailable one.
+- **Roving focus** (`ui/use-roving.ts`): arrow keys, Home and End inside every
+  hand-built choice group; one tab stop per group.
+- **Desktop command layer** (`shell/command/**`, `ui/Tooltip.tsx`,
+  `ui/ContextMenu.tsx`): the palette on ⌘K, G-then-letter navigation with a
+  plate that shows where each letter goes, `?` for the shortcuts sheet,
+  tooltips with shortcut hints on icon buttons, and right-click menus that
+  mirror each row's own actions. Desktop only; nothing fires while typing.
+- **Waiting pages** (`ui/States.tsx`, `ui/EmptyShape.tsx`): an empty section
+  draws the shape of what will fill it (the real rules and alignment, no
+  invented content) under one sentence and one action. First run, filtered
+  empty, no permission and failure read as different states.
+- **Motion:** the live duration set is written into the rules and the
+  checklist and pinned by `__tests__/motion-durations-pinned.test.ts`.
+
 ## 2026-10-18 — First run: the empty team and the new player
 
 Coach Home's first run keys on players and rounds, not events, so adding an

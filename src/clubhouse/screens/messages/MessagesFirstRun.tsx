@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare, SquarePen } from 'lucide-react';
+import { SquarePen } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 
@@ -15,7 +15,7 @@ export function MessagesFirstRun({ coach, onNew }: { coach: boolean; onNew: () =
     <EmptyState
       size="page"
       code="CH-7309"
-      icon={MessageSquare}
+      shape="people"
       title="No conversations yet"
       body={coach ? 'Start a thread with the whole team or message a player directly.' : 'Message a coach or a teammate. Team announcements show up here too.'}
       action={

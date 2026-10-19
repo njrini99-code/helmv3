@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
+import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,8 @@ import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
+import { useContextMenu, type ContextMenuBind } from '../../ui/ContextMenu';
+import { publishPeople } from '../../shell/command/people';
 import { Modal } from '../../ui/Modal';
 import { PillGroup, Segmented } from '../../ui/Segmented';
 import { SearchField } from '../../ui/SearchField';
@@ -33,10 +35,12 @@ import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
 import { PlayerPeek } from '../../ui/PlayerPeek';
+import { Tooltip } from '../../ui/Tooltip';
 import { RosterSpread } from './RosterSpread';
 import { earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
+import { SideScroll } from '../../ui/SideScroll';
 
 type Sort = 'avg' | 'hcp' | 'rounds' | 'name';
 type Show = 'active' | 'inactive' | 'all';
@@ -281,6 +285,13 @@ export function Roster({ data }: { data: ChRoster }) {
     return items;
   };
 
+  // The right-click menu holds the kebab's items, so a row is the same wherever it is opened from.
+  const ctx = useContextMenu<ChRosterPlayer>({ label: (p) => `Actions for ${p.name}`, items: menuFor });
+  // The command palette lists these players (Cmd K), nobody the coach doesn't already see here.
+  useEffect(() => {
+    publishPeople(players.map((p) => ({ id: p.id, name: p.name, detail: [p.classYear, p.status === 'inactive' ? 'Inactive' : null].filter(Boolean).join(' · ') || undefined })));
+  }, [players]);
+
   const dialogs = (
     <>
       <InviteModal
@@ -306,7 +317,7 @@ export function Roster({ data }: { data: ChRoster }) {
             </Button>
             <Button
               variant="danger"
-              disabled={remove.pending}
+              busy={remove.pending}
               feel="warning"
               onClick={() => {
                 if (removing) void remove.run(removing);
@@ -432,9 +443,9 @@ export function Roster({ data }: { data: ChRoster }) {
         <EmptyState
           size="page"
           code="CH-3301"
-          icon={Users}
+          shape="people"
           title="No players yet"
-          body="Players who sign up with your team code or open your invite link join right away. You can remove anyone here."
+          body="Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here."
           action={
             <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
               Invite players
@@ -472,19 +483,20 @@ export function Roster({ data }: { data: ChRoster }) {
                     ['list', List, 'List view'],
                   ] as const
                 ).map(([v, icon, label]) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className="ch-rs-vt__b"
-                    aria-pressed={view === v}
-                    aria-label={label}
-                    onClick={() => {
-                      if (view !== v) haptic('select');
-                      changeView(v);
-                    }}
-                  >
-                    <Icon icon={icon} size={15} />
-                  </button>
+                  <Tooltip key={v}>
+                    <button
+                      type="button"
+                      className="ch-rs-vt__b"
+                      aria-pressed={view === v}
+                      aria-label={label}
+                      onClick={() => {
+                        if (view !== v) haptic('select');
+                        changeView(v);
+                      }}
+                    >
+                      <Icon icon={icon} size={15} />
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
               <Segmented<Sort>
@@ -516,6 +528,7 @@ export function Roster({ data }: { data: ChRoster }) {
                   show={show}
                   openProfile={openProfile}
                   menuFor={menuFor}
+                  bind={ctx.bind}
                   onShowEveryone={() => {
                     setQ('');
                     setShow('all');
@@ -531,6 +544,7 @@ export function Roster({ data }: { data: ChRoster }) {
       )}
 
       {dialogs}
+      {ctx.menu}
     </main>
   );
 }
@@ -548,6 +562,7 @@ function RosterList({
   show,
   openProfile,
   menuFor,
+  bind,
   onShowEveryone,
 }: {
   rows: ChRosterPlayer[];
@@ -558,26 +573,20 @@ function RosterList({
   show: Show;
   openProfile: (id: string) => void;
   menuFor: (p: ChRosterPlayer) => MenuItem[];
+  /** The right-click menu's handlers for a row (ui/ContextMenu.tsx). */
+  bind: (p: ChRosterPlayer) => ContextMenuBind;
   onShowEveryone: () => void;
 }) {
   return (
     <>
       {rows.length === 0 ? (
-        <div className="ch-rs-empty ch-sheet">
-          <EmptyState
-            compact
-            code={q.trim() ? 'CH-3302' : 'CH-3303'}
-            title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
-            action={
-              <Button
-                size="sm"
-                onClick={onShowEveryone}
-              >
-                Show everyone
-              </Button>
-            }
-          />
-        </div>
+        <EmptyState
+          kind="filtered"
+          code={q.trim() ? 'CH-3302' : 'CH-3303'}
+          title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
+          body={show === 'all' ? 'Search matches player names.' : `Only ${show} players are in view.`}
+          action={<Button onClick={onShowEveryone}>Show everyone</Button>}
+        />
       ) : view === 'faces' ? (
         <div className="ch-rs-faces">
           {rows.map((p) => (
@@ -587,6 +596,7 @@ function RosterList({
               className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
               aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
               onClick={() => openProfile(p.id)}
+              {...bind(p)}
             >
               <span className="ch-rs-face__top">
                 <span />
@@ -610,7 +620,7 @@ function RosterList({
           ))}
         </div>
       ) : (
-        <div className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
+        <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
           <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
             <span role="columnheader">Player</span>
             <span role="columnheader">Status</span>
@@ -628,6 +638,7 @@ function RosterList({
               key={p.id}
               role="row"
               className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+              {...bind(p)}
             >
               <span role="cell" className="ch-rs-who__cell">
                 <button
@@ -663,15 +674,17 @@ function RosterList({
                   label={`Actions for ${p.name}`}
                   items={menuFor(p)}
                   trigger={(t) => (
-                    <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
-                      <Icon icon={Ellipsis} size={15} />
-                    </button>
+                    <Tooltip>
+                      <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
+                        <Icon icon={Ellipsis} size={15} />
+                      </button>
+                    </Tooltip>
                   )}
                 />
               </span>
             </div>
           ))}
-        </div>
+        </SideScroll>
       )}
     </>
   );

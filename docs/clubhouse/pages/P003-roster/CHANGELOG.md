@@ -1,5 +1,161 @@
 # P003 — Roster: changelog
 
+## 2026-10-19 — Where the team sits glides again
+
+```text
+Design package: none (CI: clubhouse:css no-layout-motion)
+PR/commit:      #2210
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The spread's coins and team line move by `translate` again (the W4c
+  pass had moved them by `left`, which lays out every frame). The iPad
+  sideways scroll that change fixed is fixed instead by the panel
+  clipping sideways overflow (`.ch-rs-sp`, `overflow-x: clip`).
+
+## 2026-10-19 — Roster on an iPad: the team spread follows a window that shrinks
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The coins and the team line on "Where the team sits" are placed with `left` in percent of their row instead of `translate` in container units. At rest the page is the same (a sub-pixel difference at most). WebKit kept the old width in the canvas's scrollable overflow when the window shrank, so an iPad turned from landscape to portrait scrolled the whole page sideways until a reload.
+- Tablet tier (821 to 1180px, end block of `roster.css`): on a plot under 561px the coins are a sixth smaller so neighbours in the same lane no longer overlap.
+
+### Why
+
+- A plot of 494px (portrait, sidebar open) puts 6.5% of the axis at 32px, under the 38px coin. The lane rule is in RosterSpread.tsx and is reported, not changed.
+
+### Verification
+
+- WebKit, touch: 1180 then 834 (open and folded) now reads scrollWidth = clientWidth (it read 807 over 618 before); the spread at 1280 differs from before by under 6% on 103 pixels of anti-aliasing; 834 before and after looked at.
+
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (roster.css)
+
+- Radii on the 5, 7, 10, 14, 20 scale; the request count and span figures use tabular numerals. The avatar monograms keep their fixed size.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — In-flight saves are busy; icon buttons have tooltips; the list fades its clipped edge
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Mark inactive or active, Remove player and Approve all keep their colour and show the ring over the label while they run (`Button` busy), instead of fading to disabled. Their neighbour (Cancel, a row's Decline) stays disabled.
+- The layout toggle and each row's actions button show their name on hover and keyboard focus (the same words as the accessible name).
+- The roster and team tables fade only the clipped edge when they scroll sideways.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — Roster prints one clean sheet
+
+```text
+Design package: none (complete-and-elevate plan, lane L6b: the coach's desk prints)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Print (print rules only, `roster.css`): the roster prints as one sheet of the list in ink on white whatever the theme, with "GolfHelm" at the right of the head under the team and the count. The sort, the join-request banner, the invite action and the portraits stay off the paper, the ledger rules are kept (`print-color-adjust: exact`) and a row never splits across pages. A letter sheet is narrower than the phone breakpoint, so the page prints in its phone layout; the rows are buttons and the app-wide print sheet hides buttons, so the rows are put back in print. The desktop layout's rows, head and chrome are set the same way for when print keeps the screen layout.
+
+## 2026-10-19 — Empty roster draws the shape of the list; a search with no match says what it searched
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-3301, CH-3302, CH-3303, CH-3306, CH-3307, CH-3308
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- No players yet: the sentence takes the first row's place and a portrait ring and a ruled row are drawn under it. The copy says who fills it (players, with the team code or invite link). The same for a player's roster (CH-3307) and the no-team pages.
+- No match for a search, or an Active or Inactive filter that hides everyone, is the filtered state: it names what it searched ("Search matches player names", "Only inactive players are in view") with Show everyone as the one way out. It no longer sits in a card.
+- A long name in a roster card wraps to two lines and ends in an ellipsis instead of widening the card.
+- `.ch-rs-empty` is gone.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/roster?state=empty` and `roster-player?state=empty`. The search no-match state was captured after only (desktop, a typed miss, light and dark), and the two-line name clamp was checked on the populated roster with a long name injected in the browser (desktop; phone has no card view).
+
+## 2026-10-19 — Right-click menu on a player; the roster feeds the command palette
+
+```text
+Design package: none (complete-and-elevate plan, lane L1, desktop command layer)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no new read: the palette lists what the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Right-click (or Shift F10) on a player's card or table row opens the same menu as the row's Actions button: View insights,
+  View stats, Message, Mark inactive or active, Remove from team, with the same handlers and confirmations. Desktop only.
+- The loaded players are handed to the command palette, so Cmd K finds a player by name and opens their stats.
+
+### Why
+
+- The kebab is only on the table; the card view had no way to the same actions.
+
+### Verification
+
+- `screens/roster/__tests__/roster-context-menu.test.tsx`; captured on `/clubhouse-preview/roster`, light and dark.
+
 ## 2026-10-18 — Wave 10: the empty team and one name for the code
 
 ```text

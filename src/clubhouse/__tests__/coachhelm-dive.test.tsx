@@ -579,7 +579,7 @@ describe('the Deep dive screen', () => {
 
   it('CH-13383 a read with no movement, outcome, category trend or strip says there is no trend yet, in place', () => {
     show(diveLoad(PREVIEW_DIVE_YOUNG), 'in-brk');
-    expect(code('CH-13383')!.textContent).toMatch(/^No trend yet\./);
+    expect(code('CH-13383')!.textContent).toMatch(/^No trend yet/);
     expect(code('CH-13283')).toBeNull();
   });
 

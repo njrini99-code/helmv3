@@ -3,7 +3,8 @@
    larger root size as the shared --ch-type-* tokens do, and looks the same at the default. */
 
 .ch-set {
-  max-width: 1080px;
+  /* A form page reads at a measure: the rail, a gap and the 640px column, centred in the canvas under the page head. */
+  max-width: calc(208px + 48px + 640px + 2 * var(--ch-page-gutter));
   margin: 0 auto;
   /* No eyebrow line over the title: its 24px is added to the head's top (tokens.css). */
   padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 96px;
@@ -26,8 +27,8 @@
 }
 .ch-set-layout {
   display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
-  gap: 32px;
+  grid-template-columns: 208px minmax(0, 1fr);
+  gap: 48px;
   align-items: start;
 }
 
@@ -42,11 +43,11 @@
 .ch-set-rail__i {
   display: flex;
   align-items: flex-start;
-  gap: 11px;
+  gap: 10px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: transparent;
   color: var(--ch-text-secondary);
   text-align: left;
@@ -110,15 +111,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 720px;
-}
-.ch-set-autosave {
-  margin: -4px 0 -8px;
-  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-}
-.ch-set-autosave.is-failed {
-  color: var(--ch-warning-600);
+  max-width: 640px;
 }
 
 /* Cards are the design system's Surface (ui.css .ch-surface). */
@@ -132,6 +125,68 @@
 }
 .ch-surface__foot .ch-set-status {
   margin-right: auto;
+}
+
+/* The inline save bar (parts.tsx SaveBar): in the card's flow under the fields while there is something to save, and at
+   the foot of the view while the card is taller than it. One height through Unsaved, Saving and Saved, so the check
+   arriving moves nothing. */
+.ch-set-savebar {
+  position: sticky;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+  min-height: 52px;
+  margin-top: 18px;
+  padding: 10px 10px 10px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-overlay), 0 0 0 1px var(--ch-border-subtle);
+}
+.ch-set-savebar__acts {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A row's own Saved (parts.tsx SavedMark): in the label's line, so nothing around it moves. */
+.ch-set-row__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.ch-set-saved {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 1px;
+}
+.ch-set-saved__w {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  animation: ch-fade var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-set-matrix__what > .ch-set-row__top {
+  font: inherit;
+  color: inherit;
+}
+/* In a card's head the mark sits with the card's own actions. */
+.ch-surface__actions > .ch-set-saved {
+  order: -1;
+}
+
+/* Delete account, Leave team: the card that says what can't be undone. Red is for this (D-42). */
+.ch-set .ch-surface.is-danger .ch-surface__title,
+.ch-set[data-canopy] .ch-surface.is-danger .ch-surface__title {
+  color: var(--ch-danger-600);
 }
 
 /* Save status */
@@ -260,11 +315,43 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ch-set-code {
-  font: 600 calc(18 * var(--ch-type-k))/1 var(--ch-font-mono);
+/* The one invite-code style, on the desktop card and the phone's (Team, staff invites): large, tabular Instrument Sans. */
+.ch-set-code,
+.ch-setm-code__v,
+.ch-setm-invite__c b {
+  font: 600 calc(28 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+.ch-set-code {
   color: var(--ch-forest-800);
+}
+/* Team code over its Copy, Copy link and Share, in one inset well. */
+.ch-set-codebox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 20px;
+  padding: 16px 18px;
+}
+.ch-set-codebox__c {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.ch-set-codebox__c > span {
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-codebox__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ch-set-codebox__acts .ch-btn {
+  min-width: 108px;
 }
 .ch-set-acts {
   display: flex;
@@ -526,7 +613,19 @@
 .ch-set-rank__acts {
   display: flex;
   flex: none;
-  gap: 2px;
+  gap: 14px;
+}
+/* The reorder arrows are drawn at 30px; the hit area reaches 44. The segments of a setting (sensitivity, delivery,
+   units) are drawn at 26px and reach 44 the same way. */
+.ch-set-rank__acts .ch-btn,
+.ch-set-row .ch-seg__b {
+  position: relative;
+}
+.ch-set-rank__acts .ch-btn::after,
+.ch-set-row .ch-seg__b::after {
+  content: '';
+  position: absolute;
+  inset: min(0px, calc(50% - 22px));
 }
 
 /* Join requests */
@@ -1152,12 +1251,6 @@
     font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
-  .ch-setm-invite__c b {
-    font: 600 calc(24 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.08em;
-    overflow-wrap: anywhere;
-  }
   .ch-setm-invite .ch-setm-link {
     margin-left: -4px;
   }
@@ -1186,7 +1279,7 @@
     inset: -2px 0;
   }
 
-  /* Sign out: a flush destructive row at the foot of the list, on its own rule; the press is the Ledger's tint. */
+  /* Sign out: a flush row at the foot of the list, in the standard row ink (it is not destructive: red is for that), on its own rule; the press is the Ledger's tint. */
   .ch-setm-signout {
     display: flex;
     align-items: center;
@@ -1200,6 +1293,7 @@
     background: none;
     font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     letter-spacing: -0.012em;
+    color: var(--ch-text-primary);
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
@@ -1207,9 +1301,6 @@
   }
   .ch-setm-signout:active {
     background: var(--ch-ledger-row-press);
-  }
-  .ch-setm-signout.is-danger {
-    color: var(--ch-danger-600);
   }
   .ch-setm-signout:disabled {
     opacity: 0.5;
@@ -1489,12 +1580,9 @@
   .ch-setm-code .ch-feat__k {
     margin: -6px -6px 0 0;
   }
-  .ch-setm-code .ch-setm-code__v {
-    font-size: calc(28 * var(--ch-type-k));
-    letter-spacing: 0.08em;
-    overflow-wrap: anywhere;
-  }
   .ch-setm-code .ch-feat__foot {
+    display: flex;
+    gap: 20px;
     padding-top: 6px;
   }
   .ch-setm-pill.is-on-green {
@@ -1783,10 +1871,6 @@
 @media (min-width: 821px) {
   .ch-set[data-canopy] .ch-set-stack {
     gap: 44px;
-    max-width: none;
-  }
-  .ch-set[data-canopy] .ch-set-autosave {
-    margin: -4px 0 -24px;
   }
   .ch-set[data-canopy] .ch-surface {
     border-radius: 0;
@@ -1917,5 +2001,20 @@ html[data-fw-theme='dark'] .ch-set-rank__n {
   }
   html[data-fw-theme='dark'] .ch-setm-act__card {
     background: rgb(36 42 37 / 0.97);
+  }
+}
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   On a narrow canvas the section rail is a strip above the page that scrolls sideways, and with its scrollbar hidden an
+   iPad portrait (a 618px canvas) cut "Preferences" in half with nothing to say there is more. A tablet has the height,
+   so the strip wraps onto a second line and every section is in view. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 860px) {
+    .ch-set-rail {
+      flex-wrap: wrap;
+      margin: 0;
+      padding: 2px 0 6px;
+      overflow-x: visible;
+    }
   }
 }

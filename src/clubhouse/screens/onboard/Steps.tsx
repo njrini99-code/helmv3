@@ -30,6 +30,8 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { Spinner } from '../../ui/Spinner';
+import { Tooltip } from '../../ui/Tooltip';
 import { haptic } from '../../lib/haptics';
 import { AuthNotice } from '../auth/AuthNotice';
 import { greetingWord } from '../auth/scene-sky';
@@ -87,9 +89,9 @@ export interface StepProps {
 /** The pause after the eighth character before the code checks itself (design: 800ms). */
 const CODE_PAUSE_MS = 800;
 /** A choice advances after its tick has been seen (design: 260 to 280ms). */
-const CHOICE_MS = 270;
+export const CHOICE_MS = 270;
 
-function Q({
+export function Q({
   eyebrow,
   title,
   sub,
@@ -137,10 +139,10 @@ function Q({
   );
 }
 
-function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight, children, phone }: { label?: string; disabled?: boolean; busy?: boolean; busyLabel?: string; icon?: typeof ArrowRight; children?: ReactNode; phone: boolean }) {
+export function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight, children, phone }: { label?: string; disabled?: boolean; busy?: boolean; busyLabel?: string; icon?: typeof ArrowRight; children?: ReactNode; phone: boolean }) {
   return (
     <div className="ch-ox-act">
-      <Button type="submit" variant="primary" size="lg" rightIcon={busy ? undefined : icon} disabled={disabled || busy}>
+      <Button type="submit" variant="primary" size="lg" rightIcon={icon} busy={busy} disabled={disabled}>
         {busy ? busyLabel ?? label : label}
       </Button>
       {!disabled && !busy && !phone && (
@@ -154,7 +156,7 @@ function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight,
 }
 
 /** A refused answer puts the cursor in the field it names (CH-15624), as sign in does (CH-15802): after the render that marks it, so the field is read out with its error. */
-const focusField = (id: string) => setTimeout(() => document.getElementById(id)?.focus(), 0);
+export const focusField = (id: string) => setTimeout(() => document.getElementById(id)?.focus(), 0);
 
 const Tick = () => (
   <span className="ch-ox-tick" aria-hidden="true">
@@ -352,7 +354,7 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
         <div className="ch-ox-code__foot" id="ch-ox-code-foot" aria-live="polite">
           {st === 'checking' ? (
             <span className="ch-ox-check">
-              <i className="ch-ox-spin" aria-hidden="true" />
+              <Spinner size="sm" />
               Checking your code…
             </span>
           ) : st === 'ok' ? (
@@ -422,7 +424,7 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
         <Act phone={phone} label={staff ? 'Join the staff' : 'Continue'} />
       ) : (
         <div className="ch-ox-act">
-          <Button type="submit" variant="primary" size="lg" rightIcon={ArrowRight} disabled={!codeCanSubmit(d.code) || st === 'checking'}>
+          <Button type="submit" variant="primary" size="lg" rightIcon={ArrowRight} busy={st === 'checking'} disabled={!codeCanSubmit(d.code)}>
             Continue
           </Button>
           <button type="button" className="ch-ox-link" onClick={() => next({ intent: 'request', code: '', kind: null, teamName: null }, 'rwho')}>
@@ -633,9 +635,11 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
                 aria-invalid={pwErr ? true : undefined}
                 aria-describedby={pwErr ? 'ch-ox-pw-e ch-ox-pw-r' : 'ch-ox-pw-r'}
               />
-              <button type="button" className="ch-ox-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} onClick={() => setShow(!show)}>
-                <Icon icon={show ? EyeOff : Eye} size={16} />
-              </button>
+              <Tooltip>
+                <button type="button" className="ch-ox-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} onClick={() => setShow(!show)}>
+                  <Icon icon={show ? EyeOff : Eye} size={16} />
+                </button>
+              </Tooltip>
             </div>
             {pwErr && (
               <span className="ch-ox-error" id="ch-ox-pw-e">
@@ -736,12 +740,16 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
             <span className="ch-ox-hcp__desc">{hcpWords(none ? null : n)}</span>
             {!none && (
               <span className="ch-ox-steps">
-                <button type="button" className="ch-ox-step" aria-label="Lower" onClick={() => set(n - 0.1)}>
-                  <Icon icon={Minus} size={16} />
-                </button>
-                <button type="button" className="ch-ox-step" aria-label="Higher" onClick={() => set(n + 0.1)}>
-                  <Icon icon={Plus} size={16} />
-                </button>
+                <Tooltip>
+                  <button type="button" className="ch-ox-step" aria-label="Lower" onClick={() => set(n - 0.1)}>
+                    <Icon icon={Minus} size={16} />
+                  </button>
+                </Tooltip>
+                <Tooltip>
+                  <button type="button" className="ch-ox-step" aria-label="Higher" onClick={() => set(n + 0.1)}>
+                    <Icon icon={Plus} size={16} />
+                  </button>
+                </Tooltip>
               </span>
             )}
           </div>
@@ -905,7 +913,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
               )}
               {uploading && (
                 <span className="ch-ox-drop__busy">
-                  <i className="ch-ox-spin" aria-hidden="true" />
+                  <Spinner size="sm" />
                   <span className="ch-au-sr">Uploading your photo</span>
                 </span>
               )}
@@ -1094,7 +1102,7 @@ export function RWho({ d, up, next, back, dir }: StepProps) {
   );
 }
 
-function Field({ id, label, optional, error, help, children }: { id: string; label: string; optional?: boolean; error?: string | null; help?: string; children: ReactNode }) {
+export function Field({ id, label, optional, error, help, children }: { id: string; label: string; optional?: boolean; error?: string | null; help?: string; children: ReactNode }) {
   return (
     <div className="ch-ox-field">
       <label htmlFor={id}>
@@ -1256,7 +1264,8 @@ export function Sent({ d, dir }: StepProps) {
   );
 }
 
-export const STEPS: Record<OnboardStep, (p: StepProps) => ReactNode> = {
+/** Sign up's and the new player's questions; a new coach's are in CoachSteps, and `steps-map.ts` joins them. */
+export const PLAYER_STEPS: Record<Exclude<OnboardStep, 'cprogram' | 'cprofile' | 'cdone'>, (p: StepProps) => ReactNode> = {
   intro: Intro,
   code: Code,
   name: Name,

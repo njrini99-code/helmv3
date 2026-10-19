@@ -284,7 +284,8 @@ describe('Settings · 80xx error toasts', () => {
     await user.click(sw);
     await expectCode('CH-8022', /CoachHelm setting/);
     expect(screen.getByRole('switch', { name: 'Performance plateau' })).not.toBeChecked();
-    expect(code('CH-8405')!.textContent).toMatch(/didn’t save/);
+    // The failed row never says Saved: it went back, and the toast said why.
+    expect(code('CH-8405')).toBeNull();
   });
 
   it('CH-8023 deleting the account fails', async () => {
@@ -439,9 +440,12 @@ describe('Settings · 83xx empty', () => {
     await expectCode('CH-8301', /aren’t on a team yet/);
   });
   it('CH-8302 a player without a team can ask to join', async () => {
-    setup({ data: playerData(false, false), section: 'golf' });
+    const { user } = setup({ data: playerData(false, false), section: 'golf' });
     await expectCode('CH-8302', /Join a team/);
-    expect(screen.getByRole('button', { name: 'Ask to join' })).toBeTruthy();
+    // The send is there once there is a code to send, not before.
+    expect(screen.queryByRole('button', { name: 'Ask to join' })).toBeNull();
+    await user.type(screen.getByLabelText('Team code'), 'k7m2');
+    expect(screen.getByRole('button', { name: 'Ask to join' })).toBeEnabled();
   });
   it('CH-8303 a pending join request', async () => {
     setup({ data: playerData(false, true), section: 'golf' });
@@ -496,9 +500,12 @@ describe('Settings · 84xx loading', () => {
 
   it('CH-8405 CoachHelm autosave status', async () => {
     const { user } = setup({ section: 'coachhelm' });
-    expect(code('CH-8405')!.textContent).toMatch(/save as you make them/);
+    // No line over the title: a setting says Saved by its own row, once it has saved.
+    expect(document.querySelector('.ch-set-autosave')).toBeNull();
+    expect(code('CH-8405')).toBeNull();
     await user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
-    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/All changes saved/));
+    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/Saved/));
+    expect(code('CH-8405')!.closest('.ch-set-row')?.textContent).toMatch(/Performance plateau/);
   });
 });
 
@@ -823,13 +830,14 @@ describe('Settings · saving', () => {
     expect(await screen.findByText('Profile saved')).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('success');
     expect(await within(card('Profile')).findByText('Saved')).toBeTruthy();
-    expect(within(card('Profile')).getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    // The bar holds only its Saved; the buttons have nothing left to do.
+    expect(within(card('Profile')).queryByRole('button', { name: 'Save changes' })).toBeNull();
   });
 
-  it('80902 a CoachHelm autosave that lands is silent too: no toast, no success haptic, and the status line says All changes saved', async () => {
+  it('80902 a CoachHelm autosave that lands is silent too: no toast, no success haptic, and its row says Saved', async () => {
     const { user } = setup({ section: 'coachhelm' });
     await user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
-    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/All changes saved/));
+    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/Saved/));
     expect(document.querySelector('.ch-toast')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(hapticSpy).not.toHaveBeenCalledWith('success');
@@ -892,7 +900,7 @@ describe('Settings · saving', () => {
     await expectCode('CH-8001');
     await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(within(card('Profile')).queryByText('Unsaved changes')).toBeNull());
-    expect(within(card('Profile')).getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(within(card('Profile')).queryByRole('button', { name: 'Save changes' })).toBeNull();
     expect(writes.refresh).toHaveBeenCalledTimes(1);
 
     await openSection(user, /^Team/);
@@ -1186,7 +1194,7 @@ describe('Settings · what a saved value does when the person leaves the section
     const setCoachHelmCoach = vi.fn(okw);
     const { user } = setup({ data, section: 'coachhelm', writes: { savePhilosophy, setCoachHelmCoach } });
     await user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
-    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/All changes saved/));
+    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/Saved/));
     await user.click(screen.getByRole('switch', { name: 'Insights' }));
     await waitFor(() => expect(screen.getByRole('switch', { name: 'Insights' })).toBeEnabled());
     await openSection(user, /^Account/);
@@ -1492,7 +1500,8 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('button', { name: 'Report a problem' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe('/privacy');
     expect(screen.getByRole('link', { name: 'Terms of service' }).getAttribute('href')).toBe('/terms');
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
+    // Signing out is not destructive: the standard row ink, never the danger red.
+    expect(screen.getByRole('button', { name: 'Sign out' }).className).toBe('ch-setm-signout');
     // Not the desktop page reflowed: no section rail.
     expect(document.querySelector('.ch-set-rail')).toBeNull();
   });
@@ -2271,7 +2280,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     it('81901 CH-8509 the Profile sheet over Account asks too, and Account stays', async () => {
       const { user } = phone();
       await openRow(user, /^Account/);
-      await user.click(screen.getByRole('button', { name: 'Profile Maya Reyes' }));
+      await user.click(screen.getByRole('button', { name: 'Name and photo Maya Reyes' }));
       await user.type(within(dialog('Profile')).getByLabelText('Full name'), ' Jr');
       act(() => window.history.back());
       // Account's own sheets carry a CH-8509 question too (closed), so find the open one.
