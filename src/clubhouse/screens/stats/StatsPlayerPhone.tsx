@@ -150,7 +150,13 @@ export function StatsPlayerPhone({
             {data.classYear && (
               <>
                 <span>{data.classYear}</span>
-                <br />
+                {/* The dot still reads and copies between the two; only the line break is drawn. */}
+                {(!failed || data.handicap != null) && (
+                  <>
+                    <span className="ch-sr-only"> · </span>
+                    <br />
+                  </>
+                )}
               </>
             )}
             {[failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`]
