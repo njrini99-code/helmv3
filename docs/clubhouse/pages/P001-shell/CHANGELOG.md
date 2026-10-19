@@ -8,8 +8,7 @@ PR/commit:      uncommitted (agent/clubhouse-complete)
 Contract IDs:   none
 Actions:        none
 Data impact:    none (the sweep asks the server for pages the role can already open; no new read or write)
-Held items:     the native flag window.__helmNativeSwipe (Swift) and shell/Dock.tsx's one-line read of dockKept: until they land the
-                web gesture stays off in the iOS app and a push still hides the dock, as before
+Held items:     the native flag window.__helmNativeSwipe (Swift): until it lands the web gesture stays off in the iOS app
 ```
 
 ### Changed
@@ -23,7 +22,7 @@ Held items:     the native flag window.__helmNativeSwipe (Swift) and shell/Dock.
   screen whose only Back is a form's Cancel.
 - A push is not immersive unless it says so (`PhoneScreen immersive`, implied by `keyboardAware`): the Resume round accessory
   stays up over a profile or details screen, which stops above it, as iOS keeps its tab bar for such a push (NATIVE_FEEL P2-3).
-  Composers and the round itself still hide the dock. Needs one line in `shell/Dock.tsx` (open, phone/shell-gestures.md).
+  Composers and the round itself still hide the dock (`shell/Dock.tsx` reads `dockKept`, and never shows an empty dock).
 - The shell's stand-in for a pushed page's bar now draws the page's always-present action in its place (Share on a coach's Player
   stats, the Qualifier actions key for a coach), so the page's own bar replaces it without anything appearing late.
 - The first visit to Roster, Messages, Team Hub, Qualifiers, Recruiting, Settings (every section the role can reach) shows the
@@ -43,8 +42,8 @@ Held items:     the native flag window.__helmNativeSwipe (Swift) and shell/Dock.
   (ordering, the two-at-a-time cap, guards, the two-minute rest).
 - Captured headless WebKit 390x844, light and dark, scripted touch events: mid-drag, past the mark, spring back, commit with the
   page returning in step (per-frame positions in VERIFY), a thread under its details (no frame moves the screen beneath backward);
-  the stand-in bar against the page's own. The dock over a profile was captured with the dock's `hidden` cleared by hand, because
-  `shell/Dock.tsx` is not yet wired: it shows the screen stopping above the accessory, not the dock staying. Not verified: a
+  the stand-in bar against the page's own; the dock over a profile with a round in progress (the accessory stays, the screen stops
+  above it, the page's thumb controls step aside). Not verified: a
   physical iPhone (Safari's own swipe against ours, haptics, VoiceOver after a swipe pop), the iOS app (the native flag does not
   exist yet), the idle prefetch in a production build.
 

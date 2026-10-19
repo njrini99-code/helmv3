@@ -58,10 +58,10 @@ Observed in headless WebKit (Playwright), 390x844 at 2x, light and dark, on the 
   was given the plain smooth spring for its translate; the two runs after it found the same: no step back beyond that 0.1px).
 - Vertical-first travel, a start outside the left 20px, a start under an open dialog, on a round route and in the iOS app without the
   native flag: covered by `shell/__tests__/edge-swipe.test.tsx` and `phone-shell-gestures.test.tsx` (jsdom), not by a capture.
-- Dock kept over a push: with `?round=1` the Resume round accessory is in the dock at the page and the dock element is `hidden` while
-  the profile is pushed (shell/Dock.tsx still reads `!immersive`, which is not this lane's file). The screenshots marked
-  `dock-forced-visible` were made by clearing `hidden` on `.ch-dock` and firing `resize`: they show the screen's own part only (the
-  screen stops at 73px of padding above the accessory, which floats over it). They are not evidence that the dock stays up.
+- Dock kept over a push: with `?round=1` the Resume round accessory is in the dock at the page and stays visible (dock not `hidden`,
+  its page slot `display: none`) while the profile is pushed, once `shell/Dock.tsx` reads `dockKept`; the screen stops at 73px of
+  padding above it, and after Back the dock is still shown. The screenshots marked `dock-forced-visible` were taken earlier with
+  `hidden` cleared by hand, before that edit; same layout. A fresh capture without forcing was read but not filed.
 - Stand-in action, `/clubhouse-preview/qualifier` (coach): the server's first paint has the Qualifier actions key at the same place
   (x 338, 44px wide) as the page's own bar after hydration. The bar's centred title "Qualifier" is hidden (opacity 0) in the server's
   first paint and visible after: the server draws the desktop markup, whose `.ch-qf-head h1` matches the large-title hide rule

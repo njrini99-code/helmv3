@@ -69,10 +69,11 @@ export function resumeRoundLabel(round: ChRoundInProgress): string {
 /** The shell's dock, above the phone tab bar: the page's controls, then the Resume round accessory. */
 export function PhoneDock({ round, pathname }: { round: ChRoundInProgress | null; pathname: string }) {
   const { setSlot, pages } = useContext(Dock);
-  const { immersive, noTabs } = usePhoneChromeState();
+  const { immersive, noTabs, dockKept } = usePhoneChromeState();
   const ref = useRef<HTMLDivElement>(null);
   const href = round && !ROUND_SCREENS.test(pathname) ? resumeRoundHref(round) : null;
-  const shown = !immersive && !noTabs && (pages > 0 || !!href);
+  // A push that is not immersive keeps the Resume round accessory (never an empty dock): PhoneScreen, shell-gestures.md.
+  const shown = (!immersive && !noTabs && (pages > 0 || !!href)) || (dockKept && !noTabs && !!href);
 
   // The canvas grows by the dock's height (the spacer in ClubhouseFrame reads it), so nothing ends up under it.
   useEffect(() => {

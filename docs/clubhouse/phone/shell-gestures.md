@@ -103,8 +103,6 @@ a production build.
 ## Open
 
 - Native: `window.__helmNativeSwipe` (above).
-- `shell/Dock.tsx`: `shown = !immersive && ...` must read `(!immersive || dockKept) && ...`
-  (`dockKept` is in `usePhoneChromeState`). Until it does, a push hides the dock as before and the rest of section 2 is dormant.
 - `shell/TopBar.tsx` and `shell/nav.ts`: a root-action stand-in for section roots (section 3), and `ChPhonePushedTop.action`
   to replace the title match in `standInAction`.
 - Physical iPhone check: the swipe against Safari's own, haptics, VoiceOver after a swipe pop.
