@@ -316,10 +316,11 @@ export function RoundCard({ review: r, phone, just, settle }: { review: ChRoundR
                 {[m.tees, m.total.par != null ? `Par ${m.total.par}` : null, holesLine(m)]
                   .filter((p): p is string => Boolean(p))
                   .map((part, i, all) => (
-                    <span key={part} className="ch-rcard-nw">
-                      {part}
+                    // The separator sits outside the unbreakable part, so a long line (large text) wraps between parts.
+                    <Fragment key={part}>
+                      <span className="ch-rcard-nw">{part}</span>
                       {i < all.length - 1 ? ' · ' : ''}
-                    </span>
+                    </Fragment>
                   ))}
               </span>
             </span>
