@@ -350,6 +350,12 @@
   gap: 8px;
   pointer-events: none;
 }
+/* CH-1812 on desktop too: inside an open dialog the toasts sit at the top, clear of the dialog's footer and its Save
+   (bottom right, where a toast would cover it and take its clicks). The phone rule is in shell.css. */
+.ch-toasts.ch-toasts--in-dialog {
+  top: calc(20px + env(safe-area-inset-top));
+  bottom: auto;
+}
 /* A toast rises 10px as it fades in (Toast.tsx): CSS on the compositor, so a save that keeps the page busy can't hold it. */
 @keyframes ch-toast-in {
   from {

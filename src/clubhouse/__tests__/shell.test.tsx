@@ -1,5 +1,6 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
 import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -164,6 +165,13 @@ describe('Shell · bell', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(code('CH-9999')).not.toBeNull());
     expect(dialog.contains(code('CH-9999'))).toBe(false);
+  });
+
+  it('CH-1812 inside a dialog the toasts sit at the top on desktop and phone, clear of the footer and its Save', () => {
+    const ui = readFileSync('src/clubhouse/styles/ui.css', 'utf8');
+    const shell = readFileSync('src/clubhouse/styles/shell.css', 'utf8');
+    expect(ui).toMatch(/\.ch-toasts\.ch-toasts--in-dialog\s*{[^}]*top:[^}]*bottom: auto/);
+    expect(shell).toMatch(/\.ch-toasts\.ch-toasts--in-dialog\s*{[^}]*top:[^}]*bottom: auto/);
   });
 
   it('CH-1201 the list does not load', async () => {

@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-19 — A toast in a dialog no longer covers its Save on desktop
+
+- CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's footer: after Publish, the "Published"
+  toast covered the Edit event dialog's Save changes and took its clicks (found by the write journeys on a production
+  build). Inside a dialog the toasts now sit at the top on desktop as they already did on the phone (ui.css), pinned
+  by a shell test.
+
 ## 2026-10-19 — Date fields drop this year's year
 
 - ui/DateField shows a date in the current year as "Tue 22 Sep" (iOS's habit), and keeps the year for any other year.
