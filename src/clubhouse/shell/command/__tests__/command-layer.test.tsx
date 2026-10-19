@@ -145,6 +145,7 @@ describe('the palette (Cmd or Ctrl K)', () => {
   });
 });
 
+const COACH = 'coach' as const;
 describe('people across a team switch', () => {
   /** A page that publishes the players it loaded, in an effect, as the Roster does. */
   function Page({ names }: { names: string[] }) {
@@ -155,7 +156,7 @@ describe('people across a team switch', () => {
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
         <Page names={names} />
-        <CommandLayer role="coach" pathname="/golf/dashboard/roster" userId="u1" teamId={teamId} />
+        <CommandLayer role={COACH} pathname="/golf/dashboard/roster" userId="u1" teamId={teamId} />
       </div>
     </LazyMotion>
   );
