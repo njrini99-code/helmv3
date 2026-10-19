@@ -49,7 +49,7 @@
   display: flex;
   flex-direction: column;
   padding: 20px 22px 18px;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   color: var(--ch-on-fill-100);
   background: var(--ch-field-green);
   box-shadow: inset 0 1px 0 rgb(210 244 221 / 0.12), var(--ch-elevation-cast);
@@ -111,7 +111,7 @@
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   font: 600 12px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   background: rgb(0 0 0 / 0.18);
@@ -492,7 +492,7 @@
 /* More unfinished rounds */
 .ch-rd-more {
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
@@ -537,7 +537,7 @@
   width: 34px;
   height: 34px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-text-tertiary);
   cursor: pointer;
@@ -551,7 +551,7 @@
 .ch-rd-more__go {
   height: 34px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   font: 600 calc(13 * var(--ch-type-k))/34px var(--ch-font-sans);
   color: var(--ch-green-700);
   text-decoration: none;
@@ -626,7 +626,7 @@
   gap: 20px;
   align-items: center;
   padding: 10px 14px 10px 10px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   color: inherit;
   text-decoration: none;
@@ -747,7 +747,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__grid {
   display: flex;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   overflow: hidden;
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.14);
 }
@@ -835,7 +835,7 @@ a.ch-rd-sc:focus-visible {
   justify-content: center;
   gap: 4px;
   height: 58px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-100);
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.08);
 }
@@ -1011,7 +1011,7 @@ a.ch-rd-sc:focus-visible {
   gap: 20px;
   min-height: 180px;
   padding: 26px 28px;
-  border-radius: 22px;
+  border-radius: var(--ch-radius-xl);
   box-sizing: border-box;
   color: var(--ch-on-fill-100);
   background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
@@ -1074,7 +1074,7 @@ a.ch-rd-sc:focus-visible {
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   padding: 16px 0;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: linear-gradient(180deg, var(--ch-ivory-25), #f6f9f6);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.14);
 }
@@ -1109,7 +1109,7 @@ a.ch-rd-sc:focus-visible {
   color: var(--ch-text-tertiary);
 }
 .ch-rv-card {
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow:
     0 0 0 1px rgb(28 25 18 / 0.08),
@@ -1232,7 +1232,7 @@ a.ch-rd-sc:focus-visible {
   min-width: 560px;
   width: 100%;
   border-collapse: collapse;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: #fff;
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
   font: 500 13px/1 var(--ch-font-sans);
@@ -1273,7 +1273,7 @@ a.ch-rd-sc:focus-visible {
   width: 30px;
   height: 28px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: none;
   font: inherit;
   color: inherit;
@@ -1494,7 +1494,7 @@ a.ch-rd-sc:focus-visible {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
   background: #bfb59c;
   transform: translateX(calc((var(--ch-rv-p, 0) - 1) * 100%));
   transition: transform var(--ch-dur-base) var(--ch-ease);
@@ -1514,7 +1514,7 @@ a.ch-rd-sc:focus-visible {
   flex-direction: column;
   gap: 10px;
   padding: 18px 20px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
 }
@@ -1659,7 +1659,7 @@ a.ch-rd-sc:focus-visible {
   }
   .ch-rd.is-phone .ch-rd-unf {
     padding: 18px 18px 16px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
   }
@@ -1808,7 +1808,7 @@ a.ch-rd-sc:focus-visible {
   .ch-rv.is-phone .ch-rv-hero {
     gap: 16px;
     padding: 18px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
   }
@@ -2326,7 +2326,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   border-collapse: separate;
   border-spacing: 3px;
   padding: 4px 6px 6px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: linear-gradient(180deg, var(--ch-green-800), var(--ch-green-900));
   box-shadow: var(--ch-elevation-feature);
   color: var(--ch-on-green-ink);
@@ -2374,7 +2374,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   color: var(--ch-on-green-ink-soft);
 }
 .ch-rv .ch-rv-nine tbody tr:not(.is-par) td:not(:empty) {
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-ivory-50);
   color: var(--ch-ink-900);
   box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.08);
@@ -2927,7 +2927,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   width: 100%;
   padding: 12px 6px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: transparent;
   font: inherit;
   text-align: left;
@@ -3072,7 +3072,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   width: min(22px, 80%);
   transform: scaleY(var(--ch-rz-p, 0));
   transform-origin: center bottom;
-  border-radius: 6px 6px 3px 3px;
+  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) 3px 3px;
   background: var(--ch-ivory-400);
 }
 .ch-rv .ch-rzpt__c i.is-one {
@@ -3232,7 +3232,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rv .ch-rzstage,
 .ch-rv .ch-rzplate {
   position: relative;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   background:
     radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
     radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
@@ -3295,7 +3295,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   width: max-content;
   min-width: 150px;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(244 238 221 / 0.96);
   box-shadow:
     0 0 0 1px rgb(8 43 28 / 0.12),
@@ -3653,7 +3653,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   border-radius: 5px;
 }
 .ch-rd .ch-rd-putts i {
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
   box-shadow: var(--ch-elevation-mark);
   transition: transform var(--ch-dur-base) var(--ch-ease);
@@ -3724,7 +3724,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   position: relative;
   margin-top: 30px;
   padding: 18px 22px 8px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background:
     radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
     radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
@@ -3907,7 +3907,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   width: max-content;
   min-width: 118px;
   padding: 9px 13px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(244 238 221 / 0.97);
   box-shadow:
     0 0 0 1px rgb(8 43 28 / 0.14),
@@ -4087,7 +4087,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     gap: 3px;
     padding: 3px;
     overflow: visible;
-    border-radius: 11px;
+    border-radius: var(--ch-radius-md);
     background: linear-gradient(180deg, #0f4a2f, #082b1c);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.1),
@@ -4097,7 +4097,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   .ch-rd[data-canopy] .ch-rd-sc__grid > span {
     height: 42px;
-    border-radius: 7px;
+    border-radius: var(--ch-radius-sm);
     background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
     box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.1);
   }
@@ -4140,7 +4140,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     font-variation-settings: 'wdth' 92;
   }
   .ch-rd[data-canopy] .ch-rd-sc__s.is-under {
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-score-under-bg);
     box-shadow: inset 0 0 0 2px var(--ch-score-under);
   }
