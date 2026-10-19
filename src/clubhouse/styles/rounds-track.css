@@ -1628,7 +1628,7 @@ button.ch-rt-strip__h {
     padding: 8px 0;
   }
   .ch-rt-hero__dist b {
-    font-size: 72px;
+    font-size: calc(72 * var(--ch-type-k));
   }
 }
 
@@ -1646,7 +1646,7 @@ button.ch-rt-strip__h {
     grid-template-columns: minmax(0, 1fr);
   }
   .ch-rt-sum__hero b {
-    font-size: 54px;
+    font-size: calc(54 * var(--ch-type-k));
   }
 }
 
@@ -2320,7 +2320,7 @@ button.ch-rt-strip__h {
   }
   .ch-rt-strip__tot b {
     align-self: center;
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
     color: var(--ch-on-green-ink);
   }
 
@@ -2475,7 +2475,7 @@ button.ch-rt-strip__h {
     color: var(--ch-on-green-ink);
   }
   .ch-rt-hero__done b {
-    font-size: 26px;
+    font-size: calc(26 * var(--ch-type-k));
     color: var(--ch-on-green-ink);
   }
   .ch-rt-hero__done span:not(.ch-score) {
@@ -2806,13 +2806,13 @@ button.ch-rt-strip__h {
       gap: 4px;
     }
     .ch-rt-hno {
-      font-size: 40px;
+      font-size: calc(40 * var(--ch-type-k));
     }
     .ch-rt-hero__dist b {
-      font-size: 38px;
+      font-size: calc(38 * var(--ch-type-k));
     }
     .ch-rt-hero__done b {
-      font-size: 22px;
+      font-size: calc(22 * var(--ch-type-k));
     }
   }
 }
