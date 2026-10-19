@@ -77,9 +77,10 @@ describe('110804 deleteInProgressRound turns away what the library would never s
     expect(ids(t)).toEqual(all);
   });
 
-  it('110804 another player’s round in progress is never deleted by this caller', async () => {
+  it('110804 another player’s round in progress is refused and never deleted by this caller', async () => {
     const t = world('user-1');
-    await deleteInProgressRound(THEIRS);
+    const res = await deleteInProgressRound(THEIRS);
+    expect(res).toEqual({ success: false, error: 'Only the player who started this round can discard it.' });
     expect(ids(t)).toEqual(all);
     expect(t.golf_rounds!.find((r) => r.id === THEIRS)).toMatchObject({ player_id: 'player-2', status: 'in_progress' });
   });

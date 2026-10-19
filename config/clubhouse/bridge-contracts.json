@@ -12267,8 +12267,8 @@
     "category": 8,
     "item": 4,
     "name": "DISCARD_IS_CHECKED_AGAIN_BY_ITS_SERVER_ACTION",
-    "meaning": "Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Run in rounds-actions-contracts.test.ts: an invalid id, a caller who is not signed in, a caller with no player profile and a round that is no longer in progress are refused and nothing is deleted. Another player's round is never deleted, but the action answers it with success (its \"already removed\" branch), where this contract says it refuses, so this stays reserved until that is settled. The action is the legacy library's, unchanged.",
-    "status": "reserved",
+    "meaning": "Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Run in rounds-actions-contracts.test.ts: an invalid id, a caller who is not signed in, a caller with no player profile, a round that is no longer in progress and another player's round the caller can see are refused and nothing is deleted. In production a player reads every round on their team (golf_rounds_select), so a teammate's round is refused; a round on another team is hidden by RLS, cannot be told from a gone one, and is answered with success (a discard is idempotent). Nothing is deleted either way.",
+    "status": "implemented",
     "where": "src/app/golf/actions/round-partial.ts#deleteInProgressRound; src/clubhouse/screens/rounds/writes.ts#LIVE_ROUNDS_WRITES",
     "tests": [
       "src/clubhouse/__tests__/rounds-actions-contracts.test.ts"
