@@ -10,7 +10,7 @@ import { setPeopleScope, usePeople } from './people';
 import { Palette } from './Palette';
 import { noteVisit, readRecent } from './recent';
 import { ShortcutsSheet } from './ShortcutsSheet';
-import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForLetter, modalOpen, pageSearchField, type ChKeyOutcome } from './shortcuts';
+import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForLetter, modalOpen, navLetters, pageSearchField, SEQUENCE_WINDOW_MS, type ChKeyOutcome } from './shortcuts';
 
 /** The command layer is for a keyboard and a pointer that hovers, on the desktop layout; the phone has none of it. */
 const DESKTOP = '(hover: hover) and (min-width: 821px)';
@@ -46,8 +46,11 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
   const [used, setUsed] = useState({ palette: false, help: false });
   const [recent, setRecent] = useState<ChRecent[]>([]);
   const armed = useRef<number | null>(null);
-  const live = useRef({ palette, help, role });
-  live.current = { palette, help, role };
+  // G is waiting for its letter: the sections it can reach are shown for as long as it waits.
+  const [waiting, setWaiting] = useState(false);
+  const waitTimer = useRef<number | undefined>(undefined);
+  const live = useRef({ palette, help, role, router });
+  live.current = { palette, help, role, router };
 
   useEffect(() => setPeopleScope(teamId), [teamId]);
   useEffect(() => {
@@ -80,6 +83,13 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
         performance.now(),
       );
       armed.current = result.armedAt;
+      window.clearTimeout(waitTimer.current);
+      if (result.outcome.kind === 'arm') {
+        setWaiting(true);
+        waitTimer.current = window.setTimeout(() => setWaiting(false), SEQUENCE_WINDOW_MS);
+      } else {
+        setWaiting(false);
+      }
       act(result.outcome, e);
     };
     const act = (o: ChKeyOutcome, e: KeyboardEvent) => {
@@ -107,7 +117,7 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
           e.preventDefault();
           haptic('select');
           chTrail('command go (keyboard)', { to: item.id });
-          router.push(item.href, { scroll: false });
+          live.current.router.push(item.href, { scroll: false });
           break;
         }
         default:
@@ -116,14 +126,31 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [desktop, openPalette, router]);
+  }, [desktop, openPalette]);
+  useEffect(() => () => window.clearTimeout(waitTimer.current), []);
 
   if (!desktop) return null;
   const apple = isApple(typeof navigator === 'undefined' ? undefined : navigator);
   return (
     <>
+      {waiting && <GoHint role={role} />}
       {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} pathname={pathname} people={people} recent={recent} keyword={opens} />}
       {used.help && <ShortcutsSheet open={help} onClose={() => setHelp(false)} role={role} apple={apple} />}
     </>
+  );
+}
+
+/** After G: the letters and where they go, for the second the sequence waits. Decorative: the shortcuts sheet is the record. */
+function GoHint({ role }: { role: ChRole }) {
+  return (
+    <div className="ch-popover ch-cmd-hint" aria-hidden="true">
+      <span className="ch-cmd-hint__k">Go to</span>
+      {navLetters(role).map(({ letter, item }) => (
+        <span key={item.id} className="ch-cmd-hint__i">
+          <kbd className="ch-cmd-kbd">{letter.toUpperCase()}</kbd>
+          {item.label}
+        </span>
+      ))}
+    </div>
   );
 }

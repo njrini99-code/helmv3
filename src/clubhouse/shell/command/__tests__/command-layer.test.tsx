@@ -33,7 +33,10 @@ beforeEach(() => {
       ({ matches: query.includes('hover: hover') ? desktop : false, media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }) as unknown as MediaQueryList,
   );
 });
-afterEach(() => cleanup());
+afterEach(() => {
+  vi.useRealTimers();
+  cleanup();
+});
 
 function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null) {
   return render(
@@ -128,6 +131,7 @@ describe('the palette (Cmd or Ctrl K)', () => {
     expect(options()[0]).toBe('Roster');
     search('zzzqxw');
     expect(within(palette()).getByRole('status').textContent).toMatch(/Nothing matches/);
+    expect(within(palette()).getByRole('status').textContent).toMatch(/Players appear here once you have opened the Roster/);
     expect(within(palette()).queryAllByRole('option')).toHaveLength(0);
   });
 
@@ -174,6 +178,22 @@ describe('G then a letter, / and ?', () => {
     expect(push).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
     now.mockRestore();
+  });
+
+  it('shows where each letter goes while G waits, and takes it away on the letter or after the second', () => {
+    vi.useFakeTimers();
+    mount('coach');
+    key('g');
+    const hint = document.querySelector('.ch-cmd-hint');
+    expect(hint?.textContent).toMatch(/Go to.*R\s*Roster/);
+    expect(hint?.textContent).not.toMatch(/Rounds/);
+    key('r');
+    expect(document.querySelector('.ch-cmd-hint')).toBeNull();
+    key('g');
+    expect(document.querySelector('.ch-cmd-hint')).not.toBeNull();
+    act(() => void vi.advanceTimersByTime(1001));
+    expect(document.querySelector('.ch-cmd-hint')).toBeNull();
+    vi.useRealTimers();
   });
 
   it('is only typing while a field has focus: no jump, no search, no sheet', () => {

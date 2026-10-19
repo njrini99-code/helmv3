@@ -50,6 +50,45 @@
   outline: none;
 }
 
+/* ── After G: the sections it reaches, for the second it waits ──────────────────────────────────────────────────────────── */
+.ch-popover.ch-cmd-hint {
+  position: fixed;
+  z-index: var(--ch-z-toast);
+  left: 50%;
+  bottom: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 16px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(680px, calc(100vw - 48px));
+  padding: 10px 16px;
+  transform: translateX(-50%);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-label-s);
+  pointer-events: none;
+  animation: ch-fade var(--ch-dur-press) var(--ch-ease);
+}
+.ch-cmd-hint__k {
+  color: var(--ch-text-secondary);
+  font-weight: 600;
+}
+.ch-cmd-hint__i {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-root[data-motion='off'] .ch-popover.ch-cmd-hint {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-popover.ch-cmd-hint {
+    animation: none;
+  }
+}
+
 /* ── Palette ────────────────────────────────────────────────────────────────────────────────────────────────────────── */
 /* The palette is the dialog's whole content: its title stays for assistive tech (aria-labelledby) and the head is not drawn. */
 .ch-modal:has(.ch-cmd) .ch-modal__head {

@@ -86,7 +86,7 @@ function PaletteBody({ onClose, role, pathname, people, recent }: { onClose: () 
         <Keys keys={['Esc']} />
       </div>
       <Command.List className="ch-cmd-list">
-        {noMatches && <NoResults query={q} role={role} onGo={go} />}
+        {noMatches && <NoResults query={q} role={role} onGo={go} peopleKnown={people.length > 0} />}
         {shown.map((group) => {
           const rows = commands.filter((c) => c.group === group);
           if (!rows.length) return null;
@@ -122,7 +122,7 @@ function PaletteBody({ onClose, role, pathname, people, recent }: { onClose: () 
 /**
  * Nothing matched: said calmly, with the nearest section as a row to take (it is the one item, so Enter takes it).
  */
-function NoResults({ query, role, onGo }: { query: string; role: ChRole; onGo: (c: ChCommand) => void }) {
+function NoResults({ query, role, onGo, peopleKnown }: { query: string; role: ChRole; onGo: (c: ChCommand) => void; peopleKnown: boolean }) {
   const q = query.trim();
   const near = nearestSection(q, role);
   return (
@@ -132,6 +132,8 @@ function NoResults({ query, role, onGo }: { query: string; role: ChRole; onGo: (
           Nothing matches <b>“{q}”</b>.
         </p>
         <p>{near ? `The closest section is ${near.label}.` : 'Try a section, a player or an action.'}</p>
+        {/* A coach's players come from the roster they have opened (people.ts): say so rather than look as if there are none. */}
+        {role === 'coach' && !peopleKnown && <p>Players appear here once you have opened the Roster.</p>}
       </div>
       {near && (
         <Command.Item
