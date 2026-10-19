@@ -1,5 +1,9 @@
 # Clubhouse changelog
 
+## 2026-10-19 — The iPad tier of the shell
+
+`shell.css` (end block "W4c tablet tier"): between 821 and 1180px the sidebar is 208px (was 240px) and the page gutter 28px (was 40px), and the next-event card in the sidebar narrows with it. An iPad portrait with the sidebar open went from a 586px canvas to 618px, a 1024px Pro from 776px to 808px; the folded rail and everything from 1181px up are unchanged. Page-level tablet fixes are in each page's own changelog. Lane W4c.
+
 ## 2026-10-19 — Hero tone titles follow the iPhone's text size
 
 `hero-tones.css` (shared): the scorecard and board tone titles (34px and 30px) are set in `calc(N * var(--ch-type-k))`, and their radii sit on the scale. Lane W4b.
