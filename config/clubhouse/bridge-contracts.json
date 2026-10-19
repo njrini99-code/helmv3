@@ -12027,9 +12027,12 @@
     "category": 7,
     "item": 2,
     "name": "WRITES_REFUSE_OFFLINE",
-    "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard and the hole's Try again are not, so this stays reserved. The shell's tests cover useAction's refusal.",
-    "status": "reserved",
-    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview"
+    "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard, setup's Start and the hole's Try again are driven offline (the browser's own flag) in rounds-contracts.test.tsx. The shell's tests cover useAction's refusal.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 110703,
@@ -12251,9 +12254,12 @@
     "category": 8,
     "item": 3,
     "name": "LIBRARY_HOLDS_ONLY_THE_PLAYERS_OWN_ROUNDS",
-    "meaning": "The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Read in this pass, not run: no test asserts the player filter.",
-    "status": "reserved",
-    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/rounds.ts#loadUnfinished"
+    "meaning": "The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Tested in rounds-contracts.test.tsx: both reads carry the session player's id and leave test rounds out, whoever the player is, and a coach session reads nothing.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/rounds.ts#loadUnfinished",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 110804,
@@ -12261,9 +12267,12 @@
     "category": 8,
     "item": 4,
     "name": "DISCARD_IS_CHECKED_AGAIN_BY_ITS_SERVER_ACTION",
-    "meaning": "Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Read in this pass, not run: no test here forces a refusal; the action is the legacy library's, unchanged.",
+    "meaning": "Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Run in rounds-actions-contracts.test.ts: an invalid id, a caller who is not signed in, a caller with no player profile and a round that is no longer in progress are refused and nothing is deleted. Another player's round is never deleted, but the action answers it with success (its \"already removed\" branch), where this contract says it refuses, so this stays reserved until that is settled. The action is the legacy library's, unchanged.",
     "status": "reserved",
-    "where": "src/app/golf/actions/round-partial.ts#deleteInProgressRound; src/clubhouse/screens/rounds/writes.ts#LIVE_ROUNDS_WRITES"
+    "where": "src/app/golf/actions/round-partial.ts#deleteInProgressRound; src/clubhouse/screens/rounds/writes.ts#LIVE_ROUNDS_WRITES",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-actions-contracts.test.ts"
+    ]
   },
   {
     "id": 110805,
@@ -12553,9 +12562,12 @@
     "category": 12,
     "item": 1,
     "name": "SETUP_KEPT_WHEN_START_FAILS",
-    "meaning": "A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Read in this pass: the CH-11007 test proves that Retry opens the round, not that every field is kept, so no test covers this.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup"
+    "meaning": "A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Tested in rounds-contracts.test.tsx: after a failed Start the course and tees, the nine, the date, the edited holes and a qualifier all stay, and pressing Start again or Retry sends the same setup.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 111202,
@@ -12563,9 +12575,12 @@
     "category": 12,
     "item": 2,
     "name": "SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE",
-    "meaning": "When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). The test forces the failure and the retry, not the kept shots, so no test covers this.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/hooks/golf/use-shot-tracking.ts#handleRetryHoleCheckpoint"
+    "meaning": "When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). Tested in rounds-contracts.test.tsx: after a failed save every shot is still listed, the card says they are kept on this device, the round stays on the hole, and Try again sends the same hole.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/hooks/golf/use-shot-tracking.ts#handleRetryHoleCheckpoint",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 111301,
@@ -12947,9 +12962,12 @@
     "category": 18,
     "item": 10,
     "name": "THE_SCORECARD_SCROLLS_IN_A_FOCUSABLE_REGION",
-    "meaning": "The scorecard on the shot screen's sheets (Scorecard and Round complete) scrolls sideways inside a labelled, focusable region (role region, tabIndex 0, \"Scorecard\"), so the keyboard can scroll it (axe scrollable-region-focusable). Found and fixed on 2026-09-30 by clubhouse:a11y; no vitest test asserts the region.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/track/round-sheets.tsx#Scorecard"
+    "meaning": "The scorecard on the shot screen's sheets (Scorecard and Round complete) scrolls sideways inside a labelled, focusable region (role region, tabIndex 0, \"Scorecard\"), so the keyboard can scroll it (axe scrollable-region-focusable). Found and fixed on 2026-09-30 by clubhouse:a11y; rounds-contracts.test.tsx asserts the region on both sheets.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/track/round-sheets.tsx#Scorecard",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 111811,
@@ -12971,9 +12989,12 @@
     "category": 19,
     "item": 1,
     "name": "LIBRARY_AND_REVIEW_PHONE_LAYOUT",
-    "meaning": "At phone width the library and the review are the phone build (useChPhone), not a shrunken desktop. The library's top bar is the tab root's \"Rounds\" with no back link and it keeps its own header; below 860px the round card and the season card stack, and at 640px and below the book drops Out · In · Tot and the meters to a date tile, the course and tee, and the to-par box (a group's header drops its average and low). The review's top bar is \"Round\" with \"‹ Rounds\" (or \"‹ Stats\" for a coach), its hero stacks and its card scrolls sideways inside its own frame. Not tested (PhoneTop needs the shell's slot and the layout is CSS): seen headless at 390 on 2026-09-30, not on an iPhone.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview; src/clubhouse/styles/rounds.css"
+    "meaning": "At phone width the library and the review are the phone build (useChPhone), not a shrunken desktop. The library's top bar is the tab root's \"Rounds\" with no back link and it keeps its own header; below 860px the round card and the season card stack, and at 640px and below the book drops Out · In · Tot and the meters to a date tile, the course and tee, and the to-par box (a group's header drops its average and low). The review's top bar is \"Round\" with \"‹ Rounds\" (or \"‹ Stats\" for a coach), its hero stacks and its card scrolls sideways inside its own frame. Tested in rounds-contracts.test.tsx with the shell's top-bar slot (the top bars) and against the stylesheet's container rules (the stacking and the dropped columns); seen headless at 390 on 2026-09-30, not on an iPhone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview; src/clubhouse/styles/rounds.css",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 111902,
@@ -12994,9 +13015,12 @@
     "category": 19,
     "item": 3,
     "name": "SETUP_AND_TRACKING_ARE_FULL_SCREEN_ON_THE_PHONE",
-    "meaning": "A new round and the shot screen are full-screen flows on the phone: the tab bar hides while either is open (usePhoneTabsHidden). Setup keeps Start round in a dock above the home indicator and Back in its band; the shot screen keeps Exit and Scorecard in its own top bar. Not tested: setup and tracking were driven in real Chromium at 390 on 2026-09-30 (a shot recorded; the dock read \"Finley GC · Blue · 18 holes · Par 72\"), not on an iPhone.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/RoundTracking.tsx#RoundTracking; src/clubhouse/shell/phone-chrome.tsx#usePhoneTabsHidden"
+    "meaning": "A new round and the shot screen are full-screen flows on the phone: the tab bar hides while either is open (usePhoneTabsHidden). Setup keeps Start round in a dock above the home indicator and Back in its band; the shot screen keeps Exit and Scorecard in its own top bar. Tested in rounds-contracts.test.tsx (the tab bar hides while either is open and returns when it closes; Start round is in the dock, Exit and Scorecard in the shot screen's top bar); setup and tracking were also driven in real Chromium at 390 on 2026-09-30 (a shot recorded; the dock read \"Finley GC · Blue · 18 holes · Par 72\"), not on an iPhone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/RoundTracking.tsx#RoundTracking; src/clubhouse/shell/phone-chrome.tsx#usePhoneTabsHidden",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 112001,
@@ -13004,9 +13028,12 @@
     "category": 20,
     "item": 1,
     "name": "SHEETS_CLOSE_ON_ESC_AND_FOCUS_RETURNS",
-    "meaning": "Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. No P011 test presses Esc. Not built: arrow keys inside the radio groups (each choice is its own Tab stop) and the iOS number pad's Done bar.",
-    "status": "reserved",
-    "where": "src/clubhouse/ui/Modal.tsx#Modal; src/clubhouse/screens/rounds/track/parts.tsx#Seg; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup"
+    "meaning": "Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. Tested in rounds-contracts.test.tsx: Esc (the dialog's cancel event) closes each of the nine and focus returns to the opener, except Add a course, which returns to the course picker it was opened from. Not built: arrow keys inside the radio groups (each choice is its own Tab stop) and the iOS number pad's Done bar.",
+    "status": "implemented",
+    "where": "src/clubhouse/ui/Modal.tsx#Modal; src/clubhouse/screens/rounds/track/parts.tsx#Seg; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 112101,
@@ -13014,9 +13041,12 @@
     "category": 21,
     "item": 1,
     "name": "LOADERS_READ_IN_ROUNDS",
-    "meaning": "The library loader reads on the server before first paint, never one request per round: the team's time zone (when there is a team), then the posted rounds (paged), then the in-progress rounds, then their holes together (paged, at most 20 rounds at once). The review reads the round, then a coach's membership check, then the holes, the shots (paged), the tee's yards and the player's name together. A read that fails is flagged on its own part and logged, never thrown (110619). No test asserts the order.",
-    "status": "reserved",
-    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/round-review.ts#loadRoundReview"
+    "meaning": "The library loader reads on the server before first paint, never one request per round: the team's time zone (when there is a team), then the posted rounds (paged), then the in-progress rounds, then their holes together (paged, at most 20 rounds at once). The review reads the round, then a coach's membership check, then the holes, the shots (paged), the tee's yards and the player's name together. A read that fails is flagged on its own part and logged, never thrown (110619). Tested in rounds-contracts.test.tsx. The library's reads run as the loader does now: the team's time zone, the posted rounds and the in-progress rounds start together, then the holes of every in-progress round are one read (the order above predates that); the review's order is as written.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/round-review.ts#loadRoundReview",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 112301,
@@ -14048,11 +14078,10 @@
     "item": 4,
     "name": "FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT",
     "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive is their own board (Q-76: the player's views are built; a coach's equivalents are not asked for).",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx",
-      "src/clubhouse/__tests__/coachhelm-views.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -14641,11 +14670,11 @@
     "category": 6,
     "item": 8,
     "name": "A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF",
-    "meaning": "The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Found in this pass, not fixed: on a coach's gate failure the pulse is not read, and the board draws its empty line 'Nothing is flagged in the pulse right now.' beside the CH-13202 notice.",
-    "status": "reserved",
+    "meaning": "The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Fixed since: on a coach's gate failure the pulse is still read and drawn beside the CH-13202 notice, never the empty line (coachhelm-contracts.test.tsx).",
+    "status": "implemented",
     "where": "src/clubhouse/data/coachhelm.ts#loadPlayerCoachHelm (gate); src/clubhouse/data/coachhelm.ts#loadCoachCoachHelm (gate); src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -14985,10 +15014,10 @@
     "item": 2,
     "name": "WRITES_REFUSE_OFFLINE",
     "meaning": "Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo)",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15267,9 +15296,12 @@
     "category": 8,
     "item": 4,
     "name": "SERVER_ACTIONS_ARE_THE_GATE",
-    "meaning": "Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Read in this pass, not run: no test here forces a refusal.",
-    "status": "reserved",
-    "where": "src/app/golf/actions/insights-feed.ts#dismissInsight; src/app/golf/actions/insights-feed.ts#reactivateInsight; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2; src/lib/auth/verify-player-access.ts#verifyInsightAccess"
+    "meaning": "Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Run in coachhelm-actions-contracts.test.ts against the real actions.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/insights-feed.ts#dismissInsight; src/app/golf/actions/insights-feed.ts#reactivateInsight; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2; src/lib/auth/verify-player-access.ts#verifyInsightAccess",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm-actions-contracts.test.ts"
+    ]
   },
   {
     "id": 130805,
@@ -15343,10 +15375,10 @@
     "item": 1,
     "name": "THIS_VISITS_CHANGES_STAY_WHILE_THE_PAGE_IS_OPEN",
     "meaning": "The Assigned chip, the dismissed notice and the chosen player are held in the page's own state: choosing another player and coming back finds the chip still there. A reload reads the server again and opens on the first player (the chip then comes from the focus-area read). The chosen player or insight is not kept in the address.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (sel, assigned, dismissed); src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard (picked)",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15395,10 +15427,10 @@
     "item": 1,
     "name": "THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ",
     "meaning": "Nothing on the page refreshes in the background. A landed Assign, Dismiss or Undo changes the page in place from the board's own state and does not call router.refresh (the dismissed notice is never refreshed away); Try again on a failed-read notice is the one client re-read (131402).",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15759,10 +15791,10 @@
     "item": 1,
     "name": "PHONE_LAYOUT",
     "meaning": "At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (phone); src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard (phone, pick); src/clubhouse/lib/use-phone.ts#useChPhone",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15772,10 +15804,10 @@
     "item": 1,
     "name": "LOADER_READS_IN_ROUNDS",
     "meaning": "The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/data/coachhelm.ts#loadCoachCoachHelm; src/clubhouse/data/coachhelm.ts#loadPlayerCoachHelm",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15785,10 +15817,10 @@
     "item": 1,
     "name": "FAILURES_REPORTED",
     "meaning": "A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players).",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/data/coachhelm.ts#log; src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/ui/SectionBoundary.tsx#SectionBoundary",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
