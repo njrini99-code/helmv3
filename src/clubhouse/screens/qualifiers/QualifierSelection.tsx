@@ -240,7 +240,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         {STAGES.map((label, i) => (
           <li key={label} className={i < stage ? 'is-done' : i === stage ? 'is-now' : undefined} aria-current={i === stage ? 'step' : undefined}>
             <span className="ch-qfs-steps__n ch-num">{i < stage || stage === 2 ? <Icon icon={Check} size={13} /> : i + 1}</span>
-            {label}
+            <span className="ch-qfs-steps__l">{label}</span>
           </li>
         ))}
       </ol>

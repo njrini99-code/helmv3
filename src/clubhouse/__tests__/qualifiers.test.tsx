@@ -2207,6 +2207,10 @@ describe('Qualifiers · Manage selections', () => {
     unmount();
     wrap(<QualifierSelection data={previewSelection('picking')} writes={selWrites()} />);
     expect(steps().map((s) => s.getAttribute('aria-current'))).toEqual([null, 'step', null]);
+    // Progress, not a switch: the step before is done (checked, no number), the one you are on is marked, the one ahead is plain.
+    expect(steps().map((s) => s.className)).toEqual(['is-done', 'is-now', '']);
+    expect(steps().map((s) => s.querySelector('.ch-qfs-steps__n')!.querySelector('svg') !== null)).toEqual([true, false, false]);
+    expect(steps().map((s) => s.querySelector('.ch-qfs-steps__l')!.textContent)).toEqual(['Standings', 'Coach’s picks', 'Squad confirmed']);
     expect(screen.getByText('Choose a player and say why')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Confirm squad' })).toBeTruthy();
   });
