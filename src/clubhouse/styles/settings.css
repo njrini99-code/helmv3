@@ -2003,3 +2003,18 @@ html[data-fw-theme='dark'] .ch-set-rank__n {
     background: rgb(36 42 37 / 0.97);
   }
 }
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   On a narrow canvas the section rail is a strip above the page that scrolls sideways, and with its scrollbar hidden an
+   iPad portrait (a 618px canvas) cut "Preferences" in half with nothing to say there is more. A tablet has the height,
+   so the strip wraps onto a second line and every section is in view. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 860px) {
+    .ch-set-rail {
+      flex-wrap: wrap;
+      margin: 0;
+      padding: 2px 0 6px;
+      overflow-x: visible;
+    }
+  }
+}

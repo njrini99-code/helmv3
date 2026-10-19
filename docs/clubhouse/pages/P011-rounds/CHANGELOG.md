@@ -1,5 +1,29 @@
 # P011 — Rounds: changelog
 
+## 2026-10-19 — Rounds on an iPad: a round card that fits, and a photo you can see is replaceable
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (821 to 1180px, end blocks of `rounds.css` and `rounds-setup.css`): on a canvas under 761px the round card's wide table takes the phone card's label, subtotal and mark sizes, so 18 holes fit in the 518px card without the circled and squared scores overlapping; the review's nine-hole tables drop their 560px minimum width instead of scrolling by a few pixels.
+- Setup: the photo's "Change" label is shown wherever there is no hover (it showed on hover or focus only).
+
+### Why
+
+- An iPad portrait with the sidebar open leaves 17px a hole in the card; a touch screen has no hover to reveal the label.
+
+### Verification
+
+- WebKit, touch, 834 and 1024 before and after looked at; the rules sit in a `screen and (821px to 1180px)` media query, and the label rule in `(hover: none)`, so a mouse desktop at 1181px and wider is unchanged.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text

@@ -2377,3 +2377,12 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     inset: min(0px, calc(50% - 22px)) 0;
   }
 }
+
+/* -- W4c tablet tier --------------------------------------------------------------------------------------------------
+   The photo's "Change" label showed only on hover or keyboard focus. A touch screen has neither, so a player on an iPad
+   never saw that the photo could be replaced. Where there is no hover the label is simply there. */
+@media (hover: none) {
+  .ch-acs__photo-change {
+    opacity: 1;
+  }
+}

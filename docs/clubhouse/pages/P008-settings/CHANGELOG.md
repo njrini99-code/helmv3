@@ -1,5 +1,28 @@
 # P008 — Settings: changelog
 
+## 2026-10-19 — Settings on an iPad: every section in view
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (821 to 1180px, end block of `settings.css`): on a canvas under 861px the section strip wraps onto a second line instead of scrolling sideways with "Preferences" cut in half.
+
+### Why
+
+- The strip's scrollbar is hidden, so nothing said there was more; a tablet has the height.
+
+### Verification
+
+- WebKit, touch, 834 and 1024: the strip's scrollWidth equals its clientWidth at 834; one row at 1024; the side rail at 1180 is unchanged.
+
 ## 2026-10-19 — Settings saves one way, reads at a measure, and ends with its danger zone
 
 ```text

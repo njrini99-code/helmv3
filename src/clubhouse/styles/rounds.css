@@ -4637,3 +4637,28 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     animation: none;
   }
 }
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   The round card's one wide table (18 holes, Out, In, Total, in 56px and 54px columns) was drawn for a card of 650px and
+   more. On an iPad portrait with the sidebar open the card is 518px, which leaves 17px a hole, under the 22px mark, so
+   the circled and squared scores overlapped their neighbours. On a canvas under 761px it takes the phone card's narrower
+   label, subtotal and mark sizes. The nine-hole tables on the review's cards drop their 560px minimum width so they fit
+   instead of scrolling by a few pixels. The container is the canvas (shell.css); the phone has its own card. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 760px) {
+    .ch-rcard:not(.is-phone) {
+      --ch-rcard-lab: 40px;
+      --ch-rcard-sub: 38px;
+      --ch-rcard-mk: 18px;
+    }
+    .ch-rcard:not(.is-phone) .ch-rcard-t {
+      font-size: calc(12 * var(--ch-type-k));
+    }
+    .ch-rcard:not(.is-phone) .ch-rcard-mk {
+      font-size: calc(12 * var(--ch-type-k));
+    }
+    .ch-rv-nine {
+      min-width: 0;
+    }
+  }
+}
