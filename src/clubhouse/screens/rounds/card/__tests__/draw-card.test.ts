@@ -42,16 +42,16 @@ describe('drawRoundCard', () => {
     for (const n of Array.from({ length: 18 }, (_, i) => String(i + 1))) expect(texts).toContain(n);
   });
 
-  it('says whose round it is and where it came from: the name in the kicker, Golfhelm and the team in the foot', () => {
+  it('says whose round it is and where it came from: the name in the kicker, GolfHelm and the team in the foot', () => {
     const who = buildCard(PREVIEW_REVIEW, { name: 'Jonah Okafor', team: 'Varsity' });
     const { g, texts } = recorder();
     drawRoundCard(g, who, { sg: true, tally: true }, palette);
     expect(texts).toContain('Jonah Okafor · Wed Oct 14 · Practice');
-    expect(texts).toContain('Golfhelm');
+    expect(texts).toContain('GolfHelm');
     expect(texts).toContain('Varsity');
     const bare = recorder();
     drawRoundCard(bare.g, m, { sg: true, tally: true }, palette);
-    expect(bare.texts).toContain('Golfhelm');
+    expect(bare.texts).toContain('GolfHelm');
     expect(bare.texts).not.toContain('Varsity');
   });
 

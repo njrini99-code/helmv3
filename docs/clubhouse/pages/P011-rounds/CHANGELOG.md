@@ -70,7 +70,7 @@ Held items:     none
 - Share card: a sheet with the picture, drawn on the device with the Canvas 2D API at 1200px wide after the fonts load,
   and two switches (Strokes gained; Putts, fairways and greens) that redraw it. Share on a device that can share files,
   Save image otherwise, named for the course, date and score. Nothing leaves the device. The picture names the player
-  before the date and has a quiet foot inside the frame: Golfhelm in the brand green and the team name when known.
+  before the date and has a quiet foot inside the frame: GolfHelm in the brand green and the team name when known.
 - Print (desktop): the page prints only the card, on one page, ledger rules kept, in ink on white in either theme.
 
 ### Why

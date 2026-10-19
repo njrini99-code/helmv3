@@ -266,14 +266,14 @@ export function drawRoundCard(g: CanvasRenderingContext2D, m: CardModel, o: Card
       g.fillText(formatSigned(v), cx, y + 52);
     });
   }
-  // The foot, inside the frame: where the card came from. Golfhelm in the brand green, and the team when it is known.
+  // The foot, inside the frame: where the card came from. GolfHelm in the brand green, and the team when it is known.
   y = H - PAD - FOOT_H + 8;
   hline(g, y, p.ruleSoft);
   g.textBaseline = 'alphabetic';
   g.textAlign = 'left';
   g.fillStyle = p.brand;
   g.font = FONT(p, 600, 15);
-  g.fillText('Golfhelm', PAD, y + 28);
+  g.fillText('GolfHelm', PAD, y + 28);
   if (m.team) {
     g.textAlign = 'right';
     g.fillStyle = p.soft;
