@@ -204,7 +204,7 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
                 ))}
               </ul>
             ) : news.first ? (
-              <NewsEmpty icon={Sparkles} code="CH-15302" title="Your team’s updates will show up here" body="Messages, posted rounds and RSVPs since your last visit." custom={custom} />
+              <NewsEmpty icon={Sparkles} code="CH-15302" title="Your team’s updates will show up here" body="Messages, posted rounds and RSVPs land here each time you sign in." custom={custom} />
             ) : (
               <NewsEmpty icon={CircleCheck} code="CH-15301" title="You’re all caught up" body="Nothing new since your last visit." custom={custom} />
             )}

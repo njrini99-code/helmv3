@@ -8,6 +8,7 @@ import { createContext, useContext, useMemo, useState, type CSSProperties } from
 import type { ChFigure, ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
+import { withPointSpan } from '../../ui/point-span';
 import { EmptyState } from '../../ui/States';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
@@ -106,6 +107,10 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
   const filtered = isFiltered(data.filter);
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
+  // The first-run page (CH-4310): no round of either length in the season, or none at all in the default window.
+  const firstRun = noRounds && !filtered && (data.window === 'season' || (data.window !== 'qualifiers' && data.filterOptions.total === 0)) && !nineOnly;
+  // With no round anywhere there is nothing to switch to; older rounds keep the window switch, so Last 10 can show them.
+  const bare = firstRun && data.filterOptions.total === 0;
   // Two or more parts that didn't load are told once, under the head, with one Try again; each keeps its title (CH-1209).
   const failed: string[] = [];
   if (!data.roundsError && !noRounds) {
@@ -136,15 +141,17 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
       <div className="ch-stm is-team">
         <header className="ch-stm-head">
           <span className="ch-num">
-            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active · `}countable rounds
+            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active ${data.activeCount === 1 ? 'player' : 'players'} · `}countable rounds only
           </span>
           <h1>Team stats</h1>
         </header>
         {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
-        <div className="ch-stm-controls">
-          <PhoneWindowSwitch custom={hasRange(data.filter)} />
-          {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
-        </div>
+        {!bare && (
+          <div className="ch-stm-controls">
+            <PhoneWindowSwitch custom={hasRange(data.filter)} />
+            {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+          </div>
+        )}
         {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
         {data.roundsError && (
           <EmptyState
@@ -161,8 +168,8 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
         {noRounds && filtered ? (
           <TeamFilterEmpty />
-        ) : noRounds && data.window === 'season' && !nineOnly ? (
-          <StatsTeamFirstRun />
+        ) : firstRun ? (
+          <StatsTeamFirstRun invite={data.activeCount === 0} />
         ) : noRounds ? (
           // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
           <EmptyState
@@ -218,7 +225,7 @@ function toneClass(f: ChFigure): string {
 const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`);
 
 /**
- * The one hero figure: the scoring average, its change and what the change is against ("vs. previous 10"). A window with
+ * The one hero figure: the scoring average, its change and what the change is against ("vs previous 10"). A window with
  * no comparison keeps the line, empty and hidden from assistive technology, so the trend below never moves.
  */
 /** Finds its own figure, so a malformed list crashes inside the figures' boundary, not the phone page (CH-4204). */
@@ -232,7 +239,7 @@ function Hero({ figures }: { figures: readonly ChFigure[] }) {
     <dl className="ch-stm-hero">
       <dt>{f.label}</dt>
       {toPar != null && <dd className="ch-stm-hero__par ch-num">{formatToPar(toPar, 1) === 'E' ? 'Even par' : `${formatToPar(toPar, 1)} to par`}</dd>}
-      <dd className="ch-stm-hero__v ch-num">{figureValue(f)}</dd>
+      <dd className="ch-stm-hero__v ch-num">{withPointSpan(figureValue(f))}</dd>
       <dd className="ch-stm-hero__c" aria-hidden={none ? true : undefined}>
         {!none && (
           <>
@@ -269,7 +276,7 @@ function Trend({ data }: { data: ChTeamStats }) {
       </section>
     );
   const change = known[known.length - 1]!.score - known[0]!.score;
-  const reading = Math.abs(change) < 0.2 ? 'Flat across these rounds.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes since ${known[0]!.label}.`;
+  const reading = Math.abs(change) < 0.2 ? 'Flat across the window.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes since ${known[0]!.label}.`;
   const mean = known.reduce((a, d) => a + d.score, 0) / known.length;
   return (
     <section className="ch-stm-trend" aria-labelledby="ch-stm-trend">

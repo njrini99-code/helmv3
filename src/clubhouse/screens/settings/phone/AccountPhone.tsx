@@ -40,11 +40,11 @@ export function AccountPhone({
   });
   return (
     <>
-      <Group title="Profile">
+      <Group title="Profile" note={data.role === 'coach' ? 'How players and staff see you across GolfHelm.' : 'How your coaches and teammates see you.'}>
         {data.profile.error ? (
           <ReadFailed bare what="Your profile" code="CH-8201" onRetry={writes.refresh} />
         ) : (
-          <NavRow label="Profile" value={data.profile.value.fullName} onClick={onProfile} />
+          <NavRow label="Name and photo" value={data.profile.value.fullName} onClick={onProfile} />
         )}
       </Group>
       <Group title="Sign in" note={sentTo ? `Check ${sentTo}. Open the link in that inbox to finish the change. Your current email works until then.` : "Where GolfHelm sends sign-in links and email notifications. You’ll confirm your current password before changing it."}>
@@ -126,6 +126,9 @@ export function ProfileSheet({
   // The coin keeps the saved initials while the name is being edited or is empty.
   const name = (coach ? draft.fullName : `${draft.firstName} ${draft.lastName}`).trim() || profile.fullName;
   const invalid = profileProblem(data.role, draft);
+  // A photo that doesn't load falls back to the initials (the URL stays, so Replace and Remove still apply).
+  const [broken, setBroken] = useState<string | null>(null);
+  const photo = draft.avatarUrl && draft.avatarUrl !== broken ? draft.avatarUrl : null;
   return (
     <FormSheet
       open={open}
@@ -141,9 +144,9 @@ export function ProfileSheet({
     >
       <div className="ch-setm-photo">
         <span className={'ch-setm-coin is-big' + (uploading ? ' is-busy' : '')} data-ch-code={draft.avatarUrl ? undefined : 'CH-8304'}>
-          {draft.avatarUrl ? (
+          {photo ? (
             // A user-uploaded storage URL, shown as a plain image.
-            <img src={draft.avatarUrl} alt="" width={84} height={84} />
+            <img src={photo} alt="" width={84} height={84} onError={() => setBroken(photo)} />
           ) : (
             initials(name || 'You')
           )}

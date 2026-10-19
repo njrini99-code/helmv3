@@ -211,7 +211,8 @@ describe('Round entry: useAction options (CH-1903, CH-11007)', () => {
     const user = shown({ success: false, error: 'Nope.' }, { retry: false });
     await user.click(screen.getByRole('button', { name: 'run' }));
     await waitFor(() => expect(code('CH-11007')).not.toBeNull());
-    expect(within(code('CH-11007')!).queryByRole('button')).toBeNull();
+    // No action: its only button is the mouse's Dismiss.
+    expect(within(code('CH-11007')!).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Dismiss notification']);
   });
 
   it('retry names the action', async () => {
@@ -583,9 +584,9 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
     view.again(fakeSession({ submitting: true, completedRoundId: 'r-77' }));
     act(() => void vi.advanceTimersByTime(POSTED_OPEN_MS + 10));
     expect(mocks.router.push).toHaveBeenCalledTimes(1);
-    expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds/r-77');
+    expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds/r-77?just=submitted');
     expect(mocks.haptic.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
-    expect(screen.getByRole('link', { name: /View round review/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/r-77');
+    expect(screen.getByRole('link', { name: /View round review/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/r-77?just=submitted');
   });
 
   it('CH-11909 saving for over 15 seconds says it is slow and names the way out; a quicker one says nothing', () => {
@@ -602,7 +603,7 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
     const s = fakeSession({ submitting: true, error: 'The server said no.' });
     runtime(s);
     const user = userEvent.setup();
-    expect(code('CH-11005')).toHaveTextContent('The round didn’t submit');
+    expect(code('CH-11005')).toHaveTextContent('The round didn’t post');
     await user.click(screen.getByRole('button', { name: 'Go back' }));
     expect(s.submitGoBack).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
@@ -612,7 +613,7 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
   it('CH-11910 every hole is in but the finish sheet is closed: a note offers it again', async () => {
     const s = fakeSession({ pendingFinalStats: [], showFinishConfirm: false });
     runtime(s);
-    await userEvent.setup().click(within(code('CH-11910')!).getByRole('button', { name: 'Review and submit' }));
+    await userEvent.setup().click(within(code('CH-11910')!).getByRole('button', { name: 'Review and post' }));
     expect(s.setShowFinishConfirm).toHaveBeenCalledWith(true);
     runtime(fakeSession({ pendingFinalStats: [], showFinishConfirm: true }));
     expect(document.querySelectorAll('[data-ch-code="CH-11910"]')).toHaveLength(1);

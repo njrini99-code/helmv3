@@ -1,3 +1,5 @@
+import { isClubhouseFrontDoor } from '@/clubhouse/gate';
+import { GateLoading } from '@/clubhouse/screens/auth/GateLoading';
 import { FormPageSkeleton } from '@/components/ui/skeleton';
 
 /**
@@ -10,6 +12,8 @@ import { FormPageSkeleton } from '@/components/ui/skeleton';
  * would make that percentage resolve against nothing.
  */
 export default function Loading() {
+  // golf_clubhouse_front_door: the same loading boundary, drawn in the sign-in room.
+  if (isClubhouseFrontDoor()) return <GateLoading label="Join a team" title="Join a team" line="Opening…" />;
   return (
     <div role="status" aria-busy="true" aria-live="polite" className="min-h-full">
       <span className="sr-only">Loading the join-a-team form&hellip;</span>

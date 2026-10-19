@@ -82,8 +82,10 @@ describe('Home reads: how deep', () => {
     tables.gate = waves.gate;
     tables.current = base();
     const { result, waves: depth } = await waves.run(loadPlayerHome({ teamId: 't1', playerId: 'p1', firstName: 'Ada' }));
+    // The player's own replies go with the events (Decision B, `mine`), and their task assignments with them (From your
+    // coach); the reply counts follow the events as before.
     expect(depth).toEqual([
-      ['golf_events', 'golf_players', 'golf_rounds', 'golf_team_settings', 'golf_teams'],
+      ['golf_event_attendance', 'golf_events', 'golf_players', 'golf_rounds', 'golf_task_assignments', 'golf_team_settings', 'golf_teams'],
       ['golf_coaches', 'golf_event_attendance', 'golf_holes', 'golf_pga_standards', 'golf_round_stats_cache'],
     ]);
     expect(result.coachUserId).toBe('u1');

@@ -1,12 +1,13 @@
 'use client';
 
-import { m, useIsPresent } from 'motion/react';
+import { m, usePresence } from 'motion/react';
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { usePaintedAfter } from '../lib/use-painted';
 import { poppedByUA } from '../lib/ua-pop';
-import { CH_UNDERLAY_SHIFT, usePhoneImmersive, usePhonePushed } from './phone-chrome';
+import { CH_UNDERLAY_SHIFT, usePhoneCover, usePhoneImmersive, usePhonePushed } from './phone-chrome';
+import { useEdgeSwipeBack, type EdgeExitHold } from './use-edge-swipe';
 import { useOverlayScrollLock } from '../lib/overlay-scroll';
 import { isNativeApp } from '@/lib/utils/capacitor';
 
@@ -16,9 +17,12 @@ import { isNativeApp } from '@/lib/utils/capacitor';
  * motion is reduced (CH-1610). The page it covers draws back about a quarter of the width and dims as it comes in, and
  * returns with it as it pops (PhoneUnderlay, CH-1618); a screen with another pushed over it (`covered`) does the same.
  * When iOS has already played the pop itself (the edge swipe), it leaves at once rather than slide out a second time
- * (CH-1908). While it is up, the shell's top bar and tab bar are inert and hidden from assistive tech (CH-1809), and
- * focus moves to the screen's title so VoiceOver starts there. Render it inside `AnimatePresence` so the pop animates
- * too. Its own top bar is a `PhoneBar`.
+ * (CH-1908). While it is up, the shell's top bar is inert and hidden from assistive tech (CH-1809), and focus moves to
+ * the screen's title so VoiceOver starts there. Whether the dock goes too is the screen's `immersive` choice: only one
+ * with a composer or fields at its foot (and the round, which has no PhoneScreen) hides it; any other push keeps the
+ * Resume round accessory up, as iOS keeps its tab bar for a push (NATIVE_FEEL P2-3). A finger that starts at the left
+ * edge drags the screen back (use-edge-swipe.ts, shell-gestures.md), where the native gesture is not already doing it.
+ * Render it inside `AnimatePresence` so the pop animates too. Its own top bar is a `PhoneBar`.
  */
 export function PhoneScreen({
   labelledBy,
@@ -26,6 +30,7 @@ export function PhoneScreen({
   children,
   code,
   keyboardAware = false,
+  immersive = keyboardAware,
   covered = false,
 }: {
   /** The id of the screen's title in its `PhoneBar`. */
@@ -40,12 +45,19 @@ export function PhoneScreen({
    * scroll fields into view itself (`data-fw-keyboard-aware`).
    */
   keyboardAware?: boolean;
+  /**
+   * The screen takes the whole phone, dock included: a composer that sits on the keyboard, a full-page flow. Off by
+   * default for every other push, which keeps the dock's Resume round accessory (and the screen stops above it). A
+   * keyboard-aware screen is immersive unless it says otherwise.
+   */
+  immersive?: boolean;
   /** Another screen is pushed over this one: it is inert until that one pops. */
   covered?: boolean;
 }) {
-  usePhoneImmersive(true);
+  usePhoneImmersive(immersive);
+  usePhoneCover(!immersive);
   // Leaving, it no longer holds the page back: the page returns as it slides out.
-  const present = useIsPresent();
+  const [present, safeToRemove] = usePresence();
   usePhonePushed(present);
   useOverlayScrollLock();
   const reduced = useChReducedMotion();
@@ -56,6 +68,16 @@ export function PhoneScreen({
   if (covered && !wasCovered) setWasCovered(true);
   const drawnBack = covered && !reduced;
   useSafariKeyboardFit(ref, keyboardAware);
+  // A swipe back that lets go past the mark leaves on its own spring from where the finger left it: the exit waits for
+  // it (`holding`) instead of playing the pop again, and React is told when the screen has gone.
+  const exit = useRef<EdgeExitHold>({ holding: false, done: () => {}, present: true });
+  exit.current.present = present;
+  exit.current.done = () => safeToRemove?.();
+  useEffect(() => {
+    if (!present && !exit.current.holding) safeToRemove?.();
+  }, [present, safeToRemove]);
+  useEdgeSwipeBack(ref, { enabled: !covered, reduced, exit });
+  useKeepDockClear(ref, !immersive);
   useEffect(() => {
     const opener = document.activeElement;
     const title = document.getElementById(labelledBy);
@@ -84,6 +106,8 @@ export function PhoneScreen({
       data-fw-keyboard-aware={keyboardAware ? '' : undefined}
       // Dims it while another screen covers it (shell.css, CH-1618).
       data-ch-covered={drawnBack ? '' : undefined}
+      // The dock's Resume round accessory stays over this screen, which stops above it (shell.css, L10 phone shell).
+      data-ch-keeps-dock={immersive ? undefined : ''}
       className={'ch-pscreen' + (className ? ` ${className}` : '')}
       aria-labelledby={labelledBy}
       data-ch-code={code}
@@ -103,11 +127,49 @@ export function PhoneScreen({
       exit="pop"
       // The pop rides the same smooth spring as the push (native-feel audit 2026-10-08, P1-2: the base ease-out read as a
       // 183ms jump); it is clear of the screen by about 350ms.
-      variants={{ pop: () => (reduced || poppedByUA() ? { opacity: 0, transition: { duration: 0 } } : { transform: 'translateX(100%)', transition: chSpring('smooth') }) }}
+      // A swipe back that is carrying the screen out itself (`holding`) leaves the exit to it: nothing here moves.
+      variants={{
+        pop: () =>
+          exit.current.holding
+            ? { transition: { duration: 0 } }
+            : reduced || poppedByUA()
+              ? { opacity: 0, transition: { duration: 0 } }
+              : { transform: 'translateX(100%)', transition: chSpring('smooth') },
+      }}
     >
       {children}
     </m.section>
   );
+}
+
+/**
+ * A screen that is not immersive leaves the dock's Resume round accessory up (shell.css, L10 phone shell). The accessory
+ * floats over the page, so the screen stops short of it by however much of the screen's foot it covers
+ * (`--ch-pscreen-dock`, which the screen pads its foot by); nothing when no round is in progress. It is read again when
+ * the dock changes size (it appears as this screen's cover lands) and with the window.
+ */
+function useKeepDockClear(ref: RefObject<HTMLElement | null>, on: boolean): void {
+  useEffect(() => {
+    const el = ref.current;
+    const root = el?.closest('.ch-root');
+    if (!on || !el || !root) return;
+    const measure = () => {
+      const resume = root.querySelector<HTMLElement>('.ch-dock:not([hidden]) .ch-resume');
+      const box = resume?.getBoundingClientRect();
+      const room = box && box.height > 0 ? Math.max(0, Math.ceil(el.getBoundingClientRect().bottom - box.top + 8)) : 0;
+      el.style.setProperty('--ch-pscreen-dock', `${room}px`);
+    };
+    measure();
+    const dock = root.querySelector('.ch-dock');
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    if (dock) ro?.observe(dock);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+      el.style.removeProperty('--ch-pscreen-dock');
+    };
+  }, [ref, on]);
 }
 
 /**

@@ -41,7 +41,8 @@ describe('onboarding paths (Q-96)', () => {
   });
 
   it('the rail shows where a code path goes before the code is known', () => {
-    expect(railOf('pre', 'code')).toEqual({ sections: ['Team', 'You', 'Account'], current: 0 });
+    expect(railOf('pre', 'code')).toEqual({ sections: ['Team', 'You', 'Account', 'Your game', 'Photo'], current: 0 });
+    expect(railOf('staff', 'code').sections).toEqual(['Team', 'You', 'Account']);
     expect(railOf('player', 'game').sections).toEqual(['Team', 'You', 'Account', 'Your game', 'Photo']);
     expect(railOf('player', 'intro').current).toBe(-1);
   });

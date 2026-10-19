@@ -10,7 +10,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { channelsFor, DEFAULT_CHANNELS, ROUTING_GROUPS, ROUTING_LABEL, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from './model';
 import { useDelivery, usePushToggle, useRouting, useTestPush } from './hooks';
-import { Card, EmailPaused, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch, useWarnOnOpen } from './parts';
+import { Card, EmailPaused, failedReads, ReadFailed, ReadsFailed, Row, SavedMark, SettingSwitch, useWarnOnOpen } from './parts';
 
 /** Recruiting and profile-view emails don't apply to GolfHelm coaches or players (as in the current app). */
 export const DELIVERY_GROUPS = DELIVERY_NOTIFICATION_GROUPS.filter((g) => g.id !== 'pipeline' && g.id !== 'profile_views');
@@ -56,7 +56,7 @@ function DeliveryCard({
   digest: ChSettingsData['digest'];
   emailPaused: boolean;
 }) {
-  const { p, dg, quiet, pending, flip, flipDigest } = useDelivery(prefs, digest, writes);
+  const { p, dg, quiet, pending, saved, flip, flipDigest } = useDelivery(prefs, digest, writes);
   const push = device.push;
   const onDevice = push.status === 'subscribed';
   const togglePush = usePushToggle(push);
@@ -76,7 +76,7 @@ function DeliveryCard({
         )
       }
     >
-      <Row label={<><Icon icon={Moon} size={15} /> Quiet mode</>} help="Pauses everything except messages from your team.">
+      <Row label={<><Icon icon={Moon} size={15} /> Quiet mode</>} help="Pauses everything except messages from your team." saved={saved.has('quiet_mode')}>
         <SettingSwitch label="Quiet mode" hideLabel checked={quiet} busy={pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
       </Row>
       {push.status !== 'unsupported' && (
@@ -111,7 +111,10 @@ function DeliveryCard({
           return (
             <div key={g.id} className={'ch-set-matrix__row' + (silenced ? ' is-dim' : '')} role="row">
               <span role="rowheader" className="ch-set-matrix__what">
-                <b>{g.label}</b>
+                <span className="ch-set-row__top">
+                  <b>{g.label}</b>
+                  <SavedMark show={saved.has(g.emailKey) || (!!g.pushKey && saved.has(g.pushKey))} />
+                </span>
                 <span>{silenced ? 'Paused by quiet mode' : g.description}</span>
               </span>
               <span role="cell">
@@ -135,7 +138,7 @@ function DeliveryCard({
             <SettingSwitch label="Weekly team email" hideLabel checked={false} disabled onChange={() => {}} />
           </Row>
         ) : (
-          <Row label="Weekly team email" help="The weekly summary of your team, by email." dim={emailPaused}>
+          <Row label="Weekly team email" help="The weekly summary of your team, by email." dim={emailPaused} saved={saved.has('digest')}>
             <SettingSwitch
               label="Weekly team email"
               hideLabel
@@ -157,7 +160,7 @@ const CHANNELS: Array<{ key: keyof ChannelPref; label: string }> = [
 ];
 
 function RoutingCard({ initial, writes, emailPaused }: { initial: { prefs: PrefsByCategory; quiet: boolean }; writes: ChSettingsWrites; emailPaused: boolean }) {
-  const { prefs, quiet, pending, bulkBusy, cellBusy, all, setCell, bulk, flipQuiet } = useRouting(initial, writes);
+  const { prefs, quiet, pending, saved, bulkBusy, cellBusy, all, setCell, bulk, flipQuiet } = useRouting(initial, writes);
   const [confirmReset, setConfirmReset] = useState(false);
   useWarnOnOpen(confirmReset);
   const muted = (ch: 'push' | 'email') => Object.fromEntries(all.map((c) => [c, { ...channelsFor(prefs, c), [ch]: false }])) as PrefsByCategory;
@@ -189,7 +192,7 @@ function RoutingCard({ initial, writes, emailPaused }: { initial: { prefs: Prefs
         </div>
       }
     >
-      <Row label={<><Icon icon={Moon} size={15} /> Quiet mode for CoachHelm</>} help="Pauses these except round reviews and goals from your coach.">
+      <Row label={<><Icon icon={Moon} size={15} /> Quiet mode for CoachHelm</>} help="Pauses these except round reviews and goals from your coach." saved={saved.has('quiet')}>
         <SettingSwitch
           label="Quiet mode for CoachHelm"
           hideLabel
@@ -219,7 +222,10 @@ function RoutingCard({ initial, writes, emailPaused }: { initial: { prefs: Prefs
               return (
                 <div key={c} className={'ch-set-matrix__row' + (silenced ? ' is-dim' : '')} role="row">
                   <span role="rowheader" className="ch-set-matrix__what">
-                    <b>{ROUTING_LABEL[c]}</b>
+                    <span className="ch-set-row__top">
+                      <b>{ROUTING_LABEL[c]}</b>
+                      <SavedMark show={CHANNELS.some((x) => saved.has(`cell:${c}:${x.key}`))} />
+                    </span>
                     {quiet && (exempt ? <Badge tone="positive">Always delivered</Badge> : <span>Paused by quiet mode</span>)}
                   </span>
                   {CHANNELS.map((x) => (

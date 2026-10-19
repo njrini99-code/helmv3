@@ -9,7 +9,8 @@ import { ScoreMark } from '../../ui/ScoreMark';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatToPar } from '../../lib/format';
-import { dayLabel, plural, positionLabel, type ChQHole, type ChQRound } from './model';
+import { dayLabel, endedLive, nextRoundNumber, plural, positionLabel, type ChQHole, type ChQRound } from './model';
+import { rebuiltHref } from '../../shell/nav';
 import { ToParPlate } from './parts';
 import { Streamed } from './streamed';
 
@@ -34,7 +35,13 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
   const shown = shownFor?.player === row.playerId ? shownFor.round : null;
   const setShown = (round: string | null) => setShownFor({ player: row.playerId, round });
   const totals = row.rounds.map((rd) => rd.total).filter((t): t is number => t != null);
+  // Your next round, while the qualifier is live and before its last day: the first one still to play.
+  const live = data.status === 'in_progress' && !endedLive({ status: data.status, endDate: data.endDate, today: data.today, entrants: data.entrants, numRounds: data.numRounds, submitted: null });
+  const playNext = me && live ? nextRoundNumber(row.rounds, data.numRounds) : null;
+  const playHref = playNext != null ? playRoundHref(data.id) : null;
   const best = row.rounds.length > 1 && totals.length ? Math.min(...totals) : null;
+  // One round is the best: of rounds tied on the best total, the first played (wave 7: two read "Best round").
+  const bestNumber = best == null ? null : Math.min(...row.rounds.filter((rd) => rd.total === best).map((rd) => rd.number));
   return (
     // Shown off, not filed (owner, 2026-10-16: "they're showing off their rounds"): the team board's green, the total to
     // par large, one tile a round with its score, the best one marked, and the rounds still to play held open.
@@ -52,6 +59,29 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
       <ol className="ch-qf-prounds__list">
         {Array.from({ length: data.numRounds }, (_, i) => i + 1).map((n) => {
           const rd = byNumber.get(n);
+          if (!rd && n === playNext && playHref) {
+            // Your next round in a live qualifier opens round setup on it (wave 7); the round's course streams in after the board.
+            return (
+              <li key={n}>
+                <Link href={playHref} className="ch-qf-prounds__r is-todo is-play" data-ch-code="CH-09906">
+                  {/* Named "Play round 3", then the course: the chip repeats the number, so it is not read. */}
+                  <span className="ch-qf-prounds__n" aria-hidden="true">
+                    R{n}
+                  </span>
+                  <span className="ch-qf-prounds__m">
+                    <b>Play round {n}</b>
+                    <Streamed fallback={null}>
+                      {(sec) => {
+                        const course = sec.roundCourses.find((c) => c.number === n)?.course ?? data.course;
+                        return course ? <small>{course}</small> : null;
+                      }}
+                    </Streamed>
+                  </span>
+                  <Icon icon={ArrowRight} size={16} />
+                </Link>
+              </li>
+            );
+          }
           if (!rd) {
             return (
               <li key={n} className="ch-qf-prounds__r is-todo">
@@ -62,7 +92,7 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
               </li>
             );
           }
-          const isBest = best != null && rd.total === best;
+          const isBest = rd.number === bestNumber;
           const isOpen = shown === rd.id;
           return (
             <li key={n}>
@@ -110,6 +140,9 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
     </section>
   );
 }
+
+/** Where a player starts a qualifier's next round: round setup with the qualifier chosen (`?qualifier=`), once it is rebuilt for players. */
+export const playRoundHref = (qualifierId: string) => rebuiltHref(`/golf/dashboard/rounds/new?qualifier=${encodeURIComponent(qualifierId)}`, 'player');
 
 export type OpenRow = { get: () => string | null; set: (playerId: string | null) => void; subscribe: (listener: () => void) => () => void };
 

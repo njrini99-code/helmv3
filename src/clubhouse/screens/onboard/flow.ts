@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { AFTER_ACCOUNT, PLAN, pathOf, type CodeKind, type OnboardPath, type OnboardStep, type RequestDetails } from './logic';
+import { AFTER_ACCOUNT, EMPTY_PROGRAM, PLAN, pathOf, type CodeKind, type OnboardPath, type OnboardStep, type ProgramDetails, type RequestDetails } from './logic';
 
 /**
  * Where someone is in sign-up, and what they have told us. The password is
@@ -11,7 +11,7 @@ import { AFTER_ACCOUNT, PLAN, pathOf, type CodeKind, type OnboardPath, type Onbo
  * sessionStorage only, and is cleared when the member card is issued.
  */
 export interface Draft {
-  intent: 'code' | 'request' | null;
+  intent: 'code' | 'request' | 'program' | null;
   code: string;
   kind: CodeKind | null;
   teamName: string | null;
@@ -24,6 +24,10 @@ export interface Draft {
   state: string;
   photoUrl: string | null;
   req: RequestDetails;
+  /** A head coach's new program (/golf/coach), their title, and the team code the server issued when it was made. */
+  prog: ProgramDetails;
+  title: string;
+  teamCode: string | null;
   /** Set once the account exists: Back never crosses it, and a reload resumes after it. */
   accountMade: boolean;
   joinedTeam: boolean | null;
@@ -43,11 +47,18 @@ export const EMPTY_DRAFT: Draft = {
   state: '',
   photoUrl: null,
   req: { who: null, first: '', last: '', school: '', coach: '', email: '', note: '' },
+  prog: EMPTY_PROGRAM,
+  title: '',
+  teamCode: null,
   accountMade: false,
   joinedTeam: null,
 };
 
 export const DRAFT_KEY = 'ch.onboard.v1';
+/** A new coach's own draft, so it can never be restored into sign up (and sign up's into this). */
+export const COACH_DRAFT_KEY = 'ch.onboard.coach.v1';
+
+export const isCoachStart = (start: OnboardStep): boolean => (PLAN.coach as readonly string[]).includes(start);
 
 export interface FlowState {
   d: Draft;
@@ -101,7 +112,7 @@ export function readDraft(raw: string | null): FlowState | null {
   try {
     const v = JSON.parse(raw) as Partial<FlowState>;
     if (!v || !v.d || !Array.isArray(v.hist) || v.hist.length === 0) return null;
-    const d = { ...EMPTY_DRAFT, ...v.d, req: { ...EMPTY_DRAFT.req, ...(v.d.req ?? {}) } };
+    const d = { ...EMPTY_DRAFT, ...v.d, req: { ...EMPTY_DRAFT.req, ...(v.d.req ?? {}) }, prog: { ...EMPTY_PROGRAM, ...(v.d.prog ?? {}) } };
     const plan = PLAN[pathOfDraft(d)];
     const hist = v.hist.filter((x): x is OnboardStep => (plan as readonly string[]).includes(x));
     if (hist.length === 0) return null;
@@ -145,13 +156,21 @@ export function useFlow(start: OnboardStep, seed: Partial<Draft>, persist = true
   const initial: FlowState = { d: d0, hist: i0 >= 0 ? (plan0.slice(0, i0 + 1) as OnboardStep[]) : [start], dir: 'fwd', n: 0 };
   const [s, dispatch] = useReducer(reduceFlow, initial);
   const restored = useRef(false);
+  // A new coach's draft is kept apart from sign up's.
+  const key = isCoachStart(start) ? COACH_DRAFT_KEY : DRAFT_KEY;
 
   useEffect(() => {
     if (restored.current) return;
     restored.current = true;
     if (!persist) return;
-    const saved = readDraft(load(DRAFT_KEY));
+    const saved = readDraft(load(key));
     if (!saved) return;
+    if (isCoachStart(start)) {
+      // The wizard picks up where it was (today's /golf/coach does), with the account's own name and address under it.
+      const d = { ...saved.d, intent: 'program' as const, accountMade: true, email: seed.email ?? saved.d.email, first: saved.d.first || seed.first || '', last: saved.d.last || seed.last || '' };
+      dispatch({ t: 'restore', state: { ...saved, d } });
+      return;
+    }
     if (start === 'intro') {
       // A fresh sign-up page never resumes past the account: that belongs to /golf/player.
       if (saved.d.accountMade) return;
@@ -171,9 +190,9 @@ export function useFlow(start: OnboardStep, seed: Partial<Draft>, persist = true
   useEffect(() => {
     if (!restored.current || !persist) return;
     const step = s.hist[s.hist.length - 1];
-    if (step === 'done' || step === 'staffdone' || step === 'sent') save(DRAFT_KEY, null);
-    else save(DRAFT_KEY, JSON.stringify({ d: s.d, hist: s.hist }));
-  }, [s, persist]);
+    if (step === 'done' || step === 'staffdone' || step === 'sent' || step === 'cdone') save(key, null);
+    else save(key, JSON.stringify({ d: s.d, hist: s.hist }));
+  }, [s, persist, key]);
 
   const up = useCallback((patch: Partial<Draft>) => dispatch({ t: 'patch', patch }), []);
   const next = useCallback((patch?: Partial<Draft>, to?: OnboardStep, from?: OnboardStep) => dispatch({ t: 'next', patch, to, from }), []);

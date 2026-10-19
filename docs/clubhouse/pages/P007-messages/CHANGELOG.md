@@ -1,5 +1,302 @@
 # P007 — Messages: changelog
 
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (messages.css)
+
+- Radii on the 5, 7, 10, 14, 20 scale (pills, circles and bars that are half their height stay).
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — In-flight actions are busy; icon buttons have tooltips
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Save an edit, Delete message, Leave, Delete conversation, Remove member, Unmute and Post are busy while they run instead of disabled. The three mute durations stay disabled while one runs (the screen does not know which was pressed).
+- Every icon-only button (New message, React, Reply, More message actions, Schedule, Details, Send, attachment and member removes) shows its name on hover and focus. The native title on New message and Schedule is gone so the tip is not drawn twice.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — Failed thread turns the composer off; empty lists are told apart; urgent reads the same everywhere
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-7202, CH-7302, CH-7303, CH-7304, CH-7308, CH-7309
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- A conversation that did not load (CH-7202) now switches its composer off and says why (a read-only box, Send and Attach disabled, one line under it) on desktop and phone. A thread that only failed to refresh keeps its composer.
+- The list's empty (CH-7302) is told by why: a name search that matches nothing offers Clear search, Unread with nothing unread offers Show all, Groups with no group only says so. "No messages mention" (CH-7303) and "No messages yet" (CH-7304) use the shared state; `.ch-ms-empty` is gone.
+- First-run (CH-7309) and no-team (CH-7308) draw portrait rows under the sentence.
+- Urgent announcements: one mark (the amber alert triangle, as the letter's head had) on the rail row, the fold and the thread header, and the word Urgent on the row.
+- The phone's conversation dates no longer carry 0.12em tracking.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `messages.test.tsx` (CH-7202 composer, the urgent row, the rail empties) and `states.test.tsx`; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/messages?state=empty` and `thread-failed` (the thread opens on desktop only, so the composer-off state was captured on desktop; the phone path has no capture or test); a search miss was captured after only (phone light, desktop light).
+
+## 2026-10-19 — Right-click on a conversation
+
+```text
+Design package: none (complete-and-elevate plan, lane L1, desktop command layer)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no new read: the palette lists what the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Right-click (or Shift F10) on a conversation in the list offers Open conversation, the row's one action. Mute, Leave and Delete
+  work on the open conversation only, so they are not offered on a row that may not be it. Desktop only; the phone inbox is
+  unchanged.
+
+### Why
+
+- The same gesture works on every list a coach lives in.
+
+### Verification
+
+- `screens/messages/__tests__/conv-context-menu.test.tsx`.
+
+## 2026-10-18 — Wave 8: premium details
+
+```text
+Design package: none (wave-7 premium review, items 15, 18, 19, 21)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-7606 (wording: the chosen chip takes the green fill)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-7 premium)
+
+- Phone inbox filters take the Qualifiers chips: a surface pill with a
+  hairline, the chosen one the green fill (it still fades in over the quick
+  beat, CH-7606), and Unread's count as its own figure ("Unread 2").
+- Phone inbox search is the kit's field, as Qualifiers draws it (36px drawn,
+  44px reach); the tinted skin and its 2px inset fill are gone.
+- The phone skeleton draws the 36px field and 36px chips, so nothing shifts
+  when the inbox arrives.
+- A bubble's name and time start (or end) on its text's 14px inset (were 12px
+  and 6px), desktop and phone.
+- A thread scrolled off its top fades into the header over 16px instead of
+  being cut off (`use-thread-anchor` toggles `.is-scrolled`).
+
+## 2026-10-18 — Wave 7: player Messages preview
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, preview)
+
+- `messages-player` shows Jonah's own inbox: the team and travel threads,
+  his 1:1 with Maya and a note from Dan, never Maya's threads with other
+  players.
+
+## 2026-10-18 — Wave 5: Messages feedback fixes
+
+```text
+Design package: none (wave-5 feedback review, items 1-2, 4-14, 17-22)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-5 feedback)
+
+- Toasts sit above the composer, however tall it grows: `composer-inset.ts`
+  hands its measured height to `.ch-toasts` (desktop and phone).
+- "Mute a week" reads "Muted until Oct 25 · 2:40 PM" (`untilLabel`: today,
+  tomorrow, a weekday within the week, then a date).
+- Phone Details: the Mute tile opens desktop's three choices in a sheet;
+  Muted turns notifications back on. The duplicate switch is gone (owner
+  decision); the panel says until when.
+- Phone New message: the first message grows as the thread's does, Return
+  adds a line, and it (and a New announcement) survives Cancel until a
+  conversation or a post takes it. Desktop's announcement draft does too.
+  Busy labels: "Starting…" (Next and Create group, as desktop) and
+  "Posting…".
+- Surprised is an open-mouthed face, not Lucide's frown.
+- More than ten files: ten are kept and CH-7106 says so; a long file name
+  ends in an ellipsis on its chip.
+- Desktop: Edit only on a message with text; Save waits for a change, with
+  focus in the box; Delete quotes the message (three lines); a Reply tool
+  quotes the message on the composer and sends with it.
+- Search hits open at their match, marked; the empty line says "No
+  conversation names match." Groups with none says "No group conversations
+  yet."
+- Web links in a message are links (http and https only, React nodes; the
+  iOS app opens them in the in-app browser).
+- Scrolled up, "Jump to latest"; a thread opened with something unread marks
+  it with a "New" divider. The phone's actions sheet says whose message.
+- "N left" within 300 characters of the 5000 limit.
+- Safe choices name what stays: "Keep conversation", "Keep Eli".
+- Deleting a conversation that fails is CH-7025 (it shared mute's CH-7011).
+- Mute and unmute toasts replace each other (`replace: 'mute'`, CH-1910):
+  a quick mute, unmute, mute leaves only the last.
+
+### Verification (2026-10-18, wave-5 feedback)
+
+- `messages.test.tsx` › Messages · wave 5 feedback (16 tests),
+  `screens/messages/__tests__/model.test.ts`, `thread-anchor.test.tsx`;
+  the existing Messages suites pass with the CH-7025 and CH-7302 strings.
+- WebKit (Playwright, dev preview): 1280 toast bottom 670 over the composer
+  top 683; 390 toast bottom 512 over the composer top 524 with a five-line
+  draft; mute a week, links, Reply, Edit, Delete quote, Jump to latest,
+  attach limit, search mark, phone mute sheet and New message draft as
+  described. The preview clears unread on tap, so its phone thread shows no
+  "New" divider; the live container clears it after the open.
+
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `messages.css`: the phone's text (rows, bubbles, thread head, composer,
+  details, recipients, announcement, reactions, quotes) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The phone text floor follows from 12px up. At the default size every
+  value is the same pixel. Fixed `line-height` px on the To row and the "new
+  below" pill stay: the text still fits their height at XXL.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit 390 (Playwright, dev preview, `--ch-type-scale` 1.353): unscaled
+  text 46 to 8 on `messages` and 46 to 7 on `messages-player`; the rest are
+  the shell's tab label and `ui.css` avatars. Thread, details and new
+  message: 71 to 13, 98 to 22, 69 to 18. Scale-1 screenshots are pixel
+  identical to before on every state; no horizontal overflow at XXL.
+
+## 2026-10-18 — Wave 3: the empty page's head on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- Desktop: the whole-page empties (CH-7309 nothing yet, CH-7308 no team) take
+  the shared page gutter and head top (`--ch-page-gutter`, `--ch-page-head-top`,
+  tokens.css); the head has no eyebrow, so the top adds its 24px. The title is
+  at x 284, y 156 at 1280, where every tab's is. The live two-pane page is
+  unchanged.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview, `?state=empty`, 1280 and 1440, light and
+  dark): the title at x 284, y 156.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Polish: a way out of no team; messages are safe
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- No team (CH-7308): the page empty offers "Open team settings"; a coach goes
+  to Team, a player to Golf profile (CH-8302). The route passes the role.
+- The files notice (CH-7214) says "Your messages are safe.", as the others
+  do, where it said "are fine".
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
+## 2026-10-17 — Polish: tabular figures in rows
+
+```text
+Design package: none (polish review row 18; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tabular figures come back on 14 rules in `messages.css` whose `font` shorthand
+  reset `.ch-num` (unread counts, times, reaction counts).
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check` and
+  `typecheck:fast` pass. The WebKit pass is the coordinator's.
+
 ## 2026-10-17 — Remove a member, search goes to its message, the phone's Schedule invites
 
 Three gaps against Fairway's Messages, built on the same actions:

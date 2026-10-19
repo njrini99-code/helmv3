@@ -64,6 +64,11 @@ export interface ChHubAnnouncement {
   /** Coach: acknowledged (or read) out of recipients. */
   ackCount: number;
   recipients: number;
+  /**
+   * Coach, on a post that asks for acknowledgement: who it went to that hasn't acknowledged yet, by name (players still on
+   * the roster). Null or absent when that read failed or the post asks for none: the card then shows the count alone.
+   */
+  notAcked?: string[] | null;
   documentCount: number;
 }
 
@@ -74,7 +79,7 @@ export interface ChHubTrip {
   /** "Mon 3 – Wed 5 Nov" */
   dates: string;
   departDate: string | null;
-  /** "Mon 12:00 PM" */
+  /** "Mon · 12:00 PM" */
   depart: string | null;
   /** The departure time as saved (HH:MM), for Edit; `depart` is the same time in words. */
   departTime: string | null;
@@ -321,7 +326,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         error: !summary,
       },
       tasks: {
-        rows: (summary?.tasks ?? []).map((t) => ({
+        rows: taskOrder((summary?.tasks ?? []).map((t) => ({
           id: t.id,
           title: t.title,
           detail: t.category ?? firstLine(t.description),
@@ -329,7 +334,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           due: t.due_date ? f.due(t.due_date, today) : null,
           status: t.status as ChHubTask['status'],
           done: null,
-        })),
+        }))),
         error: !summary,
       },
     };
@@ -381,15 +386,18 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   if (eventsRes.error) log('events', eventsRes.error);
 
   const trips = (tripsRes.data ?? []) as unknown as TripRow[];
-  // Shown soonest due first, the undated last.
+  // Soonest due first, the undated last; the rows are put in their shown order (`taskOrder`) once their status is known.
   const tasks = (tasksRes.data ?? []).slice().sort((a, b) => (a.due_date ?? '\uffff').localeCompare(b.due_date ?? '\uffff'));
   const events = eventsRes.data ?? [];
   const tripEvents = tripEventsRes.data ?? [];
   // One attendance read for this week's events, the trips' events and the builder's events; one for task completion.
-  const [attendance, assignments, authors] = await Promise.all([
+  const anns = annRes.success ? (annRes.data ?? []) : [];
+  const [attendance, assignments, authors, waiting] = await Promise.all([
     attendanceFor(supabase, [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id), ...tripEvents.map((e) => e.id)]),
     assignmentsFor(supabase, tasks.map((t) => t.id)),
-    authorNames(supabase, annRes.success ? (annRes.data ?? []) : []),
+    authorNames(supabase, anns),
+    // An all-team post's audience is the roster: without it, who is left is unknown.
+    rosterRes.error ? null : notAckedFor(supabase, anns.filter((a) => a.requires_acknowledgement).map((a) => a.id), names),
   ]);
 
   return {
@@ -412,7 +420,13 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       }),
       error: !!eventsRes.error,
     },
-    announcements: { rows: annRes.success ? (annRes.data ?? []).map((a) => announcement(a, authors, f, 'coach')) : [], error: !annRes.success },
+    announcements: {
+      rows: anns.map((a) => {
+        const row = announcement(a, authors, f, 'coach');
+        return a.requires_acknowledgement ? { ...row, notAcked: waiting ? (waiting.get(a.id) ?? []) : null } : row;
+      }),
+      error: !annRes.success,
+    },
     tripEvents: {
       rows: tripEvents.map((e) => {
         const span = eventSpan(e, f);
@@ -439,7 +453,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       error: !!tripsRes.error,
     },
     tasks: {
-      rows: tasks.map((t) => {
+      rows: taskOrder(tasks.map((t) => {
         const a = assignments.byTask.get(t.id);
         return {
           id: t.id,
@@ -450,7 +464,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           status: a && a.total > 0 && a.done === a.total ? 'completed' : t.due_date && isGolfTaskOverdueInZone(t.due_date, tz) ? 'overdue' : 'pending',
           done: assignments.error || !a ? null : [a.done, a.total],
         };
-      }),
+      })),
       error: !!tasksRes.error,
       total: tasksRes.count ?? null,
     },
@@ -561,6 +575,48 @@ export async function assignmentsFor(supabase: Awaited<ReturnType<typeof createC
   return { byTask, error: false };
 }
 
+/**
+ * Coach: who each post asking for acknowledgement went to and hasn't acknowledged, by name, sorted. A post with recipient
+ * rows went to those players; one without went to the active roster (`names`), as getAnnouncementsWithMeta counts it.
+ * A player who has left the roster has no name here and is not listed. Both reads page (a season of posts times the roster
+ * passes PostgREST's 1000-row cap, and a short ack read would list players who did acknowledge). Either read failing
+ * returns null, and the cards keep the count alone.
+ */
+export async function notAckedFor(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  announcementIds: string[],
+  names: Map<string, string>,
+): Promise<Map<string, string[]> | null> {
+  const out = new Map<string, string[]>();
+  if (!announcementIds.length) return out;
+  const to = new Map<string, Set<string>>();
+  const acked = new Map<string, Set<string>>();
+  const add = (m: Map<string, Set<string>>, k: string, v: string) => (m.get(k) ?? m.set(k, new Set()).get(k)!).add(v);
+  for (const ids of chunkIds(announcementIds)) {
+    const [recipients, acks] = await Promise.all([
+      fetchAllRowsResult((from, last) =>
+        supabase.from('golf_announcement_recipients').select('announcement_id, player_id').in('announcement_id', ids).order('id', { ascending: true }).range(from, last),
+      ),
+      fetchAllRowsResult((from, last) =>
+        supabase.from('golf_announcement_acknowledgements').select('announcement_id, player_id').in('announcement_id', ids).order('id', { ascending: true }).range(from, last),
+      ),
+    ]);
+    if (recipients.error || acks.error) {
+      log('announcementAcks', recipients.error ?? acks.error);
+      return null;
+    }
+    for (const r of recipients.data ?? []) add(to, r.announcement_id, r.player_id);
+    for (const a of acks.data ?? []) add(acked, a.announcement_id, a.player_id);
+  }
+  for (const id of announcementIds) {
+    const audience = to.get(id) ?? new Set(names.keys());
+    const done = acked.get(id);
+    const left = [...audience].filter((p) => !done?.has(p)).map((p) => names.get(p)).filter((n): n is string => !!n);
+    out.set(id, left.sort((a, b) => a.localeCompare(b)));
+  }
+  return out;
+}
+
 /** Announcement authors: coaches by user id, with their title. */
 async function authorNames(supabase: Awaited<ReturnType<typeof createClient>>, anns: GolfAnnouncementMeta[]) {
   const ids = [...new Set(anns.map((a) => a.created_by).filter((id): id is string => !!id))];
@@ -602,7 +658,8 @@ export function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string
     destination: t.destination,
     dates: f.range(t.departure_date, t.return_date),
     departDate: t.departure_date,
-    depart: t.departure_date ? [f.wd(t.departure_date), t.departure_time ? f.clock(t.departure_time) : null].filter(Boolean).join(' ') : null,
+    // Written as `back` is, so the pass and the plan read both the same way.
+    depart: t.departure_date ? [f.wd(t.departure_date), t.departure_time ? f.clock(t.departure_time) : null].filter(Boolean).join(' · ') : null,
     // `time` columns come back as HH:MM:SS; the time field takes HH:MM.
     departTime: t.departure_time ? t.departure_time.slice(0, 5) : null,
     from: t.departure_location,
@@ -682,6 +739,12 @@ export function bytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/** The order a task list is shown in: the open ones first, then soonest due, the undated last (wave 7: a done task never sits above an open one). */
+export function taskOrder(rows: ChHubTask[]): ChHubTask[] {
+  const open = (t: ChHubTask) => (t.status === 'completed' ? 1 : 0);
+  return [...rows].sort((a, b) => open(a) - open(b) || (a.dueDate ?? '\uffff').localeCompare(b.dueDate ?? '\uffff'));
 }
 
 function firstLine(s: string | null): string | null {

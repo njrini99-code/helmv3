@@ -49,6 +49,11 @@ export function AskActionCard({
     (approve ? onApprove : onDeny)(view.approvalId);
   };
   const subtitle = { live: 'Needs your OK', preparing: 'Getting it ready', confirmed: 'Confirmed', cancelled: 'Cancelled', abandoned: 'No decision made' }[status];
+  // What the notifications line claims, by where the action is: before Confirm it is a promise, after a receipt it is what happened.
+  // A failed, cancelled or undecided action sent nothing; one still running, or partly done (its receipt lists what failed), says
+  // what it notifies without claiming it went.
+  const receipt = view.receipt?.status ?? null;
+  const sendWord = waiting ? 'On confirm:' : status === 'confirmed' && receipt !== 'failed' ? (receipt === 'completed' ? 'Sent:' : 'Notifies:') : null;
   // A player already named in a fact row does not need a second pill.
   const pills = proposal.affects.filter((a) => !proposal.facts.some((f) => f.value.includes(a.label)));
 
@@ -98,12 +103,14 @@ export function AskActionCard({
         <div className="ch-th-act__note">
           <Icon icon={Info} size={15} />
           <span>
-            {proposal.notifications.length > 0 ? (
+            {proposal.notifications.length === 0 ? (
+              <b>Nothing is sent.</b>
+            ) : sendWord ? (
               <>
-                <b>Will send.</b> {proposal.notifications.join(' ')}
+                <b>{sendWord}</b> {proposal.notifications.join(' ')}
               </>
             ) : (
-              <b>Nothing is sent.</b>
+              <b>Nothing was sent.</b>
             )}
           </span>
         </div>
@@ -124,7 +131,7 @@ export function AskActionCard({
               <Button variant="ghost" disabled={status === 'preparing' || deciding} onClick={() => answer(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" disabled={status === 'preparing' || deciding} onClick={() => answer(true)}>
+              <Button variant="primary" busy={deciding} disabled={status === 'preparing'} onClick={() => answer(true)}>
                 Confirm
               </Button>
             </>

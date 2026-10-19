@@ -883,6 +883,7 @@ features:
         # glob (Phase 5 registry glob lint).
         - supabase/migrations/*player_classes*.sql
         - supabase/migrations/*coach_today_schedule*.sql
+        - supabase/migrations/*home_event_rpcs*.sql
         # golf_events table policies (2026-10-18: meetings visible to their
         # invitees only).
         - supabase/migrations/*golf_events_*.sql

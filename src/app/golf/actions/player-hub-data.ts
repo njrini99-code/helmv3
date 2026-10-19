@@ -117,7 +117,7 @@ async function getPlayerHubSummaryDataImpl(
     supabase
       .from('golf_travel_itineraries')
       .select(
-        'id, event_name, destination, transportation_type, departure_date, departure_time, departure_location, return_date, return_time, hotel_name, hotel_address, hotel_phone, hotel_confirmation, uniform_requirements, gear_list, room_assignments, notes, flight_info',
+        'id, event_id, event_name, destination, transportation_type, departure_date, departure_time, departure_location, return_date, return_time, hotel_name, hotel_address, hotel_phone, hotel_confirmation, uniform_requirements, gear_list, room_assignments, notes, flight_info',
       )
       .eq('team_id', teamId)
       .gte('departure_date', tripsSince)
@@ -192,6 +192,7 @@ async function getPlayerHubSummaryDataImpl(
 
   const trips: TripData[] = (tripsResult.data || []).map((item) => ({
     id: item.id,
+    event_id: item.event_id,
     event_name: item.event_name || '',
     destination: item.destination || '',
     transportation_type: (item.transportation_type as TripData['transportation_type']) || 'bus',

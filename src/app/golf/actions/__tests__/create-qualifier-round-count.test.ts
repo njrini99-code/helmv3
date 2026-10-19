@@ -96,6 +96,20 @@ describe('createGolfQualifier', () => {
     expect(mocked.state.qualifierInsert).toBeNull();
   });
 
+  it('rejects a squad over the database cap of 12 before anything is written', async () => {
+    const result = await createGolfQualifier({
+      name: 'Big squad',
+      startDate: '2026-08-23',
+      playerIds: [],
+      numRounds: 1,
+      selectionSlotsTotal: 13,
+      selectionSlotsCoachPick: 1,
+    });
+
+    expect(result.success).toBe(false);
+    expect(mocked.state.qualifierInsert).toBeNull();
+  });
+
   it('rejects a five-digit year (prod QA row stored start_date 60824-02-02)', async () => {
     const result = await createGolfQualifier({
       name: 'QA',

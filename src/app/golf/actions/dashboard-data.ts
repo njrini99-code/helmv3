@@ -347,8 +347,11 @@ async function getCoachDashboardDataImpl(
         // Class meetings live on the team calendar but are one player's personal
         // schedule — counting them made "Upcoming events" read 192 on a team
         // with 22 real ones (coach report, 2026-08-05). event_type is NOT NULL,
-        // so .neq() can't silently drop untyped rows.
-        supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).neq('event_type', CLASS_EVENT_TYPE).gte('start_time', now),
+        // so .neq() can't silently drop untyped rows. A cancelled event stays in
+        // the table (deleteGolfEvent soft-cancels), so every Home event read
+        // drops it by cancelled_at: status is nullable, and .neq() on it would
+        // drop untyped rows too.
+        supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).neq('event_type', CLASS_EVENT_TYPE).is('cancelled_at', null).gte('start_time', now),
         // NUMC-07: an impossible start date (prod has year 60824) is not "active".
         supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).eq('is_test', false).in('status', ['upcoming', 'in_progress'])
           .gte('start_date', qualifierDateBounds.from).lte('start_date', qualifierDateBounds.to),
@@ -389,6 +392,7 @@ async function getCoachDashboardDataImpl(
             .select('id, title, event_type, start_time, end_time, location, created_at, updated_at')
             .eq('team_id', teamId)
             .neq('event_type', CLASS_EVENT_TYPE)
+            .is('cancelled_at', null)
             .gte('start_time', now)
             .order('start_time', { ascending: true })
             .limit(20),
@@ -1047,6 +1051,7 @@ async function getPlayerDashboardDataImpl(
                 .select('id, title, event_type, start_time, end_time, location, all_day')
                 .eq('team_id', teamId)
                 .neq('event_type', CLASS_EVENT_TYPE)
+                .is('cancelled_at', null)
                 // OVERLAP, not start-membership (#1496). A tournament on its
                 // 3rd day starts in the past and outside today, so filtering
                 // `start_time >= todayStart` dropped it from Today while
@@ -1074,6 +1079,7 @@ async function getPlayerDashboardDataImpl(
                 .select('id, title, event_type, start_time, end_time, location')
                 .eq('team_id', teamId)
                 .neq('event_type', CLASS_EVENT_TYPE)
+                .is('cancelled_at', null)
                 .gte('start_time', todayEnd)
                 .order('start_time', { ascending: true })
                 .limit(15)

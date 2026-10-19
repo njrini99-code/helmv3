@@ -118,6 +118,63 @@ describe('ThemeScript (#1044)', () => {
   );
 });
 
+// Settings > Preferences > Animations off holds Clubhouse's loops still from the
+// first frame, not only once hydration marks the frame (wave-3 a11y, item 6).
+describe('ThemeScript Animations off', () => {
+  beforeEach(() => {
+    installLocalStorage();
+    window.localStorage.clear();
+    document.documentElement.className = '';
+    document.documentElement.removeAttribute('data-fw-theme');
+    document.documentElement.removeAttribute('data-motion');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: false })),
+    });
+  });
+
+  it('marks <html> on a dashboard hard load when animations are off', () => {
+    window.history.replaceState({}, '', '/golf/dashboard/calendar');
+    window.localStorage.setItem('golf_appearance_preferences', JSON.stringify({ show_animations: false }));
+
+    runBoot();
+
+    expect(document.documentElement).toHaveAttribute('data-motion', 'off');
+  });
+
+  it.each([null, JSON.stringify({ show_animations: true }), JSON.stringify({ date_format: 'YYYY-MM-DD' })])(
+    'changes nothing when the stored preference is %s',
+    (stored) => {
+      window.history.replaceState({}, '', '/golf/dashboard');
+      if (stored !== null) window.localStorage.setItem('golf_appearance_preferences', stored);
+
+      runBoot();
+
+      expect(document.documentElement).not.toHaveAttribute('data-motion');
+    },
+  );
+
+  it.each(['/admin', '/golf/login', '/golf/welcome'])('leaves %s alone', (pathname) => {
+    window.history.replaceState({}, '', pathname);
+    window.localStorage.setItem('golf_appearance_preferences', JSON.stringify({ show_animations: false }));
+
+    runBoot();
+
+    expect(document.documentElement).not.toHaveAttribute('data-motion');
+  });
+
+  it('still boots the theme when the stored preference is malformed', () => {
+    window.history.replaceState({}, '', '/golf/dashboard');
+    window.localStorage.setItem('golf_theme', 'dark');
+    window.localStorage.setItem('golf_appearance_preferences', '{not json');
+
+    runBoot();
+
+    expect(document.documentElement).toHaveAttribute('data-fw-theme', 'dark');
+    expect(document.documentElement).not.toHaveAttribute('data-motion');
+  });
+});
+
 describe('ThemeScript Dynamic Type (OD-06, TYPE-02)', () => {
   it('reads the iOS body size and caps the reading-text scale at XXL', () => {
     const html = renderToStaticMarkup(<ThemeScript />);

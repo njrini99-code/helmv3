@@ -1,5 +1,219 @@
 # Clubhouse changelog
 
+## 2026-10-19 — A toast in a dialog no longer covers its Save on desktop
+
+- CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's footer: after Publish, the "Published"
+  toast covered the Edit event dialog's Save changes and took its clicks (found by the write journeys on a production
+  build). Inside a dialog the toasts now sit at the top on desktop as they already did on the phone (ui.css), pinned
+  by a shell test.
+
+## 2026-10-19 — Date fields drop this year's year
+
+- ui/DateField shows a date in the current year as "Tue 22 Sep" (iOS's habit), and keeps the year for any other year.
+  Two half-width fields on the phone (qualifier start and end) no longer cut the date to "Tue 22 Sep 20…". The value,
+  the month grid's day names and typing are unchanged; the server render keeps the year (the year is read on the
+  client, so no time zone is guessed).
+
+## 2026-10-19 — The iPad tier of the shell
+
+`shell.css` (end block "W4c tablet tier"): between 821 and 1180px the sidebar is 208px (was 240px) and the page gutter 28px (was 40px), and the next-event card in the sidebar narrows with it. An iPad portrait with the sidebar open went from a 586px canvas to 618px, a 1024px Pro from 776px to 808px; the folded rail and everything from 1181px up are unchanged. Page-level tablet fixes are in each page's own changelog. Lane W4c.
+
+## 2026-10-19 — Hero tone titles follow the iPhone's text size
+
+`hero-tones.css` (shared): the scorecard and board tone titles (34px and 30px) are set in `calc(N * var(--ch-type-k))`, and their radii sit on the scale. Lane W4b.
+
+## 2026-10-19 — Complete and elevate: shared pieces
+
+The shared primitives behind the complete-and-elevate pass
+([COMPLETION_PLAN_2026-10-18.md](COMPLETION_PLAN_2026-10-18.md)); each page's
+own changelog says what changed on it.
+
+- **Date and time fields** (`ui/DateField.tsx`, `ui/TimeField.tsx`, with
+  `ui/PickerHost.tsx` and `ui/date-time.ts` underneath) replace every native
+  date and time input. Values are unchanged (`yyyy-mm-dd`, `HH:mm`); the field
+  reads "Thu 15 Oct 2026" and "3:30 PM". Phone: a sheet with a month grid or a
+  snapping 15-minute list. Desktop: a popover under the field that stays
+  typable ("10/15", "oct 15", "tomorrow", "fri", "3p", "1530"), with an inline
+  note when it can't read the text. Out-of-range days and times are disabled;
+  end pickers can't precede their start.
+- **Busy buttons:** `Button busy` sets `aria-busy`, blocks a second press and
+  keeps the lit look, so a primary that is saving no longer turns into the
+  grey unavailable one.
+- **Roving focus** (`ui/use-roving.ts`): arrow keys, Home and End inside every
+  hand-built choice group; one tab stop per group.
+- **Desktop command layer** (`shell/command/**`, `ui/Tooltip.tsx`,
+  `ui/ContextMenu.tsx`): the palette on ⌘K, G-then-letter navigation with a
+  plate that shows where each letter goes, `?` for the shortcuts sheet,
+  tooltips with shortcut hints on icon buttons, and right-click menus that
+  mirror each row's own actions. Desktop only; nothing fires while typing.
+- **Waiting pages** (`ui/States.tsx`, `ui/EmptyShape.tsx`): an empty section
+  draws the shape of what will fill it (the real rules and alignment, no
+  invented content) under one sentence and one action. First run, filtered
+  empty, no permission and failure read as different states.
+- **Motion:** the live duration set is written into the rules and the
+  checklist and pinned by `__tests__/motion-durations-pinned.test.ts`.
+
+## 2026-10-18 — First run: the empty team and the new player
+
+Coach Home's first run keys on players and rounds, not events, so adding an
+event keeps "Invite players" on screen; a player with events and no rounds
+gets one calm block instead of three empty ones. One name for joining ("team
+code", "invite link"), and the coach copy says what is true: code and link
+joins are instant, only Settings requests need approval. Every "go invite"
+button reads "Invite players" and opens the invite sheet. Empty heads drop
+zero counts; the qualifier form stops a coach with no roster before the
+fields; phone sign-up has "Already a member? Sign in"; team Stats with no
+rounds no longer crashes on desktop (`StatsTeamFirstRun` is a client
+component). Shot card (owner): raised result keys, miss squares, putt chips
+and quick picks; the blocked Next shot button names what is missing instead
+of a line above it. Preview: Home `?state=eventsonly` and `?state=norounds`,
+player Home `?state=norounds`.
+
+## 2026-10-18 — On the course: tracking and the round review
+
+Tracking: the Undo-shot and Discard-round confirms keep their button ink and
+sit on their own row; the save line stays on one line; a missed putt offers
+2–12 ft quick picks and 44px miss chips; once every hole is in, "Review and
+post" is the shot review's footer primary (the top note's button is
+secondary); short phones compact the hole hero so the putt result is on the
+first screen; the screen stays awake while tracking (`track/use-wake-lock.ts`,
+silent where unsupported). Round review: Fairway and GIR marks fold into Out
+and In rows on narrow widths, the dark GIR dot reads at 5:1, distances never
+break from their unit, one "Par" casing, score names instead of shot counts,
+and the player reads "what you wrote" about their own notes.
+
+## 2026-10-18 — Premium details: edges, presses, figures and fallbacks
+
+`ui.css`: buttons carry their inline padding as `--ch-btn-pad-x` (14, sm 11,
+lg 20, icon 0); `controls.css` adds `.ch-btn--flush-start` / `--flush-end`,
+which cancel it so a ghost button's label sits on the column edge (Home card
+link, Stats Filter and Export, Delete all classes). `ui/point-span.tsx`
+`withPointSpan` opens the decimal point in hero figures (`.ch-num__pt`), so
+"73.4" no longer reads "734" on Home, Rounds and Stats. Desktop coins under
+about 35px get the phone's initials floor; BackLink's chevron draws at the
+Clubhouse stroke (1.6). `shell.css`: the phone push bar's Back and text action
+dim while pressed, and the dark hero's theme-color and html background take
+the bar's `--ch-frame`. Also: dark coins on green cards, one icon per event
+type on every week strip, chart labels at 11px or more on desktop, image
+fallbacks for course and profile photos, and one filter-chip and search skin.
+
+## 2026-10-18 — The player's side: privacy, asks and replies
+
+A player sees a meeting only when they are on its invite list (own attendance
+row), on Calendar, Home, the sidebar and Classes; when the invite reads fail,
+meetings are hidden rather than shown (`screens/calendar/model.ts`
+`playerSeesMeeting`, `data/attendance-counts.ts` `loadOwnRows` /
+`loadInvitedCounts`). Player Home carries a quiet "From your coach" row
+(replies, acknowledgements, tasks due) and every surface shows the player's own
+reply ("You're going" / "Reply needed"). Players see their own class clashes.
+Qualifier rounds to play link to setup; the squad result reads from the
+player's own selection row; one handicap rule (`displayHandicap`); no role
+labels for players; CoachHelm Decline holds with Undo; the player Roster names
+the coaches.
+
+## 2026-10-18 — One Optional tag; placeholders that read as hints
+
+`controls.css` adds `.ch-field__opt`, the one "Optional" tag every form uses
+(qualifier, class, Team Hub sheets), replacing the qualifier-only tag and the
+"(optional)" label text. Placeholder ink is `--ch-ink-500`, and sample
+placeholders start with "e.g.", so a hint never reads as a typed value.
+
+## 2026-10-18 — Toasts that stay out of the way and keep their promises
+
+`ui/Toast.tsx`: a toast can carry `onExpire`, run once when it closes without
+its action (time out, dismiss, swipe, replace, overflow), so a deferred write
+happens exactly when its Undo leaves the screen; Calendar's drag-move Undo uses
+it, and an Undo pressed after the write says "Already saved. Drag it back to
+undo." A `replace` key drops a live toast of the same kind (CH-1910), so
+"Muted / Notifications back on / Muted" no longer stack. Devices with hover get
+a Dismiss X, and Esc closes a toast that holds focus (CH-1817). `ui.css` and
+`shell.css` lift the toast stack above the Messages composer by its measured
+height (`--ch-ms-comp-h`), so a toast never sits on Send. Pending labels end
+in "…" everywhere.
+
+## 2026-10-18 — Dynamic Type reaches phone text
+
+Phone text in the page sheets (messages, calendar, hub, home, qualifiers,
+roster, classes, recruiting, rounds, setup, track, stats, CoachHelm) and the
+shared sheets (`controls.css`, `ui.css`, `shell.css`: buttons, segments,
+badges, field labels, sheet titles, page bar, top bar and section switch,
+section strip, intro, zone sections) is set in `calc(N * var(--ch-type-k))`, so
+it follows iOS Text Size up to XXL. Form fields keep the iOS 16px floor and
+grow above it (`max(16px, calc(16 * var(--ch-type-k)))`, outranking the
+`globals.css` guard). Figures, score marks, scorecards, chart text, avatars,
+the bell count and the desktop sidebar stay fixed. Rendering at the default
+size is pixel identical. The hub task ring's numeral no longer inherits the
+task title's 15px, and the desktop event peek's kind label takes
+`--ch-type-label-s`.
+
+## 2026-10-18 — Focus rings that read; Animations off from the first frame
+
+`ui.css`, `controls.css`, `settings.css`, `calendar.css`: the button, segment,
+switch, slider, settings rail and week-day focus rings draw solid
+`--ch-border-focus` where they drew 45 to 55% green, and their dark overrides
+are gone (the token turns light green itself): 2.0 to 3.2:1 before, 5.2:1 or
+more after, light and dark. `shell.css`, `stats.css`: on the green frame the
+next-event card, the phone push bar's keys and the strokes-gained end row take
+the champagne ring. `src/components/golf/theme/ThemeScript.tsx` (shared with
+Fairway, dashboard paths only) marks `<html data-motion="off">` from the stored
+Animations setting before hydration, `ClubhouseFrame` keeps it in step, and
+`tokens.css` zeroes `--ch-dur-shimmer`, `--ch-dur-live` and `--ch-dur-sweep`
+under motion off, so skeleton shimmer and live pulses hold still from the first
+frame. `--ch-warning-600` is `#8a5a0c` (was `#94600e`), 4.7:1 or more on page
+and inset.
+
+## 2026-10-18 — One page-head line, head-coach identity, wave-3 copy
+
+`tokens.css` adds `--ch-page-gutter` (the 40px `--ch-gutter`) and
+`--ch-page-head-top` (34px). Every desktop page main takes them as its side and
+top padding and keeps its own max width and centring; a head with no eyebrow
+line, or a shorter one, adds that room to its top. At 1280 every full-head tab
+title lands at the same place. `shell.css`: page-head buttons take the body's
+10px radius. `data/shell.ts`: `ChShellData.viewerIsHeadCoach`, read from the
+coach's own `golf_team_coach_staff` row in the shell's parallel batch (a failed
+read is logged and the label falls back to "Coach"); the sidebar footer,
+account sheet and desktop Settings say "Head coach" for a head coach.
+`shell/NextEventCard` says "N of M going"; `ui/Ledger`'s chevron draws through
+`Icon` (1.6 stroke); the CoachHelm program pulse
+(`src/lib/coachhelm/v3/chat/program-pulse.ts`, shared with Fairway) says
+"haven’t replied to" and "N of M replied".
+
+## 2026-10-18 — Interaction review: focus, menus, phone fields, loading shapes
+
+`shell.css`: page-head secondary keys keep the shared focus ring (their
+hairline and hover ring skip `:focus-visible`, light and dark), and the phone
+section switcher draws its ring inside the title row that clipped it.
+`controls.css`: phone `.ch-input` fields are 44px tall (base 38px).
+`ui/Menu.tsx`: a menu closed by a scroll while focus is in it returns focus to
+its trigger instead of `<body>`. Page skeletons (Home, Stats, Rounds, Roster,
+Qualifiers, Calendar, Classes) now match their loaded layout, so content lands
+within a few pixels of where the skeleton drew it.
+
+## 2026-10-18 — States polish: no-team actions, settings failure, one notice voice
+
+No-team pages (Home, Roster, Calendar, Messages) offer Open team settings, as
+Classes and Recruiting do (coaches to the Team section, players to Golf
+profile). Settings' phone list says when every read failed (CH-8214, new).
+Notice copy is unified on "Try again; the error has been reported.", and
+Messages says "safe" like the rest. The phone bell's empty line matches the
+desktop's. Calendar's View itinerary lands on the trip in Team Hub
+(`?tab=travel&trip=`).
+
+## 2026-10-17 — Figures in rows keep tabular digits
+
+A page rule that sets type with the `font` shorthand resets
+`font-variant-numeric`, so `.ch-num` lost its tabular digits wherever such a
+rule styled the same element, and columns of scores, counts and times drifted
+from row to row. The rules that style figures now set
+`font-variant-numeric: tabular-nums` right after their `font`: about 310 rules
+across the page sheets, plus the shared ones in `shell.css` (sidebar and dock
+counts, the next-event line, the strip count), `ui.css` (`.ch-intro__eyebrow`,
+`.ch-nine`, `.ch-fgr dd`) and `controls.css` (`.ch-pill`). Display numerals
+(40px and up, and `.ch-serif-num`) stay proportional, as `base.css` intends. A
+WebKit sweep of the preview screens at 390px and 1280px finds no small `.ch-num`
+figure left proportional apart from the Classes term tile's week figure (a
+display figure) and the Team Hub's message times.
+
 ## 2026-10-17 — New shadows use the depth tokens; the rail's small parts move by translate
 
 The CSS quality gate (`npm run clubhouse:css`) found 18 new blur shadows

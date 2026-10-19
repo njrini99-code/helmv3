@@ -58,14 +58,14 @@ describe('P013 D6 the Deep dive says the drill once, in sentences', () => {
 describe('P013 D8 one h1 per screen', () => {
   it('on the phone the page’s large title is text (the top bar carries the h1), still labelling the page', () => {
     render(
-      <Head who="Player" phone>
+      <Head phone>
         Line
       </Head>,
     );
     expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
     expect(document.getElementById('ch-hl-title')!.textContent).toBe('CoachHelm');
     cleanup();
-    render(<Head who="Player">Line</Head>);
+    render(<Head>Line</Head>);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('CoachHelm');
   });
   it('every CoachHelm skeleton has exactly one h1', () => {

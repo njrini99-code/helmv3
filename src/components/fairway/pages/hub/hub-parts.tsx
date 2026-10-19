@@ -60,6 +60,9 @@ import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 export interface TripData {
   id: string;
+  /** The trip's calendar event (golf_travel_itineraries.event_id), or null when it has none. The
+   *  player hub aggregate sets it; the Team Hub page's own trips read doesn't select it. */
+  event_id?: string | null;
   event_name: string;
   destination: string;
   transportation_type: 'bus' | 'van' | 'fly' | 'carpool';

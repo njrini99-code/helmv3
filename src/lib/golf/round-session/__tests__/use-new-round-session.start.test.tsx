@@ -5,6 +5,7 @@
  * navigation and log tags the renderer names.
  */
 import { act, renderHook } from '@testing-library/react';
+import type { FormEvent } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -810,5 +811,39 @@ describe('the guard signals carry the renderer\'s own log source', () => {
       await hook.result.current.start(form());
     });
     expect(mocks.reportDuplicateWarned).toHaveBeenCalledWith(expect.objectContaining({ completedRoundId: 'done-1' }), logSource);
+  });
+});
+
+describe('a back nine started from a saved course (startWithPreloadedConfigs)', () => {
+  it('writes its hole setup numbered 1..9, as the engine numbers it, and gives the catalog the course\'s 10..18', async () => {
+    mocks.contributeCourseFromRound.mockResolvedValue({ success: false, error: 'not needed here' });
+    const hook = render();
+    await act(async () => {
+      hook.result.current.setSetupData(form().setup);
+      hook.result.current.setHolesPerRound(9);
+      hook.result.current.setNineSelection('back');
+      hook.result.current.setPreloadedHoleConfigs(holes);
+      // A curated saved course with no cloud course/tee yet: the start contributes it to the catalog.
+      hook.result.current.setSelectedCourseId('saved-1');
+    });
+    hook.result.current.resolvedCourseIdRef.current = null;
+    hook.result.current.selectedTeeIdRef.current = null;
+
+    await act(async () => {
+      await hook.result.current.handleSetupSubmit({ preventDefault: () => {} } as FormEvent);
+    });
+
+    const payload = mocks.savePartialRound.mock.calls[0]![0];
+    expect(payload.holesToPlay).toBe(9);
+    expect(payload.holeConfigs.map((h: { holeNumber: number }) => h.holeNumber)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    // The back nine's own pars and yardages, under the engine's numbers.
+    expect(payload.holeConfigs[0]).toMatchObject({ par: holes[9]!.par, yardage: holes[9]!.yardage });
+    expect(payload.holeConfigs[8]).toMatchObject({ par: holes[17]!.par, yardage: holes[17]!.yardage });
+    expect(hook.result.current.holes.map((h) => h.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(hook.result.current.step).toBe('tracking');
+
+    expect(mocks.contributeCourseFromRound).toHaveBeenCalledTimes(1);
+    const contribution = mocks.contributeCourseFromRound.mock.calls[0]![0] as { holes: Array<{ holeNumber: number }> };
+    expect(contribution.holes.map((h) => h.holeNumber)).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18]);
   });
 });

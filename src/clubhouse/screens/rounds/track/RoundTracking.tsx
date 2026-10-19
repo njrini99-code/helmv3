@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, CloudOff, Smartphone, Table2, X } from 'lucide-react';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { useShotTracking, type ShotTrackingPorts, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
@@ -12,6 +12,7 @@ import { haptic } from '../../../lib/haptics';
 import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
+import { Spinner } from '../../../ui/Spinner';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { CourseView } from './CourseView';
 import { HoleReview } from './HoleReview';
@@ -19,6 +20,7 @@ import { heroDistance, scoreName, shotKind } from './labels';
 import { HoleMap, ShotLog, TrackStrip } from './parts';
 import { EditShotSheet, PenaltySheet, UnsavedSheet } from './sheets';
 import { ShotEntry } from './ShotEntry';
+import { useWakeLock } from './use-wake-lock';
 import '../../../styles/rounds-track.css';
 
 /** The round this screen is scoring, for its top bar. */
@@ -35,6 +37,8 @@ export type RoundTrackingProps = ShotTrackingProps & {
   onOpenScorecard?: () => void;
   /** A finished hole's shots, for the course view's ‹ › (the round screen already holds them). Without it other holes show no shots. */
   holeShots?: (index: number) => ShotRecord[] | null;
+  /** Opens the finished round to post it, once every hole is in (CH-11910). Drawn as the shot review's footer action. */
+  onReviewRound?: () => void;
 };
 
 // CH-11706: going to another hole is a selection tick. Module-level, so the
@@ -62,7 +66,7 @@ const SAVE_WORDS = {
  * scorecard and submitting (see `round-sheets.tsx`).
  */
 export function RoundTracking(props: RoundTrackingProps) {
-  const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, startHole = 1 } = props;
+  const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, onReviewRound, startHole = 1 } = props;
   const t = useShotTracking(props, PORTS);
   const editOpen = !!(t.showEditModal && t.editingShot && t.editFormData);
   const [lastEdit, setLastEdit] = useState<{ shot: NonNullable<typeof t.editingShot>; form: NonNullable<typeof t.editFormData> } | null>(null);
@@ -71,6 +75,8 @@ export function RoundTracking(props: RoundTrackingProps) {
   // bar and bell go (rounds-track.css hides them while this is up) and the tab bar goes.
   usePhoneTabsHidden(true);
   usePhoneImmersive(true);
+  // On the course the screen stays on between shots (wave 9, owner decision A); a no-op where it isn't supported.
+  useWakeLock();
   const { distancePref } = useDistanceUnits();
   const [courseOpen, setCourseOpen] = useState(false);
   const hole = t.currentHole;
@@ -81,6 +87,19 @@ export function RoundTracking(props: RoundTrackingProps) {
   if (t.autoSaveStatus === 'saved' && hole && (acked?.hole !== hole.number || acked.shots !== t.shotHistory)) {
     setAcked({ hole: hole.number, shots: t.shotHistory });
   }
+  // The hole just holed out, while its save runs. The round screen moves on to the next hole only once that save has
+  // landed (the shared engine navigates after the checkpoint), so a move away from it that the player didn't make
+  // (`jump` below clears it) is the save succeeding: the new hole says so ("Hole 4 saved · Birdie") in place of "No
+  // shots yet" for a few seconds, or until its first shot.
+  const [savingHole, setSavingHole] = useState<{ index: number; words: string } | null>(null);
+  const [savedNote, setSavedNote] = useState<{ index: number; words: string } | null>(null);
+  // The hole the player asked to leave (the strip, Back to hole): its save, if it lands, is not announced.
+  const [leftHole, setLeftHole] = useState<number | null>(null);
+  useEffect(() => {
+    if (!savedNote) return;
+    const id = window.setTimeout(() => setSavedNote(null), 4000);
+    return () => window.clearTimeout(id);
+  }, [savedNote]);
 
   if (!hole) {
     return (
@@ -95,6 +114,24 @@ export function RoundTracking(props: RoundTrackingProps) {
   const frontier = frontierIndex(holes.length, startHole, (i) => holes[i]!.score !== null);
   const backTo = holedOut && !!onNavigateToHole && frontier >= 0 && frontier !== currentHoleIndex ? { index: frontier, number: holes[frontier]!.number } : null;
   const stats = holedOut ? calculateHoleStats(t.shotHistory, hole) : null;
+  if (leftHole !== null && leftHole !== currentHoleIndex) setLeftHole(null);
+  if (stats && t.holeCheckpointStatus === 'saving' && leftHole !== currentHoleIndex) {
+    const words = `Hole ${hole.number} saved · ${scoreName(stats.score, hole.par)}`;
+    if (savingHole?.index !== currentHoleIndex || savingHole.words !== words) setSavingHole({ index: currentHoleIndex, words });
+  } else if (savingHole && savingHole.index !== currentHoleIndex) {
+    setSavingHole(null);
+    setSavedNote({ index: currentHoleIndex, words: savingHole.words });
+  }
+  const jump = onNavigateToHole
+    ? (index: number) => {
+        // The player's own move to another hole says nothing about the save, even when the move lands a render later
+        // (the unsaved-shots sheet asks first).
+        setLeftHole(currentHoleIndex);
+        setSavingHole(null);
+        setSavedNote(null);
+        t.handleNavigateToHole(index);
+      }
+    : undefined;
   const far = heroDistance(t.distanceToHole, t.distanceUnit, distancePref);
   const liveState = t.autoSaveStatus !== 'idle' ? t.autoSaveStatus : t.autoSaveHeldOnDevice ? 'device' : t.autoSaveSyncing ? 'syncing' : 'idle';
   const heldSaved = liveState === 'idle' && acked?.hole === hole.number && acked.shots === t.shotHistory ? 'saved' : liveState;
@@ -105,7 +142,7 @@ export function RoundTracking(props: RoundTrackingProps) {
 
   return (
     <div className="ch-rt-q">
-      <div className="ch-rt" data-ui="clubhouse">
+      <main className="ch-rt" data-ui="clubhouse">
         <header className="ch-rt-top">
           {onExit ? (
             <button type="button" className="ch-rt-pill" onClick={onExit}>
@@ -140,7 +177,7 @@ export function RoundTracking(props: RoundTrackingProps) {
           )}
         </header>
         {statusSlot}
-        <TrackStrip holes={holes} current={currentHoleIndex} startHole={startHole} onJump={onNavigateToHole ? t.handleNavigateToHole : undefined} />
+        <TrackStrip holes={holes} current={currentHoleIndex} startHole={startHole} onJump={jump} />
 
         <div className="ch-rt-body">
           <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>
@@ -196,7 +233,7 @@ export function RoundTracking(props: RoundTrackingProps) {
                     ) : saveState === 'device' || saveState === 'syncing' ? (
                       <Icon icon={Smartphone} size={13} />
                     ) : (
-                      <span className="ch-rt-spin ch-rt-spin--sm" aria-hidden="true" />
+                      <Spinner size="sm" />
                     )}
                     <span>{SAVE_WORDS[saveState]}</span>
                   </p>
@@ -204,7 +241,13 @@ export function RoundTracking(props: RoundTrackingProps) {
               </div>
             </div>
             {/* Mid-hole a recorded shot opens from the log (Fairway's shot pills); once holed, the hole review is the one way in. */}
-            <ShotLog shots={t.shotHistory} pref={distancePref} onEdit={holedOut ? undefined : t.handleEditShot} editDisabled={t.undoSaving || t.editSaving} />
+            <ShotLog
+              shots={t.shotHistory}
+              pref={distancePref}
+              onEdit={holedOut ? undefined : t.handleEditShot}
+              editDisabled={t.undoSaving || t.editSaving}
+              saved={savedNote?.index === currentHoleIndex ? savedNote.words : null}
+            />
           </section>
 
           {holedOut ? (
@@ -214,12 +257,13 @@ export function RoundTracking(props: RoundTrackingProps) {
               pref={distancePref}
               checkpointStatus={t.holeCheckpointStatus}
               backTo={backTo}
+              onReviewRound={frontier < 0 ? onReviewRound : undefined}
               showUndoConfirm={t.showUndoConfirm}
               undoSaving={t.undoSaving}
               undoError={t.state.undoError}
               dispatch={t.dispatch}
               onEditShot={t.handleEditShot}
-              onNavigateToHole={t.handleNavigateToHole}
+              onNavigateToHole={jump ?? t.handleNavigateToHole}
               onRetryCheckpoint={t.handleRetryHoleCheckpoint}
               onUndoLastShot={t.handleUndoLastShot}
             />
@@ -302,7 +346,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             onDelete={t.handleDeleteShot}
           />
         )}
-      </div>
+      </main>
     </div>
   );
 }

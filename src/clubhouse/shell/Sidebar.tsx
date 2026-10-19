@@ -112,7 +112,7 @@ export function Sidebar({
           <div className="ch-identity__txt">
             <span className="ch-identity__name">{userData.name}</span>
             <span className="ch-identity__meta">
-              {userData.role === "coach" ? "Coach" : "Player"}
+              {userData.role === "coach" ? (shell.viewerIsHeadCoach ? "Head coach" : "Coach") : "Player"}
               {userData.teamName ? ` · ${userData.teamName}` : ""}
             </span>
           </div>

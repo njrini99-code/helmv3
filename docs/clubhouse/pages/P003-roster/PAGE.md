@@ -70,7 +70,7 @@ and read their figures, form and recent rounds. Write a private note about a
 player. Search, filter by status, sort and switch between cards and a list
 (desktop). Export the roster as a CSV (desktop). Message a player, view their
 stats, plan a one-to-one (phone). Remove a player from the team. Copy the team
-code or share the join link.
+code or share the invite link.
 
 ### The player's view
 

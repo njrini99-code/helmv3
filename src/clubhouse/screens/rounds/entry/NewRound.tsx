@@ -8,6 +8,7 @@ import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { haptic } from '../../../lib/haptics';
 import { useToast } from '../../../ui/Toast';
 import { RoundEntrySkeleton } from '../RoundsSkeleton';
+import { clearSetupDraft, useSetupDraftKey } from '../setup/draft';
 import { RoundSetup } from '../setup/RoundSetup';
 import type { ChSetupPorts, ChSetupQualifier } from '../setup/shape';
 import { reasonText } from './labels';
@@ -123,6 +124,12 @@ export function NewRound({ playerId }: { playerId: string }) {
   }, [conflictAttempt, engine.step]);
 
   const tracking = engine.step === 'tracking' || engine.step === 'submitting';
+  // The setup kept for this tab is spent once a round is under way (however it started: setup, or the in-progress
+  // dialog's Start a new round), and again once it posts.
+  const draftKey = useSetupDraftKey(playerId);
+  useEffect(() => {
+    if (tracking || engine.completedRoundId) clearSetupDraft(draftKey);
+  }, [tracking, engine.completedRoundId, draftKey]);
   // The setup and the round are different screens on one address: the new one opens at its top.
   useEffect(() => {
     canvasScrollNow(0);
@@ -188,6 +195,7 @@ export function NewRound({ playerId }: { playerId: string }) {
           onStarted={() => undefined}
           preselectQualifierId={params.get('qualifier')}
           isOffline={offline}
+          viewerId={playerId}
         />
       )}
       <RecoveryHost

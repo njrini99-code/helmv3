@@ -9,6 +9,7 @@ import { editedShotIssues, editResultUpdates, togglePuttMissTag, type EditShotHo
 import type { ShotRecord } from '@/lib/types/golf';
 import type { LieType } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
+import { roving } from '../../../ui/use-roving';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, distanceText, isDistanceText, PENALTY_OPTIONS, PUTT_TAGS, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
@@ -96,13 +97,13 @@ export function PenaltySheet({
         </>
       }
     >
-      <div className="ch-rt-opts" role="radiogroup" aria-label="Penalty">
+      <div className="ch-rt-opts" role="radiogroup" aria-label="Penalty" {...roving}>
         {PENALTY_OPTIONS.map(([v, title, detail]) => (
           <Choice key={v} checked={penaltyType === v} title={title} detail={detail} onPick={() => dispatch({ type: 'SET_PENALTY_TYPE', payload: v })} />
         ))}
       </div>
       {askOrigin && (
-        <div className="ch-rt-opts" role="radiogroup" aria-label="Which stroke went out">
+        <div className="ch-rt-opts" role="radiogroup" aria-label="Which stroke went out" {...roving}>
           <p className="ch-rt-opts__k">Which stroke</p>
           <Choice
             checked={penaltyOrigin === 'here' || !entered}
@@ -275,7 +276,7 @@ export function EditShotSheet({
       {showDeleteConfirm ? (
         <p className="ch-rt-delq">Delete shot {shot.shotNumber}? The hole&rsquo;s score changes with it. This can&rsquo;t be undone.</p>
       ) : form.isPenalty ? (
-        <div className="ch-rt-opts" role="radiogroup" aria-label="Penalty">
+        <div className="ch-rt-opts" role="radiogroup" aria-label="Penalty" {...roving}>
           {PENALTY_OPTIONS.map(([v, title]) => (
             <Choice key={v} checked={form.penaltyType === v} title={title} onPick={() => update({ penaltyType: v })} />
           ))}
@@ -349,7 +350,7 @@ export function EditShotSheet({
           {approach && form.result !== 'hole' && form.result !== 'green' && (
             <div className="ch-rt-sub">
               <em>Where it missed the green</em>
-              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green">
+              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green" {...roving}>
                 {APPROACH_GRID.map(([v, l]) =>
                   v === null ? (
                     <span key="green" className="ch-rt-amiss__g" aria-hidden="true">

@@ -1,10 +1,11 @@
 import type { createClient } from '@/lib/supabase/server';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 
 /**
  * RSVP counts for a player's screens, without reading teammates' rows.
  *
  * Migration 20261017102000 narrows golf_event_attendance so a player reads only their own row; the counts a player
- * sees ("5 of 6 confirmed", "6 players", D2-8's "a meeting with no invitees is the coach's own") come from
+ * sees ("5 of 6 going", "6 players", D2-8's "a meeting with no invitees is the coach's own") come from
  * `golf_event_attendance_counts(p_event_ids)` instead, which returns numbers only, for the caller's own teams. The
  * buckets mirror `rsvpOf` (data/calendar.ts): maybe/tentative count in `invited` only.
  *
@@ -28,6 +29,49 @@ export type ChAttendanceCountsResult =
 type Client = Awaited<ReturnType<typeof createClient>>;
 
 const NOT_DEPLOYED = new Set(['PGRST202', '42883']);
+
+/**
+ * How many each meeting invites, for D2-8 when a player's own replies didn't load: from the counts function or, until
+ * migration 20261017102000 is applied, from the invite rows. Null when neither could be read (`onError` gets the error);
+ * the caller then hides the meetings (playerSeesMeeting fails closed).
+ */
+export async function loadInvitedCounts(supabase: Client, ids: string[], onError: (error: unknown) => void): Promise<Map<string, number> | null> {
+  if (!ids.length) return new Map();
+  const counts = await loadAttendanceCounts(supabase, ids);
+  if (counts.kind === 'ok') return new Map(ids.map((id) => [id, counts.byEvent.get(id)?.invited ?? 0]));
+  if (counts.kind === 'error') {
+    onError(counts.error);
+    return null;
+  }
+  const byEvent = new Map(ids.map((id) => [id, 0]));
+  for (const chunk of chunkIds([...new Set(ids)])) {
+    // A chunk of meetings' invitees: well under the row cap.
+    const { data, error } = await supabase.from('golf_event_attendance').select('event_id').in('event_id', chunk).limit(1000);
+    if (error) {
+      onError(error);
+      return null;
+    }
+    for (const row of data ?? []) byEvent.set(row.event_id, (byEvent.get(row.event_id) ?? 0) + 1);
+  }
+  return byEvent;
+}
+
+/**
+ * The player's own attendance rows for these events, by event (`player_id` is checked again, so a teammate's row, which
+ * RLS returns until migration 20261017102000, never counts as theirs). Null when the read failed (`onError` gets it).
+ */
+export async function loadOwnRows(supabase: Client, ids: string[], playerId: string, onError: (error: unknown) => void): Promise<Map<string, string | null> | null> {
+  const own = new Map<string, string | null>();
+  for (const chunk of chunkIds([...new Set(ids)])) {
+    const { data, error } = await supabase.from('golf_event_attendance').select('event_id, player_id, status').in('event_id', chunk).eq('player_id', playerId).limit(1000);
+    if (error) {
+      onError(error);
+      return null;
+    }
+    for (const row of data ?? []) if (row.player_id === playerId) own.set(row.event_id, row.status);
+  }
+  return own;
+}
 
 /** Every requested event the caller may see has a row (all zeros when nobody is invited); an absent id reads as zero. */
 export async function loadAttendanceCounts(supabase: Client, eventIds: string[]): Promise<ChAttendanceCountsResult> {

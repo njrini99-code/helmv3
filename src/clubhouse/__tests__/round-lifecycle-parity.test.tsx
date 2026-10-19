@@ -286,14 +286,12 @@ describe('112402 Round lifecycle parity: Clubhouse and Fairway send the engine t
     expect(clubhouse.holes).toEqual(fairway.holes);
     expect(clubhouse.holes.map((h) => h.par)).toEqual(PARS.slice(9, 18));
     expect(clubhouse.holes.map((h) => h.yardage)).toEqual(YARDS.slice(9, 18));
-    // Known and kept (report, 2026-10-17): Fairway's quick start sends the back nine's hole configs under their card
-    // numbers (10 to 18) and Clubhouse's start numbers them 1 to 9, as the engine numbers the holes themselves. The holes
-    // the server writes are numbered by position in both (golf_holes: no 9-hole round in production is numbered past 9).
+    // Both starts number the back nine's hole configs 1 to 9, as the engine numbers the holes themselves (Fairway sent
+    // the card numbers 10 to 18 until 2026-10-17; golf_holes: no 9-hole round in production is numbered past 9).
     const { holeConfigs: fwConfigs, ...fwStart } = fairway.start[0]!.data as { holeConfigs: Array<{ holeNumber: number }> };
     const { holeConfigs: chConfigs, ...chStart } = clubhouse.start[0]!.data as { holeConfigs: Array<{ holeNumber: number }> };
-    expect(fwConfigs.map((h) => h.holeNumber)).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18]);
-    expect(chConfigs.map((h) => h.holeNumber)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    expect(chConfigs.map(({ holeNumber: _n, ...rest }) => rest)).toEqual(fwConfigs.map(({ holeNumber: _n, ...rest }) => rest));
+    expect(fwConfigs.map((h) => h.holeNumber)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(chConfigs).toEqual(fwConfigs);
     expect(chStart).toEqual(fwStart);
     expect(chStart).toMatchObject({ holesToPlay: 9, startHole: 3, currentHole: 3, roundType: 'practice' });
     expect(clubhouse.start[0]!.opts).toEqual(fairway.start[0]!.opts);

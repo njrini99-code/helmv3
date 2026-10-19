@@ -4,7 +4,7 @@ import { getDetailedStats } from '@/app/golf/actions/stats-data';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
-import { classYearLabel, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
+import { classYearLabel, displayHandicap, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
   bandPutts,
   cachedPutts,
@@ -493,7 +493,7 @@ export async function loadPlayerProfile(input: {
     gradYear: p.graduation_year,
     hometown: [p.hometown, p.state].filter(Boolean).join(', ') || null,
     status: memberRes.data.status === 'inactive' ? 'inactive' : 'active',
-    handicap: p.handicap_index ?? p.handicap,
+    handicap: displayHandicap(p),
     season,
     win,
     teamAvg,

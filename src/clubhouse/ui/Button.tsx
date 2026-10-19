@@ -5,6 +5,8 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode, MouseEvent } from 'react';
 import { Icon } from './Icon';
 import { haptic, type ChHaptic } from '../lib/haptics';
+import { Spinner } from './Spinner';
+import { Tooltip } from './Tooltip';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'ink' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -22,11 +24,14 @@ interface CommonProps {
 }
 
 type ButtonProps = CommonProps &
-  ({ href: string; onClick?: never; type?: never; disabled?: never } | {
+  ({ href: string; onClick?: never; type?: never; disabled?: never; busy?: never } | {
     href?: undefined;
     onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
     type?: 'button' | 'submit';
+    /** Not available: unlit and not clickable. Use `busy` for an action that is on its way. */
     disabled?: boolean;
+    /** The action this button starts is in flight: aria-busy, no second press, and it stays lit (working, not unavailable). */
+    busy?: boolean;
   });
 
 export function Button(props: ButtonProps) {
@@ -42,6 +47,9 @@ export function Button(props: ButtonProps) {
       {/* The hint is visual: VoiceOver read "New event, N" as the name (audit A-10); the shortcut is announced through
           aria-keyshortcuts on the control instead. */}
       {kbd && <kbd className="ch-btn__kbd" aria-hidden="true">{kbd}</kbd>}
+      {/* In flight the ring sits over the label (which keeps its width, so the key does not jump) and the label stays in
+          the accessibility tree: it is the name VoiceOver reads, with aria-busy saying it is on its way. */}
+      {props.href === undefined && props.busy && <Spinner size={size === 'sm' ? 'sm' : 'md'} tone="current" className="ch-btn__spin" />}
     </>
   );
   if (props.href !== undefined) {
@@ -56,8 +64,10 @@ export function Button(props: ButtonProps) {
       type={props.type ?? 'button'}
       className={cls}
       aria-keyshortcuts={kbd}
-      disabled={props.disabled}
+      disabled={props.disabled || props.busy}
+      aria-busy={props.busy || undefined}
       onClick={(e) => {
+        if (props.busy) return;
         if (feel) haptic(feel);
         props.onClick?.(e);
       }}
@@ -67,6 +77,10 @@ export function Button(props: ButtonProps) {
   );
 }
 
+/**
+ * An icon-only button. Its tooltip is its accessible name (and `shortcut`, when it has one: drawn as key caps, announced
+ * through aria-keyshortcuts), shown on hover rest and keyboard focus and never on touch (ui/Tooltip.tsx).
+ */
 export function IconButton({
   icon,
   label,
@@ -75,6 +89,7 @@ export function IconButton({
   feel = null,
   disabled,
   className,
+  shortcut,
 }: {
   icon: LucideIcon;
   label: string;
@@ -83,20 +98,23 @@ export function IconButton({
   feel?: ChHaptic | null;
   disabled?: boolean;
   className?: string;
+  /** The key that does the same, one string per key cap ("N", or "⌘" then "\\"). */
+  shortcut?: readonly string[];
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      className={['ch-btn', 'ch-btn--ghost', 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ')}
-      onClick={() => {
-        if (feel) haptic(feel);
-        onClick?.();
-      }}
-    >
-      <Icon icon={icon} size={size === 'sm' ? 15 : 16} />
-    </button>
+    <Tooltip label={label} shortcut={shortcut} ariaKeys={shortcut?.length === 1 && shortcut[0]!.length === 1 ? shortcut[0] : undefined}>
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        className={['ch-btn', 'ch-btn--ghost', 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ')}
+        onClick={() => {
+          if (feel) haptic(feel);
+          onClick?.();
+        }}
+      >
+        <Icon icon={icon} size={size === 'sm' ? 15 : 16} />
+      </button>
+    </Tooltip>
   );
 }

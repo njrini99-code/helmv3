@@ -256,6 +256,18 @@ legacy `is_recurring` flag in sync for older consumers.
   `*meeting*` test beside each surface; pgTAP: the migration's test of the
   same name under `supabase/tests/rls/`.
 - Event state transitions should not skip lifecycle logging when status changes.
+- **A failed read never resets or hides attendance** (2026-10-17).
+  `updateGolfEventImpl` invites nobody when its existing-attendance read fails
+  (the upsert would reset replies to pending) and returns `invitationsError`;
+  Fairway's create, series create and update toasts warn on `invitationsError`.
+  `getEventRSVPStats` throws on a failed attendance read, so `getEventRSVP`
+  returns `success: false` and the People section shows Retry, never "No one
+  invited yet"; it shows "N invited" when a viewer gets fewer rows than the
+  total. An emptied location or notes on edit is sent as a clear. Series RSVP
+  deadlines carry the team zone's offset on the deadline's own date (rows stored
+  before this are not backfilled). Tests: `golf-events.test.ts`,
+  `FairwayCalendar.saveEvent.test.tsx`, `rsvp-summary-read-failure.test.ts`,
+  `recurring-events.test.ts`, `FairwayEventDetailDrawer.test.tsx`.
 
 ## UI Contract
 

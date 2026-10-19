@@ -116,6 +116,10 @@ describe('112401 Round setup: picking a course', () => {
   it('110103 CH-11309 before a course, Start waits and the scorecard holds its place', () => {
     setup();
     expect(code('CH-11309')).toHaveTextContent('Your scorecard appears here once you pick a course and tees.');
+    // Wave 10 (D): the hole numbers hold the place, with no grey bars that read as loading.
+    const ghost = code('CH-11309')!.querySelector('.ch-rsu-hc__ghost')!;
+    expect([...ghost.querySelectorAll('b')].map((b) => b.textContent)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9']);
+    expect(ghost.querySelectorAll('i, .ch-skel')).toHaveLength(0);
     expect(dock()).toHaveTextContent('Choose a course to start');
     expect(startBtn()).toBeDisabled();
   });
@@ -171,6 +175,8 @@ describe('112401 Round setup: picking a course', () => {
     await pickFinleyBlue(user);
     expect(dock()).toHaveTextContent('Finley GC · Blue · 9 holes · Par 36');
     expect(within(screen.getByRole('radiogroup', { name: 'Holes' })).getByRole('radio', { name: '18 holes' })).toBeDisabled();
+    // Why 18 is off.
+    expect(screen.getByText('These tees have 9 holes')).toBeInTheDocument();
   });
 
   it('111503 a slow tee read for a course left behind never replaces the next course’s tees', async () => {
@@ -194,7 +200,8 @@ describe('112401 Round setup: picking a course', () => {
     await user.click(screen.getByRole('radio', { name: 'Back 9' }));
     expect(screen.getByRole('radiogroup', { name: 'Hole 10 par' })).toBeInTheDocument();
     expect(screen.queryByRole('radiogroup', { name: 'Hole 1 par' })).toBeNull();
-    expect(dock()).toHaveTextContent('9 holes · Par 36');
+    // Nine of an 18-hole card: the dock says which nine.
+    expect(dock()).toHaveTextContent('Finley GC · Blue · Back nine · Par 36');
   });
 
   it('111402 CH-11209 the library didn’t load, with Try again', async () => {

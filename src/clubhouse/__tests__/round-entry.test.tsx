@@ -68,7 +68,7 @@ describe('112401 Recovery: a saved round found on this device', () => {
     const user = userEvent.setup();
     const p = recovery();
     render(<RecoveryDialog {...p} />);
-    expect(screen.getByRole('heading', { name: 'Recover unsaved progress' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pick up where you left off' })).toBeInTheDocument();
     expect(code('CH-11512')).toHaveAttribute('open');
     expect(card()).toHaveTextContent('Finley GC');
     expect(card()).toHaveTextContent('Blue tees · Practice · saved 5 min ago');

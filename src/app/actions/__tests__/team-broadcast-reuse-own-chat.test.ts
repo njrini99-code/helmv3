@@ -43,8 +43,11 @@ function world(conversations: Row[], participants: Row[]) {
     golf_coaches: [{ id: 'coach-1', user_id: COACH, organization_id: 'org-1' }],
     golf_teams: [{ id: TEAM, organization_id: 'org-1' }],
     golf_team_members: [
-      { team_id: TEAM, player_id: 'p1', player: { user_id: 'player-user-1' } },
-      { team_id: TEAM, player_id: 'p2', player: { user_id: 'player-user-2' } },
+      { team_id: TEAM, player_id: 'p1', status: 'active', player: { user_id: 'player-user-1' } },
+      { team_id: TEAM, player_id: 'p2', status: 'active', player: { user_id: 'player-user-2' } },
+      // No longer on the team: never added to a broadcast.
+      { team_id: TEAM, player_id: 'p3', status: 'removed', player: { user_id: 'player-user-3' } },
+      { team_id: TEAM, player_id: 'p4', status: 'inactive', player: { user_id: 'player-user-4' } },
     ],
     golf_conversations: conversations,
     golf_conversation_participants: participants,
@@ -96,7 +99,7 @@ describe('createGolfTeamBroadcast reuses only the caller’s own same-titled cha
       ],
     );
 
-    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice' });
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', allPlayers: true });
 
     expect(result).toEqual({ conversationId: 'new-conv', reused: false });
     // Nothing was written into the other coach's conversation.
@@ -115,7 +118,7 @@ describe('createGolfTeamBroadcast reuses only the caller’s own same-titled cha
       ],
     );
 
-    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice' });
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', allPlayers: true });
     expect(result).toEqual({ conversationId: 'new-conv', reused: false });
   });
 
@@ -128,7 +131,7 @@ describe('createGolfTeamBroadcast reuses only the caller’s own same-titled cha
       ],
     );
 
-    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice' });
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', allPlayers: true });
 
     expect(result).toEqual({ conversationId: 'mine', reused: true });
     expect(tables.golf_conversations).toHaveLength(1);
@@ -147,7 +150,7 @@ describe('createGolfTeamBroadcast reuses only the caller’s own same-titled cha
       ],
     );
 
-    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice' });
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', allPlayers: true });
     expect(result).toEqual({ conversationId: 'mine', reused: true });
     expect(participantInserts).toEqual([]);
   });
@@ -158,8 +161,67 @@ describe('createGolfTeamBroadcast reuses only the caller’s own same-titled cha
       [{ conversation_id: 'mine-left', user_id: 'player-user-1' }],
     );
 
-    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice' });
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', allPlayers: true });
     expect(result).toEqual({ conversationId: 'new-conv', reused: false });
     expect(participantInserts.flat().some((r) => r.conversation_id === 'mine-left')).toBe(false);
+  });
+});
+
+describe('createGolfTeamBroadcast reaches the whole team only when asked', () => {
+  // An empty or missing player list used to mean "the whole team", so a group
+  // whose player lookups all missed went to everyone.
+  it.each([
+    ['an empty list', { selectedPlayerIds: [] as string[] }],
+    ['no list', {}],
+  ])('refuses %s and sends nothing', async (_label, audience) => {
+    const tables = world([], []);
+
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', ...audience } as Parameters<typeof createGolfTeamBroadcast>[0]);
+
+    expect(result).toEqual({ error: 'Choose at least one player.' });
+    expect(tables.golf_conversations).toHaveLength(0);
+    expect(participantInserts).toEqual([]);
+  });
+
+  it('refuses a list together with allPlayers', async () => {
+    const tables = world([], []);
+    const result = await createGolfTeamBroadcast({
+      teamId: TEAM,
+      title: 'Practice',
+      allPlayers: true,
+      selectedPlayerIds: ['p1'],
+    } as unknown as Parameters<typeof createGolfTeamBroadcast>[0]);
+    expect(result).toHaveProperty('error');
+    expect(tables.golf_conversations).toHaveLength(0);
+  });
+
+  it('adds every player when allPlayers is set', async () => {
+    world([], []);
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', allPlayers: true });
+    expect(result).toEqual({ conversationId: 'new-conv', reused: false });
+    const added = participantInserts.flat().map((r) => r.user_id);
+    expect(added).toEqual(expect.arrayContaining(['player-user-1', 'player-user-2']));
+  });
+
+  it('leaves out removed and inactive members, even when chosen', async () => {
+    world([], []);
+    await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', allPlayers: true });
+    const all = participantInserts.flat().map((r) => r.user_id);
+    expect(all).not.toContain('player-user-3');
+    expect(all).not.toContain('player-user-4');
+
+    world([], []);
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', selectedPlayerIds: ['p3', 'p4'] });
+    expect(result).toHaveProperty('error');
+    expect(participantInserts).toEqual([]);
+  });
+
+  it('adds only the chosen players otherwise', async () => {
+    world([], []);
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', selectedPlayerIds: ['p1'] });
+    expect(result).toEqual({ conversationId: 'new-conv', reused: false });
+    const added = participantInserts.flat().map((r) => r.user_id);
+    expect(added).toContain('player-user-1');
+    expect(added).not.toContain('player-user-2');
   });
 });

@@ -11,7 +11,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { emailProblem, passwordProblem, profileProblem, type ChProfileInput, type ChSettingsData, type ChSettingsWrites } from './model';
 import { SAVE_COPY, useAvatarUpload, useDeleteAccount, useReportProblem, useSignOut } from './hooks';
-import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction } from './parts';
+import { Card, Field, ReadFailed, Row, useDraft, useReportDirty, useSaveAction } from './parts';
 
 export function AccountSection({ data, writes, onDeleted }: { data: ChSettingsData; writes: ChSettingsWrites; onDeleted: () => void }) {
   return (
@@ -20,7 +20,8 @@ export function AccountSection({ data, writes, onDeleted }: { data: ChSettingsDa
       <EmailCard email={data.email} writes={writes} />
       <PasswordCard writes={writes} hasEmail={!!data.email} />
       <HelpCard />
-      <SessionCard writes={writes} onDeleted={onDeleted} />
+      <SessionCard writes={writes} />
+      <DangerCard writes={writes} onDeleted={onDeleted} />
     </>
   );
 }
@@ -38,28 +39,22 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
   // The coin keeps the saved initials while the name field is being edited or is empty.
   const name = (coach ? f.draft.fullName : `${f.draft.firstName} ${f.draft.lastName}`).trim() || profile.fullName;
   const invalid = profileProblem(data.role, f.draft);
+  // A photo that doesn't load falls back to the initials (the URL stays, so Replace and Remove still apply).
+  const [broken, setBroken] = useState<string | null>(null);
+  const photo = f.draft.avatarUrl && f.draft.avatarUrl !== broken ? f.draft.avatarUrl : null;
 
   return (
     <Card
       id="set-profile"
       title="Profile"
       description={coach ? 'How players and staff see you across GolfHelm.' : 'How your coaches and teammates see you.'}
-      foot={
-        <SaveBar
-          dirty={f.dirty}
-          pending={save.pending}
-          invalid={invalid}
-          savedAt={f.savedAt}
-          onReset={f.reset}
-          onSave={() => void save.run(f.draft)}
-        />
-      }
+      save={{ dirty: f.dirty, pending: save.pending, invalid, savedAt: f.savedAt, onReset: f.reset, onSave: () => void save.run(f.draft) }}
     >
       <div className="ch-set-photo">
         <span className={'ch-set-photo__img' + (uploading ? ' is-busy' : '')} data-ch-code={f.draft.avatarUrl ? undefined : 'CH-8304'}>
-          {f.draft.avatarUrl ? (
+          {photo ? (
             // A user-uploaded storage URL, shown as a plain image.
-            <img src={f.draft.avatarUrl} alt="" width={64} height={64} />
+            <img src={photo} alt="" width={64} height={64} onError={() => setBroken(photo)} />
           ) : (
             <Avatar name={name || 'You'} size={64} />
           )}
@@ -109,6 +104,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
   const [next, setNext] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  const [sentAt, setSentAt] = useState(0);
   useReportDirty('email', next.trim() !== '');
   const send = useSaveAction(
     'settings.changeEmail',
@@ -118,42 +114,55 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
       setSentTo(v);
       setNext('');
       setTouched(false);
+      setSentAt(Date.now());
     },
   );
   const problem = next.trim() ? emailProblem(next, email) : null;
   return (
-    <Card id="set-email" title="Email" description="Where GolfHelm sends sign-in links and email notifications.">
+    <Card
+      id="set-email"
+      title="Email"
+      description="Where GolfHelm sends sign-in links and email notifications."
+      save={{
+        dirty: next.trim() !== '',
+        pending: send.pending,
+        savedAt: sentAt,
+        label: 'Send confirmation',
+        enterSaves: true,
+        onReset: () => {
+          setNext('');
+          setTouched(false);
+        },
+        onSave: () => {
+          setTouched(true);
+          if (problem || !next.trim()) {
+            haptic('warning');
+            return;
+          }
+          void send.run(next.trim());
+        },
+      }}
+    >
       <Row label="Current email">
         <span className="ch-set-value">{email ?? 'No email on file'}</span>
       </Row>
       {sentTo && (
         <InlineNotice title={`Check ${sentTo}`} body="Open the link in that inbox to finish the change. Your current email works until then." />
       )}
-      <form
-        className="ch-set-inline"
-        noValidate
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setTouched(true);
-          if (problem || !next.trim()) return;
-          await send.run(next.trim());
-        }}
-      >
+      <div className="ch-set-grid">
         <Field
           id="set-newemail"
           label="New email"
           type="email"
           autoComplete="email"
           placeholder="name@school.edu"
+          span={2}
           value={next}
           error={touched ? problem : null}
           onChange={(e) => setNext(e.target.value)}
           onBlur={() => setTouched(true)}
         />
-        <Button type="submit" disabled={!next.trim() || send.pending}>
-          {send.pending ? 'Sending…' : 'Send confirmation'}
-        </Button>
-      </form>
+      </div>
     </Card>
   );
 }
@@ -163,12 +172,17 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
   const [tried, setTried] = useState(false);
+  const [changedAt, setChangedAt] = useState(0);
   useReportDirty('password', !!(cur || next || confirm));
-  const change = useSaveAction('settings.changePassword', writes.changePassword, SAVE_COPY.password, () => {
+  const clear = () => {
     setCur('');
     setNext('');
     setConfirm('');
     setTried(false);
+  };
+  const change = useSaveAction('settings.changePassword', writes.changePassword, SAVE_COPY.password, () => {
+    clear();
+    setChangedAt(Date.now());
   });
   const problem = passwordProblem(cur, next, confirm);
   return (
@@ -177,32 +191,22 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
       title="Password"
       description="You’ll confirm your current password first."
       aside={<Icon icon={KeyRound} size={16} />}
-      foot={
-        <>
-          <span className="ch-set-status" aria-live="polite">
-            {tried && problem ? (
-              <span className="is-invalid" role="alert" data-ch-code={problem.code}>
-                {problem.text}
-              </span>
-            ) : null}
-          </span>
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={!hasEmail || change.pending || !(cur || next || confirm)}
-            onClick={async () => {
-              setTried(true);
-              if (problem) {
-                haptic('warning');
-                return;
-              }
-              await change.run(cur, next);
-            }}
-          >
-            {change.pending ? 'Updating…' : 'Update password'}
-          </Button>
-        </>
-      }
+      save={{
+        dirty: hasEmail && !!(cur || next || confirm),
+        pending: change.pending,
+        savedAt: changedAt,
+        label: 'Update password',
+        invalid: tried ? problem : null,
+        onReset: clear,
+        onSave: () => {
+          setTried(true);
+          if (problem) {
+            haptic('warning');
+            return;
+          }
+          void change.run(cur, next);
+        },
+      }}
     >
       <div className="ch-set-grid">
         <Field id="set-pw-cur" label="Current password" type="password" autoComplete="current-password" span={2} value={cur} onChange={(e) => setCur(e.target.value)} />
@@ -242,8 +246,21 @@ function HelpCard() {
   );
 }
 
-function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDeleted: () => void }) {
+function SessionCard({ writes }: { writes: ChSettingsWrites }) {
   const { signOut, signingOut } = useSignOut(writes);
+  return (
+    <Card id="set-session" title="Session">
+      <Row label="Sign out" help="Signs you out on this device.">
+        <Button size="sm" leftIcon={LogOut} busy={signingOut} onClick={() => void signOut()}>
+          {signingOut ? 'Signing out…' : 'Sign out'}
+        </Button>
+      </Row>
+    </Card>
+  );
+}
+
+/** Last in the section, on its own: what can't be undone. Red is for this (D-42); the confirm below is unchanged. */
+function DangerCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDeleted: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
   const del = useDeleteAccount(writes, () => {
@@ -252,26 +269,8 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
   });
   return (
     <>
-      <Card id="set-session" title="Session and account" tone="danger">
-        <div className="ch-set-row">
-          <div className="ch-set-row__txt">
-            <span className="ch-set-row__l">Sign out</span>
-            <span className="ch-set-row__h">Signs you out on this device.</span>
-          </div>
-          <Button
-            size="sm"
-            leftIcon={LogOut}
-            disabled={signingOut}
-            onClick={() => void signOut()}
-          >
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </Button>
-        </div>
-        <div className="ch-set-row">
-          <div className="ch-set-row__txt">
-            <span className="ch-set-row__l">Delete account</span>
-            <span className="ch-set-row__h">Removes your account and everything tied to it. This can’t be undone.</span>
-          </div>
+      <Card id="set-danger" title="Danger zone" description="Things that can’t be undone." tone="danger">
+        <Row label="Delete account" help="Removes your account and everything tied to it. This can’t be undone.">
           <Button
             size="sm"
             variant="danger"
@@ -286,7 +285,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
           >
             Delete account
           </Button>
-        </div>
+        </Row>
       </Card>
       {/* CH-8604: a confirm rises and fades in; CH-8806: it traps focus, Esc closes, focus returns (native dialog). */}
       <Modal

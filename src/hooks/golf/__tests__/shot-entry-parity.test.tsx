@@ -76,7 +76,8 @@ const TAG_WORD: Record<Renderer, Record<PuttMissTag, string>> = {
   clubhouse: { short: 'Short', long: 'Long', low: 'Low side', high: 'High side' },
 };
 const BREAK_WORD = { left_to_right: 'L → R', straight: 'Straight', right_to_left: 'R → L', multiple: 'Mult.' };
-const SLOPE_WORD = { uphill: 'Uphill', level: 'Level', downhill: 'Down', severe: 'Severe' };
+// Fairway's slope key reads "Down"; Clubhouse's reads "Downhill" to match the saved line (2026-10-18).
+const SLOPE_WORD = { uphill: /^Uphill$/i, level: /^Level$/i, downhill: /^Down(?:hill)?$/i, severe: /^Severe$/i };
 const exact = (s: string) => new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 const starts = (s: string) => new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
 
@@ -157,7 +158,7 @@ async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) 
         );
         break;
       case 'slope':
-        await user.click(within(screen.getByRole('radiogroup', { name: 'Putt slope' })).getByRole('radio', { name: exact(SLOPE_WORD[step.v]) }));
+        await user.click(within(screen.getByRole('radiogroup', { name: 'Putt slope' })).getByRole('radio', { name: SLOPE_WORD[step.v] }));
         break;
       case 'dist': {
         const box = document.getElementById(r === 'fairway' ? 'fw-distance-after' : 'ch-rt-dist') as HTMLInputElement;

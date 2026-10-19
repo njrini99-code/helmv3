@@ -1,6 +1,6 @@
 'use client';
 
-import { Play, Scale as ScaleIcon } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { ChStandRow, ChStanding, ChStandSense } from '../../../data/coachhelm-standing-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
@@ -99,7 +99,7 @@ function Row({ r }: { r: ChStandRow }) {
 }
 
 function Hero({ s }: { s: ChStanding }) {
-  const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed}` : null].filter(Boolean);
+  const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
   const { tour, team } = s.counts;
   const top = s.gaps[0];
   const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
@@ -109,7 +109,8 @@ function Hero({ s }: { s: ChStanding }) {
       <div className="ch-hs-hero__main">
         <div className="ch-hs-hero__k">
           <span>Where you stand</span>
-          {meta.length > 0 && <span className="ch-num">{meta.join(' · ')}</span>}
+          {/* No-break spaces keep a date whole ("Sep 30") and a dot off the start of a line. */}
+          {meta.length > 0 && <span className="ch-num">{meta.join('\u00a0· ')}</span>}
         </div>
         {/* A headline, so no closing full stop (states audit, 2026-10-08). It leads with the most to gain; the counts say one
             denominator, the Tour's, under it (P013 D4). */}
@@ -190,12 +191,12 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
           <EmptyState
             code="CH-13370"
             size={phone ? 'page' : 'section'}
-            icon={ScaleIcon}
+            shape="rows"
             title="Standing starts with a few rounds"
             body={`Standing puts your stats next to the Tour and your team. It fills in once your first rounds are in, and refreshes overnight.${s.rounds ? ` You have posted ${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}.` : ''}`}
             action={
               startHref ? (
-                <Button variant="primary" leftIcon={Play} href={startHref.href}>
+                <Button variant="primary" leftIcon={Plus} href={startHref.href}>
                   {startHref.label}
                 </Button>
               ) : undefined
@@ -211,7 +212,9 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
           {s.cohortFailed && <RefreshNotice code="CH-13272" title="Your team’s Tour couldn’t be confirmed" body="The rows below are against the men’s Tour, the default, which may not be the one for your team. Your stats and your team’s are not affected. Try again in a moment." covered={s.baselineFailed} />}
           {s.state === 'early' && (
             <p className="ch-hs-early" role="note" data-ch-code="CH-13371">
-              <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds, and a comparison with your team needs 5 teammates with the stat.
+              <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds
+              {/* The team clause only where a row is short of teammates: rows with team values say otherwise. */}
+              {s.groups.some((g) => g.rows.some((r) => r.teamNote)) ? ', and a comparison with your team needs 5 teammates with the stat' : ''}.
             </p>
           )}
           <Hero s={s} />

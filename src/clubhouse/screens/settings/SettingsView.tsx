@@ -13,7 +13,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
 import { keepSaved } from './live';
-import { SECTIONS, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from './model';
+import { SECTIONS, viewerRoleLabel, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from './model';
 import { DirtyContext, useUnsavedGuard } from './parts';
 import { AccountSection } from './Account';
 import { NotificationsSection } from './Notifications';
@@ -153,7 +153,7 @@ export function SettingsView({
         <header className="ch-set-head" data-canopy-head="">
           <h1 className="ch-display">Settings</h1>
           <p>
-            {data.role === 'coach' ? 'Coach' : 'Player'}
+            {viewerRoleLabel(data)}
             {data.teamName ? ` · ${data.teamName}` : ''}
             {data.email ? ` · ${data.email}` : ''}
           </p>

@@ -60,10 +60,23 @@ export const welcomeLine1: Variants = {
   hidden: { opacity: 0, transform: 'translate(0px, 16px)' },
   show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.line1, WELCOME_AT.line1, OUT, c) }),
 };
-/** The name rises out of its own clipped line. */
+/**
+ * The name rises out of its own clipped line. It also fades in, a beat behind the rise: while the name is still below the
+ * clip, its cap height is the first thing to cross the line, and unfaded that read as a dash under "Good morning," (a
+ * still captured in that half second showed the greeting with no name, only the bar of the T).
+ */
 export const welcomeName: Variants = {
-  hidden: { transform: 'translate(0px, 108%)' },
-  show: (c: AuthCustom) => ({ transform: 'translate(0px, 0%)', transition: tx(WELCOME_TAKES.name, WELCOME_AT.name, SMOOTH, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 108%)' },
+  show: (c: AuthCustom) => ({
+    opacity: 1,
+    transform: 'translate(0px, 0%)',
+    transition: c.reduced
+      ? tx(WELCOME_TAKES.name, WELCOME_AT.name, SMOOTH, c)
+      : {
+          transform: { duration: WELCOME_TAKES.name, delay: WELCOME_AT.name, ease: [...SMOOTH] },
+          opacity: { duration: CH_DUR.base, delay: WELCOME_AT.name + 0.12, ease: [...OUT] },
+        },
+  }),
 };
 export const welcomeCard: Variants = {
   hidden: { opacity: 0, transform: 'translate(0px, 18px)' },

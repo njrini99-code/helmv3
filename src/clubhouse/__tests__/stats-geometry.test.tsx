@@ -21,6 +21,7 @@ import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { StatsProfileSkeleton, StatsSkeleton } from '../screens/stats/StatsSkeleton';
 import { StatsPlayerPhoneSkeleton, StatsTeamPhoneSkeleton } from '../screens/stats/StatsPhoneSkeleton';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
+import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
@@ -216,7 +217,7 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect(teamPhone.container.querySelectorAll('.ch-stm-hero > dd')).toHaveLength(2);
     expect(teamPhone.container.querySelectorAll('.ch-stm-figrow')).toHaveLength(3);
     expect(teamPhone.container.querySelectorAll('.ch-stm-sgfig + .ch-stm-legs > .ch-stm-leg')).toHaveLength(5);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-figrow\s*{[^}]*height: 60px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-figrow\s*{[^}]*min-height: 60px/);
     expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-sgfig\s*{[^}]*height: 64px/);
     expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-leg\s*{[^}]*height: 44px/);
     // The trend's hold is the plot's own box (the same bleed), and its reading holds the two lines it wraps to beside the mean's key.
@@ -237,5 +238,34 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     const { container } = render(<HomeSkeleton />);
     const head = container.querySelector('.ch-h-head')!;
     expect(head.querySelector('.ch-h-head__actions')!.children).toHaveLength(2);
+  });
+
+  it('Home: a coach\'s head is followed by the scoring form\'s band and its Up next card has invitees and an action; a player\'s has neither, nor the brief (review 2026-10-18)', () => {
+    const coach = render(<HomeSkeleton />);
+    const main = coach.container.querySelector('main')!;
+    const order = [...main.children].map((c) => c.className.split(' ')[0]);
+    expect(order.slice(order.indexOf('ch-h-head'), order.indexOf('ch-h-head') + 3)).toEqual(['ch-h-head', 'ch-h-form', 'ch-h-sheet']);
+    expect(main.querySelectorAll('.ch-h-form .ch-h-form__figs > div')).toHaveLength(3);
+    // Shapes only: the plot's box is there, with no line drawn in it.
+    expect(main.querySelector('.ch-h-form__plot')!.children).toHaveLength(0);
+    expect(main.querySelector('.ch-h-head')!.children).toHaveLength(4);
+    expect(main.querySelector('.ch-hm-skel__act')).not.toBeNull();
+    coach.unmount();
+    // The shell's role prop (a variable, as classes.test passes it: jsx-a11y reads a literal as an ARIA role).
+    const shellRole = 'player' as const;
+    const player = render(
+      <ClubhouseMarker role={shellRole}>
+        <HomeSkeleton />
+      </ClubhouseMarker>,
+    );
+    expect(player.container.querySelector('.ch-h-form')).toBeNull();
+    expect(player.container.querySelector('.ch-h-head')!.children).toHaveLength(3);
+    expect(player.container.querySelector('.ch-h-head .ch-h-head__actions')!.children).toHaveLength(2);
+    expect(player.container.querySelector('.ch-hm-skel__act')).toBeNull();
+  });
+
+  it('a profile skeleton takes the wide canvas\'s layout too, so its tabs land where they load at 1280 (review 2026-10-18)', () => {
+    expect(css).toContain(".ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero {");
+    expect(css).not.toMatch(/\.ch-st\.is-desk\[data-canopy\] \.ch-pf-hero/);
   });
 });

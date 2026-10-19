@@ -845,16 +845,29 @@ async function regenerateJoinCodeImpl(
 
   const newJoinCode = generateJoinCode();
 
-  // Update join code
-  const { error: updateError } = await supabase
+  // Update join code. An UPDATE that RLS filters to zero rows is not an error,
+  // so the saved row is read back: without it the coach was shown a code that
+  // was never stored, and players typing it were refused. RETURNING is
+  // readable here: golf_teams_update_coach and golf_teams_select both rest on
+  // is_golf_team_coach(id).
+  const { data: updatedRows, error: updateError } = await supabase
     .from('golf_teams')
     .update({
       join_code: newJoinCode,
       updated_at: new Date().toISOString()
     })
-    .eq('id', teamId);
+    .eq('id', teamId)
+    .select('id');
 
   if (updateError) {
+    return { success: false, error: 'Failed to regenerate join code. Please try again.' };
+  }
+
+  if (updatedRows?.length !== 1) {
+    await logServerError(
+      `[regenerateJoinCode] update saved ${updatedRows?.length ?? 0} rows for team ${teamId}; new code not stored`,
+      { action: 'teams.regenerateJoinCode', featureArea: 'teams' },
+    );
     return { success: false, error: 'Failed to regenerate join code. Please try again.' };
   }
 

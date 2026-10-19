@@ -3,7 +3,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import type { ChGauge } from '../../data/stats-team';
 import { gappedPath, lastValue } from '../../lib/chart';
-import { formatSigned } from '../../lib/format';
+import { formatSigned, NO_DATA } from '../../lib/format';
 
 export type TapeItem = {
   label: string;
@@ -49,6 +49,8 @@ export function TeamTape({ items }: { items: TapeItem[] }) {
 
 function TapeCell({ it }: { it: TapeItem }) {
   const d = it.delta;
+  // A figure with no value keeps no caption: "vs previous 10" and the coverage note under an em dash describe a number that is not there.
+  const none = it.value === NO_DATA;
   const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);
   const good = d != null && !flat && (it.lowerIsBetter ? d < 0 : d > 0);
   const vals = it.series.filter((v): v is number => v != null);
@@ -73,7 +75,7 @@ function TapeCell({ it }: { it: TapeItem }) {
       <span className="ch-tp__l">{it.label}</span>
       <b className="ch-tp__v ch-num">
         {it.value}
-        {it.unit && <small>{it.unit}</small>}
+        {it.unit && !none && <small>{it.unit}</small>}
       </b>
       <span className={`ch-tp__d ch-num ${tone}`}>
         {d != null ? (
@@ -82,7 +84,7 @@ function TapeCell({ it }: { it: TapeItem }) {
             {formatSigned(d, it.deltaDigits)}
           </>
         ) : null}
-        <em>{it.context}</em>
+        {!none && <em>{it.context}</em>}
       </span>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className={`ch-tp__svg ${tone}`} aria-hidden="true">
         <defs>
@@ -99,7 +101,7 @@ function TapeCell({ it }: { it: TapeItem }) {
         )}
         {end && <circle cx={x(end.i)} cy={y(end.v)} r={3.2} className="ch-tp__dot" vectorEffect="non-scaling-stroke" />}
       </svg>
-      {it.note && <span className="ch-tp__n">{it.note}</span>}
+      {it.note && !none && <span className="ch-tp__n">{it.note}</span>}
     </li>
   );
 }

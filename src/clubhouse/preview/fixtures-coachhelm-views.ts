@@ -29,7 +29,8 @@ const FULL_VECTOR: GenomeVector = {
   pressure_delta: { value: 0.82, confidence: 0.5, label: 'Tightens up' },
   // Labels are the live dimensions' own (scrambling-rate.ts: Reliable from 27.6%, Wizard from 40.6%).
   scrambling_rate: { value: 0.352, confidence: 0.9, label: 'Reliable' },
-  par3_proficiency: { value: -0.38, confidence: 1, label: 'Under par' },
+  // Far enough under par to be the persona's strength (normalised 0.71); driver usage is a profile, never one.
+  par3_proficiency: { value: -0.84, confidence: 1, label: 'Under par' },
   back_nine_delta: { value: 0.31, confidence: 0.7, label: 'Fades late' },
   scoring_trend: { value: -0.64, confidence: 0.33, label: 'Improving' },
   driver_usage: { value: 0.62, confidence: 0.95, label: 'Mixed' },

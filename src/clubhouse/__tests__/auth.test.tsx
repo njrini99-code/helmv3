@@ -748,7 +748,8 @@ describe('the welcome', () => {
     expect(screen.getByText('Your first time in')).toBeInTheDocument();
     expect(screen.queryByText('Since you last signed in')).toBeNull();
     expect(screen.getByText('Your team’s updates will show up here')).toBeInTheDocument();
-    expect(screen.getByText('Messages, posted rounds and RSVPs since your last visit.')).toBeInTheDocument();
+    expect(screen.getByText('Messages, posted rounds and RSVPs land here each time you sign in.')).toBeInTheDocument();
+    expect(screen.queryByText(/since your last visit/)).toBeNull();
     expect(document.querySelector('[data-ch-code="CH-15302"]')).not.toBeNull();
   });
 

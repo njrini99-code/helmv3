@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutGrid, List, Users } from 'lucide-react';
+import { LayoutGrid, List } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import type { ChPlayerRoster, ChTeammate } from '../../data/roster-player';
@@ -12,6 +12,7 @@ import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Tooltip } from '../../ui/Tooltip';
 import { haptic } from '../../lib/haptics';
 import { NO_DATA } from '../../lib/format';
 import { useChPhone } from '../../lib/use-phone';
@@ -19,6 +20,7 @@ import { formatHcp } from './format';
 import { TeamRosterPhone } from './TeamRosterPhone';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 import '../../styles/roster.css';
+import { SideScroll } from '../../ui/SideScroll';
 
 type View = 'faces' | 'list';
 // The same key as the coach's roster: the layout is a preference for this screen on this device.
@@ -55,6 +57,8 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
   };
 
   const { players } = data;
+  // A joined player is always on their own roster, so a new team's first run is a roster of one (CH-3309).
+  const solo = players.length === 1 && players[0]!.isYou;
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return sortTeammates(
@@ -74,7 +78,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
           <h1 className="ch-display">Your team.</h1>
-          {!data.playersError && (
+          {!data.playersError && players.length > 0 && (
             <p>
               <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} on the roster.
             </p>
@@ -82,15 +86,27 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
         </div>
       </header>
 
+      <TeamCoaches coaches={data.coaches} />
+
       {data.playersError ? (
         <InlineNotice
           code="CH-3210"
           title="The roster didn’t load"
-          body="Your team is safe. Try again, and if it keeps happening the error has already been reported."
+          body="Your team is safe. Try again; the error has been reported."
           onRetry={() => router.refresh()}
         />
       ) : players.length === 0 ? (
-        <EmptyState size="page" code="CH-3307" icon={Users} title="No one on the roster yet" body="Your teammates appear here once your coach adds them." />
+        <EmptyState size="page" code="CH-3307" shape="people" title="No one on the roster yet" body="Teammates show up here as they join with the team code." />
+      ) : solo ? (
+        <>
+          {/* Nothing to search, sort or lay out for one row. */}
+          <SectionBoundary surface="roster.team" label="The roster" code="CH-3211">
+            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} />
+          </SectionBoundary>
+          <p className="ch-rs-solo" data-ch-code="CH-3309">
+            You’re the first one here. Teammates show up as they join.
+          </p>
+        </>
       ) : (
         <>
           <div className="ch-rs-bar">
@@ -103,19 +119,20 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
                     ['list', List, 'List view'],
                   ] as const
                 ).map(([v, icon, label]) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className="ch-rs-vt__b"
-                    aria-pressed={view === v}
-                    aria-label={label}
-                    onClick={() => {
-                      if (view !== v) haptic('select');
-                      changeView(v);
-                    }}
-                  >
-                    <Icon icon={icon} size={15} />
-                  </button>
+                  <Tooltip key={v}>
+                    <button
+                      type="button"
+                      className="ch-rs-vt__b"
+                      aria-pressed={view === v}
+                      aria-label={label}
+                      onClick={() => {
+                        if (view !== v) haptic('select');
+                        changeView(v);
+                      }}
+                    >
+                      <Icon icon={icon} size={15} />
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
               <Segmented<TeamSort>
@@ -141,22 +158,48 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
   );
 }
 
+/**
+ * The team's coaches above the players (wave 7): name and role in the roster's own Ledger, plain text like every row here
+ * (CH-3808). Left out when the staff didn't load (logged) or the team has none on record.
+ */
+function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
+  if (!coaches?.length) return null;
+  return (
+    <SideScroll className="ch-rs-list ch-rs-list--team ch-rs-coaches ch-sheet" role="table" aria-label="Coaches" data-ch-code="CH-3808">
+      <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
+        <span role="columnheader">Coach</span>
+        <span role="columnheader">Role</span>
+      </div>
+      {coaches.map((c) => (
+        <div key={c.id} role="row" className="ch-rs-row">
+          <span role="cell" className="ch-rs-who__cell">
+            <span className="ch-rs-who ch-rs-who--static">
+              <Avatar name={c.name} size={40} />
+              <span>
+                <b>{c.name}</b>
+              </span>
+            </span>
+          </span>
+          <span role="cell" className="ch-rs-num2">
+            {c.role}
+          </span>
+        </div>
+      ))}
+    </SideScroll>
+  );
+}
+
 /** The teammates, as cards or a table: plain text, never a control (CH-3807). Its own component so the boundary contains it. */
 function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; view: View; q: string; onClearSearch: () => void }) {
   if (rows.length === 0) {
     return (
-      <div className="ch-rs-empty ch-sheet">
-        <EmptyState
-          compact
-          code="CH-3302"
-          title={`No players match “${q.trim()}”`}
-          action={
-            <Button size="sm" onClick={onClearSearch}>
-              Show everyone
-            </Button>
-          }
-        />
-      </div>
+      <EmptyState
+        kind="filtered"
+        code="CH-3302"
+        title={`No players match “${q.trim()}”`}
+        body="Search matches player names."
+        action={<Button onClick={onClearSearch}>Show everyone</Button>}
+      />
     );
   }
   if (view === 'faces') {
@@ -181,7 +224,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
     );
   }
   return (
-    <div className="ch-rs-list ch-rs-list--team ch-sheet" role="table" aria-label="Roster" data-ch-code="CH-3807">
+    <SideScroll className="ch-rs-list ch-rs-list--team ch-sheet" role="table" aria-label="Roster" data-ch-code="CH-3807">
       <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
         <span role="columnheader">Player</span>
         <span role="columnheader">Class</span>
@@ -208,6 +251,6 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
           </span>
         </div>
       ))}
-    </div>
+    </SideScroll>
   );
 }

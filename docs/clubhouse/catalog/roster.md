@@ -22,7 +22,7 @@ can't click") is the same route for a player: `TeamRoster` and
 `TeamRosterPhone`, loader `src/clubhouse/data/roster-player.ts`, tests
 `src/clubhouse/__tests__/roster-player.test.tsx`, preview
 `/clubhouse-preview/roster-player` (`?state=empty|failed|noteam|loading`). CH-3210,
-CH-3211, CH-3307, CH-3308 and CH-3807 are its own; CH-3302 is shared.
+CH-3211, CH-3307, CH-3308, CH-3309, CH-3807 and CH-3808 are its own; CH-3302 is shared.
 
 Success toasts sit next to their error. Every save goes through `useAction`, so
 offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
@@ -37,7 +37,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3003 | Declining a join request fails | "Couldn’t decline Grace Liu’s request"; the request comes back. Done: "Request from Grace Liu declined" | `useAction('roster.declineRequest')`, optimistic | roster.test › CH-3003 |
 | CH-3004 | The coach's note doesn't save (on leaving the field) | "Couldn’t save your note about Theo" + "Your text is still in the field. Try again in a moment." Done: "Note saved for Theo" | `useAction('roster.coachNote')` | roster.test › CH-3004 |
 | CH-3005 | The browser blocks the CSV download | "Couldn’t export the roster" + "Your browser blocked the download. Try again, or use a desktop browser." Done: "Roster exported · 7 players" | `exportCsv` | roster.test › CH-3005 |
-| CH-3006 | Copying the join code or link fails | "Couldn’t copy the join code" + "Select it and copy it by hand." Done: "Join code copied" | `useCopyText` (Invite sheet, phone requests sheet) | roster.test › CH-3006 |
+| CH-3006 | Copying the team code or invite link fails | "Couldn’t copy the team code" + "Select it and copy it by hand." Done: "Team code copied" | `useCopyText` (Invite sheet, phone requests sheet) | roster.test › CH-3006 |
 | CH-3007 | Approve all (phone requests sheet, D-55) leaves some requests unapproved | "Couldn’t approve Owen Park and Sam Reyes" + "1 of 3 added to Varsity. Those requests may have been withdrawn. Try again, or refresh to see the latest." Those requests stay listed, and Retry re-tries only them. Done: "3 players added to Varsity" | `useJoinRequests` → `useAction('roster.approveAll')`, one request at a time | roster.test › CH-3007 |
 | CH-3008 | Changing a player's status (Active or Inactive) fails | "Couldn’t mark Theo Marchetti inactive" + "Nothing changed on the roster. Try again, or refresh if it keeps failing." Retry; the confirm stays open and the row keeps its status. Done: "Theo Marchetti marked inactive" (or "marked active"), and the player moves to that filter. Offline, nothing is sent (CH-1903). `updatePlayerStatus` resolves the coach's active team with the same resolver and cookie as the roster route | `useAction('roster.changeStatus')` → `updatePlayerStatus` | roster.test › CH-3008 |
 
@@ -57,39 +57,40 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3204 | The join requests section crashes | "Join requests couldn’t be shown." + "The rest of the page is fine…" Try again | `SectionBoundary roster.requests` | roster.test › CH-3204 |
 | CH-3205 | The roster list crashes | "The roster couldn’t be shown." … | `SectionBoundary roster.list` | roster.test › CH-3205 |
 | CH-3206 | The player panel crashes | "The player panel couldn’t be shown." … | `SectionBoundary roster.peek` | roster.test › CH-3206 |
-| CH-3207 | The team row doesn't load | Invite players shows "The join code didn’t load" + "Your code still works for players who have it. Try again to show it here." (never "no join code"); the header reads "Your team" | `InviteModal`; logged `clubhouse.roster.team` | roster.test › CH-3207 |
+| CH-3207 | The team row doesn't load | Invite players shows "The team code didn’t load" + "Your code still works for players who have it. Try again to show it here." (never "no team code"); the header reads "Your team" | `InviteModal`; logged `clubhouse.roster.team` | roster.test › CH-3207 |
 | CH-3208 | Focus areas or goals don't load | The panel's Development counts read "—", never 0 | `RosterPeek`; logged `clubhouse.roster.golf_player_focus_areas` / `golf_goals` | roster.test › CH-3208 |
 | CH-3209 | This coach's notes don't load | The note field is read-only with "Your notes didn’t load, so this one can’t be edited right now. Refresh the page to try again." A blank field can never save over a real note | `CoachNote locked`; logged `clubhouse.roster.coachNotes` | roster.test › CH-3209 |
-| CH-3210 | The player's roster doesn't load (a player's own team's members) | "The roster didn’t load." + "Your team is safe. Try again, and if it keeps happening the error has already been reported." Try again. Never "No one on the roster" | `TeamRoster`, `TeamRosterPhone`; logged `clubhouse.roster.playerMembers` | roster-player.test › CH-3210 |
+| CH-3210 | The player's roster doesn't load (a player's own team's members) | "The roster didn’t load." + "Your team is safe. Try again; the error has been reported." Try again. Never "No one on the roster" | `TeamRoster`, `TeamRosterPhone`; logged `clubhouse.roster.playerMembers` | roster-player.test › CH-3210 |
 | CH-3211 | The player's roster list crashes | "The roster couldn’t be shown." … The header, search and sort stay | `SectionBoundary roster.team` | roster-player.test › CH-3211 |
 
 ## 33xx Empty
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-3301 | No players yet | The page empty state (v2 medallion): "No players yet" + "Share your team code, then approve requests as they arrive. Players appear here as soon as they join." + Invite players; on desktop also Copy team code when the team has one (v2 says "by email"; there is no email invite, Data gaps) | `Roster`, `RosterPhone` | roster.test › CH-3301 |
+| CH-3301 | No players yet | The page empty state (v2 medallion): "No players yet" + "Players who sign up with your team code or open your invite link join right away. You can remove anyone here." + Invite players; on desktop also Copy team code when the team has one (v2 says "by email"; there is no email invite, Data gaps). Every count would be 0, so the head shows the team and season only (desktop drops "0 players · 0 active.", the phone kicker reads the team's name), and the phone top bar's invite icon steps aside for the empty state's primary; it stays when the roster read failed (wave 10) | `Roster`, `RosterPhone` | roster.test › CH-3301 |
 | CH-3302 | A search matches nobody | "No players match "zzz"" + Show everyone | `Roster`, `TeamRoster` | roster.test › CH-3302 |
 | CH-3303 | A status filter has nobody | "No inactive players." / "No active players." + Show everyone | `Roster` | roster.test › CH-3303 |
-| CH-3304 | The team has no join code | "Your team has no join code yet" + "Make one in Settings, then invite players here." + Open team settings | `InviteModal` | roster.test › CH-3304 |
+| CH-3304 | The team has no team code | "There’s no team code yet" + "Make one in Settings, then invite players here." + Open team settings | `InviteModal` | roster.test › CH-3304 |
 | CH-3305 | A player has no 18-hole rounds | Form reads "No 18-hole rounds this season" and "Form appears once rounds are posted." | `RosterPeek`, phone `RosterProfile` | roster.test › CH-3305 |
-| CH-3306 | A coach signed in with no active team | The page empty state (v2 medallion): "You aren’t on a team yet" + "Your players appear here once your team is set up." No action. It used to be Home's state (CH-2307), whose text is about Home | `RosterNoTeam`, from `ClubhouseRosterRoute` | roster.test › CH-3306 |
-| CH-3307 | A player's team has nobody on it | The page empty state: "No one on the roster yet" + "Your teammates appear here once your coach adds them." No action | `TeamRoster`, `TeamRosterPhone` | roster-player.test › CH-3307 |
-| CH-3308 | A player signed in with no active team | The page empty state: "You aren’t on a team yet" + "Your teammates appear here once your coach approves your request to join." | `RosterNoTeam viewer="player"` | roster-player.test › CH-3308 |
+| CH-3306 | A coach signed in with no active team | The page empty state (v2 medallion): "You aren’t on a team yet" + "Your players appear here once your team is set up." + Open team settings (Team). It used to be Home's state (CH-2307), whose text is about Home | `RosterNoTeam`, from `ClubhouseRosterRoute` | roster.test › CH-3306 |
+| CH-3307 | A player's team has nobody on it | The page empty state: "No one on the roster yet" + "Teammates show up here as they join with the team code." No action. The head shows the team and season only (no "0 players") | `TeamRoster`, `TeamRosterPhone` | roster-player.test › CH-3307 |
+| CH-3308 | A player signed in with no active team | The page empty state: "You aren’t on a team yet" + "Your teammates appear here once your coach approves your request to join." + Open team settings (Golf profile, CH-8302) | `RosterNoTeam viewer="player"` | roster-player.test › CH-3308 |
+| CH-3309 | A player alone on their team's roster (they are always on it once joined, so this is a new team's first run) | Their own row, then one quiet line: "You’re the first one here. Teammates show up as they join." No search, layout or sort control | `TeamRoster`, `TeamRosterPhone` | roster-player.test › CH-3309 |
 
 ## 34xx Loading
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-3401 | Roster is loading | Header, toolbar and six face cards as skeletons in their final slots | `RosterSkeleton`, `aria-busy`; below 820px the phone list rows, switched in CSS | roster.test › CH-3401 |
-| CH-3402 | A remove is in flight | The button reads "Removing" and can't be pressed again | `Modal` footer | roster.test › CH-3402 |
-| CH-3403 | Approve all is in flight (phone join requests sheet, D-55) | The footer reads "Approving" and can't be pressed again; each Approve and Decline waits too | `RequestsSheet` footer | roster.test › CH-3403 |
-| CH-3404 | A status change is in flight | The confirm button reads "Saving" and can't be pressed again; Cancel waits and the dialog can't be dismissed | `StatusConfirm` footer | roster.test › CH-3404 |
+| CH-3402 | A remove is in flight | The button reads "Removing…" and can't be pressed again | `Modal` footer | roster.test › CH-3402 |
+| CH-3403 | Approve all is in flight (phone join requests sheet, D-55) | The footer reads "Approving…" and can't be pressed again; each Approve and Decline waits too | `RequestsSheet` footer | roster.test › CH-3403 |
+| CH-3404 | A status change is in flight | The confirm button reads "Saving…" and can't be pressed again; Cancel waits and the dialog can't be dismissed | `StatusConfirm` footer | roster.test › CH-3404 |
 
 ## 35xx Confirm
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-3501 | Remove from team (row menu; on the phone, the profile's ⋯ sheet) | "Remove player?" + "Remove Theo Marchetti from Varsity? They can rejoin later with the team code." + "Their account and stats are not deleted…" Cancel / Remove player | `Modal` | roster.test › CH-3501 |
+| CH-3501 | Remove from team (row menu; on the phone, the profile's ⋯ sheet) | "Remove player?" + "Remove Theo Marchetti from Varsity? They can rejoin later with the team code." + "Their account and stats are not deleted…" Keep Theo / Remove player (the safe choice names the player) | `Modal` | roster.test › CH-3501 |
 | CH-3502 | Mark inactive / Mark active (coach only: row menu; on the phone, the profile's ⋯ sheet) | "Mark player inactive?" + "Move Theo Marchetti to Inactive on Varsity?" + "They stay on the team with their account and stats, but leave team rankings and averages. Until you mark them active again, the app shows them no team." Cancel / Mark inactive. For an inactive player: "Mark player active?" + "Move Theo Marchetti back to the active roster of Varsity?" Not destructive: the confirm is the primary, no red and no warning haptic (D-42, D-70) | `StatusConfirm` (`Modal`) | roster.test › CH-3502 |
 
 ## 36xx Motion
@@ -120,3 +121,4 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3805 | No axe violations in any preview state, both layouts, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-3806 | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration | `RosterPhoneRow` `aria-label`, spark `aria-hidden` | roster.test › CH-3806 |
 | CH-3807 | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed | `TeamRoster`, `TeamRosterPhone` (`ch-rs-face--static`, `ch-rsm-row--static`) | roster-player.test › CH-3807 |
+| CH-3808 | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record | `TeamRoster`, `TeamRosterPhone`; `loadPlayerRoster` (`golf_team_coach_staff` with `golf_coaches(full_name, title)`) | roster-player.test › CH-3808 |

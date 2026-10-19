@@ -8,16 +8,18 @@ import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useInViewOnce } from '../../lib/use-in-view';
 import { InlineNotice } from '../../ui/Notices';
+import { withPointSpan } from '../../ui/point-span';
+import type { ContextMenuBind } from '../../ui/ContextMenu';
 import { Icon } from '../../ui/Icon';
+import { Tooltip } from '../../ui/Tooltip';
 
-/** A calendar date (yyyy-mm-dd) as a Date at noon UTC, so no zone moves it a day. */
-export const dateOf = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00Z`);
+import { dateOf, TYPE_LABEL } from './labels';
+
+export { dateOf, TYPE_LABEL };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
 export const monthLabel = (iso: string) => fmt({ month: 'long', year: 'numeric' }).format(dateOf(iso));
 export const shortDay = (iso: string) => fmt({ month: 'short', day: 'numeric' }).format(dateOf(iso));
 const dow = (iso: string) => fmt({ weekday: 'short' }).format(dateOf(iso));
-
-export const TYPE_LABEL: Record<ChRoundType, string> = { practice: 'Practice', tournament: 'Tournament', qualifier: 'Qualifier' };
 
 export function TeeSwatch({ color }: { color: ChTeeColor | null }) {
   return color ? <i className={`ch-rd-tee ch-rd-tee--${color}`} aria-hidden="true" /> : null;
@@ -79,6 +81,7 @@ export function UnfinishedCard({
   onRetry,
   retrying = false,
   onDiscard,
+  menu,
 }: {
   round: ChUnfinishedRound | null;
   error: boolean;
@@ -92,6 +95,8 @@ export function UnfinishedCard({
   /** The retry is in flight (`useRefresh().refreshing`). */
   retrying?: boolean;
   onDiscard: (r: ChUnfinishedRound) => void;
+  /** The round's right-click menu handlers (ui/ContextMenu.tsx); the round in progress only. */
+  menu?: ContextMenuBind;
 }) {
   if (error) {
     return (
@@ -123,7 +128,7 @@ export function UnfinishedCard({
             )}
           </span>
           {startHref && (
-            // CH-11703: Start a round, Continue and Submit are primary taps (light).
+            // CH-11703: Start a round, Continue and Post round are primary taps (light).
             <Link href={startHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
               Start a round
               <Icon icon={ArrowRight} size={15} />
@@ -135,13 +140,13 @@ export function UnfinishedCard({
   }
   const started = round.date === todayIso ? 'Today' : shortDay(round.date);
   const thru = round.played.length;
-  const cta = round.readyToSubmit ? 'Submit round' : round.nextHole ? `Continue at hole ${round.nextHole}` : 'Continue';
+  const cta = round.readyToSubmit ? 'Post round' : round.nextHole ? `Continue at hole ${round.nextHole}` : 'Continue';
   return (
-    <div className="ch-rd-unf">
+    <div className="ch-rd-unf" {...menu}>
       <div className="ch-rd-unf__top">
         <span className="ch-rd-unf__k">
           <i />
-          {round.readyToSubmit ? 'Ready to submit' : 'In progress'}
+          {round.readyToSubmit ? 'Ready to post' : 'In progress'}
         </span>
         <span className="ch-rd-unf__t">{started}</span>
       </div>
@@ -153,7 +158,7 @@ export function UnfinishedCard({
         <InlineNotice
           code="CH-11215"
           title="Couldn’t check whether this round was already posted"
-          body="Every hole is scored, but your posted rounds didn’t load, so Submit isn’t offered here yet. Try again."
+          body="Every hole is scored, but your posted rounds didn’t load, so Post round isn’t offered here yet. Try again."
           onRetry={onRetry}
           retrying={retrying}
         />
@@ -169,9 +174,11 @@ export function UnfinishedCard({
           )}
         </span>
         <span className="ch-rd-unf__acts">
-          <button type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
-            <Icon icon={Trash2} size={14} />
-          </button>
+          <Tooltip>
+            <button type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
+              <Icon icon={Trash2} size={14} />
+            </button>
+          </Tooltip>
           {continueHref && (
             <Link href={continueHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
               {cta}
@@ -343,9 +350,10 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
           </dd>
         )}
         <dd className="ch-rd-fig__m">{season.best ? (
-            // D16: the whole course name, cut by the column's ellipsis rather than at its first word.
+            // D16: the whole course name, cut by the column's ellipsis rather than at its first word. It keeps its words
+            // on one line (rounds.css) and the separator ends that line, so a wrapped date never starts with "·".
             <>
-              <span className="ch-rd-fig__course">{season.best.course}</span> · {shortDay(season.best.date)}
+              <span className="ch-rd-fig__course">{season.best.course}</span>&nbsp;· {shortDay(season.best.date)}
             </>
           ) : (
             ''
@@ -392,7 +400,8 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
         <span className="ch-rd-k" id="ch-rd-season-k">
           Season scoring
         </span>
-        <b className="ch-rd-season__none">Your season starts with your first 18-hole round</b>
+        {/* A non-breaking hyphen (U+2011), so the line never breaks "18- / hole". */}
+        <b className="ch-rd-season__none">Your season starts with your first {'18\u2011hole'} round</b>
         <span className="ch-rd-season__nonebody">Scoring average, best round, putts and greens fill in here from 18-hole rounds posted since August 1.</span>
       </section>
     );
@@ -405,7 +414,7 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
             Season scoring
           </span>
           <div className="ch-rd-season__big">
-            <b className="ch-num">{formatFixed(season.avg, 1)}</b>
+            <b className="ch-num">{withPointSpan(formatFixed(season.avg, 1))}</b>
             <em>avg · {formatToPar(season.toPar, 1)} to par</em>
           </div>
         </div>
@@ -495,7 +504,7 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
  * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap. CH-11601: on the
  * desktop Ledger a round that opens its review takes the row tint on hover (quick) and a deeper one on press, no lift.
  */
-export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void }) {
+export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void; /** The library's right-click menu (desktop). */ bind?: ContextMenuBind }) {
   const under = r.toPar != null && r.toPar < 0;
   const body = (
     <>
@@ -554,6 +563,7 @@ export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string 
       href={href}
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
       aria-label={label}
+      {...bind}
       onClick={(e) => {
         haptic('select');
         // A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.

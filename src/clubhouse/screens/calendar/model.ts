@@ -131,6 +131,54 @@ export function replyLock(
   return now.ms != null && Number.isFinite(deadline) && deadline < now.ms ? 'deadline' : null;
 }
 
+/**
+ * Decision B (owner, wave 7): a player sees a meeting only when they are on its invite list, which is their own attendance
+ * row (`own`; a player reads it before and after migration 20261017102000). Only when that read failed (`own` null) does
+ * D2-8 decide: a meeting nobody is invited to is the coach's own. When the count failed too (`invitedCount` null) the
+ * meeting is hidden: a failed read never shows a player more than they are invited to (fail closed).
+ */
+export function playerSeesMeeting(own: boolean | null, invitedCount: number | null): boolean {
+  return own ?? (invitedCount != null && invitedCount !== 0);
+}
+
+/**
+ * The player's own reply mark (Home's Up next, the sidebar's next event), one rule for both: `going` once they said yes;
+ * otherwise only while the server would take a reply (`closed` false): `needed` when their own row is unanswered, or,
+ * with no row, when the event is open to the whole team (the coach invited no one; null: unknown, nothing claimed).
+ */
+export function playerMine(reply: ChRsvp | undefined, closed: boolean, openToTeam: boolean | null): 'going' | 'needed' | null {
+  if (reply === 'accepted') return 'going';
+  if (closed) return null;
+  if (reply) return reply === 'pending' ? 'needed' : null;
+  return openToTeam ? 'needed' : null;
+}
+
+/**
+ * A stored event row takes no reply now: the rules updateRSVP enforces (lib/calendar/rsvp.ts), as Team Hub's
+ * `replyIsClosed` reads them: it doesn't ask for replies (null reads as off), it is cancelled, it has started (an all-day
+ * event a day after its stored start), or it is past its RSVP deadline.
+ */
+export function replyClosedAt(
+  e: { requires_rsvp?: boolean | null; status?: string | null; cancelled_at?: string | null; all_day: boolean | null; start_time: string; rsvp_deadline?: string | null },
+  nowMs: number,
+): boolean {
+  if (e.requires_rsvp !== true || e.status === 'cancelled' || e.cancelled_at) return true;
+  const start = Date.parse(e.start_time);
+  if (Number.isFinite(start) && (e.all_day ? start + 86_400_000 : start) <= nowMs) return true;
+  return !!e.rsvp_deadline && Date.parse(e.rsvp_deadline) < nowMs;
+}
+
+/** The player's reply is waiting on this event: it asks for replies, they are invited (or it is open to the team), they haven't answered, and the server would still take an answer. */
+export function playerReplyNeeded(
+  e: Pick<ChCalEvent, 'rsvpRequired' | 'cancelled' | 'people' | 'openReply' | 'rsvp' | 'startIso' | 'allDay' | 'date' | 'start' | 'span' | 'rsvpDeadline'>,
+  viewerId: string | null,
+  now: { date: string; hour: number; ms?: number },
+): boolean {
+  if (!viewerId || !e.rsvpRequired || e.cancelled) return false;
+  if (!e.people.includes(viewerId) && !e.openReply) return false;
+  return (e.rsvp[viewerId] ?? 'pending') === 'pending' && !replyLock(e, now);
+}
+
 export const TYPE_LABEL: Record<ChCalType, string> = {
   practice: 'Practice',
   qualifier: 'Qualifier',
@@ -373,13 +421,14 @@ export function findOverlaps(events: ChCalEvent[]): ChCalOverlap[] {
       if (e.rsvp[pid] === 'declined') continue;
       for (const b of busyFor(events, pid, e.date, e.id)) {
         if (b.start == null || b.end == null || !overlaps([e.start, e.end], [b.start, b.end])) continue;
-        // Report each pair once, on the later-starting event (the one to move).
+        // Report each pair once, on the later-starting event (the one to move); a class doesn't move, so a clash with a
+        // class that starts later is reported on the team event (a 3:30 practice over a 4:00 class was missed).
         const [later, earlier] = e.start > b.start || (e.start === b.start && e.id > b.id) ? [e, b] : [b, e];
-        if (later.type === 'class') continue;
-        const key = `${later.id}:${earlier.id}:${pid}`;
+        const [at, other] = later.type === 'class' ? [earlier, later] : [later, earlier];
+        const key = `${at.id}:${other.id}:${pid}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        out.push({ id: key, eventId: later.id, withId: earlier.id, who: pid, from: Math.max(e.start, b.start), to: Math.min(e.end, b.end) });
+        out.push({ id: key, eventId: at.id, withId: other.id, who: pid, from: Math.max(e.start, b.start), to: Math.min(e.end, b.end) });
       }
     }
   }
