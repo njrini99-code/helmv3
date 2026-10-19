@@ -40,11 +40,11 @@ export function AccountPhone({
   });
   return (
     <>
-      <Group title="Profile">
+      <Group title="Profile" note={data.role === 'coach' ? 'How players and staff see you across GolfHelm.' : 'How your coaches and teammates see you.'}>
         {data.profile.error ? (
           <ReadFailed bare what="Your profile" code="CH-8201" onRetry={writes.refresh} />
         ) : (
-          <NavRow label="Profile" value={data.profile.value.fullName} onClick={onProfile} />
+          <NavRow label="Name and photo" value={data.profile.value.fullName} onClick={onProfile} />
         )}
       </Group>
       <Group title="Sign in" note={sentTo ? `Check ${sentTo}. Open the link in that inbox to finish the change. Your current email works until then.` : "Where GolfHelm sends sign-in links and email notifications. You’ll confirm your current password before changing it."}>

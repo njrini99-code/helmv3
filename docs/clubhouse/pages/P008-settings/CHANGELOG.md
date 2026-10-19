@@ -18,6 +18,7 @@ Held items:     none
 - Autosaving settings (every switch, segment and slider on Notifications and CoachHelm, quiet mode, the weekly email) say Saved in their own row for 1.8 seconds, inside the label's line so nothing moves. Sliders and the priority list say it in their card's head. The line "Changes save as you make them" over the CoachHelm title is gone on desktop (the phone keeps its line under the title). A failed save still puts the control back and toasts.
 - The team code is one style: 28px tabular Instrument Sans, set in an inset well with Copy code, Copy link and Share beside it; Copy says Copied for 1.8 seconds. The phone's code card, the staff invite code and the desktop card share the same rule (the old tracked JetBrains Mono code is gone). The phone card gains Copy code.
 - Hit areas: the priority reorder arrows (30px) and the setting segments (26px, such as alert sensitivity) now reach 44px, and the arrows sit 14px apart so their reaches do not overlap.
+- Phone Account: the Profile group's one row is now "Name and photo" with the group's caption under it, so it no longer repeats its own heading or leaves an empty gap before Sign in.
 - Danger zone: Account ends with Session (Sign out, plain) and then a Danger zone card holding Delete account alone, in red; a player's Team card is plain and Leave team sits in its own Danger zone card after it. The confirmations are unchanged.
 
 ### Why
