@@ -1,5 +1,36 @@
 # Clubhouse changelog
 
+## 2026-10-19 — Complete and elevate: shared pieces
+
+The shared primitives behind the complete-and-elevate pass
+([COMPLETION_PLAN_2026-10-18.md](COMPLETION_PLAN_2026-10-18.md)); each page's
+own changelog says what changed on it.
+
+- **Date and time fields** (`ui/DateField.tsx`, `ui/TimeField.tsx`, with
+  `ui/PickerHost.tsx` and `ui/date-time.ts` underneath) replace every native
+  date and time input. Values are unchanged (`yyyy-mm-dd`, `HH:mm`); the field
+  reads "Thu 15 Oct 2026" and "3:30 PM". Phone: a sheet with a month grid or a
+  snapping 15-minute list. Desktop: a popover under the field that stays
+  typable ("10/15", "oct 15", "tomorrow", "fri", "3p", "1530"), with an inline
+  note when it can't read the text. Out-of-range days and times are disabled;
+  end pickers can't precede their start.
+- **Busy buttons:** `Button busy` sets `aria-busy`, blocks a second press and
+  keeps the lit look, so a primary that is saving no longer turns into the
+  grey unavailable one.
+- **Roving focus** (`ui/use-roving.ts`): arrow keys, Home and End inside every
+  hand-built choice group; one tab stop per group.
+- **Desktop command layer** (`shell/command/**`, `ui/Tooltip.tsx`,
+  `ui/ContextMenu.tsx`): the palette on ⌘K, G-then-letter navigation with a
+  plate that shows where each letter goes, `?` for the shortcuts sheet,
+  tooltips with shortcut hints on icon buttons, and right-click menus that
+  mirror each row's own actions. Desktop only; nothing fires while typing.
+- **Waiting pages** (`ui/States.tsx`, `ui/EmptyShape.tsx`): an empty section
+  draws the shape of what will fill it (the real rules and alignment, no
+  invented content) under one sentence and one action. First run, filtered
+  empty, no permission and failure read as different states.
+- **Motion:** the live duration set is written into the rules and the
+  checklist and pinned by `__tests__/motion-durations-pinned.test.ts`.
+
 ## 2026-10-18 — First run: the empty team and the new player
 
 Coach Home's first run keys on players and rounds, not events, so adding an
