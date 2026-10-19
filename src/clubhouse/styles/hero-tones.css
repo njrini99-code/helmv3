@@ -35,7 +35,7 @@
 /* Archival mat: a lighter mat with a fine inner line, set like a museum caption. */
 .ch-hero[data-tone='archival'] {
   padding: 24px 28px 26px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: #f7f4ea;
   box-shadow: 0 0 0 1px var(--ch-hero-rule), inset 0 0 0 6px #f7f4ea, inset 0 0 0 7px rgb(157 130 73 / 0.32);
 }
@@ -43,7 +43,7 @@
 /* Clubhouse plaque: a mounted plate; a forest rule stands at the title. */
 .ch-hero[data-tone='plaque'] {
   padding: 22px 26px 24px 30px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-xl);
   background: #f2efe4;
   box-shadow: 0 0 0 1px rgb(93 99 76 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.8);
 }
