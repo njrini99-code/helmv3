@@ -5,6 +5,7 @@ import { CircleAlert, CircleCheck, X } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
+import { Tooltip } from './Tooltip';
 import { CH_DUR, chSpringCurve, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { chSupportsLinear, chThrownExit } from '../lib/sheet-drag';
@@ -389,9 +390,11 @@ function ToastCard({
           {t.action.label}
         </button>
       )}
-      <button type="button" className="ch-toast__close" aria-label="Dismiss notification" onClick={close}>
-        <Icon icon={X} size={14} />
-      </button>
+      <Tooltip label="Dismiss notification">
+        <button type="button" className="ch-toast__close" aria-label="Dismiss notification" onClick={close}>
+          <Icon icon={X} size={14} />
+        </button>
+      </Tooltip>
     </m.div>
   );
 }

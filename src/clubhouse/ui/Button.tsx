@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode, MouseEvent } from 'react';
 import { Icon } from './Icon';
 import { haptic, type ChHaptic } from '../lib/haptics';
+import { Tooltip } from './Tooltip';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'ink' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -72,6 +73,10 @@ export function Button(props: ButtonProps) {
   );
 }
 
+/**
+ * An icon-only button. Its tooltip is its accessible name (and `shortcut`, when it has one: drawn as key caps, announced
+ * through aria-keyshortcuts), shown on hover rest and keyboard focus and never on touch (ui/Tooltip.tsx).
+ */
 export function IconButton({
   icon,
   label,
@@ -80,6 +85,7 @@ export function IconButton({
   feel = null,
   disabled,
   className,
+  shortcut,
 }: {
   icon: LucideIcon;
   label: string;
@@ -88,20 +94,23 @@ export function IconButton({
   feel?: ChHaptic | null;
   disabled?: boolean;
   className?: string;
+  /** The key that does the same, one string per key cap ("N", or "⌘" then "\\"). */
+  shortcut?: readonly string[];
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      className={['ch-btn', 'ch-btn--ghost', 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ')}
-      onClick={() => {
-        if (feel) haptic(feel);
-        onClick?.();
-      }}
-    >
-      <Icon icon={icon} size={size === 'sm' ? 15 : 16} />
-    </button>
+    <Tooltip label={label} shortcut={shortcut} ariaKeys={shortcut?.length === 1 && shortcut[0]!.length === 1 ? shortcut[0] : undefined}>
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        className={['ch-btn', 'ch-btn--ghost', 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ')}
+        onClick={() => {
+          if (feel) haptic(feel);
+          onClick?.();
+        }}
+      >
+        <Icon icon={icon} size={size === 'sm' ? 15 : 16} />
+      </button>
+    </Tooltip>
   );
 }

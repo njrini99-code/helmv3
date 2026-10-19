@@ -15,6 +15,8 @@ import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
+import { useContextMenu, type ContextMenuBind } from '../../ui/ContextMenu';
+import { publishPeople } from '../../shell/command/people';
 import { Modal } from '../../ui/Modal';
 import { PillGroup, Segmented } from '../../ui/Segmented';
 import { SearchField } from '../../ui/SearchField';
@@ -281,6 +283,13 @@ export function Roster({ data }: { data: ChRoster }) {
     return items;
   };
 
+  // The right-click menu holds the kebab's items, so a row is the same wherever it is opened from.
+  const ctx = useContextMenu<ChRosterPlayer>({ label: (p) => `Actions for ${p.name}`, items: menuFor });
+  // The command palette lists these players (Cmd K), nobody the coach doesn't already see here.
+  useEffect(() => {
+    publishPeople(players.map((p) => ({ id: p.id, name: p.name, detail: [p.classYear, p.status === 'inactive' ? 'Inactive' : null].filter(Boolean).join(' · ') || undefined })));
+  }, [players]);
+
   const dialogs = (
     <>
       <InviteModal
@@ -516,6 +525,7 @@ export function Roster({ data }: { data: ChRoster }) {
                   show={show}
                   openProfile={openProfile}
                   menuFor={menuFor}
+                  bind={ctx.bind}
                   onShowEveryone={() => {
                     setQ('');
                     setShow('all');
@@ -531,6 +541,7 @@ export function Roster({ data }: { data: ChRoster }) {
       )}
 
       {dialogs}
+      {ctx.menu}
     </main>
   );
 }
@@ -548,6 +559,7 @@ function RosterList({
   show,
   openProfile,
   menuFor,
+  bind,
   onShowEveryone,
 }: {
   rows: ChRosterPlayer[];
@@ -558,6 +570,8 @@ function RosterList({
   show: Show;
   openProfile: (id: string) => void;
   menuFor: (p: ChRosterPlayer) => MenuItem[];
+  /** The right-click menu's handlers for a row (ui/ContextMenu.tsx). */
+  bind: (p: ChRosterPlayer) => ContextMenuBind;
   onShowEveryone: () => void;
 }) {
   return (
@@ -587,6 +601,7 @@ function RosterList({
               className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
               aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
               onClick={() => openProfile(p.id)}
+              {...bind(p)}
             >
               <span className="ch-rs-face__top">
                 <span />
@@ -628,6 +643,7 @@ function RosterList({
               key={p.id}
               role="row"
               className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+              {...bind(p)}
             >
               <span role="cell" className="ch-rs-who__cell">
                 <button

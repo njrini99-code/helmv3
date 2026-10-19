@@ -19,6 +19,7 @@ import { RailToggle } from './RailToggle';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
 import { AccountSheet } from './AccountSheet';
+import { CommandLayer } from './command/CommandLayer';
 import { SectionStrip } from './SectionStrip';
 import { SectionSwitchProvider, useSectionSwitch } from './section-switch';
 import { RouteFrame } from './RouteFrame';
@@ -37,6 +38,7 @@ import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 import '../styles/controls.css';
+import '../styles/command.css';
 import { useCanvasSmoothScroll, useSmoothWheelEverywhere } from '../lib/smooth-scroll';
 
 /** Set under ChMotionFeatures, so a frame rendered inside it doesn't render a second one. */
@@ -177,6 +179,8 @@ export function ClubhouseFrame({
                       </div>
                       <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
                       <SectionStrip pathname={pathname} role={role} user={{ name: userData.name }} />
+                      {/* Desktop only: Cmd K's palette, G-then-letter jumps, / and ? (shell/command). */}
+                      <CommandLayer role={role} pathname={pathname} userId={userData.userId} teamId={userData.teamId ?? null} />
                       <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null, headCoach: shell.viewerIsHeadCoach ?? false }} teamSwitch={teamSwitch} />
                       {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
                       <PullToRefresh pathname={pathname} />
