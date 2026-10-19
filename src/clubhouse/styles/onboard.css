@@ -1095,6 +1095,13 @@
   background: transparent;
   cursor: pointer;
 }
+@media (max-width: 820px) {
+  /* The slider's reach is 44px; the track and thumb keep their drawing and the page below does not move. */
+  .ch-ox-range {
+    height: 44px;
+    margin: 7px 0 -7px;
+  }
+}
 .ch-ox-range::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 4px;
