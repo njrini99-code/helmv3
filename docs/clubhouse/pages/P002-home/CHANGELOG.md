@@ -1,5 +1,30 @@
 # P002 — Home: changelog
 
+## 2026-10-19 — First-run Home draws the week; the latest round's long names stay on the card
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-2302, CH-2304, CH-2305, CH-2307, CH-2308, CH-2312, CH-2313
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Coach and player first-run pages, the no-team pages, the leaderboard's empties and the latest-round empty draw the shape of what will fill them (time rows, portrait rows) under the sentence. The coach copy says the page fills itself from replies, posted rounds and the leaderboard.
+- The latest round's player name ends in an ellipsis rather than pushing the score off the card (`.ch-h-round__name`).
+- The compact in-card empties (Today, Later today, Up next) keep their one-line form.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/home?state=empty and home-player?state=empty`, phone and desktop, light and dark, before and after.
+
 ## 2026-10-18 — Wave 10: the first run and the empty team
 
 ```text

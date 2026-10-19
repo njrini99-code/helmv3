@@ -312,39 +312,6 @@
     display: none;
   }
 }
-.ch-rec-none-match {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 56px 24px 64px;
-  text-align: center;
-}
-.ch-rec-none-match__ic {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--ch-ivory-100);
-  color: var(--ch-text-tertiary);
-}
-.ch-rec-none-match b {
-  font: 600 calc(16 * var(--ch-type-k))/1.35 var(--ch-font-sans);
-}
-.ch-rec-none-match > span:not(.ch-rec-none-match__ic) {
-  max-width: 420px;
-  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-}
-.ch-rec-none-match__a {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 10px;
-}
-
 /* ── Avatar and stage chip ────────────────────────────────────────────────── */
 .ch-rec-av {
   display: grid;
@@ -1062,19 +1029,6 @@
     font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
-  /* No match: the state alone, centred on the parchment, with no box around it. */
-  .ch-rec-none-match.is-phone {
-    padding: 36px 8px 28px;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
-  .ch-rec-none-match.is-phone .ch-rec-none-match__a {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-  }
-
   /* A prospect: a pushed screen with its own scroll, on the same ledger. Who, then Stage with Email and Call as keys
      drawn on the parchment, then the parts: a part with something in it opens under the double rule, a part with
      nothing yet is one row on a seam. */

@@ -372,14 +372,16 @@ describe('Roster · empty', () => {
   it('CH-3301 no players yet: the v2 page empty state, invite first and copy the team code second', () => {
     wrap(roster({ players: [], requests: [] }));
     const el = code('CH-3301') as HTMLElement;
-    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(el.classList.contains('ch-es--page')).toBe(true);
+    expect(el.getAttribute('data-ch-state')).toBe('first-run');
+    expect(el.querySelector('.ch-es-shape--people')).not.toBeNull();
     expect(within(el).getByRole('heading', { level: 2, name: 'No players yet' })).toBeTruthy();
     const buttons = within(el).getAllByRole('button').map((b) => b.textContent);
     expect(buttons).toEqual(['Invite players', 'Copy team code']);
     // One primary per screen: the header's Invite players steps aside.
     expect(screen.getAllByRole('button', { name: 'Invite players' })).toHaveLength(1);
     // Wave 10 (A): a code or link join is instant, so the coach is not told they approve it.
-    expect(el.textContent).toMatch(/Players who sign up with your team code or open your invite link join right away\. You can remove anyone here\./);
+    expect(el.textContent).toMatch(/Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here\./);
     expect(el.textContent).not.toMatch(/approve/);
     // Wave 10 (B): with nobody on the roster the head drops its 0 counts; the team and season stay.
     expect(document.querySelector('.ch-rs-head p')).toBeNull();
@@ -449,7 +451,7 @@ describe('Roster · empty', () => {
     vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
     render(<>{await ClubhouseRosterRoute()}</>);
     const el = code('CH-3306') as HTMLElement;
-    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(el.classList.contains('ch-es--page')).toBe(true);
     expect(within(el).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/Your players appear here once your team is set up/);
     expect(within(el).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');

@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Scale as ScaleIcon } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { ChStandRow, ChStanding, ChStandSense } from '../../../data/coachhelm-standing-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
@@ -191,7 +191,7 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
           <EmptyState
             code="CH-13370"
             size={phone ? 'page' : 'section'}
-            icon={ScaleIcon}
+            shape="rows"
             title="Standing starts with a few rounds"
             body={`Standing puts your stats next to the Tour and your team. It fills in once your first rounds are in, and refreshes overnight.${s.rounds ? ` You have posted ${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}.` : ''}`}
             action={

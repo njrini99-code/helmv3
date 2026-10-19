@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, use, useState } from 'react';
-import { Archive, Check, Flag, Sparkles, UserPlus, Users } from 'lucide-react';
+import { Archive, Check, Flag, UserPlus, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { firstName, playersLine, pulseGapsLabel, withoutSignalsLine, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
@@ -156,7 +156,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
     <EmptyState
       size="page"
       code="CH-13305"
-      icon={Sparkles}
+      {...(data.off.by === 'global' ? { kind: 'restricted' as const } : { shape: 'rows' as const })}
       title="CoachHelm is off"
       body={
         data.off.by === 'global'
@@ -175,7 +175,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
     <EmptyState
       size="page"
       code="CH-13307"
-      icon={Users}
+      shape="people"
       title="Add players to start CoachHelm"
       body="Invite your players. Each one’s insights show up here once they post rounds."
       action={
@@ -205,7 +205,8 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
         <Section id="ch-hl-none" title="Your players">
           <EmptyState
             code="CH-13306"
-            icon={Sparkles}
+            shape="people"
+            shapeCount={3}
             title="No signals yet"
             body="CoachHelm reads posted rounds. Each player’s insights appear once they’ve posted enough rounds to find a pattern."
             action={

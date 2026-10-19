@@ -1,5 +1,29 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-19 — Empty Recruiting draws the pipeline; no match is the filtered state
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-14301, CH-14302, CH-14306
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The empty list draws four lanes under a ruled head (desktop) or rows (phone) under the sentence.
+- No match for a search or stage (CH-14302) is the shared filtered state, announced as a status, with the same two ways back; `.ch-rec-none-match` is gone. The prospect panel's per-part empty rows (`EmptyRow`) are unchanged.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/recruiting?state=empty and nomatch`, phone and desktop, light and dark, before and after.
+
 ## 2026-10-18 — Pickers and controls: next step due, stage radios, saving
 
 ```text

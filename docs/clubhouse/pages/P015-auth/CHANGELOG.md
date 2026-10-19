@@ -1,5 +1,28 @@
 # P015 — Auth: changelog
 
+## 2026-10-19 — The welcome's name no longer shows as a dash under the greeting
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-15803
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- While the name rose out of its clipped line, the cap bar of the first letter crossed the clip first, so a still taken in that half second showed "Good morning," over a dash. The name now also fades in, a beat behind its rise (`welcomeName`). Timing of the rise is unchanged; reduced motion is unchanged.
+
+### Why
+
+- The greeting is the first thing the owner sees after signing in; a half-drawn name read as a missing one.
+
+### Verification
+
+- `auth.test.tsx`; frames captured at about 100 ms steps on `/clubhouse-preview/auth?screen=welcome&state=player` on the phone.
+
 ## 2026-10-19 — The front door's other ways in
 
 ```text

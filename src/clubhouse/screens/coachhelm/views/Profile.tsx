@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, ChevronRight, Dna, Lock, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Lock, Plus } from 'lucide-react';
 import { useId } from 'react';
 import type { ChMeasure, ChProfile } from '../../../data/coachhelm-profile-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
@@ -239,7 +239,7 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
         <>
           <EmptyState
             code="CH-13360"
-            icon={Dna}
+            shape="rows"
             title="Your game profile starts with a few rounds"
             body="CoachHelm reads how you play from the rounds you post. Each measure has its own minimum, so they fill in one at a time. Nothing is estimated before then."
             action={

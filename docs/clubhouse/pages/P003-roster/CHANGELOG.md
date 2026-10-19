@@ -1,5 +1,31 @@
 # P003 — Roster: changelog
 
+## 2026-10-19 — Empty roster draws the shape of the list; a search with no match says what it searched
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-3301, CH-3302, CH-3303, CH-3306, CH-3307, CH-3308
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- No players yet: the sentence takes the first row's place and a portrait ring and a ruled row are drawn under it. The copy says who fills it (players, with the team code or invite link). The same for a player's roster (CH-3307) and the no-team pages.
+- No match for a search, or an Active or Inactive filter that hides everyone, is the filtered state: it names what it searched ("Search matches player names", "Only inactive players are in view") with Show everyone as the one way out. It no longer sits in a card.
+- A long name in a roster card wraps to two lines and ends in an ellipsis instead of widening the card.
+- `.ch-rs-empty` is gone.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/roster?state=empty`, phone and desktop, light and dark, before and after.
+
 ## 2026-10-19 — Right-click menu on a player; the roster feeds the command palette
 
 ```text

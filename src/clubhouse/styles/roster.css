@@ -178,9 +178,6 @@
 .ch-rs-body.has-peek {
   grid-template-columns: minmax(0, 1fr) 340px;
 }
-.ch-rs-empty {
-  padding: 8px;
-}
 /* The player's roster of one (CH-3309): one quiet line under their own row. */
 .ch-rs-solo {
   margin: 14px 2px 0;
@@ -306,8 +303,17 @@
   font-size: 24px;
 }
 .ch-rs-face__name {
+  display: -webkit-box;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
   font: 600 16px/1.2 var(--ch-font-sans);
   letter-spacing: -0.01em;
+  /* A long name wraps to a second line and ends in an ellipsis; it never pushes the card wider (the row's label carries the full name). */
+  overflow-wrap: anywhere;
+  text-align: center;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .ch-rs-face__meta {
   font: var(--ch-type-caption);
@@ -1706,9 +1712,6 @@
   .ch-rs[data-canopy] .ch-rs-body,
   .ch-rs[data-canopy] .ch-rs-bar + .ch-rs-faces {
     margin-top: -18px;
-  }
-  .ch-rs[data-canopy] .ch-rs-empty {
-    padding: 28px 0 8px;
   }
 
   /* Faces: portraits on a ruled page. Hairlines run only between the cells (each face draws the line to its left and

@@ -374,6 +374,26 @@ describe('Messages · reads that fail', () => {
     await expectCode('CH-7202', /This conversation didn’t load/);
   });
 
+  it('CH-7202 a conversation that did not load turns its composer off and says why; one that merely failed to refresh keeps it', async () => {
+    live.msgs.messages = [];
+    live.msgs.error = new Error('boom');
+    const { unmount } = show();
+    await expectCode('CH-7202', /This conversation didn’t load/);
+    const box = screen.getByRole('textbox', { name: /^Message / });
+    expect(box).toHaveAttribute('readonly');
+    expect(box).toHaveAttribute('placeholder', 'Replies are off until this loads');
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Attach/ })).toBeDisabled();
+    expect(document.querySelector('.ch-ms-comp__hint')!.textContent).toMatch(/didn’t load, so you can’t send yet/);
+    unmount();
+    // Cached messages that failed to refresh are still a thread you can answer in.
+    live.msgs.messages = [mine];
+    show();
+    await expectCode('CH-7216', /may be out of date/);
+    expect(screen.getByRole('textbox', { name: /^Message / })).not.toHaveAttribute('readonly');
+    expect(document.querySelector('.ch-ms-comp__hint')!.textContent).not.toMatch(/can’t send yet/);
+  });
+
   it('CH-7216 a conversation that fails to refresh keeps its messages and says they may be out of date', async () => {
     live.msgs.error = new Error('boom');
     show();
@@ -456,13 +476,13 @@ describe('Messages · empty and loading', () => {
     const user = userEvent.setup();
     show();
     await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'zzz');
-    await expectCode('CH-7302', /No conversation names match\./);
+    await expectCode('CH-7302', /No conversation names match/);
   });
 
   it('CH-7304 a thread with no messages yet', async () => {
     live.msgs.messages = [];
     show();
-    await expectCode('CH-7304', /No messages yet\. Say hello to the group/);
+    await expectCode('CH-7304', /No messages yet.*Say hello to the group/);
   });
 
   it('CH-7401 CH-7402 CH-7403 route, rail and thread loading', async () => {
@@ -593,6 +613,10 @@ describe('Messages · more actions that fail', () => {
     expect(document.querySelector('.ch-ms-ann__sig')!.textContent).toBe('Maya ReyesHead coach');
     // No chips: the asks are words.
     expect(document.querySelector('.ch-ms-ann .ch-badge')).toBeNull();
+    // The list row says it too: the same amber mark and the word, not a different icon on each surface.
+    const row = document.querySelector('.ch-ms-row.is-ann')!;
+    expect(row.querySelector('.ch-ms-grp.is-urgent svg.lucide-triangle-alert')).not.toBeNull();
+    expect(row.querySelector('.ch-ms-row__bot em.is-urgent')!.textContent).toBe('Urgent · ');
   });
 
   it('CH-7013 marking a task done fails', async () => {
@@ -1437,7 +1461,7 @@ describe('Messages · no team', () => {
   it('CH-7308 a coach or player with no team gets the v2 page empty state', () => {
     const { unmount } = render(<MessagesNoTeam coach />);
     const el = code('CH-7308')!;
-    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(el.classList.contains('ch-es--page')).toBe(true);
     expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: "You aren’t on a team yet" })).toBeTruthy();
     expect(within(el as HTMLElement).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
     unmount();
@@ -1649,7 +1673,7 @@ describe('Messages · wave 5 feedback', () => {
     });
     show();
     await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'bus pass');
-    await expectCode('CH-7302', /^No conversation names match\.$/);
+    await expectCode('CH-7302', /^No conversation names matchClear search$/);
     const mark = await waitFor(() => {
       const m = document.querySelector('mark.ch-ms-hit');
       expect(m).not.toBeNull();
@@ -1665,7 +1689,7 @@ describe('Messages · wave 5 feedback', () => {
     live.msgs.messages = [];
     show();
     await user.click(await screen.findByRole('radio', { name: 'Groups' }));
-    await expectCode('CH-7302', /^No group conversations yet\.$/);
+    await expectCode('CH-7302', /^No group conversations yet$/);
   });
 
   it('#6 CH-7106 more than ten files: ten are kept and the rest are said, not dropped silently', async () => {

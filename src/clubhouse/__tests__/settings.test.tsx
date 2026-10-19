@@ -1492,7 +1492,8 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('button', { name: 'Report a problem' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe('/privacy');
     expect(screen.getByRole('link', { name: 'Terms of service' }).getAttribute('href')).toBe('/terms');
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
+    // Signing out is not destructive: the standard row ink, never the danger red.
+    expect(screen.getByRole('button', { name: 'Sign out' }).className).toBe('ch-setm-signout');
     // Not the desktop page reflowed: no section rail.
     expect(document.querySelector('.ch-set-rail')).toBeNull();
   });

@@ -1,5 +1,28 @@
 # P012 — Classes: changelog
 
+## 2026-10-19 — Empty Classes draws the week
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-12301, CH-12305
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The empty schedule and the no-team page draw seven day columns under the sentence, so the page reads as a timetable waiting for classes.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/classes?state=empty`, phone and desktop, light and dark, before and after.
+
 ## 2026-10-18 — Pickers and controls: class times, saving
 
 ```text

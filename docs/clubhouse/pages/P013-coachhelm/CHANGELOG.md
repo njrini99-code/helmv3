@@ -1,5 +1,31 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-19 — Off, empty and first-run CoachHelm told apart; Deep dive empties join the shared state
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-13301, CH-13302, CH-13304, CH-13305, CH-13306, CH-13307, CH-13360, CH-13370, CH-13382, CH-13383, CH-13384
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- CoachHelm turned off for a player, or off for everyone for a coach, is the restricted state: a lock and who can change it, with no action that would fail. A coach's own switch-off keeps Open CoachHelm settings.
+- First-run boards, Game profile and Standing draw rows under the sentence; the coach's board draws portrait rows.
+- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan) use the shared compact state; `.ch-hd-none` is gone.
+- The player's phone eyebrow (`.ch-hl-role`) no longer carries 0.14em tracking.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/coachhelm?state=empty, coachhelm-player?state=off`, phone and desktop, light and dark, before and after.
+
 ## 2026-10-18 — Wave 10: inviting from an empty CoachHelm
 
 ```text

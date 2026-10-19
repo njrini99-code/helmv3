@@ -1,6 +1,6 @@
 'use client';
 
-import { ClipboardList, Megaphone, Plane, Plus, UsersRound } from 'lucide-react';
+import { ClipboardList, Plane, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
@@ -523,7 +523,7 @@ export function TeamHub({
               <EmptyState
                 size="page"
                 code={coach ? 'CH-10305' : 'CH-10306'}
-                icon={coach ? Megaphone : UsersRound}
+                shape="rows"
                 title={coach ? 'Nothing posted yet' : 'No team updates yet'}
                 body={coach ? 'Post an announcement, plan a trip or share a document. Everything you post shows up in your players’ Team Hub.' : 'Announcements, trips and documents from your coaches will show up here.'}
                 // The head's New announcement is the page's one primary action on every tab (states audit b9): the empty
@@ -587,7 +587,7 @@ export function TeamHub({
                 {data.announcements.error ? (
                   <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
                 ) : !anns.length ? (
-                  <EmptyState compact code="CH-10307" icon={Megaphone} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
+                  <EmptyState code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
                   anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)
                 )}
@@ -602,7 +602,7 @@ export function TeamHub({
                 {data.trips.error ? (
                   <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
                 ) : !tripRows.length ? (
-                  <EmptyState compact code="CH-10308" icon={Plane} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
+                  <EmptyState code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 ) : (
                   <>
                     {nextTrip && <TripPass t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}

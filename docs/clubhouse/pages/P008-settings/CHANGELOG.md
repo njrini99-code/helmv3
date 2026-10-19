@@ -1,5 +1,28 @@
 # P008 — Settings: changelog
 
+## 2026-10-19 — Sign out is not drawn red
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   81901
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- On the phone Settings list, Sign out uses the standard row ink. Red is kept for destructive actions, and signing out is not one.
+
+### Why
+
+- Red means under par, the pin or a destructive action; signing out ends a session and loses nothing.
+
+### Verification
+
+- `settings.test.tsx` (the button keeps no danger class); captured on `/clubhouse-preview/settings?state=player`, phone.
+
 ## 2026-10-18 — Wave 10: team code and what joining does
 
 ```text

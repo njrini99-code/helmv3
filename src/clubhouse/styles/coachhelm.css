@@ -1243,7 +1243,7 @@
   }
   .ch-hl.is-phone .ch-hl-role {
     font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-hl.is-phone > .ch-hl-h .ch-hl-h__t {

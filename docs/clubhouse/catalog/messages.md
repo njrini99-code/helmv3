@@ -75,7 +75,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-7201 | Conversations don't load | "Conversations didn’t load" + "Your messages are safe…" Try again | `Rail` | messages.test › CH-7201 |
-| CH-7202 | A conversation's messages don't load | "This conversation didn’t load" + "Nothing was lost…" Try again | `Thread` | messages.test › CH-7202 |
+| CH-7202 | A conversation's messages don't load | "This conversation didn’t load" + "Nothing was lost…" Try again; the composer is off (read-only box, "Replies are off until this loads", Send and Attach disabled, one line under it) | `Thread`, `Composer` | messages.test › CH-7202 |
 | CH-7203 | Message search doesn't load | "Message search didn’t load" + "Conversations above still match by name." Try again | `MessageHits` | messages.test › CH-7203 |
 | CH-7204 | Group members don't load | "Members didn’t load" Try again | `Details` | messages.test › CH-7204 |
 | CH-7205 | The team list doesn't load (New message) | "Your team list didn’t load" Try again | `NewMessage` | messages.test › CH-7205 |
@@ -97,9 +97,9 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-7301 | No conversations yet | "No conversations yet" + (coach) "Start one with a player, or create a team group." | `Rail` | messages.test › CH-7301 |
-| CH-7302 | A rail search or a filter has nothing | Search: "No conversation names match." (message hits may follow below); Groups: "No group conversations yet."; Unread: "Nothing unread. You're caught up." | `Rail`, `PhoneInbox` (`emptyListCopy`) | messages.test › CH-7302, #12 |
-| CH-7303 | No message mentions the search | "No messages mention "bus"." | `MessageHits` | messages.test › CH-7303 |
-| CH-7304 | A thread with no messages | "No messages yet. Say hello to the group." (or the person's first name) | `Thread` | messages.test › CH-7304 |
+| CH-7302 | A rail search or a filter has nothing | Search: "No conversation names match" + Clear search (message hits may follow below); Groups: "No group conversations yet"; Unread: "Nothing unread" + "You’re caught up." + Show all | `Rail`, `PhoneInbox` (`RailEmpty`) | messages.test › CH-7302, #12 |
+| CH-7303 | No message mentions the search | "No messages mention “bus”" (the shared filtered state) | `MessageHits` | messages.test › CH-7303 |
+| CH-7304 | A thread with no messages | "No messages yet" + "Say hello to the group." (or the person’s first name) | `Thread` | messages.test › CH-7304 |
 | CH-7305 | Nothing open | "Start your first conversation" / "Pick a conversation" | `MessagesView` | messages.test › CH-7305 |
 | CH-7306 | Nothing has been shared in the conversation (Details) | "No files shared yet." | `FilesPanel`, `FilesSection` | messages.test › CH-7306 |
 | CH-7307 | Everyone on the team is already in the group (Add) | "Everyone on the team is already in this group." | `AddMembersModal` | messages.test › CH-7307 |

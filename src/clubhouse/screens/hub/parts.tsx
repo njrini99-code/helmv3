@@ -777,7 +777,7 @@ export function Documents({
       {data.error ? (
         <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
       ) : !data.folders.length ? (
-        <EmptyState compact code="CH-10304" icon={Folder} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
+        <EmptyState code="CH-10304" shape="rows" shapeCount={3} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
       ) : (
         data.folders.map((f) => (
           <section key={f.name} className="ch-hb-card ch-hb-folder" aria-labelledby={`ch-hb-f-${f.name}`}>

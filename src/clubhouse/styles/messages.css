@@ -216,6 +216,11 @@
   font-style: normal;
   color: var(--ch-text-secondary);
 }
+/* Urgent is a word on the row, in the amber of the mark beside it (the letter's head says it the same way). */
+.ch-ms-row__bot em.is-urgent {
+  font-weight: 600;
+  color: var(--ch-warning-600);
+}
 .ch-ms-row.is-unread .ch-ms-row__top b {
   font-weight: 700;
 }
@@ -327,12 +332,6 @@
 .ch-ms-row.is-sel .ch-ms-count {
   background: var(--ch-ivory-50);
   color: var(--ch-forest-800);
-}
-.ch-ms-empty {
-  padding: 30px 12px;
-  font: var(--ch-type-body-s);
-  color: var(--ch-text-tertiary);
-  text-align: center;
 }
 
 /* CH-7605: the thread pane's swap (ui/Swap) fills the grid cell at every level, so the thread keeps its own
@@ -1676,7 +1675,7 @@
   .ch-msp .ch-ms-sec.is-date > .ch-ms-sec__l {
     padding-top: 13px;
     font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-    letter-spacing: 0.12em;
+    letter-spacing: 0.01em;
     font-variation-settings: normal;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1782,11 +1781,6 @@
     margin: 0;
     font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-600);
-  }
-  /* Nothing unread, no match: a quiet line at the list's edge, not a centred island. */
-  .ch-msp .ch-ms-empty {
-    padding: 14px 0;
-    text-align: left;
   }
 
   /* Pushed screens: a thread, details, a new message */

@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
+import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
@@ -441,9 +441,9 @@ export function Roster({ data }: { data: ChRoster }) {
         <EmptyState
           size="page"
           code="CH-3301"
-          icon={Users}
+          shape="people"
           title="No players yet"
-          body="Players who sign up with your team code or open your invite link join right away. You can remove anyone here."
+          body="Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here."
           action={
             <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
               Invite players
@@ -577,21 +577,13 @@ function RosterList({
   return (
     <>
       {rows.length === 0 ? (
-        <div className="ch-rs-empty ch-sheet">
-          <EmptyState
-            compact
-            code={q.trim() ? 'CH-3302' : 'CH-3303'}
-            title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
-            action={
-              <Button
-                size="sm"
-                onClick={onShowEveryone}
-              >
-                Show everyone
-              </Button>
-            }
-          />
-        </div>
+        <EmptyState
+          kind="filtered"
+          code={q.trim() ? 'CH-3302' : 'CH-3303'}
+          title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
+          body={show === 'all' ? 'Search matches player names.' : `Only ${show} players are in view.`}
+          action={<Button onClick={onShowEveryone}>Show everyone</Button>}
+        />
       ) : view === 'faces' ? (
         <div className="ch-rs-faces">
           {rows.map((p) => (

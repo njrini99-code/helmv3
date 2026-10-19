@@ -1,6 +1,6 @@
 'use client';
 
-import { Ellipsis, GraduationCap, Plus, SearchX, Trash2 } from 'lucide-react';
+import { Ellipsis, Plus, SearchX, Trash2 } from 'lucide-react';
 import { CH_STAGES, isNextStepLate, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -59,7 +59,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
             <EmptyState
               size="page"
               code="CH-14301"
-              icon={GraduationCap}
+              shape="columns"
               title="Your prospect list starts here"
               body="Add the golfers you’re watching. Keep their contact details, notes and documents in one place, and move them through Watched, Recruiting, Offered and Committed. Only coaches see this page."
               action={
@@ -105,32 +105,13 @@ export function NoMatch({ query, stage, onClear, onAll, phone = false }: { query
       ? `Try another word${stage ? ', or look across every stage' : ''}.`
       : `Search looks at names, hometowns, states, email and notes. Try another word${stage ? ', or look across every stage' : ''}.`
     : 'Nothing has reached this stage yet. Move a prospect here from their panel, or look across every stage.';
-  return (
-    <div className={'ch-rec-none-match' + (phone ? ' is-phone' : '')} data-ch-code="CH-14302">
-      <span className="ch-rec-none-match__ic" aria-hidden="true">
-        <SearchX size={20} strokeWidth={1.6} />
-      </span>
-      <b role="status">{title}</b>
-      <span>{body}</span>
-      <div className="ch-rec-none-match__a">
-        {phone ? (
-          <>
-            {stage && (
-              <Button variant="primary" onClick={onAll}>
-                {q ? 'Search all stages' : 'Show all stages'}
-              </Button>
-            )}
-            {q && <Button onClick={onClear}>Clear search</Button>}
-          </>
-        ) : (
-          <>
-            {q && <Button onClick={onClear}>Clear search</Button>}
-            {stage && <Button variant={q ? 'secondary' : 'primary'} onClick={onAll}>{q ? 'Search all stages' : 'Show all stages'}</Button>}
-          </>
-        )}
-      </div>
-    </div>
-  );
+  const all = stage ? (
+    <Button variant={phone || !q ? 'primary' : 'secondary'} onClick={onAll}>
+      {q ? 'Search all stages' : 'Show all stages'}
+    </Button>
+  ) : undefined;
+  const clear = q ? <Button onClick={onClear}>Clear search</Button> : undefined;
+  return <EmptyState kind="filtered" code="CH-14302" icon={SearchX} title={title} body={body} action={phone ? all : clear} secondaryAction={phone ? clear : all} />;
 }
 
 function ProspectTable({ c }: { c: RecCtx }) {

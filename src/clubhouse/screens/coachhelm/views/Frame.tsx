@@ -1,6 +1,5 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { PLAYER_HELM_HREF, PLAYER_HELM_VIEWS, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
@@ -46,7 +45,7 @@ export function HelmOff({ reason }: { reason: string | null }) {
     <EmptyState
       size="page"
       code="CH-13304"
-      icon={Sparkles}
+      kind="restricted"
       title="CoachHelm is off for your team"
       body={reason ? `Your coach turned it off: “${reason}”. Ask your coach if you want it back on.` : 'CoachHelm is turned off, so no insights are being shown. Ask your coach if you want it back on.'}
     />

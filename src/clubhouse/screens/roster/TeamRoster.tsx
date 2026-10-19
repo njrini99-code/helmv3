@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutGrid, List, Users } from 'lucide-react';
+import { LayoutGrid, List } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import type { ChPlayerRoster, ChTeammate } from '../../data/roster-player';
@@ -94,7 +94,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
           onRetry={() => router.refresh()}
         />
       ) : players.length === 0 ? (
-        <EmptyState size="page" code="CH-3307" icon={Users} title="No one on the roster yet" body="Teammates show up here as they join with the team code." />
+        <EmptyState size="page" code="CH-3307" shape="people" title="No one on the roster yet" body="Teammates show up here as they join with the team code." />
       ) : solo ? (
         <>
           {/* Nothing to search, sort or lay out for one row. */}
@@ -190,18 +190,13 @@ function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
 function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; view: View; q: string; onClearSearch: () => void }) {
   if (rows.length === 0) {
     return (
-      <div className="ch-rs-empty ch-sheet">
-        <EmptyState
-          compact
-          code="CH-3302"
-          title={`No players match “${q.trim()}”`}
-          action={
-            <Button size="sm" onClick={onClearSearch}>
-              Show everyone
-            </Button>
-          }
-        />
-      </div>
+      <EmptyState
+        kind="filtered"
+        code="CH-3302"
+        title={`No players match “${q.trim()}”`}
+        body="Search matches player names."
+        action={<Button onClick={onClearSearch}>Show everyone</Button>}
+      />
     );
   }
   if (view === 'faces') {

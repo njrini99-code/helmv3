@@ -1,4 +1,3 @@
-import { Users } from 'lucide-react';
 import { rebuiltHref } from '../../shell/nav';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -27,7 +26,7 @@ export function MessagesNoTeam({ coach }: { coach: boolean }) {
       <EmptyState
         size="page"
         code="CH-7308"
-        icon={Users}
+        shape="people"
         title="You aren’t on a team yet"
         body="Messages open once you’re on a team roster, with your coaches and teammates."
         action={

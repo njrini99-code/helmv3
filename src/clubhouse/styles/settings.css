@@ -1186,7 +1186,7 @@
     inset: -2px 0;
   }
 
-  /* Sign out: a flush destructive row at the foot of the list, on its own rule; the press is the Ledger's tint. */
+  /* Sign out: a flush row at the foot of the list, in the standard row ink (it is not destructive: red is for that), on its own rule; the press is the Ledger's tint. */
   .ch-setm-signout {
     display: flex;
     align-items: center;
@@ -1200,6 +1200,7 @@
     background: none;
     font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     letter-spacing: -0.012em;
+    color: var(--ch-text-primary);
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
@@ -1207,9 +1208,6 @@
   }
   .ch-setm-signout:active {
     background: var(--ch-ledger-row-press);
-  }
-  .ch-setm-signout.is-danger {
-    color: var(--ch-danger-600);
   }
   .ch-setm-signout:disabled {
     opacity: 0.5;

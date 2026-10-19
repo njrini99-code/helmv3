@@ -309,9 +309,16 @@
   gap: 12px;
   min-width: 0;
 }
+.ch-h-round__who > div {
+  min-width: 0;
+}
 .ch-h-round__name {
+  overflow: hidden;
   font: 600 15px/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
+  /* A long name ends in an ellipsis rather than pushing the score off the card. */
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ch-h-round__meta {
   font: var(--ch-type-caption);

@@ -1,5 +1,32 @@
 # P007 — Messages: changelog
 
+## 2026-10-19 — Failed thread turns the composer off; empty lists are told apart; urgent reads the same everywhere
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-7202, CH-7302, CH-7303, CH-7304, CH-7308, CH-7309
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- A conversation that did not load (CH-7202) now switches its composer off and says why (a read-only box, Send and Attach disabled, one line under it) on desktop and phone. A thread that only failed to refresh keeps its composer.
+- The list's empty (CH-7302) is told by why: a name search that matches nothing offers Clear search, Unread with nothing unread offers Show all, Groups with no group only says so. "No messages mention" (CH-7303) and "No messages yet" (CH-7304) use the shared state; `.ch-ms-empty` is gone.
+- First-run (CH-7309) and no-team (CH-7308) draw portrait rows under the sentence.
+- Urgent announcements: one mark (the amber alert triangle, as the letter's head had) on the rail row, the fold and the thread header, and the word Urgent on the row.
+- The phone's conversation dates no longer carry 0.12em tracking.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `messages.test.tsx` (CH-7202 composer, the urgent row, the rail empties) and `states.test.tsx`; captured on `/clubhouse-preview/messages?state=empty` and `thread-failed`, light and dark.
+
 ## 2026-10-19 — Right-click on a conversation
 
 ```text

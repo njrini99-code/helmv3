@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
+import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import NumberFlow from '@number-flow/react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -217,9 +217,9 @@ export function RosterPhone({
           <EmptyState
             size="page"
             code="CH-3301"
-            icon={Users}
+            shape="people"
             title="No players yet"
-            body="Players who sign up with your team code or open your invite link join right away. You can remove anyone here."
+            body="Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here."
             action={
               <Button variant="primary" leftIcon={UserPlus} onClick={onInvite}>
                 Invite players

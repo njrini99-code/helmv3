@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, UserPlus, Users } from 'lucide-react';
+import { ArrowRight, UserPlus } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import { QUIET_DAYS } from './model';
 import type { ChCoachHome, ChLatestRound, ChLeaderRow } from '../../data/home';
@@ -149,7 +149,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
         <div className="ch-h-lb ch-sheet">
           <EmptyState
             code="CH-2304"
-            icon={Users}
+            shape="people"
             title="No players on the roster yet."
             body="Share your team code from Roster; players appear here as they join."
             action={
@@ -165,7 +165,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
         <div className="ch-h-lb ch-sheet">
           <EmptyState
             code="CH-2305"
-            icon={Users}
+            shape="people"
             title="No 18-hole rounds posted yet this season."
             body={`${data.rosterSize} ${data.rosterSize === 1 ? 'player is' : 'players are'} on the roster. The leaderboard fills in as rounds are posted.`}
           />

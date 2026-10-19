@@ -101,7 +101,8 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
       ) : !r ? (
         <EmptyState
           code="CH-2302"
-          icon={Flag}
+          shape="rows"
+          shapeCount={2}
           title="No rounds posted yet this season."
           body={mine ? 'Your newest 18-hole round appears here, hole by hole, as soon as you post it.' : 'The newest 18-hole round appears here as soon as a player posts it.'}
         />

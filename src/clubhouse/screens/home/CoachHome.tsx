@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarPlus, Flag, UserPlus, Users } from 'lucide-react';
+import { CalendarPlus, UserPlus } from 'lucide-react';
 import type { ChCoachHome } from '../../data/home';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -102,9 +102,9 @@ function HomeFirstRun({ data, phone }: { data: ChCoachHome; phone: boolean }) {
       <EmptyState
         size="page"
         code="CH-2308"
-        icon={Flag}
+        shape="time"
         title="Your season starts here"
-        body={`Add your players${events ? '' : ' and your first event'}. Home fills in with replies, recent rounds and the leaderboard as the team plays.`}
+        body={`Add your players${events ? '' : ' and your first event'}. Home then fills itself in with replies, the rounds your players post and the leaderboard.`}
         action={
           roster ? (
             <Button variant="primary" leftIcon={UserPlus} href={roster}>
@@ -130,7 +130,7 @@ export function CoachHomeNoTeam() {
       <EmptyState
         size="page"
         code="CH-2307"
-        icon={Users}
+        shape="rows"
         title="You aren’t on a team yet"
         body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard."
         action={

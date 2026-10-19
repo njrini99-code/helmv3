@@ -641,24 +641,6 @@
   color: var(--ch-green-700);
 }
 
-/* A part with nothing to show says so, in place */
-.ch-hd-none {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 14px;
-  background: var(--ch-ivory-50);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
-  font: 400 calc(14 * var(--ch-type-k))/1.55 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-  text-wrap: pretty;
-}
-p.ch-hd-none {
-  display: block;
-}
-
 /* Loading, in the page's final shape */
 .ch-hd-sk__hero {
   display: grid;
@@ -1218,12 +1200,6 @@ p.ch-hd-none {
   .ch-hd-plan__i.is-link:active {
     background: var(--ch-ledger-row-press);
   }
-  .ch-hd-none {
-    padding: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
 
   /* Loading (CH-13480) in the same shapes: the feature card's place, then each group's head and rows. */
   .ch-hd-sk__hero {
@@ -1281,8 +1257,7 @@ p.ch-hd-none {
   border-top-color: var(--ch-border-hairline);
 }
 :where(html[data-fw-theme='dark']) .ch-hd-dx,
-:where(html[data-fw-theme='dark']) .ch-hd-plan__i,
-:where(html[data-fw-theme='dark']) .ch-hd-none {
+:where(html[data-fw-theme='dark']) .ch-hd-plan__i {
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
 }
 
