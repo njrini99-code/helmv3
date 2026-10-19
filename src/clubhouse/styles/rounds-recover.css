@@ -39,7 +39,7 @@
 .ch-rcv-note {
   margin: 0;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
@@ -63,7 +63,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px 18px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
