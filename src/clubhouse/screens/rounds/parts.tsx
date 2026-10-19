@@ -9,6 +9,7 @@ import { haptic } from '../../lib/haptics';
 import { useInViewOnce } from '../../lib/use-in-view';
 import { InlineNotice } from '../../ui/Notices';
 import { withPointSpan } from '../../ui/point-span';
+import type { ContextMenuBind } from '../../ui/ContextMenu';
 import { Icon } from '../../ui/Icon';
 
 /** A calendar date (yyyy-mm-dd) as a Date at noon UTC, so no zone moves it a day. */
@@ -80,6 +81,7 @@ export function UnfinishedCard({
   onRetry,
   retrying = false,
   onDiscard,
+  menu,
 }: {
   round: ChUnfinishedRound | null;
   error: boolean;
@@ -93,6 +95,8 @@ export function UnfinishedCard({
   /** The retry is in flight (`useRefresh().refreshing`). */
   retrying?: boolean;
   onDiscard: (r: ChUnfinishedRound) => void;
+  /** The round's right-click menu handlers (ui/ContextMenu.tsx); the round in progress only. */
+  menu?: ContextMenuBind;
 }) {
   if (error) {
     return (
@@ -138,7 +142,7 @@ export function UnfinishedCard({
   const thru = round.played.length;
   const cta = round.readyToSubmit ? 'Post round' : round.nextHole ? `Continue at hole ${round.nextHole}` : 'Continue';
   return (
-    <div className="ch-rd-unf">
+    <div className="ch-rd-unf" {...menu}>
       <div className="ch-rd-unf__top">
         <span className="ch-rd-unf__k">
           <i />

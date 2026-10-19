@@ -1,5 +1,30 @@
 # P003 — Roster: changelog
 
+## 2026-10-19 — Right-click menu on a player; the roster feeds the command palette
+
+```text
+Design package: none (complete-and-elevate plan, lane L1, desktop command layer)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no new read: the palette lists what the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Right-click (or Shift F10) on a player's card or table row opens the same menu as the row's Actions button: View insights,
+  View stats, Message, Mark inactive or active, Remove from team, with the same handlers and confirmations. Desktop only.
+- The loaded players are handed to the command palette, so Cmd K finds a player by name and opens their stats.
+
+### Why
+
+- The kebab is only on the table; the card view had no way to the same actions.
+
+### Verification
+
+- `screens/roster/__tests__/roster-context-menu.test.tsx`; captured on `/clubhouse-preview/roster`, light and dark.
+
 ## 2026-10-18 — Wave 10: the empty team and one name for the code
 
 ```text

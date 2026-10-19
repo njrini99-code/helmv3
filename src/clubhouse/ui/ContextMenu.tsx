@@ -43,11 +43,14 @@ interface Open<T> {
  */
 export function useContextMenu<T>({ label, items }: { label: (target: T) => string; items: (target: T) => MenuItem[] }): { bind: (target: T) => ContextMenuBind; menu: ReactNode } {
   const [open, setOpen] = useState<Open<T> | null>(null);
+  // Nothing is drawn, not even the presence that eases a menu out, until the list's first right-click (a long inbox has a hook per row).
+  const [used, setUsed] = useState(false);
   // The same value as `open`, for `close`, which reads it without being a state updater (those run twice under StrictMode).
   const current = useRef<Open<T> | null>(null);
   const place = useCallback((target: T, x: number, y: number, keyboard: boolean, from: HTMLElement) => {
     const next: Open<T> = { target, x, y, keyboard, opener: document.activeElement instanceof HTMLElement ? document.activeElement : null, host: from.closest('dialog[open]') ?? document.querySelector('.ch-root') ?? document.body };
     current.current = next;
+    setUsed(true);
     setOpen(next);
   }, []);
   const close = useCallback((focus = true) => {
@@ -82,7 +85,7 @@ export function useContextMenu<T>({ label, items }: { label: (target: T) => stri
     <ContextMenuSurface key="ctx" at={open} label={label(open.target)} items={items(open.target)} onClose={close} />
   ) : null;
   // The menu leaves with an exit; AnimatePresence needs to see it go.
-  return { bind, menu: <ContextMenuHost>{menu}</ContextMenuHost> };
+  return { bind, menu: used ? <ContextMenuHost>{menu}</ContextMenuHost> : null };
 }
 
 /** Holds the presence so the menu eases out. Rendered in place; the surface itself is portaled. */

@@ -1,5 +1,42 @@
 # P001 — Shell: changelog
 
+## 2026-10-19 — Desktop command layer: palette, shortcuts, tooltips
+
+```text
+Design package: none (complete-and-elevate plan, lane L1, desktop command layer)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no new read: the palette lists what the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Command palette on Cmd K (Ctrl K elsewhere), desktop only, in the shared Modal over cmdk. With nothing typed it shows Recent (the
+  last five sections visited this tab, not the one you are in) and Go to (every section the role's sidebar has, each with its G
+  shortcut). Typing searches Go to, People (a coach's players, from the roster the coach has already opened this session) and
+  Actions (New round, New event, New message, Post announcement, New qualifier, Add class, each only for the role that can do it;
+  every one just routes to the screen that does it). No matches says so and offers the nearest section.
+- Shortcuts: G then H, A, C, M, T, R, S, Q, E, O, L or a comma goes to a section (one second between the keys), `/` focuses the
+  page's search field, `?` opens a grouped shortcuts sheet. None fire while typing or inside a dialog or menu. N on Home and Cmd or
+  Ctrl backslash for the sidebar are unchanged and listed in the sheet.
+- Tooltips: every icon-only button (IconButton, the sheet and toast close keys, the sidebar fold toggle with its key) shows its name
+  and shortcut after the pointer rests for half a second, at once when moving along neighbours, and on keyboard focus. Never on
+  touch. Escape dismisses it. The browser's native `title` on IconButton is gone, so there is one tip, not two.
+- `ui/ContextMenu.tsx`: a right-click (and Shift F10 or the Menu key) menu on the shared Menu surface and rows. Shift, a text field
+  and a phone keep the browser's own menu.
+
+### Why
+
+- A desktop tool for a coach who works from the keyboard: jump anywhere in two keys, and every icon button says what it is.
+
+### Verification
+
+- Unit tests: `shell/command/__tests__` (key sequencing and its one-second window, suppression in fields and dialogs, the letter map
+  per role, what the palette lists per role, recent destinations, tooltip timing, the layer end to end), `ui/__tests__`.
+- Captured headless WebKit 1280x900, light and dark: palette empty and with a search, no results, shortcuts sheet, rail tooltip.
+
 ## 2026-10-18 — Wave 8: push bar presses and the dark hero edge
 
 ```text

@@ -1,5 +1,30 @@
 # P011 — Rounds: changelog
 
+## 2026-10-19 — Right-click on an unfinished round
+
+```text
+Design package: none (complete-and-elevate plan, lane L1, desktop command layer)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no new read: the palette lists what the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Right-click (or Shift F10) on the round in progress, or a row under "more unfinished rounds", offers Continue (Post round when
+  every hole is scored) and Discard round, the same links and the same confirmation as the row's own buttons. A posted round has
+  one action, a link, and keeps the browser's menu (open in a new tab). Desktop only.
+
+### Why
+
+- Discarding was a small bin icon; the menu is the keyboard-reachable form of it.
+
+### Verification
+
+- `screens/rounds/__tests__/rounds-context-menu.test.tsx`.
+
 ## 2026-10-18 — Pickers and controls: round date, radio groups, saving
 
 ```text
@@ -15,7 +40,6 @@ Held items:     none
 
 - The browser's own date and time inputs are gone. The new round's Date (no day after today) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
 - Round type, Holes, Qualifier, Which nine, a hole's par, tee colour, penalty choices and the miss-direction grid is one tab stop with the arrow keys, Home and End moving and choosing, as a native radio group does (`ui/use-roving.ts`); a disabled option is skipped.
-- Discard, the round-type Save and the recover Discard stays lit while it works (Button's `busy`: aria-busy and no second press) instead of going unlit like a button that is unavailable.
 
 ## 2026-10-18 — Wave 10: one Start a round in the library
 

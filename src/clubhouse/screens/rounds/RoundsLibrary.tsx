@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Flag, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Flag, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsLibrary, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
@@ -15,6 +15,7 @@ import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { useContextMenu } from '../../ui/ContextMenu';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
@@ -104,6 +105,18 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
     if (!r) return;
     await discard.run(r);
   };
+  // Right-click (desktop) on an unfinished round: what its row offers, Continue or Post and Discard, the same handlers.
+  // A posted round has one action, opening its review, which is a link, so it keeps the browser's own menu (open in a new tab).
+  const ctx = useContextMenu<ChUnfinishedRound>({
+    label: (r) => `Actions for the round at ${r.course}`,
+    items: (r) => {
+      const href = roundsLinks.continueRound(r.id);
+      return [
+        ...(href ? [{ label: r.readyToSubmit ? 'Post round' : 'Continue', icon: ArrowRight, href }, { kind: 'separator' as const }] : []),
+        { label: 'Discard round', icon: Trash2, danger: true, onSelect: () => askDiscard(r) },
+      ];
+    },
+  });
 
   // Empty copy only on a verified empty: both reads landed and nothing is held back (an unscored round is a round, just not a row).
   const unscored = data.rounds.error ? 0 : (data.rounds.unscored ?? 0);
@@ -166,6 +179,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 onRetry={refresh}
                 retrying={refreshing}
                 onDiscard={askDiscard}
+                menu={current ? ctx.bind(current) : undefined}
               />
             </SectionBoundary>
             {data.rounds.error ? (
@@ -186,7 +200,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 {more.map((r) => {
                   const href = roundsLinks.continueRound(r.id);
                   return (
-                    <li key={r.id}>
+                    <li key={r.id} {...ctx.bind(r)}>
                       <span>
                         <b>{r.course}</b>
                         <em className="ch-num">
@@ -271,6 +285,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
         </>
       )}
 
+      {ctx.menu}
       <Modal
         open={!!asking}
         onClose={() => setAsking(null)}
@@ -283,7 +298,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
             <Button variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
-            <Button variant="danger" busy={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
+            <Button variant="danger" disabled={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
               {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>

@@ -61,6 +61,7 @@ import { Badge } from "../../ui/Badge";
 import { Button, IconButton } from "../../ui/Button";
 import { Icon } from "../../ui/Icon";
 import { Menu } from "../../ui/Menu";
+import { useContextMenu, type ContextMenuBind } from "../../ui/ContextMenu";
 import { Modal } from "../../ui/Modal";
 import { InlineNotice } from "../../ui/Notices";
 import { SearchField } from "../../ui/SearchField";
@@ -368,6 +369,26 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
 
 /** One conversation in the list: the desktop rail and the phone inbox. */
 export function ConvRow({ api, c, avatarSize = 36 }: { api: ChMessagesApi; c: ChConv; avatarSize?: number }) {
+  const open = () => {
+    haptic("select");
+    chTrail("messages open conversation");
+    api.select(c.id);
+  };
+  // Right-click (desktop): the row's one action, as a tap does it. Mute, Leave and Delete act on the open conversation
+  // only, so they are not offered on a row that may not be it (ui/ContextMenu.tsx).
+  const ctx = useContextMenu<ChConv>({
+    label: (row) => `Actions for ${row.title}`,
+    items: () => [{ label: "Open conversation", icon: MessageSquare, onSelect: open }],
+  });
+  return (
+    <>
+      <ConvRowButton api={api} c={c} avatarSize={avatarSize} onOpen={open} bind={ctx.bind(c)} />
+      {ctx.menu}
+    </>
+  );
+}
+
+function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesApi; c: ChConv; avatarSize: number; onOpen: () => void; bind: ContextMenuBind }) {
   return (
     <button
       type="button"
@@ -379,11 +400,8 @@ export function ConvRow({ api, c, avatarSize = 36 }: { api: ChMessagesApi; c: Ch
       aria-current={
         api.selectedId === c.id ? "true" : undefined
       }
-      onClick={() => {
-        haptic("select");
-        chTrail("messages open conversation");
-        api.select(c.id);
-      }}
+      onClick={onOpen}
+      {...bind}
     >
       {c.group ? (
         <span className="ch-ms-grp">
@@ -1838,8 +1856,7 @@ export function EditMessageModal({ api, message, onClose }: { api: ChMessagesApi
           </Button>
           <Button
             variant="primary"
-            busy={busy}
-            disabled={!text.trim() || same}
+            disabled={busy || !text.trim() || same}
             onClick={async () => {
               if (!message || same) return;
               setBusy(true);
@@ -1884,7 +1901,7 @@ export function DeleteMessageModal({ api, message, onClose }: { api: ChMessagesA
           <Button
             variant="danger"
             feel="warning"
-            busy={busy}
+            disabled={busy}
             onClick={async () => {
               if (!message) return;
               setBusy(true);
@@ -1927,7 +1944,7 @@ export function LeaveGroupModal({ api, conv, open, onClose, onLeft }: { api: ChM
           <Button
             variant="danger"
             feel="warning"
-            busy={busy}
+            disabled={busy}
             onClick={async () => {
               setBusy(true);
               const ok = await api.leave();
@@ -1965,7 +1982,7 @@ export function DeleteConversationModal({ api, conv, open, onClose, onDeleted }:
           <Button
             variant="danger"
             feel="warning"
-            busy={busy}
+            disabled={busy}
             onClick={async () => {
               setBusy(true);
               const ok = (await api.deleteConversation?.()) ?? false;
@@ -2009,8 +2026,7 @@ export function RemoveMemberModal({ api, conv, member, onClose }: { api: ChMessa
           <Button
             variant="danger"
             feel="warning"
-            busy={busy}
-            disabled={!api.removeMember}
+            disabled={busy || !api.removeMember}
             onClick={async () => {
               if (!member || !api.removeMember) return;
               setBusy(true);
@@ -2488,7 +2504,7 @@ function NewMessage({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={busy} onClick={() => void go()}>
+          <Button variant="primary" disabled={busy} onClick={() => void go()}>
             {busy
               ? announce
                 ? "Posting…"

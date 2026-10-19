@@ -1,5 +1,30 @@
 # P007 — Messages: changelog
 
+## 2026-10-19 — Right-click on a conversation
+
+```text
+Design package: none (complete-and-elevate plan, lane L1, desktop command layer)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no new read: the palette lists what the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Right-click (or Shift F10) on a conversation in the list offers Open conversation, the row's one action. Mute, Leave and Delete
+  work on the open conversation only, so they are not offered on a row that may not be it. Desktop only; the phone inbox is
+  unchanged.
+
+### Why
+
+- The same gesture works on every list a coach lives in.
+
+### Verification
+
+- `screens/messages/__tests__/conv-context-menu.test.tsx`.
+
 ## 2026-10-18 — Wave 8: premium details
 
 ```text
