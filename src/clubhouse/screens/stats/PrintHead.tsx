@@ -24,7 +24,7 @@ export function usePrinting(): boolean {
 }
 
 /**
- * The line that heads a printed stats page: Golfhelm, who the figures are for, and the day they were printed. It is on the
+ * The line that heads a printed stats page: GolfHelm, who the figures are for, and the day they were printed. It is on the
  * page for paper only (`.ch-st-print`, stats.css). The day is read when the page is printed, not when it loaded, and paper
  * is always light: a page in dark mode drops its theme for the print and has it back afterwards.
  */
@@ -53,7 +53,7 @@ export function PrintHead({ subject }: { subject: string }) {
   }, []);
   return (
     <div className="ch-st-print" aria-hidden="true">
-      <b>Golfhelm</b>
+      <b>GolfHelm</b>
       <span>{subject}</span>
       <span className="ch-num">{day}</span>
     </div>

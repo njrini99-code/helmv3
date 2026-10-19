@@ -18,7 +18,7 @@ Held items:     none
 - The Scrambling dial has a reference tick like Greens' dial. The Tour has no overall scrambling figure, so the tick is the previous window's rate, the same one the change under it is measured against.
 - A tape figure with no data (an em dash) drops its unit, its "vs previous 10" caption and its coverage note.
 - The strokes-gained trend's axis ticks use the shared signed formatter (a true minus, an explicit plus, a plain 0).
-- Print: Team stats prints as plain pages: controls gone, a head line with Golfhelm, the team and season and the day, white and light even from dark mode, each section whole on its sheet, rules and fills in ink, and the desktop view kept at paper width.
+- Print: Team stats prints as plain pages: controls gone, a head line with GolfHelm, the team and season and the day, white and light even from dark mode, each section whole on its sheet, rules and fills in ink, and the desktop view kept at paper width.
 
 ## 2026-10-18 — Pickers and controls: filter date range
 

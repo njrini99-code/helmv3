@@ -22,11 +22,11 @@ describe('printing a stats page', () => {
     expect(screen.getByText('screen')).toBeTruthy();
   });
 
-  it('the head says Golfhelm, who the figures are for and the day; paper is light, and the theme comes back afterwards', () => {
+  it('the head says GolfHelm, who the figures are for and the day; paper is light, and the theme comes back afterwards', () => {
     document.documentElement.setAttribute('data-fw-theme', 'dark');
     const { container } = render(<PrintHead subject="Varsity · Fall 2026 · Team stats" />);
     const head = container.querySelector('.ch-st-print')!;
-    expect(head.textContent).toContain('Golfhelm');
+    expect(head.textContent).toContain('GolfHelm');
     expect(head.textContent).toContain('Varsity · Fall 2026 · Team stats');
     expect(head.textContent).toMatch(/[A-Z][a-z]+ \d{1,2}, \d{4}/);
     act(() => void window.dispatchEvent(new Event('beforeprint')));

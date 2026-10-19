@@ -6350,7 +6350,7 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
 
 /* Print: one clean page of the figures. The shell already drops the sidebar, top bar and strip (shell.css); here the page's own
    controls go, the page takes the paper's width, rules and fills keep their ink, and nothing that reads as one row or one card is
-   cut across two sheets. PrintHead puts Golfhelm, the subject and the day at the top. */
+   cut across two sheets. PrintHead puts GolfHelm, the subject and the day at the top. */
 .ch-st-print {
   display: none;
 }
