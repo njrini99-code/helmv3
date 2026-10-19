@@ -1792,7 +1792,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-es-shape--columns > .ch-es-shape__u {
   position: relative;
   display: block;
-  border-left: 1px solid var(--ch-ledger-rule-soft);
+  border-left: 1px solid var(--ch-ledger-rule);
 }
 .ch-es-shape--columns > .ch-es-shape__u:first-child {
   border-left: 0;
@@ -1830,11 +1830,11 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   height: 104px;
   border-top: 1px solid var(--ch-ledger-rule);
-  border-bottom: 1px solid var(--ch-ledger-rule-soft);
+  border-bottom: 1px solid var(--ch-ledger-rule);
 }
 .ch-es-shape--week > .ch-es-shape__u {
   display: block;
-  border-left: 1px solid var(--ch-ledger-rule-soft);
+  border-left: 1px solid var(--ch-ledger-rule);
 }
 .ch-es-shape--week > .ch-es-shape__u:first-child {
   border-left: 0;

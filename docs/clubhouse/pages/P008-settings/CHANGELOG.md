@@ -21,7 +21,7 @@ Held items:     none
 
 ### Verification
 
-- `settings.test.tsx` (the button keeps no danger class); captured on `/clubhouse-preview/settings?state=player`, phone.
+- `settings.test.tsx` (the button keeps no danger class); captured after only on `/clubhouse-preview/settings?state=player`, phone, light (the row reads in the standard ink); no before capture.
 
 ## 2026-10-18 — Wave 10: team code and what joining does
 

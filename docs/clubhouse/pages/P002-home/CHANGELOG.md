@@ -23,7 +23,7 @@ Held items:     none
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/home?state=empty and home-player?state=empty`, phone and desktop, light and dark, before and after.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/home?state=empty` and `home-player?state=empty` (viewed as contact sheets and crops). The latest round's long-name ellipsis was checked on desktop with a name injected in the browser; Home was not captured at a width that forces the ellipsis.
 
 ## 2026-10-18 — Wave 10: the first run and the empty team
 

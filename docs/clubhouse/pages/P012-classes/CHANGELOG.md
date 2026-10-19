@@ -21,7 +21,7 @@ Held items:     none
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/classes?state=empty`, phone and desktop, light and dark, before and after.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/classes?state=empty`.
 
 ## 2026-10-18 — Pickers and controls: class times, saving
 

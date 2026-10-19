@@ -25,7 +25,7 @@ Held items:     none
 
 ### Verification
 
-- `messages.test.tsx` (CH-7202 composer, the urgent row, the rail empties) and `states.test.tsx`; captured on `/clubhouse-preview/messages?state=empty` and `thread-failed`, light and dark.
+- `messages.test.tsx` (CH-7202 composer, the urgent row, the rail empties) and `states.test.tsx`; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/messages?state=empty` and `thread-failed` (the thread opens on desktop only, so the composer-off state was captured on desktop; the phone path has no capture or test); a search miss was captured after only (phone light, desktop light).
 
 ## 2026-10-19 — Right-click on a conversation
 

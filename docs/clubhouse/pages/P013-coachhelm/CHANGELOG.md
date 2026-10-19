@@ -24,7 +24,7 @@ Held items:     none
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/coachhelm?state=empty, coachhelm-player?state=off`, phone and desktop, light and dark, before and after.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/coachhelm?state=empty` and `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted state) was captured after only, phone, light. The Deep dive empties have unit tests but no capture.
 
 ## 2026-10-18 — Wave 10: inviting from an empty CoachHelm
 

@@ -21,7 +21,7 @@ Held items:     none
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/hub?state=empty and hub-player?state=empty&tab=ann`, phone and desktop, light and dark, before and after.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/hub?state=empty` and `hub-player?state=empty`. `hub-player?state=empty&tab=ann` was captured after only, phone, light.
 
 ## 2026-10-18 — Pickers and controls: due date, saving
 

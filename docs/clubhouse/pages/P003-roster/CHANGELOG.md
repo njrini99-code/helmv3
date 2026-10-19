@@ -24,7 +24,7 @@ Held items:     none
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured on `/clubhouse-preview/roster?state=empty`, phone and desktop, light and dark, before and after.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/roster?state=empty` and `roster-player?state=empty`. The search no-match state was captured after only (desktop, a typed miss, light and dark), and the two-line name clamp was checked on the populated roster with a long name injected in the browser (desktop; phone has no card view).
 
 ## 2026-10-19 — Right-click menu on a player; the roster feeds the command palette
 
