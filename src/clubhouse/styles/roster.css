@@ -2087,7 +2087,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   margin: 0 22px;
 }
 /* The team line and the coins sit on still, full-width rows that are their size containers; each moves along its row by
-   `translate` in container units (--ch-sp-x, 0 to 100), so a change glides on the compositor and nothing overflows the plot. */
+   `left` in percent of its row (--ch-sp-x, 0 to 100), so nothing overflows the plot. It was `translate` in container units,
+   which WebKit left in the canvas's scrollable overflow at the old size when the window shrank (an iPad turned from
+   landscape to portrait scrolled the whole page sideways until reload); a percentage is plain layout and follows. */
 .ch-rs-sp__team {
   position: absolute;
   top: 0;
@@ -2101,18 +2103,16 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0;
   border-left: 2px solid var(--ch-champagne-500);
-  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
-  transition: translate var(--ch-dur-base) var(--ch-ease);
+  left: calc(var(--ch-sp-x, 0) * 1%);
+  transition: left var(--ch-dur-base) var(--ch-ease);
 }
 .ch-rs-sp__team span {
   position: absolute;
   bottom: -26px;
-  left: 0;
   transform: translateX(-50%);
-  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
-  transition: translate var(--ch-dur-base) var(--ch-ease);
+  left: calc(var(--ch-sp-x, 0) * 1%);
+  transition: left var(--ch-dur-base) var(--ch-ease);
   padding: 3px 9px;
   border-radius: 99px;
   background: var(--ch-champagne-500);
@@ -2137,8 +2137,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   pointer-events: none;
 }
 .ch-rs-sp__coins button {
-  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
-  transition: translate var(--ch-dur-reveal) var(--ch-ease);
+  position: relative;
+  left: calc(var(--ch-sp-x, 0) * 1%);
+  transition: left var(--ch-dur-reveal) var(--ch-ease);
   pointer-events: auto;
   display: grid;
   justify-items: center;
@@ -2287,5 +2288,17 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     page-break-inside: avoid;
     border-bottom: 0.5pt solid silver;
     background: none;
+  }
+}
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   Where the team sits is laid out in lanes by the share of the axis between two coins (6.5%). On a plot of 494px (an
+   iPad portrait with the sidebar open) that is 32px, under the 38px coin, so neighbours overlapped. The coins shrink a
+   sixth there (the label under each keeps its size); the lane rule itself is in RosterSpread.tsx. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 560px) {
+    .ch-rs-sp__coins .ch-avatar {
+      scale: 0.84;
+    }
   }
 }

@@ -1196,3 +1196,45 @@ html:not([data-fw-theme='dark']) .ch-ask {
     color: var(--ch-text-primary);
   }
 }
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   Ask was laid out for a canvas of 1000px and more: the chats panel is 280px and the evidence panel 380px. On an iPad
+   the canvas is 618px (portrait, sidebar open) to 1116px, so the conversation was left a 300px column in which the three
+   "Since you were last here" cards ran a word to a line. The cards now take as many columns as the page can hold, and
+   on a narrow canvas the chats panel narrows to 216px and the evidence panel lays over the conversation's right edge, as a side sheet, instead of taking a
+   third column from it. The container is the canvas (shell.css). */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  .ch-ask-find__grid {
+    grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
+  }
+  @container (max-width: 780px) {
+    /* The chats panel gives up 64px to the conversation, whose composer needs about 330px to keep its send key. */
+    .ch-ask-body.has-panel,
+    .ch-ask-body.has-panel.has-evidence {
+      grid-template-columns: 216px minmax(0, 1fr);
+    }
+    .ch-ask-hist > * {
+      min-width: 192px;
+    }
+    /* The title and its coverage note share a line in a 350px column, and the title lost: it wrapped to three lines. */
+    .ch-ask-find__top {
+      flex-wrap: wrap;
+      row-gap: 2px;
+    }
+    .ch-ask-find__cov {
+      text-align: left;
+    }
+    .ch-ask-body.has-evidence {
+      position: relative;
+      grid-template-columns: 0 minmax(0, 1fr);
+    }
+    .ch-ask-body.has-evidence > .ch-ask-ev {
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: 0;
+      z-index: 2;
+      width: min(380px, 92%);
+      box-shadow: var(--ch-elevation-floating);
+    }
+  }
+}

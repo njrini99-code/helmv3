@@ -1,5 +1,29 @@
 # P003 — Roster: changelog
 
+## 2026-10-19 — Roster on an iPad: the team spread follows a window that shrinks
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The coins and the team line on "Where the team sits" are placed with `left` in percent of their row instead of `translate` in container units. At rest the page is the same (a sub-pixel difference at most). WebKit kept the old width in the canvas's scrollable overflow when the window shrank, so an iPad turned from landscape to portrait scrolled the whole page sideways until a reload.
+- Tablet tier (821 to 1180px, end block of `roster.css`): on a plot under 561px the coins are a sixth smaller so neighbours in the same lane no longer overlap.
+
+### Why
+
+- A plot of 494px (portrait, sidebar open) puts 6.5% of the axis at 32px, under the 38px coin. The lane rule is in RosterSpread.tsx and is reported, not changed.
+
+### Verification
+
+- WebKit, touch: 1180 then 834 (open and folded) now reads scrollWidth = clientWidth (it read 807 over 618 before); the spread at 1280 differs from before by under 6% on 103 pixels of anti-aliasing; 834 before and after looked at.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text

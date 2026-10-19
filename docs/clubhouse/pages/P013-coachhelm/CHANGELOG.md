@@ -1,5 +1,29 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-19 — CoachHelm on an iPad: the views head, the Ask cards and the evidence side sheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (821 to 1180px, end blocks of `coachhelm.css` and `coachhelm-ask.css`): a player's views head puts the view switch under the sentence when the page holds under 781px, where the sentence had a 56px column and ran a word to a line.
+- Ask: the "Since you were last here" cards take as many columns as fit (three at 1180, one at 834), their title no longer wraps to three lines, the chats panel is 216px on a canvas under 781px, and the evidence panel lays over the conversation as a side sheet there instead of taking a third column.
+
+### Why
+
+- The canvas is 618px at 834 with the sidebar open; Ask gave the conversation 338px and the cards 70px each.
+
+### Verification
+
+- WebKit, touch: 834 and 1024 before and after looked at (profile, ask home, ask answer, ask with evidence); the rules sit in a `screen and (821px to 1180px)` media query.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text

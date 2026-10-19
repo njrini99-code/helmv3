@@ -1841,3 +1841,22 @@ html:not([data-fw-theme='dark']) .ch-hl {
     color: var(--ch-text-primary);
   }
 }
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   A player's views head sets the lead sentence in a column beside the view switch and the Development link, which is
+   about 340px wide. On an iPad portrait with the sidebar open the page holds 562px, so the sentence got a 56px column
+   and ran a word to a line under the tabs. Under 780px the switch drops under the sentence instead. The container is
+   the page (chhl), so this is its own width, not the window's. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container chhl (max-width: 780px) {
+    .ch-hl-h.has-aside:has(.ch-hv-tabs) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .ch-hl-h.has-aside:has(.ch-hv-tabs) > .ch-hl-h__aside {
+      grid-column: 1;
+      grid-row: auto;
+      justify-self: start;
+      padding-top: 8px;
+    }
+  }
+}
