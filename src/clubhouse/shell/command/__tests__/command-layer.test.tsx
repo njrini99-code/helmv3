@@ -193,10 +193,11 @@ describe('G then a letter, / and ?', () => {
   });
 
   it('takes its letter before a page\'s own handler, which skips a key already used (Calendar binds a bare T)', () => {
+    const acted: string[] = [];
     const page = vi.fn((e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       e.preventDefault();
-      page.mock.results.push({ type: 'return', value: 'today' });
+      acted.push(e.key.toLowerCase());
     });
     window.addEventListener('keydown', page);
     mount('coach');
@@ -205,7 +206,8 @@ describe('G then a letter, / and ?', () => {
     window.removeEventListener('keydown', page);
     expect(push).toHaveBeenCalledWith('/golf/dashboard/team-hub', { scroll: false });
     // The page saw both keys; it acted on the G (not used by anyone) and not on the T that went to Team hub.
-    expect(page.mock.results.filter((r) => r.value === 'today')).toHaveLength(1);
+    expect(page).toHaveBeenCalledTimes(2);
+    expect(acted).toEqual(['g']);
   });
 
   it('lets the sequence lapse after a second', () => {
