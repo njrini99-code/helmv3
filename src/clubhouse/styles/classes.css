@@ -159,14 +159,20 @@
 }
 .ch-cl-tb__wk span {
   font: 500 11px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-hero-mint);
 }
 .ch-cl-tb__wk b {
   font: 500 38px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.05em;
 }
 .ch-cl-tb__wk em {
   font: 500 11px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: rgb(244 241 232 / 0.55);
 }
@@ -365,6 +371,7 @@
   padding: 4px 8px;
   border-radius: 999px;
   font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   background: rgb(255 255 255 / 0.55);
   color: var(--ch-cl-tf);
 }
@@ -2198,15 +2205,20 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   .ch-cl[data-canopy] .ch-cl-tb__wk span {
     flex: 1 0 100%;
     font: 600 12px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
   .ch-cl[data-canopy] .ch-cl-tb__wk b {
     font: 500 34px/0.9 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.04em;
     color: var(--ch-text-primary);
   }
   .ch-cl[data-canopy] .ch-cl-tb__wk em {
     font: 500 13px/1 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-cl[data-canopy] .ch-cl-tb__stack {
@@ -2375,6 +2387,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
     padding: 0;
     border-radius: 0;
     font: 500 12px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
     background: none;
   }
