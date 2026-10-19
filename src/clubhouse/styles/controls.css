@@ -890,8 +890,12 @@
 .ch-df__box {
   position: relative;
   display: block;
+  min-width: 0;
 }
 .ch-df .ch-df__in {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   padding-right: 40px;
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
