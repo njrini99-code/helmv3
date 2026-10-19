@@ -36,7 +36,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { InlineNotice } from '../../ui/Notices';
-import { PillGroup, Segmented } from '../../ui/Segmented';
+import { PillGroup, Segmented, type SegOption } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { Tooltip } from '../../ui/Tooltip';
@@ -648,10 +648,10 @@ function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
   );
 }
 
-const MARKS: Array<{ value: AttendanceMark | 'none'; label: string; cls?: string }> = [
+const MARKS: Array<SegOption<AttendanceMark | 'none'>> = [
   { value: 'present', label: 'Present' },
-  { value: 'late', label: 'Late', cls: 'is-late' },
-  { value: 'no_show', label: 'No-show', cls: 'is-absent' },
+  { value: 'late', label: 'Late', className: 'is-late' },
+  { value: 'no_show', label: 'No-show', className: 'is-absent' },
 ];
 
 export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: string }) {
@@ -793,29 +793,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
 }
 
 function AttendanceSeg({ name, value, onChange }: { name: string; value: AttendanceMark | null; onChange: (m: AttendanceMark) => void }) {
-  return (
-    <div className="ch-seg ch-well ch-seg--sm" role="radiogroup" aria-label={`Attendance for ${name}`}>
-      {MARKS.map((m) => {
-        const on = value === m.value;
-        return (
-          <button
-            key={m.value}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            className={'ch-seg__b' + (on ? ' is-on' : '') + (m.cls ? ` ${m.cls}` : '')}
-            onClick={() => {
-              if (!on) haptic('select');
-              onChange(m.value as AttendanceMark);
-            }}
-          >
-            {on && <span className="ch-seg__pill" aria-hidden="true" />}
-            <span className="ch-seg__l">{m.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <Segmented<AttendanceMark | 'none'> size="sm" label={`Attendance for ${name}`} value={value ?? 'none'} options={MARKS} onChange={(m) => onChange(m as AttendanceMark)} />;
 }
 
 export function Lanes({ rows, from, to, prop }: { rows: Array<{ who: string; blocks: Array<{ kind: string; s: number; e: number; label: string }> }>; from: number; to: number; prop?: [number, number] }) {

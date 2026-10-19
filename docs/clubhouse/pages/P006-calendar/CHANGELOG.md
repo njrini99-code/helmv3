@@ -1,5 +1,30 @@
 # P006 — Calendar: changelog
 
+## 2026-10-19 — In-flight saves are busy; icon buttons have tooltips; attendance marks use the shared segmented control
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Save event, Attach, Save attendance and a feed link's confirm are busy while they run instead of disabled.
+- More, More actions and Remove file show their name on hover and focus.
+- A player's attendance marks (Present, Late, No-show) are the shared `Segmented`: the same markup and tones, now with the sliding chip and arrow keys.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
 ## 2026-10-18 — Pickers and controls: dates, times, saving
 
 ```text

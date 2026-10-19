@@ -1,5 +1,30 @@
 # P012 — Classes: changelog
 
+## 2026-10-19 — In-flight actions are busy; one spinner; remove buttons have tooltips
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Remove class, Delete all classes, Import and Retry sync are busy while they run instead of disabled.
+- The calendar sync note draws the shared `Spinner`.
+- A parsed row's remove button shows its name on hover and focus.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
 ## 2026-10-19 — Empty Classes draws the week
 
 ```text

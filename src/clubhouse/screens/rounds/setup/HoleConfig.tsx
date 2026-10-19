@@ -1,6 +1,7 @@
 'use client';
 
 import { haptic } from '../../../lib/haptics';
+import { Segmented } from '../../../ui/Segmented';
 import { roving } from '../../../ui/use-roving';
 import { editedCount, holesForRound, MAX_HOLE_YARDS, parOf, PARS, yardsOf, type ChSetupHole } from './shape';
 
@@ -56,27 +57,16 @@ export function HoleConfig({
           </span>
         </div>
         {count === 9 && holes.length === 18 && (
-          <div className="ch-rsu-seg ch-rsu-seg--sm" role="radiogroup" aria-label="Which nine" {...roving}>
-            {(
-              [
-                ['front', 'Front 9'],
-                ['back', 'Back 9'],
-              ] as const
-            ).map(([v, l]) => (
-              <button
-                key={v}
-                type="button"
-                role="radio"
-                aria-checked={nine === v}
-                onClick={() => {
-                  haptic('select');
-                  onNine(v);
-                }}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
+          <Segmented<'front' | 'back'>
+            size="sm"
+            label="Which nine"
+            value={nine}
+            options={[
+              { value: 'front', label: 'Front 9' },
+              { value: 'back', label: 'Back 9' },
+            ]}
+            onChange={onNine}
+          />
         )}
       </div>
       <dl className="ch-rsu-hc__sum">

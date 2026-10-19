@@ -56,6 +56,18 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 1px;
 }
+.ch-seg__b:disabled {
+  color: var(--ch-ink-400);
+  text-shadow: none;
+  cursor: not-allowed;
+}
+/* A form field's choice: the well takes the row and the options share it equally. */
+.ch-seg--block {
+  display: flex;
+}
+.ch-seg--block .ch-seg__b {
+  flex: 1;
+}
 .ch-seg__pill {
   position: absolute;
   inset: 0;

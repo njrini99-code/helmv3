@@ -1,5 +1,30 @@
 # P003 — Roster: changelog
 
+## 2026-10-19 — In-flight saves are busy; icon buttons have tooltips; the list fades its clipped edge
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Mark inactive or active, Remove player and Approve all keep their colour and show the ring over the label while they run (`Button` busy), instead of fading to disabled. Their neighbour (Cancel, a row's Decline) stays disabled.
+- The layout toggle and each row's actions button show their name on hover and keyboard focus (the same words as the accessible name).
+- The roster and team tables fade only the clipped edge when they scroll sideways.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
 ## 2026-10-19 — Roster prints one clean sheet
 
 ```text

@@ -1,5 +1,31 @@
 # P011 — Rounds: changelog
 
+## 2026-10-19 — In-flight actions are busy; one spinner; round setup choices use the shared segmented control
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Restore round, Discard, Change round type, Reload and the conflict banner's Discard are busy while they run instead of disabled.
+- The posting, saving and sync rings are the shared `Spinner` (one duration, still under reduced motion and Animations off).
+- Round type, Holes (setup and Add a course) and Which nine are the shared `Segmented`, with the unavailable 18-hole option skipped by the arrow keys. `.ch-rsu-seg` in `rounds-setup.css` is no longer used.
+- Previous and next hole, the discard buttons and the course view's controls show their name on hover and focus. The hole strip and the review scorecard fade a clipped edge.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
 ## 2026-10-19 — The library reaches the card; the round's labels are callable from the server
 
 ```text
