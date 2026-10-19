@@ -636,6 +636,7 @@
   place-items: center;
   border-radius: 50%;
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   background: var(--ch-bg-subtle);
   color: var(--ch-text-tertiary);
 }
