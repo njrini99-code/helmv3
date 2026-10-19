@@ -1804,7 +1804,7 @@
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
 @media (max-width: 820px) {
   .ch-hb-rsvp__d em {
-    font-size: calc(12 * var(--ch-type-k));
+    font-size: 12px;
   }
   /* The ring's numeral, fixed like the bell's count: "6/6" fits inside its 24px face. */
   .ch-hb-ring b {
