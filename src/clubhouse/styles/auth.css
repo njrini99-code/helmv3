@@ -1381,7 +1381,7 @@
   .ch-au-input {
     height: 52px;
     padding: 0 10px 0 14px;
-    border-radius: var(--ch-radius-md);
+    border-radius: 13px;
   }
   .ch-au-input input {
     font: 400 max(16px, calc(16 * var(--ch-type-k)))/1.25 var(--ch-font-sans);
@@ -1411,7 +1411,7 @@
   }
   .ch-au-submit .ch-btn {
     height: 52px;
-    border-radius: var(--ch-radius-md);
+    border-radius: 13px;
     font-size: calc(16 * var(--ch-type-k));
   }
   .ch-au-bottom {
@@ -1495,7 +1495,7 @@
   .ch-au-wl-cta .ch-btn {
     flex: 1;
     height: 52px;
-    border-radius: var(--ch-radius-md);
+    border-radius: 13px;
     font-size: calc(16 * var(--ch-type-k));
   }
   .ch-au-wl-hint {
