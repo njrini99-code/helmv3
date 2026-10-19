@@ -85,7 +85,7 @@
   gap: 10px;
   align-items: flex-start;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
   font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
@@ -151,7 +151,7 @@
   justify-content: center;
   width: 84px;
   height: 84px;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   background: rgb(0 0 0 / 0.2);
   box-shadow:
     inset 0 1px 2px rgb(0 0 0 / 0.35),
@@ -204,7 +204,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(255 255 255 / 0.06);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
   color: rgb(244 241 232 / 0.72);
@@ -234,7 +234,7 @@
 .ch-cl-tb__fill {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   background: linear-gradient(90deg, rgb(123 199 154 / 0.35), #7bc79a);
 }
 .ch-cl-tb__tick {
@@ -248,7 +248,7 @@
   position: absolute;
   top: -6px;
   bottom: -6px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: rgb(231 184 102 / 0.14);
   box-shadow: inset 0 0 0 1.5px rgb(231 184 102 / 0.55);
 }
@@ -320,7 +320,7 @@
   min-height: 236px;
   padding: 18px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-cl-t);
   color: var(--ch-cl-tf);
   font: inherit;
@@ -391,7 +391,7 @@
   align-items: center;
   gap: 3px;
   padding: 6px 0 20px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.35);
 }
 .ch-cl-card__week em {
@@ -421,7 +421,7 @@
 .ch-cl-card__flex {
   margin-top: auto;
   padding: 14px 12px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.35);
   font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   text-align: center;
@@ -460,7 +460,7 @@
   min-height: 236px;
   padding: 18px;
   border: 2px dashed rgb(28 25 18 / 0.18);
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: transparent;
   color: var(--ch-ink-600);
   font: inherit;
@@ -504,7 +504,7 @@
 
 /* The side column */
 .ch-cl-card2 {
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -533,7 +533,7 @@
 }
 .ch-cl-over {
   padding: 18px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -590,7 +590,7 @@
 .ch-cl-over__c {
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: #fff;
   box-shadow: var(--ch-elevation-control);
 }
@@ -644,7 +644,7 @@
   align-items: center;
   gap: 10px;
   padding: 4px 4px 4px 12px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: #fff;
   box-shadow: var(--ch-elevation-reading);
 }
@@ -695,7 +695,7 @@
   grid-template-columns: repeat(var(--ch-cl-pick, 5), 1fr);
   gap: 4px;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-inset);
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12);
 }
@@ -735,7 +735,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 14px 16px;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: #fff;
   box-shadow: var(--ch-elevation-reading);
 }
@@ -829,7 +829,7 @@
   gap: 8px;
   padding: 30px 20px 18px;
   border: 2px dashed rgb(21 90 57 / 0.3);
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: radial-gradient(60% 80% at 50% 0%, #edf4ef, transparent 70%), var(--ch-ivory-25);
   color: inherit;
   font: inherit;
@@ -864,7 +864,7 @@
   top: 10px;
   width: 64px;
   height: 74px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: #fff;
   box-shadow:
     0 0 0 1px rgb(28 25 18 / 0.1),
@@ -963,7 +963,7 @@
   margin-bottom: 10px;
   padding: 16px;
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: #fff;
   box-shadow: var(--ch-elevation-reading);
   overflow: hidden;
@@ -1013,7 +1013,7 @@
   width: 56px;
   height: 56px;
   margin-bottom: 6px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
   box-shadow: 0 0 0 6px #fbf5e8;
@@ -1045,7 +1045,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   padding: 12px 0;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
 }
@@ -1077,7 +1077,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: #fff;
   box-shadow: var(--ch-elevation-reading);
   overflow: hidden;
@@ -1103,7 +1103,7 @@
   gap: 2px;
   width: 52px;
   height: 46px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-cl-t);
   color: var(--ch-cl-tf);
   box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
@@ -1257,7 +1257,7 @@
   .ch-cl-tb {
     padding: 16px;
     gap: 16px;
-    border-radius: 18px;
+    border-radius: var(--ch-radius-xl);
   }
   .ch-cl-tb__top {
     grid-template-columns: auto minmax(0, 1fr);
@@ -1266,7 +1266,7 @@
   .ch-cl-tb__wk {
     width: 64px;
     height: 64px;
-    border-radius: 16px;
+    border-radius: var(--ch-radius-lg);
   }
   .ch-cl-tb__wk b {
     font-size: calc(28 * var(--ch-type-k));
@@ -1324,7 +1324,7 @@
   display: grid;
   gap: 10px;
   padding: 14px 16px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
 }
 /* On the green card: ivory, never the page's secondary ink. */
 .ch-cl-tb__one {
@@ -1371,7 +1371,7 @@
   padding: 12px 14px;
   border: 0;
   box-shadow: var(--ch-elevation-reading);
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   color: inherit;
   text-align: left;
@@ -1453,7 +1453,7 @@
   .ch-cl.is-phone .ch-cl-tb.is-compact {
     gap: 12px;
     padding: 18px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
   }
