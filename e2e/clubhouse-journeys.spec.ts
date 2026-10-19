@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { localSupabase, removeTeamSeed, seedClubhouseTeam, type SeededTeam } from './helpers/clubhouse-local-seed';
-import { assertGone, journeyRows, signIn, sql, teamToday, warmRoutes } from './helpers/clubhouse-journey';
+import { assertGone, compileRoutes, journeyRows, NO_ROW_ID, signIn, sql, teamToday, warmRoutes } from './helpers/clubhouse-journey';
 
 /**
  * Clubhouse write journeys: what a coach and a player write on Calendar, Qualifiers, Team Hub, Settings and Messages, through
@@ -37,6 +37,7 @@ test.beforeAll(async ({ browser }) => {
     '/golf/dashboard/messages',
   ]);
   await warmRoutes(browser, team.players[1]!, ['/golf/dashboard/team-hub', '/golf/dashboard/settings', '/golf/dashboard/messages', '/golf/dashboard/rounds', '/golf/dashboard/rounds/new']);
+  await compileRoutes(browser, team.players[1]!, [`/golf/dashboard/rounds/continue/${NO_ROW_ID}`, `/golf/dashboard/rounds/${NO_ROW_ID}`]);
 });
 
 test.afterAll(async () => {

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { localSupabase, removeSeed, scoredHoles, seedClubhousePlayer, seededRounds, type SeededPlayer } from './helpers/clubhouse-local-seed';
-import { signIn } from './helpers/clubhouse-journey';
+import { compileRoutes, NO_ROW_ID, signIn } from './helpers/clubhouse-journey';
 
 /**
  * Swap audit F-06: a Clubhouse round from setup to submit, through the screens a player uses, against a real server and
@@ -20,8 +20,11 @@ test.describe.configure({ mode: 'serial' });
 
 let seed: SeededPlayer;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ browser }) => {
+  test.setTimeout(15 * 60_000);
   seed = await seedClubhousePlayer();
+  // Run on its own, nothing compiled these yet (the journeys spec's warm-up does when the two run together).
+  await compileRoutes(browser, seed, ['/golf/dashboard/rounds', '/golf/dashboard/rounds/new', `/golf/dashboard/rounds/continue/${NO_ROW_ID}`, `/golf/dashboard/rounds/${NO_ROW_ID}`]);
 });
 
 test.afterAll(async () => {

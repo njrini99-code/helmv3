@@ -49,6 +49,28 @@ export async function warmRoutes(browser: Browser, who: { email: string; passwor
   }
 }
 
+/**
+ * Compiles dynamic routes the journeys reach by a tap, with an id no row has: `next dev` compiles a route on its first
+ * request and then sends a hot update that reloads the page still open in the browser. Reached for the first time by a
+ * tap (Continue on Rounds opens /rounds/continue/[id]), that reload threw the page back to where the tap started
+ * (2026-10-18, local stack: every failed "Continue at hole 2" lined up with "Compiling /golf/dashboard/rounds/continue/[id]"
+ * and "Fast Refresh had to perform a full reload"). What the page shows for the unknown id does not matter.
+ */
+export async function compileRoutes(browser: Browser, who: { email: string; password: string }, paths: string[]): Promise<void> {
+  const use = test.info().project.use;
+  const context = await browser.newContext({ baseURL: use.baseURL, viewport: use.viewport, timezoneId: use.timezoneId, locale: use.locale });
+  const page = await context.newPage();
+  try {
+    await expect(async () => signIn(page, who)).toPass({ timeout: 10 * 60_000 });
+    for (const path of paths) await page.goto(path, { timeout: 240_000, waitUntil: 'load' }).catch(() => undefined);
+  } finally {
+    await context.close();
+  }
+}
+
+/** A route id no row has, for compileRoutes. */
+export const NO_ROW_ID = '00000000-0000-4000-8000-000000000000';
+
 /** One query against the local database (refuses anything that is not local). */
 export async function sql<Row = Record<string, unknown>>(text: string, params: unknown[] = []): Promise<Row[]> {
   const db = new PgClient({ connectionString: localDbUrl() });

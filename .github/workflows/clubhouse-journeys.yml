@@ -57,7 +57,7 @@ jobs:
       # The local stack's superuser: the seed and its removal set
       # session_replication_role (e2e/helpers/clubhouse-local-seed.ts).
       SUPABASE_DB_URL: postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres
-      NODE_OPTIONS: --max-old-space-size=6144
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
