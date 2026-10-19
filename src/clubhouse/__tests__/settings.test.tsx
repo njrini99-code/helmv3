@@ -2280,7 +2280,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     it('81901 CH-8509 the Profile sheet over Account asks too, and Account stays', async () => {
       const { user } = phone();
       await openRow(user, /^Account/);
-      await user.click(screen.getByRole('button', { name: 'Profile Maya Reyes' }));
+      await user.click(screen.getByRole('button', { name: 'Name and photo Maya Reyes' }));
       await user.type(within(dialog('Profile')).getByLabelText('Full name'), ' Jr');
       act(() => window.history.back());
       // Account's own sheets carry a CH-8509 question too (closed), so find the open one.
