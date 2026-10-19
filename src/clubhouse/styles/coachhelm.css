@@ -1834,3 +1834,10 @@ html:not([data-fw-theme='dark']) .ch-hl {
   background: color-mix(in srgb, var(--ch-green-fill-600) 14%, var(--ch-bg-surface));
   box-shadow: inset 0 1px 2px rgb(11 58 37 / 0.12);
 }
+
+/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
+@media (hover: hover) {
+  .ch-hl-why:hover svg {
+    color: var(--ch-text-primary);
+  }
+}
