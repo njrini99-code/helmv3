@@ -68,7 +68,7 @@ export function StatusConfirm({
           </Button>
           <Button
             variant="primary"
-            busy={pending}
+            disabled={pending}
             onClick={() => {
               if (player) onConfirm(player, to);
             }}

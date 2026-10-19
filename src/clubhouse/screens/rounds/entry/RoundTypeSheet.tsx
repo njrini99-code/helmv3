@@ -106,7 +106,7 @@ export function RoundTypeSheet({
           <Button variant="ghost" disabled={pending} onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={pending} disabled={!ready} onClick={() => onSave(choice)}>
+          <Button variant="primary" disabled={!ready || pending} onClick={() => onSave(choice)}>
             {pending ? <span data-ch-code="CH-11411">Saving…</span> : 'Save'}
           </Button>
         </>

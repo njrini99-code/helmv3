@@ -653,7 +653,7 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={save.pending} feel={null} onClick={() => void submit()}>
+          <Button variant="primary" disabled={save.pending} feel={null} onClick={() => void submit()}>
             {save.pending ? <span data-ch-code="CH-5401">Adding…</span> : 'Propose focus area'}
           </Button>
         </>

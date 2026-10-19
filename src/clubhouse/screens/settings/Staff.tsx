@@ -95,7 +95,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
             <Segmented label="Staff role" size="sm" value={invite.role} options={STAFF_ROLE_OPTIONS} onChange={invite.setRole} />
           </Row>
           <Row label="New invite">
-            <Button size="sm" variant="secondary" leftIcon={UserPlus} busy={invite.create.pending} onClick={() => void invite.create.run(invite.role)}>
+            <Button size="sm" variant="secondary" leftIcon={UserPlus} disabled={invite.create.pending} onClick={() => void invite.create.run(invite.role)}>
               {invite.create.pending ? 'Making…' : 'Create invite'}
             </Button>
           </Row>

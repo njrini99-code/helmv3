@@ -97,7 +97,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
               </Button>
               <Button
                 variant="danger"
-                busy={leave.pending}
+                disabled={leave.pending}
                 onClick={() => void leave.run()}
               >
                 {leave.pending ? 'Leaving…' : 'Leave team'}
@@ -145,7 +145,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
           <Field id="set-join-code" label="Team code" autoComplete="off" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
           <Field id="set-join-note" label="Note to the coaches" help="Optional." maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="ch-set-span2">
-            <Button type="submit" variant="primary" busy={join.pending} disabled={!code.trim()}>
+            <Button type="submit" variant="primary" disabled={!code.trim() || join.pending}>
               {join.pending ? 'Sending…' : 'Ask to join'}
             </Button>
           </div>

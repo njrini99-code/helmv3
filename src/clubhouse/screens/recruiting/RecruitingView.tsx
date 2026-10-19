@@ -399,7 +399,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
               <Button variant="ghost" disabled={del.pending} onClick={() => setAsking(null)}>
                 Keep them
               </Button>
-              <Button variant="danger" busy={del.pending} feel="warning" onClick={() => asking && void del.run(asking)}>
+              <Button variant="danger" disabled={del.pending} feel="warning" onClick={() => asking && void del.run(asking)}>
                 {del.pending ? <span data-ch-code="CH-14406">Deleting…</span> : 'Delete prospect'}
               </Button>
             </>

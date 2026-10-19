@@ -773,8 +773,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
           <div className="ch-in__sec ch-in__foot">
             <Button
               variant="primary"
-              busy={save.pending}
-              disabled={!changed.length}
+              disabled={!changed.length || save.pending}
               onClick={() => {
                 chTrail('calendar attendance save');
                 void save.run();
