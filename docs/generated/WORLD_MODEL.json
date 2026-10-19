@@ -3685,6 +3685,10 @@
         "definedIn": "supabase/migrations/20260708020000_gate_admin_telemetry_rpcs_pii.sql"
       },
       {
+        "id": "get_player_hub_events",
+        "definedIn": "supabase/migrations/20261018120000_golf_events_meetings_invitees_only.sql"
+      },
+      {
         "id": "get_qualifier_leaderboard",
         "definedIn": "supabase/migrations/20260807030400_gate_qualifier_leaderboard.sql"
       },
@@ -3735,6 +3739,10 @@
       {
         "id": "golf_player_anonymize_on_unlink",
         "definedIn": "supabase/migrations/20260819200000_preserve_golf_history_on_account_deletion.sql"
+      },
+      {
+        "id": "golf_player_invited_to_event",
+        "definedIn": "supabase/migrations/20261018120000_golf_events_meetings_invitees_only.sql"
       },
       {
         "id": "golf_qualifier_selection_reasons",
@@ -12262,6 +12270,11 @@
           "kind": "import_graph",
           "path": "src/lib/calendar/availability.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/calendar/meeting-invites.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
         }
       ]
     },
@@ -20426,6 +20439,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/dashboard-data.ts",
           "anchor": "src/lib/calendar/class-events"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/dashboard-data.ts",
+          "anchor": "src/lib/calendar/meeting-invites"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/player-hub-data.ts",
+          "anchor": "src/lib/calendar/meeting-invites"
         }
       ]
     },
@@ -20450,6 +20473,18 @@
           "kind": "rpc_call",
           "path": "src/app/golf/actions/dashboard-data.ts",
           "anchor": "get_coach_today_schedule"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "get_player_hub_events",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/golf/actions/player-hub-data.ts",
+          "anchor": "get_player_hub_events"
         }
       ]
     },
