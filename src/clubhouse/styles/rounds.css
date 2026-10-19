@@ -126,6 +126,8 @@
 }
 .ch-rd-strip span.is-played em {
   font: 500 9.5px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   opacity: 0.72;
 }
@@ -162,6 +164,7 @@
   padding-top: 14px;
   border-top: 1px solid rgb(255 255 255 / 0.1);
   font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: rgb(244 241 232 / 0.72);
 }
 .ch-rd-unf__f b {
@@ -254,11 +257,15 @@
 }
 .ch-rd-season__big b {
   font: 500 46px/0.9 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.05em;
   font-variation-settings: 'wdth' 92;
 }
 .ch-rd-season__big em {
   font: 500 13px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -1052,6 +1059,8 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-hero__s b {
   font: 500 84px/0.85 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.06em;
   font-variation-settings: 'wdth' 96;
 }
@@ -1066,6 +1075,8 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-hero__s span {
   font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: rgb(244 241 232 / 0.6);
 }
 .ch-rv-figs {
@@ -1276,6 +1287,7 @@ a.ch-rd-sc:focus-visible {
   border-radius: var(--ch-radius-sm);
   background: none;
   font: inherit;
+  font-variant-numeric: tabular-nums;
   color: inherit;
   cursor: pointer;
 }
@@ -1410,6 +1422,7 @@ a.ch-rd-sc:focus-visible {
   height: 28px;
   border-radius: 50%;
   font: 700 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
   box-shadow: 0 0 0 3px var(--ch-bg-surface);
@@ -2407,6 +2420,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rv-nine .is-score b {
   font: 700 18px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
 }
 .ch-rv .ch-rv-nine tbody tr:not(.is-par) td.is-sel:not(:empty) {
   background: var(--ch-ivory-0);
@@ -2474,6 +2489,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rv-recap__by {
   font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 
@@ -2857,6 +2874,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rv .ch-rzmeta {
   margin: 14px 0 0;
   font: 400 calc(13.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-rv .ch-rzmeta b {
@@ -2959,11 +2977,14 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzcost__t {
   font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
 }
 .ch-rv .ch-rzcost__t small {
   display: block;
   margin-top: 3px;
   font: 400 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-rv .ch-rzcost b {
@@ -3026,6 +3047,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzhit__c em {
   font: 500 11px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -3045,6 +3068,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzpair small {
   font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 
@@ -3087,6 +3112,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzpt__c em {
   font: 500 11px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -3689,6 +3716,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   .ch-rd[data-canopy] .ch-rd-season__big b {
     order: 1;
     font: 600 58px/0.92 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.035em;
     font-variation-settings: 'wdth' 90;
   }
@@ -3704,6 +3732,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   .ch-rd[data-canopy] .ch-rd-season__big em {
     order: 3;
     font: 500 13px/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-rd[data-canopy] .ch-rd-fig + .ch-rd-fig {
     box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.38);
@@ -4263,10 +4292,14 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rcard-h__s b {
   font: 600 32px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-rcard-h__s em {
   font: 600 16px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-primary);
 }
@@ -4332,6 +4365,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   table-layout: fixed;
   border-collapse: collapse;
   font: 400 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-rcard-t th,
@@ -4403,6 +4437,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   height: var(--ch-rcard-mk);
   place-items: center;
   font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-rcard-mk b {
@@ -4471,6 +4506,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rcard-sg dd {
   margin: 4px 0 0;
   font: 600 19px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rcard-sg .is-total dd {
   font-size: calc(22 * var(--ch-type-k));
