@@ -2812,7 +2812,7 @@
   .ch-lane__b,
   .ch-calm-week__d em,
   .ch-calm-month__h span {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
   .ch-ag__now span,
   .ch-in__resp dt,
