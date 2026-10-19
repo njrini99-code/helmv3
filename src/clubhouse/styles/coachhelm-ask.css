@@ -238,7 +238,7 @@
   height: 42px;
   padding: 0 12px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
@@ -326,7 +326,7 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-inset);
   color: var(--ch-text-secondary);
 }
@@ -443,7 +443,7 @@
   width: 100%;
   padding: 16px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-page);
   color: var(--ch-text-primary);
   text-align: left;
@@ -486,7 +486,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-page);
 }
 .ch-ask-nothing__ic {
