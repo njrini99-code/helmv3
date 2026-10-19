@@ -2597,3 +2597,15 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 .ch-cl-tb__wk b {
   font-weight: 600;
 }
+
+/* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
+@media (max-width: 820px) {
+  .ch-cl-rv__x {
+    position: relative;
+  }
+  .ch-cl-rv__x::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}
