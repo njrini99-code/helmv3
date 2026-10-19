@@ -365,7 +365,7 @@
 .ch-th-bar__val > span,
 .ch-th-rank__val > span {
   font-weight: 400;
-  font-size: 12.5px;
+  font-size: calc(12.5 * var(--ch-type-k));
   color: var(--ch-text-tertiary);
 }
 
@@ -572,7 +572,7 @@ a.ch-th-rank__name::after {
   font-weight: 400;
 }
 .ch-th-table thead th {
-  font-size: 12px;
+  font-size: calc(12 * var(--ch-type-k));
   font-weight: 500;
   color: var(--ch-text-tertiary);
 }
@@ -1084,7 +1084,7 @@ a.ch-th-rank__name::after {
 @media (max-width: 820px) {
   .ch-th-ax,
   .ch-th-ref-label {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 
