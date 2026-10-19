@@ -434,12 +434,12 @@ describe('the profile’s extra figures', () => {
 /* ─── Game detail: More detail ─── */
 
 describe('Game detail · More detail', () => {
-  it('each section has one, open on the desktop, a native disclosure with its own panels', async () => {
+  it('each section has one, closed to start, a native disclosure with its own panels', async () => {
     showPlayer(player());
     await openTab(/Game detail/);
     const more = [...document.querySelectorAll('details.ch-gx-more')] as HTMLDetailsElement[];
     expect(more).toHaveLength(5);
-    expect(more.every((d) => d.open && d.querySelector('summary')!.textContent === 'More detail')).toBe(true);
+    expect(more.every((d) => !d.open && d.querySelector('summary')!.textContent === 'More detail')).toBe(true);
     expect([...document.querySelectorAll('.ch-gm')].every((s) => s.querySelector('.ch-gx-rule')!.textContent!.includes('18 holes only'))).toBe(true);
   });
 

@@ -62,7 +62,7 @@ export interface ChFigure {
   /**
    * How the figure is drawn under its value, against a reference the data gives (owner, 2026-10-07: no bare numbers):
    * strokes gained from the Tour's zero, the scoring average from par, a rate on its 0 to 100 track (with the Tour's
-   * mark when there is one), putts against two on every green (36), birdies as holes out of 18.
+   * mark when there is one; scrambling has no Tour figure overall, so its mark is the previous window's rate), putts against two on every green (36), birdies as holes out of 18.
    */
   gauge?: ChGauge;
 }
@@ -251,7 +251,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
     { key: 'gir', series: weekKeys.map((wk) => rate(weekRows(wk), 'greens_hit', 'greens_total')), label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage, gauge: { kind: 'rate', ref: benchGir ?? null } },
     { key: 'putts', series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), puttsOf)), label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, puttsOf), weightedMean(holePrev, puttsOf)), lowerIsBetter: true, context: hasPrev ? 'vs previous 10' : holeSample, note: coverage, gauge: { kind: 'putts' } },
-    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs previous 10' : holeSample, note: coverage, gauge: { kind: 'rate' } },
+    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs previous 10' : holeSample, note: coverage, gauge: { kind: 'rate', ref: hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null } },
     {
       key: 'birdies',
       series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), birdiesOf)),

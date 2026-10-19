@@ -1,5 +1,23 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-19 — Stats you can read like a scorecard (L6a)
+
+```text
+Design package: none (complete-and-elevate plan, lane L6a)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-19, L6a)
+
+- Putting rings: upright labels with the make rate right-aligned, and leaders that no longer cross or run through a label.
+- The Par swatch in the scoring key has a hairline ring.
+- The Scrambling dial has a reference tick like Greens' dial. The Tour has no overall scrambling figure, so the tick is the previous window's rate, the same one the change under it is measured against.
+- A tape figure with no data (an em dash) drops its unit, its "vs previous 10" caption and its coverage note.
+
 ## 2026-10-18 — Pickers and controls: filter date range
 
 ```text

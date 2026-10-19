@@ -69,10 +69,10 @@ export function Rule({ children, how }: { children: ReactNode; how?: string }) {
   );
 }
 
-/** "More detail": a native disclosure (keyboard and screen reader for free), open on the desktop and closed on the phone. */
-export function More({ open, children }: { open: boolean; children: ReactNode }) {
+/** "More detail": a native disclosure (keyboard and screen reader for free), closed on every screen: the figures and the picture are the read. */
+export function More({ children }: { children: ReactNode }) {
   return (
-    <details className="ch-gx-more" open={open}>
+    <details className="ch-gx-more">
       <summary>More detail</summary>
       <div className="ch-gm__body">{children}</div>
     </details>

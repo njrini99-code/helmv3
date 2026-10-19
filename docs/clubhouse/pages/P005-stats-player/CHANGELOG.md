@@ -14,6 +14,9 @@ Held items:     none
 ### Changed (2026-10-19, L6a)
 
 - The Rounds table fits its canvas at 1024, 1100, 1280 and 1440 (it was 1040px wide and scrolled sideways at 1280). The columns size to the room, and where the canvas is under 820px GIR and putts, both on Game detail, step out before anything scrolls. A long course keeps one line with an ellipsis (the full name on hover) and its round type beside it; the figures stay right-aligned in tabular numerals, and a row lifts on hover where hover exists.
+- Putting rings: the five distance labels are upright, the band on the left and its make rate right-aligned, and every leader starts on one ray from the cup and steps down with its label, so no two cross and none runs through another label.
+- The Par swatch in the scoring key has a hairline ring, so parchment on parchment reads as a swatch.
+- Game detail opens with every More detail collapsed (it opened expanded on desktop). A figure with no data no longer carries its caption underneath ("Tour 62%", "18 approaches" under an em dash).
 
 ## 2026-10-18 — Pickers and controls: filter date range, saving
 

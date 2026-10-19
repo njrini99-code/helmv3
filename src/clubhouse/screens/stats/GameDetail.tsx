@@ -106,7 +106,7 @@ function Sec({
               <div key={l}>
                 <dt>{l}</dt>
                 <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
-                {n && <dd className="ch-gm__sub">{n}</dd>}
+                {n && v !== NO_DATA && <dd className="ch-gm__sub">{n}</dd>}
               </div>
             );
           })}
@@ -298,7 +298,6 @@ export function GameDetail({
   const ruleOf = (tail: string) => (phone ? { rule: shortBasis, how: `${basisLine}. ${tail}` } : { rule: `${basisLine}. ${tail}` });
   /** A panel's note: the whole paragraph on a screen; on the phone one short line, and the paragraph behind "How this is measured". */
   const noteOf = (long: string, short: string) => (phone ? { note: short, how: long } : { note: long });
-  const open = !phone;
 
   return (
     <div className={'ch-gd' + (phone ? ' is-phone' : '')}>
@@ -342,7 +341,7 @@ export function GameDetail({
           ],
         ]}
         more={
-          <More open={open}>
+          <More>
             <ScoringMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
@@ -376,7 +375,7 @@ export function GameDetail({
           ['Fairways par 5', pct(s.fairwayPctPar5), s.fairwayPctPar4 != null ? `Par 4s: ${Math.round(s.fairwayPctPar4)}%` : null, undefined],
         ]}
         more={
-          <More open={open}>
+          <More>
             <TeeMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
@@ -422,7 +421,7 @@ export function GameDetail({
           ['From the rough', pct(s.girPctFromRough), s.girPctFromFairway != null ? `GIR · fairway ${Math.round(s.girPctFromFairway)}%` : null, undefined],
         ]}
         more={
-          <More open={open}>
+          <More>
             <ApproachMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
@@ -516,7 +515,7 @@ export function GameDetail({
           ['From the rough', pct(s.scramblingPctRough), benchScrRough != null ? `Tour ${benchScrRough}%` : `${s.scrambleRoughAttempts} attempts`, tone(s.scramblingPctRough, benchScrRough)],
         ]}
         more={
-          <More open={open}>
+          <More>
             <ShortMore s={s} />
           </More>
         }
@@ -567,7 +566,7 @@ export function GameDetail({
           ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${s.firstPuttDistanceAvg.toFixed(1)} ft`, 'Average start', undefined],
         ]}
         more={
-          <More open={open}>
+          <More>
             <PuttingMore s={s} x={x} sixBands={shotBands} />
           </More>
         }
