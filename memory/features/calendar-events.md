@@ -232,6 +232,29 @@ legacy `is_recurring` flag in sync for older consumers.
   `src/test/lib/calendar/availability.test.ts`,
   `src/app/golf/actions/__tests__/conflict-inbox.test.ts`,
   `src/test/golf/actions/rsvp-failure-vs-refusal.test.ts`.
+- **A meeting is visible to a player only when they are invited to it**
+  (owner-approved 2026-10-18; Clubhouse's `playerSeesMeeting`, Decision B).
+  A meeting is `event_type = 'meeting'`; invited means the player has their
+  own `golf_event_attendance` row on it. A meeting nobody is invited to is the
+  coach's own. Every other event type stays visible to the whole team, invite
+  list or not; coaches see every meeting. Fairway applies it in app code
+  (`src/lib/calendar/meeting-visibility.ts` + `meeting-invites.ts`) on every
+  player read that carries titles: the calendar page and its client range
+  fetch (in the query, not after), player Home, the player hub, Travel's
+  "Linked to" title, `GET /api/calendar/events`, the iCal team feed (admin
+  client: owner not a coach of the team ⇒ player view), and busy periods
+  (`getUserBusyPeriodsWithStatus`: a meeting is busy time only for its
+  invitees). `respondToEvent` refuses a reply to a meeting the player is not
+  on ("Event not found"). A failed invite read hides every meeting (server
+  reads log `[meetings] invite read failed`; the client range fetch shows its
+  retryable range error; busy periods are marked `partial`). Coach reads skip
+  the invite read entirely. The database enforces the same rule once the held
+  migration `20261018120000_golf_events_meetings_invitees_only.sql` is applied
+  (`golf_events_select_team` + `get_player_hub_events`; Realtime payloads
+  follow the SELECT policy, so only the migration closes them). Tests:
+  `src/lib/calendar/__tests__/meeting-visibility.test.ts` and one
+  `*meeting*` test beside each surface; pgTAP: the migration's test of the
+  same name under `supabase/tests/rls/`.
 - Event state transitions should not skip lifecycle logging when status changes.
 - **A failed read never resets or hides attendance** (2026-10-17).
   `updateGolfEventImpl` invites nobody when its existing-attendance read fails

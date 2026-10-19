@@ -11,6 +11,8 @@ import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { isClassEvent } from '@/lib/calendar/class-events';
+import { isMeetingEvent } from '@/lib/calendar/meeting-visibility';
+import { loadInvitedMeetingIds } from '@/lib/calendar/meeting-invites';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -1380,6 +1382,20 @@ async function respondToEventImpl(
     // event_type is refused the same way every read path already treats it.
     if (isClassEvent(event)) {
       return { success: false, error: 'Class meetings don\'t take RSVPs.', code: 'class_meeting' };
+    }
+
+    // A meeting takes replies only from the players invited to it (their own
+    // attendance row; meeting-visibility.ts). Without this, a self-RSVP
+    // (golf_event_attendance_insert_self) would put a player on a 1:1 they
+    // were never invited to, and that row is what makes a meeting visible to
+    // them. Answered as "not found" so the reply does not confirm the meeting
+    // exists. The held migration 20261018120000 refuses the insert as well.
+    if (isMeetingEvent(event)) {
+      const invited = await loadInvitedMeetingIds(supabase, player.id, [event.id], {
+        action: 'golf.respondToEvent.meetingInvite',
+      });
+      if (!invited) return { success: false, error: UNREADABLE };
+      if (!invited.has(event.id)) return { success: false, error: 'Event not found' };
     }
 
     const { data: membership, error: membershipError } = await supabase

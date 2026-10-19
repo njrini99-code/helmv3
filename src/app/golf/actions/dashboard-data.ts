@@ -17,6 +17,7 @@ import {
     type RoundStatsCacheRow,
 } from '@/lib/golf/countable-round-stats';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -1159,7 +1160,24 @@ async function getPlayerDashboardDataImpl(
     // row's `end_time` is UTC midnight on the INCLUSIVE last day — comparing
     // instants drops the final round of every tournament, the same
     // one-day-early bug as #1493/#1494/#1495.
-    const todayEventsRaw = (todayEventsResult.data || []).filter((e) =>
+    //
+    // A player's Home shows a meeting only when they are invited to it (their
+    // own attendance row; meeting-visibility.ts): golf_events_select_team still
+    // hands a player every team meeting until the held migration 20261018120000
+    // lands. One invite read covers Today and Upcoming; a failed read hides
+    // every meeting. A coach looking at this player's Home is unchanged.
+    const visibleEventIds = playerAccess.reason === 'coach'
+        ? null
+        : new Set(
+            (await filterMeetingsForPlayer(
+                supabase,
+                [...(todayEventsResult.data || []), ...(upcomingEventsResult.data || [])],
+                playerId,
+                { action: 'golf.playerDashboard.meetingInvites', featureArea: 'player_hub' },
+            )).map((e) => e.id),
+        );
+    const shownToViewer = (e: { id: string }) => !visibleEventIds || visibleEventIds.has(e.id);
+    const todayEventsRaw = (todayEventsResult.data || []).filter(shownToViewer).filter((e) =>
         eventRunsOnDay(e as { start_time?: string | null; end_time?: string | null; all_day?: boolean | null }, playerTeamTimezone, today),
     );
     let todayEvents: TodayEvent[] = todayEventsRaw.map(e => ({
@@ -1174,7 +1192,7 @@ async function getPlayerDashboardDataImpl(
     // DaySchedule home-dashboard card — future events beyond today. No RSVP
     // merge here (unlike todayEvents above): the card is a read-only agenda,
     // not an RSVP surface (RSVP still lives at Calendar).
-    const upcomingEvents: TodayEvent[] = (upcomingEventsResult.data || []).map(e => ({
+    const upcomingEvents: TodayEvent[] = (upcomingEventsResult.data || []).filter(shownToViewer).map(e => ({
         id: e.id,
         title: e.title,
         event_type: e.event_type,

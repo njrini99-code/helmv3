@@ -73,6 +73,10 @@ Player opens hub
   `get_player_hub_events`. The hub's trips carry `event_id`.
 - Player Hub must only show data for the authenticated player's team and assignments.
 - RSVP actions update event attendance, not generic task state.
+- Events (hub and Home Today/Up next) list a meeting only when the player is
+  invited to it; a failed invite read hides every meeting. See "A meeting is
+  visible to a player only when they are invited to it" in
+  `memory/features/calendar-events.md`.
 - Task completion truth must match the write path used by `completeTask()`.
 - Travel details can include sensitive logistics and should stay team/player scoped.
 - Headline numbers (scoring average, best round, putts/18, birdies/18, SG)
