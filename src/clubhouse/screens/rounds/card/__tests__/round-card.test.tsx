@@ -15,6 +15,7 @@ vi.mock('../draw-card', async (orig) => ({ ...(await orig<typeof import('../draw
 
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH } from '../../../../preview/fixtures-round-review';
 import { ToastProvider } from '../../../../ui/Toast';
+import { GolfUserProvider } from '@/contexts/golf-user-context';
 import { RoundCard } from '../RoundCard';
 import { useJustSubmitted } from '../just-submitted';
 
@@ -153,6 +154,25 @@ describe('RoundCard share sheet', () => {
     await waitFor(() => expect(draw.renderCardCanvas).toHaveBeenLastCalledWith(expect.anything(), { sg: false, tally: true }));
     await userEvent.click(screen.getByRole('switch', { name: 'Putts, fairways and greens' }));
     await waitFor(() => expect(draw.renderCardCanvas).toHaveBeenLastCalledWith(expect.anything(), { sg: false, tally: false }));
+  });
+
+  it('the picture names the signed-in player and their team on a player’s own round, and the player on a coach’s view', async () => {
+    const as = (role: 'player' | 'coach', name: string, review: typeof PREVIEW_REVIEW) =>
+      wrap(
+        <GolfUserProvider userData={{ role, userId: 'u1', name, teamName: 'Varsity' }}>
+          <RoundCard review={review} phone={false} just={false} settle={false} />
+        </GolfUserProvider>,
+      );
+    const { unmount } = render(as('player', 'Jonah Okafor', PREVIEW_REVIEW));
+    await userEvent.click(screen.getByRole('button', { name: 'Share card' }));
+    await waitFor(() => expect(draw.renderCardCanvas).toHaveBeenCalled());
+    expect(draw.renderCardCanvas.mock.calls[0]![0]).toMatchObject({ kicker: 'Jonah Okafor · Wed Oct 14 · Practice', team: 'Varsity' });
+    unmount();
+    draw.renderCardCanvas.mockClear();
+    render(as('coach', 'Maya Reyes', PREVIEW_REVIEW_COACH));
+    await userEvent.click(screen.getByRole('button', { name: 'Share card' }));
+    await waitFor(() => expect(draw.renderCardCanvas).toHaveBeenCalled());
+    expect(draw.renderCardCanvas.mock.calls[0]![0].kicker.startsWith('Jonah Okafor · ')).toBe(true);
   });
 
   it('a card that cannot be drawn says so and offers no Share', async () => {

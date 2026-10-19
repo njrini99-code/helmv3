@@ -123,6 +123,12 @@ describe('buildCard: 18, 9 and partial rounds', () => {
     expect(buildCard(PREVIEW_REVIEW).kicker).toBe('Wed Oct 14 · Practice');
   });
 
+  it('a player’s own round names the signed-in player; a coach’s view keeps the player it is about', () => {
+    expect(buildCard(PREVIEW_REVIEW, { name: 'Jonah Okafor', team: 'Varsity' })).toMatchObject({ kicker: 'Jonah Okafor · Wed Oct 14 · Practice', team: 'Varsity' });
+    expect(buildCard(PREVIEW_REVIEW_COACH, { name: 'Someone Else' }).kicker.startsWith('Jonah Okafor · ')).toBe(true);
+    expect(buildCard(PREVIEW_REVIEW).team).toBeNull();
+  });
+
   it('rows with nothing tracked are left off', () => {
     const bare: ChRoundReview = { ...PREVIEW_REVIEW, holes: PREVIEW_REVIEW.holes.map((h) => ({ ...h, putts: null, fairway: null, gir: null })) };
     expect(buildCard(bare).rows).toEqual({ putts: false, fir: false, gir: false });

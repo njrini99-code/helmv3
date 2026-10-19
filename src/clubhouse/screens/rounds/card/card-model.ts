@@ -58,8 +58,10 @@ export interface CardLeg {
 
 export interface CardModel {
   course: string;
-  /** "Wed Oct 14 · Practice", with the player's name first when a coach is looking. */
+  /** "Jonah Okafor · Wed Oct 14 · Practice": whose round it is, when, and what it counted as. */
   kicker: string;
+  /** The team's name, for the picture's foot; null when it isn't known. */
+  team: string | null;
   /** "Blue tees · 6,984 yds · 73.1 / 133": whatever the tee facts are. */
   tees: string | null;
   holesPlayed: number;
@@ -106,7 +108,13 @@ function band(label: 'Out' | 'In', holes: CardHole[]): CardBand {
   return { label, holes, par: sumOf(holes, 'par'), score: sumOf(holes, 'score'), putts: sumOf(holes, 'putts'), fir: countOf(holes, 'fir'), gir: countOf(holes, 'gir') };
 }
 
-export function buildCard(r: ChRoundReview): CardModel {
+/** Who the card names when the review doesn't (a player's own round carries no name): the signed-in player, and their team. */
+export interface CardWho {
+  name?: string | null;
+  team?: string | null;
+}
+
+export function buildCard(r: ChRoundReview, who: CardWho = {}): CardModel {
   const start = firstHole(r);
   const nines = r.holesPlayed === 9 ? 1 : 2;
   const byN = new Map(r.holes.map((h) => [h.n, h]));
@@ -125,7 +133,8 @@ export function buildCard(r: ChRoundReview): CardModel {
   const date = `${new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' }).format(dateOf(r.date))} ${new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(dateOf(r.date))}`;
   return {
     course: r.course,
-    kicker: [r.playerName, date, r.type ? TYPE_LABEL[r.type] : null].filter(Boolean).join(' · '),
+    kicker: [r.playerName ?? who.name ?? null, date, r.type ? TYPE_LABEL[r.type] : null].filter(Boolean).join(' · '),
+    team: who.team ?? null,
     tees: [r.tee, r.teeFacts].filter(Boolean).join(' · ') || null,
     holesPlayed: r.holesPlayed,
     scored,

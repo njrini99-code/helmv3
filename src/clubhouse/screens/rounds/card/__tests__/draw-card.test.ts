@@ -5,7 +5,7 @@ import { CARD_SCALE, CARD_W, cardHeight, drawRoundCard, renderCardCanvas, type C
 
 /** P011 round card: the Canvas 2D drawing. jsdom has no canvas, so the context is a recorder. */
 
-const palette: CardPalette = { paper: '#fff', ink: '#000', soft: '#333', faint: '#444', frame: '#b09560', rule: '#ccc', ruleSoft: '#ddd', under: '#b03a2e', gain: '#155a39', loss: '#865608', band: '#eee', sans: 'sans-serif' };
+const palette: CardPalette = { paper: '#fff', ink: '#000', soft: '#333', faint: '#444', frame: '#b09560', rule: '#ccc', ruleSoft: '#ddd', under: '#b03a2e', gain: '#155a39', loss: '#865608', band: '#eee', brand: '#155a39', sans: 'sans-serif' };
 
 function recorder() {
   const texts: string[] = [];
@@ -40,6 +40,19 @@ describe('drawRoundCard', () => {
     expect(texts).toEqual(expect.arrayContaining(['Out', 'In', '37', 'Strokes gained', '+0.6', 'Approach', '+1.3', '−0.9']));
     expect(texts.some((t) => t.includes('Par 72') && t.includes('18 holes'))).toBe(true);
     for (const n of Array.from({ length: 18 }, (_, i) => String(i + 1))) expect(texts).toContain(n);
+  });
+
+  it('says whose round it is and where it came from: the name in the kicker, Golfhelm and the team in the foot', () => {
+    const who = buildCard(PREVIEW_REVIEW, { name: 'Jonah Okafor', team: 'Varsity' });
+    const { g, texts } = recorder();
+    drawRoundCard(g, who, { sg: true, tally: true }, palette);
+    expect(texts).toContain('Jonah Okafor · Wed Oct 14 · Practice');
+    expect(texts).toContain('Golfhelm');
+    expect(texts).toContain('Varsity');
+    const bare = recorder();
+    drawRoundCard(bare.g, m, { sg: true, tally: true }, palette);
+    expect(bare.texts).toContain('Golfhelm');
+    expect(bare.texts).not.toContain('Varsity');
   });
 
   it('leaves the strokes gained and the putts and greens off when asked', () => {

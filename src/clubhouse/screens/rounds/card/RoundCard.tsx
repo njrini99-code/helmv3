@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Printer, Share } from 'lucide-react';
+import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import type { ChRoundReview } from '../../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
@@ -294,7 +295,11 @@ function ShareSheet({ open, onClose, model, dateIso }: { open: boolean; onClose:
 
 /** `just`: opened straight from Post round (the quiet line under the card). `settle`: the card arrives on the spring; false under reduced motion. */
 export function RoundCard({ review: r, phone, just, settle }: { review: ChRoundReview; phone: boolean; just: boolean; settle: boolean }) {
-  const m = useMemo(() => buildCard(r), [r]);
+  // A player's own round carries no name; the signed-in player is the one it names. A coach's view carries the player's.
+  const user = useGolfUserOptional();
+  const name = user?.role === 'player' ? user.name : null;
+  const team = user?.teamName ?? null;
+  const m = useMemo(() => buildCard(r, { name, team }), [r, name, team]);
   const story = useMemo(() => (just ? storyLine(r) : null), [just, r]);
   const [sharing, setSharing] = useState(false);
   const tone = m.total.toPar == null || m.total.toPar === 0 ? '' : m.total.toPar < 0 ? ' is-under' : ' is-over';

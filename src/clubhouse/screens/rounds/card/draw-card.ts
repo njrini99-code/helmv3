@@ -19,6 +19,7 @@ const HEAD_H = 118;
 const ROW = { head: 28, par: 26, score: 36, putts: 26, mark: 24 } as const;
 const BAND_GAP = 20;
 const SG_H = 68;
+const FOOT_H = 44;
 
 export interface CardPalette {
   paper: string;
@@ -32,6 +33,7 @@ export interface CardPalette {
   gain: string;
   loss: string;
   band: string;
+  brand: string;
   sans: string;
 }
 
@@ -58,6 +60,7 @@ export function readPalette(doc: Document = document): CardPalette {
     gain: t('--ch-chart-gain', '#155a39'),
     loss: t('--ch-chart-loss', '#865608'),
     band: t('--ch-ledger-row-hover', 'rgb(110 98 62 / 0.05)'),
+    brand: t('--ch-green-600', '#155a39'),
     sans: t('--ch-font-sans', 'system-ui, sans-serif'),
   };
 }
@@ -72,7 +75,7 @@ function bandHeight(m: CardModel, o: CardOptions): number {
 /** The picture's height in layout units, so the canvas can be sized before anything is drawn. */
 export function cardHeight(m: CardModel, o: CardOptions): number {
   const sg = o.sg && m.sg ? SG_H : 0;
-  return PAD + HEAD_H + m.bands.length * bandHeight(m, o) + (m.bands.length - 1) * BAND_GAP + (sg ? 24 + sg : 0) + PAD;
+  return PAD + HEAD_H + m.bands.length * bandHeight(m, o) + (m.bands.length - 1) * BAND_GAP + (sg ? 24 + sg : 0) + FOOT_H + PAD;
 }
 
 const FONT = (p: CardPalette, w: 400 | 500 | 600, px: number) => `${w} ${px}px ${p.sans}`;
@@ -262,6 +265,20 @@ export function drawRoundCard(g: CanvasRenderingContext2D, m: CardModel, o: Card
       g.font = FONT(p, 600, bold ? 22 : 19);
       g.fillText(formatSigned(v), cx, y + 52);
     });
+  }
+  // The foot, inside the frame: where the card came from. Golfhelm in the brand green, and the team when it is known.
+  y = H - PAD - FOOT_H + 8;
+  hline(g, y, p.ruleSoft);
+  g.textBaseline = 'alphabetic';
+  g.textAlign = 'left';
+  g.fillStyle = p.brand;
+  g.font = FONT(p, 600, 15);
+  g.fillText('Golfhelm', PAD, y + 28);
+  if (m.team) {
+    g.textAlign = 'right';
+    g.fillStyle = p.soft;
+    g.font = FONT(p, 500, 13);
+    g.fillText(fit(g, m.team, CARD_W - PAD * 2 - 110), CARD_W - PAD, y + 28);
   }
   return H;
 }
