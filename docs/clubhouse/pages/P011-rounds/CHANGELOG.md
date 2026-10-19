@@ -13,7 +13,7 @@ Held items:     none
 
 ### Changed
 
-- Tablet tier (821 to 1180px, end blocks of `rounds.css` and `rounds-setup.css`): on a canvas under 761px the round card's wide table takes the phone card's label, subtotal and mark sizes, so 18 holes fit in the 518px card without the circled and squared scores overlapping; the review's nine-hole tables drop their 560px minimum width instead of scrolling by a few pixels.
+- Tablet tier (821 to 1180px, end blocks of `rounds.css` and `rounds-setup.css`): on a canvas under 761px the round card's wide table takes the phone card's label, subtotal and mark sizes, so 18 holes fit in the 518px card without the circled and squared scores overlapping; the review's nine-hole tables drop their 560px minimum width (at any canvas in the tier) instead of scrolling by a few pixels (they scrolled by 52px at 1180px).
 - Setup: the photo's "Change" label is shown wherever there is no hover (it showed on hover or focus only).
 
 ### Why

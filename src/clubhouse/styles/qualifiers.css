@@ -4046,3 +4046,16 @@ button.ch-qf-prounds__r.is-open {
     padding-inline: 0;
   }
 }
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   The leaderboard is a column beside Selections from a canvas of about 940px. Its narrow template (names keep 150px)
+   still wants 534px, and the column is 500px at 1180px with the sidebar open, so the table scrolled sideways by 34px.
+   Under 560px the name keeps 110px and the gaps and numbers tighten, which is enough for the 498px column. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container ch-lb (max-width: 560px) {
+    .ch-qf-lbrow {
+      grid-template-columns: 40px minmax(110px, 1fr) 48px 40px 56px 76px 24px;
+      gap: 6px;
+    }
+  }
+}

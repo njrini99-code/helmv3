@@ -1,5 +1,28 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-19 — Qualifier leaderboard on an iPad: fits its column at 1180px
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (end block of `qualifiers.css`): under 560px the leaderboard keeps a 110px name and tighter gaps and numbers, so it no longer scrolls sideways by 34px in the 500px column beside Selections at 1180px with the sidebar open. The round-by-round table still scrolls by design (its columns follow the round count).
+
+### Why
+
+- The narrow template wanted 534px of a 498px column.
+
+### Verification
+
+- WebKit, touch, 1180 and 1024 (open and folded): the leaderboard's scrollWidth equals its clientWidth.
+
 ## 2026-10-19 — Qualifiers: eyebrow, step strip, tracking, leaderboard, print
 
 ```text
