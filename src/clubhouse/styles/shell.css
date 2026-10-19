@@ -4022,3 +4022,22 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     pointer-events: none;
   }
 }
+
+/* -- W4c tablet tier (821px to 1180px): the desktop shell on an iPad -------------------------------------------------
+   The desktop pages were tuned for a canvas of 1000px and more. An iPad portrait (834) with the 240px sidebar open
+   leaves a canvas of 586px, a Pro portrait (1024) one of 776px. The sidebar gives back 32px of that, and the page
+   gutter (each main's side padding, tokens.css --ch-page-gutter) goes from 40px to 28px, which is another 24px for the
+   page itself. The folded rail (56px) is untouched. 1181px and wider is byte-identical to before. The auth hand-off
+   curtain reads the same sidebar token, so it still lands on the canvas's edge. `html` in front outranks the token's
+   own rule whatever order the sheets load in. */
+@media (min-width: 821px) and (max-width: 1180px) {
+  html [data-ui='clubhouse'] {
+    --ch-sidebar-w: 208px;
+    --ch-page-gutter: 28px;
+  }
+  /* The next-event card is fixed at the full sidebar's inner width (so it never reflows while the edge passes over it);
+     at 208px that is 28px less: the sidebar's 10px padding and 4px either side. */
+  .ch-sidebar__card {
+    width: 180px;
+  }
+}
