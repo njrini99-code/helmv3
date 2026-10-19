@@ -20,7 +20,8 @@ Held items:     none
   every one just routes to the screen that does it). No matches says so and offers the nearest section.
 - Shortcuts: G then H, A, C, M, T, R, S, Q, E, O, L or a comma goes to a section (one second between the keys), `/` focuses the
   page's search field, `?` opens a grouped shortcuts sheet. None fire while typing or inside a dialog or menu. N on Home and Cmd or
-  Ctrl backslash for the sidebar are unchanged and listed in the sheet.
+  Ctrl backslash for the sidebar are unchanged and listed in the sheet. While G waits for its letter, a small plate lists the
+  letters and where they go.
 - Tooltips: every icon-only button (IconButton, the sheet and toast close keys, the sidebar fold toggle with its key) shows its name
   and shortcut after the pointer rests for half a second, at once when moving along neighbours, and on keyboard focus. Never on
   touch. Escape dismisses it. The browser's native `title` on IconButton is gone, so there is one tip, not two.
