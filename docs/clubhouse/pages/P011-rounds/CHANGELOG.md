@@ -13,22 +13,26 @@ Held items:     none
 
 ### Changed
 
-- When a discard deletes nothing and the caller's own round is not there, the action now looks the round up by id
-  alone. A round the caller can still see under another player is refused with "Only the player who started this
-  round can discard it." instead of the "already removed" success. Production's `golf_rounds_select` lets a player read
-  every round on their team, so a teammate's round is refused. A round on another team is hidden by RLS, cannot be told
-  from a gone one and stays the idempotent success. Nothing is deleted in either case. The new outcome is recorded as
-  `not_owner`.
+- When a discard deletes nothing and the caller's own round is not there, the
+  action now looks the round up by id alone. A round the caller can still see
+  under another player is refused with "Only the player who started this round
+  can discard it." instead of the "already removed" success. Production's
+  `golf_rounds_select` lets a player read every round on their team, so a
+  teammate's round is refused. A round on another team is hidden by RLS, cannot
+  be told from a gone one and stays the idempotent success. Nothing is deleted
+  in either case. The new outcome is recorded as `not_owner`.
 
 ### Why
 
-- 110804 says the action refuses a round that is not the caller's; it answered success. The legacy library and the
-  Clubhouse library both keep the device copy when the action refuses.
+- 110804 says the action refuses a round that is not the caller's; it answered
+  success. The legacy library and the Clubhouse library both keep the device
+  copy when the action refuses.
 
 ### Verification
 
-- `rounds-actions-contracts.test.ts` now expects the refusal; the discard observability, integrity, discard-race and
-  recover-port tests pass (7 files, 72 tests).
+- `rounds-actions-contracts.test.ts` now expects the refusal; the discard
+  observability, integrity, discard-race and recover-port tests pass (7 files,
+  72 tests).
 
 ## 2026-10-19 — Rounds on an iPad: a round card that fits, and a photo you can see is replaceable
 

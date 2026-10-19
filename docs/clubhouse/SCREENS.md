@@ -8,6 +8,8 @@ They do not certify the dependency-upgraded release candidate.
 [ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) covers all 15 page families;
 [SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records confirmed motion findings.
 Physical Safari/iPhone acceptance and production-build profiling remain open.
+The 2026-10-19 completion pass (#2210) is summarized in
+[STATUS.md](STATUS.md) "Since the 2026-10-17 audit".
 
 Every GolfHelm screen live in production on the old Fairway UI, and whether
 Clubhouse has rebuilt it. Tick a screen when its route is added to
@@ -76,3 +78,22 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [ ] **Announcements** `/announcements` — Team news from the coaches (Clubhouse has them inside Messages)
 - [x] **Classes** `/classes` — Their class schedule by term, synced to the calendar so coaches see when they're busy (`Classes`, 2026-09-30; spec `phone/classes.md`, boards `Player - Classes.html` and its Mobile board)
 - [ ] **Courses** `/courses` — Course library and tee sets
+
+## Front door (signed out)
+
+Not dashboard routes, so not in `CH_REBUILT_ROUTES` and not ticked here. They
+render Clubhouse only with `golf_clubhouse_front_door` on, which stays off at
+turn-on (STATUS.md, step 5). Built by 2026-10-19 (D-77); the checklist is
+`screens/auth.md` and the manifest is `config/clubhouse/pages/P015-auth.json`
+(join and staff invite live outside the `(auth)` group, so the manifest does
+not list them).
+
+- **Sign in** `/golf/login` and **Welcome** `/golf/welcome`
+- **Sign up** `/golf/signup` and **Player sign-up** `/golf/player`
+- **Reset password** `/golf/reset-password` (phone `phone/reset-password.md`)
+- **New coach** `/golf/coach` (phone `phone/coach-onboarding.md`) and
+  **Waiting for approval** `/golf/coach/pending` (phone `phone/coach-pending.md`)
+- **Demo** `/golf/demo` (phone `phone/demo-entry.md`)
+- **Join a team** `/golf/join` and `/golf/join/[code]` (phone
+  `phone/join-team.md`)
+- **Staff invite** `/golf/staff/join/[token]` (phone `phone/staff-invite.md`)
