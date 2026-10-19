@@ -1,5 +1,20 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-19 — Stats you can read like a scorecard (L6a)
+
+```text
+Design package: none (complete-and-elevate plan, lane L6a)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-19, L6a)
+
+- The Rounds table fits its canvas at 1024, 1100, 1280 and 1440 (it was 1040px wide and scrolled sideways at 1280). The columns size to the room, and where the canvas is under 820px GIR and putts, both on Game detail, step out before anything scrolls. A long course keeps one line with an ellipsis (the full name on hover) and its round type beside it; the figures stay right-aligned in tabular numerals, and a row lifts on hover where hover exists.
+
 ## 2026-10-18 — Pickers and controls: filter date range, saving
 
 ```text

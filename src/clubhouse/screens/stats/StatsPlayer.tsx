@@ -408,8 +408,8 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
               <span role="columnheader">Date</span>
               <span role="columnheader" className="r">Score</span>
               <span role="columnheader" className="r">To par</span>
-              <span role="columnheader" className="r">GIR</span>
-              <span role="columnheader" className="r">Putts</span>
+              <span role="columnheader" className="r ch-tr__x">GIR</span>
+              <span role="columnheader" className="r ch-tr__x">Putts</span>
               <span role="columnheader" className="r">SG total</span>
               {LEGS_LIST.map((l) => (
                 <span key={l} role="columnheader" className="r">
@@ -424,11 +424,13 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                   {(() => {
                     const href = rebuiltHref(`/golf/dashboard/rounds/${r.id}`, role);
                     return href ? (
-                      <Link href={href} className="ch-tr__link" aria-label={`${r.course}, ${r.date}: open the round`}>
+                      <Link href={href} className="ch-tr__link ch-tr__name" title={r.course} aria-label={`${r.course}, ${r.date}: open the round`}>
                         {r.course}
                       </Link>
                     ) : (
-                      r.course
+                      <span className="ch-tr__name" title={r.course}>
+                        {r.course}
+                      </span>
                     );
                   })()}
                   {r.holes === 9 && <em className="ch-gx-type">9 holes</em>}
@@ -437,8 +439,8 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                 <span role="cell" className="ch-n2">{r.date}</span>
                 <span role="cell" className="r ch-num ch-n">{r.score}</span>
                 <span role="cell" className={'r ch-num ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-                <span role="cell" className="r ch-num ch-n2">{r.gir ?? NO_DATA}</span>
-                <span role="cell" className="r ch-num ch-n2">{r.putts ?? NO_DATA}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.gir ?? NO_DATA}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.putts ?? NO_DATA}</span>
                 <span role="cell" className={'r ch-num ch-n2' + (r.sg == null ? '' : r.sg >= 0 ? ' ch-gain' : ' ch-loss')}>{formatSigned(r.sg)}</span>
                 {r.sgLegs.map((v, i) => (
                   <span key={i} role="cell" className={'r ch-num ch-n2' + (v == null ? '' : v >= 0 ? ' ch-gain' : ' ch-loss')}>

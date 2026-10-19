@@ -6130,10 +6130,46 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
 .ch-st[data-canopy] .ch-zt {
   min-width: 0;
 }
+.ch-st[data-canopy] .ch-zt {
+  container: ch-rounds / inline-size;
+}
 .ch-st[data-canopy] .ch-zt .ch-tr {
-  grid-template-columns: minmax(160px, 1.4fr) 64px 52px 52px 56px 52px 68px repeat(4, minmax(72px, 1fr));
-  gap: 10px;
+  grid-template-columns: minmax(150px, 1fr) 56px 46px 46px 52px 46px 60px repeat(4, minmax(56px, 72px));
+  gap: 8px;
   min-width: 0;
+}
+/* the rounds table fits the canvas it is in (880px at a 1280 window, more at 1440): where the canvas is narrower, GIR and putts
+   (both on Game detail) leave before anything scrolls, and the course keeps its line with an ellipsis */
+@container ch-rounds (max-width: 820px) {
+  .ch-st[data-canopy] .ch-zt .ch-tr {
+    grid-template-columns: minmax(120px, 1fr) 52px 44px 44px 56px repeat(4, minmax(52px, 64px));
+  }
+  .ch-st[data-canopy] .ch-zt .ch-tr > .ch-tr__x {
+    display: none;
+  }
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__course {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__course .ch-gx-type {
+  flex: none;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h):hover {
+    background: rgb(176 149 96 / 0.1);
+  }
+}
+.ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h) {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 
 /* Development: each focus area or goal as a track from where it started to its target, with the current value marked on it. */
