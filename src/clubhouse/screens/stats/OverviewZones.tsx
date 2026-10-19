@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import { formatSigned, NO_DATA } from '../../lib/format';
+import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { holeCoverage } from '../../data/round-scope';
 import { Zone, ZoneBig as Big, ZoneBlock as Vis, ZoneNote as Missing, Zones } from '../../ui/Zone';
@@ -190,7 +190,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
             <div className="ch-znlines">
               {toParAvg != null && (
                 <span>
-                  <b>{toParAvg > 0.05 ? `+${toParAvg.toFixed(1)}` : toParAvg < -0.05 ? `−${Math.abs(toParAvg).toFixed(1)}` : 'E'}</b> to par a round
+                  <b>{formatToPar(toParAvg, 1)}</b> to par a round
                 </span>
               )}
               {coach && data.teamAvg != null && w.avg != null && (

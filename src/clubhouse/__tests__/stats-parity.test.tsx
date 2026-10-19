@@ -550,7 +550,7 @@ describe('Game detail · More detail', () => {
     expect(cells(rowOf(panel('Short, low and high misses by break'), 'Straight'))).toEqual(['40%', '40%', '20%']);
     const tour = panel('Against the Tour');
     expect(tour.querySelectorAll('tbody tr')).toHaveLength(5);
-    expect(cells(rowOf(tour, '3–5 ft'))).toEqual(['63%', '90.5%', '38', 'Below the Tour']);
+    expect(cells(rowOf(tour, '3–5 ft'))).toEqual(['63%', '91%', '38', 'Below the Tour']);
     expect(panel('Putts by round').querySelector('svg.ch-gx-line')).not.toBeNull();
   });
 
@@ -705,7 +705,7 @@ describe('Rounds tab · bests and comparison', () => {
     expect(tile(bests, 'Best score').textContent).toContain('72');
     expect(tile(bests, 'Best score').textContent).toContain('Pinehurst No. 8 · Sep 9');
     expect(tile(bests, 'Best to par').querySelector('dd')!.textContent).toBe('E');
-    expect(tile(bests, 'Best GIR').querySelector('dd')!.textContent).toBe('83.3%');
+    expect(tile(bests, 'Best GIR').querySelector('dd')!.textContent).toBe('83%');
     expect(tile(bests, 'Fewest putts').textContent).toContain('Oakmont CC · Oct 12');
     const cmp = card('rx-compare');
     expect(cmp.querySelector('th[scope="col"]:nth-child(2)')!.textContent).toBe('Latest 10');

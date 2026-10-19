@@ -13,13 +13,13 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
-import { NO_DATA } from '../../lib/format';
+import { formatPct, NO_DATA } from '../../lib/format';
 import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, MakeRows, ParTiles, ScoreMix } from './charts';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 
 type Tone = 'gain' | 'loss' | undefined;
-const pct = (v: number | null | undefined, d = 0) => (v == null ? NO_DATA : `${v.toFixed(d)}%`);
+const pct = formatPct;
 const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.toFixed(d));
 /** Green when on the right side of the benchmark, amber when not, no colour without one. */
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
@@ -337,7 +337,7 @@ export function GameDetail({
           [
             'Doubles or worse',
             num(s.doublePlusPerRound),
-            doublePct == null ? null : `${doublePct.toFixed(1)}% of holes${bench.big_number_rate != null ? ` · Tour ${bench.big_number_rate}%` : ''}`,
+            doublePct == null ? null : `${formatPct(doublePct)} of holes${bench.big_number_rate != null ? ` · Tour ${bench.big_number_rate}%` : ''}`,
             doublePct != null && bench.big_number_rate != null ? (doublePct <= bench.big_number_rate ? 'gain' : 'loss') : undefined,
           ],
         ]}

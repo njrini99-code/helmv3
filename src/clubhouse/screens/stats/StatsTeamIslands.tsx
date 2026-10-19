@@ -477,7 +477,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                 <g key={t}>
                   <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke="var(--ch-ivory-200)" strokeOpacity={0.7} />
                   <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
-                    {isSg ? (t > 0 ? `+${t}` : t === 0 ? '0' : `−${Math.abs(t)}`) : t}
+                    {isSg ? formatSigned(t, Number.isInteger(t) ? 0 : 1) : t}
                   </text>
                 </g>
               ))}
