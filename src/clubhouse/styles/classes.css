@@ -1269,7 +1269,7 @@
     border-radius: 16px;
   }
   .ch-cl-tb__wk b {
-    font-size: 28px;
+    font-size: calc(28 * var(--ch-type-k));
   }
   .ch-cl-tb__over {
     grid-column: 1 / -1;
@@ -2134,7 +2134,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   }
   /* The day tab is a fixed 52 by 46 tile: its letters keep their size under Dynamic Type. */
   .ch-cl-rv__tab {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 
@@ -2244,7 +2244,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
     color: var(--ch-warning-600);
   }
   .ch-cl[data-canopy] .ch-cl-tb__over b {
-    font-size: 30px;
+    font-size: calc(30 * var(--ch-type-k));
     letter-spacing: -0.03em;
     color: var(--ch-text-primary);
   }
