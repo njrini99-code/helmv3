@@ -118,7 +118,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
 | P013 | 7 | 12 |  | 29 | 1 | 37 | 23 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 158 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
-| P015 |  | 1 | 2 | 3 | 4 | 14 | 1 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 68 |
+| P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 
 ## P001 Shell
 
@@ -1635,6 +1635,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
 | 150201 | CH-15401 | 02 Initial loading / skeleton | `THE_WELCOME_IS_READING_WHO_YOU_ARE` | implemented | The welcome is reading who you are and what is new |
+| 150203 | CH-15430 | 02 Initial loading / skeleton | `THE_RESET_LINK_IS_BEING_CHECKED` | implemented | The reset link is being checked |
+| 150204 | CH-15431 | 02 Initial loading / skeleton | `SAVING_THE_NEW_PASSWORD` | implemented | Saving the new password |
+| 150205 | CH-15432 | 02 Initial loading / skeleton | `JOINING_A_TEAM` | implemented | Joining a team |
+| 150206 | CH-15433 | 02 Initial loading / skeleton | `A_STAFF_INVITATION_IS_READING_THE_SESSION` | implemented | A staff invitation is reading the session, or the accept or sign-up is in flight |
+| 150207 | CH-15435 | 02 Initial loading / skeleton | `THE_DEMO_IS_CHECKING_WHO_IS_SIGNED` | implemented | The demo is checking who is signed in, or entering |
+| 150208 | CH-15436 | 02 Initial loading / skeleton | `A_TEAM_CODE_IS_BEING_TAKEN_TO` | implemented | A team code is being taken to its team |
 | 150301 | CH-15402 | 03 Background loading / refresh | `A_SIGN_IN_IS_IN_FLIGHT` | implemented | A sign-in is in flight (and stays so while it navigates away) |
 | 150302 | CH-15420 | 03 Background loading / refresh | `RESET_PASSWORD_A_LINK_IS_BEING_ASKED` | implemented | Reset password: a link is being asked for |
 | 150401 | CH-15301 | 04 Empty | `THERE_IS_AN_EARLIER_VISIT_AND_NOTHING` | implemented | There is an earlier visit and nothing new since |
@@ -1644,6 +1650,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 150502 | CH-15110 | 05 Validation | `SIGN_UP_THE_TEAM_CODE_MATCHES_NO` | implemented | Sign up: the team code matches no team (or the gate is throttled, which the server reports the same way on purpose, Q-99) |
 | 150503 | CH-15120 | 05 Validation | `RESET_PASSWORD_SEND_WITH_NO_ADDRESS` | implemented | Reset password: Send with no address |
 | 150504 | CH-15121 | 05 Validation | `RESET_PASSWORD_AN_ADDRESS_THAT_IS_NOT` | implemented | Reset password: an address that is not one |
+| 150505 | CH-15130 | 05 Validation | `RESET_PASSWORD_SAVE_WITH_NO_NEW_PASSWORD` | implemented | Reset password: Save with no new password |
+| 150506 | CH-15131 | 05 Validation | `RESET_PASSWORD_A_RULE_IS_MISSING` | implemented | Reset password: a rule is missing |
+| 150507 | CH-15132 | 05 Validation | `RESET_PASSWORD_THE_CONFIRMATION_IS_EMPTY` | implemented | Reset password: the confirmation is empty |
+| 150508 | CH-15133 | 05 Validation | `RESET_PASSWORD_THE_TWO_BOXES_DIFFER` | implemented | Reset password: the two boxes differ |
+| 150509 | CH-15140 | 05 Validation | `JOIN_A_TEAM_CONTINUE_WITH_NO_CODE` | implemented | Join a team: Continue with no code |
+| 150510 | CH-15141 | 05 Validation | `JOIN_A_TEAM_FEWER_THAN_FOUR_CHARACTERS` | implemented | Join a team: fewer than four characters |
+| 150511 | CH-15142 | 05 Validation | `STAFF_INVITATION_THE_ACCOUNT_FORM_IS_MISSING` | implemented | Staff invitation: the account form is missing something |
+| 150512 | CH-15143 | 05 Validation | `DEMO_ENTRY_AND_THE_NEW_COACHS_QUESTIONS` | implemented | Demo entry and the new coach's questions: an answer is missing |
 | 150601 | CH-15001 | 06 Server / system error | `THE_SERVER_REFUSES_THE_CREDENTIALS` | implemented | The server refuses the credentials ("Invalid login credentials") |
 | 150602 | CH-15002 | 06 Server / system error | `THE_EMAIL_IS_NOT_CONFIRMED` | implemented | The email is not confirmed |
 | 150603 | CH-15003 | 06 Server / system error | `TOO_MANY_SIGN_IN_ATTEMPTS` | implemented | Too many sign-in attempts |
@@ -1658,7 +1672,40 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 150612 | CH-15201 | 06 Server / system error | `THE_WELCOMES_NOTIFICATIONS_READ_FAILS` | implemented | The welcome's notifications read fails |
 | 150613 | CH-15020 | 06 Server / system error | `RESET_PASSWORD_THE_SERVER_REFUSES_THE_REQUEST` | implemented | Reset password: the server refuses the request in its own words |
 | 150614 | CH-15021 | 06 Server / system error | `RESET_PASSWORD_ANYTHING_ELSE_THROWS` | implemented | Reset password: anything else throws (the request never reached the server) |
+| 150615 | CH-15030 | 06 Server / system error | `RESET_PASSWORD_THE_SERVER_REFUSES_THE_NEW` | implemented | Reset password (the link's page): the server refuses the new password itself (the one already in use, or too easy to guess) |
+| 150616 | CH-15031 | 06 Server / system error | `RESET_PASSWORD_SAVE_FAILS_FOR_A_REASON` | implemented | Reset password: Save fails for a reason that is not about the password (too many tries, no connection, anything else) |
+| 150617 | CH-15032 | 06 Server / system error | `JOIN_A_TEAM_THE_SERVER_REFUSES_THE` | implemented | Join a team: the server refuses the join (a code that no longer matches, or anything the validator words) |
+| 150618 | CH-15033 | 06 Server / system error | `JOIN_A_TEAM_THE_REQUEST_NEVER_REACHED` | implemented | Join a team: the request never reached the server |
+| 150619 | CH-15034 | 06 Server / system error | `STAFF_INVITATION_THE_SERVER_REFUSES_THE_ACCOUNT` | implemented | Staff invitation: the server refuses the account or the accept for any reason but the wrong account (CH-15944) |
+| 150620 | CH-15035 | 06 Server / system error | `NEW_COACH_THE_PROGRAM_COULD_NOT_BE` | implemented | New coach: the program could not be made (the action rolls the organization, team and coach back together) |
+| 150621 | CH-15036 | 06 Server / system error | `DEMO_ENTRY_THE_SERVER_REFUSES_OR_THE` | implemented | Demo entry: the server refuses (a rate limit, anything `enterDemo` words) or the request fails |
 | 150701 | CH-15004 | 07 Network / offline | `THE_SERVER_CANNOT_BE_REACHED` | implemented | The server cannot be reached |
+| 150705 | CH-15930 | 07 Network / offline | `THE_RESET_LINK_IS_SPENT_EXPIRED_OR` | implemented | The reset link is spent, expired or has no token (or the session ran out between the check and Save) |
+| 150706 | CH-15931 | 07 Network / offline | `THE_RESET_LINK_WAS_OPENED_ON_A` | implemented | The reset link was opened on a device signed in as someone else |
+| 150707 | CH-15932 | 07 Network / offline | `THE_PASSWORD_IS_SAVED` | implemented | The password is saved |
+| 150708 | CH-15933 | 07 Network / offline | `GOLF_JOIN` | implemented | `/golf/join` |
+| 150709 | CH-15934 | 07 Network / offline | `GOLF_JOIN_CODE_WITH_A_CODE_THAT` | implemented | `/golf/join/[code]` with a code that names a team |
+| 150710 | CH-15935 | 07 Network / offline | `A_CODE_THAT_NAMES_NO_TEAM` | implemented | A code that names no team |
+| 150711 | CH-15936 | 07 Network / offline | `THE_PLAYER_IS_ALREADY_ON_THIS_TEAM` | implemented | The player is already on this team |
+| 150712 | CH-15937 | 07 Network / offline | `THE_JOIN_LANDS` | implemented | The join lands |
+| 150713 | CH-15938 | 07 Network / offline | `THE_WRONG_PERSON_IS_SIGNED_IN` | implemented | The wrong person is signed in (a link opened on someone else's browser) |
+| 150714 | CH-15939 | 07 Network / offline | `THE_PLAYER_IS_ON_ANOTHER_TEAM` | implemented | The player is on another team |
+| 150715 | CH-15940 | 07 Network / offline | `A_STAFF_INVITATION_THAT_IS_NOT_VALID` | implemented | A staff invitation that is not valid |
+| 150716 | CH-15941 | 07 Network / offline | `A_VALID_INVITATION_SIGNED_IN` | implemented | A valid invitation, signed in |
+| 150717 | CH-15943 | 07 Network / offline | `NOT_YOU_ON_THE_INVITATION` | implemented | "Not you?" on the invitation |
+| 150718 | CH-15944 | 07 Network / offline | `THE_SIGNED_IN_ACCOUNT_ALREADY_BELONGS_TO` | implemented | The signed-in account already belongs to another program |
+| 150719 | CH-15945 | 07 Network / offline | `A_VALID_INVITATION_SIGNED_OUT` | implemented | A valid invitation, signed out |
+| 150720 | CH-15946 | 07 Network / offline | `THE_STAFF_INVITATION_LANDS` | implemented | The staff invitation lands |
+| 150721 | CH-15950 | 07 Network / offline | `A_NEW_COACHS_PROGRAM_IS_MADE` | implemented | A new coach's program is made |
+| 150722 | CH-15951 | 07 Network / offline | `THE_CODE_COULD_NOT_BE_COPIED` | implemented | The code could not be copied |
+| 150723 | CH-15952 | 07 Network / offline | `WHO_MAY_SEE_THE_NEW_PROGRAM_QUESTIONS` | implemented | Who may see the new-program questions |
+| 150724 | CH-15953 | 07 Network / offline | `THE_NEW_PROGRAM_QUESTIONS_ARE_CHECKING_THE` | implemented | The new-program questions are checking the account |
+| 150725 | CH-15960 | 07 Network / offline | `GOLF_COACH_PENDING` | implemented | `/golf/coach/pending` |
+| 150726 | CH-15961 | 07 Network / offline | `CHECK_AGAIN` | implemented | Check again |
+| 150727 | CH-15962 | 07 Network / offline | `SIGN_OUT_FAILS` | implemented | Sign out fails |
+| 150728 | CH-15970 | 07 Network / offline | `GOLF_DEMO` | implemented | `/golf/demo` |
+| 150729 | CH-15971 | 07 Network / offline | `THE_DEMO_IS_OPENED_BY_SOMEONE_ALREADY` | implemented | The demo is opened by someone already signed in |
+| 150730 | CH-15972 | 07 Network / offline | `MESSAGE_DEMO_SESSION_EXPIRED` | implemented | `?message=demo_session_expired` |
 | 150801 | CH-15902 | 08 Permission / authorization | `WHERE_A_SIGN_IN_GOES` | implemented | Where a sign-in goes |
 | 150802 | CH-15903 | 08 Permission / authorization | `THE_WELCOME_IS_OPENED_WITH_A_SESSION` | implemented | The welcome is opened with a session the auth server has ruled invalid |
 | 150901 | CH-15904 | 09 Success | `GOLF_LOGIN_MESSAGE_NAMES_A_NOTICE` | implemented | `/golf/login?message=` names a notice |

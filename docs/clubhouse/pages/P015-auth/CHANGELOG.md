@@ -1,5 +1,53 @@
 # P015 — Auth: changelog
 
+## 2026-10-19 — The front door's other ways in
+
+```text
+Design package: none (no owner board; phone drafts in docs/clubhouse/phone/: reset-password, join-team, staff-invite, coach-onboarding, coach-pending, demo-entry)
+PR/commit:      667ce28 (agent/clubhouse-complete, lane L5)
+Contract IDs:   CH-15030 to CH-15036, CH-15130 to CH-15133, CH-15140 to CH-15143, CH-15430 to CH-15436, CH-15930 to CH-15972 (47 in all)
+Actions:        none new: requestPasswordResetAction, processGolfTeamInvitation, previewStaffInvite, redeemStaffInvite, signupWithStaffInviteAction, completeCoachOnboarding, getGolfCoachEntry and enterDemo, each called as today's page calls it; the Supabase verifyOtp, updateUser and signOut({ scope: 'others' }) of today's reset page
+Data impact:    none
+Held items:     the head coach's name on the join confirm (the team lookup returns none); Fairway's error.tsx boundaries on the join, coach and staff routes
+```
+
+### Changed
+
+- Every way into the app that was still drawn by Fairway has a Clubhouse screen behind `golf_clubhouse_front_door`
+  (off in production): the page the reset email opens (`/golf/reset-password`), a team code (`/golf/join`) and its
+  confirm (`/golf/join/[code]`), a staff invitation (`/golf/staff/join/[token]`), a new head coach's questions
+  (`/golf/coach`), waiting for approval (`/golf/coach/pending`) and the demo (`/golf/demo`). The flag chooses the page
+  that is drawn; every read, redirect and action sits above or behind both. Flag off, all seven render as before.
+- Reset, join, the staff invitation, waiting and the demo sit in sign in's own room (`GateFrame`: the same course, lockup, panel and
+  field anatomy), so moving from sign in to any of them is the same place. The coach's questions are a fourth path of
+  sign up's flow (`cprogram`, `cprofile`, `cdone`), so they have its rail, its pane and a member card that fills in with
+  the program.
+- Reset password: the link is verified once (a development double effect cannot spend it); the four rules and four bars
+  tick off as the password is typed; a spent link asks for a new one on the same page; if someone else was signed in on
+  the device the page says the link replaced them.
+- Team code: one box per character over one real input (paste fills all, upper case, the one-time-code suggestion, a
+  pasted invite link gives up its code), eight boxes and a dash, ten for an older team's longer code. The confirm shows
+  the team and who is joining before anything is joined, with "Not you?" for a link opened on the wrong browser.
+- Staff invitation: signed in is one button, signed out makes the account here; the wrong account (already in another
+  program) is a warning with "Switch account"; an account made whose staff row did not land goes to Accept with the reason.
+- Waiting for approval: says who approves, looks again by itself once a minute and when the tab comes back, and Sign out
+  really signs out (today's link only goes to sign in).
+- New coach: the questions are today's three screens (program, profile, code) with `completeCoachOnboarding`; the code
+  can be copied as a code or as an invite link (`/golf/join/<code>`); the draft is kept apart from sign up's.
+- Loading boundaries for join, the staff invitation, waiting and the coach's questions draw in the sign-in room when the
+  flag is on, so the step from the last page is never a Fairway skeleton.
+
+### Why
+
+- A person who followed any of those links with the flag on left Clubhouse for Fairway mid-journey, which is the
+  seam the front door exists to remove.
+
+### Verification
+
+- Targeted tests: auth-reset, auth-join, auth-staff, auth-demo-pending, onboard-coach and front-door-routes (see
+  VERIFY.md). WebKit captures at 390 and 1280, light and dark, of every state through `/clubhouse-preview/auth` and
+  `/clubhouse-preview/onboard` (VERIFY.md, Looked at). Not done: a physical iPhone, a real reset email, VoiceOver.
+
 ## 2026-10-18 — Wave 10: a way to sign in on the phone, and first-run words
 
 ```text
