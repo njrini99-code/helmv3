@@ -4002,3 +4002,23 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 .ch-next > .ch-badge {
   align-self: flex-start;
 }
+
+/* L10 phone shell — the phone's native-feel pieces (docs/clubhouse/phone/shell-gestures.md). */
+@media (max-width: 820px) {
+  /* A pushed screen that is not immersive (PhoneScreen `data-ch-keeps-dock`) leaves the dock's Resume round accessory up
+     over it, as iOS keeps its tab bar for a push. The accessory floats above the screen, the page's own thumb controls
+     stand down (they belong to the page under it), and the screen stops short of the accessory by what it covers. */
+  .ch-root:has(.ch-pscreen[data-ch-keeps-dock]) .ch-dock {
+    z-index: calc(var(--ch-z-sticky) + 11);
+  }
+  .ch-root:has(.ch-pscreen[data-ch-keeps-dock]) .ch-dock__slot {
+    display: none;
+  }
+  .ch-pscreen[data-ch-keeps-dock] {
+    padding-bottom: var(--ch-pscreen-dock, 0px);
+  }
+  /* The stand-in bar's picture of a page's action (shell/phone-chrome.tsx standInAction): the key's place, not a key. */
+  .ch-pbar__icon[data-ch-standin] {
+    pointer-events: none;
+  }
+}

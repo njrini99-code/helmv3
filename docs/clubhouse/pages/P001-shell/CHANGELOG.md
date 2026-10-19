@@ -1,5 +1,51 @@
 # P001 — Shell: changelog
 
+## 2026-10-19 — The phone shell feels native: edge swipe back, pushes that keep the dock, no late bars, idle prefetch
+
+```text
+Design package: none (complete-and-elevate plan, lane L10); no owner board, so the phone draft is docs/clubhouse/phone/shell-gestures.md
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (the sweep asks the server for pages the role can already open; no new read or write)
+Held items:     the native flag window.__helmNativeSwipe (Swift) and shell/Dock.tsx's one-line read of dockKept: until they land the
+                web gesture stays off in the iOS app and a push still hides the dock, as before
+```
+
+### Changed
+
+- Edge swipe back on a pushed phone screen. A finger that starts within the left 20px follows the screen (the page beneath, or
+  the screen beneath a second push, draws back with it by the pop's own parallax). Letting go past 35% of the width, or flicked
+  right, pops it: the screen's own Back runs and the screen leaves on the smooth spring from where it was let go, at the finger's
+  speed; sooner, and it springs back. A first travel that is vertical stays the page's scroll. The selection haptic ticks as the
+  mark is crossed. With reduced motion nothing follows the finger and a commit pops at once. It does not run beside the native
+  swipe (in the app only when the shell says its own is off), with a sheet or dialog open, on a round-tracking route, or for a
+  screen whose only Back is a form's Cancel.
+- A push is not immersive unless it says so (`PhoneScreen immersive`, implied by `keyboardAware`): the Resume round accessory
+  stays up over a profile or details screen, which stops above it, as iOS keeps its tab bar for such a push (NATIVE_FEEL P2-3).
+  Composers and the round itself still hide the dock. Needs one line in `shell/Dock.tsx` (open, phone/shell-gestures.md).
+- The shell's stand-in for a pushed page's bar now draws the page's always-present action in its place (Share on a coach's Player
+  stats, the Qualifier actions key for a coach), so the page's own bar replaces it without anything appearing late.
+- The first visit to Roster, Messages, Team Hub, Qualifiers, Recruiting, Settings (every section the role can reach) shows the
+  page, not a skeleton: after the tabs, when idle, the other sections are fetched whole two at a time with a 1.5 second rest,
+  under the same Data Saver and offline guards, and not again inside two minutes after a refresh.
+
+### Why
+
+- A drag that tracks the finger is what an iPhone user expects of Back; a screen that jumps, a bar whose key arrives late and a
+  skeleton on first visit are the three places the shell still read as a web page.
+
+### Verification
+
+- Unit tests: `shell/__tests__/edge-swipe.test.tsx` (the state machine: zone, slop, vertical wins, thresholds, flick, the
+  capability check, tracking routes, overlays, the screen's Back), `phone-shell-gestures.test.tsx` (the swipe bound to a screen,
+  the dock kept or hidden per screen, the stand-in action), `phone-prefetch-sweep.test.tsx` and `use-prefetch-tabs.test.tsx`
+  (ordering, the two-at-a-time cap, guards, the two-minute rest).
+- Captured headless WebKit 390x844, light and dark, scripted touch events: mid-drag, past the mark, spring back, commit with the
+  page returning in step, a thread under its details; the dock over a profile; the stand-in bar against the page's own. Not
+  verified: a physical iPhone (Safari's own swipe against ours, haptics, VoiceOver after a swipe pop), the iOS app (the native
+  flag does not exist yet).
+
 ## 2026-10-19 — Desktop command layer: palette, shortcuts, tooltips
 
 ```text

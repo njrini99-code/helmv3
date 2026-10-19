@@ -80,8 +80,10 @@ let documentPage = true;
  * again when the thread is idle; a tap during the refresh wins, as Next drops a refresh a navigation overtakes (WebKit,
  * 700ms latency, a second tap 200–900ms after the first: 3 of 3 ended on it). The tabs are asked for once the document's
  * first page has painted and after every arrival; Next fetches only what it no longer holds.
- * The last two other sections left (Roster, Settings, …) are kept the same way, so going back to one is instant too
- * (`sections` lists them all; only the ones visited are fetched). Not as the
+ * The last two other sections left (Roster, Settings, …) are kept the same way, so going back to one is instant too.
+ * The rest of `sections` (the pages the strip reaches that are not tabs: Roster, Settings, Recruiting, …) are fetched
+ * last, by an idle sweep (`sweepSections`) so the first visit to one shows the page, not a skeleton first (native-feel
+ * audit 2026-10-08, P0-2; L10, 2026-10-19). Not as the
  * strip opens: with a real network that fetch raced the tap and the page was asked for twice (WebKit, 700ms latency:
  * skeleton at 944ms, page at 1711ms). Skipped with Data Saver on or offline.
  * Next prefetches only in production builds.
@@ -114,8 +116,12 @@ export function usePrefetchTabs(hrefs: readonly string[], current: string, secti
       shownAt.set(current, now);
     }
     if (!tabs.length || !prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
+    const sectionList = sectionKey ? sectionKey.split('|') : [];
+    let stopSweep = () => {};
     const fetchOthers = () => {
       for (const href of [...tabs, ...visited]) if (href !== current) fetchAhead(router, href, Date.now());
+      // After the tabs and the sections kept: the others, when idle, two at a time.
+      stopSweep = sweepSections(router, () => sweepQueue(sectionList, tabs, current, Date.now()));
     };
     let cancel = () => {};
     if (refresh) {
@@ -146,8 +152,59 @@ export function usePrefetchTabs(hrefs: readonly string[], current: string, secti
     } else {
       cancel = whenIdle(fetchOthers);
     }
-    return () => cancel();
+    return () => {
+      cancel();
+      stopSweep();
+    };
   }, [key, sectionKey, current, router]);
+}
+
+/** How many sections one batch of the idle sweep asks for, and how long the sweep rests between batches. */
+export const CH_SWEEP_AT_ONCE = 2;
+export const CH_SWEEP_GAP_MS = 1500;
+/**
+ * A section asked for by the sweep is not asked for again for this long, whatever happened to it. A refresh (every tab
+ * revisit after 30s) drops every page Next held; without this each of them would render all of the sections again.
+ */
+export const CH_SWEEP_AGAIN_MS = 120_000;
+const sweptAt = new Map<string, number>();
+
+/**
+ * The sections the sweep has still to ask for, in the strip's order: not a tab, not the page on screen, not one kept as a
+ * visit (those were just asked for), not held by Next, and not asked for within the last `CH_SWEEP_AGAIN_MS`.
+ */
+export function sweepQueue(sections: readonly string[], tabs: readonly string[], current: string, now: number): string[] {
+  return sections.filter((href) => {
+    if (tabs.includes(href) || href === current || visited.includes(href)) return false;
+    if (held(fetchedAt.get(href), shownAt.get(href), now)) return false;
+    const asked = sweptAt.get(href);
+    return asked === undefined || now - asked > CH_SWEEP_AGAIN_MS;
+  });
+}
+
+/**
+ * Asks for the queue's sections whole, `CH_SWEEP_AT_ONCE` at a time. Each batch waits for the thread to be idle, and the
+ * next for the gap after it, so a phone is never fetching everything at once; Data Saver or going offline stops it. The
+ * queue is read afresh for every batch (a page visited meanwhile is no longer waiting). Returns what stops it.
+ */
+export function sweepSections(router: Router, queue: () => string[]): () => void {
+  let cancel = () => {};
+  const batch = () => {
+    cancel = whenIdle(() => {
+      if (!prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
+      const now = Date.now();
+      const next = queue().slice(0, CH_SWEEP_AT_ONCE);
+      if (!next.length) return;
+      for (const href of next) {
+        sweptAt.set(href, now);
+        fetchAhead(router, href, now);
+      }
+      const later = window.setTimeout(batch, CH_SWEEP_GAP_MS);
+      cancel = () => window.clearTimeout(later);
+    });
+  };
+  batch();
+  return () => cancel();
 }
 
 /** The sections other than the tabs that were visited last, newest first, kept whole like the tabs. */
@@ -165,6 +222,7 @@ function rememberVisit(href: string): void {
 export function resetPrefetchTabsForTests(): void {
   fetchedAt.clear();
   shownAt.clear();
+  sweptAt.clear();
   visited.length = 0;
   documentPage = true;
 }
