@@ -42,6 +42,7 @@ import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
 import { PlayerStage } from './PlayerStage';
+import { PrintHead, usePrinting } from './PrintHead';
 import { OverviewZones } from './OverviewZones';
 import { Zone, ZoneBig as Big, Zones } from '../../ui/Zone';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
@@ -67,7 +68,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const toast = useToast();
   const delayedToast = useDelayedToast();
   const reduced = useChReducedMotion();
-  const phone = useChPhone();
+  const printing = usePrinting();
+  const phone = useChPhone() && !printing;
   // The tab comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1); an address that names one (Roster's "All N" opens
   // `?tab=rounds`, D-53) wins until a tab is chosen.
   const [keptTab, setKeptTab] = useChSessionState<Tab>('profile-tab', 'overview');
@@ -190,6 +192,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   return (
     <>
       <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
+        <PrintHead subject={`${data.name} · Player stats`} />
         {coach && (
           <div className="ch-st-back">
             <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>

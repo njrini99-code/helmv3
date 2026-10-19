@@ -20,6 +20,7 @@ import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
+import { usePrinting } from './PrintHead';
 import { useChSessionState } from '../../lib/session-state';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
@@ -73,7 +74,8 @@ export function PhoneWindowSwitch({ custom }: { custom: boolean }) {
 
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
 export function StatsTeamFrame({ filter: current, phone, children }: { filter: ChFilter; phone?: ReactNode; children: ReactNode }) {
-  const isPhone = useChPhone() && phone != null;
+  const printing = usePrinting();
+  const isPhone = useChPhone() && phone != null && !printing;
   const tone = useHeroTone();
   const router = useRouter();
   const toast = useToast();

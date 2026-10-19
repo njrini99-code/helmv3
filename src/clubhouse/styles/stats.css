@@ -6347,3 +6347,87 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
     filter: brightness(1.12);
   }
 }
+
+/* Print: one clean page of the figures. The shell already drops the sidebar, top bar and strip (shell.css); here the page's own
+   controls go, the page takes the paper's width, rules and fills keep their ink, and nothing that reads as one row or one card is
+   cut across two sheets. PrintHead puts Golfhelm, the subject and the day at the top. */
+.ch-st-print {
+  display: none;
+}
+@media print {
+  .ch-st-print {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12pt;
+    margin: 0 0 4pt;
+    padding-bottom: 6pt;
+    border-bottom: 1pt solid gray;
+    font: 500 9.5pt/1.2 var(--ch-font-sans);
+    color: black;
+  }
+  .ch-st-print b {
+    font-weight: 700;
+  }
+  /* Paper is under the phone breakpoint, which hides the desktop tree until the phone view takes over; on paper the desktop tree is the page. */
+  .ch-st-desk,
+  .ch-st.is-desk > * {
+    visibility: visible;
+  }
+  .ch-st,
+  .ch-st * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-st {
+    max-width: none;
+    padding: 0;
+    opacity: 1;
+    transition: none;
+  }
+  .ch-st .ch-hero__actions,
+  .ch-st .ch-st-back,
+  .ch-st .ch-pf-hero__act,
+  .ch-st .ch-pf-tabs,
+  .ch-st .ch-sf,
+  .ch-st .ch-gd__nav,
+  .ch-st .ch-st-updating {
+    display: none !important;
+  }
+  /* A plain page: white paper, and the shell's "Skip to content" (fixed, so it would print on every sheet) stays on screen. */
+  html:has(.ch-st),
+  html:has(.ch-st) body,
+  html:has(.ch-st) .ch-root,
+  html:has(.ch-st) .ch-app,
+  html:has(.ch-st) .ch-canvas {
+    background: white !important;
+  }
+  html:has(.ch-st) .ch-skip {
+    display: none !important;
+  }
+  .ch-st .ch-tbl {
+    overflow: visible;
+  }
+  .ch-st .ch-tr {
+    min-width: 0;
+  }
+  .ch-st .ch-tr,
+  .ch-st .ch-zrow,
+  .ch-st .ch-lb__r,
+  .ch-st .ch-ft tr,
+  .ch-st .ch-tp__c,
+  .ch-st .ch-fm,
+  .ch-st .ch-st-card,
+  .ch-st .ch-sgm,
+  .ch-st .ch-dv,
+  .ch-st .ch-best__r,
+  .ch-st .ch-par3__t,
+  .ch-st .ch-gm-p,
+  .ch-st .ch-lg {
+    break-inside: avoid;
+  }
+  .ch-st h2,
+  .ch-st h3 {
+    break-after: avoid;
+  }
+}
