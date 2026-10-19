@@ -734,7 +734,7 @@
     padding: 14px 14px 12px;
   }
   .ch-hd-hero__f dd {
-    font-size: 28px;
+    font-size: calc(28 * var(--ch-type-k));
   }
   .ch-hd-sk__hero {
     min-height: 224px;
@@ -750,7 +750,7 @@
     font-size: calc(23 * var(--ch-type-k));
   }
   .ch-hd-meas__v b {
-    font-size: 36px;
+    font-size: calc(36 * var(--ch-type-k));
   }
   .ch-hd-tr > li {
     grid-template-columns: minmax(0, 1fr);
