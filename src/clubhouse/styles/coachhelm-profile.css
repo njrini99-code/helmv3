@@ -1059,7 +1059,8 @@ main[data-canopy] .ch-hg-hero.is-second,
     main[data-canopy] .ch-hg-hero.ch-scoreboard:has(> .ch-hg-stand) {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(300px, 0.85fr);
-      column-gap: 44px;
+      grid-template-rows: auto auto 1fr;
+      gap: 16px 44px;
       align-items: start;
     }
     main[data-canopy] .ch-hg-hero.ch-scoreboard:has(> .ch-hg-stand) > * {
@@ -1070,7 +1071,7 @@ main[data-canopy] .ch-hg-hero.is-second,
     }
     main[data-canopy] .ch-hg-hero.ch-scoreboard > .ch-hg-stand {
       grid-column: 2;
-      grid-row: 2 / span 4;
+      grid-row: 2 / span 2;
       grid-template-columns: minmax(0, 1fr);
       padding-top: 0;
     }

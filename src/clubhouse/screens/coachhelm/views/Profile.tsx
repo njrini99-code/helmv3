@@ -158,7 +158,8 @@ function Hero({ p }: { p: ChProfile }) {
         {/* A no-break space before each dot, so a wrapped line never starts with one. */}
         <span className="ch-num">{meta.join('\u00a0· ')}</span>
       </div>
-      <h2 id="ch-hg-hero-t">{p.courseProfile ?? 'What your rounds say so far'}</h2>
+      {/* A no-break space before each dot, so a wrapped line never starts with one. */}
+      <h2 id="ch-hg-hero-t">{p.courseProfile?.replaceAll(' · ', '\u00a0· ') ?? 'What your rounds say so far'}</h2>
       {none ? (
         <p className="ch-hg-hero__none">Nothing stands out yet. A strength or a watch-out shows once a measure is clearly high or low, with enough rounds behind it.</p>
       ) : (
