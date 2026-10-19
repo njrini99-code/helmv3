@@ -19,6 +19,8 @@ export interface PickerPanelApi {
   clear?: () => void;
   close: () => void;
   phone: boolean;
+  /** The body takes focus as it opens: it was opened from the keyboard or the key, not by a click that put the cursor in the text. */
+  grab: boolean;
 }
 
 export interface PickerFieldProps {
@@ -76,6 +78,7 @@ export function PickerField(p: PickerFieldProps) {
   const reduced = useChReducedMotion();
   const uid = useId();
   const [open, setOpen] = useState(false);
+  const grab = useRef(true);
   const [text, setText] = useState<string | null>(null);
   const [bad, setBad] = useState(false);
   const wrap = useRef<HTMLSpanElement | null>(null);
@@ -97,8 +100,9 @@ export function PickerField(p: PickerFieldProps) {
 
   const shown = text ?? p.format(p.value);
 
-  const openPicker = useCallback(() => {
+  const openPicker = useCallback((byPointer = false) => {
     if (p.disabled) return;
+    grab.current = !byPointer;
     p.onOpen?.();
     host.current = hostFor(wrap.current);
     setOpen(true);
@@ -240,7 +244,7 @@ export function PickerField(p: PickerFieldProps) {
     }
   };
 
-  const body = open ? p.render({ pick, clear, close: () => closePicker(), phone }) : null;
+  const body = open ? p.render({ pick, clear, close: () => closePicker(), phone, grab: grab.current }) : null;
   const target = host.current ?? (typeof document === 'undefined' ? null : hostFor(null));
   const everOpened = useRef(false);
   if (open) everOpened.current = true;
@@ -264,7 +268,7 @@ export function PickerField(p: PickerFieldProps) {
           aria-describedby={p.ariaDescribedBy}
           data-ch-code={p.dataChCode}
           {...p.extra}
-          onClick={openPicker}
+          onClick={() => openPicker()}
         >
           <span className={'ch-df__v' + (shown ? '' : ' is-empty')}>{shown || p.placeholder || '—'}</span>
           <Icon icon={p.icon} size={16} />
@@ -310,10 +314,16 @@ export function PickerField(p: PickerFieldProps) {
                 }
               }
             }}
-            onBlur={() => {
+            onBlur={(e) => {
               if (text !== null) commit(text);
+              // Tabbing on to another field closes the picker; a click inside it (no related target in Safari) does not.
+              const to = e.relatedTarget as Node | null;
+              if (open && to && !panel.current?.contains(to) && !wrap.current?.contains(to)) setOpen(false);
             }}
             onKeyDown={onInputKey}
+            onClick={() => {
+              if (!open) openPicker(true);
+            }}
           />
           <button
             ref={trigger}
@@ -351,7 +361,7 @@ export function PickerField(p: PickerFieldProps) {
                     ref={panel}
                     id={panelId}
                     role="dialog"
-                    aria-label={p.label}
+                    aria-label={`Pick ${p.label.toLowerCase()}`}
                     className="ch-df-pop ch-popover"
                     data-ui="clubhouse"
                     style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: p.panelWidth }}

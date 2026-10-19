@@ -64,20 +64,22 @@ export function TimeField(props: TimeFieldProps) {
       ariaDescribedBy={props['aria-describedby']}
       dataChCode={props['data-ch-code']}
       extra={{ 'data-min': min || undefined, 'data-max': max || undefined }}
-      render={({ pick, clear, phone }) => <TimeList value={value} step={step} min={min} max={max} phone={phone} onPick={pick} onClear={clear} />}
+      render={({ pick, clear, phone, grab }) => <TimeList value={value} step={step} min={min} max={max} phone={phone} grab={grab} onPick={pick} onClear={clear} />}
     />
   );
 }
 
 /** The day by `step` minutes, scrolled to the chosen time and snapping to rows. Arrows move, Enter chooses. */
 export function TimeList({
-  value, step, min, max, phone, onPick, onClear,
+  value, step, min, max, phone, grab, onPick, onClear,
 }: {
   value: string;
   step: number;
   min?: string;
   max?: string;
   phone: boolean;
+  /** Focus moves into the list as it opens (a keyboard open); false leaves it where it is (a click in the text). */
+  grab: boolean;
   onPick: (value: string) => void;
   onClear?: () => void;
 }) {
@@ -92,7 +94,13 @@ export function TimeList({
   const first = slots.includes(value) ? value : (slots.find((s) => (parseHm(s) ?? 0) >= 9 * 60 && allowed(s)) ?? slots.find(allowed) ?? slots[0]!);
   const [cursor, setCursor] = useState(first);
   const list = useRef<HTMLDivElement | null>(null);
-  const wantFocus = useRef(!phone);
+  // Text that was typed and understood moves the cursor to it.
+  const [seenValue, setSeenValue] = useState(value);
+  if (seenValue !== value) {
+    setSeenValue(value);
+    if (slots.includes(value)) setCursor(value);
+  }
+  const wantFocus = useRef(!phone && grab);
 
   useEffect(() => {
     const row = list.current?.querySelector<HTMLElement>(`[data-time="${cursor}"]`);

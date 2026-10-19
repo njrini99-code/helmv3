@@ -267,7 +267,7 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
         <div className="ch-ed__row">
           <DateField label="Date" row value={date} onChange={(v) => v && setDate(v)} />
           <TimeField label="Start time" disabled={allDay} value={toHHMM(win[0])} onChange={(v) => v && setWin([fromHHMM(v), Math.max(fromHHMM(v) + 0.25, win[1])])} />
-          <TimeField label="End time" disabled={allDay} value={toHHMM(win[1])} onChange={(v) => v && setWin([win[0], fromHHMM(v)])} />
+          <TimeField label="End time" disabled={allDay} min={toHHMM(win[0] + 0.25)} value={toHHMM(win[1])} onChange={(v) => v && setWin([win[0], fromHHMM(v)])} />
         </div>
         {touched && !allDay && win[1] <= win[0] && (
           <span className="ch-field__help is-error" data-ch-code="CH-6104">

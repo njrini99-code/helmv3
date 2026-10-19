@@ -242,6 +242,13 @@ export function toHm(minutes: number): string {
   return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
 }
 
+/** `HH:mm` moved on by `minutes`, or undefined when `value` isn't a time or the result is past the day's end (for an end time's `min`). */
+export function addMinutes(value: string | null | undefined, minutes: number): string | undefined {
+  const t = parseHm(value);
+  if (t === null || t + minutes > 23 * 60 + 59) return undefined;
+  return toHm(t + minutes);
+}
+
 /** "3:30 PM", the calendar's own wording (fmtHour). Empty for no value. */
 export function formatTime(value: string | null | undefined): string {
   const t = parseHm(value);

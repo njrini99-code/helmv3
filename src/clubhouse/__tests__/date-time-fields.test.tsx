@@ -100,7 +100,7 @@ describe('DateField on the desktop', () => {
     const user = userEvent.setup();
     render(<DateHarness initial="2026-10-20" min="2026-10-10" max="2026-10-25" />);
     await user.click(screen.getByRole('button', { name: 'Pick a date' }));
-    const cal = await screen.findByRole('dialog', { name: 'Date' });
+    const cal = await screen.findByRole('dialog', { name: 'Pick date' });
     expect(within(cal).getByText('October 2026')).toBeTruthy();
     expect(within(cal).getByRole('button', { name: 'Thu 15 Oct 2026' }).getAttribute('aria-current')).toBe('date');
     expect(within(cal).getByRole('button', { name: 'Tue 20 Oct 2026' }).closest('[role="gridcell"]')!.getAttribute('aria-selected')).toBe('true');
@@ -114,7 +114,7 @@ describe('DateField on the desktop', () => {
     const seen = vi.fn();
     render(<DateHarness initial="2026-10-15" onValue={seen} />);
     await user.click(screen.getByRole('button', { name: 'Pick a date' }));
-    const cal = await screen.findByRole('dialog', { name: 'Date' });
+    const cal = await screen.findByRole('dialog', { name: 'Pick date' });
     expect(document.activeElement).toBe(within(cal).getByRole('button', { name: 'Thu 15 Oct 2026' }));
     await user.keyboard('{ArrowRight}{ArrowDown}');
     expect(document.activeElement).toBe(within(cal).getByRole('button', { name: 'Fri 23 Oct 2026' }));
@@ -123,7 +123,7 @@ describe('DateField on the desktop', () => {
     expect(document.activeElement).toBe(within(cal).getByRole('button', { name: 'Mon 23 Nov 2026' }));
     await user.keyboard('{Enter}');
     expect(seen).toHaveBeenLastCalledWith('2026-11-23');
-    expect(screen.queryByRole('dialog', { name: 'Date' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Pick date' })).toBeNull();
     expect(document.activeElement).toBe(input('Date')); // focus returns to the field
     expect(input('Date').value).toBe('Mon 23 Nov 2026');
   });
@@ -140,7 +140,7 @@ describe('DateField on the desktop', () => {
     await user.click(screen.getByRole('button', { name: 'Pick a date' }));
     const day = await screen.findByRole('button', { name: 'Thu 15 Oct 2026' });
     expect(fireEvent.keyDown(day, { key: 'Escape' })).toBe(false); // prevented: the native dialog would otherwise close
-    expect(screen.queryByRole('dialog', { name: 'Date' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Pick date' })).toBeNull();
   });
 
   it('couples a range: the end opens on the start and cannot be picked before it', async () => {
@@ -157,14 +157,14 @@ describe('DateField on the desktop', () => {
     }
     render(<Pair />);
     await user.click(screen.getAllByRole('button', { name: 'Pick a date' })[1]!);
-    const cal = await screen.findByRole('dialog', { name: 'End date' });
+    const cal = await screen.findByRole('dialog', { name: 'Pick end date' });
     expect((within(cal).getByRole('button', { name: 'Sun 18 Oct 2026' }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(cal).getByRole('button', { name: 'Mon 19 Oct 2026' }) as HTMLButtonElement).disabled).toBe(false);
     await user.click(within(cal).getByRole('button', { name: 'Wed 21 Oct 2026' }));
     expect(input('End date').value).toBe('Wed 21 Oct 2026');
     // An optional end can be cleared from the picker.
     await user.click(screen.getAllByRole('button', { name: 'Pick a date' })[1]!);
-    await user.click(within(await screen.findByRole('dialog', { name: 'End date' })).getByRole('button', { name: 'Clear' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Pick end date' })).getByRole('button', { name: 'Clear' }));
     expect(input('End date').value).toBe('');
   });
 
@@ -176,6 +176,52 @@ describe('DateField on the desktop', () => {
     await user.type(input('Date'), '10/20/2026');
     await user.tab();
     expect(seen).toHaveBeenLastCalledWith('2026-10-20');
+  });
+});
+
+describe('opening from the text field', () => {
+  it('a click in the date text opens the month and leaves the cursor in the text; typing moves the month', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <DateHarness initial="2026-10-15" />
+        <input aria-label="Next field" />
+      </>,
+    );
+    await user.click(input('Date'));
+    const cal = await screen.findByRole('dialog', { name: 'Pick date' });
+    expect(document.activeElement).toBe(input('Date'));
+    await user.clear(input('Date'));
+    await user.type(input('Date'), '12/25/2026');
+    await user.tab();
+    expect(screen.queryByRole('dialog', { name: 'Pick date' })).toBeNull(); // tabbing on closes it
+    expect(input('Date').value).toBe('Fri 25 Dec 2026');
+    await user.click(screen.getByRole('button', { name: 'Pick a date' }));
+    expect(within(await screen.findByRole('dialog', { name: 'Pick date' })).getByText('December 2026')).toBeTruthy();
+    void cal;
+  });
+
+  it('a click in the time text opens the list with focus still in the text', async () => {
+    const user = userEvent.setup();
+    render(<TimeHarness initial="09:00" />);
+    await user.click(input('Start time'));
+    await screen.findByRole('listbox', { name: 'Times' });
+    expect(document.activeElement).toBe(input('Start time'));
+  });
+
+  it('an end time cannot be picked before its start, but a typed one still goes to the form', async () => {
+    const user = userEvent.setup();
+    const seen = vi.fn();
+    render(<TimeHarness initial="10:00" min="09:15" onValue={seen} label="End time" />);
+    await user.click(screen.getByRole('button', { name: 'Pick a time' }));
+    const list = await screen.findByRole('listbox', { name: 'Times' });
+    expect((within(list).getByRole('option', { name: '9:00 AM' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(list).getByRole('option', { name: '9:15 AM' }) as HTMLButtonElement).disabled).toBe(false);
+    await user.keyboard('{Escape}');
+    await user.clear(input('End time'));
+    await user.type(input('End time'), '8:00 am');
+    await user.tab();
+    expect(seen).toHaveBeenLastCalledWith('08:00');
   });
 });
 

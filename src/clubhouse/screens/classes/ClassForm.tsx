@@ -35,6 +35,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Select } from '../../ui/Select';
+import { addMinutes } from '../../ui/date-time';
 import { TimeField } from '../../ui/TimeField';
 
 /**
@@ -257,7 +258,7 @@ export function ClassForm({
               <label htmlFor={id('end')} className="ch-field__label">
                 Ends
               </label>
-              <TimeField id={id('end')} label="Ends" value={v.end} onChange={(t) => set('end', t)} {...inv('time')} />
+              <TimeField id={id('end')} label="Ends" min={addMinutes(v.start, 15)} value={v.end} onChange={(t) => set('end', t)} {...inv('time')} />
             </div>
           </div>
           {err('time')}

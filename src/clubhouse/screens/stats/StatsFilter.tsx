@@ -384,7 +384,7 @@ function FilterSheet({
                 label="To"
                 className="ch-input ch-num"
                 value={to}
-                min="2000-01-01"
+                min={from || '2000-01-01'}
                 max="2100-12-31"
                 anchor={from || undefined}
                 clearable

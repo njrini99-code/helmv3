@@ -72,7 +72,7 @@ export function DateField(props: DateFieldProps) {
       ariaDescribedBy={props['aria-describedby']}
       dataChCode={props['data-ch-code']}
       extra={{ 'data-min': min || undefined, 'data-max': max || undefined }}
-      render={({ pick, clear, phone }) => (
+      render={({ pick, clear, phone, grab }) => (
         <MonthGrid
           value={value}
           min={min}
@@ -81,6 +81,7 @@ export function DateField(props: DateFieldProps) {
           today={today || localToday()}
           weekStart={props.weekStart ?? 0}
           phone={phone}
+          grab={grab}
           onPick={pick}
           onClear={clear}
         />
@@ -91,7 +92,7 @@ export function DateField(props: DateFieldProps) {
 
 /** A month of days to choose from. Arrows move by day and week, PageUp and PageDown by month, Home and End to the week's ends. */
 export function MonthGrid({
-  value, min, max, anchor, today, weekStart, phone, onPick, onClear,
+  value, min, max, anchor, today, weekStart, phone, grab, onPick, onClear,
 }: {
   value: string;
   min?: string;
@@ -100,6 +101,8 @@ export function MonthGrid({
   today: string;
   weekStart: number;
   phone: boolean;
+  /** Focus moves into the grid as it opens (a keyboard open); false leaves it where it is (a click in the text). */
+  grab: boolean;
   onPick: (iso: string) => void;
   onClear?: () => void;
 }) {
@@ -109,11 +112,18 @@ export function MonthGrid({
   const [cursor, setCursor] = useState(start);
   const grid = useRef<HTMLDivElement | null>(null);
   // Focus follows the cursor once the picker has been used from the keyboard (and on open on desktop); a tap never pulls it.
-  const wantFocus = useRef(!phone);
+  const wantFocus = useRef(!phone && grab);
   useEffect(() => {
     if (!wantFocus.current) return;
     grid.current?.querySelector<HTMLElement>(`[data-date="${cursor}"]`)?.focus({ preventScroll: true });
   }, [cursor]);
+
+  // Text that was typed and understood moves the month and the cursor to it.
+  const [seenValue, setSeenValue] = useState(value);
+  if (seenValue !== value) {
+    setSeenValue(value);
+    if (parseIso(value)) setCursor(value);
+  }
 
   const go = (to: string) => {
     wantFocus.current = true;

@@ -123,7 +123,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
               <Button
                 size="sm"
                 variant="ghost"
-                busy={cancel.pending}
+                disabled={cancel.pending}
                 onClick={() => void cancel.run(r.id)}
               >
                 Cancel

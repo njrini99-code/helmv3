@@ -593,7 +593,7 @@ export function EventEditor({
             <div className="ch-ed__row">
               <DateField label="Date" row value={date} onChange={(v) => v && setDate(v)} />
               <TimeField label="Start time" disabled={allDay} value={toHHMM(win[0])} onChange={(v) => v && setWin([snap(fromHHMM(v)), multiTimed ? win[1] : snap(fromHHMM(v)) + (win[1] - win[0])])} />
-              <TimeField label="End time" disabled={allDay} value={toHHMM(win[1])} aria-invalid={touched && invalidTime} onChange={(v) => v && setWin([win[0], snap(fromHHMM(v))])} />
+              <TimeField label="End time" disabled={allDay} min={!multiTimed && !needsEnd ? toHHMM(win[0] + 0.25) : undefined} value={toHHMM(win[1])} aria-invalid={touched && invalidTime} onChange={(v) => v && setWin([win[0], snap(fromHHMM(v))])} />
             </div>
             {!allDay && (
               <p className={'ch-field__help' + (touched && invalidTime ? ' is-error' : '')} data-ch-code={touched && invalidTime ? 'CH-6102' : undefined}>
@@ -1049,7 +1049,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                 ) : (
                   <Button
                     size="sm"
-                    busy={busy}
+                    disabled={busy}
                     onClick={() => void create.run(r.type)}
                   >
                     Create link
@@ -1063,7 +1063,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                       <Button size="sm" variant="ghost" onClick={() => setAsking(null)}>
                         Keep link
                       </Button>
-                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} busy={busy} onClick={() => confirm(r.type, asking.kind)}>
+                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} disabled={busy} onClick={() => confirm(r.type, asking.kind)}>
                         {ask.go}
                       </Button>
                     </div>
