@@ -1838,7 +1838,8 @@ export function EditMessageModal({ api, message, onClose }: { api: ChMessagesApi
           </Button>
           <Button
             variant="primary"
-            disabled={busy || !text.trim() || same}
+            busy={busy}
+            disabled={!text.trim() || same}
             onClick={async () => {
               if (!message || same) return;
               setBusy(true);
@@ -1883,7 +1884,7 @@ export function DeleteMessageModal({ api, message, onClose }: { api: ChMessagesA
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy}
+            busy={busy}
             onClick={async () => {
               if (!message) return;
               setBusy(true);
@@ -1926,7 +1927,7 @@ export function LeaveGroupModal({ api, conv, open, onClose, onLeft }: { api: ChM
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy}
+            busy={busy}
             onClick={async () => {
               setBusy(true);
               const ok = await api.leave();
@@ -1964,7 +1965,7 @@ export function DeleteConversationModal({ api, conv, open, onClose, onDeleted }:
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy}
+            busy={busy}
             onClick={async () => {
               setBusy(true);
               const ok = (await api.deleteConversation?.()) ?? false;
@@ -2008,7 +2009,8 @@ export function RemoveMemberModal({ api, conv, member, onClose }: { api: ChMessa
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy || !api.removeMember}
+            busy={busy}
+            disabled={!api.removeMember}
             onClick={async () => {
               if (!member || !api.removeMember) return;
               setBusy(true);
@@ -2486,7 +2488,7 @@ function NewMessage({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={busy} onClick={() => void go()}>
+          <Button variant="primary" busy={busy} onClick={() => void go()}>
             {busy
               ? announce
                 ? "Posting…"

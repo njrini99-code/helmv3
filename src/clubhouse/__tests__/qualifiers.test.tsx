@@ -411,7 +411,7 @@ describe('Qualifiers · the loader', () => {
     wrap(<QualifierForm data={previewEditForm()} writes={fakeWrites()} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Pinehurst qualifier' })).toBeTruthy();
     expect((screen.getByLabelText('Qualifier name') as HTMLInputElement).value).toBe('Pinehurst qualifier');
-    expect((screen.getByLabelText('Start date') as HTMLInputElement).value).toBe('2026-09-22');
+    expect((screen.getByLabelText('Start date') as HTMLInputElement).value).toBe('Tue 22 Sep 2026');
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy();
   });
 
@@ -1723,7 +1723,7 @@ describe('Qualifiers · create and edit', () => {
     expect(screen.getByText('Players who make the trip, up to 12.')).toBeTruthy();
     expect(screen.getAllByText('Choose one, or set the qualifier’s course above')).toHaveLength(3);
     expect(screen.queryByText('Uses the qualifier’s course')).toBeNull();
-    expect((document.getElementById('qf-end') as HTMLInputElement).min).toBe('2026-10-19');
+    expect((document.getElementById('qf-end') as HTMLInputElement).dataset.min).toBe('2026-10-19');
   });
 
   it('CH-09404 a create in flight reads Creating and cannot be sent twice', async () => {
@@ -2622,7 +2622,9 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     await expectCode('CH-09101', /Give the qualifier a name/);
     expect(writes.create).not.toHaveBeenCalled();
     await user.type(screen.getByLabelText('Qualifier name'), 'Conference qualifier');
-    await user.type(screen.getByLabelText('Start date'), '2026-10-19');
+    // On the phone the date is chosen, not typed: the field opens its sheet, and Today is in it.
+    await user.click(screen.getByLabelText('Start date'));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Start date' })).getByRole('button', { name: 'Today' }));
     await user.click(within(top).getByRole('button', { name: 'Cancel' }));
     await expectCode('CH-09502', /Discard your changes/);
     await user.click(inDialog('CH-09502', 'Keep editing'));

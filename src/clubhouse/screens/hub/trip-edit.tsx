@@ -131,7 +131,7 @@ export function TripEditSheet({
           <Button variant="ghost" onClick={onClose} disabled={save.pending}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={save.pending} feel={null} onClick={() => submit()}>
+          <Button variant="primary" busy={save.pending} feel={null} onClick={() => submit()}>
             {save.pending ? 'Saving…' : 'Save changes'}
           </Button>
         </>

@@ -153,7 +153,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
           onChange={(e) => setNext(e.target.value)}
           onBlur={() => setTouched(true)}
         />
-        <Button type="submit" disabled={!next.trim() || send.pending}>
+        <Button type="submit" busy={send.pending} disabled={!next.trim()}>
           {send.pending ? 'Sending…' : 'Send confirmation'}
         </Button>
       </form>
@@ -192,7 +192,8 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
           <Button
             variant="primary"
             size="sm"
-            disabled={!hasEmail || change.pending || !(cur || next || confirm)}
+            busy={change.pending}
+            disabled={!hasEmail || !(cur || next || confirm)}
             onClick={async () => {
               setTried(true);
               if (problem) {
@@ -306,7 +307,8 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
             </Button>
             <Button
               variant="danger"
-              disabled={typed.trim().toLowerCase() !== 'delete' || del.pending}
+              busy={del.pending}
+              disabled={typed.trim().toLowerCase() !== 'delete'}
               onClick={() => void del.run()}
             >
               {del.pending ? 'Deleting…' : 'Delete account'}

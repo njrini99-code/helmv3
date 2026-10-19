@@ -517,7 +517,7 @@ function TieRow({ c, stage, full, choose }: { c: ChQCandidate; stage: 0 | 1 | 2;
       <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
       <ToPar value={c.toPar} />
       {stage === 1 && (
-        <Button size="sm" variant="ghost" disabled={act.pending || (!c.onScore && full)} onClick={() => void act.run(!c.onScore)}>
+        <Button size="sm" variant="ghost" busy={act.pending} disabled={!c.onScore && full} onClick={() => void act.run(!c.onScore)}>
           {act.pending ? <span data-ch-code="CH-09408">Saving…</span> : c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
         </Button>
       )}

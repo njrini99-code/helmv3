@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { ArrowRight, ChartColumn, ChevronLeft, MapPin, Medal, Search } from 'lucide-react';
 import type { ChRoundType } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
+import { roving } from '../../../ui/use-roving';
 import { useAction } from '../../../lib/use-action';
 import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
+import { DateField } from '../../../ui/DateField';
 import { InlineNotice } from '../../../ui/Notices';
 import { Select } from '../../../ui/Select';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
@@ -302,7 +304,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
             <div className="ch-rsu-form">
               <div className="ch-rsu-field">
                 <span>Round type</span>
-                <div className="ch-rsu-seg" role="radiogroup" aria-label="Round type">
+                <div className="ch-rsu-seg" role="radiogroup" aria-label="Round type" {...roving}>
                   {TYPES.map((t) => (
                     <button
                       key={t}
@@ -320,21 +322,22 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
                 </div>
               </div>
               <div className="ch-rsu-2">
-                <label className="ch-rsu-field">
+                <div className="ch-rsu-field">
                   <span>Date</span>
-                  <input
-                    type="date"
+                  <DateField
+                    label="Date"
                     className="ch-rsu-in"
                     value={form.date}
                     max={today}
+                    today={today}
                     aria-invalid={form.date > today || undefined}
                     data-ch-code={form.date > today ? 'CH-11109' : undefined}
-                    onChange={(e) => set({ date: e.target.value })}
+                    onChange={(d) => set({ date: d })}
                   />
-                </label>
+                </div>
                 <div className="ch-rsu-field">
                   <span>Holes</span>
-                  <div className="ch-rsu-seg" role="radiogroup" aria-label="Holes">
+                  <div className="ch-rsu-seg" role="radiogroup" aria-label="Holes" {...roving}>
                     {([9, 18] as const).map((n) => (
                       <button
                         key={n}
@@ -381,7 +384,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
                     No qualifier is open for you right now. Your coach opens one when it&rsquo;s time; until then, play a practice or tournament round.
                   </p>
                 ) : (
-                  <div className="ch-rsu-opts" role="radiogroup" aria-label="Qualifier">
+                  <div className="ch-rsu-opts" role="radiogroup" aria-label="Qualifier" {...roving}>
                     {qualifiers.map((q) => (
                       <button key={q.id} type="button" role="radio" aria-checked={form.qualifierId === q.id} disabled={q.nextRound == null} className="ch-rsu-opt" onClick={() => playQualifier(q)}>
                         <span className="ch-rsu-radio" aria-hidden="true" />

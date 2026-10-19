@@ -7,6 +7,7 @@ import type { ChQFormData, ChQFormRoundCourse } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
+import { DateField } from '../../ui/DateField';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
@@ -357,14 +358,14 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   <label htmlFor="qf-start" className="ch-field__label">
                     Start date
                   </label>
-                  <input {...inputProps('startDate')} type="date" value={v.startDate} onChange={(e) => set('startDate', e.target.value)} />
+                  <DateField label="Start date" {...inputProps('startDate')} value={v.startDate} onChange={(d) => set('startDate', d)} />
                   {fieldHelp('startDate')}
                 </div>
                 <div className="ch-field">
                   <label htmlFor="qf-end" className="ch-field__label">
                     End date <span className="ch-field__opt">Optional</span>
                   </label>
-                  <input {...inputProps('endDate', FORM_HELP.endDate)} type="date" min={v.startDate || undefined} value={v.endDate} onChange={(e) => set('endDate', e.target.value)} />
+                  <DateField label="End date" {...inputProps('endDate', FORM_HELP.endDate)} min={v.startDate || undefined} anchor={v.startDate || undefined} clearable value={v.endDate} onChange={(d) => set('endDate', d)} />
                   {fieldHelp('endDate', FORM_HELP.endDate)}
                 </div>
               </div>
@@ -534,7 +535,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
               <Button variant="ghost" onClick={cancel}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" leftIcon={Check} disabled={pending || blocked}>
+              <Button type="submit" variant="primary" leftIcon={Check} busy={pending} disabled={blocked}>
                 {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving…' : 'Creating…'}</span> : editing ? 'Save changes' : 'Create qualifier'}
               </Button>
             </div>

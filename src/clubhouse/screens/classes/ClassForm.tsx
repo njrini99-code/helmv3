@@ -35,6 +35,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Select } from '../../ui/Select';
+import { TimeField } from '../../ui/TimeField';
 
 /**
  * Add or edit a class (classes.jsx `AddClass`; the board's inline card form is
@@ -146,7 +147,7 @@ export function ClassForm({
             <Button variant="ghost" onClick={requestClose}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={saving} onClick={submit}>
+            <Button variant="primary" busy={saving} onClick={submit}>
               {saving ? (editing ? 'Saving…' : 'Adding…') : editing ? 'Save changes' : 'Add class'}
             </Button>
           </>
@@ -250,13 +251,13 @@ export function ClassForm({
               <label htmlFor={id('start')} className="ch-field__label">
                 Starts
               </label>
-              <input id={id('start')} className="ch-input" type="time" value={v.start} onChange={(e) => set('start', e.target.value)} {...inv('time')} />
+              <TimeField id={id('start')} label="Starts" value={v.start} onChange={(t) => set('start', t)} {...inv('time')} />
             </div>
             <div className="ch-field">
               <label htmlFor={id('end')} className="ch-field__label">
                 Ends
               </label>
-              <input id={id('end')} className="ch-input" type="time" value={v.end} onChange={(e) => set('end', e.target.value)} {...inv('time')} />
+              <TimeField id={id('end')} label="Ends" value={v.end} onChange={(t) => set('end', t)} {...inv('time')} />
             </div>
           </div>
           {err('time')}

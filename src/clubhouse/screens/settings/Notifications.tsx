@@ -87,7 +87,7 @@ function DeliveryCard({
           <span className="ch-set-pair">
             {/* P008-C3: a test push to this person's own devices (D1-6), once push is on here. */}
             {onDevice && push.test && (
-              <Button size="sm" disabled={test.busy} onClick={() => void test.run()}>
+              <Button size="sm" busy={test.busy} onClick={() => void test.run()}>
                 {test.busy ? 'Sending…' : 'Send a test'}
               </Button>
             )}

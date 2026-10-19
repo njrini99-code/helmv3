@@ -2,9 +2,10 @@
 
 import { AnimatePresence } from 'motion/react';
 import { Check, ChevronDown, ChevronRight, GraduationCap, Mail, Phone, Plus } from 'lucide-react';
-import { useCallback, useState, type KeyboardEvent } from 'react';
+import { useCallback, useState } from 'react';
 import { CH_STAGES, mailHref, rowLineOf, subtitleOf, telHref, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
+import { roving } from '../../ui/use-roving';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
@@ -196,20 +197,10 @@ function Detail({ p, c, picking, onPickStage }: { p: ChProspect; c: RecCtx; pick
 
 /** The stage picker (PhoneStage board): four rows, the current one ticked, each saved as it is picked; Done closes. */
 function StageSheet({ p, onClose, onPick }: { p: ChProspect | null; onClose: () => void; onPick: (p: ChProspect, to: ChStage) => void }) {
-  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const d = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
-    if (!d || !p) return;
-    e.preventDefault();
-    const i = CH_STAGES.findIndex((s) => s.value === p.stage);
-    const next = CH_STAGES[(i + d + CH_STAGES.length) % CH_STAGES.length]!;
-    onPick(p, next.value);
-    e.currentTarget.querySelector<HTMLElement>(`[data-stage="${next.value}"]`)?.focus();
-  };
   return (
     <RecPickSheet open={!!p} onClose={onClose} title="Stage" note="Saves as soon as you pick. Players never see this.">
       {p && (
-        // eslint-disable-next-line jsx-a11y/interactive-supports-focus -- the radios inside are the tab stops; the group only routes arrow keys
-        <div className="ch-recm-stages" role="radiogroup" aria-label={`Stage for ${p.name}`} onKeyDown={onKey}>
+        <div className="ch-recm-stages" role="radiogroup" aria-label={`Stage for ${p.name}`} {...roving}>
           {CH_STAGES.map((s) => {
             const on = p.stage === s.value;
             return (
@@ -218,8 +209,6 @@ function StageSheet({ p, onClose, onPick }: { p: ChProspect | null; onClose: () 
                 type="button"
                 role="radio"
                 aria-checked={on}
-                tabIndex={on ? 0 : -1}
-                data-stage={s.value}
                 className="ch-recm-stages__row"
                 onClick={() => {
                   if (!on) haptic('select');

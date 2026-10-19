@@ -288,7 +288,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
             <Button variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
-            <Button variant="danger" disabled={discard.pending} feel={null} onClick={() => asking && void discard.run(asking)}>
+            <Button variant="danger" busy={discard.pending} feel={null} onClick={() => asking && void discard.run(asking)}>
               {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>

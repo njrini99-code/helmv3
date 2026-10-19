@@ -1369,7 +1369,7 @@ describe('Classes, add and edit', () => {
       field('Building').value,
       field('Room').value,
       field('Instructor').value,
-    ]).toEqual(['STAT 201', 'Probability and Statistics', '3', '09:00', '10:15', 'Hanes Hall', '120', 'Dr. L. Osei']);
+    ]).toEqual(['STAT 201', 'Probability and Statistics', '3', '9:00 AM', '10:15 AM', 'Hanes Hall', '120', 'Dr. L. Osei']);
     expect([day('Mon'), day('Tue'), day('Wed'), day('Thu'), day('Fri')].map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false', 'true', 'false']);
     setField('Room', '121');
     await submitForm(user);

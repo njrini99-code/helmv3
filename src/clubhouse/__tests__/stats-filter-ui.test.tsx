@@ -25,6 +25,7 @@ import { StatsTeam } from '../screens/stats/StatsTeam';
 import { CrumbProvider } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
+import { formatDate } from '../ui/date-time';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_PLAYER_NOMATCH, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
@@ -471,7 +472,7 @@ describe('Team stats · the filter sheet', () => {
     await user.click(screen.getByRole('button', { name: /^Filter/ }));
     const d = inDialog();
     expect(d.getByRole('button', { name: 'Practice' }).getAttribute('aria-pressed')).toBe('true');
-    expect((d.getByLabelText('From') as HTMLInputElement).value).toBe(RANGE.from);
+    expect((d.getByLabelText('From') as HTMLInputElement).value).toBe(formatDate(RANGE.from));
     expect((within(d.getByRole('group', { name: 'Course' })).getByRole('checkbox', { name: /Finley GC/ }) as HTMLInputElement).checked).toBe(true);
     await user.click(d.getByRole('button', { name: 'Done' }));
     expect(router.push).not.toHaveBeenCalled();
@@ -496,7 +497,7 @@ describe('the filter, for assistive technology', () => {
     expect(d.getByRole('button', { name: 'Practice' }).getAttribute('aria-pressed')).toBe('false');
     expect(d.getByRole('radiogroup', { name: 'Window' })).toBeTruthy();
     expect(within(d.getByRole('group', { name: 'Course' })).getAllByRole('checkbox').length).toBeGreaterThan(1);
-    expect(d.getByLabelText('From').getAttribute('type')).toBe('date');
+    expect(d.getByLabelText('From').getAttribute('aria-haspopup')).toBe('dialog');
     // A range error is the dates' description, not just text beside them.
     fireEvent.change(d.getByLabelText('From'), { target: { value: RANGE.to } });
     fireEvent.change(d.getByLabelText('To'), { target: { value: RANGE.from } });

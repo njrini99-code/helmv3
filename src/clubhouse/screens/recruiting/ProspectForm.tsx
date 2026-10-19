@@ -17,6 +17,7 @@ import {
 } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
+import { DateField } from '../../ui/DateField';
 import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { RecFormSheet } from './RecSheet';
@@ -217,7 +218,7 @@ export function ProspectForm({
           <Button variant="ghost" disabled={saving} onClick={close}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={saving} feel="press" onClick={submit}>
+          <Button variant="primary" busy={saving} feel="press" onClick={submit}>
             {saving ? <span data-ch-code="CH-14403">Saving…</span> : adding ? 'Add prospect' : 'Save changes'}
           </Button>
         </>
@@ -262,15 +263,27 @@ function Field({
       <label htmlFor={`${uid}-${name}`} className="ch-field__label">
         {label}
       </label>
-      <input
-        id={`${uid}-${name}`}
-        className="ch-input"
-        value={draft[name]}
-        aria-invalid={!!problem || undefined}
-        aria-describedby={problem ? `${uid}-${name}-e` : undefined}
-        onChange={(e) => onChange({ ...draft, [name]: clean ? clean(e.target.value) : e.target.value })}
-        {...input}
-      />
+      {input.type === 'date' ? (
+        <DateField
+          id={`${uid}-${name}`}
+          label={label}
+          value={draft[name]}
+          clearable
+          aria-invalid={!!problem || undefined}
+          aria-describedby={problem ? `${uid}-${name}-e` : undefined}
+          onChange={(d) => onChange({ ...draft, [name]: d })}
+        />
+      ) : (
+        <input
+          id={`${uid}-${name}`}
+          className="ch-input"
+          value={draft[name]}
+          aria-invalid={!!problem || undefined}
+          aria-describedby={problem ? `${uid}-${name}-e` : undefined}
+          onChange={(e) => onChange({ ...draft, [name]: clean ? clean(e.target.value) : e.target.value })}
+          {...input}
+        />
+      )}
       <Problem id={`${uid}-${name}-e`} problem={problem} />
     </div>
   );

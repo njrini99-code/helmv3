@@ -1,6 +1,7 @@
 'use client';
 
 import { haptic } from '../../../lib/haptics';
+import { roving } from '../../../ui/use-roving';
 import { editedCount, holesForRound, MAX_HOLE_YARDS, parOf, PARS, yardsOf, type ChSetupHole } from './shape';
 
 /**
@@ -55,7 +56,7 @@ export function HoleConfig({
           </span>
         </div>
         {count === 9 && holes.length === 18 && (
-          <div className="ch-rsu-seg ch-rsu-seg--sm" role="radiogroup" aria-label="Which nine">
+          <div className="ch-rsu-seg ch-rsu-seg--sm" role="radiogroup" aria-label="Which nine" {...roving}>
             {(
               [
                 ['front', 'Front 9'],
@@ -108,7 +109,7 @@ export function HoleConfig({
                     <span className="ch-rsu-hole__n" aria-hidden="true">
                       {h.n}
                     </span>
-                    <div className="ch-rsu-par" role="radiogroup" aria-label={`Hole ${h.n} par`}>
+                    <div className="ch-rsu-par" role="radiogroup" aria-label={`Hole ${h.n} par`} {...roving}>
                       {PARS.map((p) => (
                         <button
                           key={p}

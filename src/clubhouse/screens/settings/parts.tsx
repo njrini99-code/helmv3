@@ -170,7 +170,7 @@ export function SaveBar({
           Discard
         </Button>
       )}
-      <Button variant="primary" size="sm" disabled={!dirty || pending || !!invalid} onClick={onSave}>
+      <Button variant="primary" size="sm" busy={pending} disabled={!dirty || !!invalid} onClick={onSave}>
         {pending ? 'Saving…' : label}
       </Button>
     </>

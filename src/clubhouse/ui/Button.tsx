@@ -22,11 +22,14 @@ interface CommonProps {
 }
 
 type ButtonProps = CommonProps &
-  ({ href: string; onClick?: never; type?: never; disabled?: never } | {
+  ({ href: string; onClick?: never; type?: never; disabled?: never; busy?: never } | {
     href?: undefined;
     onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
     type?: 'button' | 'submit';
+    /** Not available: unlit and not clickable. Use `busy` for an action that is on its way. */
     disabled?: boolean;
+    /** The action this button starts is in flight: aria-busy, no second press, and it stays lit (working, not unavailable). */
+    busy?: boolean;
   });
 
 export function Button(props: ButtonProps) {
@@ -56,8 +59,10 @@ export function Button(props: ButtonProps) {
       type={props.type ?? 'button'}
       className={cls}
       aria-keyshortcuts={kbd}
-      disabled={props.disabled}
+      disabled={props.disabled || props.busy}
+      aria-busy={props.busy || undefined}
       onClick={(e) => {
+        if (props.busy) return;
         if (feel) haptic(feel);
         props.onClick?.(e);
       }}

@@ -393,7 +393,7 @@ function UploadDialog({
             <Button variant="ghost" disabled={busy} onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={busy || !staged} onClick={() => staged && onUpload(staged)}>
+            <Button variant="primary" busy={busy} disabled={!staged} onClick={() => staged && onUpload(staged)}>
               {busy ? <span data-ch-code="CH-14404">{progress === null ? 'Uploading…' : `Uploading… ${progress}%`}</span> : 'Upload'}
             </Button>
           </>
