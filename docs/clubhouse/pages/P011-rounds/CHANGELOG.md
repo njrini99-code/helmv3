@@ -1,5 +1,25 @@
 # P011 — Rounds: changelog
 
+## 2026-10-19 — The library reaches the card; the round's labels are callable from the server
+
+```text
+Design package: none (complete-and-elevate plan, lead wiring for lane L4)
+PR/commit:      agent/clubhouse-complete
+Contract IDs:   CH-11920 (link target)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Right-click (or Shift+F10) on a posted round in the library offers Open round and Scorecard; Scorecard opens the review
+  at the card (#ch-rcard). Shift+right-click keeps the browser's own menu, so open-in-new-tab is still there. Both note
+  the round as opened from the library, so the review's Back is a step back (a link item in ui/Menu now runs its
+  onSelect as it opens).
+- dateOf and TYPE_LABEL moved to rounds/labels.ts (a plain module); parts.tsx re-exports them. The card's model imported
+  them from a 'use client' module, which the client-boundary test refuses.
+
 ## 2026-10-19 — The round card: a scorecard to keep, share and print
 
 ```text

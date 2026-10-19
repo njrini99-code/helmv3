@@ -1,3 +1,5 @@
+'use client';
+
 import { releaseSpeed } from '../lib/sheet-drag';
 
 /**

@@ -188,7 +188,11 @@ export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (foc
         const role = it.checked !== undefined ? 'menuitemradio' : 'menuitem';
         if (it.href) {
           return (
-            <Link key={it.label} href={it.href} role={role} aria-checked={it.checked} className={cls} tabIndex={i === first ? 0 : -1} onClick={() => onClose(false)}>
+            <Link key={it.label} href={it.href} role={role} aria-checked={it.checked} className={cls} tabIndex={i === first ? 0 : -1} onClick={() => {
+              // A link item can also note something as it opens (the rounds library notes the round, so the review's Back is a step back).
+              it.onSelect?.();
+              onClose(false);
+            }}>
               {content}
             </Link>
           );

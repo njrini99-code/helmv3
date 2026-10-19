@@ -12,14 +12,13 @@ import { withPointSpan } from '../../ui/point-span';
 import type { ContextMenuBind } from '../../ui/ContextMenu';
 import { Icon } from '../../ui/Icon';
 
-/** A calendar date (yyyy-mm-dd) as a Date at noon UTC, so no zone moves it a day. */
-export const dateOf = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00Z`);
+import { dateOf, TYPE_LABEL } from './labels';
+
+export { dateOf, TYPE_LABEL };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
 export const monthLabel = (iso: string) => fmt({ month: 'long', year: 'numeric' }).format(dateOf(iso));
 export const shortDay = (iso: string) => fmt({ month: 'short', day: 'numeric' }).format(dateOf(iso));
 const dow = (iso: string) => fmt({ weekday: 'short' }).format(dateOf(iso));
-
-export const TYPE_LABEL: Record<ChRoundType, string> = { practice: 'Practice', tournament: 'Tournament', qualifier: 'Qualifier' };
 
 export function TeeSwatch({ color }: { color: ChTeeColor | null }) {
   return color ? <i className={`ch-rd-tee ch-rd-tee--${color}`} aria-hidden="true" /> : null;
@@ -502,7 +501,7 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
  * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap. CH-11601: on the
  * desktop Ledger a round that opens its review takes the row tint on hover (quick) and a deeper one on press, no lift.
  */
-export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void }) {
+export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void; /** The library's right-click menu (desktop). */ bind?: ContextMenuBind }) {
   const under = r.toPar != null && r.toPar < 0;
   const body = (
     <>
@@ -561,6 +560,7 @@ export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string 
       href={href}
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
       aria-label={label}
+      {...bind}
       onClick={(e) => {
         haptic('select');
         // A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.

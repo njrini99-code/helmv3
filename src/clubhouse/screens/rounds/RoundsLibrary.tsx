@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Flag, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Flag, Plus, ScrollText, Trash2, TriangleAlert } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsLibrary, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
@@ -106,7 +106,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
     await discard.run(r);
   };
   // Right-click (desktop) on an unfinished round: what its row offers, Continue or Post and Discard, the same handlers.
-  // A posted round has one action, opening its review, which is a link, so it keeps the browser's own menu (open in a new tab).
+  // A posted round opens its review or goes straight to its scorecard (#ch-rcard, P011); Shift+right-click keeps the browser's own menu (open in a new tab).
   const ctx = useContextMenu<ChUnfinishedRound>({
     label: (r) => `Actions for the round at ${r.course}`,
     items: (r) => {
@@ -114,6 +114,18 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
       return [
         ...(href ? [{ label: r.readyToSubmit ? 'Post round' : 'Continue', icon: ArrowRight, href }, { kind: 'separator' as const }] : []),
         { label: 'Discard round', icon: Trash2, danger: true, onSelect: () => askDiscard(r) },
+      ];
+    },
+  });
+  const postedCtx = useContextMenu<ChLibraryRound>({
+    label: (r) => `Actions for the round at ${r.course}`,
+    items: (r) => {
+      const href = roundsLinks.review(r.id);
+      if (!href) return [];
+      const note = () => noteOpenedFromLibrary(r.id);
+      return [
+        { label: 'Open round', icon: ArrowRight, href, onSelect: note },
+        { label: 'Scorecard', icon: ScrollText, href: `${href}#ch-rcard`, onSelect: note },
       ];
     },
   });
@@ -266,7 +278,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                       </div>
                       <div className="ch-rd-book">
                         {g.rounds.map((r) => (
-                          <RoundRow key={r.id} r={r} href={roundsLinks.review(r.id)} onOpen={() => noteOpenedFromLibrary(r.id)} />
+                          <RoundRow key={r.id} r={r} href={roundsLinks.review(r.id)} onOpen={() => noteOpenedFromLibrary(r.id)} bind={postedCtx.bind(r)} />
                         ))}
                       </div>
                     </section>
@@ -286,6 +298,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
       )}
 
       {ctx.menu}
+      {postedCtx.menu}
       <Modal
         open={!!asking}
         onClose={() => setAsking(null)}

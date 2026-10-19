@@ -1,3 +1,5 @@
+'use client';
+
 import type { ReactNode } from 'react';
 import { CDone, CProfile, CProgram } from './CoachSteps';
 import { PLAYER_STEPS, type StepProps } from './Steps';

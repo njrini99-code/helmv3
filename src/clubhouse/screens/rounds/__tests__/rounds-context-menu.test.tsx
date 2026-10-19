@@ -68,11 +68,16 @@ describe('Rounds right-click menu', () => {
     expect(menuLabels()).toEqual([expect.stringMatching(/^(Continue|Post round)$/), 'Discard round']);
   });
 
-  it('a posted round keeps the browser\'s menu: it has one action, a link', () => {
+  it('a posted round opens its review or goes straight to its scorecard; Shift keeps the browser\'s menu', () => {
     render(tree);
     const posted = screen.getAllByRole('link').find((l) => /\/rounds\/a0000000-/.test(l.getAttribute('href') ?? ''))!;
-    expect(fireEvent.contextMenu(posted, { clientX: 10, clientY: 10 })).toBe(true);
+    const href = posted.getAttribute('href')!;
+    expect(fireEvent.contextMenu(posted, { clientX: 10, clientY: 10, shiftKey: true })).toBe(true);
     expect(screen.queryByRole('menu')).toBeNull();
+    fireEvent.contextMenu(posted, { clientX: 10, clientY: 10 });
+    expect(menuLabels()).toEqual(['Open round', 'Scorecard']);
+    expect(screen.getByRole('menuitem', { name: 'Open round' })).toHaveAttribute('href', href);
+    expect(screen.getByRole('menuitem', { name: 'Scorecard' })).toHaveAttribute('href', `${href}#ch-rcard`);
   });
 
   it('closes with Escape and gives focus back to where it was', async () => {

@@ -1,6 +1,6 @@
 import type { ChReviewHole, ChRoundReview } from '../../../data/round-review-shape';
 import { formatFixed, formatSigned, NO_DATA } from '../../../lib/format';
-import { dateOf, TYPE_LABEL } from '../parts';
+import { dateOf, TYPE_LABEL } from '../labels';
 import { flow, headline, resultOf } from '../round-insights';
 
 /**
