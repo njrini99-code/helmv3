@@ -10864,103 +10864,103 @@
           "name": "--ch-text-primary",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2207
+          "line": 2210
         },
         {
           "name": "--ch-text-secondary",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2208
+          "line": 2211
         },
         {
           "name": "--ch-text-tertiary",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2209
+          "line": 2212
         },
         {
           "name": "--ch-ledger-ink",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2210
+          "line": 2213
         },
         {
           "name": "--ch-ledger-rule",
           "value": "gray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2211
+          "line": 2214
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "silver",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2212
+          "line": 2215
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double gray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2213
+          "line": 2216
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2214
+          "line": 2217
         },
         {
           "name": "--ch-ink-950",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2215
+          "line": 2218
         },
         {
           "name": "--ch-ink-900",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2216
+          "line": 2219
         },
         {
           "name": "--ch-ink-700",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2217
+          "line": 2220
         },
         {
           "name": "--ch-ink-600",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2218
+          "line": 2221
         },
         {
           "name": "--ch-ink-500",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2219
+          "line": 2222
         },
         {
           "name": "--ch-score-under",
           "value": "firebrick",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2220
+          "line": 2223
         },
         {
           "name": "--ch-chart-gain",
           "value": "darkgreen",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2221
+          "line": 2224
         },
         {
           "name": "--ch-chart-loss",
           "value": "sienna",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2222
+          "line": 2225
         },
         {
           "name": "--ch-green-700",
           "value": "darkgreen",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2223
+          "line": 2226
         }
       ]
     },
