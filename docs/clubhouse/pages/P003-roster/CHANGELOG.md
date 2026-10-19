@@ -38,7 +38,7 @@ Held items:     none
 
 ### Changed
 
-- Print (print rules only, `roster.css`): the roster prints as one sheet of the list in ink on white whatever the theme, with "Golfhelm" at the right of the head under the team and the count. The sort, the join-request banner, the invite action and the portraits stay off the paper, the ledger rules are kept (`print-color-adjust: exact`) and a row never splits across pages. A letter sheet is narrower than the phone breakpoint, so the page prints in its phone layout; the rows are buttons and the app-wide print sheet hides buttons, so the rows are put back in print. The desktop layout's rows, head and chrome are set the same way for when print keeps the screen layout.
+- Print (print rules only, `roster.css`): the roster prints as one sheet of the list in ink on white whatever the theme, with "GolfHelm" at the right of the head under the team and the count. The sort, the join-request banner, the invite action and the portraits stay off the paper, the ledger rules are kept (`print-color-adjust: exact`) and a row never splits across pages. A letter sheet is narrower than the phone breakpoint, so the page prints in its phone layout; the rows are buttons and the app-wide print sheet hides buttons, so the rows are put back in print. The desktop layout's rows, head and chrome are set the same way for when print keeps the screen layout.
 
 ## 2026-10-19 — Empty roster draws the shape of the list; a search with no match says what it searched
 

@@ -3887,7 +3887,7 @@ button.ch-qf-prounds__r.is-open {
 }
 
 /* Print (the qualifier's page): one clean sheet. The app's chrome is hidden by the shell; here the qualifier's own head, facts and side
-   column step aside for a small head (qualifier, dates, team, Golfhelm) over the leaderboard, in ink on white whatever the theme (the
+   column step aside for a small head (qualifier, dates, team, GolfHelm) over the leaderboard, in ink on white whatever the theme (the
    page's tokens are re-pointed to plain colours so a night page does not print a dark sheet). The ledger rules are kept
    (print-color-adjust: exact) and a row, with the cut line above it, never splits across pages. */
 .ch-qf-printhead {

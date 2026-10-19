@@ -5,7 +5,7 @@ import type { ChQDetailCore } from '../../data/qualifiers';
 import { rangeLabel } from './model';
 
 /**
- * The sheet's head when the page is printed (qualifiers.css, @media print): the qualifier, its dates and the team on the left, Golfhelm
+ * The sheet's head when the page is printed (qualifiers.css, @media print): the qualifier, its dates and the team on the left, GolfHelm
  * and the day it was printed on the right. Hidden on screen. The team is the top bar's own (the qualifier's data does not carry it),
  * read when the page mounts and again as the print starts, so a team switched since is the one on the paper.
  */
@@ -31,7 +31,7 @@ export function PrintHead({ data }: { data: ChQDetailCore }) {
         <span>{[team, rangeLabel(data.startDate, data.endDate)].filter(Boolean).join(' · ')}</span>
       </div>
       <div>
-        <b>Golfhelm</b>
+        <b>GolfHelm</b>
         <span>{printed && `Printed ${printed}`}</span>
       </div>
     </div>

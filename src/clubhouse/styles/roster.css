@@ -2197,7 +2197,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 
 /* Print (the roster): one clean sheet of the list, in ink on white whatever the theme. A letter sheet is narrower than the phone
    breakpoint, so the page prints in its phone layout (.ch-rsm; useChPhone reads the print width); .ch-rs is the desktop one. The shell
-   hides its chrome; here the sort, the join banner and the invite action go too, "Golfhelm" joins the head, the ledger rules are kept
+   hides its chrome; here the sort, the join banner and the invite action go too, "GolfHelm" joins the head, the ledger rules are kept
    (print-color-adjust: exact) and a row never splits across pages. The app-wide print sheet hides every button, and the rows are
    buttons, so they are put back here. */
 @media print {
@@ -2261,7 +2261,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     grid-column: 1;
   }
   .ch-rsm .ch-rsm-head::after {
-    content: 'Golfhelm';
+    content: 'GolfHelm';
     grid-column: 2;
     grid-row: 1 / span 2;
     font: 700 16pt/1.15 var(--ch-font-sans);
