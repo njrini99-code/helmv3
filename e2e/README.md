@@ -247,7 +247,14 @@ Nightly in CI: `.github/workflows/clubhouse-journeys.yml`, against a stack
 started on the runner.
 
 1. `npx supabase start` (or `db reset`).
-2. Start `next dev --webpack` with `HELM_DEV_KEEP_ROUTES=1` and
+2. Preferred, as the nightly does: `VERCEL_ENV=preview next build --webpack`,
+   then `VERCEL_ENV=preview next start --port 3100`, with the variables below
+   (`VERCEL_ENV=preview` turns the Clubhouse flag on; nothing deploys). On
+   `next dev` the suite fails at random: a route compiled on a tap reloads the
+   page, and the dev server restarts past its memory threshold (2026-10-18:
+   16/16 twice on a production build, flaky on dev). A worktree whose
+   `node_modules` is a symlink must build with `--webpack` (Turbopack refuses
+   it). Or start `next dev --webpack` with `HELM_DEV_KEEP_ROUTES=1` and
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
    `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` and
    `SUPABASE_SERVICE_ROLE_KEY` set from `npx supabase status -o env`, for

@@ -17,12 +17,18 @@ name: Clubhouse journeys
 # a merge. No secrets: nothing here can reach production (the stack action
 # asserts a loopback URL, and the specs refuse any other Supabase host).
 #
-# Why `next dev`, not a production build: the accessibility scan reads the
-# /clubhouse-preview fixtures, which a production server answers 404, and one
-# server for both halves skips a ten-minute build. HELM_DEV_KEEP_ROUTES=1
-# (next.config.mjs) keeps every compiled route compiled, and the journeys spec
-# compiles every route it visits before the first write, so no hot update
-# reloads a page in the middle of a step.
+# Why a production build for the journeys: on `next dev` they failed at random
+# (local stack, 2026-10-18). A route compiled on its first request sends a hot
+# update that reloads the page under the test (every failed "Continue at hole
+# 2" lined up with "Compiling .../rounds/continue/[id]" and "Fast Refresh had
+# to perform a full reload"), and with HELM_DEV_KEEP_ROUTES=1 the dev server
+# grew past its memory threshold and restarted 4 times in one run, dropping
+# every compiled route. Against `next build --webpack` + `next start` the
+# same suite passed 16/16 twice in 2 minutes (19 minutes and flaky on dev).
+# VERCEL_ENV=preview makes the build resolve flags as a preview does, so the
+# Clubhouse UI is on; nothing here deploys. The accessibility scan still runs
+# on `next dev`: it reads the /clubhouse-preview fixtures, which a production
+# server answers 404.
 
 on:
   schedule:
@@ -50,7 +56,6 @@ jobs:
     timeout-minutes: 80
     env:
       NEXT_TELEMETRY_DISABLED: '1'
-      HELM_DEV_KEEP_ROUTES: '1'
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3100
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3100
       CH_BASE: http://127.0.0.1:3100
@@ -85,9 +90,47 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
 
-      - name: Start next dev against the local stack
+      - name: Production build against the local stack
+        timeout-minutes: 30
+        env:
+          VERCEL_ENV: preview
+        run: node scripts/serialize.mjs -- ./node_modules/.bin/next build --webpack
+
+      - name: Start the production server
+        env:
+          VERCEL_ENV: preview
         run: |
           set -euo pipefail
+          ./node_modules/.bin/next start --hostname 127.0.0.1 --port 3100 > /tmp/next-start.log 2>&1 &
+          echo $! > /tmp/next-start.pid
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null --max-time 30 "$CH_BASE/golf/login"; then
+              echo "Server ready after ${i} attempt(s)."
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/next-start.pid)" 2>/dev/null; then
+              echo "::error::next start died during startup"
+              cat /tmp/next-start.log
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::next start did not answer /golf/login within 2 minutes"
+          cat /tmp/next-start.log
+          exit 1
+
+      - name: Write journeys in Chromium and WebKit
+        timeout-minutes: 20
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse-journeys.config.ts
+
+      - name: Stop the production server, start next dev for the scan
+        if: success() || failure()
+        env:
+          HELM_DEV_KEEP_ROUTES: '1'
+        run: |
+          set -euo pipefail
+          kill "$(cat /tmp/next-start.pid)" 2>/dev/null || true
+          sleep 2
           ./node_modules/.bin/next dev --webpack --hostname 127.0.0.1 --port 3100 > /tmp/next-dev.log 2>&1 &
           echo $! > /tmp/next-dev.pid
           for i in $(seq 1 120); do
@@ -106,10 +149,6 @@ jobs:
           cat /tmp/next-dev.log
           exit 1
 
-      - name: Write journeys in Chromium and WebKit
-        timeout-minutes: 45
-        run: ./node_modules/.bin/playwright test --config playwright.clubhouse-journeys.config.ts
-
       # Every /clubhouse-preview state at 1280 and 390px, light and dark
       # (docs/clubhouse/ALL_PAGE_AUDIT.md logs the local runs). Advisory until
       # its dark run is clean: see the latest entry there.
@@ -123,9 +162,11 @@ jobs:
         shell: bash
         run: node scripts/clubhouse/a11y.mjs 2>&1 | tee /tmp/clubhouse-a11y.log
 
-      - name: Stop next dev
+      - name: Stop the servers
         if: always()
-        run: kill "$(cat /tmp/next-dev.pid)" 2>/dev/null || true
+        run: |
+          kill "$(cat /tmp/next-dev.pid)" 2>/dev/null || true
+          kill "$(cat /tmp/next-start.pid)" 2>/dev/null || true
 
       - name: Upload reports, failure traces and server log
         if: always()
@@ -136,6 +177,7 @@ jobs:
             test-results/clubhouse-journeys/
             playwright-report/clubhouse-journeys/
             /tmp/next-dev.log
+            /tmp/next-start.log
             /tmp/clubhouse-a11y.log
           if-no-files-found: warn
           retention-days: 7

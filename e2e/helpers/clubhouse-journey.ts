@@ -41,7 +41,8 @@ export async function warmRoutes(browser: Browser, who: { email: string; passwor
     for (const path of paths) {
       await expect(async () => {
         await page.goto(path, { timeout: 240_000 });
-        await expect(page.locator('.ch-root')).toBeVisible({ timeout: 120_000 });
+        // .first(): while a page streams, its route skeleton's .ch-root and the frame's are both in the document.
+        await expect(page.locator('.ch-root').first()).toBeVisible({ timeout: 120_000 });
       }).toPass({ timeout: 10 * 60_000 });
     }
   } finally {

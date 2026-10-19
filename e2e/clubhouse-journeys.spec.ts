@@ -58,7 +58,7 @@ const player = () => team.players[0]!;
 
 async function open(page: Page, path: string) {
   await page.goto(path, { timeout: 180_000 });
-  await expect(page.locator('.ch-root')).toBeVisible({ timeout: 120_000 });
+  await expect(page.locator('.ch-root').first()).toBeVisible({ timeout: 120_000 });
 }
 
 test('Calendar: a coach publishes an event for the team, then edits it', async ({ page }) => {
@@ -156,7 +156,8 @@ test('Team Hub: a coach posts an announcement that asks players to acknowledge i
   const [post] = await sql<{ id: string; ack: boolean }>('select id, requires_acknowledgement as ack from golf_announcements where team_id = $1 and title = $2', [team.teamId, headline]);
   expect(post?.ack, 'the announcement is stored and asks for acknowledgement').toBe(true);
   const recipients = await sql<{ n: number }>('select count(*)::int as n from golf_announcement_recipients where announcement_id = $1', [post!.id]);
-  expect(recipients[0]!.n, 'it is addressed to every player').toBe(team.players.length);
+  // A whole-team post has no recipient rows: none is how every reader tells "all team" (announcements.ts, step 2).
+  expect(recipients[0]!.n, 'a whole-team post names no recipients').toBe(0);
 });
 
 test('Team Hub: a player acknowledges the announcement', async ({ page }) => {
