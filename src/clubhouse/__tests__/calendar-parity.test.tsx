@@ -56,6 +56,10 @@ import { Calendar } from '../screens/calendar/Calendar';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR } from '../preview/fixtures-calendar';
 import './dialog-polyfill';
+import { formatDate, localToday } from '../ui/date-time';
+
+/** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
+const fieldDate = (iso: string) => formatDate(iso, { omitYear: iso.slice(0, 4) === localToday().slice(0, 4) });
 
 const freezeClock = () => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -208,7 +212,7 @@ describe('Calendar parity · a timed event over several days is on every day it 
     wrap(cal([TOUR[2]!]), 'inv');
     await user.click(await screen.findByRole('button', { name: 'Edit event' }));
     const box = await screen.findByRole('textbox', { name: 'Event title' });
-    expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('Fri 16 Oct 2026');
+    expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe(fieldDate('2026-10-16'));
     expect((screen.getByLabelText('Start time') as HTMLInputElement).value).toBe('7:00 AM');
     expect((screen.getByLabelText('End time') as HTMLInputElement).value).toBe('4:30 PM');
     expect(screen.getByText('Ends Sun 18 Oct')).toBeTruthy();

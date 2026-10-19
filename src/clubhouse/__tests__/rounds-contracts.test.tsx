@@ -47,6 +47,10 @@ import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH } from '../preview/fixtures-round-
 import { PREVIEW_ROUNDS, previewRow } from '../preview/fixtures-rounds';
 import { PREVIEW_SETUP_COURSES, PREVIEW_SETUP_QUALIFIERS, PREVIEW_SETUP_TEES, PREVIEW_SETUP_TODAY, previewTeeHoles } from '../preview/fixtures-setup';
 import type { ChSetupPorts } from '../screens/rounds/setup/shape';
+import { formatDate, localToday } from '../ui/date-time';
+
+/** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
+const fieldDate = (iso: string) => formatDate(iso, { omitYear: iso.slice(0, 4) === localToday().slice(0, 4) });
 
 // jsdom has no layout: the state machine scrolls the distance box into view.
 Element.prototype.scrollIntoView ??= function () {};
@@ -291,7 +295,7 @@ describe('111201 a Start that fails keeps the setup as it was, until the round o
     expect(onStarted).not.toHaveBeenCalled();
     // Everything is where it was.
     expect(dock()).toHaveTextContent('Finley GC · Blue · Back nine');
-    expect((screen.getByLabelText('Date') as HTMLInputElement).value).toMatch(/12 Oct 2026/);
+    expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe(fieldDate('2026-10-12'));
     expect(within(screen.getByRole('radiogroup', { name: 'Holes' })).getByRole('radio', { name: '9 holes' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByRole('radio', { name: 'Back 9' })).toHaveAttribute('aria-checked', 'true');
     expect(within(screen.getByRole('radiogroup', { name: 'Hole 12 par' })).getByRole('radio', { name: '5' })).toHaveAttribute('aria-checked', 'true');

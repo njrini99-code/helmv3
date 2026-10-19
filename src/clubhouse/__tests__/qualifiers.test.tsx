@@ -69,6 +69,10 @@ import { isRebuilt } from '../shell/nav';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
+import { formatDate, localToday } from '../ui/date-time';
+
+/** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
+const fieldDate = (iso: string) => formatDate(iso, { omitYear: iso.slice(0, 4) === localToday().slice(0, 4) });
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -411,7 +415,7 @@ describe('Qualifiers · the loader', () => {
     wrap(<QualifierForm data={previewEditForm()} writes={fakeWrites()} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Pinehurst qualifier' })).toBeTruthy();
     expect((screen.getByLabelText('Qualifier name') as HTMLInputElement).value).toBe('Pinehurst qualifier');
-    expect((screen.getByLabelText('Start date') as HTMLInputElement).value).toBe('Tue 22 Sep 2026');
+    expect((screen.getByLabelText('Start date') as HTMLInputElement).value).toBe(fieldDate('2026-09-22'));
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy();
   });
 
