@@ -1,5 +1,28 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-19 — Team stats on an iPad: the tape in two rows and a leaderboard that fits
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (821 to 1180px, `stats.css` end block): on a canvas under 721px the five-figure tape takes two rows (three, then two) instead of five 110px cards whose figures overlapped their changes. Under 861px the leaderboard's leg grid drops its 760px minimum width and narrows the leg columns, so it no longer scrolls sideways on an 834px portrait or a 1024px Pro.
+
+### Why
+
+- An iPad portrait with the sidebar open leaves a 618px canvas; the page was tuned from about 860px up. 1181px and wider is unchanged.
+
+### Verification
+
+- WebKit, touch, 834x1194 / 1024x768 open and folded; the leaderboard's scrollWidth equals its clientWidth at both; the rules sit in a `screen and (821px to 1180px)` media query, so 1181px and wider and print do not match them.
+
 ## 2026-10-19 — Stats you can read like a scorecard (L6a)
 
 ```text

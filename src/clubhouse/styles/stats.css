@@ -6431,3 +6431,39 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
     break-after: avoid;
   }
 }
+
+/* -- W4c tablet tier (a canvas under 861px: an iPad portrait with the sidebar open leaves 618px) --------------------
+   Team stats was tuned from a canvas of about 860px up. Two things broke below it. The tape's five 110px cards put the
+   figure on top of its change and the label under the next card, so it takes two rows (three, then two) with the seam
+   between them. The leg grid forced 760px of minimum width, which scrolled sideways when the canvas could hold it with
+   narrower leg columns. The container is the canvas (shell.css). The media query keeps it to a tablet on screen: the
+   phone has its own tree, 1181px and wider is untouched, and paper keeps the desktop view as it is. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 720px) {
+    .ch-st[data-canopy] .ch-tp {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c {
+      grid-column: span 2;
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(n + 4) {
+      grid-column: span 3;
+      box-shadow: inset 0 1px 0 rgb(176 149 96 / 0.34);
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(4) {
+      padding-left: 22px;
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(5) {
+      box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.34), inset 0 1px 0 rgb(176 149 96 / 0.34);
+    }
+  }
+  @container (max-width: 860px) {
+    .ch-lg__r {
+      grid-template-columns: minmax(160px, 1.6fr) repeat(4, minmax(56px, 1fr)) 48px 60px;
+      min-width: 0;
+    }
+    .ch-lg__r .c {
+      padding: 0 8px;
+    }
+  }
+}
