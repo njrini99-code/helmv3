@@ -42,9 +42,11 @@ Held items:     the native flag window.__helmNativeSwipe (Swift) and shell/Dock.
   the dock kept or hidden per screen, the stand-in action), `phone-prefetch-sweep.test.tsx` and `use-prefetch-tabs.test.tsx`
   (ordering, the two-at-a-time cap, guards, the two-minute rest).
 - Captured headless WebKit 390x844, light and dark, scripted touch events: mid-drag, past the mark, spring back, commit with the
-  page returning in step, a thread under its details; the dock over a profile; the stand-in bar against the page's own. Not
-  verified: a physical iPhone (Safari's own swipe against ours, haptics, VoiceOver after a swipe pop), the iOS app (the native
-  flag does not exist yet).
+  page returning in step (per-frame positions in VERIFY), a thread under its details (no frame moves the screen beneath backward);
+  the stand-in bar against the page's own. The dock over a profile was captured with the dock's `hidden` cleared by hand, because
+  `shell/Dock.tsx` is not yet wired: it shows the screen stopping above the accessory, not the dock staying. Not verified: a
+  physical iPhone (Safari's own swipe against ours, haptics, VoiceOver after a swipe pop), the iOS app (the native flag does not
+  exist yet), the idle prefetch in a production build.
 
 ## 2026-10-19 — Desktop command layer: palette, shortcuts, tooltips
 
