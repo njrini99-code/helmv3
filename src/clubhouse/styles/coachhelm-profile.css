@@ -98,6 +98,8 @@
 }
 .ch-hg-stand__v {
   font: 600 15px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-on-fill-50);
 }
 
@@ -216,11 +218,15 @@
 }
 .ch-hg-m__fig b {
   font: 600 20px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--ch-hg-ink);
 }
 .ch-hg-m__fig span {
   font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hg-m__edge {
@@ -348,6 +354,7 @@
   justify-content: space-between;
   gap: 12px;
   font: 400 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 
@@ -824,6 +831,7 @@ main[data-canopy] .ch-hg-hero.ch-scoreboard .ch-hg-stand__c,
   gap: 8px;
   margin: 26px 0 10px;
   font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
 .ch-hg-grp span {
@@ -835,6 +843,7 @@ main[data-canopy] .ch-hg-hero.ch-scoreboard .ch-hg-stand__c,
   border-radius: 999px;
   background: var(--ch-green-fill-600);
   font: 700 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-on-fill-50);
 }
 .ch-hg-grp.is-locked span {
