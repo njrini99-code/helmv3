@@ -5530,6 +5530,29 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   background: var(--ch-green-50);
   color: var(--ch-green-600);
 }
+/* Reading a round: the ribbon takes a drag across it (a finger scrolls the page up and down, never sideways here) and the arrow keys. */
+.ch-st[data-canopy] .ch-fm__bars {
+  touch-action: pan-y;
+  cursor: default;
+}
+.ch-st[data-canopy] .ch-fm__bars:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 8px;
+  border-radius: 10px;
+}
+.ch-st[data-canopy] .ch-fm__head p.ch-fm__read {
+  font: 600 14px/1.45 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-fm__c.is-read {
+  border-radius: 10px;
+  background: rgb(176 149 96 / 0.12);
+}
+.ch-st[data-canopy] .ch-fm__c.is-read .ch-fm__d {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
 .ch-st[data-canopy] .ch-fm__key {
   display: flex;
   flex-wrap: wrap;

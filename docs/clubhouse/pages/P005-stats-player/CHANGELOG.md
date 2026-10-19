@@ -19,6 +19,7 @@ Held items:     none
 - Game detail opens with every More detail collapsed (it opened expanded on desktop). A figure with no data no longer carries its caption underneath ("Tour 62%", "18 approaches" under an em dash).
 - Empty panels are the shared compact empty state, not a bare sentence: the five Game detail panels with nothing logged (drives, missed greens, missed putts, long first putts, putts with a break), the scoring-trend scoreboard and the form chart with no rounds, and the proximity bands that need more shots (now a title, with the bands and their counts as its sentence). A title carries no full stop.
 - One number voice: percentages are whole numbers everywhere on the page (the Tour column of the putting table, Best GIR and the share of holes that are doubles or worse used to carry a decimal), through the new `formatPct`; the scoring average's to par is `formatToPar` (E for even, a true minus) and the chart ticks use `formatSigned`, not hand-built signs.
+- The scoring form ribbon reads like a scorecard: a finger or pointer dragged across it, or the arrow keys (Home, End and Escape too) once it has focus, snaps to the nearest round and reads that round's date, course and score with to par in the ribbon's own header line, in place of its note, with the round's column lifted; a polite live region says the same. A vertical swipe still scrolls the page. Nothing animates, so reduced motion needs no swap.
 
 ## 2026-10-18 — Pickers and controls: filter date range, saving
 

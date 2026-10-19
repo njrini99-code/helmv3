@@ -374,7 +374,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 /** Memoised: the seven zones are the page's heaviest read, and the tab's own state (the focus sheet, a transition) must not recompute them. */
 const Overview = memo(function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const first = data.firstName;
-  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
+  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, course: r.course, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   // Seven zones, one per stat area; the last holds the scoring-form ribbon. Every figure is read from the profile (see OverviewZones).
   return (
     <OverviewZones
@@ -382,7 +382,7 @@ const Overview = memo(function Overview({ data, coach }: { data: ChPlayerProfile
       coach={coach}
       ribbon={
         <PlayerStage
-          rounds={trendRounds.map((r) => ({ label: r.label, score: r.score, toPar: r.toPar, holes: r.holes }))}
+          rounds={trendRounds.map((r) => ({ label: r.label, course: r.course, score: r.score, toPar: r.toPar, holes: r.holes }))}
           first={first}
           coach={coach}
           teamAvg={data.teamAvg}
