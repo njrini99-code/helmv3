@@ -5087,22 +5087,9 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-tp__c + .ch-tp__c {
   box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.34);
 }
-.ch-st[data-canopy] .ch-tp__c::before {
-  position: absolute;
-  top: 0;
-  right: 20px;
-  left: 20px;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: var(--ch-border-strong);
-  content: '';
-}
-.ch-st[data-canopy] .ch-tp__c.is-good::before {
-  background: var(--ch-green-500);
-}
-.ch-st[data-canopy] .ch-tp__c.is-bad::before {
-  background: var(--ch-champagne-500);
-}
+/* No coloured bar across a figure's top: the change under the number already says better or worse in its arrow and ink, and a
+   status is a dot or a word, never a stripe (owner's call left open on #2202; taken in the 2026-10-19 Stats pass, revert this
+   commit to restore the bars). */
 .ch-st[data-canopy] .ch-tp__l {
   padding-right: 52px;
   color: var(--ch-text-primary);
