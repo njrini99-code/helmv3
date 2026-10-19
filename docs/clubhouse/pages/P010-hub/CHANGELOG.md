@@ -1,5 +1,30 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (hub.css)
+
+- The task ring's numeral and the date tile keep their size; the remaining announcement headings and the pass figure follow the iPhone's text size.
+- Radii on the 5, 7, 10, 14, 20 scale.
+- The phone "5 of 6 acknowledged" count and the attached-document chip reach 44px; on a pointer the chip, the count, the waiver box and the updates rows have a hover state.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
 ## 2026-10-19 — In-flight saves are busy; icon buttons have tooltips; the tabs fade a clipped edge
 
 ```text
