@@ -88,7 +88,8 @@ test('a player sets up a round, saves it for later, continues it and submits all
 
   await test.step('play holes 2 to 18 and submit', async () => {
     for (let hole = 2; hole <= 18; hole++) await birdie(page, hole);
-    await page.getByRole('button', { name: /^Submit/ }).click();
+    // main says Submit round; #2202 renames it Post round (round-sheets.tsx). Either posts the round.
+    await page.getByRole('button', { name: /^(Submit|Post) round/ }).click();
   });
 
   await test.step('the database holds a completed round with 18 scored holes', async () => {

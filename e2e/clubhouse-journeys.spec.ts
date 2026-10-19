@@ -179,6 +179,12 @@ test('Team Hub: a player acknowledges the announcement', async ({ page }) => {
     .toBe(true);
 });
 
+/** The save landed: main greys Save changes out; #2202's Settings removes its save bar once nothing is unsaved. */
+async function saveSettled(section: Locator) {
+  const save = section.getByRole('button', { name: 'Save changes', exact: true });
+  await expect.poll(async () => (await save.count()) === 0 || (await save.isDisabled()), { timeout: 60_000 }).toBe(true);
+}
+
 test('Settings: a coach changes their name', async ({ page }) => {
   const name = `Dana Whitfield-Reyes`;
   await signIn(page, coach());
@@ -186,7 +192,7 @@ test('Settings: a coach changes their name', async ({ page }) => {
   const profile = page.getByRole('region', { name: 'Profile' });
   await profile.getByRole('textbox', { name: 'Full name' }).fill(name);
   await profile.getByRole('button', { name: 'Save changes', exact: true }).click();
-  await expect(profile.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled({ timeout: 60_000 });
+  await saveSettled(profile);
   await expect.poll(async () => (await sql<{ n: string }>('select full_name as n from golf_coaches where id = $1', [team.coach.coachId]))[0]?.n).toBe(name);
 });
 
@@ -197,7 +203,7 @@ test('Settings: a player changes their name', async ({ page }) => {
   await profile.getByRole('textbox', { name: 'First name' }).fill('Theodore');
   await profile.getByRole('textbox', { name: 'Last name' }).fill('Marsh-Ellery');
   await profile.getByRole('button', { name: 'Save changes', exact: true }).click();
-  await expect(profile.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled({ timeout: 60_000 });
+  await saveSettled(profile);
   await expect
     .poll(async () => sql('select first_name, last_name from golf_players where id = $1', [player().playerId]))
     .toEqual([{ first_name: 'Theodore', last_name: 'Marsh-Ellery' }]);
