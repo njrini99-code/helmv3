@@ -1,5 +1,22 @@
 # P015 — Auth: changelog
 
+## 2026-10-19 — The new-coach guard reads its errors
+
+```text
+Design package: none (CI: helm/no-unchecked-supabase-error ratchet)
+PR/commit:      #2210
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- screens/onboard/coach-guard.ts binds `error` on its coach and player row reads. A failed read keeps the person on the
+  new-coach page (an unread coach row counts as present, an unread player row as absent), so a failure never sends a
+  coach to the player dashboard.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text

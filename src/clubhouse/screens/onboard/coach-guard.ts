@@ -60,13 +60,15 @@ export function browserCoachGuard(): CoachGuardDeps {
       return { user: r.data.user, failed: !!r.error };
     },
     entry: () => getGolfCoachEntry(),
+    // A read that fails keeps the person on this page: an unread coach row counts as present and an unread player row
+    // as absent, so a failure never sends a coach to the player dashboard.
     async hasCoachRow(userId) {
-      const { data } = await supabase.from('golf_coaches').select('id, onboarding_completed').eq('user_id', userId).maybeSingle();
-      return !!data;
+      const { data, error } = await supabase.from('golf_coaches').select('id, onboarding_completed').eq('user_id', userId).maybeSingle();
+      return error ? true : !!data;
     },
     async hasPlayerRow(userId) {
-      const { data } = await supabase.from('golf_players').select('id').eq('user_id', userId).maybeSingle();
-      return !!data;
+      const { data, error } = await supabase.from('golf_players').select('id').eq('user_id', userId).maybeSingle();
+      return error ? false : !!data;
     },
     wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   };
