@@ -304,7 +304,7 @@ export function RoundCard({ review: r, phone, just, settle }: { review: ChRoundR
   const [sharing, setSharing] = useState(false);
   const tone = m.total.toPar == null || m.total.toPar === 0 ? '' : m.total.toPar < 0 ? ' is-under' : ' is-over';
   return (
-    <section className="ch-rcard-wrap ch-rprint-keep" aria-label="Scorecard to keep" data-ch-code="CH-11920">
+    <section id="ch-rcard" className="ch-rcard-wrap ch-rprint-keep" aria-label="Scorecard to keep" data-ch-code="CH-11920">
       <article className={'ch-rcard' + (settle ? ' is-just' : '') + (phone ? ' is-phone' : '')} aria-labelledby="ch-rcard-h">
         {/* On the page the hero above already names the round, so the card's head is quiet: its name, its tees and its total. */}
         <div className="ch-rcard-h">
