@@ -55,6 +55,7 @@ function makeWrites(over: Partial<OnboardWrites> = {}): OnboardWrites {
     ),
     createAccount: vi.fn(async (i) => (i.kind === 'staff' ? { ok: true as const, redirectTo: '/golf/dashboard', staffJoined: true } : { ok: true as const, redirectTo: '/golf/player?joinCode=K7PQX4MN', staffJoined: false })),
     finishPlayer: vi.fn(async () => ({ ok: true as const, joinedTeam: true })),
+    finishCoach: vi.fn(async () => ({ ok: true as const, joinCode: 'M4RT2KQ9' })),
     uploadPhoto: vi.fn(async () => ({ ok: true as const, url: 'https://example.test/a.png' })),
     sendRequest: vi.fn(async () => ({ ok: true as const })),
     ...over,

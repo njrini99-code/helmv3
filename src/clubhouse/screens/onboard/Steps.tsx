@@ -87,9 +87,9 @@ export interface StepProps {
 /** The pause after the eighth character before the code checks itself (design: 800ms). */
 const CODE_PAUSE_MS = 800;
 /** A choice advances after its tick has been seen (design: 260 to 280ms). */
-const CHOICE_MS = 270;
+export const CHOICE_MS = 270;
 
-function Q({
+export function Q({
   eyebrow,
   title,
   sub,
@@ -137,7 +137,7 @@ function Q({
   );
 }
 
-function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight, children, phone }: { label?: string; disabled?: boolean; busy?: boolean; busyLabel?: string; icon?: typeof ArrowRight; children?: ReactNode; phone: boolean }) {
+export function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight, children, phone }: { label?: string; disabled?: boolean; busy?: boolean; busyLabel?: string; icon?: typeof ArrowRight; children?: ReactNode; phone: boolean }) {
   return (
     <div className="ch-ox-act">
       <Button type="submit" variant="primary" size="lg" rightIcon={busy ? undefined : icon} disabled={disabled || busy}>
@@ -154,7 +154,7 @@ function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight,
 }
 
 /** A refused answer puts the cursor in the field it names (CH-15624), as sign in does (CH-15802): after the render that marks it, so the field is read out with its error. */
-const focusField = (id: string) => setTimeout(() => document.getElementById(id)?.focus(), 0);
+export const focusField = (id: string) => setTimeout(() => document.getElementById(id)?.focus(), 0);
 
 const Tick = () => (
   <span className="ch-ox-tick" aria-hidden="true">
@@ -1094,7 +1094,7 @@ export function RWho({ d, up, next, back, dir }: StepProps) {
   );
 }
 
-function Field({ id, label, optional, error, help, children }: { id: string; label: string; optional?: boolean; error?: string | null; help?: string; children: ReactNode }) {
+export function Field({ id, label, optional, error, help, children }: { id: string; label: string; optional?: boolean; error?: string | null; help?: string; children: ReactNode }) {
   return (
     <div className="ch-ox-field">
       <label htmlFor={id}>
@@ -1256,7 +1256,8 @@ export function Sent({ d, dir }: StepProps) {
   );
 }
 
-export const STEPS: Record<OnboardStep, (p: StepProps) => ReactNode> = {
+/** Sign up's and the new player's questions; a new coach's are in CoachSteps, and `steps-map.ts` joins them. */
+export const PLAYER_STEPS: Record<Exclude<OnboardStep, 'cprogram' | 'cprofile' | 'cdone'>, (p: StepProps) => ReactNode> = {
   intro: Intro,
   code: Code,
   name: Name,

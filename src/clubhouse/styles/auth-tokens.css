@@ -26,6 +26,9 @@
   --ch-au-t-err: 220ms;
   /* A refusal about the fields shakes them once (the sign-up code's shake, --ch-ox-t-shake). */
   --ch-au-t-shake: 380ms;
+  /* A character landing in the team code's box, and the caret that waits for the next (sign up's --ch-ox-t-key, --ch-ox-t-caret). */
+  --ch-au-t-key: 260ms;
+  --ch-au-t-caret: 1s;
   --ch-au-t-sheet: 760ms;
   --ch-au-t-sheet-fade: 500ms;
   /* The phone's sheet rising over the keyboard and settling back, about the keyboard's own pace. */
@@ -72,6 +75,7 @@
     --ch-au-t-panel-move: 1ms;
     --ch-au-t-err: 1ms;
     --ch-au-t-shake: 1ms;
+    --ch-au-t-key: 1ms;
     --ch-au-t-sheet: 1ms;
     --ch-au-t-sheet-fade: 1ms;
     --ch-au-t-kb: 1ms;
@@ -100,6 +104,7 @@
   --ch-au-t-panel-move: 1ms;
   --ch-au-t-err: 1ms;
   --ch-au-t-shake: 1ms;
+  --ch-au-t-key: 1ms;
   --ch-au-t-sheet: 1ms;
   --ch-au-t-sheet-fade: 1ms;
   --ch-au-t-kb: 1ms;

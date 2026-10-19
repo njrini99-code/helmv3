@@ -25,15 +25,20 @@ export type OnboardStep =
   | 'staffdone'
   | 'rwho'
   | 'rdetails'
-  | 'sent';
+  | 'sent'
+  | 'cprogram'
+  | 'cprofile'
+  | 'cdone';
 
-export type OnboardPath = 'pre' | 'player' | 'staff' | 'request';
+export type OnboardPath = 'pre' | 'player' | 'staff' | 'request' | 'coach';
 
 export const PLAN: Record<OnboardPath, readonly OnboardStep[]> = {
   pre: ['intro', 'code'],
   player: ['intro', 'code', 'name', 'grad', 'account', 'game', 'photo', 'done'],
   staff: ['intro', 'code', 'name', 'account', 'staffdone'],
   request: ['intro', 'rwho', 'rdetails', 'sent'],
+  // A new head coach, signed in already, makes the program and the team (/golf/coach): the account came first.
+  coach: ['cprogram', 'cprofile', 'cdone'],
 };
 
 /** The rail's section for each question (full-screen moments have none). */
@@ -46,18 +51,21 @@ export const SECTION: Partial<Record<OnboardStep, string>> = {
   photo: 'Photo',
   rwho: 'You',
   rdetails: 'Details',
+  cprogram: 'Program',
+  cprofile: 'Profile',
 };
 
 /** Screens where the question pane gives way to the whole scene. */
-export const FULL_STEPS: ReadonlySet<OnboardStep> = new Set(['intro', 'done', 'staffdone', 'sent']);
+export const FULL_STEPS: ReadonlySet<OnboardStep> = new Set(['intro', 'done', 'staffdone', 'sent', 'cdone']);
 
 /** Steps the account exists by: Back never returns across the account. */
-export const AFTER_ACCOUNT: ReadonlySet<OnboardStep> = new Set(['game', 'photo', 'done', 'staffdone']);
+export const AFTER_ACCOUNT: ReadonlySet<OnboardStep> = new Set(['game', 'photo', 'done', 'staffdone', 'cprogram', 'cprofile', 'cdone']);
 
 export type CodeKind = 'roster' | 'staff';
 
-export function pathOf(intent: 'code' | 'request' | null, kind: CodeKind | null): OnboardPath {
+export function pathOf(intent: 'code' | 'request' | 'program' | null, kind: CodeKind | null): OnboardPath {
   if (intent === 'request') return 'request';
+  if (intent === 'program') return 'coach';
   if (kind === 'staff') return 'staff';
   if (kind === 'roster') return 'player';
   return 'pre';
@@ -303,3 +311,40 @@ export function requestMessage(d: RequestDetails): string {
     .filter(Boolean)
     .join('\n');
 }
+
+// ── New program (a head coach) ───────────────────────────────────────────────
+
+/** The divisions today's /golf/coach offers, in its order. */
+export const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA', 'NJCAA', 'Club'] as const;
+
+export interface ProgramDetails {
+  org: string;
+  division: string;
+  conference: string;
+  city: string;
+  state: string;
+  /** Left blank, the server names it "<school> Golf". */
+  team: string;
+  gender: 'mens' | 'womens';
+}
+
+export const EMPTY_PROGRAM: ProgramDetails = { org: '', division: '', conference: '', city: '', state: '', team: '', gender: 'mens' };
+
+/** Today's one required answer about the program, and the two location rules sign up already has. */
+export function programProblem(p: ProgramDetails): { field: 'org' | 'state'; message: string } | null {
+  if (!p.org.trim()) return { field: 'org', message: 'Enter your school or organization.' };
+  const where = hometownProblem(p.city, p.state);
+  if (where) return { field: 'state', message: where };
+  return null;
+}
+
+export function coachNameProblem(first: string, last: string): { field: 'first' | 'last'; message: string } | null {
+  if (!first.trim()) return { field: 'first', message: 'Enter your first name.' };
+  if (!last.trim()) return { field: 'last', message: 'Enter your last name.' };
+  return null;
+}
+
+/** What the program is called when no team name is typed: the server's own default, shown so it is no surprise. */
+export const teamNameFor = (p: ProgramDetails): string => p.team.trim() || (p.org.trim() ? `${p.org.trim()} Golf` : '');
+
+export const COACH_INVITE_PATH = (code: string): string => `/golf/join/${code}`;

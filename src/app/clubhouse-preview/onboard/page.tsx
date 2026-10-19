@@ -2,15 +2,16 @@ import { notFound } from 'next/navigation';
 import { PreviewOnboard } from '@/clubhouse/preview/PreviewOnboard';
 import type { OnboardStep } from '@/clubhouse/screens/onboard/logic';
 
-const STEPS: readonly OnboardStep[] = ['intro', 'code', 'name', 'grad', 'account', 'game', 'photo', 'done', 'staffdone', 'rwho', 'rdetails', 'sent'];
+const STEPS: readonly OnboardStep[] = ['intro', 'code', 'name', 'grad', 'account', 'game', 'photo', 'done', 'staffdone', 'rwho', 'rdetails', 'sent', 'cprogram', 'cprofile', 'cdone'];
 
 /**
  * Dev-only preview of sign up and onboarding, over sample answers, with every
  * server call faked (there is one database, and it is production). 404 in production.
  *
- *   /clubhouse-preview/onboard ?step=intro|code|name|grad|account|game|photo|done|staffdone|rwho|rdetails|sent
+ *   /clubhouse-preview/onboard ?step=intro|code|name|grad|account|game|photo|done|staffdone|rwho|rdetails|sent|cprogram|cprofile|cdone
  *     &who=invite (intro from an invite link) | matched (code already matched) | staff (the assistant's path) | joinfail (done, join failed)
- *     &sim=network | exists | breached | joinfail | upload   (the call that fails, and how)
+ *     &sim=network | exists | breached | joinfail | upload   (the call that fails, and how; refused for the coach's program)
+ *     a new coach (/golf/coach): step=cprogram|cprofile|cdone, &who=filled (answers in) | nocode (done, no code issued)
  *     &hour=6.4 | 12.5 | 18.6 | 22   (a fixed time of day for the course; otherwise the viewer's clock)
  *   Codes that match: K7PQX4MN (roster, Varsity Golf), S4VN8QRT (staff). Anything else does not.
  */
