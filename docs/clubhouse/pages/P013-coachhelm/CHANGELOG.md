@@ -1,5 +1,31 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (coachhelm.css, coachhelm-ask.css, coachhelm-dive.css, coachhelm-profile.css, coachhelm-standing.css, coachhelm-thread.css, coachhelm-views.css)
+
+- Figures and labels still in pixels (the dive hero and measure values, the standing "you" figures, the focus and bars values, the thread's bar and rank values) follow the iPhone's text size. The thread's chart axis and reference labels keep theirs (SVG text).
+- Radii on the 5, 7, 10, 14, 20 scale.
+- The phone's chat header keys, history keys and rows, question pills, composer chips, the thread's copy key, pills, chips and the "View as table" toggle reach 44px; the toggle, the work row, "Why we think this", the profile measure disclosure and the ask finder link have a hover state.
+- The thread's bar and rank values, and the profile's measure, standing and score figures, use tabular numerals.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
 ## 2026-10-19 — In-flight actions are busy; one spinner; icon buttons have tooltips; chip and player rows fade a clipped edge
 
 ```text
