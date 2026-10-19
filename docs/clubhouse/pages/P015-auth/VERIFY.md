@@ -53,7 +53,7 @@ authentication test.
 | `auth-reset.test.tsx` (2026-10-19: the new-password page: the link verified once, the rules and refusals, CH-15030 to CH-15133, CH-15430, CH-15431, CH-15930 to CH-15932; `describeResetFailure` and the Supabase calls held to today's page) | pass (14) |
 | `auth-join.test.tsx` (2026-10-19: the code field's typing, paste, Backspace and growth; `/golf/join`, the confirm, already-a-member, another team, the wrong account and an invalid code, CH-15032, CH-15033, CH-15140, CH-15141, CH-15432, CH-15436, CH-15933 to CH-15939) | pass (15) |
 | `auth-staff.test.tsx` (2026-10-19: an invalid invitation, accept, create, the wrong account, an account made without its staff row; CH-15034, CH-15142, CH-15433, CH-15940 to CH-15946) | pass (11) |
-| `auth-demo-pending.test.tsx` (2026-10-19: the demo's checks, ref, destination and refusals, and waiting for approval: Check again, the minute's look, sign out; CH-15036, CH-15143, CH-15435, CH-15960 to CH-15972) | pass (13) |
+| `auth-demo-pending.test.tsx` (2026-10-19: the demo's checks, ref, destination and refusals, and waiting for approval: Check again, the minute's look, sign out; CH-15036, CH-15143, CH-15435, CH-15960 to CH-15972) | pass (12) |
 | `onboard-coach.test.tsx` (2026-10-19: the coach path, its draft key, the program's questions, the action's fields, the code, the guard; CH-15035, CH-15143, CH-15950 to CH-15953) | pass (18) |
 | `front-door-routes.test.tsx` (2026-10-19: the layouts and pages that choose Fairway or Clubhouse; flag off is today's page, flag on is Clubhouse's, and a client page's children are never replaced) | pass (7) |
 | `auth-credentials.test.ts` (Q-98: the server's wrong-password text reads as the design's, attempts kept) | pass |
@@ -71,6 +71,9 @@ authentication test.
   `/clubhouse-preview/auth` (`screen=reset|join|joinconfirm|staff|pending|demo`) and `/clubhouse-preview/onboard`
   (`step=cprogram|cprofile|cdone`): every state the new screens draw, looked at as contact sheets and then opened where
   anything looked off (Screenshots, below, files the evidence set).
+  - Final set (the last code): all 48 states in the list below, each at 390 and 1280 in light and in dark (192 captures), read as
+    contact sheets of six (phone) and eight (desktop) states with light over dark. The Next dev badge in the corner and the
+    "Compiling" pill in two captures are the dev server's, not the page.
   - The new-password page in every stage (checking, the form, the other-account line, a field refusal, a mismatch, a
     banner, expired, sent, saved); the team code empty, partly and fully typed, ten characters and too short; the confirm,
     long names, already on this team, another team, a refused join and a code that names no team; the staff invitation

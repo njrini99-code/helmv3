@@ -27,7 +27,7 @@ const GATE_SCREENS: readonly string[] = ['reset', 'join', 'joinconfirm', 'staff'
  *     pending: &state=waiting | checked | noname | signoutfail
  *     demo:    &state=form | invite (the address a demo email carries) | expired | problem | refused | signedin | checking | live (checks the session; &sim=signedin | refused)
  */
-export default async function ClubhouseAuthPreview({ searchParams }: { searchParams: Promise<{ screen?: string; state?: string; fail?: string; hour?: string; go?: string; pending?: string; sim?: string; previous?: string; fail?: string }> }) {
+export default async function ClubhouseAuthPreview({ searchParams }: { searchParams: Promise<{ screen?: string; state?: string; fail?: string; hour?: string; go?: string; pending?: string; sim?: string; previous?: string }> }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen, state, fail, hour, go, pending, sim, previous } = await searchParams;
   const h = hour === undefined ? undefined : Number(hour);

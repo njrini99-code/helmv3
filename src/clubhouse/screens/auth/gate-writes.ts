@@ -2,6 +2,7 @@
 
 import { processGolfTeamInvitation, redeemStaffInvite } from '@/app/golf/actions/teams';
 import { signupWithStaffInviteAction } from '@/app/golf/actions/auth';
+import { probeSignedIn } from '@/lib/demo/gate-probe';
 import { createClient } from '@/lib/supabase/client';
 import { chEndSession } from '../../lib/sign-out';
 
@@ -28,12 +29,9 @@ export const gateWrites: GateWrites = {
   redeemStaff: redeemStaffInvite,
   signUpStaff: signupWithStaffInviteAction,
   async signedIn() {
-    try {
-      const { data } = await createClient().auth.getUser();
-      return data.user ? { email: data.user.email ?? null } : null;
-    } catch {
-      return null;
-    }
+    // A hard deadline, and any failure reads as signed out, so a stale cookie can never leave the invitation on "checking" (#918).
+    const user = await probeSignedIn(createClient());
+    return user ? { email: user.email ?? null } : null;
   },
   async switchAccount(returnTo) {
     await chEndSession('auth.gate');
