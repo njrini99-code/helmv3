@@ -876,6 +876,7 @@
   .ch-ev--tournament:hover,
   .ch-ev--qualifier:hover,
   .ch-ev--travel:hover,
+  .ch-ev--busy:hover,
   .ch-ev-bar:hover {
     box-shadow: var(--ch-elevation-chip-hover);
   }
@@ -3276,4 +3277,14 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
 .ch-calm-week__d i span.is-reply,
 .ch-calm-week__d.is-on i span.is-reply {
   background: var(--ch-warning-600);
+}
+
+/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
+@media (hover: hover) {
+  .ch-in__next:hover {
+    background: var(--ch-green-fill-600);
+  }
+  .ch-in__today .ch-in__next:hover {
+    background: rgb(255 255 255 / 0.16);
+  }
 }
