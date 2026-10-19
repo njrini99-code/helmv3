@@ -3885,3 +3885,164 @@ button.ch-qf-prounds__r.is-open {
     background: var(--ch-bg-surface);
   }
 }
+
+/* Print (the qualifier's page): one clean sheet. The app's chrome is hidden by the shell; here the qualifier's own head, facts and side
+   column step aside for a small head (qualifier, dates, team, Golfhelm) over the leaderboard, in ink on white whatever the theme (the
+   page's tokens are re-pointed to plain colours so a night page does not print a dark sheet). The ledger rules are kept
+   (print-color-adjust: exact) and a row, with the cut line above it, never splits across pages. */
+.ch-qf-printhead {
+  display: none;
+}
+/* Printing a page narrower than the phone breakpoint (a letter sheet is 720px) switches the page to its phone layout (useChPhone reads
+   the print width), so the sheet is set for both layouts: .ch-qf--detail is the desktop one, .ch-qfm the phone's. */
+@media print {
+  .ch-qf--detail,
+  .ch-qfm {
+    --ch-text-primary: black;
+    --ch-text-secondary: dimgray;
+    --ch-text-tertiary: dimgray;
+    --ch-ink-950: black;
+    --ch-ink-900: black;
+    --ch-ink-800: black;
+    --ch-ink-700: dimgray;
+    --ch-ink-600: dimgray;
+    --ch-ink-500: dimgray;
+    --ch-ink-400: gray;
+    --ch-ink-300: gray;
+    --ch-border-strong: gray;
+    --ch-green-500: darkgreen;
+    --ch-green-600: darkgreen;
+    --ch-warning-600: saddlebrown;
+    --ch-warning-700: saddlebrown;
+    --ch-ink-rule: gray;
+    --ch-ledger-rule: gray;
+    --ch-ledger-rule-soft: silver;
+    --ch-bg-surface: white;
+    --ch-score-under: firebrick;
+    --ch-chart-loss: sienna;
+    --ch-chart-gain: darkgreen;
+    --ch-ledger-eyebrow: dimgray;
+    --ch-green-700: darkgreen;
+    --ch-forest-800: black;
+    max-width: none;
+    padding: 0;
+    background: white;
+    color: black;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-qf--detail > :not(.ch-qf-printhead, .ch-qf-body),
+  .ch-qfm > :not(.ch-qf-printhead, .ch-qf-board) {
+    display: none !important;
+  }
+  .ch-qf-printhead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16pt;
+    margin-bottom: 14pt;
+    padding-bottom: 8pt;
+    border-bottom: 1.5pt solid black;
+  }
+  .ch-qf-printhead > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3pt;
+  }
+  .ch-qf-printhead > div:last-child {
+    align-items: flex-end;
+    text-align: right;
+  }
+  .ch-qf-printhead b {
+    font: 700 16pt/1.15 var(--ch-font-sans);
+    color: black;
+  }
+  .ch-qf-printhead span {
+    font: 500 10pt/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: dimgray;
+  }
+  .ch-qf--detail .ch-qf-body {
+    display: block;
+  }
+  .ch-qf--detail .ch-qf-body > .ch-qf-col:not(:first-child),
+  .ch-qf--detail .ch-qf-col > .ch-qf-panel:not(.ch-qf-board),
+  .ch-qf-board .ch-qf-sp,
+  .ch-qf-board .ch-qf-feed,
+  .ch-qf-board .ch-qf-open,
+  .ch-qf-board [id^='ch-qf-tray-'],
+  .ch-qf-board .ch-qf-lbrow > :nth-child(8) {
+    display: none !important;
+  }
+  .ch-qf-board {
+    border-radius: 0;
+    background: white;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-qf-board .ch-qf-lbrow {
+    grid-template-columns: 36pt minmax(0, 1fr) 44pt 40pt 40pt 48pt 70pt;
+    gap: 8pt;
+    min-height: 0;
+    padding-top: 6pt;
+    padding-bottom: 6pt;
+  }
+  .ch-qf-board .ch-qf-lbrow > :nth-child(4) {
+    display: block;
+  }
+  .ch-qf-board .ch-qf-table > [role='rowgroup']:first-child {
+    position: static;
+    background: none;
+  }
+  .ch-qf-board .ch-qf-table > [role='rowgroup'] > div,
+  .ch-qf-board .ch-qf-lbrow {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .ch-qf-board .ch-qf-row {
+    border-bottom: 0.5pt solid silver;
+    background: none;
+  }
+  .ch-qfm-lb > li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-bottom: 0.5pt solid silver;
+  }
+  /* Dark mode gives each status tone its own ink at higher specificity; on paper they are plain. */
+  .ch-qf-board .ch-badge--warning {
+    color: saddlebrown !important;
+  }
+  .ch-qf-board .ch-badge--positive,
+  .ch-qf-board .ch-badge--accent {
+    color: darkgreen !important;
+  }
+  /* The shell paints the phone's canvas in its own colours (shell.css gives the print sheet no white of its own at phone width). */
+  .ch-root:has(.ch-qf-printhead),
+  .ch-app:has(.ch-qf-printhead),
+  .ch-canvas:has(.ch-qf-printhead) {
+    background: white !important;
+  }
+  /* Everything on the sheet starts at the same left edge as the print head. */
+  .ch-qf-board {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .ch-qf-board .ch-qf-panel__head {
+    padding: 0 0 10pt;
+  }
+  .ch-qf-board .ch-qf-table {
+    margin-inline: 0;
+  }
+  .ch-qf-board .ch-qf-lbrow {
+    padding-inline: 0;
+  }
+  .ch-qf-board .ch-qf-lbrow::after {
+    right: 0;
+    left: 0;
+  }
+  .ch-qf-board .ch-qf-cap {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}

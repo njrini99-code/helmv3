@@ -26,6 +26,7 @@ import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
+import { PrintHead } from './PrintHead';
 import { StandingsSpread } from './StandingsSpread';
 import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
@@ -181,6 +182,7 @@ export function QualifierDetail({
   return (
     <SecondaryProvider value={shown.source}>
       <main className="ch-qf ch-qf--detail" data-canopy="">
+        <PrintHead data={data} />
         <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
           <BackLink href={LIST_HREF}>Qualifiers</BackLink>
         </div>
