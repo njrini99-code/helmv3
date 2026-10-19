@@ -804,7 +804,9 @@ describe('Messages · group members (D-45, D-47)', () => {
 
 describe('Messages · phone', () => {
   const openThread = async (user: User) => {
-    await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+    // A thread popped by Back is still on screen until its exit settles, slower on a loaded runner.
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /Varsity team/ }));
     return screen.findByRole('region', { name: /Varsity team/ });
   };
 
@@ -1758,7 +1760,9 @@ describe('Messages · wave 5 feedback', () => {
 
   describe('phone', () => {
     const openThread = async (user: User) => {
-      await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+      // A thread popped by Back is still on screen until its exit settles, slower on a loaded runner.
+      await waitFor(() => expect(screen.getAllByRole('button', { name: /Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+      await user.click(screen.getByRole('button', { name: /Varsity team/ }));
       return screen.findByRole('region', { name: /Varsity team/ });
     };
 
