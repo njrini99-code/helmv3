@@ -6844,7 +6844,7 @@
     "item": 3,
     "name": "COACHHELM_SETTINGS_ARE_SAVING",
     "chCode": "CH-8405",
-    "meaning": "CoachHelm settings are saving",
+    "meaning": "A setting that saves as it changes has saved",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },

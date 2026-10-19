@@ -1,5 +1,34 @@
 # P008 — Settings: changelog
 
+## 2026-10-19 — Settings saves one way, reads at a measure, and ends with its danger zone
+
+```text
+Design package: none (complete-and-elevate plan, lane L7: Settings that feel like the rest of the app)
+PR/commit:      lane L7 commits on agent/clubhouse-complete
+Contract IDs:   80303, 80901, 80902, CH-8405
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Desktop layout: the section navigator (208px, 10px radius, tighter rows, still sticky and `?section=` addressed) and a 640px column sit together at the centre of the canvas under the page head, instead of a 1000px column that put every switch far from its label.
+- Saving, one pattern. A card that needs an explicit save (profile, email change, password, team details, scoring, reminders, golf details, asking to join) shows its save bar only while there is something to save: "Unsaved changes" with Discard and Save changes; the button is busy while the save is out; a landed save gives the success haptic and the bar says Saved for 1.8 seconds at the same height, then goes. The bar sits at the foot of the view while its card is taller than the view. Cmd or Ctrl+S saves the card; Enter still saves only the email change and the join request (82001). The disabled grey button is gone.
+- Autosaving settings (every switch, segment and slider on Notifications and CoachHelm, quiet mode, the weekly email) say Saved in their own row for 1.8 seconds, inside the label's line so nothing moves. Sliders and the priority list say it in their card's head. The line "Changes save as you make them" over the CoachHelm title is gone on desktop (the phone keeps its line under the title). A failed save still puts the control back and toasts.
+- The team code is one style: 28px tabular Instrument Sans, set in an inset well with Copy code, Copy link and Share beside it; Copy says Copied for 1.8 seconds. The phone's code card, the staff invite code and the desktop card share the same rule (the old tracked JetBrains Mono code is gone). The phone card gains Copy code.
+- Hit areas: the priority reorder arrows (30px) and the setting segments (26px, such as alert sensitivity) now reach 44px, and the arrows sit 14px apart so their reaches do not overlap.
+- Danger zone: Account ends with Session (Sign out, plain) and then a Danger zone card holding Delete account alone, in red; a player's Team card is plain and Leave team sits in its own Danger zone card after it. The confirmations are unchanged.
+
+### Why
+
+- A coach edits a form here once or twice a season, so the page has to say plainly whether something is saved; the old pattern showed a disabled button, a status line far from what changed, and three code styles.
+
+### Verification
+
+- `settings-save-bar.test.tsx` (9 tests: the bar appears only when dirty, Discard, busy then Saved, invalid, Cmd+S, Enter, password, Danger zone last, row Saved, Copy code); `settings.test.tsx`, `settings-staff.test.tsx`, `settings-server.test.tsx`, `wiring-p008-settings.test.tsx` updated where they asserted the disabled button or the status line.
+- WebKit captures, 1280 and 390, light and dark, of every section and a dirty form, before and after, in the lane scratch folder; looked at.
+
 ## 2026-10-19 — Sign out is not drawn red
 
 ```text

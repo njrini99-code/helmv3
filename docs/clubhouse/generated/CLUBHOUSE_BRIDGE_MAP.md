@@ -755,7 +755,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80201 | CH-8401 | 02 Initial loading / skeleton | `THE_PAGE_IS_LOADING` | implemented | The page is loading |
 | 80301 | CH-8402 | 03 Background loading / refresh | `A_FORM_IS_SAVING` | implemented | A form is saving |
 | 80302 | CH-8404 | 03 Background loading / refresh | `A_PHOTO_IS_UPLOADING` | implemented | A photo is uploading |
-| 80303 | CH-8405 | 03 Background loading / refresh | `COACHHELM_SETTINGS_ARE_SAVING` | implemented | CoachHelm settings are saving |
+| 80303 | CH-8405 | 03 Background loading / refresh | `COACHHELM_SETTINGS_ARE_SAVING` | implemented | A setting that saves as it changes has saved |
 | 80401 | CH-8301 | 04 Empty | `A_COACH_WITH_NO_TEAM_OPENS_TEAM` | implemented | A coach with no team opens Team |
 | 80402 | CH-8302 | 04 Empty | `A_PLAYER_WITH_NO_TEAM_OPENS_GOLF` | implemented | A player with no team opens Golf profile |
 | 80403 | CH-8303 | 04 Empty | `A_PLAYER_HAS_ASKED_TO_JOIN_AND` | implemented | A player has asked to join and is waiting |

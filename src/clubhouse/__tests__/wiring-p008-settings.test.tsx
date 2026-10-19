@@ -133,7 +133,8 @@ describe('P008 wiring · join a team', () => {
     await user.click(within(code('CH-8303') as HTMLElement).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(writes.cancelRequest).toHaveBeenCalledWith('rq1'));
     await waitFor(() => expect(code('CH-8303')).toBeNull());
-    expect(screen.getByRole('button', { name: 'Ask to join' })).toBeTruthy();
+    // The form is back; its send appears once there is a code to send.
+    expect(screen.getByLabelText('Team code')).toBeTruthy();
     serve(playerData(false, false));
     expect(code('CH-8303')).toBeNull();
   });
