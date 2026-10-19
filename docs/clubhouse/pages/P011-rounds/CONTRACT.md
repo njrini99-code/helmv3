@@ -268,6 +268,12 @@ review (110902); using a course you typed in closes its sheet with the success h
 | 110901 | — | `DISCARD_LANDED` | A discard that lands says so in a toast ("Round discarded") with the success haptic, and the card leaves and the idle card ("No round in progress") takes its place, whether the discard came from the question or from the toast's Retry. |
 | 110902 | — | `ROUND_POSTED_SAYS_SO` | A submitted round says "Round posted" with the course, names the coach ("Coach Reyes can see it now.", else "Your coach can see it now.") and links View round review (the round screen ticks the success haptic once and opens it after two and a half seconds). While it submits it names the real shot count, not timed steps, and a failed submit says so with Try again (CH-11005). |
 
+A posted round opens its review with `?just=submitted` (the submit path's own navigation and its link). The review's
+round card (CH-11920 to CH-11924, `screens/rounds/card/`) settles in once on the smooth spring and says one quiet line
+about the round, using only figures the page shows; the success haptic was fired by the submit path and the card fires
+none. The parameter is taken out of the address after it is read, so a reload does not replay it. Share draws the card
+as a 1200px picture on the device (Canvas 2D) and hands it to the share sheet, or downloads it; nothing goes to a server.
+
 From the shell (P001): 10901 CHANGE_LANDED.
 
 ## 10 — Warning

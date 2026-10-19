@@ -146,7 +146,8 @@ describe('112401 Round review, on screen', () => {
 
   it('CH-11804 the card is two captioned tables; a par 3 has no fairway; three putts are flagged', () => {
     show(PREVIEW_REVIEW);
-    const [out] = screen.getAllByRole('table');
+    // The review's own scorecard (Scorecard and shots); the round card above it has tables of its own (screens/rounds/card).
+    const [out] = within(document.getElementById('ch-rz-card')!).getAllByRole('table');
     expect(out!.querySelector('caption')!.textContent).toMatch(/^Front nine/);
     const firRow = within(out!).getByRole('row', { name: /^FIR/ });
     // Hole 3 is a par 3.
@@ -211,7 +212,7 @@ describe('112401 Round review, on screen', () => {
   it('CH-11205 the shots fail to load: said in the hole card; the card still shows', async () => {
     show(PREVIEW_REVIEW_NO_SHOTS);
     await expectCode('CH-11205', /The shots for this round didn’t load/);
-    expect(screen.getAllByRole('table')).toHaveLength(2);
+    expect(within(document.getElementById('ch-rz-card')!).getAllByRole('table')).toHaveLength(2);
     expect(code('CH-11306')).toBeNull();
   });
 

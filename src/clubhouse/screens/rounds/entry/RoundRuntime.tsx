@@ -20,6 +20,8 @@ import '../../../styles/rounds-track.css';
 
 /** After a round posts, its review opens once the check has had a moment (the legacy overlay counted three seconds). */
 export const POSTED_OPEN_MS = 2500;
+/** The review a posted round opens carries this, so the review knows it was just posted and lets its card settle in once (card/just-submitted.ts). */
+const JUST_SUBMITTED = '?just=submitted';
 /** Submitting for this long says it is slow and names a way out (the legacy overlay's 15 second escape). CH-11909. */
 export const SUBMIT_SLOW_MS = 15_000;
 
@@ -234,7 +236,7 @@ export function RoundRuntime({
       ticked.current = id;
       haptic('success');
     }
-    const t = window.setTimeout(() => routerRef.current.push(routesRef.current.review(id)), POSTED_OPEN_MS);
+    const t = window.setTimeout(() => routerRef.current.push(`${routesRef.current.review(id)}${JUST_SUBMITTED}`), POSTED_OPEN_MS);
     return () => window.clearTimeout(t);
   }, [session.completedRoundId]);
 
@@ -350,7 +352,7 @@ export function RoundRuntime({
           shots={shots}
           coach={null}
           score={postedScore(card)}
-          reviewHref={session.completedRoundId ? routes.review(session.completedRoundId) : null}
+          reviewHref={session.completedRoundId ? `${routes.review(session.completedRoundId)}${JUST_SUBMITTED}` : null}
           error={session.error || null}
           onRetry={() => s.current.submitRetry()}
           onGoBack={() => s.current.submitGoBack()}

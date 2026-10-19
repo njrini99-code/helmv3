@@ -30,6 +30,9 @@ import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from 
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
 import { checkedRecap } from './recap-check';
+import { hasCard } from './card/card-model';
+import { useJustSubmitted } from './card/just-submitted';
+import { RoundCard } from './card/RoundCard';
 import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
 
@@ -349,6 +352,7 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
 export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null }) {
   const phone = useChPhone();
   const reduced = useChReducedMotion();
+  const justSubmitted = useJustSubmitted();
   const router = useRouter();
   const { refresh, refreshing } = useRefresh();
   const r = review;
@@ -446,6 +450,8 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           <span>{r.score == null ? 'Score not recorded' : r.holesPlayed === 9 ? 'Strokes · 9 holes' : 'Strokes'}</span>
         </div>
       </header>
+
+      {hasCard(r) && <RoundCard review={r} phone={phone} just={justSubmitted} settle={justSubmitted && !reduced} />}
 
       <dl className="ch-rv-figs">
         {figs.map(([k, v, m]) => (

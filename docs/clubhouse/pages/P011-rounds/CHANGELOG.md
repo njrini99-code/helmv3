@@ -1,5 +1,45 @@
 # P011 — Rounds: changelog
 
+## 2026-10-19 — The round card: a scorecard to keep, share and print
+
+```text
+Design package: none (complete-and-elevate plan, lane L4); no owner board, phone draft in docs/clubhouse/phone/round-card.md
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   CH-11920 to CH-11924
+Actions:        none (no server action, endpoint or save path touched)
+Data impact:    none (the card is drawn from the review the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- A round's review has a scorecard under the hero: Out, In and Total, par, the score in scorecard notation (circle birdie,
+  double circle eagle or better, square bogey, double square double bogey or worse; red for under par only), putts,
+  fairways and greens where tracked, the course, tees, rating and slope, the date, holes played, and the strokes gained by
+  leg. Phone: two bands of nine. Desktop: one wide table. A nine-hole round has one band; a round with holes missing says
+  "Thru 14 of 18 holes" and shows no short subtotal. No card for a round posted as a total.
+- Arriving from Post round (`?just=submitted`, added to the engine's own navigation and its link in `RoundRuntime`), the
+  card settles in once on the smooth spring, with one quiet line from figures the page shows: "Best on hole 5, a birdie.
+  35 putts, 1.9 a hole." Reduced motion: no movement. No haptic (the submit path fired it). A reload does not replay it.
+- Share card: a sheet with the picture, drawn on the device with the Canvas 2D API at 1200px wide after the fonts load,
+  and two switches (Strokes gained; Putts, fairways and greens) that redraw it. Share on a device that can share files,
+  Save image otherwise, named for the course, date and score. Nothing leaves the device.
+- Print (desktop): the page prints only the card, on one page, ledger rules kept, in ink on white in either theme.
+
+### Why
+
+- The round is the product's heart and its last screen was a report. A player and a coach want the card itself, the way
+  it would come off a scorecard, to keep.
+
+### Verification
+
+- `screens/rounds/card/__tests__/` (card-model, share-card, draw-card, round-card): mark mapping, 9, 18 and partial rounds,
+  Out and In against the page's own figures, the share and download branches, the 1200px canvas. The existing review and
+  round-entry tests pass with the new card (two assertions scoped to the review's own scorecard; the engine's post
+  navigation now carries `?just=submitted`).
+- WebKit captures (headless, 390 and 1280, light and dark), the exported PNG, print emulation, and a Chromium PDF (one page).
+  Not tried: a physical iPhone, the native share sheet, a physical printer.
+
 ## 2026-10-19 — Right-click on an unfinished round
 
 ```text
