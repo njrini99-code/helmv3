@@ -1096,7 +1096,7 @@ a.ch-th-rank__name::after {
 @media (max-width: 820px) {
   .ch-th-ax,
   .ch-th-ref-label {
-    font-size: calc(12 * var(--ch-type-k));
+    font-size: 12px;
   }
 }
 
