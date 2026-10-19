@@ -331,6 +331,8 @@
 }
 .ch-h-round__score > span:first-child {
   font: var(--ch-type-figure-l);
+
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-text-primary);
@@ -374,6 +376,7 @@
 .ch-h-nine__holes {
   height: 20px;
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-h-nine__par {
@@ -385,6 +388,8 @@
 }
 .ch-h-nine__par {
   font: 500 12px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 /* Plain scores (par) read as ink, the same weight as the marks beside them. */
@@ -1338,6 +1343,8 @@
   }
   .ch-hm-form__top b {
     font: 500 44px/0.9 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     /* -0.035em, not tighter: the decimal point touched the 3 ("73.4" read "734"); the hero figures share it. */
     letter-spacing: -0.035em;
     font-variation-settings: 'wdth' 92;
@@ -2153,6 +2160,7 @@
   justify-content: space-between;
   margin-top: 8px;
   font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-ph-spark__word {
@@ -3428,6 +3436,8 @@
   }
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
     font: 600 22px/1 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     font-variation-settings: normal;
   }
@@ -3865,6 +3875,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 .ch-h-form .ch-h-form__big {
   color: var(--ch-stage-ink);
   font: 600 64px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.045em;
 }
 .ch-h-form__delta {
