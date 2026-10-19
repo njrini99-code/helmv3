@@ -656,7 +656,7 @@
   box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-h-lb__pos.is-tie {
-  font-size: 11px;
+  font-size: calc(11 * var(--ch-type-k));
   letter-spacing: -0.02em;
 }
 .ch-h-lb__pos.is-lead {
@@ -1615,7 +1615,7 @@
     color: var(--ch-text-primary);
   }
   .ch-hm-strip dd span {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
     color: var(--ch-text-tertiary);
   }
   .ch-hm-muted {
@@ -2343,7 +2343,7 @@
   box-shadow: var(--ch-seam-x), var(--ch-seam-y);
 }
 .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
-  font-size: 26px;
+  font-size: calc(26 * var(--ch-type-k));
 }
 .ch-ph-game.is-phone .ch-ph-note {
   align-items: flex-start;
@@ -2385,7 +2385,7 @@
   margin-top: 0;
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg__v > span {
-  font-size: 30px;
+  font-size: calc(30 * var(--ch-type-k));
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg__v em {
   font-size: calc(12.5 * var(--ch-type-k));
@@ -3061,7 +3061,7 @@
     display:none;
   }
   .ch-hm-form__top b {
-    font-size:56px;
+    font-size: calc(56 * var(--ch-type-k));
     letter-spacing:-.035em;
   }
   .ch-hm-form__top>span:first-child::after {
@@ -3793,7 +3793,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     white-space: nowrap;
   }
   .ch-hm-since__fig em {
-    font-size: 13px;
+    font-size: calc(13 * var(--ch-type-k));
     font-style: normal;
     letter-spacing: 0;
     color: var(--ch-text-secondary);
