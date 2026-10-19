@@ -1,5 +1,9 @@
 # Clubhouse changelog
 
+## 2026-10-19 — Hero tone titles follow the iPhone's text size
+
+`hero-tones.css` (shared): the scorecard and board tone titles (34px and 30px) are set in `calc(N * var(--ch-type-k))`, and their radii sit on the scale. Lane W4b.
+
 ## 2026-10-19 — Complete and elevate: shared pieces
 
 The shared primitives behind the complete-and-elevate pass
