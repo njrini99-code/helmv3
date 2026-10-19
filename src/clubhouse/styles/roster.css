@@ -2185,3 +2185,98 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     transition-delay: 0s;
   }
 }
+
+/* Print (the roster): one clean sheet of the list, in ink on white whatever the theme. A letter sheet is narrower than the phone
+   breakpoint, so the page prints in its phone layout (.ch-rsm; useChPhone reads the print width); .ch-rs is the desktop one. The shell
+   hides its chrome; here the sort, the join banner and the invite action go too, "Golfhelm" joins the head, the ledger rules are kept
+   (print-color-adjust: exact) and a row never splits across pages. The app-wide print sheet hides every button, and the rows are
+   buttons, so they are put back here. */
+@media print {
+  .ch-rsm,
+  .ch-rs {
+    --ch-text-primary: black;
+    --ch-text-secondary: dimgray;
+    --ch-text-tertiary: dimgray;
+    --ch-ledger-ink: black;
+    --ch-ledger-rule: gray;
+    --ch-ledger-rule-soft: silver;
+    --ch-ledger-rule-double: 3px double gray;
+    --ch-ledger-eyebrow: dimgray;
+    --ch-ink-950: black;
+    --ch-ink-900: black;
+    --ch-ink-700: dimgray;
+    --ch-ink-600: dimgray;
+    --ch-ink-500: dimgray;
+    --ch-score-under: firebrick;
+    --ch-chart-gain: darkgreen;
+    --ch-chart-loss: sienna;
+    --ch-green-700: darkgreen;
+    background: white;
+    color: black;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-root:has(.ch-rsm),
+  .ch-app:has(.ch-rsm),
+  .ch-canvas:has(.ch-rsm),
+  .ch-root:has(.ch-rs),
+  .ch-app:has(.ch-rs),
+  .ch-canvas:has(.ch-rs) {
+    background: white !important;
+  }
+  .ch-rsm .ch-rsm-sort,
+  .ch-rsm .ch-rsm-banner,
+  .ch-rsm .ch-avatar,
+  .ch-rs .ch-rs-head__act,
+  .ch-rs .ch-rs-req,
+  .ch-rs .ch-rs-attn,
+  .ch-rs .ch-rs-sp,
+  .ch-rs .ch-rs-bar,
+  .ch-rs .ch-rs-peek {
+    display: none !important;
+  }
+  .ch-rsm .ch-rsm-row,
+  .ch-rs .ch-rs-who__cell button {
+    display: flex !important;
+  }
+  .ch-rsm .ch-rsm-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 16pt;
+    margin-bottom: 12pt;
+    padding-bottom: 8pt;
+    border-bottom: 1.5pt solid black;
+  }
+  .ch-rsm .ch-rsm-head > * {
+    grid-column: 1;
+  }
+  .ch-rsm .ch-rsm-head::after {
+    content: 'Golfhelm';
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    font: 700 16pt/1.15 var(--ch-font-sans);
+    color: black;
+  }
+  .ch-rsm .ch-rsm-list {
+    box-shadow: none;
+  }
+  .ch-rsm .ch-rsm-list > li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-top: 0.5pt solid silver;
+    box-shadow: none;
+  }
+  .ch-rsm .ch-rsm-row {
+    min-height: 0;
+    padding-block: 6pt;
+    background: none;
+  }
+  .ch-rs .ch-rs-row {
+    min-width: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-bottom: 0.5pt solid silver;
+    background: none;
+  }
+}
