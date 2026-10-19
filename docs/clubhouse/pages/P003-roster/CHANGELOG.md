@@ -1,5 +1,23 @@
 # P003 — Roster: changelog
 
+## 2026-10-19 — Where the team sits glides again
+
+```text
+Design package: none (CI: clubhouse:css no-layout-motion)
+PR/commit:      #2210
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The spread's coins and team line move by `translate` again (the W4c
+  pass had moved them by `left`, which lays out every frame). The iPad
+  sideways scroll that change fixed is fixed instead by the panel
+  clipping sideways overflow (`.ch-rs-sp`, `overflow-x: clip`).
+
 ## 2026-10-19 — Roster on an iPad: the team spread follows a window that shrinks
 
 ```text

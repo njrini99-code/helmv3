@@ -2068,6 +2068,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   gap: 14px;
   margin: 8px 0 22px;
   padding: 22px 24px 8px;
+  overflow-x: clip;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow: inset 0 3px 0 var(--ch-champagne-500), 0 0 0 1px rgb(176 149 96 / 0.3), var(--ch-elevation-plate);
@@ -2087,9 +2088,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   margin: 0 22px;
 }
 /* The team line and the coins sit on still, full-width rows that are their size containers; each moves along its row by
-   `left` in percent of its row (--ch-sp-x, 0 to 100), so nothing overflows the plot. It was `translate` in container units,
-   which WebKit left in the canvas's scrollable overflow at the old size when the window shrank (an iPad turned from
-   landscape to portrait scrolled the whole page sideways until reload); a percentage is plain layout and follows. */
+   `translate` in container units (--ch-sp-x, 0 to 100), so a change glides on the compositor. WebKit kept a translated
+   coin's old position in the canvas's scrollable overflow when the window shrank (an iPad turned to portrait scrolled the
+   page sideways until reload), so the panel clips sideways overflow (.ch-rs-sp, overflow-x: clip): its padding and the
+   plot's margin leave room for a coin at either end. */
 .ch-rs-sp__team {
   position: absolute;
   top: 0;
@@ -2103,16 +2105,18 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   position: absolute;
   top: 0;
   bottom: 0;
+  left: 0;
   border-left: 2px solid var(--ch-champagne-500);
-  left: calc(var(--ch-sp-x, 0) * 1%);
-  transition: left var(--ch-dur-base) var(--ch-ease);
+  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
+  transition: translate var(--ch-dur-base) var(--ch-ease);
 }
 .ch-rs-sp__team span {
   position: absolute;
   bottom: -26px;
+  left: 0;
   transform: translateX(-50%);
-  left: calc(var(--ch-sp-x, 0) * 1%);
-  transition: left var(--ch-dur-base) var(--ch-ease);
+  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
+  transition: translate var(--ch-dur-base) var(--ch-ease);
   padding: 3px 9px;
   border-radius: 99px;
   background: var(--ch-champagne-500);
@@ -2137,9 +2141,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   pointer-events: none;
 }
 .ch-rs-sp__coins button {
-  position: relative;
-  left: calc(var(--ch-sp-x, 0) * 1%);
-  transition: left var(--ch-dur-reveal) var(--ch-ease);
+  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
+  transition: translate var(--ch-dur-reveal) var(--ch-ease);
   pointer-events: auto;
   display: grid;
   justify-items: center;

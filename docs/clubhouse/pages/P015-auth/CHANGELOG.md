@@ -3,7 +3,7 @@
 ## 2026-10-19 — The new-coach guard reads its errors
 
 ```text
-Design package: none (CI: helm/no-unchecked-supabase-error ratchet)
+Design package: none (CI ratchets)
 PR/commit:      #2210
 Contract IDs:   none
 Actions:        none
@@ -13,9 +13,12 @@ Held items:     none
 
 ### Changed
 
-- screens/onboard/coach-guard.ts binds `error` on its coach and player row reads. A failed read keeps the person on the
-  new-coach page (an unread coach row counts as present, an unread player row as absent), so a failure never sends a
-  coach to the player dashboard.
+- screens/onboard/coach-guard.ts binds `error` on its coach and player row
+  reads. A failed read keeps the person on the new-coach page (an unread
+  coach row counts as present, an unread player row as absent), so a
+  failure never sends a coach to the player dashboard.
+- The join code slots and the team plate take their depth from
+  `--ch-elevation-control` (clubhouse:css shadow-token).
 
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
