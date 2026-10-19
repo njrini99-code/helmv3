@@ -70,6 +70,8 @@ vi.mock('next/font/google', () => ({
   Instrument_Serif: mockFont,
   JetBrains_Mono: mockFont,
   Norican: mockFont,
+  // GolfHelm reset page (src/app/golf/(auth)/reset-password/layout.tsx)
+  Poppins: mockFont,
 }));
 
 // Mock Next.js image

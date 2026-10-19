@@ -128,11 +128,26 @@ Join code
   `GenericPageSkeleton`/`FormPageSkeleton` family, which carries no
   `role="status"`/`aria-busy` of its own — the call site supplies them.
 
-- `/golf/reset-password` renders on `AuthCanvas` (`src/components/auth/golf-auth-canvas.tsx`),
-  the same flat treatment as login and forgot-password (AUTH-02, 2026-09-23).
-  `GolfAuthShell` no longer has an importer. The recovery-session logic
-  (`exchangeCodeForSession` / `verifyOtp`, with no `updateUser` until it is `ready`)
-  is unchanged.
+- `/golf/reset-password` (2026-10-18 redesign) matches the reset email, not
+  `AuthCanvas`: `reset-shell.tsx` draws the ivory canvas, lockup and ruled card,
+  with Poppins loaded for this route only (`layout.tsx`). States: checking,
+  form, expired (asks for a new link in place via `requestPasswordResetAction`),
+  sent, saved. The link is still the only authorization: every load runs
+  `verifyOtp({ type: 'recovery', token_hash })` with no branch that skips it
+  (golf links are always server-minted token_hash links, never PKCE `?code=`),
+  no `updateUser` runs before it succeeds, and the token is stripped from the
+  URL once verified. Supabase errors map to plain sentences
+  (`reset-errors.ts`). A successful save calls `signOut({ scope: 'others' })`
+  (owner decision: a reset signs out every other device) and keeps this device
+  signed in; Continue goes to `/golf/dashboard`, not back to sign-in.
+- GolfHelm reset emails go through Resend (`src/lib/auth/send-password-reset.ts`),
+  never Supabase's mailer, so `supabase/templates/recovery.html` does not reach
+  golf users. `src/lib/auth/golfhelm-reset-email.ts` renders the same design for
+  the Resend path; a test fails if the two drift. The Supabase template still
+  serves Baseball and Lift Lab client-side resets.
+- `/golf/forgot-password`'s sent state plays a one-time CSS sequence (envelope,
+  ripple, check; off under reduced motion) via the `hero` slot on `AuthCanvas`,
+  and offers a resend after a 30-second cooldown.
 - `/golf/join` (the invite-code entry page) renders on `AuthCanvas` too
   (2026-09-27). Its "Home" back link goes to `/golf`, not `/`: the in-app links
   to it (NoTeamBanner, player onboarding, travel, classes) come from signed-in

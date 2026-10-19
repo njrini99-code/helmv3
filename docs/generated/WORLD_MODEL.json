@@ -15324,6 +15324,11 @@
           "kind": "import_graph",
           "path": "src/app/lifting/actions/invites.ts",
           "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/send-password-reset.ts",
+          "anchor": "src/lib/auth/golfhelm-reset-email"
         }
       ]
     },
