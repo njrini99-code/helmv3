@@ -1,0 +1,29 @@
+schema_version: 1
+replay_id: recap-word-limit-rewrite-2026-10-20
+incident_id: memory/incidents/coachhelm_ai/INC-2026-10-13-recap-style-fallback-logged-as-llm.md
+feature_id: coachhelm_ai
+title: >-
+  A round recap whose model reply only broke the 36-word limit went straight
+  to the template (5 of 5 recaps after the 2026-10-18 deploy, Bridge
+  1cd457e7); it now gets one rewrite pass under the same gates.
+bad_version: 07810c413e6b4179cc64af274869d180ae31688b
+fixed_version: 79fa1aefe097b918d568f036db92d16f06199770
+fixture:
+  - source: round-recap-style-fallback-call-log.test.ts
+    target: src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic round, player name and model replies; no production rows, PII,
+    tokens or logs.
+source_incident_status: fixed
+created_at: "2026-10-20"
+notes: >-
+  On bad_version the rewrite case fails with
+  'expected "vi.fn()" to be called 2 times, but got 1 times'.
