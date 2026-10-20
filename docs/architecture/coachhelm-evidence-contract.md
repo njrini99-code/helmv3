@@ -2194,3 +2194,84 @@ surface may call them causal, root causes or mechanisms.
   days, and its player has a completed non-test round within 60 days.
 - Linked patterns (`chains.ts`): every hop gated, no arithmetic hop, signs
   consistent with any direct edge between chain nodes; sign carried.
+
+## Support and the claim ladder (Slice 1, 2026-10-20)
+
+Flag `coachhelm_support_v1` (off). Spec: CoachHelm supercharge
+`02-accuracy-standard.md` §2-§6 and `04-output-specs-and-examples.md` §1.1,
+§1.2, §1.5. Code: `src/lib/coachhelm/v3/support/` (pure statistics,
+`evaluate.ts`; the server pass, `run-pass.ts`; the run log, `run-log.ts`).
+
+When the flag is on, `analyzePlayer` runs the pass after the Tier-1
+generators and the composite synthesis. It reads exactly the v3 rows the run
+wrote: the orchestrator opens a run collector (`support/run-collector.ts`)
+around the generators and composites, and `upsertInsightV3` records each id
+it writes, so two runs of one player seconds apart, and the pass's own
+writes, never share a BH population. It merges these keys into each row's
+`evidence` with a compare-and-set on
+`updated_at`. Nothing else on the row changes: `confidence`, `title`,
+`content`, `priority` and the lifecycle are untouched, so the confidence
+word reads as before until a renderer reads `ladder`.
+
+- `support`: `version`, `testable` (or `untestable_reason`), `family`,
+  `gap` (positive = worse than the benchmark), `gap_unit`, `range_lo` /
+  `range_hi` (95%), `p_one_sided`, `q_adj` (BH), `tests_in_run`, `method`
+  (`wilson` / `newcombe` / `welch` / `poisson`), `test`, `direction`
+  (`weakness` / `strength`), `n`, `n_unit`, `rounds_n`, `floor`,
+  `round_floor`, `benchmark` `{ source, value }`, `clear`.
+- `ladder`: the read as worded: `seen_repeatedly`, `observed`, `likely`,
+  `working_hypothesis`, `not_enough_yet`.
+- `what_ladder`: the WHAT alone (what a surface may print when it drops an
+  uncorroborated cause).
+- `ladder_reasons`: machine-readable reasons (`not_supported`,
+  `below_round_floor`, `rounds_unknown`, `untestable:<why>`,
+  `tour_benchmark_only`, `no_strokes_estimate`, `uncorroborated_cause`,
+  `family_cap:<rung>`, ...).
+- `strokes_shrunk`, `shrink`: strokes a round from the shrunk estimate
+  `(n·y + κ·μ)/(n + κ)`; κ 30 attempts / 20 shots / 5 rounds / 8 rounds; μ is
+  the team line when comparable.
+- `stability`: written only when the evidence carries split-half gaps.
+
+Rules the pass applies:
+
+- Tests by shape. One rate against a benchmark: Wilson range, exact binomial
+  p. Two rates within the player (downhill vs level, driver vs non-driver):
+  Newcombe range, pooled-z p. A mean with a standard error: t range and p. A
+  count per round: exact Poisson range and p.
+- Benchmark: the row's `standing.team_avg` when the team has >= 4 players and
+  the standing measures the same quantity (not for approach rows, whose
+  standing is on-green proximity), else `level_avg`, else the row's own
+  comparison. A Tour-only benchmark caps the read at Working hypothesis (02
+  §3: words compare to the team).
+- Benjamini-Hochberg across every candidate of the run at q = 0.10.
+  Untestable candidates count in `m` as p = 1.
+- Ladder gates as 02 §6. Where 02 is silent: unknown rounds is Not enough
+  yet; no strokes estimate stops the WHAT at Working hypothesis; strokes below
+  0.3 with a real estimate is Not enough yet; a zero `strokes_impact` is a
+  measured zero only for `sg_baseline`.
+- Untestable today, by design (no counts or spread on the evidence):
+  `par_scoring`, `big_number_rate`, composites, opening-hole and pressure rows
+  without a stored interval, and putt-break rows without per-side counts.
+
+`golf_coachhelm_run_log` (migration 20261020114500, held until the owner
+applies it) gets one row per player per run: candidates, testable,
+supported, shown (Working hypothesis or above, before delivery caps),
+suppressed by first reason, rungs, per-family rungs and the Watching list.
+`trigger` is `round` (round submitted), `checkpoint` (the safety-net cron
+re-running a round whose analysis did not finish), `sweep` (roster sweep) or
+`manual` (a coach refresh or on-demand analysis); `newest_round_id` is the
+newest round that passes `isCountableRound` (`src/lib/golf/round-countable.ts`).
+`golf_insight_exposure.rank_factors` gets `{ version, score, S, R, ladder,
+q_adj, position, surface }` (S from `strokes_shrunk`, capped at 3; R the 03
+§2.2 rung weight); the surface's existing `rank_score` and ranking are
+unchanged.
+
+Back-test, part one (`scripts/coachhelm/support-backtest.ts` over the export
+from `scripts/coachhelm/support-backtest.sql`, production 2026-10-20, 710
+live v3 reads on 68 players): as stored today, 6 Observed, 8 Working
+hypothesis and 696 Not enough yet; with round counts stamped (Slice 0b), 6
+Observed, 2 Likely, 47 Working hypothesis and 655 Not enough yet. 107 of 504
+testable reads are BH-supported; 5 of 49 players with >= 5 countable rounds
+would get an Observed-or-better read, against the 02 §8 bar of 70%. Ladder
+words must not reach players until the bars are met. The replay over past
+cutoffs (held / cleared / contradicted per rung) is not built yet.

@@ -36,6 +36,7 @@ import {
   personalBests,
   pressureGap,
   toughestHoles,
+  triplePlusCount,
   windowCompare,
   type ChBests,
   type ChCompare,
@@ -138,6 +139,8 @@ export interface ChProfileExtra {
    * say so ("Hole stats from 3 of 5 rounds"). Absent: every round has its holes.
    */
   holeRounds?: number;
+  /** Holes at triple bogey or worse in the detail read's rounds (a part of double or worse); null when the hole read failed. Absent: not read. */
+  triplePlus?: number | null;
 }
 
 export interface ChPlayerProfile {
@@ -522,6 +525,7 @@ export async function loadPlayerProfile(input: {
       puttsError: putts.error,
       truncated: holeWin.length > DETAIL_MAX_ROUNDS,
       holeRounds: holeWin.length,
+      triplePlus: holes.error ? null : triplePlusCount(holes.rows),
     },
     rounds: winRounds.map((r) => {
       const c = cache.byRound.get(r.id);

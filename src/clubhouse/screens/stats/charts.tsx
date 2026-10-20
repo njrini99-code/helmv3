@@ -434,42 +434,6 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
   );
 }
 
-type Mix = { eagle: number; birdie: number; par: number; bogey: number; double: number };
-
-/** The mix of holes: per round, and with `totals` the holes behind it and each result's share ("46 of 180 holes"). */
-export function ScoreMix({ d, totals }: { d: Mix; totals?: Mix }) {
-  const segs: Array<[string, number, string, number | null]> = [
-    ['Eagle+', d.eagle, 'is-eagle', totals?.eagle ?? null],
-    ['Birdie', d.birdie, 'is-birdie', totals?.birdie ?? null],
-    ['Par', d.par, 'is-par', totals?.par ?? null],
-    ['Bogey', d.bogey, 'is-bogey', totals?.bogey ?? null],
-    ['Double+', d.double, 'is-double', totals?.double ?? null],
-  ];
-  const tot = segs.reduce((a, s) => a + s[1], 0) || 1;
-  const holes = totals ? totals.eagle + totals.birdie + totals.par + totals.bogey + totals.double : 0;
-  return (
-    <div className="ch-mix">
-      <div className="ch-mix__bar" role="img" aria-label={segs.map(([l, v]) => `${l} ${v.toFixed(1)}`).join(', ')}>
-        {segs.map(([l, v, c]) => (v > 0 ? <span key={l} className={`ch-mix__s ${c}`} style={{ flex: v / tot }} /> : null))}
-      </div>
-      <div className="ch-mix__k">
-        {segs.map(([l, v, c, n]) => (
-          <span key={l}>
-            <i className={c} />
-            <b className="ch-num">{v < 0.1 && v > 0 ? v.toFixed(2) : v.toFixed(1)}</b>
-            {l}
-            {n != null && holes > 0 && (
-              <small className="ch-num">
-                {n} of {holes} holes · {Math.round((n / holes) * 100)}%
-              </small>
-            )}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | null; bench: number | null }> }) {
   return (
     <div className="ch-par3">
@@ -669,87 +633,6 @@ export function GreenMiss({ m }: { m: Record<'ll' | 'lg' | 'lr' | 'l' | 'r' | 's
         ),
       )}
     </div>
-  );
-}
-
-/** Make rate by distance: the player's line against the Tour's dashed line. Bands under 10 putts aren't graded. */
-/**
- * Make rate by distance on the phone, as the board draws it (m-stats.jsx Putting, m.css .m-putt): a row per band, the
- * bar in green or amber under the Tour's tick, the rate on the right. The desktop curve's labels are unreadable at
- * phone width (F-54). A band grades only with 10 or more putts, as on desktop.
- */
-export function MakeRows({ bands }: { bands: Array<{ band: string; value: number | null; bench: number | null; n: number }> }) {
-  return (
-    <div className="ch-stm-putt">
-      {bands.map((b) => {
-        const low = b.value != null && b.bench != null && b.n >= 10 && b.value < b.bench;
-        return (
-          <div key={b.band} className="ch-stm-putt__r">
-            <span className="ch-num">{b.band} ft</span>
-            <span className="ch-stm-putt__bar" aria-hidden="true">
-              {b.value != null && <i className={low ? 'is-low' : ''} style={{ width: `${Math.min(100, b.value)}%` }} />}
-              {b.bench != null && <em style={{ left: `${b.bench}%` }} />}
-            </span>
-            <b className={'ch-num' + (low ? ' ch-loss' : '')}>{b.value == null ? NO_DATA : `${Math.round(b.value)}%`}</b>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-export function MakeCurve({ bands }: { bands: Array<{ band: string; value: number | null; bench: number | null; n: number }> }) {
-  const w = 760;
-  const h = 210;
-  const pl = 64;
-  const pr = 44;
-  const pt = 26;
-  const pb = 36;
-  const x = (i: number) => pl + (i * (w - pl - pr)) / Math.max(1, bands.length - 1);
-  const y = (v: number) => pt + ((100 - v) / 100) * (h - pt - pb);
-  const you = bands.map((b, i) => (b.value == null ? null : ([x(i), y(b.value)] as [number, number]))).filter((p): p is [number, number] => !!p);
-  const tourPts = bands.map((b, i) => (b.bench == null ? null : ([x(i), y(b.bench)] as [number, number]))).filter((p): p is [number, number] => !!p);
-  const line = (pts: Array<[number, number]>) => pts.map(([px, py], i) => `${i ? 'L' : 'M'}${px},${py}`).join(' ');
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="ch-mk" role="img" aria-label={bands.map((b) => `${b.band} feet ${b.value == null ? 'no data' : `${Math.round(b.value)}%`}`).join(', ')}>
-      {[0, 25, 50, 75, 100].map((t) => (
-        <g key={t}>
-          <line x1={pl} x2={w - pr} y1={y(t)} y2={y(t)} stroke="var(--ch-ivory-200)" />
-          <text x={pl - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
-            {t}%
-          </text>
-        </g>
-      ))}
-      {tourPts.length > 1 && <path d={line(tourPts)} fill="none" stroke="var(--ch-champagne-500)" strokeDasharray="4 4" strokeWidth={1.5} />}
-      {you.length > 1 && (
-        <>
-          <path d={`${line(you)} L${you[you.length - 1]![0]},${y(0)} L${you[0]![0]},${y(0)} Z`} fill="var(--ch-chart-gain)" opacity={0.07} />
-          <path d={line(you)} fill="none" stroke="var(--ch-green-700)" strokeWidth={2.25} strokeLinejoin="round" />
-        </>
-      )}
-      {bands.map((b, i) => {
-        const graded = b.value != null && b.bench != null && b.n >= 10;
-        const good = graded && b.value! >= b.bench!;
-        return (
-          <g key={b.band}>
-            {b.value != null && (
-              <>
-                <circle cx={x(i)} cy={y(b.value)} r={4.5} fill="var(--ch-ivory-25)" stroke={!graded ? 'var(--ch-ink-400)' : good ? 'var(--ch-chart-gain)' : 'var(--ch-chart-loss)'} strokeWidth={2} />
-                <text x={i === 0 ? x(i) + 9 : x(i)} y={y(b.value) - 10} textAnchor={i === 0 ? 'start' : 'middle'} className={`ch-mk__v ${!graded ? '' : good ? 'is-gain' : 'is-loss'}`}>
-                  {Math.round(b.value)}%
-                </text>
-              </>
-            )}
-            <text x={x(i)} y={h - 16} textAnchor="middle" className="ch-mk__b">
-              {b.band} ft
-            </text>
-            <text x={x(i)} y={h - 3} textAnchor="middle" className="ch-mk__n">
-              {b.n} putts
-            </text>
-          </g>
-        );
-      })}
-    </svg>
   );
 }
 

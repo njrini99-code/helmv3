@@ -25,6 +25,8 @@ describe('floors', () => {
     expect([9, 10, 29, 30].map((n) => sampleState('make', n))).toEqual(['none', 'early', 'early', 'steady']);
     expect(sampleState('score', 1)).toBe('early');
     expect(sampleState('score', null)).toBe('none');
+    // A share of holes (the scoring mix): any hole shows, under 30 is an early read.
+    expect([0, 1, 29, 30].map((n) => sampleState('holes', n))).toEqual(['none', 'early', 'early', 'steady']);
   });
 
   it('say what is missing in the stat’s own unit, singular and plural', () => {
@@ -37,6 +39,10 @@ describe('floors', () => {
     expect(earlyTag(1)).toBe('Early read · 1 round');
     // A weighted count (a nine-hole round is half) rounds to whole rounds.
     expect(earlyTag(9.5)).toBe('Early read · 10 rounds');
+    // In the stat's own unit when it is not rounds.
+    expect(earlyTag(24, 'hole')).toBe('Early read · 24 holes');
+    expect(earlyTag(1, 'hole')).toBe('Early read · 1 hole');
+    expect(needsText('holes')).toBe('Needs 1 hole');
   });
 });
 

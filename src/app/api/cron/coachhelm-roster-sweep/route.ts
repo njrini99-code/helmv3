@@ -155,7 +155,7 @@ async function handleRosterSweep(): Promise<NextResponse> {
     const pairs = await Promise.all(
       batch.map(async ({ playerId, freshness }) => {
         try {
-          const result = await triggerPlayerInsightsAfterRound(playerId);
+          const result = await triggerPlayerInsightsAfterRound(playerId, { runTrigger: 'sweep' });
           return { playerId, freshness, ok: true as const, result };
         } catch (err) {
           return { playerId, freshness, ok: false as const, err };

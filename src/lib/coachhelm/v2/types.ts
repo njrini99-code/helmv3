@@ -690,6 +690,12 @@ export interface AnalysisOptions {
    * insight — it reads the persisted rows the writers above produce.
    */
   runInsightGenerators?: boolean;
+  /**
+   * What started this engine run, recorded on the CoachHelm run log
+   * (`golf_coachhelm_run_log.trigger`, Slice 1, flag `coachhelm_support_v1`).
+   * Omitted → 'unspecified'. Has no other effect.
+   */
+  runTrigger?: 'round' | 'sweep' | 'manual' | 'checkpoint';
   depth?: 'quick' | 'standard' | 'deep';
   /**
    * Coach's persisted Insight Detail Level (golf_coach_philosophy.insight_verbosity).

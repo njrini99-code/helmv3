@@ -1,5 +1,82 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-20 — Scoring mix bar (stats visuals 6)
+
+```text
+Design package: none (stats visuals plan, spec 4.4, decision Q11)
+PR/commit:      uncommitted (local/stats-pr6-mix)
+Contract IDs:   none
+Actions:        none
+Data impact:    profile gains extra.triplePlus (from the existing hole read)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- One scoring mix everywhere: `ScoreMixBar` replaces the Overview's "Every
+  hole, by result" bar (`ch-zmix`), Game detail's "What an average round looks
+  like" (`ScoreMix`, desktop and phone) and the three bars in Outcomes by par
+  (More detail). A 100% bar with par in the middle: going out from it, birdie
+  then eagle or better to the left (under par), bogey then double or worse to
+  the right (over par), with "Under par" and "Over par" under the bar.
+- Each segment at least about 30px wide prints its share; every share is in
+  the key (with the rate a round on the main mix). Shares are whole percents
+  that add up to 100 (largest remainder; a result with holes that rounds to
+  none reads "<1%"). The preview's birdies read 10%, not 11% (10.6% exact).
+- A pointer, a tap or the arrow keys read a result above the bar: "Double
+  or worse · 12 of 180 holes · 7% · 1.2 a round · 3 triple or worse". A tap
+  or a key pins it; only a pin or a key is announced. The key entries pin
+  too, so a sliver (one eagle) is reachable on the phone.
+- A result with no holes draws nothing; the main key reads it as 0%, each
+  par's key leaves it out. Under 30 holes the mix is muted with "Early read ·
+  N holes". The phone's key is a short table, one result a row.
+- Palette as before (red under par; ivory, gray and ink over), with no literal
+  colors: eagle is the new `--ch-score-eagle-fill` token (light and dark),
+  birdie `--ch-chart-flag`, par `--ch-ivory-300`, bogey `--ch-ink-500`, double
+  `--ch-score-double`. Bogey stays gray, not amber (Q11).
+- Data: the profile carries `extra.triplePlus`, counted from the hole read
+  the loader already makes (same rounds as the detail read); null when that
+  read failed. No query, table or migration change.
+
+## 2026-10-20 — Putting by distance (stats visuals 4)
+
+```text
+Design package: none (stats-display-spec.md section 4.3, decision Q9)
+PR/commit:      uncommitted (local/stats-pr4-putt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (same putt rows; no query, table or migration change)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- Make rate by distance is one component, `PuttBands`, on the desktop Overview
+  (zone 6), the desktop Game detail putting section and the phone's Game detail.
+  It replaces the two `MakeCurve` copies (Overview and `charts.tsx`) and the
+  phone's `MakeRows`.
+- Six bands in the Tour's cut (0–3, 3–5, 5–10, 10–15, 15–25, 25+ ft) on equal
+  spacing, and the chart says the spacing is equal and not to scale. The
+  nine-band breakdown (15–20 ft up to 35+ ft) stays in the putting table under
+  More. Each band is a dot on a 0 to 100% axis with a thin Wilson 95% whisker
+  (named once, "Likely range (95%)", in the key), its rate and "made/tried"
+  under it, and the Tour's thin line behind the dots where the Tour publishes a
+  value (none inside 3 feet).
+- A band of 10 to 29 putts is a hollow early read and is not graded against the
+  Tour; under 10 it draws no dot and says "Needs 10 putts in the band" ("Needs
+  10 putts" in the phone's narrow column). From 30 putts a band grades by its
+  dot, green at or above the Tour and amber below; the whisker never grades.
+- A pointer over a band, a tap, or the arrow keys read it in the line above the
+  chart ("5–10 ft · 20 of 51 made, 39% · likely range 27% to 53% · Tour 62%"); a
+  tap or a key pins it and a screen reader hears it then, never on hover. The
+  chart is a focusable group.
+- The putt-read failure notes are unchanged (CH-5211 in Game detail, "The putt
+  read failed, so the curve stops at 20 feet." on the Overview). Without the
+  putt read, Game detail still falls back to the calculator's five bands to 20
+  feet, drawing each rate as kept and printing its count ("33 putts").
+- The panel and zone notes describe the new chart; the old `.ch-mk` styles are
+  gone.
+
 ## 2026-10-20 — The trend of rounds is a dot per round (visuals 3)
 
 ```text
