@@ -40,8 +40,15 @@ function git(args: string[], cwd: string): string {
 let tmp: string;
 let seed: string;
 let home: string;
+let prevDiskReserve: string | undefined;
 
 beforeEach(() => {
+  // createWorkspace refuses below a machine free-disk reserve (12 GiB by
+  // default). These tests exercise provisioning, not that guard, and the
+  // temp dirs live on whatever runner disk CI got, so a runner with less
+  // free space failed Unit tests (4) on unrelated PRs with DISK_LOW.
+  prevDiskReserve = process.env.HELM_DISK_RESERVE_GIB;
+  process.env.HELM_DISK_RESERVE_GIB = '0';
   // realpathSync matters on macOS: /var/folders/... vs /private/var/folders/...
   // is exactly the string mismatch that made canonical-root comparisons
   // manufacture false budget refusals elsewhere in this repo (see
@@ -75,6 +82,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  if (prevDiskReserve === undefined) delete process.env.HELM_DISK_RESERVE_GIB;
+  else process.env.HELM_DISK_RESERVE_GIB = prevDiskReserve;
   rmSync(tmp, { recursive: true, force: true });
 });
 
