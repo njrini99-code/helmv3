@@ -1,5 +1,202 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-20 — Board and Deep dive keep the reads past the feed cap
+
+```text
+Design package: none (CoachHelm supercharge, Slice 0 delivery)
+PR/commit:      see git log (claude/coachhelm-delivery)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm.ts` (the player Board) and `data/coachhelm-dive.ts` (the
+  Deep dive) read the feed with `includeMore: true`. Nothing is drawn
+  differently: with the flag `coachhelm_reads_v1_copy` off (everywhere
+  today) the option does nothing.
+
+### Why
+
+- With that flag on, `getInsightsForPlayer` holds each player's feed to 3
+  open reads and 1 strength, the same 3 + 1 the Board draws. The Board
+  already caps itself and counts the rest into the Deep dive, and the Deep
+  dive lists every read, so both ask for the whole list. Overlapping reads
+  (driver with penalties, for example) still fold into one for them, as on
+  every other surface.
+
+### Verification
+
+- `coachhelm.test.tsx`, `coachhelm-reads.test.ts` and
+  `coachhelm-dive.test.tsx` check the Board and the Deep dive ask for the
+  whole list. No screenshot: nothing is drawn differently.
+
+## 2026-10-20 — Player board: three reads and one strength; no zero strokes
+
+```text
+Design package: none (supercharge 03 section 2, 09 and 10; design call)
+PR/commit:      see git log (claude/coachhelm-board-caps)
+Contract IDs:   130101, 130102 (meaning reworded)
+Actions:        none
+Data impact:    none (read-only; no engine, generator or schema change)
+Held items:     none
+```
+
+### Changed
+
+- The player's Board shows at most three reads that need work (the focus and
+  two in Also worth knowing) and one in What's working, in the feed's own
+  order (`NEEDS_MAX`, `WORKING_MAX` in `coachhelm-shape.ts`; it was five and
+  five, cut with no word of the rest).
+- The reads it leaves out are counted in one ghost button under the lists,
+  "8 more reads in the Deep dive", which opens the Deep dive the way the view
+  switch does. It is not drawn when the Board shows every read. The Deep dive
+  still lists every read.
+- A measured zero (a strokes-gained baseline whose `strokes_impact` prints as
+  0.0: 36 of 95 live `sg_baseline` rows, all approach proximity) is left out
+  of the Board's open reads and counted in that line. Any other zero (a peer
+  delta or rough estimate that was never estimated) keeps its read.
+- The v2 miner's own "Projected impact: ~0.00 strokes per round." sentence
+  in a read's text (the lede or Why we think this) is not drawn when its
+  figure is zero or the row has no estimate (`withoutZeroImpact` in
+  `coachhelm-strokes.ts`, at render; the stored row is untouched). A real
+  figure on a row that carries one ("~0.80 strokes per round played here")
+  stays. Production had no live zero sentence on 2026-10-20 (11 live rows
+  carry the sentence, 0.80 to 3.20).
+- `strokesAtStake` gives a strokes-a-round figure only for a non-zero
+  `sg_baseline` or `peer_delta` value, never "0.0 strokes", for any line
+  that states `strokes_impact`; none on this page did before.
+- CH-13303 names What's working only when that list is drawn.
+- An out-of-date read still sorts after the current ones, so the cap cuts it
+  first; it is counted in the Deep dive line like any other.
+
+### Why
+
+- Production has a median of nine reads a player and up to nineteen; three
+  and one is what a player can hold. 364 of 710 live v3 reads carry a zero
+  `strokes_impact`, and most are legitimate reads with no estimate.
+
+### Verification
+
+- `coachhelm-board-caps.test.ts`: each strokes case (sg_baseline non-zero and
+  zero, peer_delta non-zero and zero, rough estimate, missing), the Projected
+  impact sentence (zero, real, no estimate, in the lede and in Why), and the
+  caps (0, 2, 3 and 9 findings with 0, 1 and 3 strengths; the counts add
+  up).
+- `coachhelm.test.tsx`: the Board with nine and three, the button and its
+  route, and a measured zero alone.
+- Looked at on a phone (390 px) with the preview fixtures
+  (`?state=many|zero`). The "more reads" button is a small ghost button
+  (30 px), so on touch it keeps a 44 px target (`pointer: coarse`).
+- Review fix (CH13-21): the Board counts as shown only the reads it draws
+  (the focus, up to two more and one strength). The player feed takes a
+  `drawnLater` callback: the loader says which ids it drew once it has
+  shaped the rows, and only those are written to `golf_insight_exposure`.
+  Before, every read past the caps was recorded as a Board exposure.
+
+## 2026-10-20 — A not-traced cause is not drawn as a likely one
+
+```text
+Design package: none (CoachHelm supercharge, Slice 2; 00 open question 3)
+PR/commit:      see git log (claude/coachhelm-root-cause)
+Contract IDs:   CH-13982 (the diagnosis block; no id added)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_root_cause_diagnosis is on)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm-dive-shape.ts` `diagnosisFor`: a row whose
+  `evidence.cause.state` is `not_traced` gets no diagnosis, as the
+  placeholder does. The engine writes that state only with
+  `coachhelm_root_cause_diagnosis` on (off everywhere), so nothing changes
+  today. The mapping of the three cause states onto the existing level:
+  counted (`observed_sequence`) is `observed`; likely from the totals
+  (`inferred_hypothesis`) is `hypothesis`, which a player never sees; not
+  traced is no diagnosis.
+
+### Why
+
+- A not-traced sentence ("Not traced yet. Needs 10 missed greens over 3
+  rounds; 6 so far.") is a count-down or a data gap, not a cause. Drawn in
+  the "Likely, not measured" box it would read as a guess.
+
+### Verification
+
+- `coachhelm-dive.test.tsx`: not traced gets no diagnosis; counted and
+  likely keep `observed` and `hypothesis`. No screenshot: no layout change.
+
+## 2026-10-20 — Deep dive: each read opens with What, Why, Next and When
+
+```text
+Design package: CoachHelm supercharge, Slice 0 (the Read, output only)
+PR/commit:      see git log (claude/coachhelm-read-lines)
+Contract IDs:   130716 (CH-13982: coach only now), CH-13903 (When line)
+Actions:        none
+Data impact:    none (no new read, no engine or generator change)
+Held items:     none
+```
+
+### Changed
+
+- The player's Deep dive opens each read with four lines under its title
+  (`data/coachhelm-read-shape.ts`, drawn by `Read` in `views/DeepDive.tsx`):
+  What (the metric, the value and its sample, the comparison by name, strokes
+  a round only when the row estimates them, the confidence word), Why (a cause
+  seen in the shots, marked "Measured in your shots", with its counts; else
+  "Not traced yet: the record does not say why."), Next (the drill, or the
+  row's own action, or "No drill assigned." for the generators' placeholder)
+  and When ("Through" the newest round in the read, and "Out of date: ..."
+  when a newer round is not in it).
+- A player never sees an inferred cause (the owner's default for supercharge
+  open question 3, "hide"): no cause sentence and no "Likely, not measured"
+  marker on the Why line or in "Why CoachHelm thinks so"; the Why line reads
+  "Not traced yet". A coach's rendering (`toChDeepInsight(..., say, 'coach')`)
+  keeps "Likely, not measured" and the cause. The role is the viewer the loader
+  already maps the card for. The generators' stock reason "sample adequate"
+  is no longer drawn; the drivers and their counts still are.
+- Folded, not repeated: the lede under the title (it is the start of the full
+  write-up now), the out-of-date note under the title (the When line), the
+  cause and its marker in "Why CoachHelm thinks so" (the Why line; the section
+  keeps the drivers, the reason and the write-up), the "This week" block (the
+  Next line) and the stroke sentence under the measured number (the What
+  line, said once).
+- New styles under `.ch-hd-read` in `coachhelm-dive.css`, `--ch-*` tokens only.
+
+### Why
+
+- Supercharge Slice 0: one read is one claim in four fixed lines, from fields
+  that exist today. A zero or unestimated stroke figure is never said, a
+  benchmark always has a name, and a cause the row does not state is "not
+  traced yet", never made up. After PR #2213 the generators' placeholder cause
+  maps to no diagnosis, so those rows read "Not traced yet".
+
+### Verification
+
+- `coachhelm-read.test.ts` (new): a real cause, no cause, the placeholder
+  action, zero and unestimated strokes, a measured `sg_baseline` figure, an
+  out-of-date row, the same numbers in the coach's and the player's voice, and
+  an inferred cause hidden from the player but shown to a coach (an observed
+  one shown to both). `coachhelm-dive.test.tsx` updated on purpose for the
+  folded parts and the hidden hypothesis.
+- Looked at on a phone (390 px) and a desktop width with the preview
+  fixtures (`?state=many|stale|zero`). On a phone the four lines sit in the
+  green dossier head, so they take its on-green inks there
+  (`--ch-on-green-ink*`); the first pass used the card inks and was too
+  dark to read.
+- The open read's category over its title ("Around the green") was field
+  green on the green phone head, a rule from before this change; it takes the
+  on-green ink there now.
+- Review fixes: a count ("18 of 31 putts") is never derived from a sample
+  that counts both arms of a comparison (putt-bias and putt-slope-bias store
+  both sides' putts), and when the Why line is not traced for the viewer the
+  full write-up leaves out the generator's sentences that guess a cause
+  ("consistent with a pace-control pattern"), so a player never reads the
+  cause the Why line holds back.
+
 ## 2026-10-20 — The Deep dive stops drawing the placeholder cause
 
 ```text
@@ -35,8 +232,8 @@ Held items:     none
 ### Verification
 
 - `placeholder-cause.test.ts` (both production spellings) and
-  `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank, observed and hypothesis cases are
-  unchanged). No screenshot: the card loses one block and no layout rule
+  `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank,
+  observed and hypothesis cases are unchanged). No screenshot: the card loses one block and no layout rule
   changed.
 
 ## 2026-10-19 — CoachHelm: no side rails, one place for the view switch

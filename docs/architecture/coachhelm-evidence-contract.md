@@ -2070,6 +2070,78 @@ Other contract changes in the same pass:
   persists it: the label came from headline keywords, not from the worst SG
   category. Per-category SG lives in the `sg_*` standings.
 
+## Honest root cause (supercharge Slice 2, 2026-10-20)
+
+Behind `coachhelm_root_cause_diagnosis` (OFF). With the flag off, the
+generator writes the P0-05 template diagnosis exactly as before, never loads
+shots, and writes none of the fields below. With it on, a leak read's
+`evidence.diagnosis` comes from `v3/engine/root-cause.ts`, and the row carries
+`evidence.cause` in one of three states:
+
+- `observed_sequence`, "counted": ≥ 10 failing events over ≥ 3 rounds, and
+  one recorded path on ≥ 4 of them, ≥ 30%, in ≥ 2 rounds
+  (`MIN_PATTERN_ROUNDS`; one bad day is not a pattern). Reader level
+  `observed`.
+- `inferred_hypothesis`, "likely from totals": no counted path, but the
+  narrowing's chosen par × length slice has ≥ 10 per arm, a slice rate ≥ 1.25
+  × the rest, and a Newcombe lower bound above zero, Bonferroni-widened over
+  the slices the narrowing tried (family-wise 95%). Reader level
+  `hypothesis`.
+- `not_traced`: neither; `not_traced_reason` says why. Not a cause, so no
+  reader level.
+
+`diagnosis.causality_level` is `observed_sequence` only for a counted cause
+and `inferred_hypothesis` otherwise; readers must look at `cause.state` to
+tell a likely cause from a not-traced one.
+
+- **Likely prints both arms.** `cause.alternatives[0]` holds `arm_a` (the
+  slice) and `arm_b` (the rest) with n, failures and rate, the lift (null when
+  the rest never failed) and the interval. The sentence quotes all of them.
+- **Not traced says why.** `count_down` carries need and have for events and
+  rounds; `data_gap` names the one `golf_shots` field recorded on under 60%
+  of the failures (`miss_direction`, `distance_to_hole_after`) and, as
+  `target_count`, how many of the next failures must carry it: the smallest
+  x with (have + x) / (of + x) ≥ 0.6, since new failures join the population
+  too. It is mirrored in `evidence.data_gap`. `no_leading_path`,
+  `no_shot_path`, `no_window`, `pattern_only` and `load_failed` are the
+  others. None of them is written as a cause, and the "is off its benchmark.
+  Likely cause inferred from the aggregate" placeholder is never written.
+- **Only recorded, unusual paths count.** A path with an unrecorded step
+  (leave distance missing) and a costly-shot path where nothing was costly
+  have no pattern at all, so they count toward neither a path nor the
+  floors. The ordinary putt miss (inside 3 ft, holed next) is not a path.
+- **Tee and opening hole stop at Likely.** `sg_ott` and `opening_hole_delta`
+  carry `maxState: 'inferred_hypothesis'`: a repeated tee or first-hole path
+  is reported as `pattern_only`, never as a counted cause.
+- **Putt actions stay sourced.** Lag pace advice is given only for first
+  putts from 25 ft or more; shorter ranges get a neutral "Practice first
+  putts from …". No start-line advice (unsourced in
+  `docs/v3-research-golf-domain.md`).
+- **No window, no trace.** A read without a stamped window (`window_start`,
+  or `window_days` > 0 with an end) is `no_window`; a zero-day span is not a
+  window. Rolling generators (`tee-strategy`, `approach-miss`, `scrambling`,
+  `warmup-hole`) set `rollingWindowDays`, so the shot load uses that many
+  days ending today rather than their lifetime or last-round stamp. The
+  one-year fallback from #2073 is gone.
+- **`diagnosis.basis`** records what the cause rests on (`shot_sequence`,
+  `hypothesis_policy`, `aggregate_only`), what was checked, and the context
+  narrowing. `basis.sequence.examples` lists up to five holes.
+- **Readers.** `src/lib/coachhelm/reads/cause-state.ts` is the one mapping.
+  Clubhouse's dive returns no diagnosis for a not-traced cause, so its Why
+  section reads "Not traced yet". Fairway's player hub draws a not-traced
+  cause step without a "Likely" marker, and the coach `DiagnosisPanel` (via
+  `EvidencePanel`) shows no causality chip and the sentence alone, with the
+  action under "Next step", never "Likely because" or "Practice focus". A
+  likely cause keeps its Hypothesis chip and its own "Likely from the
+  totals" lead, without a second "Likely because".
+- **Framing.** Only a leak gets a cause. Generators whose verdict is not the
+  sign of `your_value − comparison_value` declare `ComposedContent.framing`
+  (`tee-strategy`, `putt-bias`, `pressure-gap`, `warmup-hole`); the others
+  fall back to comparing the two values by polarity.
+- **`evidence.coach_copy`** (title and content in a coach's third-person
+  voice) is typed and stamped from `ComposedContent.coach`; no generator sets
+  it yet.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
@@ -2122,3 +2194,84 @@ surface may call them causal, root causes or mechanisms.
   days, and its player has a completed non-test round within 60 days.
 - Linked patterns (`chains.ts`): every hop gated, no arithmetic hop, signs
   consistent with any direct edge between chain nodes; sign carried.
+
+## Support and the claim ladder (Slice 1, 2026-10-20)
+
+Flag `coachhelm_support_v1` (off). Spec: CoachHelm supercharge
+`02-accuracy-standard.md` §2-§6 and `04-output-specs-and-examples.md` §1.1,
+§1.2, §1.5. Code: `src/lib/coachhelm/v3/support/` (pure statistics,
+`evaluate.ts`; the server pass, `run-pass.ts`; the run log, `run-log.ts`).
+
+When the flag is on, `analyzePlayer` runs the pass after the Tier-1
+generators and the composite synthesis. It reads exactly the v3 rows the run
+wrote: the orchestrator opens a run collector (`support/run-collector.ts`)
+around the generators and composites, and `upsertInsightV3` records each id
+it writes, so two runs of one player seconds apart, and the pass's own
+writes, never share a BH population. It merges these keys into each row's
+`evidence` with a compare-and-set on
+`updated_at`. Nothing else on the row changes: `confidence`, `title`,
+`content`, `priority` and the lifecycle are untouched, so the confidence
+word reads as before until a renderer reads `ladder`.
+
+- `support`: `version`, `testable` (or `untestable_reason`), `family`,
+  `gap` (positive = worse than the benchmark), `gap_unit`, `range_lo` /
+  `range_hi` (95%), `p_one_sided`, `q_adj` (BH), `tests_in_run`, `method`
+  (`wilson` / `newcombe` / `welch` / `poisson`), `test`, `direction`
+  (`weakness` / `strength`), `n`, `n_unit`, `rounds_n`, `floor`,
+  `round_floor`, `benchmark` `{ source, value }`, `clear`.
+- `ladder`: the read as worded: `seen_repeatedly`, `observed`, `likely`,
+  `working_hypothesis`, `not_enough_yet`.
+- `what_ladder`: the WHAT alone (what a surface may print when it drops an
+  uncorroborated cause).
+- `ladder_reasons`: machine-readable reasons (`not_supported`,
+  `below_round_floor`, `rounds_unknown`, `untestable:<why>`,
+  `tour_benchmark_only`, `no_strokes_estimate`, `uncorroborated_cause`,
+  `family_cap:<rung>`, ...).
+- `strokes_shrunk`, `shrink`: strokes a round from the shrunk estimate
+  `(n·y + κ·μ)/(n + κ)`; κ 30 attempts / 20 shots / 5 rounds / 8 rounds; μ is
+  the team line when comparable.
+- `stability`: written only when the evidence carries split-half gaps.
+
+Rules the pass applies:
+
+- Tests by shape. One rate against a benchmark: Wilson range, exact binomial
+  p. Two rates within the player (downhill vs level, driver vs non-driver):
+  Newcombe range, pooled-z p. A mean with a standard error: t range and p. A
+  count per round: exact Poisson range and p.
+- Benchmark: the row's `standing.team_avg` when the team has >= 4 players and
+  the standing measures the same quantity (not for approach rows, whose
+  standing is on-green proximity), else `level_avg`, else the row's own
+  comparison. A Tour-only benchmark caps the read at Working hypothesis (02
+  §3: words compare to the team).
+- Benjamini-Hochberg across every candidate of the run at q = 0.10.
+  Untestable candidates count in `m` as p = 1.
+- Ladder gates as 02 §6. Where 02 is silent: unknown rounds is Not enough
+  yet; no strokes estimate stops the WHAT at Working hypothesis; strokes below
+  0.3 with a real estimate is Not enough yet; a zero `strokes_impact` is a
+  measured zero only for `sg_baseline`.
+- Untestable today, by design (no counts or spread on the evidence):
+  `par_scoring`, `big_number_rate`, composites, opening-hole and pressure rows
+  without a stored interval, and putt-break rows without per-side counts.
+
+`golf_coachhelm_run_log` (migration 20261020114500, held until the owner
+applies it) gets one row per player per run: candidates, testable,
+supported, shown (Working hypothesis or above, before delivery caps),
+suppressed by first reason, rungs, per-family rungs and the Watching list.
+`trigger` is `round` (round submitted), `checkpoint` (the safety-net cron
+re-running a round whose analysis did not finish), `sweep` (roster sweep) or
+`manual` (a coach refresh or on-demand analysis); `newest_round_id` is the
+newest round that passes `isCountableRound` (`src/lib/golf/round-countable.ts`).
+`golf_insight_exposure.rank_factors` gets `{ version, score, S, R, ladder,
+q_adj, position, surface }` (S from `strokes_shrunk`, capped at 3; R the 03
+§2.2 rung weight); the surface's existing `rank_score` and ranking are
+unchanged.
+
+Back-test, part one (`scripts/coachhelm/support-backtest.ts` over the export
+from `scripts/coachhelm/support-backtest.sql`, production 2026-10-20, 710
+live v3 reads on 68 players): as stored today, 6 Observed, 8 Working
+hypothesis and 696 Not enough yet; with round counts stamped (Slice 0b), 6
+Observed, 2 Likely, 47 Working hypothesis and 655 Not enough yet. 107 of 504
+testable reads are BH-supported; 5 of 49 players with >= 5 countable rounds
+would get an Observed-or-better read, against the 02 §8 bar of 70%. Ladder
+words must not reach players until the bars are met. The replay over past
+cutoffs (held / cleared / contradicted per rung) is not built yet.

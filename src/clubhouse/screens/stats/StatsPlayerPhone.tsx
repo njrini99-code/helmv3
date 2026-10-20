@@ -18,14 +18,19 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
+import { deltaTone, halvesChange } from '../../lib/stats-signal';
+import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
-import { FigureGauge, SgBars, SgChangeChip } from './charts';
+import { FigureGauge, SgChangeChip } from './charts';
+import { sgLegRows, type SgLegRow } from './leg-rows';
+import { SgBars } from './SgBars';
+import { RoundTrend } from './RoundTrend';
+import { trendRounds } from './round-trend';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
-import { ScoreLine } from './StatsTeamPhone';
 import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
@@ -206,7 +211,7 @@ export function StatsPlayerPhone({
         {data.statsError ? (
           <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
-          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} puttBands={data.puttBands} onRetry={onRetry} phone />
+          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={onRetry} phone />
         ) : (
           <section className="ch-stm-panel">
             <EmptyState
@@ -252,7 +257,10 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
   const flat = form != null && Math.abs(form) < 0.05;
   // The rounds in each half of the trend the change compares (summarizeWindow's own split).
   const half = Math.floor(w.trend.length / 2);
-  const formTone = form == null || flat ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
+  // Coloured only when the change clears its standard error (Q4): three scores a half rarely do, so it mostly reads as no clear change.
+  const formSignal = deltaTone(form, halvesChange(w.trend)?.se, true);
+  const formTone = formSignal === 'is-gain' ? ' ch-gain' : formSignal === 'is-loss' ? ' ch-loss' : '';
+  const halves = half === 1 ? 'Newest round vs first' : `Newest ${half} vs first ${half}`;
   const d = data.sgChange.delta;
   // The scoring average against par, per 18 holes over the window's rounds that carry a par (owner, 2026-10-07: no bare numbers).
   const pars = data.rounds.filter((r) => r.toPar != null).map((r) => per18(r.toPar as number, r.holes));
@@ -277,7 +285,10 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
           <dt>Scoring trend</dt>
           {/* Scores, so "higher" is worse (amber) and "lower" better; the sub-line names the halves compared (summarizeWindow). */}
           <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${Math.abs(form).toFixed(1)} ${form < 0 ? 'lower' : 'higher'}`}</dd>
-          <dd>{form == null ? 'After three rounds' : half === 1 ? 'Newest round vs first' : `Newest ${half} vs first ${half}`}</dd>
+          <dd>
+            {form != null && formSignal === '' && <span className="ch-stm-figs__clear">No clear change</span>}
+            {form == null ? 'After three rounds' : halves}
+          </dd>
         </div>
       </dl>
       {/* Each figure drawn against its reference (decorative; the figures say it): scoring from par, strokes gained from
@@ -293,7 +304,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
             <span className="ch-num">{countWords(w.rounds, w.effRounds)} in this window.</span>
             {/* P005-D6: the chip names what it measures, since it sits away from the SG figure. */}
             {w.sgPerRound != null && d != null && (
-              <SgChangeChip change={{ ...data.sgChange, context: data.sgChange.context ? `SG a round ${data.sgChange.context}` : 'SG a round' }} code="CH-5310" />
+              <SgChangeChip change={data.sgChange} subject="SG a round" code="CH-5310" />
             )}
           </>
         )}
@@ -306,13 +317,9 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
 function StrokesGained({ data }: { data: ChPlayerProfile }) {
   const w = data.win;
   const baseline = sgBaseline(data.tour);
-  const legs = [
-    { label: 'Off the tee', value: w.sgLegs.tee },
-    { label: 'Approach', value: w.sgLegs.approach },
-    { label: 'Around green', value: w.sgLegs.around },
-    { label: 'Putting', value: w.sgLegs.putting },
-  ];
-  const known = legs.filter((l): l is { label: string; value: number } => l.value != null);
+  const rows = sgLegRows(data, data.viewer === 'coach');
+  const legs = rows.filter((l) => !l.total);
+  const known = legs.filter((l): l is SgLegRow & { value: number } => l.value != null);
   if (!known.length && w.sgPerRound == null)
     return (
       <section className="ch-stm-panel ch-stm-panel--bars ch-stm-panel--sg" aria-labelledby="ch-spm-sg">
@@ -336,7 +343,7 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
         <h2 id="ch-spm-sg">Strokes gained</h2>
         <span>Per round · {baseline.vs}</span>
       </div>
-      <SgBars rows={[...legs, { label: 'Total', value: w.sgPerRound, total: true }]} />
+      <SgBars rows={rows} />
       {note && <p className="ch-stm-note">{note}</p>}
     </section>
   );
@@ -344,35 +351,42 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
 
 function Trend({ data }: { data: ChPlayerProfile }) {
   // Oldest first, every round in the window, a score per 18 holes (a 9-hole score doubled). The phone's one scoring
-  // chart (P005-D1): Score by round is desktop only.
-  const rounds = [...data.rounds].reverse().map((r) => ({ ...r, score: per18(r.score, r.holes) }));
+  // chart (P005-D1): Score by round is desktop only. Each round is a dot; the line is the five-round average from the third.
+  const role = data.viewer === 'coach' ? 'coach' : 'player';
+  const rounds = trendRounds(data.rounds, 'score');
   if (rounds.length === 0) return null;
-  const change = rounds[rounds.length - 1]!.score - rounds[0]!.score;
+  const first = rounds[0]!;
+  const last = rounds[rounds.length - 1]!;
+  const change = last.value! - first.value!;
+  const sgRounds = trendRounds(data.rounds, 'sg');
+  const openHref = (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}`, role);
   return (
-    <section className="ch-stm-panel" aria-labelledby="ch-spm-trend">
-      <div className="ch-stm-panel__h">
-        <h2 id="ch-spm-trend">Scoring trend</h2>
-        <span className="ch-num">
-          {rounds.length} {rounds.length === 1 ? 'round' : 'rounds'}
-          {rounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}
-        </span>
-      </div>
-      {/* A line needs two rounds; with one the panel says what there is instead of vanishing. */}
-      {rounds.length === 1 ? (
-        <div className="ch-stm-chart-hold">
-          <p className="ch-stm-note">
-            One round so far: <span className="ch-num">{rounds[0]!.score}</span> on {rounds[0]!.date}. The trend draws from the second.
-          </p>
+    <>
+      <section className="ch-stm-panel" aria-labelledby="ch-spm-trend">
+        <div className="ch-stm-panel__h">
+          <h2 id="ch-spm-trend">Scoring trend</h2>
+          <span className="ch-num">
+            {rounds.length} {rounds.length === 1 ? 'round' : 'rounds'}
+            {rounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}
+          </span>
         </div>
-      ) : (
-        <ScoreLine
-          values={rounds.map((r) => r.score)}
-          from={rounds[0]!.date}
-          to={rounds[rounds.length - 1]!.date}
-          label={`Scores over the last ${rounds.length} rounds, from ${rounds[0]!.score} to ${rounds[rounds.length - 1]!.score}${change === 0 ? '' : `, ${Math.abs(change)} ${change < 0 ? 'lower' : 'higher'}`}.`}
+        <RoundTrend
+          rounds={rounds}
+          kind="score"
+          openHref={openHref}
+          label={`Scores over the last ${rounds.length} rounds, from ${Math.round(first.value!)} to ${Math.round(last.value!)}${Math.round(change) === 0 ? '' : `, ${Math.abs(Math.round(change))} ${change < 0 ? 'lower' : 'higher'}`}.`}
         />
+      </section>
+      {sgRounds.some((r) => r.value != null) && (
+        <section className="ch-stm-panel" aria-labelledby="ch-spm-sgtrend">
+          <div className="ch-stm-panel__h">
+            <h2 id="ch-spm-sgtrend">Strokes gained by round</h2>
+            <span className="ch-num">Per 18 holes</span>
+          </div>
+          <RoundTrend rounds={sgRounds} kind="sg" openHref={openHref} label="Strokes gained in each round of the window." />
+        </section>
       )}
-    </section>
+    </>
   );
 }
 

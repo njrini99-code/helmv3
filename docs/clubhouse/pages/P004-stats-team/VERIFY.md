@@ -293,6 +293,14 @@ before, after, baseline or evidence.
 | `P004__figures-lead__coach__1280__loading__after__d16567c.png` | after | d16567c | figures-lead (coach), 1280px window, Safari TP 253; skeleton in the lead layout; loading row 213px = loaded 213px; /clubhouse-preview/stats?state=loading; synthetic preview |
 | `P004__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
 | `P004__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P004__lead-chip__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | lead-chip (coach), 1440px, default, before: team strokes gained lead and its change chip; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__lead-chip__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | lead-chip (coach), 1440px, default, after: team strokes gained lead and its change chip; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__figure-tape__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | figure-tape (coach), 1440px, default, before: team figure tape: change tones and words; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__figure-tape__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | figure-tape (coach), 1440px, default, after: team figure tape: change tones and words; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__hero__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | hero (coach), 390px, default, before: phone hero scoring change; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__hero__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | hero (coach), 390px, default, after: phone hero scoring change; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__round-figures__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | round-figures (coach), 390px, default, before: phone figure rows and their change tones; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__round-figures__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | round-figures (coach), 390px, default, after: phone figure rows and their change tones; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

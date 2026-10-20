@@ -14,7 +14,10 @@ import { InlineNotice } from '../../ui/Notices';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { formatPct, NO_DATA } from '../../lib/format';
-import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, MakeRows, ParTiles, ScoreMix } from './charts';
+import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
+import { PuttBands } from './PuttBands';
+import type { PuttBandInput } from './putt-bands';
+import { ScoreMixBar } from './ScoreMixBar';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 
@@ -251,22 +254,24 @@ export function GameDetail({
   const benchScrRough = bench.scrambling_pct_rough ?? null;
   const benchSand = bench.scrambling_pct_sand ?? null;
 
-  // Putting: the curve is the calculator's nine bands from the window's own putts (exact counts past 20 feet); without the putt read it stops at 20 feet.
-  const nine = x.puttBandsNine;
-  const curve = nine
-    ? nine.map((b) => ({ band: b.label.replace(' ft', ''), value: b.attempts ? (b.made / b.attempts) * 100 : null, bench: b.bench, n: b.attempts }))
-    : [
-        { band: '0–3', value: s.puttMakePct0_3, bench: null, n: s.puttMakeCount0_3 },
-        { band: '3–5', value: s.puttMakePct3_5, bench: bench.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
-        { band: '5–10', value: s.puttMakePct5_10, bench: bench.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
-        { band: '10–15', value: s.puttMakePct10_15, bench: bench.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
-        // No Tour mark: the Tour's standard is 15-25 feet, and this band is 15-20 (graded like with like only in the six Tour bands).
-        { band: '15–20', value: s.puttMakePct15_20, bench: null, n: s.puttMakeCount15_20 },
-      ];
+  // Putting: the make-rate chart reads the window's own putts in the six bands the Tour grades (0–3 to 25+ ft, exact made and
+  // tried); without the putt read it falls back to the calculator's own rates, which stop at 20 feet.
+  const cacheBands = [
+    { band: '0–3', value: s.puttMakePct0_3, bench: null, n: s.puttMakeCount0_3 },
+    { band: '3–5', value: s.puttMakePct3_5, bench: bench.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
+    { band: '5–10', value: s.puttMakePct5_10, bench: bench.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
+    { band: '10–15', value: s.puttMakePct10_15, bench: bench.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
+    // No Tour mark: the Tour's standard is 15-25 feet, and this band is 15-20 (graded like with like only in the six Tour bands).
+    { band: '15–20', value: s.puttMakePct15_20, bench: null, n: s.puttMakeCount15_20 },
+  ];
+  // The calculator keeps a rate and a count, not the putts made: the band carries the rate as kept and says its count.
+  const curve: PuttBandInput[] = shotBands
+    ? shotBands.map((b) => ({ label: b.label, made: b.made, attempts: b.attempts, bench: b.bench }))
+    : cacheBands.map((b) => ({ label: `${b.band} ft`, made: null, rate: b.value, attempts: b.n, bench: b.bench }));
   // The lead names the band furthest under the Tour, from the six bands the Tour publishes (not the nine, which reuse a standard across bands).
   const leadBands = shotBands
     ? shotBands.map((b) => ({ band: b.label.replace(' ft', ''), value: b.attempts ? (b.made / b.attempts) * 100 : null, bench: b.bench, n: b.attempts }))
-    : curve;
+    : cacheBands;
   const worstPutt = leadBands
     .filter((b) => b.value != null && b.bench != null && b.n >= 10)
     .sort((a, b) => (a.value! - a.bench!) - (b.value! - b.bench!))[0];
@@ -347,8 +352,8 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="What an average round looks like" wide {...noteOf('Holes per round by result, then the holes they add up to. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
-          <ScoreMix d={dist} totals={totals} />
+        <Panel title="What an average round looks like" wide {...noteOf('Every scored hole by result, under par to the left and over par to the right, with each result a round. Select one for the holes behind it. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
+          <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
         </Panel>
         <Panel title="Scoring by par" wide>
           <ParTiles rows={pars} />
@@ -579,12 +584,12 @@ export function GameDetail({
           title="Make rate by distance"
           wide
           {...noteOf(
-            `${phone ? 'Bars are the make rate; the tick is the Tour. Amber is below it.' : 'Green line is the player, dashed champagne is the Tour.'} Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`,
-            'Bars are the make rate; the tick is the Tour. Amber is below it.',
+            `Green dots are at or above the Tour, amber below it. A band shows from 10 putts and is graded against the Tour from 30.${shotBands ? ' Counts are putts logged with a distance. The Tour publishes five averages, one for each band past 3 feet.' : ''}`,
+            'Amber dots are below the Tour. A band grades from 30 putts.',
           )}
         >
           {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
-          {phone ? <MakeRows bands={curve} /> : <MakeCurve bands={curve} />}
+          <PuttBands bands={curve} compact={phone} />
         </Panel>
         <Panel title="How putts miss" wide>
           {/* Four zeros and "100% low side" claimed a pattern that was never logged (F-54). */}

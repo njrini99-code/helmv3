@@ -665,6 +665,7 @@ src/lib/coachhelm/
 - `src/app/golf/actions/insight-attribution.ts`
 - `src/app/golf/actions/insight-celebration.ts`
 - `src/app/golf/actions/insight-delivery-ranking.ts`
+- `src/app/golf/actions/insight-delivery-reads.ts`
 - `src/app/golf/actions/insight-delivery.ts`
 - `src/app/golf/actions/insight-management.ts`
 - `src/app/golf/actions/insights-coachhelm.ts`

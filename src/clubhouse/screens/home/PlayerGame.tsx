@@ -8,6 +8,7 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { changeSe, deltaTone, deltaWords } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
 import { formatHcp } from '../roster/format';
@@ -49,6 +50,8 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   const mean = shown.length ? shown.reduce((a, p) => a + p.score, 0) / shown.length : null;
   const prevMean = before.length >= Math.min(n, 3) && before.length ? before.reduce((a, p) => a + p.score, 0) / before.length : null;
   const delta = mean != null && prevMean != null ? mean - prevMean : null;
+  // Green or amber only when the change clears its standard error (stats visuals Q4): the two windows' scores, pooled spread under five.
+  const deltaSignal = deltaTone(delta, delta == null ? null : changeSe(shown.map((p) => p.score), before.map((p) => p.score), 'score'), true);
   const withPar = shown.filter((p): p is ChScoringPoint & { par: number } => p.par != null);
   const under = withPar.filter((p) => p.score < p.par).length;
   // Each figure drawn against a real reference (owner, 2026-10-06: no bare numbers): the average against the previous
@@ -81,7 +84,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
     ) : null,
   };
   const figs: Array<[string, string, string, string]> = [
-    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} vs previous ${before.length}`, changeTone(delta, true)],
+    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} · ${deltaWords(delta, deltaSignal, `vs previous ${before.length}`)}`, deltaSignal],
     ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
     ['Handicap', formatHcp(data.handicap), 'Index', ''],
     ['Under par', withPar.length ? `${under} of ${withPar.length}` : NO_DATA, withPar.length < shown.length ? 'Rounds with par recorded' : 'Rounds in this window', ''],

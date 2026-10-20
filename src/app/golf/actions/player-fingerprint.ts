@@ -269,7 +269,9 @@ async function getPlayerFingerprintImpl(
     // does not log the game route twice (DATA-16). A self-view keeps user.id.
     getInsightsForCoach(
       access.reason === 'coach' && access.coachId ? access.coachId : user.id,
-      { player_id: playerId, limit: 40 },
+      // A profile of the player, not the pick of what to work on: every read,
+      // folded, past the Slice 0 cap of 3 + 1 (no effect with the flag off).
+      { player_id: playerId, limit: 40, includeMore: true },
       supabase,
     ),
     // Strokes gained over COUNTABLE rounds (all of them, not the 10-round

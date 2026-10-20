@@ -19,7 +19,7 @@
  * {@link AssembledEvidence} as its own cast target and null-guards every read.
  * ========================================================================== */
 
-import type { InsightCategory } from '@/lib/coachhelm/v2/insights/types';
+import type { InsightCategory, InsightStrokesImpactMethod } from '@/lib/coachhelm/v2/insights/types';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { CounterfactualProjection } from '@/lib/coachhelm/v3/counterfactual/types';
 
@@ -50,6 +50,8 @@ export interface AssembledEvidence {
   metric_label?: string;
   /** base impact — frequently 0; NOT the ranking key (use counterfactual). */
   strokes_impact?: number;
+  /** how `strokes_impact` was produced; `rough_estimate` is a heuristic, not a measurement. */
+  strokes_impact_method?: InsightStrokesImpactMethod;
   confidence?: number;
   /** present only when the generator had a standing row (requiresStanding). */
   standing?: AssembledStanding | null;
