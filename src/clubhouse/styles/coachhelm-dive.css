@@ -1285,6 +1285,12 @@ main[data-canopy] .ch-hd-hero.ch-scoreboard .ch-hd-hero__k,
 .ch-hd-hero.ch-scoreboard .ch-hd-hero__sub {
   color: var(--ch-text-secondary);
 }
+/* On the scoreboard the counts are tiles again, so they take the tiles' gap back from the Ledger's flush figure line (gap 0),
+   which had them touching edge to edge (2026-10-19). */
+main[data-canopy] .ch-hd-hero.ch-scoreboard .ch-hd-hero__f,
+.ch-hd-hero.ch-scoreboard .ch-hd-hero__f {
+  gap: 10px;
+}
 main[data-canopy] .ch-hd-hero.ch-scoreboard .ch-hd-hero__f > div,
 .ch-hd-hero.ch-scoreboard .ch-hd-hero__f > div {
   padding: 16px 18px 14px;
