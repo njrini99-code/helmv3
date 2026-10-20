@@ -154,7 +154,7 @@ alias that moves it to one, and the query naming the item is read there
 | `/messages?conversation=<id>` (message fan-out, stored in `golf_calendar_notifications`) | coach, player | Messages, that thread |
 | `/announcements` | coach, player | Team Hub, Announcements tab |
 | `/tasks?task=<id>` | coach, player | Team Hub (coach: Tasks tab), that task |
-| `/roster`, `/roster?tab=requests` | coach | Roster; desktop draws the requests card at the top, and the phone opens the requests sheet once for `?tab=requests` (P003, `RosterPhone`) |
+| `/roster`, `/roster?tab=requests` | coach | Roster; for `?tab=requests` desktop focuses the requests card at the top (`Roster`), and the phone opens the requests sheet once (`RosterPhone`); P003 |
 | `/team` (older rows) | coach | Settings, Team |
 | `/settings`, `/settings?section=notifications` | coach, player | Settings |
 | `/coachhelm`, `/coachhelm?view=development`, `/my-development` (next.config) | coach, player | CoachHelm; a player's Development opens Stats' Development tab |

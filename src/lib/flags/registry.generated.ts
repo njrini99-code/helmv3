@@ -183,6 +183,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies migration 20260923100000_round_recap_single_flight_lock to each environment and confirms both public.claim_round_recap_lock and public.release_round_recap_lock exist via `pg_proc`. expires_at is a review reminder, not an automatic kill — if the migration still hasn't landed by then, re-date it rather than silently expiring. Once on everywhere and stable for a season, consider promoting to a permanent `release` flag or removing the flag branch entirely (the lock becomes the only code path) — owner's call, not automatic.",
   },
   {
+    feature_id: "coachhelm_root_cause_diagnosis",
+    owner: "golf/coachhelm",
+    purpose: "Gates the shot-based root cause on v3 CoachHelm insights (v3/engine/root-cause.ts, run from BaseGenerator.run()). When on, every leak row gets evidence.cause in one of three states: a counted shot sequence (a recorded path on at least 4 of at least 10 failures over 3 rounds, at least 30% of them, across at least 2 rounds; never for tee shots or opening holes), likely from the totals (one par x length context with both arms printed, lift at least 1.25, 10 per arm, Newcombe lower bound above 0 after a Bonferroni widening over the slices tried), or not traced (a count-down to the floor, a data gap naming the missing field, or the reason nothing was checked); diagnosis.root_cause is the sentence for that state and the \"is off its benchmark\" template is never written; strength and neutral rows get no cause. When off, the engine writes exactly what it wrote before this flag existed.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: "Off: the next analysis run rewrites each row's diagnosis with the old template and drops evidence.cause (the update path replaces evidence).",
+    cleanup_plan: "Remove the flag and the template branch in generator-base.ts once the root cause has run in production for a season without a wording or accuracy complaint; if coaches reject it, turn it off and remove the cause path instead.",
+  },
+  {
     feature_id: "coachhelm_round_review_narrative",
     owner: "golf/coachhelm",
     purpose: "Gates the round-review narrative end to end: checked FIRST, before any DB read tied to generation (mirroring the A4 slice 3b pattern — zero cost while off), so no code path selects, claims a lock for, or writes golf_round_reviews.ai_narrative unless this is on. Requires migration 20260923100000_round_recap_single_flight_lock applied in prod — it carries both the shared lock table/functions AND (folded into the same migration, revised in place before either piece was applied anywhere) the ai_narrative column and the golf_coachhelm_llm_calls.task CHECK widening to accept 'round_review_narrative', so neither piece can land half-applied. Until it is applied, turning this on would make every narrative generation attempt fail against columns/functions that don't exist there yet. Off by default in every environment for exactly that reason, same as coachhelm_recap_single_flight_lock's own migration-ordering rationale.",

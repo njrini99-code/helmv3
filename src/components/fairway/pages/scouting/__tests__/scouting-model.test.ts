@@ -15,6 +15,7 @@ import {
 } from '../scouting-model';
 import { makeInsight, makeRound } from './fixtures';
 import type { ThemeNode } from '@/lib/coachhelm/v3/themes/types';
+import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 
 describe('isFullRound', () => {
   it('drops partial rounds, including the "18 holes · 37" row', () => {
@@ -122,6 +123,25 @@ describe('buildClaim', () => {
   it('shows weight only when the strokes impact is real', () => {
     expect(buildClaim(makeInsight({ evidence: { strokes_impact: 0 } }), [], []).weightText).toBeNull();
     expect(buildClaim(makeInsight(), [], []).weightText).toBe('~0.8 strokes/rd vs Tour');
+  });
+
+  it('draws no weight for a value that rounds to 0.0, a missing value, or a negative one', () => {
+    const weight = (evidence: Partial<EvidenceInsight['evidence']>) =>
+      buildClaim(makeInsight({ evidence }), [], []).weightText;
+    expect(weight({ strokes_impact: 0, strokes_impact_method: 'peer_delta' })).toBeNull();
+    expect(weight({ strokes_impact: 0.004 })).toBeNull();
+    expect(weight({ strokes_impact: undefined as unknown as number })).toBeNull();
+    // Negative is a gain, not a cost; this line only weighs a cost.
+    expect(weight({ strokes_impact: -0.6 })).toBeNull();
+  });
+
+  it('shows a real peer_delta weight plainly and labels a rough_estimate one', () => {
+    const weight = (evidence: Partial<EvidenceInsight['evidence']>) =>
+      buildClaim(makeInsight({ evidence }), [], []).weightText;
+    expect(weight({ strokes_impact: 0.8, strokes_impact_method: 'peer_delta' })).toBe('~0.8 strokes/rd vs Tour');
+    expect(weight({ strokes_impact: 0.4, strokes_impact_method: 'rough_estimate' })).toBe(
+      '~0.4 strokes/rd vs Tour (rough estimate)',
+    );
   });
 
   it('links a claim to the plan and carries the server evidence-changed status', () => {

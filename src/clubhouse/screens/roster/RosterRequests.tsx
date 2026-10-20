@@ -1,6 +1,7 @@
 'use client';
 
 import { UserPlus } from 'lucide-react';
+import type { Ref } from 'react';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -12,14 +13,17 @@ import type { ChJoinRequestsState } from './useJoinRequests';
  * Join requests. The list and its actions live in useJoinRequests, so the
  * phone's banner and this card read the same optimistic state. `covered`: the
  * page's one notice (CH-1209) already says they failed, so only the title stays.
+ * `ref`: the card, which the bell's `?tab=requests` link focuses (Roster).
  */
 export function RosterRequests({
+  ref,
   teamName,
   jr,
   error,
   covered = false,
   onRetry,
 }: {
+  ref?: Ref<HTMLElement>;
   teamName: string;
   jr: ChJoinRequestsState;
   error: boolean;
@@ -42,7 +46,7 @@ export function RosterRequests({
   if (!reqs.length) return null;
 
   return (
-    <section className="ch-rs-req" aria-label="Join requests">
+    <section ref={ref} className="ch-rs-req" aria-label="Join requests" tabIndex={-1}>
       <div className="ch-rs-req__head">
         <span className="ch-rs-req__ic">
           <Icon icon={UserPlus} size={15} />

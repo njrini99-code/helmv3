@@ -58,6 +58,25 @@ import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 /**
+ * Thrown by `upsertInsight` when the ownership lookup (team membership or
+ * coach staff) ERRORS past its one retry. Writing anyway would key the row
+ * on a partial (signature, player_id, coach_id, team_id) tuple that the
+ * dedup lookup cannot match to the existing owned row, so every failed
+ * lookup minted a duplicate (2026-09-24 brownout: PGRST002 on the staff
+ * lookup wrote 19 coachless twins for one player in 50 s). Carries the
+ * PostgREST/Postgres `code` so `classifyThrown` reads it as transient.
+ */
+export class InsightOwnershipLookupError extends Error {
+  readonly code: string | undefined;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = 'InsightOwnershipLookupError';
+    this.code = code;
+  }
+}
+
+/**
  * Sentinel returned by `upsertInsight` when an active philosophy gate
  * decided the insight should not be written. Callers that need to know
  * whether a write happened can check for this constant; existing callers
@@ -685,6 +704,13 @@ const OWNED_TEAM_MEMBER_STATUSES = ['active', 'inactive'] as const;
  * staffed coach — better to land an orphaned row than throw, since refusing
  * to write loses the insight entirely rather than just its ownership.
  *
+ * 2026-09-25: a lookup that ERRORS (past its one retry) now throws
+ * `InsightOwnershipLookupError` instead of falling back to nulls. The
+ * fallback's premise ("refusing loses the insight") stopped holding once a
+ * thrown generator reports `status:'failed'` (P0-04): the write is picked up
+ * by the next analysis run, while the fallback wrote a permanent duplicate
+ * (see the class). Only the genuine no-team / no-staff case lands an orphan.
+ *
  * 2026-09-22 (orphan-insight investigation): both lookups here used to
  * destructure only `{ data }`, discarding `error` — so a real, retryable
  * Postgres/network failure on either query was silently indistinguishable
@@ -715,6 +741,7 @@ async function resolvePlayerOwnership(
     const coachId = await resolveTeamPrimaryCoachId(supabase, teamId);
     return { coachId, teamId };
   } catch (error) {
+    if (error instanceof InsightOwnershipLookupError) throw error;
     await logServerError(
       `resolvePlayerOwnership failed: ${describeError(error)}`,
       { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm' },
@@ -743,11 +770,14 @@ async function resolveActiveTeamId(
       return resolveActiveTeamId(supabase, playerId, attempt + 1);
     }
     await logServerError(
-      `resolvePlayerOwnership: golf_team_members lookup failed for player=${playerId}, falling back to unowned: ${describeError(error)}`,
+      `resolvePlayerOwnership: golf_team_members lookup failed for player=${playerId}; not writing the insight: ${describeError(error)}`,
       { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm', playerId },
       'warning'
     );
-    return null;
+    throw new InsightOwnershipLookupError(
+      `upsertInsight: team membership lookup failed for player=${playerId}: ${error.message}`,
+      (error as { code?: string }).code,
+    );
   }
 
   return membership?.team_id ?? null;
@@ -772,11 +802,14 @@ async function resolveTeamPrimaryCoachId(
       return resolveTeamPrimaryCoachId(supabase, teamId, attempt + 1);
     }
     await logServerError(
-      `resolvePlayerOwnership: golf_team_coach_staff lookup failed for team=${teamId}, falling back to unowned coach: ${describeError(error)}`,
+      `resolvePlayerOwnership: golf_team_coach_staff lookup failed for team=${teamId}; not writing the insight: ${describeError(error)}`,
       { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm' },
       'warning'
     );
-    return null;
+    throw new InsightOwnershipLookupError(
+      `upsertInsight: coach staff lookup failed for team=${teamId}: ${error.message}`,
+      (error as { code?: string }).code,
+    );
   }
 
   return staff?.coach_id ?? null;
