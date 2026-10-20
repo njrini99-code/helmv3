@@ -56,6 +56,8 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: async () => ({ data: { user: { id: 'u1' } }, error: null }) },
     from: (table: string) => tableChain(table),
+    // Entrants' names come through golf_player_profiles (security review S4).
+    rpc: async (name: string) => outcomes.get(`rpc:${name}`) ?? ok([]),
   }),
 }));
 
@@ -78,6 +80,7 @@ describe('getQualifierLeaderboard — a failed read is not an empty field', () =
     outcomes.set('golf_qualifiers', ok(QUALIFIER));
     outcomes.set('golf_players', ok({ id: 'p1' }));
     outcomes.set('golf_qualifier_entries', ok([ENTRY]));
+    outcomes.set('rpc:golf_player_profiles', ok([{ ...ENTRY.player, user_id: null, graduation_year: null, handicap: null, handicap_index: null }]));
     outcomes.set('golf_rounds', ok([{ player_id: 'p1', qualifier_round_number: 1, total_score: 74, score_to_par: 2 }]));
   });
 

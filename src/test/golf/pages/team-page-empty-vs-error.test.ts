@@ -70,6 +70,9 @@ function tableChain(table: string) {
 const client = {
   auth: { getUser: async () => ({ data: { user: { id: 'u1' } }, error: null }) },
   from: (t: string) => tableChain(t),
+  // The roster's names and avatars come through golf_player_profiles (security
+  // review S4); `rpc:<name>` is its outcome.
+  rpc: async (name: string) => outcomes.get(`rpc:${name}`) ?? ok([]),
 };
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => client }));
 
@@ -94,6 +97,7 @@ beforeEach(() => {
   outcomes.set('golf_teams:single', ok({ id: 'team-1', name: 'Shenandoah' }));
   outcomes.set('golf_teams', ok([{ id: 'team-1', name: 'Shenandoah' }]));
   outcomes.set('golf_players', ok([{ id: 'player-1', first_name: 'A', last_name: 'B' }]));
+  outcomes.set('rpc:golf_player_profiles', ok([{ id: 'player-1', user_id: 'u1', first_name: 'A', last_name: 'B', avatar_url: null, graduation_year: null, handicap: null, handicap_index: null }]));
   outcomes.set('golf_announcements', ok([]));
   outcomes.set('golf_coaches:single', ok({ id: 'coach-1', organization_id: 'org-1' }));
   outcomes.set('golf_team_coach_staff', ok([{ team_id: 'team-1' }]));
@@ -101,7 +105,8 @@ beforeEach(() => {
 
 describe('team page — a failed read is not an empty team', () => {
   it('does not render a team with no teammates when the roster read failed', async () => {
-    outcomes.set('golf_players', fails('statement timeout', '57014'));
+    // The roster is read through golf_player_profiles now (security review S4).
+    outcomes.set('rpc:golf_player_profiles', fails('statement timeout', '57014'));
     await expect(renderPage()).rejects.toThrow();
   });
 

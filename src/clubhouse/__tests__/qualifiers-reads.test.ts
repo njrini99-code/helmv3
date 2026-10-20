@@ -29,6 +29,8 @@ const qualifier = {
   is_test: false,
 };
 const entry = { qualifier_id: Q, player_id: 'p1', player: { id: 'p1', first_name: 'Eli', last_name: 'Brandt', graduation_year: 2027 } };
+/** The entrants' names come through golf_player_profiles (security review S4), not an embed on the entries. */
+const profiles = { data: [{ ...entry.player, user_id: null, avatar_url: null, handicap: null, handicap_index: null }] };
 const round = { id: 'r1', qualifier_id: Q, player_id: 'p1', qualifier_round_number: 1, total_score: 72, score_to_par: 0, round_date: '2026-10-02', course_name: 'Hope Valley CC', holes_played: 18 };
 
 afterEach(() => {
@@ -47,6 +49,7 @@ describe('Qualifier detail reads', () => {
     golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
     golf_holes: { data: [{ round_id: 'r1', hole_number: 1, par: 4, score: 4 }] },
     'rpc:get_qualifier_selection_reasons': { data: [] },
+    'rpc:golf_player_profiles': profiles,
   });
   const read = () => loadQualifierDetail({ role: 'player', teamId: 't1', playerId: 'p1', qualifierId: Q });
 
@@ -129,6 +132,7 @@ describe('Qualifier form reads', () => {
       golf_qualifier_selections: { data: [] },
       golf_qualifier_round_courses: { data: [{ round_number: 1, course_id: 'c1', course_name: 'Hope Valley CC', tee_id: 'tee1' }] },
       golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
+      'rpc:golf_player_profiles': profiles,
     };
     const { result, waves: depth } = await waves.run(loadQualifierForm({ teamId: 't1', qualifierId: Q }));
     expect(depth[0]).toEqual(['golf_qualifiers', 'golf_team_members']);

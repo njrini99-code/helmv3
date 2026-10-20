@@ -10,7 +10,12 @@ const mock = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
   auth: { getUser: async () => ({ data: { user: { id: 'viewer' } } }) },
-  rpc: mock.rpc,
+  // Players' names come through golf_player_profiles (security review S4), answered from the seeded players; every
+  // other function is the conversations read the tests drive through `mock.rpc`.
+  rpc: (name: string, args: unknown) =>
+    name === 'golf_player_profiles'
+      ? Promise.resolve({ data: mock.fail ? null : mock.players, error: mock.fail ? { message: 'Temporary network failure' } : null })
+      : mock.rpc(name, args),
   from: (table: string) => {
     const data = table === 'golf_coaches' ? mock.coaches : table === 'golf_players' ? mock.players : [];
     const result = { data, error: mock.fail ? { message: 'Temporary network failure' } : null, count: data.length };

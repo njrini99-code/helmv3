@@ -78,11 +78,19 @@ beforeEach(() => {
 });
 
 describe('Player roster · what the loader reads (30805)', () => {
+  // The active members; p9 is one whose profile the viewer may not see, so it is no teammate on the screen.
   const MEMBER_ROWS = [
-    // The database hands back whatever it is asked for; the extra fields prove nothing here depends on them.
-    { status: 'active', player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027, handicap: 1.2, handicap_index: -0.8, email: 'theo@school.edu', phone: '555-0100' } },
-    { status: 'active', player: { id: 'p2', first_name: 'Ava', last_name: 'Lindqvist', graduation_year: 2028, handicap: 2.4, handicap_index: null, email: 'ava@school.edu' } },
-    { status: 'active', player: null },
+    { status: 'active', player_id: 'p1' },
+    { status: 'active', player_id: 'p2' },
+    { status: 'active', player_id: 'p9' },
+  ];
+  // Teammates' display columns come through golf_player_profiles (security review S4), for the team's roster rows of any
+  // status: p3 is not an active member, so it is left out. The database hands back whatever it is asked for; the extra
+  // fields prove nothing here depends on them.
+  const PROFILES = [
+    { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027, handicap: 1.2, handicap_index: -0.8, email: 'theo@school.edu', phone: '555-0100' },
+    { id: 'p2', first_name: 'Ava', last_name: 'Lindqvist', graduation_year: 2028, handicap: 2.4, handicap_index: null, email: 'ava@school.edu' },
+    { id: 'p3', first_name: 'Removed', last_name: 'Player', graduation_year: 2026, handicap: null, handicap_index: null },
   ];
 
   it('asks only for the team row, the team\'s active members and its coaches\' names and roles, with no join code, request, note or round', async () => {
@@ -96,6 +104,7 @@ describe('Player roster · what the loader reads (30805)', () => {
     tables.current = {
       golf_teams: answer('golf_teams', { name: 'Varsity', season: 'Fall 2026', join_code: 'JOINME', head_coach_notes: 'private' }),
       golf_team_members: answer('golf_team_members', MEMBER_ROWS),
+      'rpc:golf_player_profiles': answer('rpc:golf_player_profiles', PROFILES),
       golf_team_coach_staff: answer('golf_team_coach_staff', [
         { role: 'assistant', is_primary: false, coach: { id: 'c2', full_name: 'Dan Whitfield', title: 'Assistant coach', email: 'dan@school.edu' } },
         { role: 'head_coach', is_primary: true, coach: { id: 'c1', full_name: 'Maya Reyes', title: null } },
@@ -104,7 +113,9 @@ describe('Player roster · what the loader reads (30805)', () => {
       ]),
     };
     const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
-    expect([...new Set(asked)].sort()).toEqual(['golf_team_coach_staff', 'golf_team_members', 'golf_teams']);
+    expect([...new Set(asked)].sort()).toEqual(['golf_team_coach_staff', 'golf_team_members', 'golf_teams', 'rpc:golf_player_profiles']);
+    // The names are asked for by this team only.
+    expect(filters['rpc:golf_player_profiles']).toEqual([['args', [{ p_team_ids: ['t1'] }]]]);
     // Wave 7 (decision D): the staff of this team, by name and role, head coach first; a coach with no name is left out.
     expect(String(filters['golf_team_coach_staff']!.find(([k]) => k === 'select')![1][0])).toBe('role, is_primary, coach:golf_coaches(id, full_name, title)');
     expect(filters['golf_team_coach_staff']).toContainEqual(['eq', ['team_id', 't1']]);
@@ -135,7 +146,12 @@ describe('Player roster · what the loader reads (30805)', () => {
   });
 
   it('CH-3808 a coaching staff read that fails leaves the Coaches group out, never "no coaches", and is logged; the players stand', async () => {
-    tables.current = { golf_teams: { data: { name: 'Varsity', season: null } }, golf_team_members: { data: MEMBER_ROWS }, golf_team_coach_staff: { error: { message: 'boom' } } };
+    tables.current = {
+      golf_teams: { data: { name: 'Varsity', season: null } },
+      golf_team_members: { data: MEMBER_ROWS },
+      'rpc:golf_player_profiles': { data: PROFILES },
+      golf_team_coach_staff: { error: { message: 'boom' } },
+    };
     const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
     expect(data.coaches).toBeNull();
     expect(data.players).toHaveLength(2);
@@ -151,7 +167,7 @@ describe('Player roster · what the loader reads (30805)', () => {
   });
 
   it('a team row that does not load leaves the name as "Your team", and the list stands', async () => {
-    tables.current = { golf_teams: { error: { message: 'boom' } }, golf_team_members: { data: MEMBER_ROWS } };
+    tables.current = { golf_teams: { error: { message: 'boom' } }, golf_team_members: { data: MEMBER_ROWS }, 'rpc:golf_player_profiles': { data: PROFILES } };
     const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
     expect(data.teamError).toBe(true);
     expect(data.teamName).toBe('Your team');

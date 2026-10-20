@@ -106,6 +106,8 @@ export function seed(fx: ParityFixture): void {
       },
     ],
     golf_qualifier_entries: entries,
+    // What golf_player_profiles reads (security review S4): the entrants' names no longer come embedded on the entries.
+    golf_players: fx.entries.map((e) => ({ ...player(e.player_id), user_id: null, handicap: null, handicap_index: null })),
     golf_rounds: fx.rounds.map((r) => ({ course_name: null, ...r })),
     golf_qualifier_selections: (fx.selections ?? []).map((s) => ({
       qualifier_id: fx.qualifier.id,
@@ -177,8 +179,12 @@ export function parityClient() {
   };
   return {
     from: (table: string) => query(table),
-    // No selection-reasons function: the reader falls back to the column, as before the D-35 migration.
-    rpc: async (name: string) => ({ data: null, error: { code: 'PGRST202', message: `Could not find the function public.${name}` } }),
+    // golf_player_profiles answers the entrants' display columns (every seeded player is on the qualifier's team). No
+    // selection-reasons function: the reader falls back to the column, as before the D-35 migration.
+    rpc: async (name: string, args?: { p_player_ids?: string[] | null }) =>
+      name === 'golf_player_profiles'
+        ? { data: (db.golf_players ?? []).filter((p) => !args?.p_player_ids || args.p_player_ids.includes(p.id as string)), error: null }
+        : { data: null, error: { code: 'PGRST202', message: `Could not find the function public.${name}` } },
     channel: () => channel,
     removeChannel: () => undefined,
     auth: { getUser: async () => ({ data: { user: { id: 'coach-user' } }, error: null }) },

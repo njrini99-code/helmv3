@@ -79,13 +79,39 @@ function baseTables(): SeedTables {
   };
 }
 
+/**
+ * The report reads players' names through golf_player_profiles (security
+ * review S4), not an embed: answered here from the seeded golf_players rows,
+ * display columns only, as the function returns them.
+ */
+function profilesRpc(tables: Record<string, Row[]>) {
+  return {
+    golf_player_profiles: async (args: unknown) => {
+      const ids = (args as { p_player_ids?: string[] }).p_player_ids ?? [];
+      const data = (tables.golf_players ?? [])
+        .filter((p) => ids.includes(p.id as string))
+        .map((p) => ({
+          id: p.id,
+          user_id: p.user_id ?? null,
+          first_name: p.first_name ?? null,
+          last_name: p.last_name ?? null,
+          avatar_url: null,
+          graduation_year: null,
+          handicap: null,
+          handicap_index: null,
+        }));
+      return { data, error: null };
+    },
+  };
+}
+
 function asCoach<T extends Record<string, Row[]>>(tables: T): T {
-  fake = createFakeSupabase({ user: { id: 'u-coach' }, tables });
+  fake = createFakeSupabase({ user: { id: 'u-coach' }, tables, rpc: profilesRpc(tables) });
   return tables;
 }
 
 function asUser<T extends Record<string, Row[]>>(userId: string, tables: T): T {
-  fake = createFakeSupabase({ user: { id: userId }, tables });
+  fake = createFakeSupabase({ user: { id: userId }, tables, rpc: profilesRpc(tables) });
   return tables;
 }
 

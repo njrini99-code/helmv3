@@ -74,6 +74,14 @@ import { formatDate, localToday } from '../ui/date-time';
 /** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
 const fieldDate = (iso: string) => formatDate(iso, { omitYear: iso.slice(0, 4) === localToday().slice(0, 4) });
 
+/**
+ * What golf_player_profiles answers (security review S4): the entrants' names are read through it, no longer embedded on
+ * their entries, so a loader test that shows names seeds `'rpc:golf_player_profiles'` with this.
+ */
+const profilesAnswer = (...players: Array<{ id: string; first_name: string | null; last_name: string | null; graduation_year: number | null }>) => ({
+  data: players.map((p) => ({ user_id: null, avatar_url: null, handicap: null, handicap_index: null, ...p })),
+});
+
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
@@ -277,6 +285,7 @@ describe('Qualifiers · the loader', () => {
     { qualifier_id: 'q1', player_id: 'p1', player: player('p1', 'Ann') },
     { qualifier_id: 'q1', player_id: 'p2', player: player('p2', 'Bea') },
   ];
+  const profiles = profilesAnswer(player('p1', 'Ann'), player('p2', 'Bea'));
   const rounds = [
     { id: 'r1', qualifier_id: 'q1', player_id: 'p1', qualifier_round_number: 1, total_score: 70, score_to_par: -2, round_date: '2026-09-22', course_name: 'Finley GC', holes_played: 18 },
     { id: 'r2', qualifier_id: 'q1', player_id: 'p2', qualifier_round_number: 1, total_score: 74, score_to_par: 2, round_date: '2026-09-22', course_name: 'Finley GC', holes_played: 18 },
@@ -308,7 +317,7 @@ describe('Qualifiers · the loader', () => {
 
   it('90106 a player list puts their own qualifiers first, with where they stand; mine keeps only those', async () => {
     const other = { ...Q, id: 'q2', name: 'Other', start_date: '2026-10-01' };
-    tables.current = { golf_qualifiers: { data: [other, Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds } };
+    tables.current = { golf_qualifiers: { data: [other, Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds }, 'rpc:golf_player_profiles': profiles };
     const all = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'all' });
     expect(all.items.map((i) => i.id)).toEqual(['q1', 'q2']);
     // Live, so the next round (2, at the qualifier's course with none set for it); the squad confirmed, and Bea not on it.
@@ -325,6 +334,7 @@ describe('Qualifiers · the loader', () => {
       golf_qualifier_entries: { data: entries },
       golf_rounds: { data: rounds },
       golf_qualifier_round_courses: { data: [{ qualifier_id: 'q1', round_number: 2, course_name: 'Hope Valley CC' }] },
+      'rpc:golf_player_profiles': profiles,
       golf_qualifier_selections: (f) => {
         asked.push(f);
         return { data: [{ qualifier_id: 'q1' }] };
@@ -353,6 +363,7 @@ describe('Qualifiers · the loader', () => {
       golf_qualifier_entries: { data: entries },
       golf_rounds: { data: rounds },
       golf_qualifier_round_courses: { data: [] },
+      'rpc:golf_player_profiles': profiles,
       // Answers with only the columns asked for, so a player read that asked for the reasoning would carry it.
       golf_qualifier_selections: (filters) => {
         const cols = String(filters.find(([k]) => k === 'select')?.[1][0] ?? '');
@@ -438,16 +449,23 @@ describe('Qualifiers · the loader', () => {
       return { ...counts };
     };
     const open = { ...Q, selection_state: 'open' };
-    expect(await asked({ golf_qualifiers: { data: [open] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds } }, () => loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' }))).toEqual({
+    // The entrants' names are one golf_player_profiles call beside the entries (security review S4).
+    expect(
+      await asked({ golf_qualifiers: { data: [open] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds }, 'rpc:golf_player_profiles': profiles }, () =>
+        loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' }),
+      ),
+    ).toEqual({
       golf_qualifiers: 1,
       golf_qualifier_entries: 1,
       golf_rounds: 1,
+      'rpc:golf_player_profiles': 1,
     });
     expect(
-      await asked({ golf_qualifiers: { data: open }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds }, golf_qualifier_round_courses: { data: [] }, golf_holes: holesFor }, () =>
-        loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }),
+      await asked(
+        { golf_qualifiers: { data: open }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds }, golf_qualifier_round_courses: { data: [] }, golf_holes: holesFor, 'rpc:golf_player_profiles': profiles },
+        () => loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }),
       ),
-    ).toEqual({ golf_qualifiers: 1, golf_qualifier_entries: 1, golf_rounds: 1, golf_qualifier_round_courses: 1, golf_holes: 1 });
+    ).toEqual({ golf_qualifiers: 1, golf_qualifier_entries: 1, golf_rounds: 1, golf_qualifier_round_courses: 1, golf_holes: 1, 'rpc:golf_player_profiles': 1 });
     const editAnswers = {
       golf_team_members: { data: [{ player: player('p1', 'Ann') }] },
       golf_qualifiers: { data: open },
@@ -455,6 +473,7 @@ describe('Qualifiers · the loader', () => {
       golf_rounds: { data: [] },
       golf_qualifier_selections: { data: [] },
       golf_qualifier_round_courses: { data: [] },
+      'rpc:golf_player_profiles': profiles,
     };
     expect(await asked(editAnswers, () => loadQualifierForm({ teamId: 't1', qualifierId: 'q1' }))).toEqual({
       golf_team_members: 1,
@@ -463,6 +482,7 @@ describe('Qualifiers · the loader', () => {
       golf_rounds: 1,
       golf_qualifier_selections: 1,
       golf_qualifier_round_courses: 1,
+      'rpc:golf_player_profiles': 1,
     });
     expect(await asked(editAnswers, () => loadQualifierForm({ teamId: 't1', qualifierId: null }))).toEqual({ golf_team_members: 1 });
   });
@@ -475,6 +495,7 @@ describe('Qualifiers · the loader', () => {
       golf_rounds: { data: [{ player_id: 'p2', qualifier_round_number: 2 }] },
       golf_qualifier_selections: { data: [{ player_id: 'p1' }] },
       golf_qualifier_round_courses: { data: [] },
+      'rpc:golf_player_profiles': profiles,
     };
     const form = (await loadQualifierForm({ teamId: 't1', qualifierId: 'q1' }))!;
     expect(form.minRounds).toBe(2);
@@ -544,6 +565,7 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
       golf_rounds: { data: rounds },
       golf_qualifier_round_courses: { data: [] },
       golf_holes: { data: [] },
+      'rpc:golf_player_profiles': profilesAnswer(player('p1', 'Ann'), player('p2', 'Bea')),
       golf_qualifier_selections: (filters) => {
         const cols = String(filters.find(([k]) => k === 'select')?.[1][0] ?? '');
         return cols.includes('coach_reasoning') ? miss : { data: [{ player_id: 'p2', selection_type: 'coach_pick' }] };
@@ -1154,6 +1176,7 @@ describe('Qualifiers · the courses and the cards stream behind the standings (o
       golf_qualifier_round_courses: { data: [{ round_number: 1, course_name: 'Finley GC', tee_id: 'tee1' }] },
       golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
       golf_holes: { data: [{ round_id: 'r1', hole_number: 1, par: 4, score: 4 }] },
+      'rpc:golf_player_profiles': profilesAnswer({ id: 'p1', first_name: 'Ann', last_name: 'X', graduation_year: null }),
     };
     const el = (await ClubhouseQualifiersRoute({ view: 'detail', id: Q1 })) as ReactElement<{ data: Record<string, unknown>; secondary: Promise<unknown> }>;
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -2741,6 +2764,7 @@ describe('Qualifiers · the route (who reaches which address)', () => {
       golf_qualifier_selections: { data: [] },
       golf_team_members: { data: [{ player: player('p1', 'Ann') }] },
       golf_holes: { data: [] },
+      'rpc:golf_player_profiles': profilesAnswer(player('p1', 'Ann'), player('p2', 'Bea')),
       ...over,
     };
     tables.current = new Proxy({}, { get: (_t, key: string) => (reads.push(key), answers[key]) }) as never;
