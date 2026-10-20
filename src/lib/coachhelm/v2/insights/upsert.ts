@@ -53,7 +53,7 @@ import {
   type LifecycleWriteDecision,
 } from './lifecycle-policy';
 import { getActiveGate, incrementGatedCount } from './gate-context';
-import { evidenceRevisionKey as currentRevisionKey } from './revision-key';
+import { carryForwardStamp, evidenceRevisionKey as currentRevisionKey } from './revision-key';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -268,6 +268,8 @@ async function updateExisting(
   teamId: string | null,
   attempt = 0,
 ): Promise<string> {
+  // Slice 0b: an unstamped write (failed round load) keeps the row's stamp.
+  evidence = carryForwardStamp(existing.evidence, evidence);
   const nowIso = new Date().toISOString();
   const existingValue = existing.evidence?.your_value ?? 0;
   const newValue = evidence.your_value;

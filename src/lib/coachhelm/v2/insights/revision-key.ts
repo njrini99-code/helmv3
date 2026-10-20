@@ -26,6 +26,29 @@ export function revisionKeyFor(
   return `${evidence.sample_n}|${evidence.window_end}`;
 }
 
+/** Freshness stamp fields `carryForwardStamp` keeps across an unstamped write. */
+const STAMP_FIELDS = ['newest_round_id', 'scanned_through_round_id', 'rounds_n', 'sample_unit'] as const;
+
+/**
+ * Pure: when an incoming write carries no freshness stamp (its round load
+ * failed) but the row it replaces had one, keep the previous stamp fields, so
+ * a transient error never unstamps a read (which would also flip its
+ * revision key back to the legacy one). A stamped write is returned as is.
+ */
+export function carryForwardStamp(
+  previous: Partial<InsightEvidence> | null | undefined,
+  next: InsightEvidence,
+): InsightEvidence {
+  if (next.newest_round_id || !previous?.newest_round_id) return next;
+  const kept: Partial<InsightEvidence> = {};
+  for (const field of STAMP_FIELDS) {
+    if (previous[field] !== undefined && next[field] === undefined) {
+      (kept as Record<string, unknown>)[field] = previous[field];
+    }
+  }
+  return { ...next, ...kept };
+}
+
 /** The key upsert persists, with the mode read from the Slice 0 flag. */
 export function evidenceRevisionKey(
   evidence: Pick<InsightEvidence, 'sample_n' | 'window_start' | 'window_end' | 'newest_round_id'>,

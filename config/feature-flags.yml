@@ -639,25 +639,35 @@ flags:
       been reviewed, or remove the section and its wiring if the review
       asks for a different surface/placement instead.
 
-  # CoachHelm supercharge Slice 0 / 0b (design:
-  # /mnt/project-files/coachhelm/supercharge/07-system-architecture.md §4).
-  # Owner: Nick. Created off by the Slice 0b freshness PR. Stamping each read's
-  # window, newest round and sample unit is NOT behind it (additive, honest).
+  # CoachHelm supercharge, Slice 0 and 0b (design in the owner's
+  # coachhelm/supercharge folder, 07 section 4). One flag for every Slice 0
+  # change a live coach or player would see; whichever of the delivery PR and
+  # the freshness PR merges second extends this one entry, never adds a
+  # second. Owner: Nick. Delivery (Slice 0): overlapping reads fold into one
+  # and each Fairway insight feed holds 3 open reads + 1 strength per player
+  # (src/app/golf/actions/insight-delivery-reads.ts). Freshness (Slice 0b):
+  # floors, revision key, displayed window bounds and the freshness sweep
+  # (src/lib/coachhelm/v3/engine/read-window.ts, read-floors.ts,
+  # sweep-freshness.ts). Writing each read's newest round, rounds and sample
+  # unit is NOT behind it (no surface shows them). Off: everything is what it
+  # was.
   - feature_id: coachhelm_reads_v1_copy
     owner: golf/coachhelm
     purpose: >-
-      Turns on the CoachHelm Reads v1 behavior. Slice 0b part: a read needs
-      at least 3 countable rounds and its family's attempt floor or it is
-      held back as Watching with a count-down; a new evidence revision is a
-      new newest round in the window (or a moved window), not a changed
-      sample count; and the nightly roster sweep re-analyzes any player whose
-      newest countable round is newer than their newest read (deterministic
-      generators only, no LLM). Off, the engine keeps the old 5-sample gate,
-      the sample_n|window_end key and the unanalyzed-latest-round sweep.
+      Gates the CoachHelm Slice 0 output changes. Delivery: overlapping reads
+      fold into one at delivery and each player's feeds hold 3 open reads
+      plus 1 strength. Freshness: a new or refreshed read needs at least 3
+      countable rounds and its family's attempt floor or it is held back as
+      Watching with a count-down; a new evidence revision is a new newest
+      round in the window (or a moved window), not a changed sample count;
+      empty window dates are filled from the rounds read; and the nightly
+      roster sweep re-analyzes players whose newest countable round is newer
+      than their newest read (deterministic generators only, no LLM). Off
+      until the owner reviews the shorter feeds and the Watching counts.
     type: release
     status: active
     created_at: "2026-10-20"
-    expires_at: "2027-01-31"
+    expires_at: null
     default: false
     environment:
       production: false
@@ -665,12 +675,14 @@ flags:
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
-      The owner turns it on (development, preview, production) after
-      reviewing the Watching counts in the Slice 0b PR. Once on everywhere
-      for two weeks with no rollback, delete the flag and the legacy
-      branches it guards (revision-key.ts legacy key, the floor check in
-      read-window.ts stampAndCheckRead, the sweep's legacy-only path).
-      Turning it off rolls everything back to the old gates at once.
+      When the owner turns production on and the 3 + 1 feeds and the floors
+      have held for an observation window, make fold and cap the only
+      behavior in insight-delivery.ts, delete the legacy branches the
+      freshness part guards (revision-key.ts legacy key, the floor and bounds
+      branches in read-window.ts, the sweep's legacy-only path), and delete
+      this flag in the same change. Turning it off restores the old gates,
+      key and sweep for every later write; reads already archived or matured
+      while it was on stay as they are until their next refresh.
 
   # Clubhouse: the from-scratch GolfHelm UI (src/clubhouse/) for coaches and
   # players (isClubhouseFor). Parallel to Fairway, never layered on it.

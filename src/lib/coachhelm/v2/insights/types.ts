@@ -200,12 +200,15 @@ export interface InsightEvidence {
    * Slice 0b freshness stamps (additive). Written by the v3 engine from the
    * rounds the read was computed over (`v3/engine/read-window.ts`):
    * `sample_unit` names what `sample_n` counts, `rounds_n` is the countable
-   * rounds in the window, and `newest_round_id` is the newest round in it.
+   * rounds that contributed, `newest_round_id` is the newest of them, and
+   * `scanned_through_round_id` is the newest countable round the read looked
+   * at (a newer round can add nothing to a family, e.g. no bunker shot).
    * Absent on v2 rows and on v3 rows written before the stamp existed.
    */
   sample_unit?: InsightSampleUnit;
   rounds_n?: number;
   newest_round_id?: string;
+  scanned_through_round_id?: string;
   /**
    * The completed, non-test rounds inside [window_start, window_end] that the
    * row was computed from (audit row 22), newest first, capped at 200. Lets

@@ -1,10 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
 const flagMock = vi.fn(() => false);
+const logEventMock = vi.fn(async (..._args: unknown[]) => {});
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => flagMock() }));
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerEvent: (...args: unknown[]) => logEventMock(...args),
+  logServerError: vi.fn(async () => {}),
+}));
 
 import {
   applyWindowStamp,
+  newestCountableRound,
+  scannedThrough,
   stampAndCheckRead,
   stampFromIds,
   stampFromRange,
@@ -116,37 +123,68 @@ describe('stampFromIds / stampFromRange', () => {
   });
 });
 
+describe('scannedThrough / newestCountableRound', () => {
+  it('scans up to the composed end (or today), skipping test rounds', () => {
+    const idx = [...INDEX, round('t', '2026-10-03', { is_test: true })];
+    const s = scannedThrough(idx, evidence({ window_end: '2026-10-03' }));
+    expect(s.newest?.id).toBe('r5');
+    // r5 is not countable (back nine missing), so the countable one is r4.
+    expect(s.newestCountable?.id).toBe('r4');
+    expect(scannedThrough(INDEX, evidence({ window_end: '2026-09-15' })).newest?.id).toBe('r2');
+  });
+
+  it('breaks a same-day, same-entry-time tie on id, like the sweep', () => {
+    const a = round('a', '2026-10-01');
+    const b = round('b', '2026-10-01');
+    expect(newestCountableRound([a, b])?.id).toBe('b');
+    expect(newestCountableRound([b, a])?.id).toBe('b');
+  });
+});
+
 describe('applyWindowStamp', () => {
-  it('an id stamp replaces the composed window and sets the freshness fields', () => {
-    const out = applyWindowStamp(
-      evidence({ window_end: '2026-10-19' }),
-      stampFromIds(INDEX, ['r1', 'r2']),
-      'putts',
-    );
+  it('flag off: writes the freshness fields and leaves the displayed bounds exactly as composed', () => {
+    const composed = evidence({ window_end: '2026-10-19' });
+    const out = applyWindowStamp(composed, stampFromIds(INDEX, ['r1', 'r2']), 'putts', scannedThrough(INDEX, composed));
     expect(out).toMatchObject({
-      window_start: '2026-09-01',
-      window_end: '2026-09-10',
+      window_start: '',
+      window_end: '2026-10-19',
       newest_round_id: 'r2',
+      scanned_through_round_id: 'r4',
       rounds_n: 2,
       sample_unit: 'putts',
       source_round_ids: ['r2', 'r1'],
     });
   });
 
-  it('a range stamp only fills empty bounds', () => {
-    const out = applyWindowStamp(
-      evidence({ window_start: '2026-08-01', window_end: '2026-09-20' }),
-      stampFromRange(INDEX, evidence({ window_end: '2026-09-20' })),
-      null,
-    );
-    expect(out.window_start).toBe('2026-08-01');
+  it('flag on: keeps a composed window_end on a real round day (the newest round scanned)', () => {
+    // A sand read: its bunker rounds are r1/r2, but it scanned through r4's day.
+    const composed = evidence({ window_end: '2026-09-20' });
+    const out = applyWindowStamp(composed, stampFromIds(INDEX, ['r1', 'r2']), null, scannedThrough(INDEX, composed), true);
     expect(out.window_end).toBe('2026-09-20');
+    expect(out.window_start).toBe('2026-09-01');
+    expect(out.newest_round_id).toBe('r2');
+    expect(out.scanned_through_round_id).toBe('r4');
+  });
+
+  it('flag on: fills an empty window_end with the newest round scanned, not the newest contributing one', () => {
+    const composed = evidence();
+    const out = applyWindowStamp(composed, stampFromIds(INDEX, ['r1']), null, scannedThrough(INDEX, composed), true);
+    expect(out.window_end).toBe('2026-10-01');
+    expect(out.newest_round_id).toBe('r1');
+  });
+
+  it('flag on: a cache end date on a test round moves back to the newest real round', () => {
+    // The stats cache's last_round_date can be a QA round (held migrations);
+    // the index never holds test rounds.
+    const composed = evidence({ window_start: '2026-09-01', window_end: '2026-09-25' });
+    const out = applyWindowStamp(composed, stampFromRange(INDEX, composed), null, scannedThrough(INDEX, composed), true);
+    expect(out.window_end).toBe('2026-09-20');
+    expect(out.window_start).toBe('2026-09-01');
     expect(out.newest_round_id).toBe('r4');
-    expect(out.sample_unit).toBeUndefined();
   });
 
   it('never overwrites a sample unit the composer chose, and a null stamp changes only the unit', () => {
-    const out = applyWindowStamp(evidence({ sample_unit: 'holes' }), null, 'rounds');
+    const out = applyWindowStamp(evidence({ sample_unit: 'holes' }), null, 'rounds', null, true);
     expect(out.sample_unit).toBe('holes');
     expect(out.window_end).toBe('');
     expect(out.newest_round_id).toBeUndefined();
@@ -160,28 +198,38 @@ describe('stampAndCheckRead', () => {
         golf_rounds: [
           { ...round('a', '2026-10-01'), player_id: 'p1', status: 'completed' },
           { ...round('b', '2026-10-08'), player_id: 'p1', status: 'completed' },
+          { ...round('c', '2026-10-12'), player_id: 'p1', status: 'completed' },
+          { ...round('q', '2026-10-14'), player_id: 'p1', status: 'completed', is_test: true },
           { ...round('x', '2026-10-09'), player_id: 'p2', status: 'completed' },
         ],
       },
     }) as unknown as SupabaseClient;
   }
 
-  it('stamps the window and never holds a read back while the flag is off', async () => {
+  it('flag off: stamps the freshness fields, keeps the bounds, never holds a read back', async () => {
     __resetRoundIndexMemo();
     flagMock.mockReturnValue(false);
     const { evidence: out, shortfall } = await stampAndCheckRead(
       client(), 'p1', 'approach_miss', evidence({ sample_n: 9 }), ['a', 'b'],
     );
     expect(shortfall).toBeNull();
-    expect(out).toMatchObject({ window_start: '2026-10-01', window_end: '2026-10-08', newest_round_id: 'b', rounds_n: 2, sample_unit: 'approaches' });
+    expect(out).toMatchObject({
+      window_start: '',
+      window_end: '',
+      newest_round_id: 'b',
+      scanned_through_round_id: 'c',
+      rounds_n: 2,
+      sample_unit: 'approaches',
+    });
   });
 
-  it('holds a thin read back with a count-down when the flag is on', async () => {
+  it('flag on: fills the bounds and holds a thin read back with a count-down', async () => {
     __resetRoundIndexMemo();
     flagMock.mockReturnValue(true);
-    const { shortfall } = await stampAndCheckRead(
+    const { evidence: out, shortfall } = await stampAndCheckRead(
       client(), 'p1', 'approach_miss', evidence({ sample_n: 9 }), ['a', 'b'],
     );
+    expect(out).toMatchObject({ window_start: '2026-10-01', window_end: '2026-10-12' });
     expect(shortfall).toEqual({
       family: 'approach_miss',
       needs: [
@@ -192,11 +240,20 @@ describe('stampAndCheckRead', () => {
     flagMock.mockReturnValue(false);
   });
 
-  it('is failure-silent when the rounds cannot be read', async () => {
+  it('logs a failed round load and leaves the read unstamped and unjudged', async () => {
     __resetRoundIndexMemo();
+    flagMock.mockReturnValue(true);
     const broken = { from: () => { throw new Error('down'); } } as unknown as SupabaseClient;
-    const { evidence: out } = await stampAndCheckRead(broken, 'p1', 'putt_distance', evidence(), null);
+    const { evidence: out, shortfall } = await stampAndCheckRead(broken, 'p1', 'putt_distance', evidence(), null);
     expect(out.window_end).toBe('');
+    expect(out.newest_round_id).toBeUndefined();
     expect(out.sample_unit).toBe('putts');
+    expect(shortfall).toBeNull();
+    expect(logEventMock).toHaveBeenCalledWith(
+      expect.stringContaining('round index load failed'),
+      expect.objectContaining({ action: 'coachhelm.v3.readWindow.load' }),
+      'warning',
+    );
+    flagMock.mockReturnValue(false);
   });
 });

@@ -17,7 +17,9 @@
  * Who runs: every player whose most recent completed round is unanalyzed
  * (always) and, behind `coachhelm_reads_v1_copy` (CoachHelm Slice 0b), every
  * player whose newest countable round is newer than their newest visible
- * read — oldest first, at most MAX_FRESHNESS_REFRESHES_PER_RUN a night.
+ * read and whose engine has not run in FRESHNESS_COOLDOWN_DAYS — in a
+ * nightly rotation, at most MAX_FRESHNESS_REFRESHES_PER_RUN a night, and no
+ * new freshness batch after FRESHNESS_TIME_BUDGET_MS.
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse, type NextRequest } from 'next/server';
@@ -34,11 +36,11 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { describeError } from '@/lib/utils/describe-error';
-import { isCountableRound } from '@/lib/golf/round-countable';
-import { VISIBLE_LIFECYCLE_STATES } from '@/lib/coachhelm/v3/insight-visibility';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { freshnessReadsEnabled } from '@/lib/coachhelm/v3/engine/read-floors';
+import { loadPlayerRoundIndex, newestCountableRound } from '@/lib/coachhelm/v3/engine/read-window';
 import {
-  newestReadDay,
+  FRESHNESS_COOLDOWN_DAYS,
   planFreshnessRefreshes,
   readsBehindNewestRound,
   type SweepRead,
@@ -53,6 +55,13 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 const CONCURRENCY = 3;
+
+/**
+ * No new freshness batch starts after this much of the run (maxDuration is
+ * 300 s); the rest are reported as deferred and wait for the next night.
+ * Unanalyzed-latest-round players are not limited (unchanged behaviour).
+ */
+export const FRESHNESS_TIME_BUDGET_MS = 240_000;
 
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
@@ -104,40 +113,45 @@ async function handleRosterSweep(): Promise<NextResponse> {
   // completed rounds at all, etc.) — not an error.
   let skipped = 0;
   let failed = 0;
-  // Slice 0b (flag `coachhelm_reads_v1_copy`): players re-analyzed because
-  // their newest countable round is newer than their newest read.
+  // Slice 0b (flag `coachhelm_reads_v1_copy`): players whose engine run
+  // SUCCEEDED because their newest countable round was newer than their
+  // newest read.
   let freshnessRefreshed = 0;
   const freshnessOn = freshnessReadsEnabled();
+  const startedAt = Date.now();
 
   // Phase 1: decide per player (cheap reads only), in small batches.
   const decisions: SweepDecision[] = [];
   for (let i = 0; i < uniquePlayerIds.length; i += CONCURRENCY) {
     const batch = uniquePlayerIds.slice(i, i + CONCURRENCY);
     decisions.push(
-      ...(await Promise.all(batch.map((playerId) => decideSweep(supabase, playerId, freshnessOn)))),
+      ...(await Promise.all(batch.map((playerId) => decideSweep(supabase, playerId, freshnessOn, startedAt)))),
     );
   }
 
-  // Phase 2: run every unanalyzed-latest-round player (as before) and the
-  // freshness refreshes, most out-of-date first, up to the nightly cap (the
-  // rest wait for the next night). The engine run is the deterministic
-  // generators + composites only (`analyzePlayer`); no LLM composer is on
-  // this path.
+  // Phase 2: run every unanalyzed-latest-round player (as before), then the
+  // freshness refreshes in tonight's rotation up to the nightly cap (the rest
+  // wait for another night). The engine run is the deterministic generators +
+  // composites only (`analyzePlayer`); no LLM composer is on this path.
   const plan = planFreshnessRefreshes(
     decisions.filter((d): d is FreshnessDecision => d.kind === 'freshness'),
+    Math.floor(startedAt / 86_400_000),
   );
-  const freshnessDeferred = plan.deferred.length;
-  // Player's MOST RECENT completed round already had coachhelm_analyzed_at
-  // set and nothing newer needs a refresh (or it waits for tomorrow's cap).
-  const alreadyAnalyzedSkipped =
-    decisions.filter((d) => d.kind === 'already_analyzed').length + freshnessDeferred;
+  const freshnessCooldown = decisions.filter((d) => d.kind === 'freshness_cooldown').length;
+  let freshnessDeferred = plan.deferred.length;
   const toRun: Array<{ playerId: string; freshness: boolean }> = [
     ...decisions.filter((d) => d.kind === 'legacy').map((d) => ({ playerId: d.playerId, freshness: false })),
     ...plan.run.map((d) => ({ playerId: d.playerId, freshness: true })),
   ];
 
   for (let i = 0; i < toRun.length; i += CONCURRENCY) {
-    const batch = toRun.slice(i, i + CONCURRENCY);
+    let batch = toRun.slice(i, i + CONCURRENCY);
+    if (Date.now() - startedAt > FRESHNESS_TIME_BUDGET_MS) {
+      // Out of freshness time: keep running unanalyzed rounds, defer the rest.
+      freshnessDeferred += batch.filter((p) => p.freshness).length;
+      batch = batch.filter((p) => !p.freshness);
+      if (batch.length === 0) continue;
+    }
     const pairs = await Promise.all(
       batch.map(async ({ playerId, freshness }) => {
         try {
@@ -162,9 +176,10 @@ async function handleRosterSweep(): Promise<NextResponse> {
         );
         continue;
       }
-      if (p.freshness) freshnessRefreshed++;
       if (p.result.success) {
         analyzed++;
+        // Only a run that succeeded refreshed anything.
+        if (p.freshness) freshnessRefreshed++;
       } else if (isAnalysisOutcomeCode(p.result.code) && isFailureKind(kindForCode(p.result.code))) {
         // R3: the engine names its own state. A transient or permanent
         // failure is a failure here too — it used to be folded into
@@ -178,6 +193,12 @@ async function handleRosterSweep(): Promise<NextResponse> {
     }
   }
 
+  // Player's MOST RECENT completed round already had coachhelm_analyzed_at
+  // set and nothing newer needs a refresh now (current, cooling down, or
+  // waiting for another night).
+  const alreadyAnalyzedSkipped =
+    decisions.filter((d) => d.kind === 'already_analyzed').length + freshnessCooldown + freshnessDeferred;
+
   return NextResponse.json({
     success: true,
     playersTotal: uniquePlayerIds.length,
@@ -188,13 +209,15 @@ async function handleRosterSweep(): Promise<NextResponse> {
     failed,
     freshnessRefreshed,
     freshnessDeferred,
+    freshnessCooldown,
   });
 }
 
-type FreshnessDecision = { playerId: string; kind: 'freshness'; newestReadDay: string | null };
+type FreshnessDecision = { playerId: string; kind: 'freshness' };
 type SweepDecision =
   | { playerId: string; kind: 'legacy' }
   | { playerId: string; kind: 'already_analyzed' }
+  | { playerId: string; kind: 'freshness_cooldown' }
   | FreshnessDecision;
 
 /**
@@ -209,13 +232,15 @@ type SweepDecision =
  *
  * Slice 0b rule (flag on): an analyzed player is still refreshed when their
  * newest countable round is newer than their newest visible read
- * (`readsBehindNewestRound`). A lookup error there means "no refresh": the
+ * (`readsBehindNewestRound`), unless their engine ran inside the cooldown
+ * (`FRESHNESS_COOLDOWN_DAYS`). A lookup error there means "no refresh": the
  * legacy rule already covers new data, so this one never fails open.
  */
 async function decideSweep(
   supabase: ReturnType<typeof createAdminClient>,
   playerId: string,
   freshnessOn: boolean,
+  nowMs: number,
 ): Promise<SweepDecision> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -245,10 +270,12 @@ async function decideSweep(
     if (!freshnessOn) return { playerId, kind: 'already_analyzed' };
 
     const freshness = await loadFreshnessInputs(supabase, playerId);
-    if (freshness && readsBehindNewestRound(freshness.newest, freshness.reads)) {
-      return { playerId, kind: 'freshness', newestReadDay: newestReadDay(freshness.reads) };
+    if (!freshness || !readsBehindNewestRound(freshness.newest, freshness.reads)) {
+      return { playerId, kind: 'already_analyzed' };
     }
-    return { playerId, kind: 'already_analyzed' };
+    const cooling = await engineRanRecently(supabase, playerId, nowMs);
+    if (cooling !== false) return { playerId, kind: 'freshness_cooldown' };
+    return { playerId, kind: 'freshness' };
   } catch (err) {
     await logServerError(
       `cron.rosterSweep.decide failed: ${describeError(err)}`,
@@ -260,42 +287,60 @@ async function decideSweep(
   }
 }
 
-/** Rows read to find the newest countable round (non-countable ones skipped). */
-const NEWEST_ROUND_LOOKBACK = 10;
+/**
+ * True when the player's engine wrote a run row (`post_round_v2`, written by
+ * every engine run that reaches generation, including this sweep's) inside
+ * the cooldown; null when the lookup failed (treated as cooling: freshness
+ * never fails open).
+ */
+async function engineRanRecently(
+  supabase: ReturnType<typeof createAdminClient>,
+  playerId: string,
+  nowMs: number,
+): Promise<boolean | null> {
+  const since = new Date(nowMs - FRESHNESS_COOLDOWN_DAYS * 86_400_000).toISOString();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('golf_insight_generation_log')
+    .select('id')
+    .eq('player_id', playerId)
+    .eq('insight_type', 'post_round_v2')
+    .gte('created_at', since)
+    .limit(1);
+  if (error) return null;
+  return Array.isArray(data) && data.length > 0;
+}
 
 /**
- * The player's newest countable round and their visible v3 reads' window
- * stamps. Null on any lookup error (the caller then does not refresh).
+ * The player's newest countable round and their visible v3 reads' stamps.
+ * The round comes from the same index, order and countable rule the stamp
+ * uses (`loadPlayerRoundIndex`, `newestCountableRound`: completed, non-test,
+ * every page, ties broken on id), so a run of newer non-countable rounds
+ * cannot hide it and the sweep and the stamp cannot disagree about which
+ * round is newest. Null on any lookup error (the caller then does not
+ * refresh).
  */
 async function loadFreshnessInputs(
   supabase: ReturnType<typeof createAdminClient>,
   playerId: string,
 ): Promise<{ newest: SweepRound | null; reads: SweepRead[] } | null> {
-  const { data: rounds, error: roundsError } = await supabase
-    .from('golf_rounds')
-    .select('id, round_date, created_at, is_test, holes_played, total_score, front_nine, back_nine, total_putts')
-    .eq('player_id', playerId)
-    .eq('status', 'completed')
-    .eq('is_test', false)
-    .order('round_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(NEWEST_ROUND_LOOKBACK);
-  if (roundsError) return null;
-  const newest = (rounds ?? []).find((r) => isCountableRound(r)) ?? null;
+  const index = await loadPlayerRoundIndex(supabase, playerId);
+  if (!index) return null;
+  const newest = newestCountableRound(index);
 
-  const { data: insights, error: insightsError } = await supabase
-    .from('golf_coach_insights')
-    .select('evidence')
-    .eq('player_id', playerId)
-    .eq('engine_version', 'v3')
-    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed');
+  // The shared product-visibility contract (v3 by engine_version OR a v3:
+  // signature, visible lifecycle, not dismissed): the reads a coach sees.
+  const { data: insights, error: insightsError } = await applyInsightVisibility(
+    supabase.from('golf_coach_insights').select('evidence').eq('player_id', playerId),
+  );
   if (insightsError) return null;
+  const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
   const reads: SweepRead[] = (insights ?? []).map((row) => {
-    const ev = (row.evidence ?? {}) as { window_end?: unknown; newest_round_id?: unknown };
+    const ev = (row.evidence ?? {}) as Record<string, unknown>;
     return {
-      window_end: typeof ev.window_end === 'string' ? ev.window_end : null,
-      newest_round_id: typeof ev.newest_round_id === 'string' ? ev.newest_round_id : null,
+      window_end: str(ev.window_end),
+      newest_round_id: str(ev.newest_round_id),
+      scanned_through_round_id: str(ev.scanned_through_round_id),
     };
   });
   return { newest: newest ? { id: newest.id, round_date: newest.round_date } : null, reads };

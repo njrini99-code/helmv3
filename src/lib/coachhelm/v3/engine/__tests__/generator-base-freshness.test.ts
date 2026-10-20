@@ -19,10 +19,14 @@ vi.mock('@/lib/coachhelm/v3/insights/upsert-v3', () => ({
   GATED_OUT: '__gated_out__',
 }));
 vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadStandingForMetric: async () => null }));
-vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: vi.fn(async () => {}),
+  logServerEvent: vi.fn(async () => {}),
+}));
 
 import { BaseGenerator } from '../generator-base';
 import { __resetRoundIndexMemo } from '../read-window';
+import { readsBehindNewestRound } from '../sweep-freshness';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '../types';
 import type { InsightInput } from '@/lib/coachhelm/v2/insights/types';
 
@@ -38,7 +42,10 @@ class ApproachLike extends BaseGenerator<Agg> {
   readonly minSampleN = 5;
   protected override readonly requiresStanding = false;
 
-  constructor(private readonly agg: Agg) {
+  constructor(
+    private readonly agg: Agg,
+    private readonly composedEnd = '',
+  ) {
     super('p1');
   }
   async aggregate(): Promise<Agg> {
@@ -61,7 +68,7 @@ class ApproachLike extends BaseGenerator<Agg> {
         sample_n: agg.attempts,
         window_days: 90,
         window_start: '',
-        window_end: '',
+        window_end: this.composedEnd,
         strokes_impact: 0,
         strokes_impact_method: 'sg_baseline',
         confidence: 0,
@@ -103,20 +110,52 @@ beforeEach(() => {
 });
 
 describe('BaseGenerator.run() — Slice 0b stamping', () => {
-  it('stamps the window from the rounds the aggregate named (flag off)', async () => {
+  it('flag off: stamps the freshness fields and leaves the displayed window as composed', async () => {
     const ids = seedRounds(6);
     const res = await new ApproachLike({
       sampleN: 9, playerValue: 1, attempts: 9, windowRoundIds: ids.slice(1, 4),
     }).run();
     expect(res.status).toBe('generated');
     expect(lastInput().evidence).toMatchObject({
-      window_start: '2026-10-02',
-      window_end: '2026-10-04',
+      window_start: '',
+      window_end: '',
       newest_round_id: 'r4',
+      scanned_through_round_id: 'r6',
       rounds_n: 3,
       sample_unit: 'approaches',
       source_round_ids: ['r4', 'r3', 'r2'],
     });
+  });
+
+  it('flag off: a composed window_end (the newest round scanned) is never moved to an older contributing round', async () => {
+    const ids = seedRounds(6);
+    await new ApproachLike(
+      { sampleN: 9, playerValue: 1, attempts: 9, windowRoundIds: ids.slice(0, 3) },
+      '2026-10-06',
+    ).run();
+    expect(lastInput().evidence.window_end).toBe('2026-10-06');
+    expect(lastInput().evidence.newest_round_id).toBe('r3');
+  });
+
+  it('generate then sweep: a read whose newest rounds added nothing is not "behind" (flag on)', async () => {
+    flagMock.mockReturnValue(true);
+    const ids = seedRounds(6);
+    await new ApproachLike(
+      { sampleN: 30, playerValue: 1, attempts: 30, windowRoundIds: ids.slice(0, 4) },
+      '2026-10-06',
+    ).run();
+    const ev = lastInput().evidence;
+    expect(ev.window_end).toBe('2026-10-06');
+    expect(ev.newest_round_id).toBe('r4');
+    expect(readsBehindNewestRound({ id: 'r6', round_date: '2026-10-06' }, [ev])).toBe(false);
+
+    // Same with an empty composed end: it fills with the newest round scanned.
+    await new ApproachLike({ sampleN: 30, playerValue: 1, attempts: 30, windowRoundIds: ids.slice(0, 4) }).run();
+    const filled = lastInput().evidence;
+    expect(filled.window_end).toBe('2026-10-06');
+    expect(readsBehindNewestRound({ id: 'r6', round_date: '2026-10-06' }, [filled])).toBe(false);
+    // A later round does make it behind.
+    expect(readsBehindNewestRound({ id: 'r7', round_date: '2026-10-07' }, [filled])).toBe(true);
   });
 
   it('with the flag off a thin read is still written (old gates unchanged)', async () => {
@@ -128,10 +167,16 @@ describe('BaseGenerator.run() — Slice 0b stamping', () => {
 });
 
 describe('BaseGenerator.run() — Slice 0b floors (flag on)', () => {
-  it('holds a read under the floor back as Watching and writes nothing', async () => {
+  it('holds a read under the floor back as Watching, retracts the scope and writes nothing', async () => {
     flagMock.mockReturnValue(true);
     const ids = seedRounds(2);
-    const res = await new ApproachLike({ sampleN: 9, playerValue: 1, attempts: 9, windowRoundIds: ids }).run();
+    const gen = new ApproachLike({ sampleN: 9, playerValue: 1, attempts: 9, windowRoundIds: ids });
+    const retract = vi
+      .spyOn(gen as unknown as { retractStaleInScope: (keep: string | null) => Promise<number> }, 'retractStaleInScope')
+      .mockResolvedValue(1);
+    const res = await gen.run();
+    expect(retract).toHaveBeenCalledWith(null);
+    expect(res.retracted).toBe(1);
     expect(res).toMatchObject({ id: null, gated: false, status: 'no_data' });
     expect(res.watching).toEqual({
       family: 'approach_miss',
