@@ -2,7 +2,13 @@
 
 import { Search, X } from 'lucide-react';
 import { Icon } from './Icon';
+import { Tooltip } from './Tooltip';
 
+/**
+ * A search box: the magnifier, the field, and a clear key once there is text (Esc clears it too). On the phone it is
+ * drawn 36px tall and reaches 44px to the finger, its input and clear key taking their own taps, and its text is 16px
+ * so iOS doesn't zoom the page when it takes focus (CH-1815, controls.css): a page needs no reach of its own.
+ */
 export function SearchField({
   value,
   onChange,
@@ -30,9 +36,11 @@ export function SearchField({
         autoComplete="off"
       />
       {value && (
-        <button type="button" className="ch-search__x" aria-label="Clear search" onClick={() => onChange('')}>
-          <Icon icon={X} size={13} />
-        </button>
+        <Tooltip>
+          <button type="button" className="ch-search__x" aria-label="Clear search" onClick={() => onChange('')}>
+            <Icon icon={X} size={13} />
+          </button>
+        </Tooltip>
       )}
     </label>
   );

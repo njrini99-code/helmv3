@@ -67,12 +67,25 @@ export function pulseToFindings(items: readonly PulseItem[], rebuilt: (href: str
 /**
  * A question the new-chat page offers: a pill on desktop, a card on the phone.
  * `text` is what is sent; `title` and `sub` are the phone card's two lines.
+ *
+ * Plain data only: the suggestions are built on the server and handed to the client Ask Home as props, so a
+ * function here makes the RSC render throw "Functions cannot be passed directly to Client Components" (Sentry
+ * JAVASCRIPT-NEXTJS-158). `sub` carries a `{team}` token instead; `askSuggestionSub` fills it on the client.
  */
 export interface ChAskSuggestion {
   id: 'brief' | 'strokes' | 'trending' | 'week';
   text: string;
   title: string;
-  sub: (team: string) => string;
+  /** The card's second line; `{team}` stands for the team's name. */
+  sub: string;
+}
+
+/** The token in `ChAskSuggestion.sub` that stands for the team's name. */
+export const ASK_TEAM_TOKEN = '{team}';
+
+/** The phone card's second line for this team. */
+export function askSuggestionSub(suggestion: Pick<ChAskSuggestion, 'sub'>, team: string): string {
+  return suggestion.sub.split(ASK_TEAM_TOKEN).join(team);
 }
 
 /** The players with a recent round it takes before "who is trending" is a team answer (the strokes opener's own rule). */
@@ -88,10 +101,10 @@ export function buildAskSuggestions(input: { openers: readonly string[]; recentC
   const out: ChAskSuggestion[] = [];
   const brief = input.openers.find((o) => /^brief me/i.test(o));
   const strokes = input.openers.find((o) => /losing the most strokes/i.test(o));
-  if (brief) out.push({ id: 'brief', text: brief, title: 'Brief me', sub: (team) => `on ${team}` });
-  if (strokes) out.push({ id: 'strokes', text: strokes, title: 'Losing strokes', sub: () => 'where the team loses most' });
-  if (input.recentCovered >= ASK_MIN_COVERED) out.push({ id: 'trending', text: 'Who is trending up this month?', title: 'Trending up', sub: () => "who's improving this month" });
-  if (input.rosterCount > 0) out.push({ id: 'week', text: "What's on this week?", title: 'This week', sub: () => "what's coming up" });
+  if (brief) out.push({ id: 'brief', text: brief, title: 'Brief me', sub: `on ${ASK_TEAM_TOKEN}` });
+  if (strokes) out.push({ id: 'strokes', text: strokes, title: 'Losing strokes', sub: 'where the team loses most' });
+  if (input.recentCovered >= ASK_MIN_COVERED) out.push({ id: 'trending', text: 'Who is trending up this month?', title: 'Trending up', sub: "who’s improving this month" });
+  if (input.rosterCount > 0) out.push({ id: 'week', text: "What’s on this week?", title: 'This week', sub: "what’s coming up" });
   return out.slice(0, 5);
 }
 

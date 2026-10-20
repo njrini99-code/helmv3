@@ -235,7 +235,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     mocks.savePartialRound.mockResolvedValueOnce({ success: false, error: 'The server is busy' });
     const user = renderNew();
     await startRound(user);
-    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn't start your round at Finley GC"));
+    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
     await user.click(toastAction('CH-11007', 'Retry')!);
     await screen.findByTestId('tracking');
     expect(startCalls()).toHaveLength(2);
@@ -525,7 +525,7 @@ describe('Round entry: a submit the coach’s closed qualifier refuses (CH-11516
   async function submitClosed(user: ReturnType<typeof userEvent.setup>) {
     mocks.submitGolfRoundComprehensive.mockResolvedValue({ success: false, error: closed });
     await finishRound();
-    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Submit round/ }));
+    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Post round/ }));
     await waitFor(() => expect(code('CH-11516')).toHaveAttribute('open'));
   }
 
@@ -533,7 +533,7 @@ describe('Round entry: a submit the coach’s closed qualifier refuses (CH-11516
     const user = await playing();
     await submitClosed(user);
     expect(code('CH-11516')).toHaveTextContent(closed);
-    expect(screen.queryByText('The round didn’t submit')).toBeNull();
+    expect(screen.queryByText('The round didn’t post')).toBeNull();
     expect(code('CH-11005')).toBeNull();
   });
 

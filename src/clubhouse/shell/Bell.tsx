@@ -1,9 +1,9 @@
 'use client';
 
 import { AnimatePresence, m } from 'motion/react';
-import { Bell as BellIcon, BellOff, ChevronDown, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, X, type LucideIcon } from 'lucide-react';
+import { Bell as BellIcon, BellOff, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
@@ -15,7 +15,6 @@ import {
   groupByDayBucket,
   isUnread,
   itemMatchesFilter,
-  type NotificationCategoryId,
   type NotificationFilter,
   type UnifiedNotificationItem,
 } from '@/app/golf/actions/unified-notifications-model';
@@ -23,13 +22,16 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { InlineNotice } from '../ui/Notices';
 import { Menu } from '../ui/Menu';
-import { Skeleton } from '../ui/States';
+import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
-import { CH_POP, chTween } from '../lib/motion';
+import { useAfterPaint } from '../lib/use-painted';
+import { CH_POP, chSpring, chSpringCurve } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
-import { useSheetDrag } from '../lib/sheet-drag';
-import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { useChPhone } from '../lib/use-phone';
+import { useSectionSwitch } from './section-switch';
+import { BellStacks, CH_NOTIFICATION_KIND } from './BellStacks';
+import { ago, markLocallyRead, notificationKey } from './notification-stacks';
+import { armRelink } from './relink';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
 
@@ -52,9 +54,22 @@ export interface ChBellApi {
 }
 
 const FEED_LIMIT = 30;
+
+/**
+ * The drop's arrival: the reveal spring, ended once it is within 1% of its mark and rescaled so it lands there without a
+ * step. The spring alone spent its last 300ms creeping the final few dozen pixels of the veil (827ms in all, measured on
+ * the Simulator, 2026-10-14); this lands in about 660ms on the same curve.
+ */
+const REVEAL_IN = (() => {
+  const c = chSpringCurve('reveal', { rest: 0.01 });
+  const top = c.ease(0.9999);
+  return { duration: c.ms / 1000, ease: (p: number) => (p >= 1 ? 1 : Math.min(1, c.ease(p) / top)) };
+})();
 const W = 380;
 
 const BellSource = createContext<ChBellApi | null>(null);
+
+const noSubscribe = () => () => {};
 
 /** Preview only: a fixture feed in place of the live actions. */
 export function BellSourceProvider({ api, children }: { api: ChBellApi; children: ReactNode }) {
@@ -76,28 +91,9 @@ function useLiveBell(): ChBellApi {
   );
 }
 
-const CATEGORY: Record<NotificationCategoryId, { icon: LucideIcon; label: string }> = {
-  messages: { icon: MessageSquare, label: 'Messages' },
-  events: { icon: CalendarDays, label: 'Events' },
-  announcements: { icon: Megaphone, label: 'Announcements' },
-  tasks: { icon: ClipboardCheck, label: 'Tasks' },
-  coachhelm: { icon: Sparkles, label: 'CoachHelm' },
-  pipeline: { icon: Users, label: 'Team' },
-  profile_views: { icon: Eye, label: 'Profile' },
-};
+const CATEGORY = CH_NOTIFICATION_KIND;
 
-export function ago(iso: string, now = Date.now()): string {
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return '';
-  const mins = Math.max(0, Math.round((now - t) / 60000));
-  if (mins < 1) return 'Now';
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  const days = Math.round(hrs / 24);
-  if (days < 7) return `${days}d`;
-  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+export { ago };
 
 export function Bell() {
   const preview = useContext(BellSource);
@@ -107,9 +103,28 @@ export function Bell() {
   const id = useId();
   const reduced = useChReducedMotion();
   const phone = useChPhone();
+  // The portal waits for hydration: the server has no document, and the phone drop is always rendered once it exists.
+  const hydrated = useSyncExternalStore(noSubscribe, () => true, () => false);
   const btn = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  // The feed starts loading as the finger lands on the bell, so on a phone the cards are there before the drop lands
+  // and nothing swaps under it mid-motion. Cleared on close, so the next open fetches fresh.
+  const [primed, setPrimed] = useState(false);
+  const wanted = open || primed;
+  // Closed and done moving, the drop rests out of the render tree (display: none, shell.css): hidden but laid out, its
+  // cards made every view transition's snapshot of the page slower, a section switch's included (a 38ms frame against
+  // 25ms, with a player's 30 cards; WebKit, production build, 2026-10-15). It is back as the finger lands on the bell,
+  // so it is laid out before it moves, and rests again only once its move away has finished.
+  const [rested, setRested] = useState(true);
+  const wantedRef = useRef(wanted);
+  wantedRef.current = wanted;
+  // A finger that lands on the bell and leaves without opening it (a pull to refresh begun on the bar): the drop rests
+  // again, rather than staying laid out until the bell is next opened and closed.
+  const openRef = useRef(open);
+  openRef.current = open;
+  const unprime = useRef(0);
+  useEffect(() => () => window.clearTimeout(unprime.current), []);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const [items, setItems] = useState<UnifiedNotificationItem[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -119,19 +134,133 @@ export function Bell() {
 
   const close = useCallback((focus = true) => {
     setOpen(false);
+    setPrimed(false);
     if (focus) btn.current?.focus({ preventScroll: true });
   }, []);
-  const closeSheet = useCallback(() => close(), [close]);
-  const drag = useSheetDrag(panel, closeSheet, { enabled: phone && !reduced });
+  const sw = useSectionSwitch();
+  // CH-1612 (owner 2026-10-12, with the section strip): on the phone the sheet drops from under the top bar, as the strip
+  // does, on the smooth spring, and goes back up under it on the same spring, at the speed it was thrown when swiped up.
+  // The finger's offset, on the CSS `translate` property, which composes with the `transform` the drop opens and closes
+  // on: transform strings, not framer's `y`, so Motion hands them to the compositor (WAAPI) and the drop keeps moving
+  // while the page under it is busy (owner, 2026-10-15: "All transitions need fixed. All popups").
+  const dragY = useRef(0);
+  // The drop and the veil move a painted frame after the state changes, from where they are (lib/use-painted.ts).
+  const moving = useAfterPaint(open);
+  const fling = useRef(0);
+  const sheetMotion = {
+    // The stacks drop from under the bar and land with the settle spring's slight give, a touch smaller as they come.
+    // Transform and opacity only, nothing that re-rasterizes (no scale, no blur), so WebKit keeps it on the compositor.
+    shown: { transform: 'translateY(0px)', opacity: 1, visibility: 'visible', transition: reduced ? { duration: 0 } : { ...REVEAL_IN, opacity: chSpring('smooth') } },
+    gone: () => {
+      if (reduced) return { opacity: 0, transition: { duration: 0 }, transitionEnd: { visibility: 'hidden' } };
+      // Back up under the bar from where the finger left it, at the speed it was thrown, fading as it goes.
+      const from = dragY.current;
+      dragY.current = 0;
+      if (panel.current) panel.current.style.translate = '';
+      const travel = 140;
+      const left = travel + from;
+      const out = chSpringCurve('smooth', { velocity: left > 0 ? fling.current / left : 0, rest: 0.5 / Math.max(left, 1) });
+      fling.current = 0;
+      return {
+        transform: [`translateY(${from}px)`, `translateY(${-travel}px)`],
+        opacity: 0,
+        transition: { duration: out.ms / 1000, ease: out.ease },
+        transitionEnd: { visibility: 'hidden' },
+      };
+    },
+  };
+  /** The sheet follows the finger up from its header or grab (CH-1611): past a third of its height, or flicked, it closes. */
+  const onSheetDrag = (e: ReactPointerEvent) => {
+    if (reduced || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const start = e.clientY;
+    const el = e.currentTarget as HTMLElement;
+    const sheet = panel.current;
+    sheet?.getAnimations?.().forEach((a) => a.cancel());
+    let last = start;
+    let lastT = performance.now();
+    let v = 0;
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch {
+      // A pointer that already went away.
+    }
+    const move = (ev: PointerEvent) => {
+      const now = performance.now();
+      v = 0.8 * ((ev.clientY - last) / Math.max(1, now - lastT)) + 0.2 * v;
+      last = ev.clientY;
+      lastT = now;
+      const dy = ev.clientY - start;
+      dragY.current = dy < 0 ? dy : dy * 0.15;
+      if (sheet) sheet.style.translate = `0 ${dragY.current}px`;
+    };
+    const up = () => {
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      el.removeEventListener('pointercancel', up);
+      const h = panel.current?.offsetHeight ?? 600;
+      if (dragY.current < -h / 3 || v < -0.5) {
+        fling.current = -v * 1000;
+        haptic('commit');
+        close();
+        return;
+      }
+      // Springs back from where it was let go, at the speed it was moving.
+      const from = dragY.current;
+      dragY.current = 0;
+      if (!sheet || !from) return;
+      const back = chSpringCurve('smooth', { velocity: (-Math.sign(from) * v * 1000) / Math.abs(from) });
+      sheet.style.translate = '';
+      sheet.animate?.([{ translate: `0 ${from}px` }, { translate: '0 0' }], { duration: back.ms, easing: back.linear });
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+  };
+
+  // The phone drop opens on its cards: the feed is read once the page settles, so the first open of a visit doesn't start
+  // on the skeleton and swap the feed in mid-drop, which jumped the cards and stalled the drop (Simulator, 2026-10-14).
+  // Opening still reads it again, and that read wins.
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  useEffect(() => {
+    if (!phone) return;
+    let live = true;
+    const run = () => {
+      loadRef
+        .current()
+        .then((r) => {
+          if (live && r && (r.success || r.ok) && r.data) {
+            const next = r.data.items;
+            setItems((prev) => prev ?? next);
+          }
+        })
+        .catch(() => {
+          // The open reads it again and reports a failure there.
+        });
+    };
+    const idle = typeof window.requestIdleCallback === 'function';
+    const handle = idle ? window.requestIdleCallback(run, { timeout: 3000 }) : window.setTimeout(run, 1500);
+    return () => {
+      live = false;
+      if (idle) window.cancelIdleCallback(handle);
+      else window.clearTimeout(handle);
+    };
+  }, [phone]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!wanted) return;
     let live = true;
     load()
       .then((r) => {
         if (!live) return;
         if (r && (r.success || r.ok) && r.data) {
-          setItems(r.data.items);
+          const next = r.data.items;
+          // The same feed again keeps the same list, so a refresh that lands mid-drop re-renders nothing.
+          // Read is compared as read, not by its time: a card cleared here carries this device's time until the server's
+          // arrives, and re-rendering the whole feed for that was a long frame after every clear (WebKit, 2026-10-16).
+          const same = (prev: UnifiedNotificationItem[] | null) =>
+            !!prev && prev.length === next.length && prev.every((i, k) => i.id === next[k]!.id && i.source === next[k]!.source && !i.read_at === !next[k]!.read_at && i.title === next[k]!.title);
+          setItems((prev) => (same(prev) ? prev : next));
           setFailed(false);
         } else {
           setFailed(true);
@@ -146,7 +275,7 @@ export function Bell() {
     return () => {
       live = false;
     };
-  }, [open, load, attempt]);
+  }, [wanted, load, attempt]);
 
   useLayoutEffect(() => {
     if (!open || !btn.current) return;
@@ -183,17 +312,56 @@ export function Bell() {
         }
       }
     };
+    // The desktop popover isn't modal: when focus leaves it for the page (Tab past its last item), it closes, rather than
+    // staying open over a page the keyboard is now walking (audit A-30).
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target;
+      if (phone || !(t instanceof Element) || t.closest('.ch-menu')) return;
+      if (!panel.current?.contains(t) && !btn.current?.contains(t)) close(false);
+    };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
-    const frame = requestAnimationFrame(() => panel.current?.focus({ preventScroll: true }));
+    document.addEventListener('focusin', onFocusIn);
+    // The phone's drop takes focus once it is moving (below): until then it is still hidden, and focus would not land.
+    const frame = phone ? 0 : requestAnimationFrame(() => panel.current?.focus({ preventScroll: true }));
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocusIn);
     };
   }, [open, close, phone]);
+  // The phone's drop is shown a painted frame after it opens (`moving`, lib/use-painted.ts); focus goes in once it is.
+  useEffect(() => {
+    if (!phone || !open || !moving) return;
+    const frame = requestAnimationFrame(() => panel.current?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [phone, open, moving]);
 
   const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: "Couldn't mark your notifications read", code: 'CH-1001' });
+
+  /** Marks items read where the coach cleared them (a swipe, a stack's ×): the feed restacks at once, the server follows. */
+  const clearItems = (list: UnifiedNotificationItem[]) => {
+    const unreadOnes = list.filter(isUnread);
+    if (!unreadOnes.length) return;
+    chTrail('bell clear', { count: unreadOnes.length });
+    const keys = new Set(unreadOnes.map(notificationKey));
+    setItems((prev) => (prev ? markLocallyRead(prev, keys, new Date().toISOString()) : prev));
+    // The server follows once the stacks below have slid into place: its answer refreshes the page under the drop and
+    // the badge's count, and each was a long frame in the middle of the slide (WebKit, production build, 2026-10-16).
+    const write = api.markRead;
+    window.setTimeout(() => {
+      for (const item of unreadOnes) void write(item).catch((err: unknown) => chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' }));
+    }, chSpringCurve('smooth').ms + 80);
+  };
+  const markAllNow = async () => {
+    const before = items;
+    const at = new Date().toISOString();
+    setItems((prev) => prev?.map((i) => ({ ...i, read_at: i.read_at ?? at })) ?? prev);
+    const r = await markAll.run();
+    if (r.success) api.refetchCount();
+    else setItems(before);
+  };
 
   const openItem = (item: UnifiedNotificationItem) => {
     haptic('select');
@@ -204,15 +372,26 @@ export function Bell() {
       void api.markRead(item).catch((err: unknown) => chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' }));
     }
     close(false);
-    // Stored links are only followed inside GolfHelm: a notification can never send someone off-site.
-    if (isSafeInternalPath(item.action_url)) router.push(item.action_url);
+    // Stored links are only followed inside GolfHelm: a notification can never send someone off-site. One to the screen
+    // already open, naming another item, mounts that screen again so the item opens (relink.ts).
+    if (isSafeInternalPath(item.action_url)) {
+      armRelink(item.action_url);
+      router.push(item.action_url);
+    }
   };
 
   const unread = api.unread;
-  const list = items ?? [];
-  const counts = countByCategory(list);
-  const cats = NOTIFICATION_CATEGORY_IDS.filter((c) => counts[c] > 0);
-  const groups = groupByDayBucket(list.filter((i) => itemMatchesFilter(i, filter)));
+  // The count is the badge's. While the list hasn't loaded the panel can't show what it counts, so its head says nothing
+  // of it and offers no Mark all read (the button keeps its badge).
+  const listFailed = failed && !items?.length;
+  const shownUnread = listFailed ? 0 : unread;
+  // The bell renders on every section switch and strip open (it reads the switcher), so what it derives from the list
+  // is kept between renders (overnight jank pass, 2026-10-15: rebuilding it was most of a switch's main thread).
+  const cats = useMemo(() => {
+    const counts = countByCategory(items ?? []);
+    return NOTIFICATION_CATEGORY_IDS.filter((c) => counts[c] > 0);
+  }, [items]);
+  const groups = useMemo(() => groupByDayBucket((items ?? []).filter((i) => itemMatchesFilter(i, filter))), [items, filter]);
 
   const filterMenu = cats.length > 1 && (
     <Menu
@@ -234,22 +413,16 @@ export function Bell() {
       size="sm"
       variant="ghost"
       disabled={unread === 0 || markAll.pending}
-      onClick={async () => {
-        const before = items;
-        const at = new Date().toISOString();
-        setItems((prev) => prev?.map((i) => ({ ...i, read_at: i.read_at ?? at })) ?? prev);
-        const r = await markAll.run();
-        if (r.success) api.refetchCount();
-        else setItems(before);
-      }}
+      onClick={() => void markAllNow()}
     >
       Mark all read
     </Button>
   );
-  const body = (
+  // The desktop popover's list: built only when the popover is open, never on the phone (its drop draws BellStacks).
+  const body = () => (
     <div className="ch-bellp__body">
-      {failed && !items?.length ? (
-        <InlineNotice code="CH-1201" title="Notifications didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
+      {listFailed ? (
+        <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
       ) : items === null ? (
         <div className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
           {[0, 1, 2, 3].map((k) => (
@@ -263,16 +436,21 @@ export function Bell() {
           ))}
         </div>
       ) : groups.length === 0 ? (
-        <div className="ch-bellp__empty" data-ch-code={filter === 'all' ? 'CH-1302' : 'CH-1303'}>
-          <Icon icon={BellOff} size={18} />
-          <b>{filter === 'all' ? "You're all caught up." : 'Nothing of this kind.'}</b>
-          <span>{filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}</span>
-          {filter !== 'all' && (
-            <Button size="sm" variant="secondary" onClick={() => setFilter('all')}>
-              Show all
-            </Button>
-          )}
-        </div>
+        // The shared section empty (states audit, 2026-10-08): a flush line at the rows' inset, not a centred block.
+        <EmptyState
+          compact
+          icon={BellOff}
+          code={filter === 'all' ? 'CH-1302' : 'CH-1303'}
+          title={filter === 'all' ? 'You’re all caught up' : 'Nothing of this kind'}
+          body={filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}
+          action={
+            filter !== 'all' && (
+              <Button size="sm" variant="secondary" onClick={() => setFilter('all')}>
+                Show all
+              </Button>
+            )
+          }
+        />
       ) : (
         groups.map((g) => (
           <section key={g.bucket} aria-label={DAY_BUCKET_LABEL[g.bucket]}>
@@ -317,11 +495,27 @@ export function Bell() {
         title="Notifications"
         aria-expanded={open}
         aria-controls={id}
+        onPointerDown={() => {
+          if (open) return;
+          setRested(false);
+          setPrimed(true);
+          window.clearTimeout(unprime.current);
+          // Cleared when the bell opens.
+          unprime.current = window.setTimeout(() => {
+            if (openRef.current) return;
+            setPrimed(false);
+            setRested(true);
+          }, 1500);
+        }}
         onClick={() => {
           // CH-1705: a tick as the bell opens; CH-1612: on the phone its sheet rises over a scrim; CH-1805: it is a dialog.
           haptic('select');
-          if (!open) chTrail('bell open');
-          setOpen((o) => !o);
+          if (open) return close(false);
+          chTrail('bell open');
+          sw?.setOpen(false);
+          window.clearTimeout(unprime.current);
+          setRested(false);
+          setOpen(true);
         }}
       >
         <Icon icon={BellIcon} size={16} />
@@ -331,85 +525,113 @@ export function Bell() {
           </span>
         )}
       </button>
-      {typeof document !== 'undefined' &&
+      {hydrated &&
         createPortal(
-          <AnimatePresence>
-            {open && phone && (
+          <>
+            {/* The phone drop stays rendered, hidden and inert, so opening it only moves it: a first frame that has to
+                render every card is the stutter it had (an 85ms frame at 4x CPU, 2026-10-12). It never leaves, so it sits
+                outside AnimatePresence: that hands its children a new presence context each time the bell renders (every
+                section switch), and the swipeable cards under it rendered again with it, each having Motion measure the
+                arriving page (2026-10-15). */}
+            {phone && (
               <m.div
-                key="scrim"
-                className="ch-scrim"
+                key="veil"
+                className="ch-bst-veil"
                 data-ui="clubhouse"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={reduced ? { duration: 0 } : chTween('base')}
+                aria-hidden="true"
+                data-open={open || undefined}
+                // The veil pours down from under the bar, its feathered edge leading (a static mask on a layer taller than
+                // the screen, moved by transform alone, so the compositor carries it), and draws back up as the drop goes.
+                initial={false}
+                animate={
+                  reduced
+                    ? { opacity: open ? 1 : 0, transform: 'translateY(0%)', visibility: open ? 'visible' : 'hidden', transition: { duration: 0 } }
+                    : moving
+                      ? { transform: 'translateY(0%)', opacity: 1, visibility: 'visible', transition: REVEAL_IN }
+                      : { transform: 'translateY(-100%)', opacity: 1, transition: chSpring('smooth'), transitionEnd: { visibility: 'hidden' } }
+                }
                 onClick={() => close()}
               />
             )}
-            {open && phone && (
+            {phone && (
               <m.div
                 key="sheet"
                 ref={panel}
                 id={id}
                 role="dialog"
-                aria-modal="true"
+                aria-modal={open || undefined}
+                aria-hidden={open ? undefined : true}
+                inert={!open || undefined}
                 aria-label="Notifications"
                 // Read by the iOS swipe-back guard (NativeSwipeBackBridge): no edge swipe while the sheet is up.
-                data-state="open"
+                data-state={open ? 'open' : undefined}
                 data-ch-code="CH-1811"
                 tabIndex={-1}
-                className="ch-bellp ch-bellp--sheet"
+                className="ch-bst"
                 data-ui="clubhouse"
-                initial={reduced ? { opacity: 0 } : { y: '100%' }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={reduced ? { y: 0, opacity: 0 } : { y: '100%' }}
-                transition={reduced ? { duration: 0 } : chTween('base')}
+                // Portaled out of the Clubhouse root, so it carries the root's motion setting itself (the cards' CSS press
+                // and the motion tokens read it).
+                data-motion={reduced ? 'off' : undefined}
+                data-rest={(rested && !wanted) || undefined}
+                initial={false}
+                variants={sheetMotion}
+                animate={moving ? 'shown' : 'gone'}
+                // A move away that a reopen cut short also lands here: the drop rests only if it is still closed.
+                onAnimationComplete={(done) => {
+                  if (done === 'gone' && !wantedRef.current) setRested(true);
+                }}
               >
-                <OverlayScrollLock />
-                <div className="ch-bellp__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
-                <div className="ch-bellp__shead" onPointerDown={drag.onPointerDown}>
-                  <span className="ch-bellp__stitle">
-                    <b>Notifications</b>
-                    {unread > 0 && <span className="ch-num">{unread} unread</span>}
-                  </span>
-                  <button type="button" className="ch-bellp__x" aria-label="Close" onClick={() => close()}>
-                    <Icon icon={X} size={16} />
-                  </button>
+                {/* No OverlayScrollLock: freezing the body re-lays out the whole page in the drop's first frame (and again as
+                    it closes), the stutter. The drop covers the screen and takes the touches (touch-action in shell.css),
+                    and its list contains its own scroll, so the page under it cannot move anyway. */}
+                <div className="ch-bst__head" onPointerDown={onSheetDrag}>
+                  <b>Notifications</b>
+                  {shownUnread > 0 && (
+                    <button type="button" className="ch-bst__all" disabled={markAll.pending} onClick={() => void markAllNow()}>
+                      Mark all read
+                    </button>
+                  )}
                 </div>
-                {(filterMenu || unread > 0) && (
-                  <div className="ch-bellp__tools">
-                    {filterMenu || <span />}
-                    {markAllButton}
+                {/* A tap on the open space puts the drop away; the keyboard has Esc, so the space needs no key of its own. */}
+                {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- see above */}
+                <div
+                  className="ch-bst__scroll"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget || (e.target as Element).classList?.contains('ch-bst-feed')) close();
+                  }}
+                >
+                  <BellStacks items={items} failed={listFailed} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
+                </div>
+                <div className="ch-bst__grab" aria-hidden="true" onPointerDown={onSheetDrag} />
+              </m.div>
+            )}
+            <AnimatePresence>
+              {open && !phone && (
+                <m.div
+                  key="popover"
+                  ref={panel}
+                  id={id}
+                  role="dialog"
+                  aria-label="Notifications"
+                  tabIndex={-1}
+                  className="ch-bellp ch-popover"
+                  data-ui="clubhouse"
+                  style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: W }}
+                  {...(reduced ? {} : CH_POP)}
+                >
+                  <div className="ch-bellp__head">
+                    <b>
+                      Notifications
+                      {shownUnread > 0 && <span className="ch-num"> · {shownUnread} unread</span>}
+                    </b>
+                    {filterMenu}
+                    {!listFailed && markAllButton}
                   </div>
-                )}
-                {body}
-              </m.div>
-            )}
-            {open && !phone && (
-              <m.div
-                key="popover"
-                ref={panel}
-                id={id}
-                role="dialog"
-                aria-label="Notifications"
-                tabIndex={-1}
-                className="ch-bellp ch-popover"
-                data-ui="clubhouse"
-                style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: W }}
-                {...(reduced ? {} : CH_POP)}
-              >
-                <div className="ch-bellp__head">
-                  <b>
-                    Notifications
-                    {unread > 0 && <span className="ch-num"> · {unread} unread</span>}
-                  </b>
-                  {filterMenu}
-                  {markAllButton}
-                </div>
-                {body}
-              </m.div>
-            )}
-          </AnimatePresence>,
+                  {body()}
+                </m.div>
+              )}
+            </AnimatePresence>
+          </>,
           document.querySelector('.ch-root') ?? document.body,
         )}
     </>

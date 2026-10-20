@@ -52,7 +52,9 @@ const sentryRelease = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERC
 const nextConfig = {
   // Helm owns its agent instructions; dev startup must not rewrite them.
   agentRules: false,
-  allowedDevOrigins: ['127.0.0.1'],
+  // A phone on the same network can load the dev server for real-device checks (Safari on iPhone) when the host is
+  // named explicitly: HELM_DEV_LAN_ORIGIN=192.168.x.y npm run dev. Dev only; production ignores allowedDevOrigins.
+  allowedDevOrigins: ['127.0.0.1', ...(process.env.HELM_DEV_LAN_ORIGIN ? [process.env.HELM_DEV_LAN_ORIGIN] : [])],
   reactStrictMode: true, // Enable to catch potential issues
   // Don't advertise the framework in an X-Powered-By header.
   poweredByHeader: false,
@@ -184,6 +186,12 @@ const nextConfig = {
     // hook above and docs/operations/GATES.md).
     cpus: 3,
     webpackMemoryOptimizations: true,
+    // Client router cache: left at Next's defaults (dynamic 0s, static
+    // 300s). A 30s dynamic stale time (Clubhouse native-feel audit P0-2)
+    // applied app-wide and let Fairway, Baseball and Lift Lab show data up to
+    // 30s old on a revisit (#2189). The Clubhouse tabs get their instant
+    // switch from a full prefetch instead (held for the static 300s), which
+    // they refresh in place past 30s: shell/use-prefetch-tabs.ts.
     // Enable server actions.
     // bodySizeLimit must cover the largest Server Action payload. Recruit
     // documents no longer pass a File through an action (they upload straight

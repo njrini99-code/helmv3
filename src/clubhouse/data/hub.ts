@@ -9,6 +9,7 @@ import { getPlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { getUnifiedNotifications } from '@/app/golf/actions/unified-notifications';
 import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
+import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
@@ -63,6 +64,11 @@ export interface ChHubAnnouncement {
   /** Coach: acknowledged (or read) out of recipients. */
   ackCount: number;
   recipients: number;
+  /**
+   * Coach, on a post that asks for acknowledgement: who it went to that hasn't acknowledged yet, by name (players still on
+   * the roster). Null or absent when that read failed or the post asks for none: the card then shows the count alone.
+   */
+  notAcked?: string[] | null;
   documentCount: number;
 }
 
@@ -73,7 +79,7 @@ export interface ChHubTrip {
   /** "Mon 3 – Wed 5 Nov" */
   dates: string;
   departDate: string | null;
-  /** "Mon 12:00 PM" */
+  /** "Mon · 12:00 PM" */
   depart: string | null;
   /** The departure time as saved (HH:MM), for Edit; `depart` is the same time in words. */
   departTime: string | null;
@@ -144,9 +150,12 @@ export interface ChHubUpdate {
   id: string;
   title: string;
   body: string | null;
+  /** Only a link inside GolfHelm, as the bell follows it (isSafeInternalPath); anything else shows as plain text. */
   href: string | null;
   when: string;
   unread: boolean;
+  /** Which feed the row came from, so opening it marks that row read (markNotificationRead), as the bell does. */
+  source?: 'notifications' | 'golf_calendar_notifications';
 }
 
 export interface ChTeamHub {
@@ -245,7 +254,15 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     documents: { folders: docsRes.error ? [] : folders(docsRes.data ?? [], f), error: !!docsRes.error },
     updates: {
       rows: updatesRes.success && updatesRes.data
-        ? updatesRes.data.items.slice(0, 6).map((n) => ({ id: n.id, title: n.title, body: n.body, href: n.action_url, when: f.ago(n.created_at), unread: !n.read_at }))
+        ? updatesRes.data.items.slice(0, 6).map((n) => ({
+            id: n.id,
+            title: n.title,
+            body: n.body,
+            href: isSafeInternalPath(n.action_url) ? n.action_url : null,
+            when: f.ago(n.created_at),
+            unread: !n.read_at,
+            source: n.source,
+          }))
         : [],
       error: !updatesRes.success,
     },
@@ -264,15 +281,17 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     const annsFallback = summary ? null : await getPlayerHubAnnouncements(input.teamId, playerId).catch(() => null);
     const annList = anns ?? (annsFallback?.success ? (annsFallback.data ?? []) : null);
     if (!annList) log('announcements', 'player announcements did not load');
-    // A trip is the player's when they're invited to its event.
-    const tripEvents = (summary?.trips ?? []).map((t) => (t as { event_id?: string | null }).event_id).filter((id): id is string => !!id);
+    // A trip is the player's when they're invited to its event. The aggregate's trips carry no event_id (its select
+    // leaves it out), so the link is read here, for those trips only; a failed read leaves every trip unknown (C-19).
+    const tripLinks = await tripEventIds(supabase, (summary?.trips ?? []).map((t) => t.id));
+    const tripEvents = tripLinks ? [...new Set(tripLinks.values())] : [];
     // The aggregate lists every team event, with the player's own reply or null when they have no place on its invite
     // list (an attendance row is what invites someone, as in Calendar). Only their own are theirs to answer: a reply to
     // any other would add them to that event's list.
     const replyable = (summary?.events ?? []).filter((e) => e.event_type !== CLASS_EVENT_TYPE && e.rsvp_status != null);
     const [authors, invited, closed] = await Promise.all([
       authorNames(supabase, annList ?? []),
-      invitedTo(supabase, tripEvents, playerId),
+      tripLinks ? invitedTo(supabase, tripEvents, playerId) : Promise.resolve(null),
       closedReplies(supabase, replyable.map((e) => e.event_id), now.getTime()),
     ]);
     return {
@@ -280,8 +299,10 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       tripEvents: { rows: [], error: false },
       rsvps: {
         // Only events that still take a reply: respondToEvent refuses the rest, so they get no Going / Maybe / Can't.
+        // An event that doesn't ask for replies is never listed (owner, 2026-10-08); when that couldn't be read, the
+        // section says so rather than offering replies the coach never asked for.
         rows: replyable
-          .filter((e) => !closed.has(e.event_id))
+          .filter((e) => !closed.error && !closed.has(e.event_id))
           .map((e) => ({
             eventId: e.event_id,
             title: e.title,
@@ -291,20 +312,21 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
             mine: (e.rsvp_status ?? 'pending') as ChRsvp,
             counts: null,
           })),
-        error: !summary,
+        error: !summary || closed.error,
       },
       announcements: { rows: (annList ?? []).map((a) => announcement(a, authors, f, 'player')), error: !annList },
       trips: {
         rows: summary
           ? summary.trips.map((t) => {
-              const eventId = (t as { event_id?: string | null }).event_id ?? null;
+              const eventId = tripLinks?.get(t.id) ?? null;
+              // No event: nobody is invited to anything, so whether the player travels is unknown, not "Not traveling".
               return trip({ ...(t as unknown as TripRow), event_id: eventId }, f, today, { travelers: null, count: null, mine: eventId && invited ? invited.has(eventId) : null });
             })
           : [],
         error: !summary,
       },
       tasks: {
-        rows: (summary?.tasks ?? []).map((t) => ({
+        rows: taskOrder((summary?.tasks ?? []).map((t) => ({
           id: t.id,
           title: t.title,
           detail: t.category ?? firstLine(t.description),
@@ -312,7 +334,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           due: t.due_date ? f.due(t.due_date, today) : null,
           status: t.status as ChHubTask['status'],
           done: null,
-        })),
+        }))),
         error: !summary,
       },
     };
@@ -332,11 +354,13 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       .is('parent_task_id', null)
       .order('due_date', { ascending: false, nullsFirst: true })
       .limit(HUB_TASK_CAP),
+    // The RSVPs section: this week's events that ask for replies (owner, 2026-10-08: off unless the coach turns it on).
     supabase
       .from('golf_events')
       .select('id, title, event_type, start_time, all_day, location')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
+      .eq('requires_rsvp', true)
       .is('cancelled_at', null)
       .gte('start_time', now.toISOString())
       .lt('start_time', `${weekEnd}T23:59:59Z`)
@@ -362,15 +386,18 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   if (eventsRes.error) log('events', eventsRes.error);
 
   const trips = (tripsRes.data ?? []) as unknown as TripRow[];
-  // Shown soonest due first, the undated last.
+  // Soonest due first, the undated last; the rows are put in their shown order (`taskOrder`) once their status is known.
   const tasks = (tasksRes.data ?? []).slice().sort((a, b) => (a.due_date ?? '\uffff').localeCompare(b.due_date ?? '\uffff'));
   const events = eventsRes.data ?? [];
   const tripEvents = tripEventsRes.data ?? [];
   // One attendance read for this week's events, the trips' events and the builder's events; one for task completion.
-  const [attendance, assignments, authors] = await Promise.all([
+  const anns = annRes.success ? (annRes.data ?? []) : [];
+  const [attendance, assignments, authors, waiting] = await Promise.all([
     attendanceFor(supabase, [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id), ...tripEvents.map((e) => e.id)]),
     assignmentsFor(supabase, tasks.map((t) => t.id)),
-    authorNames(supabase, annRes.success ? (annRes.data ?? []) : []),
+    authorNames(supabase, anns),
+    // An all-team post's audience is the roster: without it, who is left is unknown.
+    rosterRes.error ? null : notAckedFor(supabase, anns.filter((a) => a.requires_acknowledgement).map((a) => a.id), names),
   ]);
 
   return {
@@ -393,7 +420,13 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       }),
       error: !!eventsRes.error,
     },
-    announcements: { rows: annRes.success ? (annRes.data ?? []).map((a) => announcement(a, authors, f, 'coach')) : [], error: !annRes.success },
+    announcements: {
+      rows: anns.map((a) => {
+        const row = announcement(a, authors, f, 'coach');
+        return a.requires_acknowledgement ? { ...row, notAcked: waiting ? (waiting.get(a.id) ?? []) : null } : row;
+      }),
+      error: !annRes.success,
+    },
     tripEvents: {
       rows: tripEvents.map((e) => {
         const span = eventSpan(e, f);
@@ -412,14 +445,15 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     },
     trips: {
       rows: trips.map((t) => {
-        const ids = t.event_id && !attendance.error ? (attendance.byEvent.get(t.event_id) ?? []).map((r) => r.player).filter((id) => names.has(id)) : null;
+        // Travelers are named from the roster: without it they are unknown (null), never "0 travelers" (CH-10208).
+        const ids = t.event_id && !attendance.error && !rosterRes.error ? (attendance.byEvent.get(t.event_id) ?? []).map((r) => r.player).filter((id) => names.has(id)) : null;
         const who = ids ? ids.map((id) => names.get(id)!) : null;
         return trip(t, f, today, { travelers: who, ids, count: who ? who.length : null, mine: null });
       }),
       error: !!tripsRes.error,
     },
     tasks: {
-      rows: tasks.map((t) => {
+      rows: taskOrder(tasks.map((t) => {
         const a = assignments.byTask.get(t.id);
         return {
           id: t.id,
@@ -430,7 +464,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           status: a && a.total > 0 && a.done === a.total ? 'completed' : t.due_date && isGolfTaskOverdueInZone(t.due_date, tz) ? 'overdue' : 'pending',
           done: assignments.error || !a ? null : [a.done, a.total],
         };
-      }),
+      })),
       error: !!tasksRes.error,
       total: tasksRes.count ?? null,
     },
@@ -453,6 +487,23 @@ export async function attendanceFor(supabase: Awaited<ReturnType<typeof createCl
   return { byEvent, error: false };
 }
 
+/**
+ * Each trip's calendar event, by trip id (trips with none are left out), or null when the read failed. The player hub
+ * aggregate (getPlayerHubSummaryData) selects no event_id, so without this a player's pass always read "—".
+ */
+export async function tripEventIds(supabase: Awaited<ReturnType<typeof createClient>>, tripIds: string[]): Promise<Map<string, string> | null> {
+  const out = new Map<string, string>();
+  for (const ids of chunkIds([...new Set(tripIds)])) {
+    const { data, error } = await supabase.from('golf_travel_itineraries').select('id, event_id').in('id', ids);
+    if (error) {
+      log('tripLinks', error);
+      return null;
+    }
+    for (const r of data ?? []) if (r.event_id) out.set(r.id, r.event_id);
+  }
+  return out;
+}
+
 /** The trips' events the player is invited to, or null when the read failed: unknown, never "Not traveling" (C-19). */
 async function invitedTo(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], playerId: string): Promise<Set<string> | null> {
   if (!eventIds.length) return new Set();
@@ -466,9 +517,14 @@ async function invitedTo(supabase: Awaited<ReturnType<typeof createClient>>, eve
 
 /**
  * The rules respondToEvent enforces (updateRSVP in lib/calendar/rsvp.ts): a cancelled event takes no reply, nor one that
- * has started (an all-day event a day after its stored start), nor one past its RSVP deadline.
+ * has started (an all-day event a day after its stored start), nor one past its RSVP deadline. And an event that doesn't
+ * ask for replies takes none (owner, 2026-10-08: RSVP is off unless the coach turns it on; null reads as off).
  */
-export function replyIsClosed(e: { status: string | null; cancelled_at: string | null; all_day: boolean | null; start_time: string | null; rsvp_deadline: string | null }, nowMs: number): boolean {
+export function replyIsClosed(
+  e: { status: string | null; cancelled_at: string | null; all_day: boolean | null; start_time: string | null; rsvp_deadline: string | null; requires_rsvp?: boolean | null },
+  nowMs: number,
+): boolean {
+  if (e.requires_rsvp !== true) return true;
   if (e.status === 'cancelled' || e.cancelled_at) return true;
   const start = e.start_time ? new Date(e.start_time).getTime() : NaN;
   if (Number.isFinite(start) && (e.all_day ? start + 86400000 : start) <= nowMs) return true;
@@ -476,15 +532,20 @@ export function replyIsClosed(e: { status: string | null; cancelled_at: string |
 }
 
 /**
- * Which of these events no longer take a reply, and which are all day (the hub summary carries no all_day, F-53).
- * A read that fails closes nothing: the row stays and the server still decides.
+ * Which of these events take no reply, and which are all day (the hub summary carries no all_day, F-53). A read that
+ * fails sets `error`: whether an event asks for replies is unknown then, so the caller lists none and says so.
  */
-async function closedReplies(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], nowMs: number): Promise<Set<string> & { allDay: Set<string> }> {
-  const closed = Object.assign(new Set<string>(), { allDay: new Set<string>() });
+async function closedReplies(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  eventIds: string[],
+  nowMs: number,
+): Promise<Set<string> & { allDay: Set<string>; error: boolean }> {
+  const closed = Object.assign(new Set<string>(), { allDay: new Set<string>(), error: false });
   for (const ids of chunkIds([...new Set(eventIds)])) {
-    const { data, error } = await supabase.from('golf_events').select('id, status, cancelled_at, all_day, start_time, rsvp_deadline').in('id', ids);
+    const { data, error } = await supabase.from('golf_events').select('id, status, cancelled_at, all_day, start_time, rsvp_deadline, requires_rsvp').in('id', ids);
     if (error) {
       log('eventReplyRules', error);
+      closed.error = true;
       continue;
     }
     for (const e of data ?? []) {
@@ -512,6 +573,48 @@ export async function assignmentsFor(supabase: Awaited<ReturnType<typeof createC
     }
   }
   return { byTask, error: false };
+}
+
+/**
+ * Coach: who each post asking for acknowledgement went to and hasn't acknowledged, by name, sorted. A post with recipient
+ * rows went to those players; one without went to the active roster (`names`), as getAnnouncementsWithMeta counts it.
+ * A player who has left the roster has no name here and is not listed. Both reads page (a season of posts times the roster
+ * passes PostgREST's 1000-row cap, and a short ack read would list players who did acknowledge). Either read failing
+ * returns null, and the cards keep the count alone.
+ */
+export async function notAckedFor(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  announcementIds: string[],
+  names: Map<string, string>,
+): Promise<Map<string, string[]> | null> {
+  const out = new Map<string, string[]>();
+  if (!announcementIds.length) return out;
+  const to = new Map<string, Set<string>>();
+  const acked = new Map<string, Set<string>>();
+  const add = (m: Map<string, Set<string>>, k: string, v: string) => (m.get(k) ?? m.set(k, new Set()).get(k)!).add(v);
+  for (const ids of chunkIds(announcementIds)) {
+    const [recipients, acks] = await Promise.all([
+      fetchAllRowsResult((from, last) =>
+        supabase.from('golf_announcement_recipients').select('announcement_id, player_id').in('announcement_id', ids).order('id', { ascending: true }).range(from, last),
+      ),
+      fetchAllRowsResult((from, last) =>
+        supabase.from('golf_announcement_acknowledgements').select('announcement_id, player_id').in('announcement_id', ids).order('id', { ascending: true }).range(from, last),
+      ),
+    ]);
+    if (recipients.error || acks.error) {
+      log('announcementAcks', recipients.error ?? acks.error);
+      return null;
+    }
+    for (const r of recipients.data ?? []) add(to, r.announcement_id, r.player_id);
+    for (const a of acks.data ?? []) add(acked, a.announcement_id, a.player_id);
+  }
+  for (const id of announcementIds) {
+    const audience = to.get(id) ?? new Set(names.keys());
+    const done = acked.get(id);
+    const left = [...audience].filter((p) => !done?.has(p)).map((p) => names.get(p)).filter((n): n is string => !!n);
+    out.set(id, left.sort((a, b) => a.localeCompare(b)));
+  }
+  return out;
 }
 
 /** Announcement authors: coaches by user id, with their title. */
@@ -555,7 +658,8 @@ export function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string
     destination: t.destination,
     dates: f.range(t.departure_date, t.return_date),
     departDate: t.departure_date,
-    depart: t.departure_date ? [f.wd(t.departure_date), t.departure_time ? f.clock(t.departure_time) : null].filter(Boolean).join(' ') : null,
+    // Written as `back` is, so the pass and the plan read both the same way.
+    depart: t.departure_date ? [f.wd(t.departure_date), t.departure_time ? f.clock(t.departure_time) : null].filter(Boolean).join(' · ') : null,
     // `time` columns come back as HH:MM:SS; the time field takes HH:MM.
     departTime: t.departure_time ? t.departure_time.slice(0, 5) : null,
     from: t.departure_location,
@@ -580,13 +684,41 @@ export function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string
 
 const TYPE_OF: Record<string, string> = { pdf: 'PDF', doc: 'DOC', docx: 'DOC', xls: 'XLS', xlsx: 'XLS', csv: 'XLS', png: 'IMG', jpg: 'IMG', jpeg: 'IMG', gif: 'IMG', webp: 'IMG', heic: 'IMG', txt: 'TXT', md: 'TXT' };
 
+/** A stored MIME type's short name, for the types a team shares (production stores the MIME; older rows an extension). */
+const KIND_OF_MIME: Record<string, string> = {
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'text/plain': 'txt',
+  'text/markdown': 'md',
+  'text/csv': 'csv',
+};
+
+/**
+ * The file's kind as TYPE_OF reads it: from a MIME type (`application/pdf` -> `pdf`, an image -> `png`), from an
+ * extension stored in its place, else from the file's address. A Word file's `application/vnd.openxml…` read "VND."
+ */
+export function fileKind(fileType: string | null, fileUrl: string): string {
+  const t = (fileType ?? '').trim().toLowerCase();
+  if (t.includes('/')) {
+    if (KIND_OF_MIME[t]) return KIND_OF_MIME[t];
+    const sub = t.split('/')[1]!.split(/[;+]/)[0]!;
+    if (TYPE_OF[sub] || t.startsWith('image/')) return TYPE_OF[sub] ? sub : 'png';
+  } else if (t) return t;
+  const fromUrl = fileUrl.split('?')[0]!.split('/').pop() ?? '';
+  return fromUrl.includes('.') ? fromUrl.split('.').pop()!.toLowerCase() : '';
+}
+
 /** Folders in first-seen order ("Team" for none), files newest first. */
 export function folders(docs: Array<{ id: string; title: string; folder: string | null; file_type: string | null; file_url: string; file_size: number | null; updated_at: string | null; created_at: string | null; is_public?: boolean | null }>, f: ReturnType<typeof formatters>) {
   const out = new Map<string, ChHubFile[]>();
   const sorted = [...docs].sort((a, b) => (b.updated_at ?? b.created_at ?? '').localeCompare(a.updated_at ?? a.created_at ?? ''));
   for (const d of sorted) {
     const name = d.folder?.trim() || 'Team';
-    const ext = (d.file_type ?? d.file_url.split('?')[0]!.split('.').pop() ?? '').toLowerCase().replace(/^.*\//, '');
+    const ext = fileKind(d.file_type, d.file_url);
     out.set(name, [
       ...(out.get(name) ?? []),
       {
@@ -607,6 +739,12 @@ export function bytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/** The order a task list is shown in: the open ones first, then soonest due, the undated last (wave 7: a done task never sits above an open one). */
+export function taskOrder(rows: ChHubTask[]): ChHubTask[] {
+  const open = (t: ChHubTask) => (t.status === 'completed' ? 1 : 0);
+  return [...rows].sort((a, b) => open(a) - open(b) || (a.dueDate ?? '\uffff').localeCompare(b.dueDate ?? '\uffff'));
 }
 
 function firstLine(s: string | null): string | null {

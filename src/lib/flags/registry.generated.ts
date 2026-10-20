@@ -253,7 +253,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "golf_clubhouse_ui",
     owner: "golf/clubhouse",
-    purpose: "Renders the Clubhouse shell and rebuilt screens (src/clubhouse) in place of the Fairway dashboard shell for coaches and players. Routes not yet rebuilt show a \"not rebuilt yet\" placeholder inside the Clubhouse shell.",
+    purpose: "Renders the Clubhouse shell and rebuilt screens (src/clubhouse) in place of the Fairway dashboard shell for coaches and players. Routes without a Clubhouse version redirect to the closest rebuilt screen; retired ones (course management, the printable report, genome compare) keep their redirects. HELM_CLUBHOUSE_TEAMS limits it to listed teams. Status and rollout: docs/clubhouse/STATUS.md.",
     type: "release",
     status: "active",
     created_at: "2026-09-29",

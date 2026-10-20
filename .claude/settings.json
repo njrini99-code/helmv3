@@ -18,10 +18,26 @@
       "mcp__supabase",
       "mcp__claude_ai_Supabase",
       "mcp__claude_ai_Vercel",
-      "mcp__claude_ai_Sentry"
+      "mcp__claude_ai_Sentry",
+      "mcp__supabase-readonly"
     ],
     "deny": [],
-    "ask": []
+    "ask": [
+      "mcp__claude_ai_Vercel__request_promote",
+      "mcp__claude_ai_Vercel__request_rollback",
+      "mcp__claude_ai_Vercel__create_deployment",
+      "mcp__claude_ai_Vercel__deploy_to_vercel",
+      "mcp__claude_ai_Vercel__buy_domain",
+      "mcp__claude_ai_Vercel__buy_domains",
+      "mcp__claude_ai_Vercel__buy_single_domain",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__request_promote",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__request_rollback",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__create_deployment",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__deploy_to_vercel",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_domain",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_domains",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_single_domain"
+    ]
   },
   "hooks": {
     "SessionStart": [
@@ -34,7 +50,12 @@
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stamp-workspace.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stamp-workspace.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stamp-workspace.mjs",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
             "timeout": 10
           }
         ]
@@ -44,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/restore-session-state.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/restore-session-state.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/restore-session-state.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: restore session state"
           }
@@ -56,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs",
             "timeout": 60
           }
         ]
@@ -67,7 +88,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-remove.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-remove.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-remove.mjs",
             "timeout": 60
           }
         ]
@@ -78,7 +99,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/route-prompt.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/route-prompt.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/route-prompt.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: route prompt"
           }
@@ -90,7 +111,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: save session state"
           }
@@ -103,8 +124,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs",
             "timeout": 20
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
+            "timeout": 10
           }
         ]
       }

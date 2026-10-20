@@ -1,5 +1,8 @@
 import { notFound } from 'next/navigation';
 import { ClubhouseFrame } from '@/clubhouse/shell/ClubhouseFrame';
+import { HeroToneProvider } from '@/clubhouse/ui/PageHero';
+import { heroToneFrom } from '@/clubhouse/ui/hero-tone';
+import { previewLightTime } from '@/clubhouse/lib/light';
 import { CoachHome } from '@/clubhouse/screens/home/CoachHome';
 import { PlayerHome } from '@/clubhouse/screens/home/PlayerHome';
 import { PreviewHub } from '@/clubhouse/preview/PreviewHub';
@@ -7,6 +10,7 @@ import { PreviewRounds } from '@/clubhouse/preview/PreviewRounds';
 import { PreviewTracking } from '@/clubhouse/preview/PreviewTracking';
 import { PreviewSetup } from '@/clubhouse/preview/PreviewSetup';
 import { RoundReview } from '@/clubhouse/screens/rounds/RoundReview';
+import { RoundReviewSkeleton, RoundsSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH, PREVIEW_REVIEW_HOLE_BY_HOLE, PREVIEW_REVIEW_NO_HOLES, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_NO_SHOTS, PREVIEW_REVIEW_TOTAL_ONLY } from '@/clubhouse/preview/fixtures-round-review';
 import { PREVIEW_ROUNDS, PREVIEW_ROUNDS_EMPTY, PREVIEW_ROUNDS_FAILED, PREVIEW_ROUNDS_IDLE, PREVIEW_ROUNDS_MANY, PREVIEW_ROUNDS_NO_SEASON, PREVIEW_ROUNDS_UNFINISHED_FAILED } from '@/clubhouse/preview/fixtures-rounds';
 import '@/clubhouse/styles/rounds.css';
@@ -16,7 +20,7 @@ import { ClassesSkeleton } from '@/clubhouse/screens/classes/ClassesSkeleton';
 import { PREVIEW_CLASSES, PREVIEW_CLASSES_CLEAR, PREVIEW_CLASSES_EMPTY, PREVIEW_CLASSES_FAILED, PREVIEW_CLASSES_MIXED, PREVIEW_CLASSES_PARTIAL } from '@/clubhouse/preview/fixtures-classes';
 import '@/clubhouse/styles/classes.css';
 import { PREVIEW_HUB_COACH, PREVIEW_HUB_COACH_EMPTY, PREVIEW_HUB_COACH_FAILED, PREVIEW_HUB_PLAYER, PREVIEW_HUB_PLAYER_EMPTY, PREVIEW_HUB_PLAYER_FAILED } from '@/clubhouse/preview/fixtures-hub';
-import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_EVENTS } from '@/clubhouse/preview/fixtures-player-home';
+import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_EVENTS, PREVIEW_PLAYER_HOME_NO_ROUNDS } from '@/clubhouse/preview/fixtures-player-home';
 import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
 import { PreviewError } from '@/clubhouse/preview/PreviewError';
 import { Roster } from '@/clubhouse/screens/roster/Roster';
@@ -26,7 +30,7 @@ import { RosterSkeleton } from '@/clubhouse/screens/roster/RosterSkeleton';
 import { PREVIEW_PLAYER_ROSTER, PREVIEW_PLAYER_ROSTER_EMPTY, PREVIEW_PLAYER_ROSTER_FAILED, PREVIEW_ROSTER, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '@/clubhouse/preview/fixtures-roster';
 import { StatsTeam } from '@/clubhouse/screens/stats/StatsTeam';
 import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
-import { StatsSkeleton } from '@/clubhouse/screens/stats/StatsSkeleton';
+import { StatsSkeletonFor } from '@/clubhouse/screens/stats/StatsRouteSkeleton';
 import {
   PREVIEW_PLAYER,
   PREVIEW_PLAYER_EARLY,
@@ -46,7 +50,8 @@ import { PreviewMessages } from '@/clubhouse/preview/PreviewMessages';
 import { PreviewBell } from '@/clubhouse/preview/PreviewBell';
 import { PreviewSettings } from '@/clubhouse/preview/PreviewSettings';
 import { QualifiersList } from '@/clubhouse/screens/qualifiers/QualifiersList';
-import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifiersSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
+import { HubSkeleton } from '@/clubhouse/screens/hub/HubSkeleton';
+import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
 import { PreviewQualifierDetail, PreviewQualifierForm, PreviewQualifierSelection } from '@/clubhouse/preview/PreviewQualifiers';
 import { DETAIL_INDEX, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '@/clubhouse/preview/fixtures-qualifiers';
 import { SettingsSkeleton } from '@/clubhouse/screens/settings/SettingsSkeleton';
@@ -67,9 +72,12 @@ import {
   PREVIEW_HOME_EMPTY,
   PREVIEW_HOME_FAILED,
   PREVIEW_HOME_NO_EVENTS,
+  PREVIEW_HOME_EVENTS_ONLY,
+  PREVIEW_HOME_NO_ROUNDS,
   PREVIEW_HOME_NOW,
   PREVIEW_PLAYER as PREVIEW_PLAYER_USER,
   PREVIEW_SHELL,
+  PREVIEW_ROUND_IN_PROGRESS,
 } from '@/clubhouse/preview/fixtures';
 import { PreviewCoachHelm } from '@/clubhouse/preview/PreviewCoachHelm';
 import { PreviewRecruiting } from '@/clubhouse/preview/PreviewRecruiting';
@@ -105,24 +113,27 @@ import '@/clubhouse/styles/coachhelm-views.css';
 import '@/clubhouse/styles/coachhelm-profile.css';
 import '@/clubhouse/styles/coachhelm-standing.css';
 import '@/clubhouse/styles/coachhelm-dive.css';
+import { ChPhoneHintProvider } from '@/clubhouse/lib/use-phone';
+import { phoneHint } from '@/clubhouse/lib/phone-hint';
 
 /**
  * Dev-only Clubhouse preview: every screen and state rendered from the
  * handoff's sample data, with no auth and no database, for comparison with
  * design/handoff/screenshots. 404 in production.
  *
- *   /clubhouse-preview/home   ?state=empty | noevents | failed | loading | error   (empty is the first-run page)
- *   /clubhouse-preview/home-player ?state=empty | noevents | failed | loading   (Theo; empty is the first-run page)
+ *   /clubhouse-preview/home   ?state=empty | eventsonly | norounds | noevents | failed | loading | error   (empty and eventsonly are the first-run page)
+ *   any screen &at=HH:MM holds the global light; &round=1 adds a round in progress (the Resume accessory)
+ *   /clubhouse-preview/home-player ?state=empty | norounds | noevents | failed | loading   (Theo; empty is the first-run page)
  *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
  *   /clubhouse-preview/rounds ?state=idle | many | empty | noseason | failed | unfinished-failed | failwrites   (Jonah)
  *   /clubhouse-preview/round ?state=coach | noshots | noholes | total | holebyhole | nosg   (a round's review)
  *   /clubhouse-preview/classes ?state=clear | empty | failed | partial | mixed | noteam | loading | failwrites | failsync | read-notschedule | read-fault | read-none | read-warn   (Jonah)
  *   /clubhouse-preview/setup ?state=failcourses | failtees | failholes | failstart | noqualifiers | qualifiersfailed   (new round)
- *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail   (the shot screen)
+ *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail | saved | phone | saving | retrying   (the shot screen; the last four fake the round's save line, CH-11901)
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
  *   /clubhouse-preview/roster-player ?state=empty | failed | noteam | loading   (the player's read-only roster; Theo)
  *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in)
- *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines
+ *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | loading
  *   /clubhouse-preview/calendar ?state=empty | firstrun | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route | files-failed | add-failed
@@ -146,11 +157,13 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event, bell, new: isNew, section, q, tab, teams } = await searchParams;
+  const { state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round } = await searchParams;
+  // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
+  const heroTone = heroToneFrom(tone);
   const qDetail = (role: 'coach' | 'player') => {
     const d = previewDetail(DETAIL_INDEX[q ?? 'live'] ?? 0, role);
     if (state === 'failed') return { ...d, entriesError: true, board: null, entrants: 0 };
@@ -184,7 +197,7 @@ export default async function ClubhousePreview({
           <PreviewError kind="unknown" />
         ) : (
           <CoachHome
-            data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : PREVIEW_HOME}
+            data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : state === 'eventsonly' ? PREVIEW_HOME_EVENTS_ONLY : state === 'norounds' ? PREVIEW_HOME_NO_ROUNDS : PREVIEW_HOME}
             now={PREVIEW_HOME_NOW}
           />
         ),
@@ -196,22 +209,24 @@ export default async function ClubhousePreview({
           <HomeSkeleton />
         ) : (
           <PlayerHome
-            data={state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : PREVIEW_PLAYER_HOME}
+            data={state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : state === 'norounds' ? PREVIEW_PLAYER_HOME_NO_ROUNDS : PREVIEW_PLAYER_HOME}
             now={PREVIEW_HOME_NOW}
           />
         ),
     },
     hub: {
       path: '/golf/dashboard/team-hub',
-      node: <PreviewHub data={state === 'empty' ? PREVIEW_HUB_COACH_EMPTY : state === 'failed' ? PREVIEW_HUB_COACH_FAILED : PREVIEW_HUB_COACH} state={state} tab={tab} />,
+      node: state === 'loading' ? <HubSkeleton /> : <PreviewHub data={state === 'empty' ? PREVIEW_HUB_COACH_EMPTY : state === 'failed' ? PREVIEW_HUB_COACH_FAILED : PREVIEW_HUB_COACH} state={state} tab={tab} />,
     },
     'hub-player': {
       path: '/golf/dashboard/team-hub',
-      node: <PreviewHub data={state === 'empty' ? PREVIEW_HUB_PLAYER_EMPTY : state === 'failed' ? PREVIEW_HUB_PLAYER_FAILED : PREVIEW_HUB_PLAYER} state={state} tab={tab} />,
+      node: state === 'loading' ? <HubSkeleton /> : <PreviewHub data={state === 'empty' ? PREVIEW_HUB_PLAYER_EMPTY : state === 'failed' ? PREVIEW_HUB_PLAYER_FAILED : PREVIEW_HUB_PLAYER} state={state} tab={tab} />,
     },
     rounds: {
       path: '/golf/dashboard/rounds',
-      node: (
+      node: state === 'loading' ? (
+        <RoundsSkeleton />
+      ) : (
         <PreviewRounds
           state={state}
           data={
@@ -251,7 +266,9 @@ export default async function ClubhousePreview({
     },
     round: {
       path: `/golf/dashboard/rounds/${PREVIEW_REVIEW.id}`,
-      node: (
+      node: state === 'loading' ? (
+        <RoundReviewSkeleton />
+      ) : (
         <RoundReview
           review={
             { coach: PREVIEW_REVIEW_COACH, noshots: PREVIEW_REVIEW_NO_SHOTS, noholes: PREVIEW_REVIEW_NO_HOLES, total: PREVIEW_REVIEW_TOTAL_ONLY, holebyhole: PREVIEW_REVIEW_HOLE_BY_HOLE, nosg: PREVIEW_REVIEW_NO_SG }[state ?? ''] ?? PREVIEW_REVIEW
@@ -283,7 +300,7 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/stats',
       node:
         state === 'loading' ? (
-          <StatsSkeleton />
+          <StatsSkeletonFor profile={false} />
         ) : state === 'empty' ? (
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundCount: 0, grid: [], players: [], putting: null, bests: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 0, courses: [] } }} />
         ) : state === 'failed' ? (
@@ -310,6 +327,8 @@ export default async function ClubhousePreview({
       node:
         state === 'failed' ? (
           <StatsPlayer data={{ ...PREVIEW_PLAYER, roundsError: true, statsError: true, devError: true }} coachId="preview-coach" />
+        ) : state === 'loading' ? (
+          <StatsSkeletonFor profile />
         ) : state === 'filtered' ? (
           <StatsPlayer data={PREVIEW_PLAYER_FILTERED} coachId="preview-coach" />
         ) : state === 'nomatch' ? (
@@ -356,31 +375,31 @@ export default async function ClubhousePreview({
     },
     'qualifiers-player': {
       path: '/golf/dashboard/qualifiers',
-      node: <QualifiersList data={qList('player', 'all')} />,
+      node: state === 'loading' ? <QualifiersSkeleton /> : <QualifiersList data={qList('player', 'all')} />,
     },
     'my-qualifiers': {
       path: '/golf/dashboard/my-qualifiers',
-      node: <QualifiersList data={qList('player', 'mine')} />,
+      node: state === 'loading' ? <QualifiersSkeleton mode="mine" /> : <QualifiersList data={qList('player', 'mine')} />,
     },
     qualifier: {
-      path: '/golf/dashboard/qualifiers',
+      path: '/golf/dashboard/qualifiers/00000000-0000-4000-8000-0000000000a1',
       node: state === 'loading' ? <QualifierDetailSkeleton /> : <PreviewQualifierDetail data={qDetail('coach')} state={state} />,
     },
     'qualifier-player': {
-      path: '/golf/dashboard/qualifiers',
+      path: '/golf/dashboard/qualifiers/00000000-0000-4000-8000-0000000000a1',
       node: <PreviewQualifierDetail data={qDetail('player')} state={state} />,
     },
     'qualifier-new': {
-      path: '/golf/dashboard/qualifiers',
+      path: '/golf/dashboard/qualifiers/new',
       node: state === 'loading' ? <QualifierFormSkeleton /> : <PreviewQualifierForm data={qForm(false)} state={state} />,
     },
     'qualifier-edit': {
-      path: '/golf/dashboard/qualifiers',
+      path: '/golf/dashboard/qualifiers/00000000-0000-4000-8000-0000000000a1/edit',
       node: state === 'loading' ? <QualifierFormSkeleton /> : <PreviewQualifierForm data={qForm(true)} state={state} />,
     },
     'qualifier-selection': {
-      path: '/golf/dashboard/qualifiers',
-      node: <PreviewQualifierSelection data={previewSelection(q === 'picking' || q === 'picked' || q === 'selected' ? q : 'standings')} state={state} />,
+      path: '/golf/dashboard/qualifiers/00000000-0000-4000-8000-0000000000a1/selection',
+      node: state === 'loading' ? <QualifierSelectionSkeleton /> : <PreviewQualifierSelection data={previewSelection(q === 'picking' || q === 'picked' || q === 'selected' ? q : 'standings')} state={state} />,
     },
     'messages-player': {
       path: '/golf/dashboard/messages',
@@ -451,9 +470,22 @@ export default async function ClubhousePreview({
 
   return (
     <PreviewBell state={bell}>
-      <ClubhouseFrame userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>
-        {entry.node}
+      {/* The phone hint from the request, as the dashboard layout passes it, so a phone's first paint is the phone layout. */}
+      <ChPhoneHintProvider phone={await phoneHint()}>
+      <ClubhouseFrame
+        userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
+        // &round=1: the player has a round in progress (P001-C1: the dock's Resume accessory, the sidebar's card).
+        shell={round ? { ...PREVIEW_SHELL, roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : PREVIEW_SHELL}
+        pathname={entry.path}
+        // The preview's own query, as the live shell hands the frame the address's: `&section=` and a coach's `&player=` decide the phone bar (CH-1402).
+        search={new URLSearchParams(Object.entries(await searchParams).filter((kv): kv is [string, string] => typeof kv[1] === 'string')).toString()}
+        forceRebuilt
+        // ?at=18:30 holds the global light at that time in the fixture team's zone (P001-A1).
+        lightAt={previewLightTime(at, PREVIEW_SHELL.timezone)}
+      >
+        <HeroToneProvider tone={heroTone}>{entry.node}</HeroToneProvider>
       </ClubhouseFrame>
+      </ChPhoneHintProvider>
     </PreviewBell>
   );
 }

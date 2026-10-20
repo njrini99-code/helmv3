@@ -94,9 +94,9 @@ describe('the standing rows as the page draws them', () => {
     expect(figure('gir_pct', 'percent', Number.NaN)).toBe('—');
   });
 
-  it('against the Tour: strokes gained is against the field average, every other stat against the Tour, by the metric’s own direction', () => {
+  it('against the Tour: every stat, strokes gained included, is named against the Tour as Stats names it (Q-88, P013 D4), by the metric’s own direction', () => {
     const sg = rowOf(PREVIEW_STANDING, 'sg_total');
-    expect(sg).toMatchObject({ you: '−2.14', tour: { label: 'Field average', ref: 'the field average', text: '0.00' }, vsTour: { sense: 'behind', text: '2.14 strokes behind the field average' } });
+    expect(sg).toMatchObject({ you: '−2.14', tour: { label: 'Tour', ref: 'the Tour', text: '0.00' }, vsTour: { sense: 'behind', text: '2.14 strokes behind the Tour' } });
     expect(rowOf(PREVIEW_STANDING, 'putts_made_3_5ft_pct')).toMatchObject({ you: '71%', tour: { label: 'Tour', text: '88%' }, vsTour: { sense: 'behind', text: '17 pts behind the Tour' } });
     // A lower-is-better distance: farther is behind, closer is ahead.
     expect(rowOf(PREVIEW_STANDING, 'approach_proximity_125_175ft').vsTour).toEqual({ sense: 'behind', text: '13 ft farther than the Tour' });
@@ -133,21 +133,40 @@ describe('the standing rows as the page draws them', () => {
   it('a women’s team is against the LPGA Tour, by name, in the row and in the page', () => {
     expect(PREVIEW_STANDING_WOMENS.tour).toBe('LPGA Tour');
     expect(rowOf(PREVIEW_STANDING_WOMENS, 'gir_pct')).toMatchObject({ tour: { label: 'LPGA Tour', ref: 'the LPGA Tour' }, vsTour: { text: '8 pts behind the LPGA Tour' } });
-    expect(rowOf(PREVIEW_STANDING_WOMENS, 'sg_total').tour!.label).toBe('Field average');
+    expect(rowOf(PREVIEW_STANDING_WOMENS, 'sg_total').tour!.label).toBe('LPGA Tour');
     expect(PREVIEW_STANDING.tour).toBe('Tour');
   });
 
   it('the projection is the shared counterfactual, from their scoring average, in strokes a round', () => {
-    const cfg = METRIC_RENDER_CONFIG.putts_made_3_5ft_pct;
-    const cf = computeCounterfactual({ metric_id: 'putts_made_3_5ft_pct', direction: cfg.direction, player_value: 71, pga_value: 88, player_30d_scoring_avg: 77.2 });
+    const cfg = METRIC_RENDER_CONFIG.putts_made_5_10ft_pct;
+    const cf = computeCounterfactual({ metric_id: 'putts_made_5_10ft_pct', direction: cfg.direction, player_value: 38, pga_value: 51, player_30d_scoring_avg: 77.2 });
     expect(cf.suppressed).toBe(false);
-    expect(rowOf(PREVIEW_STANDING, 'putts_made_3_5ft_pct').projection).toEqual({
+    expect(rowOf(PREVIEW_STANDING, 'putts_made_5_10ft_pct').projection).toEqual({
       strokes: cf.strokes_saved_per_round.toFixed(1),
       from: '77.2',
       to: (cf.projected_score_if_closed as number).toFixed(1),
       weeks: Math.max(1, Math.round(cf.weeks_to_typical_close)),
       clamped: cf.clamped === true,
     });
+  });
+
+  it('a part of the game is sized by their own attempts a round, as its insight card is', () => {
+    const cfg = METRIC_RENDER_CONFIG.putts_made_3_5ft_pct;
+    const cf = computeCounterfactual({ metric_id: 'putts_made_3_5ft_pct', direction: cfg.direction, player_value: 71, pga_value: 88, player_30d_scoring_avg: 77.2, player_attempts_per_round: 2.4 });
+    expect(cf.attempts_used).toBe(2.4);
+    const s = toChStanding(STANDING_ROWS, { ...ok, attemptsPerRound: { putts_made_3_5ft_pct: 2.4 } });
+    expect(rowOf(s, 'putts_made_3_5ft_pct').projection).toMatchObject({ strokes: cf.strokes_saved_per_round.toFixed(1), to: (cf.projected_score_if_closed as number).toFixed(1) });
+  });
+
+  it('without their attempts, a part never costs more than its strokes-gained category is behind (3–5 ft is not 1.7 when putting is 0.63)', () => {
+    const p = rowOf(PREVIEW_STANDING, 'putts_made_3_5ft_pct').projection!;
+    expect(Number(p.strokes)).toBeLessThanOrEqual(0.63);
+    expect(p).toMatchObject({ strokes: '0.6', to: '76.6', clamped: true });
+    // A category within the noise floor of the Tour leaves its parts nothing to project.
+    const near = toChStanding([standingRow('sg_putting', -0.2, 0, null), standingRow('putts_made_3_5ft_pct', 71, 88, null)], ok);
+    expect(rowOf(near, 'putts_made_3_5ft_pct').projection).toBeNull();
+    // With no strokes-gained row to bound it, the shared counterfactual stands.
+    expect(rowOf(toChStanding([standingRow('putts_made_3_5ft_pct', 71, 88, null)], ok), 'putts_made_3_5ft_pct').projection?.strokes).toBe('1.7');
   });
 
   it('no projection where the gap is small, where they are past the Tour, or without five rounds behind a scoring average', () => {
@@ -160,10 +179,13 @@ describe('the standing rows as the page draws them', () => {
 
   it('the most to gain is the three biggest projections, most first, and they are not added', () => {
     expect(PREVIEW_STANDING.gaps).toEqual([
-      { id: 'sg_total', label: 'Strokes gained: total', strokes: '2.1' },
-      { id: 'putts_made_3_5ft_pct', label: 'Putts made, 3–5 ft', strokes: '1.7' },
       { id: 'scoring_par_4', label: 'Par 4 scoring', strokes: '1.5' },
+      { id: 'penalty_rate_per_round', label: 'Penalties per round', strokes: '1.4' },
+      { id: 'big_number_rate', label: 'Doubles or worse', strokes: '1.3' },
     ]);
+    // Strokes gained: total is the sum of every row (2.1 here), never a part of the game to work on.
+    expect(rowOf(PREVIEW_STANDING, 'sg_total').projection?.strokes).toBe('2.1');
+    expect(PREVIEW_STANDING.gaps.some((g) => g.id === 'sg_total')).toBe(false);
     expect(PREVIEW_STANDING.gaps.length).toBeLessThanOrEqual(3);
   });
 
@@ -230,6 +252,23 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     expect(out.data.groups.flatMap((g) => g.rows.map((r) => r.id))).toEqual(['sg_total', 'sg_ott']);
   });
 
+  it('each putt band is sized by its own attempts column over the rounds played; a band with none falls back to the cap', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    tables.current = {
+      golf_player_stats_cache: { data: { rounds_played: 10, scoring_average: 77.2, putt_attempts_3_5ft: 24, putt_attempts_5_10ft: 0, putt_attempts_10_15ft: 31, sand_attempts: 12 } },
+    };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    const row = (id: string) => out.data.groups.flatMap((g) => g.rows).find((r) => r.id === id)!;
+    const cfg = METRIC_RENDER_CONFIG.putts_made_3_5ft_pct;
+    const own = computeCounterfactual({ metric_id: 'putts_made_3_5ft_pct', direction: cfg.direction, player_value: 71, pga_value: 88, player_30d_scoring_avg: 77.2, player_attempts_per_round: 2.4 });
+    expect(own.attempts_used).toBe(2.4);
+    expect(row('putts_made_3_5ft_pct').projection).toMatchObject({ strokes: own.strokes_saved_per_round.toFixed(1), clamped: own.clamped === true });
+    // 5–10 ft has no attempts on file: the fixed rate, within what putting is behind (0.63), unclamped as it is under it.
+    const fixed = computeCounterfactual({ metric_id: 'putts_made_5_10ft_pct', direction: cfg.direction, player_value: 38, pga_value: 51, player_30d_scoring_avg: 77.2 });
+    expect(row('putts_made_5_10ft_pct').projection?.strokes).toBe(fixed.strokes_saved_per_round.toFixed(1));
+  });
+
   it('no standing row yet is the first-run state, never a failure', async () => {
     standingRead.load.mockResolvedValue(new Map());
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
@@ -269,22 +308,26 @@ describe('the Standing screen', () => {
   it('CH-13880 the page is labelled by CoachHelm; where they stand, each group and the most to gain are labelled regions', () => {
     show();
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
-    expect(screen.getByRole('region', { name: /Ahead of the Tour on 0 of 19 stats and ahead of your team on 16 of 18/ })).toBeTruthy();
+    // P013 D4: the hero leads with the most to gain, and its counts use one denominator, the Tour's.
+    const top = PREVIEW_STANDING.gaps[0]!;
+    const hero = screen.getByRole('region', { name: `${top.label} is worth about ${top.strokes} strokes a round` });
+    expect(hero.querySelector('.ch-hs-hero__sub')!.textContent).toBe('Ahead of the Tour on 0 of 19 stats. Every stat, strokes gained included, is against the Tour.');
+    expect(hero.textContent).not.toMatch(/field average|of 18|20 stats/);
     for (const g of PREVIEW_STANDING.groups) expect(screen.getByRole('region', { name: g.label })).toBeTruthy();
     expect(screen.getByRole('complementary', { name: 'Most to gain' })).toBeTruthy();
-    expect(screen.getByText('14 rounds · Scoring average 77.2 · Refreshed Sep 30')).toBeTruthy();
+    expect(screen.getByText('14 rounds · Scoring average 77.2 · Refreshed Sep 30').textContent).toBe('14 rounds\u00a0· Scoring average 77.2\u00a0· Refreshed Sep\u00a030');
   });
 
   it('each row: the stat, how they stand in words and in colour-free text, the three figures with their keys, and what closing it is worth', () => {
     show();
-    const li = screen.getByRole('heading', { name: 'Putts made, 3–5 ft', level: 4 }).closest('li') as HTMLElement;
+    const li = screen.getByRole('heading', { name: 'Putts made, 3–5 ft', level: 3 }).closest('li') as HTMLElement;
     expect(within(li).getByText('17 pts behind the Tour')).toBeTruthy();
     expect(within(li).getByText('Upper half of your team')).toBeTruthy();
     const figures = li.querySelector('dl')!;
     expect(within(figures).getByText('You').nextElementSibling!.textContent).toBe('71%');
     expect(within(figures).getByText('Tour').nextElementSibling!.textContent).toBe('88%');
     expect(within(figures).getByText('Team').nextElementSibling!.textContent).toBe('66%');
-    expect(li.querySelector('.ch-hs-proj')!.textContent).toMatch(/^About 1\.7 strokes a round if it matched the Tour: your scoring average 77\.2 to 75\.\d, typically in about \d+ weeks?\.$/);
+    expect(li.querySelector('.ch-hs-proj')!.textContent).toMatch(/^About 0\.6 strokes a round if it matched the Tour: your scoring average 77\.2 to 76\.6, typically in about \d+ weeks?\. The projection is capped, so it is a ceiling, not a forecast\.$/);
   });
 
   it('the track is decoration, hidden from assistive tech: every number is in the text beside it', () => {
@@ -294,7 +337,7 @@ describe('the Standing screen', () => {
 
   it('CH-13372 a team too small to compare says so in the row, and shows no team figure or rank', () => {
     show();
-    const li = screen.getByRole('heading', { name: 'Scrambling from sand', level: 4 }).closest('li') as HTMLElement;
+    const li = screen.getByRole('heading', { name: 'Scrambling from sand', level: 3 }).closest('li') as HTMLElement;
     expect(within(li).getByText('Team comparison needs 5 teammates with this stat (3 so far).')).toBeTruthy();
     expect(li.querySelector('dl .is-team dd')!.textContent).toBe('—');
     expect(li.querySelector('.ch-hs-pct')).toBeNull();
@@ -302,7 +345,7 @@ describe('the Standing screen', () => {
 
   it('CH-13373 a Tour value that is not comparable says why in the row, and its Tour figure is a dash', () => {
     show();
-    const li = screen.getByRole('heading', { name: 'Approach proximity, 50–125 yd', level: 4 }).closest('li') as HTMLElement;
+    const li = screen.getByRole('heading', { name: 'Approach proximity, 50–125 yd', level: 3 }).closest('li') as HTMLElement;
     expect(within(li).getByText(/Tour proximity counts every approach, misses included/)).toBeTruthy();
     expect(li.querySelector('dl .is-tour dd')!.textContent).toBe('—');
     expect(li.querySelector('.ch-hs-proj')).toBeNull();
@@ -310,18 +353,35 @@ describe('the Standing screen', () => {
 
   it('CH-13371 an early read: the rounds so far and what is not there yet, with comparisons drawn and no projection', () => {
     show(standingLoad(PREVIEW_STANDING_EARLY));
-    expect(code('CH-13371')!.textContent).toBe('3 rounds so far, so this is an early read. Projections start at 5 rounds, and a comparison with your team needs 5 teammates with the stat.');
+    // Every row here has its team values, so the notice does not say a team comparison is still missing.
+    expect(code('CH-13371')!.textContent).toBe('3 rounds so far, so this is an early read. Projections start at 5 rounds.');
     expect(document.querySelector('.ch-hs-proj')).toBeNull();
     expect(screen.queryByRole('complementary', { name: 'Most to gain' })).toBeNull();
-    expect(screen.getByText('3 rounds · Refreshed Sep 30')).toBeTruthy();
+    expect(screen.getByText('3 rounds · Refreshed Sep 30').textContent).toBe('3 rounds\u00a0· Refreshed Sep\u00a030');
+  });
+
+  it('CH-13371 the early notice names the team floor only where a row is short of teammates', () => {
+    const short = toChStanding([standingRow('gir_pct', 58, 66, { avg: 52, n: 3, pct: 89 })], { status: 'ok', roundsPlayed: 3, scoringAverage: 80.4 });
+    show(standingLoad(short));
+    expect(code('CH-13371')!.textContent).toBe('3 rounds so far, so this is an early read. Projections start at 5 rounds, and a comparison with your team needs 5 teammates with the stat.');
   });
 
   it('CH-13271 projections that did not load say so, with Try again; the comparisons are untouched and it is not called an early read', async () => {
     show(standingLoad(PREVIEW_STANDING_NOBASELINE));
     expect(code('CH-13271')!.textContent).toMatch(/Your projections didn’t load.*not affected/);
     expect(code('CH-13371')).toBeNull();
-    expect(screen.getByRole('heading', { name: 'Putts made, 3–5 ft', level: 4 })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Putts made, 3–5 ft', level: 3 })).toBeTruthy();
     await userEvent.click(within(code('CH-13271') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-13271 and CH-13272 both beside the rows: said once with one Try again (CH-1209), each keeping its title and no button', async () => {
+    show(standingLoad({ ...PREVIEW_STANDING_NOBASELINE, cohortFailed: true }));
+    expect(code('CH-1209')!.textContent).toMatch(/Your scoring average and your team’s Tour didn’t load/);
+    expect(code('CH-13271')!.textContent).toMatch(/Your projections didn’t load/);
+    expect(code('CH-13272')!.textContent).toMatch(/Your team’s Tour couldn’t be confirmed/);
+    for (const c of ['CH-13271', 'CH-13272']) expect(within(code(c) as HTMLElement).queryByRole('button', { name: /Try again/ })).toBeNull();
+    await userEvent.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 

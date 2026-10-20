@@ -1,22 +1,27 @@
 'use client';
 
-import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserMinus, UserPlus, Users } from 'lucide-react';
+import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
+import { updatePlayerStatus } from '@/app/golf/actions/team-management';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
+import { useContextMenu, type ContextMenuBind } from '../../ui/ContextMenu';
+import { publishPeople } from '../../shell/command/people';
 import { Modal } from '../../ui/Modal';
 import { PillGroup, Segmented } from '../../ui/Segmented';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Swap } from '../../ui/Swap';
 import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
@@ -29,8 +34,13 @@ import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
-import { formatHcp } from './format';
+import { PlayerPeek } from '../../ui/PlayerPeek';
+import { Tooltip } from '../../ui/Tooltip';
+import { RosterSpread } from './RosterSpread';
+import { earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
+import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
+import { SideScroll } from '../../ui/SideScroll';
 
 type Sort = 'avg' | 'hcp' | 'rounds' | 'name';
 type Show = 'active' | 'inactive' | 'all';
@@ -41,6 +51,11 @@ const lastName = (n: string) => n.split(' ').slice(-1)[0] ?? n;
 const nullsLast = (a: number | null, b: number | null) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a - b);
 /** A spreadsheet reads a cell that starts with = + - @ (or a tab or a return) as a formula. Players type their own names, so the export writes them as text (30502). */
 const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
+
+/** A `?player=` link's player, held across a remount until the profile opens (see the effect in Roster). */
+let linkedPlayer: string | null = null;
+/** A `?invite=1` arrival (Home's first-run Invite players) not yet shown, held across a remount like the linked player. */
+let linkedInvite = false;
 
 export function Roster({ data }: { data: ChRoster }) {
   const copy = useCopyText();
@@ -59,10 +74,33 @@ export function Roster({ data }: { data: ChRoster }) {
   const [show, setShow] = useChSessionState<Show>('show', 'active');
   const [sort, setSort] = useChSessionState<Sort>('sort', 'avg');
   const [view, setView] = useChSessionState<View>('view', 'faces');
+  // Counts the coach's own layout changes: the cards and the table swap with motion on those (CH-3603), never when the
+  // kept layout comes back as the page opens.
+  const [viewTurn, setViewTurn] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
+  // `?invite=1` (Home's first-run Invite players) opens the invite sheet once, on desktop and the phone, and the param is
+  // dropped so a reload or Back shows the roster. Only the coach's roster reads it: a player's roster and the no-team page
+  // are other screens and ignore it (wiring audit, 2026-10-17).
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('invite') === '1') {
+      linkedInvite = true;
+      url.searchParams.delete('invite');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+    if (linkedInvite) setInvite(true);
+  }, []);
+  const closeInvite = useCallback(() => {
+    linkedInvite = false;
+    setInvite(false);
+  }, []);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
-  const jr = useJoinRequests(data.teamName, data.requests);
+  // The player whose Active/Inactive status the coach is changing (CH-3502).
+  const [restatus, setRestatus] = useState<ChRosterPlayer | null>(null);
+  // Mid-sentence the team is its name, or "your team" when the team row didn't load (P003 #8).
+  const teamRef = teamInSentence(data);
+  const jr = useJoinRequests(teamRef, data.requests);
   const phone = useChPhone();
   // Phone: the open player is a pushed screen (RosterPhone keeps it in the history, CH-1906).
   // A link with ?player= opens that profile once; the param is dropped so a reload shows the list.
@@ -70,12 +108,20 @@ export function Roster({ data }: { data: ChRoster }) {
   useEffect(() => {
     if (!phone) return;
     const url = new URL(window.location.href);
-    const id = url.searchParams.get('player');
+    const id = url.searchParams.get('player') ?? linkedPlayer;
     if (!id) return;
-    url.searchParams.delete('player');
-    window.history.replaceState(null, '', url.pathname + url.search);
+    // Kept until the profile is on screen: dropping the param can remount this screen (the address changed under the
+    // route), and the new copy would otherwise find no param and open the list (dark a11y scan, 2026-10-17).
+    linkedPlayer = id;
+    if (url.searchParams.has('player')) {
+      url.searchParams.delete('player');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
     setOpenId(id);
   }, [phone]);
+  useEffect(() => {
+    if (openId && players.some((p) => p.id === openId)) linkedPlayer = null;
+  }, [openId, players]);
   const openPlayer = useCallback((id: string) => {
     chTrail('roster open player');
     // CH-3701: a tick on opening a player, changing a filter, layout or sort.
@@ -93,6 +139,7 @@ export function Roster({ data }: { data: ChRoster }) {
     // setView is useChSessionState's useState setter (stable), so this still runs once.
   }, [setView]);
   const changeView = (v: View) => {
+    if (v !== view) setViewTurn((n) => n + 1);
     setView(v);
     try {
       localStorage.setItem(VIEW_KEY, v);
@@ -101,26 +148,32 @@ export function Roster({ data }: { data: ChRoster }) {
     }
   };
 
-  const active = players.filter((p) => p.status === 'active');
+  const active = useMemo(() => players.filter((p) => p.status === 'active'), [players]);
   const inactiveCount = players.length - active.length;
   const teamAvg = useMemo(() => {
     const avgs = active.map((p) => p.avg).filter((v): v is number => v != null);
     return avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null;
   }, [active]);
 
+  // Places and the team strip rank the active roster, never the rows a search or filter left (P003 #2).
+  const standings = useMemo(() => rosterStandings(players), [players]);
+  const spreadPlayers = useMemo(() => active.filter((p) => standings.byId.has(p.id)), [active, standings]);
+  // Avg sorts nothing while season stats are missing: the order falls back to Name (P003 #7).
+  const sortBy: Sort = data.statsError && sort === 'avg' ? 'name' : sort;
+
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = players.filter((p) => (show === 'all' || p.status === show) && p.name.toLowerCase().includes(needle));
     return [...list].sort((a, b) =>
-      sort === 'name'
+      sortBy === 'name'
         ? lastName(a.name).localeCompare(lastName(b.name))
-        : sort === 'avg'
+        : sortBy === 'avg'
           ? nullsLast(a.avg, b.avg)
-          : sort === 'hcp'
+          : sortBy === 'hcp'
             ? nullsLast(a.handicap, b.handicap)
             : b.rounds - a.rounds,
     );
-  }, [players, q, show, sort]);
+  }, [players, q, show, sortBy]);
 
   const attn = players.filter((p) => p.attention && p.status === 'active');
   const cur = players.find((p) => p.id === sel);
@@ -128,6 +181,23 @@ export function Roster({ data }: { data: ChRoster }) {
     if (id) chTrail('roster open player');
     haptic('select');
     setSel((s) => (s === id ? null : id));
+  }, []);
+  /** A player's face or name goes to their profile (owner, 2026-10-08); where that page isn't rebuilt it opens the peek. */
+  const openProfile = useCallback(
+    (id: string) => {
+      const href = rebuiltHref(`/golf/dashboard/stats?player=${id}`);
+      if (!href) return select(id);
+      chTrail('roster open profile');
+      haptic('select');
+      router.push(href);
+    },
+    [router, select],
+  );
+  /** A Needs-a-look chip only opens its player; closing stays on X or Esc (P003 #11). */
+  const openSel = useCallback((id: string) => {
+    chTrail('roster open player');
+    haptic('select');
+    setSel(id);
   }, []);
 
   // What a removal changes on this screen happens inside the action, so the toast's Retry finishes the job as well (31403).
@@ -145,11 +215,26 @@ export function Roster({ data }: { data: ChRoster }) {
       return res;
     },
     (p) => ({
-      done: `${p.name} removed from ${data.teamName}`,
-      failed: `Couldn't remove ${p.name}`,
+      done: `${p.name} removed from ${teamRef}`,
+      failed: `Couldn’t remove ${p.name}`,
       hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
       code: 'CH-3001',
     }),
+  );
+  // Active ⇄ Inactive (the dropped Fairway "Change status", rebuilt). Like a removal, the list changes inside the
+  // action, so the toast's Retry finishes the job as well (31403). `updatePlayerStatus` resolves the coach's active team
+  // with the same cookie-aware resolver this route used (resolveCoachActiveTeam), so it writes to the team on screen.
+  const changeStatus = useAction(
+    'roster.changeStatus',
+    async (p: ChRosterPlayer, to: ChRosterPlayer['status']) => {
+      const res = await updatePlayerStatus(p.id, to);
+      if (res.success) {
+        setPlayers((ps) => ps.map((x) => (x.id === p.id ? { ...x, status: to } : x)));
+        setRestatus(null);
+      }
+      return res;
+    },
+    (p, to) => statusCopy(p.name, to),
   );
   /** A note that saved is the note the list holds, so the player reads back with it (31203). */
   const noteSaved = useCallback(
@@ -176,7 +261,7 @@ export function Roster({ data }: { data: ChRoster }) {
       toast({ title: `Roster exported · ${rows.length} ${rows.length === 1 ? 'player' : 'players'}` });
     } catch {
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't export the roster", body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });
+      toast({ tone: 'error', title: 'Couldn’t export the roster', body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });
     }
   };
 
@@ -191,16 +276,28 @@ export function Roster({ data }: { data: ChRoster }) {
     const messagesHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
     if (messagesHref) items.push({ label: 'Message', icon: MessageSquare, href: messagesHref });
     if (items.length) items.push({ kind: 'separator' });
+    items.push(
+      p.status === 'active'
+        ? { label: 'Mark inactive', icon: UserX, onSelect: () => setRestatus(p) }
+        : { label: 'Mark active', icon: UserCheck, onSelect: () => setRestatus(p) },
+    );
     items.push({ label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => setRemoving(p) });
     return items;
   };
+
+  // The right-click menu holds the kebab's items, so a row is the same wherever it is opened from.
+  const ctx = useContextMenu<ChRosterPlayer>({ label: (p) => `Actions for ${p.name}`, items: menuFor });
+  // The command palette lists these players (Cmd K), nobody the coach doesn't already see here.
+  useEffect(() => {
+    publishPeople(players.map((p) => ({ id: p.id, name: p.name, detail: [p.classYear, p.status === 'inactive' ? 'Inactive' : null].filter(Boolean).join(' · ') || undefined })));
+  }, [players]);
 
   const dialogs = (
     <>
       <InviteModal
         open={invite}
-        onClose={() => setInvite(false)}
-        teamName={data.teamName}
+        onClose={closeInvite}
+        teamName={teamRef}
         code={data.joinCode}
         codeFailed={data.teamError}
         onRetry={() => router.refresh()}
@@ -212,27 +309,34 @@ export function Roster({ data }: { data: ChRoster }) {
         width={460}
         icon={UserMinus}
         title="Remove player?"
-        description={removing ? `Remove ${removing.name} from ${data.teamName}? They can rejoin later with the team code.` : undefined}
+        description={removing ? `Remove ${removing.name} from ${teamRef}? They can rejoin later with the team code.` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setRemoving(null)}>
-              Cancel
+              {removing ? `Keep ${removing.firstName}` : 'Keep player'}
             </Button>
             <Button
               variant="danger"
-              disabled={remove.pending}
+              busy={remove.pending}
               feel="warning"
               onClick={() => {
                 if (removing) void remove.run(removing);
               }}
             >
-              {remove.pending ? <span data-ch-code="CH-3402">Removing</span> : 'Remove player'}
+              {remove.pending ? <span data-ch-code="CH-3402">Removing…</span> : 'Remove player'}
             </Button>
           </>
         }
       >
         <p className="ch-rs-remove">Their account and stats are not deleted. This only removes them from your active roster.</p>
       </Modal>
+      <StatusConfirm
+        player={restatus}
+        teamName={teamRef}
+        pending={changeStatus.pending}
+        onCancel={() => setRestatus(null)}
+        onConfirm={(p, to) => void changeStatus.run(p, to)}
+      />
     </>
   );
 
@@ -247,6 +351,7 @@ export function Roster({ data }: { data: ChRoster }) {
         onClose={() => setOpenId(null)}
         onInvite={() => setInvite(true)}
         onRemove={setRemoving}
+        onStatus={setRestatus}
         onNoteSaved={noteSaved}
         onRetry={() => router.refresh()}
       >
@@ -255,20 +360,19 @@ export function Roster({ data }: { data: ChRoster }) {
     );
   }
 
+  // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
+  const failed = rosterFailedParts(data);
+  const covered = failed.length > 1;
   return (
-    <main className="ch-rs">
-      <header className="ch-rs-head">
+    <main className="ch-rs" data-canopy="">
+      <header className="ch-rs-head" data-canopy-head="tight">
         <div>
           <span className="ch-rs-team">
-            <span className="ch-rs-team__stack" aria-hidden="true">
-              {active.slice(0, 7).map((p) => (
-                <Avatar key={p.id} name={p.name} size={30} />
-              ))}
-            </span>
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
-          <h1 className="ch-display">Your players.</h1>
-          {!data.playersError && (
+          <h1 className="ch-display">Your players</h1>
+          {/* With nobody on the roster every count is 0: the team and season above say enough (wave 10). */}
+          {!data.playersError && players.length > 0 && (
             <p>
               <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} &middot;{' '}
               <span className="ch-num">{active.length}</span> active.
@@ -296,16 +400,19 @@ export function Roster({ data }: { data: ChRoster }) {
         </div>
       </header>
 
+      <PageRefreshNotice parts={failed} />
+
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        <RosterRequests teamName={data.teamName} jr={jr} error={data.requestsError} onRetry={() => router.refresh()} />
+        <RosterRequests teamName={teamRef} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
       </SectionBoundary>
 
       {data.statsError && (
         <InlineNotice
           code="CH-3202"
-          title="Season stats didn't load."
+          title="Season stats didn’t load"
           body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
           onRetry={() => router.refresh()}
+          covered={covered}
         />
       )}
 
@@ -313,11 +420,13 @@ export function Roster({ data }: { data: ChRoster }) {
         <section className="ch-rs-attn" aria-label="Needs a look">
           <span className="ch-rs-attn__l">Needs a look</span>
           {attn.map((p) => (
-            <button key={p.id} type="button" className="ch-rs-attn__c" onClick={() => select(p.id)}>
-              <Avatar name={p.name} size={24} />
-              <b>{p.firstName}</b>
-              <span className={`ch-rs-attn__n is-${p.attention!.tone}`}>{p.attention!.text}</span>
-            </button>
+            <PlayerPeek key={p.id} player={rosterPeek(p)}>
+              <button type="button" className="ch-rs-attn__c" onClick={() => openSel(p.id)}>
+                <Avatar name={p.name} size={24} />
+                <b>{p.firstName}</b>
+                <span className={`ch-rs-attn__n is-${p.attention!.tone}`}>{p.attention!.text}</span>
+              </button>
+            </PlayerPeek>
           ))}
         </section>
       )}
@@ -325,17 +434,18 @@ export function Roster({ data }: { data: ChRoster }) {
       {data.playersError ? (
         <InlineNotice
           code="CH-3201"
-          title="The roster didn't load."
-          body="Your players are safe. Try again, and if it keeps happening the error has already been reported."
+          title="The roster didn’t load"
+          body="Your players are safe. Try again; the error has been reported."
           onRetry={() => router.refresh()}
+          covered={covered}
         />
       ) : players.length === 0 ? (
         <EmptyState
           size="page"
           code="CH-3301"
-          icon={Users}
+          shape="people"
           title="No players yet"
-          body="Share your team code, then approve requests as they arrive. Players appear here as soon as they join."
+          body="Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here."
           action={
             <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
               Invite players
@@ -343,7 +453,7 @@ export function Roster({ data }: { data: ChRoster }) {
           }
           secondaryAction={
             data.joinCode ? (
-              <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+              <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                 Copy team code
               </Button>
             ) : undefined
@@ -351,6 +461,7 @@ export function Roster({ data }: { data: ChRoster }) {
         />
       ) : (
         <>
+          {!phone && !data.statsError && <RosterSpread players={spreadPlayers} teamAvg={teamAvg} onOpen={openSel} />}
           <div className="ch-rs-bar">
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">
@@ -372,28 +483,29 @@ export function Roster({ data }: { data: ChRoster }) {
                     ['list', List, 'List view'],
                   ] as const
                 ).map(([v, icon, label]) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className="ch-rs-vt__b"
-                    aria-pressed={view === v}
-                    aria-label={label}
-                    onClick={() => {
-                      if (view !== v) haptic('select');
-                      changeView(v);
-                    }}
-                  >
-                    <Icon icon={icon} size={15} />
-                  </button>
+                  <Tooltip key={v}>
+                    <button
+                      type="button"
+                      className="ch-rs-vt__b"
+                      aria-pressed={view === v}
+                      aria-label={label}
+                      onClick={() => {
+                        if (view !== v) haptic('select');
+                        changeView(v);
+                      }}
+                    >
+                      <Icon icon={icon} size={15} />
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
               <Segmented<Sort>
                 size="sm"
                 label="Sort players"
-                value={sort}
+                value={sortBy}
                 onChange={setSort}
                 options={[
-                  { value: 'avg', label: 'Avg score' },
+                  ...(data.statsError ? [] : [{ value: 'avg' as const, label: 'Avg score' }]),
                   { value: 'hcp', label: 'Handicap' },
                   { value: 'rounds', label: 'Rounds' },
                   { value: 'name', label: 'Name' },
@@ -404,19 +516,25 @@ export function Roster({ data }: { data: ChRoster }) {
 
           <div className={'ch-rs-body' + (cur ? ' has-peek' : '')}>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterList
-                rows={rows}
-                view={view}
-                sel={sel}
-                q={q}
-                show={show}
-                select={select}
-                menuFor={menuFor}
-                onShowEveryone={() => {
-                  setQ('');
-                  setShow('all');
-                }}
-              />
+              {/* CH-3603: Team view and List view settle in as the toggle moves (base in, quick out); instant with
+                  reduced motion. */}
+              <Swap swapKey={viewTurn}>
+                <RosterList
+                  rows={rows}
+                  standings={standings}
+                  view={view}
+                  sel={sel}
+                  q={q}
+                  show={show}
+                  openProfile={openProfile}
+                  menuFor={menuFor}
+                  bind={ctx.bind}
+                  onShowEveryone={() => {
+                    setQ('');
+                    setShow('all');
+                  }}
+                />
+              </Swap>
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
               <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} />
@@ -426,6 +544,7 @@ export function Roster({ data }: { data: ChRoster }) {
       )}
 
       {dialogs}
+      {ctx.menu}
     </main>
   );
 }
@@ -436,41 +555,38 @@ export function Roster({ data }: { data: ChRoster }) {
  */
 function RosterList({
   rows,
+  standings,
   view,
   sel,
   q,
   show,
-  select,
+  openProfile,
   menuFor,
+  bind,
   onShowEveryone,
 }: {
   rows: ChRosterPlayer[];
+  standings: ReturnType<typeof rosterStandings>;
   view: View;
   sel: string | null;
   q: string;
   show: Show;
-  select: (id: string | null) => void;
+  openProfile: (id: string) => void;
   menuFor: (p: ChRosterPlayer) => MenuItem[];
+  /** The right-click menu's handlers for a row (ui/ContextMenu.tsx). */
+  bind: (p: ChRosterPlayer) => ContextMenuBind;
   onShowEveryone: () => void;
 }) {
   return (
     <>
       {rows.length === 0 ? (
-        <div className="ch-rs-empty ch-sheet">
-          <EmptyState
-            compact
-            code={q.trim() ? 'CH-3302' : 'CH-3303'}
-            title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
-            action={
-              <Button
-                size="sm"
-                onClick={onShowEveryone}
-              >
-                Show everyone
-              </Button>
-            }
-          />
-        </div>
+        <EmptyState
+          kind="filtered"
+          code={q.trim() ? 'CH-3302' : 'CH-3303'}
+          title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
+          body={show === 'all' ? 'Search matches player names.' : `Only ${show} players are in view.`}
+          action={<Button onClick={onShowEveryone}>Show everyone</Button>}
+        />
       ) : view === 'faces' ? (
         <div className="ch-rs-faces">
           {rows.map((p) => (
@@ -478,13 +594,16 @@ function RosterList({
               key={p.id}
               type="button"
               className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-              aria-pressed={sel === p.id}
-              onClick={() => select(p.id)}
+              aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
+              onClick={() => openProfile(p.id)}
+              {...bind(p)}
             >
               <span className="ch-rs-face__top">
                 <span />
-                {/* CH-3802: the status is a word; the dot is decoration. CH-3602: the card lifts on hover and presses in. */}
-                <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
+                {/* CH-3802: the status is a word; the dot is decoration, drawn only under All where it tells players
+                    apart (P003-A3: under Active or Inactive every dot is the same). CH-3602: on desktop the cell takes
+                    the Ledger tint on hover and a deeper one on press; the phone's card lifts. */}
+                {show === 'all' && <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />}
                 <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
               </span>
               <span className="ch-rs-face__av">
@@ -495,26 +614,13 @@ function RosterList({
               <span className="ch-rs-face__form">
                 <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
               </span>
-              <span className="ch-rs-face__figs">
-                <span>
-                  <b className="ch-num">{formatFixed(p.avg)}</b>Avg
-                </span>
-                <span>
-                  <b className={'ch-num' + (p.sgPerRound == null ? '' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')}>
-                    {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
-                  </b>
-                  SG
-                </span>
-                <span>
-                  <b className="ch-num">{formatHcp(p.handicap)}</b>HCP
-                </span>
-              </span>
+              <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} />
               {p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>}
             </button>
           ))}
         </div>
       ) : (
-        <div className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
+        <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
           <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
             <span role="columnheader">Player</span>
             <span role="columnheader">Status</span>
@@ -532,9 +638,15 @@ function RosterList({
               key={p.id}
               role="row"
               className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+              {...bind(p)}
             >
               <span role="cell" className="ch-rs-who__cell">
-                <button type="button" className="ch-rs-who" onClick={() => select(p.id)} aria-pressed={sel === p.id}>
+                <button
+                  type="button"
+                  className="ch-rs-who"
+                  onClick={() => openProfile(p.id)}
+                  aria-label={`${p.name}. Open profile`}
+                >
                   <Avatar name={p.name} size={40} />
                   <span>
                     <b>{p.name}</b>
@@ -562,15 +674,17 @@ function RosterList({
                   label={`Actions for ${p.name}`}
                   items={menuFor(p)}
                   trigger={(t) => (
-                    <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
-                      <Icon icon={Ellipsis} size={15} />
-                    </button>
+                    <Tooltip>
+                      <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
+                        <Icon icon={Ellipsis} size={15} />
+                      </button>
+                    </Tooltip>
                   )}
                 />
               </span>
             </div>
           ))}
-        </div>
+        </SideScroll>
       )}
     </>
   );
@@ -608,23 +722,24 @@ function InviteModal({
       onClose={onClose}
       icon={UserPlus}
       title="Invite players"
-      description={`Players join ${teamName} with the code or link. You approve each request.`}
+      description={`Players who sign up with the team code or open the invite link join ${teamName} right away. Players already on GolfHelm who enter the code in Settings send a request you approve.`}
       footer={<Button onClick={onClose}>Done</Button>}
     >
       {code ? (
         <div className="ch-rs-inv">
           <div className="ch-rs-inv__code ch-well-soft">
-            <span>Join code</span>
+            <span>Team code</span>
             <b className="ch-num">{code}</b>
-            <Button size="sm" leftIcon={Copy} onClick={() => void copy(code, 'Join code')}>
+            <Button size="sm" leftIcon={Copy} onClick={() => void copy(code, 'Team code')}>
               Copy
             </Button>
           </div>
           {link && (
             <div className="ch-field">
-              <span className="ch-field__label">Or send the link</span>
+              <span className="ch-field__label">Or send the invite link</span>
               <div className="ch-rs-inv__link">
-                <input className="ch-input" readOnly value={link} aria-label="Invite link" onFocus={(e) => e.currentTarget.select()} />
+                {/* The scheme is left off and the field clips from the start (roster.css), so the code at the end stays in view; Copy and Share send the full URL. */}
+                <input className="ch-input" readOnly value={link.replace(/^https?:\/\//, '')} aria-label="Invite link" onFocus={(e) => e.currentTarget.select()} />
                 {typeof navigator !== 'undefined' && 'share' in navigator ? (
                   <Button variant="primary" leftIcon={Share} onClick={() => void share()}>
                     Share
@@ -635,14 +750,14 @@ function InviteModal({
                   </Button>
                 )}
               </div>
-              <span className="ch-field__help">It opens the join request with your team filled in.</span>
+              <span className="ch-field__help">Players who open it join right away, after making an account if they need one.</span>
             </div>
           )}
         </div>
       ) : codeFailed ? (
         <InlineNotice
           code="CH-3207"
-          title="The join code didn't load."
+          title="The team code didn’t load"
           body="Your code still works for players who have it. Try again to show it here."
           onRetry={onRetry}
         />
@@ -650,7 +765,7 @@ function InviteModal({
         <EmptyState
           code="CH-3304"
           compact
-          title="Your team has no join code yet."
+          title="There’s no team code yet"
           body="Make one in Settings, then invite players here."
           action={
             <Button size="sm" href="/golf/dashboard/settings?section=team">
@@ -661,4 +776,66 @@ function InviteModal({
       )}
     </Modal>
   );
+}
+
+/**
+ * A roster card's figures, drawn (owner, 2026-10-06: no bare numbers). Scoring: the player's average among the
+ * team's on one strip, with their place. Strokes gained: a bar from zero, green for gained, amber for lost. Handicap
+ * reads as a labelled line.
+ */
+function FaceFigures({
+  p,
+  avgs,
+  standing,
+}: {
+  p: { avg: number | null; sgPerRound: number | null; handicap: number | null; rounds: number };
+  /** The ranked team's averages (active, past the early floor), for the strip. */
+  avgs: number[];
+  /** This player's place among them; undefined when they aren't ranked (inactive, early, no average). */
+  standing: RosterStanding | undefined;
+}) {
+  const lo = avgs.length ? Math.min(...avgs) : 0;
+  const hi = avgs.length ? Math.max(...avgs) : 0;
+  const at = (v: number) => (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
+  const need = p.avg != null ? earlyNeed(p.rounds) : null;
+  const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+  const sg = p.sgPerRound;
+  const sgW = sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3) * 50);
+  return (
+    <span className="ch-rs-figs">
+      <span className="ch-rs-fig">
+        <span className="ch-rs-fig__k">Scoring</span>
+        <b className="ch-num">{formatFixed(p.avg)}</b>
+        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${ord(standing.place)} of ${standing.of}` : need ?? 'Avg'}</span>
+        {p.avg != null && standing && standing.of > 1 && (
+          <span className="ch-rs-strip" aria-hidden="true">
+            {avgs.map((v, k) => (
+              <i key={k} style={{ left: `${at(v)}%` }} />
+            ))}
+            <i className="is-me" style={{ left: `${at(p.avg)}%` }} />
+          </span>
+        )}
+      </span>
+      <span className="ch-rs-fig">
+        <span className="ch-rs-fig__k">Strokes gained</span>
+        <b className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</b>
+        {sg != null && <span className="ch-rs-fig__m">a round</span>}
+        {sg != null && (
+          <span className="ch-rs-sgbar" aria-hidden="true">
+            <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
+          </span>
+        )}
+      </span>
+      <span className="ch-rs-face__hcp">
+        Handicap <b className="ch-num">{formatHcp(p.handicap)}</b>
+      </span>
+    </span>
+  );
+}
+
+/** A card's name for VoiceOver: the player and one figure, not every number on it (P003 #13). */
+function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): string {
+  if (p.avg == null) return p.name;
+  const place = standing && standing.of > 1 ? `, ${standing.place} of ${standing.of}` : '';
+  return `${p.name}, scoring average ${p.avg.toFixed(1)}${place}`;
 }

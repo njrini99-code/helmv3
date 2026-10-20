@@ -1,7 +1,7 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import { useEffect, useId, useState, type MouseEvent, type ReactNode, type SyntheticEvent } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState, type MouseEvent, type ReactNode, type SyntheticEvent } from 'react';
 import { Icon } from '../../../ui/Icon';
 import { haptic } from '../../../lib/haptics';
 import { useDialogLifetime } from '../../../lib/dialog-lifetime';
@@ -15,6 +15,19 @@ import { useReportDirty } from '../parts';
  * `Modal`, because the design's bars differ: Cancel, a title and Save; a title
  * and Done; an iOS action sheet with the destructive choice in red.
  */
+
+/**
+ * An open edit sheet, as the phone stack sees it: whether it holds something (unsaved edits, a save in flight), and its
+ * own close request (the discard question when dirty, nothing while busy). SettingsPhone asks the topmost held sheet
+ * before the browser's Back or the iOS edge swipe pops the section under it (CH-8509), since the sheets are not history
+ * entries themselves.
+ */
+export interface ChHeldSheet {
+  held: () => boolean;
+  requestClose: () => void;
+}
+/** Registers an open sheet with the phone stack; the returned function takes it off. No provider: nothing registers. */
+export const HeldSheetsContext = createContext<((sheet: ChHeldSheet) => () => void) | null>(null);
 
 /** Opens and closes a <dialog> with `open`, follows the finger down (CH-1611), and sends Esc and the backdrop the same way. */
 function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boolean; dirty?: boolean; ask: () => void }) {
@@ -51,8 +64,8 @@ function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boo
 
 /**
  * A sheet with Cancel, a title and a Save-type action (the design's Profile sheet). The action is a submit button, so
- * Enter in a field sends it. Cancel, a drag down, Esc and the backdrop all ask first when `dirty` (CH-8509) and do
- * nothing while `busy`.
+ * Enter in a field sends it. Cancel, a drag down, Esc, the backdrop, and the browser's Back or the iOS edge swipe (through
+ * HeldSheetsContext) all ask first when `dirty` (CH-8509) and do nothing while `busy`.
  */
 export function FormSheet({
   open,
@@ -92,6 +105,16 @@ export function FormSheet({
   // The page guards on any unsaved edit: closing or reloading the tab asks (CH-8508), and so does a link off the page (CH-8506).
   useReportDirty(titleId, open && !!dirty);
   const { dialogProps, drag, requestClose, retainContent } = useSheetDialog(open, onClose, { busy, dirty, ask: () => setAsking(true) });
+  // While open, a Back that would pop the section under this sheet asks it first, through the same close as Cancel.
+  const register = useContext(HeldSheetsContext);
+  const latest = useRef({ held: false, requestClose });
+  useEffect(() => {
+    latest.current = { held: !!(busy || dirty), requestClose };
+  });
+  useEffect(() => {
+    if (!open || !register) return;
+    return register({ held: () => latest.current.held, requestClose: () => latest.current.requestClose() });
+  }, [open, register]);
   return (
     <>
       <dialog {...dialogProps} className={'ch-setm-dlg' + (full ? ' is-full' : '')} aria-labelledby={titleId} data-ch-code={code}>
@@ -131,7 +154,7 @@ export function FormSheet({
         onClose={() => setAsking(false)}
         code="CH-8509"
         title="Discard your changes?"
-        message="What you changed hasn't been saved."
+        message="What you changed hasn’t been saved."
         cancelLabel="Keep editing"
         actions={[
           {

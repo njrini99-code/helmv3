@@ -15,14 +15,11 @@ import {
   regenerateJoinCode,
 } from '@/app/golf/actions/teams';
 import { updateTeamCoachHelmSettings } from '@/app/golf/actions/insights-coachhelm';
-import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
-import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { tsToDb } from '@/lib/coachhelm/philosophy-map';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { chReport } from '../../lib/track';
-import { chSignOut } from '../../lib/sign-out';
+import { chEndSession, chSignOut } from '../../lib/sign-out';
 import type { ChResult, ChSettingsWrites, ChStaffWrites } from './model';
 
 /**
@@ -258,9 +255,7 @@ export function createLiveWrites(ctx: {
 
     async cleanupAfterDelete() {
       // The account is gone server-side; clear this device too before leaving.
-      clearAllCachedResources();
-      await clearActiveTeam().catch((err: unknown) => chReport(err, { surface: 'settings.session', action: 'clearActiveTeam', severity: 'low' }));
-      await sb.auth.signOut().catch((err: unknown) => chReport(err, { surface: 'settings.session', action: 'signOutAfterDelete', severity: 'low' }));
+      await chEndSession('settings.session');
       window.location.assign(afterDeleteHref());
     },
 

@@ -58,25 +58,25 @@ One route skeleton in Settings' own shape (80201): the title, the rail and two c
 | --- | --- | --- | --- |
 | 80201 | CH-8401 | `THE_PAGE_IS_LOADING` | The page is loading |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
 Status: DEFINED
 
-There is no polling, realtime or pull to refresh. What runs in the background is work the person started: a form saving (80301: the button reads Saving… and cannot be pressed twice), a photo uploading (80302, a state tested in the preview only) and the CoachHelm autosave, whose status line reads Saving… and then All changes saved (80303). After a save that changes what the server renders the page reads again (81501).
+There is no polling, realtime or pull to refresh. What runs in the background is work the person started: a form saving (80301: the button reads Saving… and cannot be pressed twice), a photo uploading (80302, a state tested in the preview only) and the CoachHelm autosave, whose row says Saved once it lands (80303; the phone keeps its line under the title). After a save that changes what the server renders the page reads again (81501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 80301 | CH-8402 | `A_FORM_IS_SAVING` | A form is saving |
 | 80302 | CH-8404 | `A_PHOTO_IS_UPLOADING` | A photo is uploading |
-| 80303 | CH-8405 | `COACHHELM_SETTINGS_ARE_SAVING` | CoachHelm settings are saving |
+| 80303 | CH-8405 | `COACHHELM_SETTINGS_ARE_SAVING` | A setting that saves as it changes has saved |
 
 ## 04 — Empty
 
 Status: DEFINED
 
-First-run states only; the page has no filter or search, so no filtered empty. A coach with no team sees why Team is empty (80401); a player with no team can join one (80402) and sees a request that is waiting (80403); no photo shows the monogram (80404). Settings never replaces the whole page with a no-team state (80405, so D-71 does not apply): Account, Notifications and Preferences work without a team. A failed read is never drawn as empty; it is a notice with Try again (category 06).
+First-run states only; the page has no filter or search, so no filtered empty. A coach with no team sees why Team is empty (80401); a player with no team can join one (80402) and sees a request that is waiting (80403), in place of the form as soon as the page reads again after Ask to join (fixed 2026-10-17: the form stayed until the section was reopened); no photo shows the monogram (80404). Settings never replaces the whole page with a no-team state (80405, so D-71 does not apply): Account, Notifications and Preferences work without a team. A failed read is never drawn as empty; it is a notice with Try again (category 06).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -85,12 +85,13 @@ First-run states only; the page has no filter or search, so no filtered empty. A
 | 80403 | CH-8303 | `A_PLAYER_HAS_ASKED_TO_JOIN_AND` | A player has asked to join and is waiting |
 | 80404 | CH-8304 | `NO_PROFILE_PHOTO` | No profile photo |
 | 80405 | — | `SETTINGS_OPEN_WITHOUT_A_TEAM` | A coach or player with no team still gets Settings, never a no-team page: Account, Notifications and Preferences work, a coach's Team section says why it is empty (CH-8301) and a player's Golf profile offers Join a team (CH-8302). |
+| 80406 | CH-8320 | `THE_TEAMS_COURSE_LOCATION` | The team's course location (Team; migration 20261008150000, applied 2026-10-11) |
 
 ## 05 — Validation
 
 Status: DEFINED
 
-Each card checks its fields before anything is sent and keeps Save disabled while a value is invalid or unchanged (80501 to 80515). The message shows in the card's footer or under the field. The password card shows its message after the first press of Update password, with the warning haptic. A photo of the wrong type or over 2 MB is refused before it uploads (80602, in the write).
+Each card checks its fields before anything is sent and keeps Save disabled while a value is invalid or unchanged (80501 to 80515). The message shows in the card's footer or under the field. The password card shows its message after the first press of Update password, with the warning haptic. A photo of the wrong type or over 2 MB is refused before it uploads (80602, in the write). The reminder times are checked in order whether or not reminders are on, because the database checks them either way; out of order with reminders off, the two times stay on screen so they can be fixed (80511; fixed 2026-10-17: switching reminders off let an out-of-order schedule send and fail).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -114,7 +115,16 @@ Each card checks its fields before anything is sent and keeps Save disabled whil
 
 Status: DEFINED
 
-Every change has its own toast (80601 to 80624) naming what failed and why when the server gave a short reason, otherwise "Check your connection and try again", with Retry on saves and switches. Every section that fails to load shows its own notice with Try again (80625 to 80635), never a blank form that could be saved over real data; its Try again reads the whole page again (81401). A crash stays in its section (80636, SectionBoundary). The route's own errors are the shell's (10603 to 10607).
+Every change has its own toast (80601 to 80624) naming what failed and why when
+the server gave a short reason, otherwise "Check your connection and try again",
+with Retry on saves and switches. Every section that fails to load shows its own
+notice with Try again (80625 to 80635), never a blank form that could be saved
+over real data; its Try again reads the whole page again (81401). When more than
+one of a section's reads fails (Team, Notifications, Golf), the section says so
+once at its top, naming each, with the one Try again (the shell's CH-1209), and
+each part keeps only its title under its heading (states audit b6, 2026-10-08).
+A crash stays in its section (80636, SectionBoundary). The route's own errors
+are the shell's (10603 to 10607).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -129,7 +139,7 @@ Every change has its own toast (80601 to 80624) naming what failed and why when 
 | 80609 | CH-8009 | `MUTE_PUSH_MUTE_EMAIL_OR_RESET_DOESNT` | Mute push, Mute email or Reset doesn't save (player) |
 | 80610 | CH-8010 | `COACHHELM_QUIET_MODE_DOESNT_SAVE` | CoachHelm quiet mode doesn't save (player) |
 | 80611 | CH-8011 | `SAVING_TEAM_DETAILS_FAILS` | Saving team details fails |
-| 80612 | CH-8012 | `MAKING_A_NEW_INVITE_CODE_FAILS` | Making a new invite code fails |
+| 80612 | CH-8012 | `MAKING_A_NEW_INVITE_CODE_FAILS` | Making a new team code fails |
 | 80613 | CH-8013 | `COPYING_THE_CODE_OR_LINK_FAILS` | Copying the code or link fails (clipboard blocked) |
 | 80614 | CH-8014 | `SAVING_SCORING_AND_FORMAT_FAILS` | Saving scoring and format fails |
 | 80615 | CH-8015 | `SAVING_THE_REMINDER_SCHEDULE_FAILS` | Saving the reminder schedule fails |
@@ -147,7 +157,7 @@ Every change has its own toast (80601 to 80624) naming what failed and why when 
 | 80627 | CH-8203 | `COACHHELM_UPDATE_SETTINGS_DONT_LOAD` | CoachHelm update settings don't load (player) |
 | 80628 | CH-8204 | `THE_WEEKLY_TEAM_EMAIL_SETTING_DOESNT_LOAD` | The weekly team email setting doesn't load (coach) |
 | 80629 | CH-8205 | `TEAM_DETAILS_DONT_LOAD` | Team details don't load |
-| 80630 | CH-8206 | `THE_INVITE_CODE_DOESNT_LOAD` | The invite code doesn't load |
+| 80630 | CH-8206 | `THE_INVITE_CODE_DOESNT_LOAD` | The team code doesn't load |
 | 80631 | CH-8207 | `SCORING_SETTINGS_DONT_LOAD` | Scoring settings don't load |
 | 80632 | CH-8208 | `EVENT_REMINDERS_DONT_LOAD` | Event reminders don't load |
 | 80633 | CH-8209 | `GOLF_DETAILS_DONT_LOAD` | Golf details don't load (player) |
@@ -158,6 +168,8 @@ Every change has its own toast (80601 to 80624) naming what failed and why when 
 | 80638 | CH-8027 | `DECLINING_AN_ASSISTANT_COACH_REQUEST_FAILS` | Declining an assistant coach request fails (head coach) |
 | 80639 | CH-8028 | `MAKING_A_STAFF_INVITE_FAILS` | Making a staff invite fails (head coach) |
 | 80640 | CH-8213 | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | The assistant coach requests don't load (head coach) |
+| 80641 | CH-8029 | `SEND_A_TEST_PUSH_FAILS` | Send a test push fails (P008-C3, D1-6) |
+| 80642 | CH-8214 | `EVERY_READ_FAILS` | Every read fails (phone list) |
 
 ## 07 — Network / offline
 
@@ -168,8 +180,9 @@ Offline and slow saves are the shell's: a form save offline is refused before an
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 80701 | — | `INSTANT_SAVE_REFUSED_OFFLINE` | While the browser is offline a switch, or a CoachHelm autosave, is refused before it changes anything: it stays where it was, nothing is sent, the error haptic fires and an error toast (CH-1903) says nothing was changed. |
+| 80702 | CH-8901 | `CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE` | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -194,7 +207,7 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_S
 
 Status: DEFINED
 
-A save that lands says so by name and fires the success haptic (80901); a card with a Save button also says Saved for about two seconds. A switch, segment, slider or CoachHelm autosave that lands says nothing (80902, D-70): its selection tick was the feedback, and CoachHelm's status line reads All changes saved. Deleting the account has its own hand-over (80903). Copying the invite code or link toasts and fires the success haptic (81705).
+A save that lands says so by name and fires the success haptic (80901); a card with a Save button keeps its inline bar for about two seconds to say Saved, then lets it go (the bar is there only while the card has something to save, and Cmd or Ctrl+S saves it). A switch, segment, slider or CoachHelm autosave that lands says nothing loud (80902, D-70): its selection tick was the feedback, and its own row (or its card's head, for a group of sliders) says Saved for about two seconds. There is no line over the CoachHelm title. Deleting the account has its own hand-over (80903). Copying the invite code or link toasts and fires the success haptic (81705).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -226,11 +239,12 @@ Five confirms: Delete account (the person types delete), Leave team, Make a new 
 | --- | --- | --- | --- |
 | 81101 | CH-8501 | `DELETE_ACCOUNT` | Delete account |
 | 81102 | CH-8502 | `LEAVE_TEAM` | Leave team (player) |
-| 81103 | CH-8503 | `MAKE_A_NEW_INVITE_CODE` | Make a new invite code |
+| 81103 | CH-8503 | `MAKE_A_NEW_INVITE_CODE` | Make a new team code |
 | 81104 | CH-8504 | `RESET_COACHHELM_UPDATES` | Reset CoachHelm updates (player) |
 | 81105 | CH-8505 | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | Turn off CoachHelm on your dashboards |
-| 81106 | CH-8509 | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes |
+| 81106 | CH-8509 | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside, or the browser's Back or the iOS edge swipe while it is open over a section) with unsaved changes |
 | 81107 | CH-8510 | `PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS` | Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet |
+| 81108 | CH-8511 | `DECLINE_AN_ASSISTANT_COACH_REQUEST` | Decline an assistant coach request (Team, head coach) |
 
 ## 12 — State preservation
 
@@ -285,11 +299,17 @@ Settings is rendered on the server for each request and has no realtime. After a
 
 Status: DEFINED
 
-Settings' own motion (81601 to 81608) on the v2 tokens (D-64), and the shell's press, sheets and toasts (11601 to 11612). Animations off in Preferences makes every Clubhouse transition instant (81608).
+Settings' own motion (81601 to 81609) on the v2 tokens (D-64), and the shell's
+press on keys, sheets and toasts (11601 to 11613); a section in the rail, a link
+row and the phone's list rows deepen their tint on press instead of scaling
+(81607). On the phone a section is pushed: it slides in from the right over the
+list, which fades under it, and Back slides it off the same way (81609); a pop
+the iOS back-swipe has already drawn swaps at once. Animations off in
+Preferences makes every Clubhouse transition instant (81608).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 81601 | CH-8601 | `SWITCHING_SECTION` | Switching section |
+| 81601 | CH-8601 | `SWITCHING_SECTION` | Switching section (desktop) |
 | 81602 | CH-8602 | `SAVE_STATUS_CHANGES` | Save status changes |
 | 81603 | CH-8603 | `FLIPPING_A_SWITCH` | Flipping a switch |
 | 81604 | CH-8604 | `A_CONFIRM_OPENS` | A confirm opens |
@@ -297,8 +317,9 @@ Settings' own motion (81601 to 81608) on the v2 tokens (D-64), and the shell's p
 | 81606 | CH-8606 | `MOVING_A_COACHHELM_PRIORITY` | Moving a CoachHelm priority |
 | 81607 | CH-8607 | `PRESSING_A_SECTION_OR_BUTTON` | Pressing a section or button |
 | 81608 | CH-8608 | `ANIMATIONS_TURNED_OFF_IN_PREFERENCES` | Animations turned off in Preferences |
+| 81609 | CH-8609 | `PHONE_OPENING_A_SECTION_FROM_THE_LIST` | Phone: opening a section from the list, and Back |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -312,18 +333,24 @@ Settings' own haptics (81701 to 81707) on the v2 grammar (D-70), with Discard ad
 | 81702 | CH-8702 | `A_SAVE_LANDS` | A Save changes that lands |
 | 81703 | CH-8703 | `A_SAVE_FAILS_OR_A_PHOTO_IS` | A save fails or a photo is rejected |
 | 81704 | CH-8704 | `OPENING_DELETE_ACCOUNT_OR_PRESSING_UPDATE_PASSWORD` | Opening Delete account, or pressing Update password with a problem |
-| 81705 | CH-8705 | `COPYING_THE_INVITE_CODE_OR_LINK` | Copying the invite code or link |
+| 81705 | CH-8705 | `COPYING_THE_INVITE_CODE_OR_LINK` | Copying the team code or invite link |
 | 81706 | CH-8706 | `PRESSING_A_PRIMARY_BUTTON` | Pressing a primary button (Save changes) |
 | 81707 | CH-8707 | `TURNING_HAPTICS_BACK_ON` | Turning Haptics back on |
 | 81708 | — | `DISCARD_WARNS` | Discard (a card's edits, Discard changes when leaving a section, Discard and leave when following a link) fires the warning haptic before anything is dropped (D-70). |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
 Status: DEFINED
 
 Settings' own (81801 to 81807): the rail is a navigation with the open section marked current; every switch has a name; save status and errors are announced; the notification grids are tables; dialogs trap focus and close on Esc; fields are labelled and their help or error is read with them. The shell's skip link, landmarks and dialog behaviour (11801 to 11811). Axe (clubhouse:a11y) has eight Settings pages at 1280 and 390.
+
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -335,7 +362,7 @@ Settings' own (81801 to 81807): the rail is a navigation with the open section m
 | 81806 | CH-8806 | `DIALOGS_TRAP_FOCUS_ESC_CLOSES_FOCUS_RETURNS` | Dialogs trap focus, Esc closes, focus returns to the button |
 | 81807 | CH-8807 | `EVERY_FIELD_HAS_A_LABEL_AND_ITS` | Every field has a label, and its help or error is read with it |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 
@@ -412,3 +439,8 @@ Status: N/A — the Bridge is wired later (owner, D-68). Every contract above al
 Keyboard Move up/down alternatives reveal in their own row on focus.
 Ordinary assistive descriptions remain hidden; the visible reorder handle and
 its arrow-key path remain available.
+
+Since 2026-10-08 the phone ranker runs on dnd-kit: the handle's arrows still
+move one place and save each move, and space (or Enter) also picks the row up,
+the arrows carry it a place at a time (a tick and the place spoken each), space
+puts it down with one save and Escape puts it back unsaved.

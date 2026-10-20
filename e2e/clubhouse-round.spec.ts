@@ -56,7 +56,8 @@ test('a player sets up a round, saves it for later, continues it and submits all
 
   await test.step('set up the round on Clubhouse', async () => {
     await page.goto('/golf/dashboard/rounds/new');
-    await expect(page.getByRole('heading', { name: 'Track every shot of this round.' })).toBeVisible({ timeout: 90_000 });
+    // The setup's title since the #2180 premium pass (it was "Track every shot of this round.").
+    await expect(page.getByRole('heading', { name: 'New round', level: 1 })).toBeVisible({ timeout: 90_000 });
     await page.getByRole('button', { name: 'Browse courses' }).click();
     await page.getByRole('dialog', { name: 'Where are you playing?' }).getByRole('button', { name: new RegExp(seed.courseName) }).click();
     await page.getByRole('button', { name: 'Play the White tees' }).click();

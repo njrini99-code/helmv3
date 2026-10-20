@@ -20,6 +20,7 @@ import type { PriorityItem, SpineLedgerRow, StandingTrackProps } from '@/compone
 import { clampPct } from '@/components/fairway/modules';
 import { standingSubjectLabel } from '@/components/golf/coachhelm/v3/StandingBar';
 import { formatMetricText } from '@/lib/golf/metrics/display-registry';
+import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 /** The seven `?area=` stage views (`home` renders the bento). */
 export type StatsArea =
@@ -41,6 +42,31 @@ const SG_CATEGORY_TO_AREA: Record<string, StatsArea> = {
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
+}
+
+/** made/attempts as an unrounded percent, when the counts are what produced the stored 1 dp rate. */
+function exactRate(stored: number | null, made: number, attempts: number): number | null {
+  if (stored === null || !(attempts > 0) || !Number.isFinite(made)) return stored;
+  // Same expression as safePercent, so the comparison is exact.
+  return Math.round((made / attempts) * 1000) / 10 === stored ? (made / attempts) * 100 : stored;
+}
+
+/**
+ * The page's headline rates, unrounded. `safePercent` stores them at 1 dp, and
+ * this surface prints whole percents, so 59/96 (61.46%) became 61.5 and then
+ * "62%". The four rates whose counts ship with `GolfStats` are rebuilt from
+ * those counts so display rounds once; the rest keep their stored value. A
+ * rate the counts don't reproduce is left as it was.
+ */
+export function withExactHeadlineRates(s: GolfStats | null): GolfStats | null {
+  if (!s) return s;
+  return {
+    ...s,
+    fairwayPercentage: exactRate(finite(s.fairwayPercentage), s.fairwaysHit, s.fairwayOpportunities),
+    girPercentage: exactRate(finite(s.girPercentage), s.girTotal, s.girOpportunities),
+    scramblingPercentage: exactRate(finite(s.scramblingPercentage), s.scramblesMade, s.scrambleAttempts),
+    sandSavePercentage: exactRate(finite(s.sandSavePercentage), s.sandSavesMade, s.sandSaveAttempts),
+  };
 }
 
 /**

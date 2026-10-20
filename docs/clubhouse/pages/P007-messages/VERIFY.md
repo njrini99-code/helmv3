@@ -61,7 +61,8 @@ Physical iPhone scrolling and keyboard performance remain unverified.
 
 | Test | Contract | Result |
 | --- | --- | --- |
-| `src/clubhouse/__tests__/messages.test.tsx` (63 cases, each named by the codes it forces) | every catalog row of kinds 0 to 5 (706xx, 705xx, 704xx, 702xx, 711xx), plus 7604, 7704, 7804 | pass (`messages.test.tsx` 63/63, 2026-09-30) |
+| `src/clubhouse/__tests__/messages.test.tsx` (96 cases, each named by the codes it forces) | every catalog row of kinds 0 to 5 (706xx, 705xx, 704xx, 702xx, 711xx), plus 7604, 7704, 7804, and CH-7503 (Delete conversation asks first; a failed one shows CH-7011) | pass (`messages.test.tsx` 96/96, 2026-10-08) |
+| `src/test/actions/hide-golf-conversation.test.ts` (4 cases) | 71103 (the per-person hide action) | pass (4/4, 2026-10-08) |
 | `src/app/golf/actions/__tests__/message-attachments-conversation-files.test.ts` (7 cases) | 72302, 70630 | pass |
 | `src/clubhouse/__tests__/shell.test.tsx` | the shell contracts this page inherits (10703, 10702, 11611, 11811 and the rest) | pass |
 
@@ -187,6 +188,8 @@ before, after, baseline or evidence.
 | `P007__premium-audit__coach__1280__case-058-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-058-chromium-normal; /clubhouse-preview/messages; synthetic preview |
 | `P007__premium-audit__coach__390__case-007-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-007-webkit-reduce; /clubhouse-preview/messages; synthetic preview |
 | `P007__premium-audit__coach__390__case-058-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-058-chromium-normal; /clubhouse-preview/messages; synthetic preview |
+| `P007__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P007__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 
 ## 2026-10-02 — Apple Messages phone interaction pass
 

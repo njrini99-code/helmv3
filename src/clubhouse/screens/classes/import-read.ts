@@ -20,8 +20,13 @@ export type ChReadFail = 'notSchedule' | 'tooLarge' | 'unsupported' | 'fault' | 
 
 export type ChReadResult = { ok: true; rows: ChImportRow[]; warnings: string[] } | { ok: false; kind: ChReadFail; message: string };
 
-/** The largest file the reader takes (the vision action's own ceiling). */
+/** The largest PDF or TXT file the reader takes. */
 export const MAX_SCHEDULE_BYTES = 12 * 1024 * 1024;
+/**
+ * The vision action's own ceiling (`MAX_TOTAL_BASE64_CHARS` in schedule-image.ts, about 12 MB of image data). It applies to
+ * what is sent: a photo is downscaled first, so a large phone photo is taken, as the current importer takes it.
+ */
+export const MAX_IMAGE_BASE64_CHARS = 16 * 1024 * 1024;
 
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
 
@@ -29,8 +34,9 @@ export type ChFileKind = 'image' | 'pdf' | 'text';
 
 /**
  * A file the reader can take, or why not, before anything is sent: a screenshot
- * (PNG, JPG, WebP, GIF, and HEIC or HEIF, which iOS hands over as-is), a PDF or
- * a TXT file, up to 12 MB.
+ * (PNG, JPG, WebP, GIF, and HEIC or HEIF, which iOS hands over as-is) of any
+ * size, since it is downscaled before it is sent and only what is sent is
+ * measured (`readScheduleLive`); a PDF or a TXT file up to 12 MB.
  */
 export function screenFile(f: { name: string; type: string; size: number }): { ok: true; kind: ChFileKind } | { ok: false; kind: 'tooLarge' | 'unsupported' } {
   const kind: ChFileKind | null =
@@ -42,7 +48,7 @@ export function screenFile(f: { name: string; type: string; size: number }): { o
           ? 'text'
           : null;
   if (!kind) return { ok: false, kind: 'unsupported' };
-  if (f.size > MAX_SCHEDULE_BYTES) return { ok: false, kind: 'tooLarge' };
+  if (kind !== 'image' && f.size > MAX_SCHEDULE_BYTES) return { ok: false, kind: 'tooLarge' };
   return { ok: true, kind };
 }
 
@@ -110,7 +116,7 @@ async function prepareScheduleImages(file: File): Promise<ScheduleImage[]> {
   } catch {
     // The browser can't decode this format (HEIC outside Safari): send the original when the reader takes it.
     if (IMAGE_TYPES.has(file.type)) return [{ base64: await blobToBase64(file), mediaType: file.type }];
-    throw new Error("This browser can't open that image format. Use a PNG or JPG; a screenshot works well.");
+    throw new Error("This browser can’t open that image format. Use a PNG or JPG; a screenshot works well.");
   }
   try {
     const { width, height } = bitmap;
@@ -228,23 +234,26 @@ function fromText(text: string): ChReadResult {
   const parsed = parseScheduleText(text);
   return parsed.length
     ? { ok: true, rows: parsed.map(toImportRow), warnings: [] }
-    : { ok: false, kind: 'none', message: "We read the text but couldn't find course codes or times. Check that each class has a code such as STAT 201, then try again." };
+    : { ok: false, kind: 'none', message: "We read the text but couldn’t find course codes or times. Check that each class has a code such as STAT 201, then try again." };
 }
 
 export async function readScheduleLive(source: ChReadSource): Promise<ChReadResult> {
   try {
     if (source.kind === 'text') return fromText(source.text);
     const screened = screenFile(source.file);
-    if (!screened.ok) return { ok: false, kind: screened.kind, message: screened.kind === 'tooLarge' ? 'Use an image under 12 MB.' : 'Use a PNG, JPG or WebP screenshot, a PDF or a TXT file.' };
+    if (!screened.ok) return { ok: false, kind: screened.kind, message: screened.kind === 'tooLarge' ? 'Use a file under 12 MB.' : 'Use a PNG, JPG or WebP screenshot, a PDF or a TXT file.' };
     if (screened.kind === 'text') return fromText(await source.file.text());
     if (screened.kind === 'pdf') return fromText(await extractTextFromPdf(source.file));
-    const result = await extractClassesFromScheduleImage(await prepareScheduleImages(source.file));
+    const images = await prepareScheduleImages(source.file);
+    // Only an image the browser could not downscale (sent as it is) can still be past the action's ceiling.
+    if (images.reduce((n, i) => n + i.base64.length, 0) > MAX_IMAGE_BASE64_CHARS) return { ok: false, kind: 'tooLarge', message: 'Use an image under 12 MB.' };
+    const result = await extractClassesFromScheduleImage(images);
     if (!result.success || !result.classes?.length) {
       const kind = classifyReadError(result.error);
-      return { ok: false, kind, message: result.error ?? "We read the image but couldn't find course codes or times. Try a clearer screenshot, or paste the text." };
+      return { ok: false, kind, message: result.error ?? "We read the image but couldn’t find course codes or times. Try a clearer screenshot, or paste the text." };
     }
     return { ok: true, rows: result.classes.map(toImportRow), warnings: result.warnings ?? [] };
   } catch (err) {
-    return { ok: false, kind: 'fault', message: err instanceof Error && err.message ? err.message : "Reading the schedule didn't finish. Paste the text instead." };
+    return { ok: false, kind: 'fault', message: err instanceof Error && err.message ? err.message : "Reading the schedule didn’t finish. Paste the text instead." };
   }
 }

@@ -9,6 +9,7 @@ import { useSheetDrag } from '../../../lib/sheet-drag';
 import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SearchField } from '../../../ui/SearchField';
+import { Tooltip } from '../../../ui/Tooltip';
 import { useAskKept } from './drafts';
 import { COACHHELM_HREF } from './SubTabs';
 
@@ -105,7 +106,8 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
 
 /**
  * The standing History panel (desktop, 280px): the team's name, Hide chats, New chat, then the list. It stays mounted
- * while collapsed, so the width can animate over base (CH-13620); a collapsed panel is inert.
+ * while collapsed, and a collapsed panel is inert. Its column switches at once (layout never animates); shown again, the
+ * panel fades in with its content sliding from the edge, and hidden it goes at once (CH-13620, coachhelm-ask.css).
  */
 export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: () => void; heading: string }) {
   const { open, onHide, heading, onNew } = props;
@@ -113,9 +115,11 @@ export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: (
     <aside className={'ch-ask-hist' + (open ? '' : ' is-closed')} aria-label="Chats" inert={!open || undefined} data-ch-code="CH-13820">
       <div className="ch-ask-hist__head">
         <b>{heading}</b>
-        <button type="button" className="ch-ask-hist__iconbtn" aria-label="Hide chats" onClick={onHide}>
-          <Icon icon={PanelLeftClose} size={19} />
-        </button>
+        <Tooltip>
+          <button type="button" className="ch-ask-hist__iconbtn" aria-label="Hide chats" onClick={onHide}>
+            <Icon icon={PanelLeftClose} size={19} />
+          </button>
+        </Tooltip>
       </div>
       <button type="button" className="ch-ask-hist__new" onClick={onNew}>
         <Icon icon={SquarePen} size={17} />
@@ -157,17 +161,19 @@ export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose:
         <aside ref={aside} className="ch-ask-hist is-drawer" aria-label="Chats" onPointerDown={drag.onPointerDown}>
           <div className="ch-ask-hist__head">
             <b>Chats</b>
-            <button
-              type="button"
-              className="ch-ask-hist__iconbtn is-accent"
-              aria-label="New chat"
-              onClick={() => {
-                onNew();
-                onClose();
-              }}
-            >
-              <Icon icon={SquarePen} size={20} />
-            </button>
+            <Tooltip>
+              <button
+                type="button"
+                className="ch-ask-hist__iconbtn is-accent"
+                aria-label="New chat"
+                onClick={() => {
+                  onNew();
+                  onClose();
+                }}
+              >
+                <Icon icon={SquarePen} size={20} />
+              </button>
+            </Tooltip>
           </div>
           <HistoryList
             {...props}

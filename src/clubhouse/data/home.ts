@@ -13,6 +13,8 @@ import { previousInFilter, roundsInFilter, seasonOnly } from './stats-common';
 import { filterFor } from './stats-filter';
 import { weightedMean } from './stats-weight';
 import { rsvpOf } from './calendar';
+import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
+import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 
 export { classYearLabel, formStatus } from './season';
@@ -35,6 +37,8 @@ export interface ChHomeDay {
   /** Team events that day, excluding personal class blocks. */
   eventCount: number;
   hasCompetition: boolean;
+  /** The day's competition, for its mark (calendar TYPE_ICON): a tournament outranks a qualifier on the same day. */
+  competitionType: 'tournament' | 'qualifier' | null;
 }
 
 export interface ChAgendaRow {
@@ -60,6 +64,8 @@ export interface ChLatestRound {
   playerId: string;
   playerName: string;
   meta: string;
+  /** The day it was played, YYYY-MM-DD. */
+  date?: string;
   score: number;
   toPar: number | null;
   /** Null when the round was posted as a total, without hole-by-hole detail. */
@@ -104,8 +110,26 @@ export interface ChHomeEvent {
   location: string | null;
   /** Invitees' names, in roster order; null when replies didn't load (CH-2209). */
   invitees: string[] | null;
-  /** Accepted replies; null when replies or the identities needed for the paired count didn't load. */
+  /**
+   * Accepted replies; null when replies or the identities needed for the paired count didn't load, or when the event
+   * doesn't ask for replies (`requires_rsvp` off, the default).
+   */
   going: number | null;
+  /** Invitees who haven't replied (golf_players id and name), for the coach's Nudge; null when replies didn't load. */
+  awaiting?: Array<{ id: string; name: string }> | null;
+  /** Every invitee's golf_players id, for the coach's Message (prefilled, never sent); null when replies didn't load. */
+  inviteeIds?: string[] | null;
+  /**
+   * How many are invited, for D2-8 (a meeting with no invitees is the coach's own); null when replies didn't load. A
+   * player's Home has this without `inviteeIds` (it reads counts, never teammates' rows).
+   */
+  invitedCount?: number | null;
+  /**
+   * A player's Home only: their own reply on an event that asks for one. `going` when they said yes; `needed` when it is
+   * still theirs to answer (invited, or open to the whole team, and not started or past its deadline). Null otherwise,
+   * and when their own reply didn't load.
+   */
+  mine?: 'going' | 'needed' | null;
   /** Overlaps another of today's timed events. */
   conflict: boolean;
 }
@@ -129,6 +153,13 @@ export interface ChTeamForm {
   putts: { avg: number | null; delta: number | null };
 }
 
+/** The team's zone and its date when the page was read. */
+export interface ChHomeClock {
+  tz: string;
+  /** YYYY-MM-DD in `tz`. */
+  day: string;
+}
+
 export interface ChCoachHome {
   greeting: string;
   /** The team chat to open from "Message team"; null opens Messages. */
@@ -136,6 +167,11 @@ export interface ChCoachHome {
   /** Who needs a look and what's next, from the leaderboard and the week. Null when that read failed. */
   subline: string | null;
   todayLabel: string;
+  /**
+   * The team clock this page was read on: its zone and its date then (YYYY-MM-DD). The client compares the team-local
+   * date now against `day` and reads the page again when it has rolled over (useHomeDayRollover). Optional for fixtures.
+   */
+  clock?: ChHomeClock;
   week: { days: ChHomeDay[]; agenda: ChAgendaRow[]; error: boolean };
   /** holesError: the rounds loaded but their hole-by-hole detail didn't. */
   latestRounds: { rounds: ChLatestRound[]; error: boolean; holesError: boolean };
@@ -235,7 +271,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       return p ? nameOf(p) : 'Former player';
     }),
   );
-  const [{ greeting, todayLabel }, rosterRes, chatRes, wk, seasonRead, latest] = await Promise.all([clockRead, rosterRead, chatRead, weekRead, roundsRead, latestRead]);
+  const [{ greeting, todayLabel, tz, day }, rosterRes, chatRes, wk, seasonRead, latest] = await Promise.all([clockRead, rosterRead, chatRead, weekRead, roundsRead, latestRead]);
   // CH-2208: without the team chat, Message team opens Messages instead.
   if (chatRes.error) log('team chat', chatRes.error);
 
@@ -288,6 +324,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
     teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
     subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),
     todayLabel,
+    clock: { tz, day },
     week: wk.week,
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },
     leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
@@ -297,14 +334,14 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
 
 /**
  * The team's timezone (CH-2210: Eastern, the product default, when it doesn't
- * load or isn't a real zone), the time-of-day greeting in it, and today's long
- * date.
+ * load or isn't a real zone), the time-of-day greeting in it, today's long
+ * date, and today's date (YYYY-MM-DD) in it.
  */
 export async function homeClock(
   supabase: Awaited<ReturnType<typeof createClient>>,
   teamId: string,
   now: Date,
-): Promise<{ tz: string; greeting: string; todayLabel: string }> {
+): Promise<{ tz: string; greeting: string; todayLabel: string; day: string }> {
   const { data: settings, error: settingsError } = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
   if (settingsError) log('timezone', settingsError);
   // A stored value that isn't a real IANA zone would throw in every Intl call below; read it as missing instead.
@@ -317,7 +354,7 @@ export async function homeClock(
     /* unknown zone: the time-neutral phrase is never wrong */
   }
   const todayLabel = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' }).format(now);
-  return { tz, greeting, todayLabel };
+  return { tz, greeting, todayLabel, day: ymd(now, tz) };
 }
 
 /**
@@ -354,6 +391,7 @@ export async function latestWithHoles(
       playerId: r.player_id,
       playerName: nameFor(r.player_id),
       meta: [r.course_name, dateFmt.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)), r.tees_played ? `${r.tees_played} tees` : null].filter(Boolean).join(' · '),
+      date: r.round_date.slice(0, 10),
       score: r.total_score ?? 0,
       toPar: r.score_to_par,
       holes: holes && holes.length === 18 ? holes : null,
@@ -384,10 +422,24 @@ export interface ChHomeWeek {
  * counts, today's agenda and the week's competitions, Up next and Today.
  * Team events only (class blocks are personal). `names` turns invitees into
  * names; a player's Home passes none, so it never lists who else is invited.
+ * `viewer: 'player'` reads the reply counts through golf_event_attendance_counts
+ * (migration 20261017102000) instead of the rows, so no teammate's id or reply
+ * reaches the page; until that function exists it reads the rows as before.
+ * With `playerId` it also reads the player's own replies, beside the events:
+ * a meeting they aren't invited to is not on their week at all (Decision B),
+ * and each event carries their own reply (`mine`).
  */
 export async function loadHomeWeek(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  input: { teamId: string; tz: string | Promise<string>; now: Date; names: Map<string, string> | Promise<Map<string, string>> },
+  input: {
+    teamId: string;
+    tz: string | Promise<string>;
+    now: Date;
+    names: Map<string, string> | Promise<Map<string, string>>;
+    viewer?: 'coach' | 'player';
+    /** The player whose Home this is (with `viewer: 'player'`): their own replies decide which meetings they see. */
+    playerId?: string | null;
+  },
 ): Promise<ChHomeWeek> {
   const { now } = input;
   // The events are asked for before the team's timezone is known, over a window that holds the week of any zone (`wideEventWindow`),
@@ -397,7 +449,7 @@ export async function loadHomeWeek(
   const eventsRead = fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_events')
-      .select('id, title, event_type, start_time, end_time, all_day, location')
+      .select('id, title, event_type, start_time, end_time, all_day, location, requires_rsvp, rsvp_deadline')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
@@ -408,7 +460,27 @@ export async function loadHomeWeek(
       .order('id', { ascending: true })
       .range(from, to),
   );
-  const [tz, wideRes] = await Promise.all([input.tz, eventsRead]);
+  // The player's own replies in the same window, read beside the events: a player reads their own rows before and after
+  // migration 20261017102000. `player_id` is checked again below, so a teammate's row can never count as theirs.
+  const playerId = input.viewer === 'player' ? (input.playerId ?? null) : null;
+  const ownRead = playerId
+    ? fetchAllRowsResult((from, to) =>
+        supabase
+          .from('golf_event_attendance')
+          .select('id, event_id, player_id, status, golf_events!inner(id)')
+          .eq('player_id', playerId)
+          .eq('golf_events.team_id', input.teamId)
+          .lt('golf_events.start_time', wide.to)
+          .or(`start_time.gte.${wide.from},end_time.gte.${wide.from}`, { referencedTable: 'golf_events' })
+          .order('id', { ascending: true })
+          .range(from, to),
+      )
+    : null;
+  const [tz, wideRes, ownRes] = await Promise.all([input.tz, eventsRead, ownRead]);
+  /** The player's own reply by event; null when it didn't load (then no meeting is dropped here, and no reply is claimed). */
+  let own: Map<string, ChRsvp> | null = null;
+  if (ownRes?.error) log('ownReplies', ownRes.error);
+  else if (ownRes) own = new Map((ownRes.data ?? []).filter((a) => a.player_id === playerId).map((a) => [a.event_id, rsvpOf(a.status)]));
   const today = ymd(now, tz);
   const { weekStart, weekEnd, from, to } = weekWindow(today);
   const eventsRes = wideRes.error ? wideRes : {
@@ -420,6 +492,11 @@ export async function loadHomeWeek(
     }),
   };
 
+  // When the player's own replies didn't load, D2-8 decides which meetings they see (a meeting nobody is invited to is
+  // the coach's own), from the counts or the invite rows; when that fails too, none (playerSeesMeeting fails closed).
+  const fallbackMeetings = playerId && !own && !eventsRes.error ? (eventsRes.data ?? []).filter((e) => e.event_type === 'meeting').map((e) => e.id) : [];
+  const invitedFallback = fallbackMeetings.length ? await loadInvitedCounts(supabase, fallbackMeetings, (err) => log('meetingInvites', err)) : null;
+
   // ── Week ──
   if (eventsRes.error) log('events', eventsRes.error);
   // The shared calendar contract preserves UTC-midnight all-day dates and
@@ -427,6 +504,9 @@ export async function loadHomeWeek(
   const calendarDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const events = (eventsRes.error ? [] : (eventsRes.data ?? [])).flatMap((e) => {
     const span = eventDaySpan(e, tz);
+    // Decision B (owner, wave 7): a meeting the player isn't invited to is not on their week: not a day's count, not the
+    // agenda, not Up next (which moves on to the next event they can see).
+    if (playerId && e.event_type === 'meeting' && !playerSeesMeeting(own ? own.has(e.id) : null, invitedFallback?.get(e.id) ?? null)) return [];
     return span ? [{ ...e, localDate: calendarDate(span.first), lastDate: calendarDate(span.last) }] : [];
   });
   const runsOn = (e: (typeof events)[number], date: string) => e.localDate <= date && e.lastDate >= date;
@@ -441,6 +521,11 @@ export async function loadHomeWeek(
       isToday: date === today,
       eventCount: dayEvents.length,
       hasCompetition: dayEvents.some((e) => COMPETITION_TYPES.has(e.event_type)),
+      competitionType: dayEvents.some((e) => e.event_type === 'tournament')
+        ? 'tournament'
+        : dayEvents.some((e) => e.event_type === 'qualifier')
+          ? 'qualifier'
+          : null,
     };
   });
 
@@ -456,28 +541,47 @@ export async function loadHomeWeek(
   // drops the counts and names, never shows "0 players".
   const invited = new Map<string, string[]>();
   const accepted = new Map<string, number>();
+  const unanswered = new Map<string, string[]>();
+  /** Rows the coach's invitation wrote (`notified_at`): none means the event is open to the whole team. */
+  const coachInvited = new Map<string, number>();
   let attendanceError = false;
-  // The chunks are independent, so they are read together.
-  const attendance = await Promise.all(
-    chunkIds([...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))]).map((ids) =>
-      fetchAllRowsResult((from, to) =>
-        supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
+  const weekIds = [...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))];
+  // A player's Home: counts only (migration 20261017102000). `missing` (not applied yet) falls through to the rows.
+  const counts = input.viewer === 'player' ? await loadAttendanceCounts(supabase, weekIds) : null;
+  const countsByEvent: Map<string, ChAttendanceCounts> | null = counts?.kind === 'ok' ? counts.byEvent : null;
+  if (counts?.kind === 'error') {
+    // CH-2209: without replies, agenda rows drop who is invited and the confirmed count, never "0 players".
+    log('attendance', counts.error);
+    attendanceError = true;
+  } else if (!countsByEvent) {
+    // The chunks are independent, so they are read together.
+    const attendance = await Promise.all(
+      chunkIds(weekIds).map((ids) =>
+        fetchAllRowsResult((from, to) =>
+          supabase.from('golf_event_attendance').select('id, event_id, player_id, status, notified_at').in('event_id', ids).order('id', { ascending: true }).range(from, to),
+        ),
       ),
-    ),
-  );
-  for (const { data, error } of attendance) {
-    if (error) {
-      // CH-2209: without replies, agenda rows drop who is invited and the confirmed count, never "0 players".
-      log('attendance', error);
-      attendanceError = true;
-      break;
-    }
-    for (const a of data ?? []) {
-      invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
-      if (rsvpOf(a.status) === 'accepted') accepted.set(a.event_id, (accepted.get(a.event_id) ?? 0) + 1);
+    );
+    for (const { data, error } of attendance) {
+      if (error) {
+        // CH-2209: without replies, agenda rows drop who is invited and the confirmed count, never "0 players".
+        log('attendance', error);
+        attendanceError = true;
+        break;
+      }
+      for (const a of data ?? []) {
+        invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
+        if (rsvpOf(a.status) === 'accepted') accepted.set(a.event_id, (accepted.get(a.event_id) ?? 0) + 1);
+        if (rsvpOf(a.status) === 'pending') unanswered.set(a.event_id, [...(unanswered.get(a.event_id) ?? []), a.player_id]);
+        if (a.notified_at) coachInvited.set(a.event_id, (coachInvited.get(a.event_id) ?? 0) + 1);
+      }
     }
   }
-  const inviteesOf = (id: string) => (attendanceError ? null : (invited.get(id) ?? []));
+  if (countsByEvent) for (const [id, c] of countsByEvent) accepted.set(id, c.accepted);
+  // Invitee ids (the rows' path) or, from the counts, only how many: no identities.
+  const inviteesOf = (id: string): string[] | null => (attendanceError || countsByEvent ? null : (invited.get(id) ?? []));
+  const invitedOf = (id: string): string[] | number | null =>
+    attendanceError ? null : countsByEvent ? (countsByEvent.get(id)?.invited ?? 0) : (invited.get(id) ?? []);
   const names = await input.names;
 
   const agenda: ChAgendaRow[] = [
@@ -485,7 +589,7 @@ export async function loadHomeWeek(
       id: e.id,
       timeLabel: e.all_day ? 'All day' : clock(e.start_time),
       title: e.title,
-      detail: inviteDetail({ location: e.location, title: e.title, invitees: inviteesOf(e.id), names }),
+      detail: inviteDetail({ location: e.location, title: e.title, invitees: invitedOf(e.id), names }),
       isNext: e.id === nextId,
       isCompetition: COMPETITION_TYPES.has(e.event_type),
       when: 'today' as const,
@@ -495,7 +599,8 @@ export async function loadHomeWeek(
       timeLabel: WEEKDAYS[weekdayIndexMonFirst(e.localDate)] ?? '',
       title: e.title,
       detail:
-        [e.all_day ? null : `First tee ${clock(e.start_time)}`, confirmedLine(inviteesOf(e.id), accepted.get(e.id) ?? 0) ?? e.location].filter(Boolean).join(' · ') ||
+        // "5 of 6 going" only for an event that asks for replies (owner, 2026-10-08); otherwise where it is.
+        [e.all_day ? null : `First tee ${clock(e.start_time)}`, (e.requires_rsvp === true ? confirmedLine(invitedOf(e.id), accepted.get(e.id) ?? 0) : null) ?? e.location].filter(Boolean).join(' · ') ||
         null,
       isNext: false,
       isCompetition: true,
@@ -512,25 +617,60 @@ export async function loadHomeWeek(
   const timed = todays.filter((e) => !e.all_day && e.end_time);
   const overlaps = (e: (typeof events)[number]) =>
     !e.all_day && !!e.end_time && timed.some((o) => o.id !== e.id && new Date(o.start_time) < new Date(e.end_time!) && new Date(e.start_time) < new Date(o.end_time!));
+  const phoneBase = (e: (typeof events)[number]) => ({
+    id: e.id,
+    title: e.title,
+    type: HOME_TYPES.has(e.event_type) ? (e.event_type as ChHomeEvent['type']) : ('other' as const),
+    date: e.localDate,
+    timezone: tz,
+    startIso: e.start_time,
+    endIso: e.end_time,
+    allDay: !!e.all_day,
+    startLabel: e.all_day ? 'All day' : clockAmPm(e.start_time),
+    rangeLabel: e.all_day ? 'All day' : e.end_time ? `${clock(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
+    location: e.location,
+  });
+  /**
+   * The player's own reply (`mine`), by the rule the sidebar's card uses too (playerMine): only on an event that asks for
+   * one, while the server would take it (`replyClosedAt`), and, with no row of theirs, when the coach invited no one so
+   * the whole team may reply. Unknown (a failed read) claims nothing.
+   */
+  const mineOf = (e: (typeof events)[number]): ChHomeEvent['mine'] => {
+    if (!own || e.requires_rsvp !== true) return null;
+    const open = attendanceError ? null : countsByEvent ? (countsByEvent.get(e.id)?.coachInvited ?? 0) === 0 : (coachInvited.get(e.id) ?? 0) === 0;
+    return playerMine(own.get(e.id), replyClosedAt(e, now.getTime()), open);
+  };
   const toPhone = (e: (typeof events)[number]): ChHomeEvent => {
     const ids = inviteesOf(e.id);
     const invitees = ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null;
+    // Replies count, and the unanswered get a nudge, only on an event that asks for them (owner, 2026-10-08). Without
+    // it the card says who is invited, and its action is Message, not Nudge. Null (older rows) reads as off.
+    const asks = e.requires_rsvp === true;
+    const invitedCount = attendanceError ? null : countsByEvent ? (countsByEvent.get(e.id)?.invited ?? 0) : (ids?.length ?? 0);
+    if (countsByEvent) {
+      // Counts only (a player's Home): no names and no ids, exactly as the rows' path renders for a player, who is
+      // passed no names. The paired "N of M going" needs every invitee's name, so it stands only when nobody is invited.
+      return {
+        ...phoneBase(e),
+        invitees: [],
+        going: asks && invitedCount === 0 ? 0 : null,
+        awaiting: asks ? [] : null,
+        inviteeIds: null,
+        invitedCount,
+        ...(playerId ? { mine: mineOf(e) } : {}),
+        conflict: runsOn(e, today) && overlaps(e),
+      };
+    }
     return {
-      id: e.id,
-      title: e.title,
-      type: HOME_TYPES.has(e.event_type) ? (e.event_type as ChHomeEvent['type']) : 'other',
-      date: e.localDate,
-      timezone: tz,
-      startIso: e.start_time,
-      endIso: e.end_time,
-      allDay: !!e.all_day,
-      startLabel: e.all_day ? 'All day' : clockAmPm(e.start_time),
-      rangeLabel: e.all_day ? 'All day' : e.end_time ? `${clock(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
-      location: e.location,
+      ...phoneBase(e),
       invitees,
       // The card pairs this number with the rendered names' count. Partial
       // identities cannot turn "3 of 4" actual replies into "3 of 2 going".
-      going: ids && invitees?.length === ids.length ? (accepted.get(e.id) ?? 0) : null,
+      going: asks && ids && invitees?.length === ids.length ? (accepted.get(e.id) ?? 0) : null,
+      awaiting: asks && ids ? (unanswered.get(e.id) ?? []).flatMap((id) => (names.has(id) ? [{ id, name: names.get(id)! }] : [])) : null,
+      inviteeIds: ids,
+      invitedCount,
+      ...(playerId ? { mine: mineOf(e) } : {}),
       conflict: runsOn(e, today) && overlaps(e),
     };
   };

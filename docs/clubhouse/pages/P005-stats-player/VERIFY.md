@@ -1,5 +1,20 @@
 # P005 — Stats (player): verification
 
+## 2026-10-19 — Scorecard pass (lane L6a)
+
+Rounds table, putting rings, collapsed More detail, compact empty states, one number voice, the scoring form scrub, print.
+
+Vitest, `npx vitest run src/clubhouse/__tests__/stats- src/clubhouse/lib/__tests__/format-number.test.ts`: 20 files, 432 tests pass (exit 0),
+including `stats-scrub` (snapping, arrow keys, the live region), `stats-print` and `stats-tape`. ESLint on `screens/stats` is clean.
+`npm run typecheck` reports no error in these files (it fails on other lanes' files).
+
+WebKit 26, headless, against the dev server, reduced motion: `/clubhouse-preview/player` Rounds tab at 1024, 1100, 1280 and 1440px
+has no horizontal overflow (scrollWidth equals clientWidth in the table); the scrub was driven by pointer and by ArrowLeft, light and dark;
+the putting rings were looked at light and dark. Print was checked as a Letter PDF from headless Chromium (WebKit cannot make a PDF):
+white page, no controls, the head line, no section split across sheets, light tokens even when the page was dark.
+Not checked: a real Safari print dialog, the phone widths for the rounds table and the scrub (the phone view has its own markup),
+and the compact empty states in Game detail panels (no fixture reaches them).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 
@@ -189,7 +204,7 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 | P005__filter__coach__390__populated__after__cca081c.png | after | cca081c (working-tree after) | WebKit iPhone 13; Phoneplayerstatsfilter44×44px target withremainingcontrolsvisible |
 | P005__overview__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone player stats before page spacing and material repairs |
 | P005__overview__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered overview and strokes gained panels,16px rhythm and readable captions |
-| Skeleton | CH-4401 | the route's loading.tsx (Team stats' shape); test on Team stats | busy skeleton; a profile's first paint moves it |
+| Skeleton | CH-4401 | the route's loading.tsx, profile-aware (`StatsRouteSkeleton.tsx`: a player or a coach's `?player=` draws the profile's shape; corrected 2026-10-17) | busy skeleton |
 | Empty | 50401 to 50405 | `?state=early` (preview), tests | each tab or section says what is missing; an early read names what will move |
 | Validation | 50501 | test | message under the field, the field focused, the warning tick, nothing sent |
 | Server failure | 50601 to 50611 | tests (each read forced with its logged name, four tab crashes, the save, the share); preview `?state=failed` | toast or notice with its code; the text is kept |
@@ -237,8 +252,8 @@ Text scaling:   not checked.
 ## Performance
 
 ```text
-Layout shift:      not measured for the profile; the route skeleton is Team stats' shape, so a profile's
-                   hero (taller) moves what the skeleton drew
+Layout shift:      not measured for the profile; the route skeleton is profile-shaped
+                   (`StatsRouteSkeleton.tsx`, corrected 2026-10-17)
 Request waterfall: a test now holds the shape (52101): the team, player and membership together, then the
                    rounds, shot detail, benchmarks, focus areas and goals together, then the round figures once
 Large list:        not measured
@@ -300,6 +315,8 @@ before, after, baseline or evidence.
 | `P005__premium-audit__player__1280__case-031-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (player), 1280px, case-031-chromium-normal; /clubhouse-preview/player; synthetic preview |
 | `P005__premium-audit__player__390__case-004-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (player), 390px, case-004-webkit-reduce; /clubhouse-preview/player; synthetic preview |
 | `P005__premium-audit__player__390__case-031-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (player), 390px, case-031-chromium-normal; /clubhouse-preview/player; synthetic preview |
+| `P005__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P005__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -333,8 +350,8 @@ before, after, baseline or evidence.
 - `clubhouse:a11y` rerun for the phone profile and every state.
 - Forced states against a live session; the shot-level refusal against a real
   other-team coach.
-- Layout shift for the profile, and a profile-shaped loading state (a
-  loading.tsx cannot read the address).
+- Layout shift for the profile (the loading state is profile-shaped now,
+  `StatsRouteSkeleton.tsx`).
 - Found and fixed 2026-09-30: a failed player or membership read showed "That
   player isn't on your team"; a
   pending or removed member opened as Active; the Message button opened the bare

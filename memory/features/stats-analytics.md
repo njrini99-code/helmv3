@@ -77,6 +77,12 @@ still use `getPlayerStatsDashboardBundle`.
 
 ## Business Rules
 
+- Player Stats rounds Fairways, GIR, Scrambling and Sand saves once, from their
+  hit and attempt counts (`withExactHeadlineRates`; 61.46% shows 61%, not 62%)
+  (2026-10-17). Per-par splits, putt bands, 30-day deltas and the
+  cached stat tiles still round twice. Team strokes gained averages each
+  round's SG, so a 9-hole round counts as a full round (open; recommended: per
+  18 holes, changed in TS and the `sg_*_per_round` function together).
 - Round and shot data remain the source of truth; cached stats are derived.
 - Test data (OD-03, 2026-09-27): rounds with `golf_rounds.is_test = true` are
   QA/demo rows. Every player- and coach-facing stats read in `stats-data.ts`,
@@ -373,3 +379,22 @@ Desktop Game detail section jumps use the canonical Clubhouse reduced-motion
 hook, including live Animations off/on updates, rather than only the OS query.
 The phone section selection and preserved session state are unchanged. The
 premium composition audit is recorded in `docs/clubhouse/PREMIUM_AUDIT.md`.
+
+## Clubhouse team figures drawn, October 7
+
+Each Team stats figure (`ChFigure.gauge`, drawn by `FigureGauge` in
+`src/clubhouse/screens/stats/charts.tsx`) is drawn against a reference the data
+gives, never an invented benchmark:
+
+- strokes gained from the Tour's zero;
+- the scoring average from par (`score_to_par` per 18 holes, over the same
+  rounds as the average);
+- greens on a 0–100 track with the Tour's `gir_pct` mark, which is drawn only
+  when the team's tour is known (CH-4210);
+- scrambling on a 0–100 track with no mark;
+- putts against two on every green (36);
+- birdies as holes out of 18.
+
+A figure with no value draws no gauge. Tests: `strokes-gained.test.tsx` › "every
+team figure is drawn against a real reference", and `stats-total-only.test.tsx`
+› Season.

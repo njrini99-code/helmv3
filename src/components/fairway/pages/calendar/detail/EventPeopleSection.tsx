@@ -27,6 +27,11 @@ const STATUS_META: Record<Attendee['status'], { label: string; tone: FwStatusTon
 export interface EventPeopleSectionProps {
   eventId: string;
   active: boolean;
+  /**
+   * The event asks for replies. Off (the default for new events, owner 2026-10-08) lists who is invited with no
+   * Going / No response pill, since nobody was asked to reply.
+   */
+  showReplies?: boolean;
 }
 
 function initials(name: string): string {
@@ -40,10 +45,10 @@ function initials(name: string): string {
 
 type LoadState =
   | { status: 'loading' }
-  | { status: 'loaded'; attendees: Attendee[] }
+  | { status: 'loaded'; attendees: Attendee[]; total: number }
   | { status: 'failed'; error: string };
 
-export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps) {
+export function EventPeopleSection({ eventId, active, showReplies = true }: EventPeopleSectionProps) {
   const [state, setState] = React.useState<LoadState>({ status: 'loading' });
   const requestRef = React.useRef(0);
 
@@ -59,7 +64,9 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
           setState({ status: 'failed', error: result.error || 'Could not load who’s invited.' });
           return;
         }
-        setState({ status: 'loaded', attendees: result.data.summary.attendees });
+        // A player is sent only their own row (RSVP privacy, migration 20261017102000); the total still counts everyone.
+        const { attendees, total } = result.data.summary;
+        setState({ status: 'loaded', attendees, total: Math.max(total, attendees.length) });
       } catch {
         if (requestId === requestRef.current) {
           setState({ status: 'failed', error: 'Could not load who’s invited.' });
@@ -86,7 +93,7 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
           <Users className="h-[18px] w-[18px]" aria-hidden />
         </span>
         <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-          People{state.status === 'loaded' ? ` · ${attendees.length}` : ''}
+          People{state.status === 'loaded' ? ` · ${state.total}` : ''}
         </p>
       </div>
       {state.status === 'loading' ? (
@@ -102,36 +109,48 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
             Retry
           </Button>
         </div>
-      ) : attendees.length === 0 ? (
+      ) : state.total === 0 ? (
         <p className="font-fw-sans text-body-sm text-text-tertiary">No one invited yet.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {attendees.map((a) => {
-            const meta = STATUS_META[a.status] ?? STATUS_META.pending;
-            return (
-              <li
-                key={a.playerId}
-                className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <span
-                    aria-hidden
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full font-fw-sans text-microbadge font-semibold"
-                    style={{ color: meta.tint, backgroundColor: meta.tintBg }}
+        <>
+          {attendees.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {attendees.map((a) => {
+                const meta = showReplies ? (STATUS_META[a.status] ?? STATUS_META.pending) : STATUS_META.pending;
+                return (
+                  <li
+                    key={a.playerId}
+                    className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
                   >
-                    {initials(a.playerName)}
-                  </span>
-                  <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                    {a.playerName}
-                  </span>
-                </span>
-                <StatusPill tone={meta.tone} size="sm" dot={false}>
-                  {meta.label}
-                </StatusPill>
-              </li>
-            );
-          })}
-        </ul>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        aria-hidden
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full font-fw-sans text-microbadge font-semibold"
+                        style={{ color: meta.tint, backgroundColor: meta.tintBg }}
+                      >
+                        {initials(a.playerName)}
+                      </span>
+                      <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                        {a.playerName}
+                      </span>
+                    </span>
+                    {showReplies ? (
+                      <StatusPill tone={meta.tone} size="sm" dot={false}>
+                        {meta.label}
+                      </StatusPill>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+          {/* A player is sent only their own row; the rest of the roster is the coaches' to see. */}
+          {attendees.length < state.total ? (
+            <p className="font-fw-sans text-body-sm text-text-tertiary">
+              {state.total} invited{attendees.length > 0 ? ' · replies are visible to coaches' : ''}
+            </p>
+          ) : null}
+        </>
       )}
     </div>
   );

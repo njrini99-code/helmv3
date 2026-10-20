@@ -4,6 +4,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { FeatureUnavailable } from '@/components/fairway';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseSettingsRoute } from '@/clubhouse/routes/settings';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 export const metadata: Metadata = {
   title: 'Coaching Intelligence',
@@ -24,8 +25,9 @@ export default async function CoachingIntelligenceLayout({
   if (!session) redirect('/golf/login');
 
   // Clubhouse: this link opens Settings at CoachHelm for coaches; a player lands on their own Settings.
-  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) {
-    return <ClubhouseSettingsRoute section={session.coach ? 'coachhelm' : undefined} />;
+  const chRole = await getGolfDashboardRole();
+  if (await isClubhouseFor(chRole)) {
+    return <ClubhouseSettingsRoute section={chRole === 'coach' ? 'coachhelm' : undefined} />;
   }
 
   if (!session.coach) {

@@ -20,6 +20,7 @@ vi.mock('../lib/use-phone', () => ({ useChPhone: () => phoneState.on, CH_PHONE_Q
 vi.mock('../shell/phone-chrome', () => ({
   PhoneTop: (p: { back?: { label: string; onBack: () => void } }) => (p.back ? <button onClick={p.back.onBack}>{`phone back to ${p.back.label}`}</button> : null),
   usePhoneTabsHidden: () => {},
+  usePhoneImmersive: () => {},
 }));
 vi.mock('@/app/golf/actions/round-partial', () => ({ deleteInProgressRound: vi.fn() }));
 vi.mock('@/lib/utils/emergency-save', () => ({ clearEmergencySave: vi.fn(), markRoundDiscarded: vi.fn() }));
@@ -243,14 +244,14 @@ describe('CH-11912 Rounds library inside the shell frame: the search and the pla
     await user.click(screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' }));
 
     view.rerender(page(REV, review()));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
 
     // The review's Back: a step back in history, then the library again.
     act(() => {
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     view.rerender(page(LIB, library()));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520, behavior: 'instant' });
     expect((screen.getByRole('searchbox', { name: 'Search rounds by course' }) as HTMLInputElement).value).toBe('finley');
     canvas.remove();
   });

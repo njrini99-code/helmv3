@@ -1,9 +1,9 @@
 'use client';
 
 import { Suspense, use, useState } from 'react';
-import { Archive, Check, Flag, Sparkles, Users } from 'lucide-react';
+import { Archive, Check, Flag, UserPlus, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
-import { firstName, playersLine, pulseGapsLabel, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
+import { firstName, playersLine, pulseGapsLabel, withoutSignalsLine, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { normalise, useAction } from '../../lib/use-action';
@@ -14,6 +14,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState, Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
@@ -22,10 +23,13 @@ import { BoardPartial, FocusCard, Head, PulseList } from './parts';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
+import { SideScroll } from '../../ui/SideScroll';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const coachBoardLinks = {
   roster: () => rebuiltHref('/golf/dashboard/roster', 'coach'),
+  /** Roster with its invite sheet open (Roster reads `?invite=1` once), as Home's Invite players. */
+  invite: () => rebuiltHref('/golf/dashboard/roster?invite=1', 'coach'),
   settings: () => rebuiltHref('/golf/dashboard/settings/coaching-intelligence', 'coach'),
 };
 
@@ -66,7 +70,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   const [assigned, setAssigned] = useState<Record<string, ChHelmAssigned>>({});
   const [dismissed, setDismissed] = useState<Record<string, true>>({});
   // A switch to Ask moves the strip at once and dims the board (aria-busy) until Ask is ready.
-  const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v]);
+  const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
 
   // The follow-ups (marking assigned, hiding a dismissed card, restoring it) live inside the action, so a toast's Retry completes them too.
   // CH-13702: Assign is a primary Button, so its tap is the light press; the write's success and error haptics come from useAction.
@@ -147,12 +151,13 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   // known, so Assign (and Propose again) are not offered. Dismiss does not depend on any of them and stays.
   const statusUnknown = !mine && !!(data.missing?.assigned || data.missing?.declined || data.missing?.newest);
   const rosterHref = coachBoardLinks.roster();
+  const inviteHref = coachBoardLinks.invite();
 
   const body = data.off ? (
     <EmptyState
       size="page"
       code="CH-13305"
-      icon={Sparkles}
+      {...(data.off.by === 'global' ? { kind: 'restricted' as const } : { shape: 'rows' as const })}
       title="CoachHelm is off"
       body={
         data.off.by === 'global'
@@ -171,13 +176,13 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
     <EmptyState
       size="page"
       code="CH-13307"
-      icon={Users}
+      shape="people"
       title="Add players to start CoachHelm"
-      body="CoachHelm reads the rounds your players post. Invite players from Roster, and their insights show up here."
+      body="Invite your players. Each one’s insights show up here once they post rounds."
       action={
-        rosterHref ? (
-          <Button variant="primary" leftIcon={Users} href={rosterHref}>
-            Open roster
+        inviteHref ? (
+          <Button variant="primary" leftIcon={UserPlus} href={inviteHref}>
+            Invite players
           </Button>
         ) : undefined
       }
@@ -196,26 +201,30 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
       {data.roster.error || data.players.error ? (
         <RefreshNotice code="CH-13202" title="Your players’ insights didn’t load" body="Nothing is lost. Every insight is still saved; try again in a moment." />
       ) : !cur ? (
-        <EmptyState
-          size="page"
-          code="CH-13306"
-          icon={Sparkles}
-          title="No signals yet"
-          body="CoachHelm reads posted rounds. Each player’s insights appear once they’ve posted enough rounds to find a pattern."
-          action={
-            rosterHref ? (
-              <Button variant="primary" leftIcon={Users} href={rosterHref}>
-                View roster
-              </Button>
-            ) : undefined
-          }
-        />
+        // The pulse is on the page, so this is the players' section with nothing in it yet, not an empty page: its line
+        // and View roster sit right under the heading, in view on the desktop and the phone (states audit, 2026-10-08).
+        <Section id="ch-hl-none" title="Your players">
+          <EmptyState
+            code="CH-13306"
+            shape="people"
+            shapeCount={3}
+            title="No signals yet"
+            body="CoachHelm reads posted rounds. Each player’s insights appear once they’ve posted enough rounds to find a pattern."
+            action={
+              rosterHref ? (
+                <Button variant="primary" leftIcon={Users} href={rosterHref}>
+                  View roster
+                </Button>
+              ) : undefined
+            }
+          />
+        </Section>
       ) : (
         <>
           {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} />}
           <div className="ch-hl-cgrid">
             <SectionBoundary surface="coachhelm.players" label="Your players" code="CH-13204">
-              <section className="ch-hl-plist" aria-labelledby="ch-hl-plist-h">
+              <SideScroll as="section" className="ch-hl-plist" aria-labelledby="ch-hl-plist-h">
                 <h2 id="ch-hl-plist-h">By player</h2>
                 {players.map((p, i) => {
                   const on = p.id === cur.id;
@@ -236,11 +245,12 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                         <b>{p.name}</b>
                         <em>{dismissed[p.top.id] ? 'Dismissed' : p.top.title}</em>
                       </span>
-                      <span className="ch-hl-pl__c ch-num">{open[i]}</span>
+                      {/* No open signal draws no count: a "0" beside a signal line read as a contradiction (P013 D12). */}
+                      {open[i] ? <span className="ch-hl-pl__c ch-num">{open[i]}</span> : null}
                     </button>
                   );
                 })}
-              </section>
+              </SideScroll>
             </SectionBoundary>
             {/* CH-13805: the focus is a polite live region, so choosing another player is announced. */}
             <div className="ch-hl-cmain" aria-live="polite">
@@ -256,8 +266,8 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                     <span>
                       <b>Insight dismissed.</b> It no longer shows on your board or on {firstName(cur.name)}’s. Undo brings it back.
                     </span>
-                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => void undo.run(cur)}>
-                      {here('undo') ? <span data-ch-code="CH-13403">Undoing</span> : 'Undo'}
+                    <Button size="sm" variant="ghost" busy={here('undo')} disabled={busy && !here('undo')} onClick={() => void undo.run(cur)}>
+                      {here('undo') ? <span data-ch-code="CH-13403">Undoing…</span> : 'Undo'}
                     </Button>
                   </div>
                 ) : (
@@ -285,21 +295,22 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                             body={`${focusStatusSaid(data.missing, firstName(cur.name))} Dismiss still works. Try again in a moment.`}
                           />
                         ) : stale ? null : (
-                          <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
-                            {here('assign') ? <span data-ch-code="CH-13403">Assigning</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
+                          <Button variant="primary" leftIcon={Flag} busy={here('assign')} disabled={busy && !here('assign')} onClick={() => void assign.run(cur)}>
+                            {here('assign') ? <span data-ch-code="CH-13403">Assigning…</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
                           </Button>
                         )}
                         <Button
                           variant="ghost"
                           leftIcon={Archive}
-                          disabled={busy}
+                          busy={here('dismiss')}
+                          disabled={busy && !here('dismiss')}
                           onClick={() => {
                             // CH-13703: the warning comes before the write, as before any destructive tap (D-70).
                             haptic('warning');
                             void dismiss.run(cur);
                           }}
                         >
-                          {here('dismiss') ? <span data-ch-code="CH-13403">Dismissing</span> : 'Dismiss'}
+                          {here('dismiss') ? <span data-ch-code="CH-13403">Dismissing…</span> : 'Dismiss'}
                         </Button>
                         {mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
                         {!mine && !stale && !statusUnknown && cur.top.declined && (
@@ -321,7 +332,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
           </div>
           {data.withoutSignals > 0 && (
             <p className="ch-hl-note" data-ch-code="CH-13310">
-              {data.withoutSignals} {data.withoutSignals === 1 ? 'player has' : 'players have'} no insights yet.
+              {withoutSignalsLine(data.withoutSignals, data.withoutNames)}
             </p>
           )}
         </>
@@ -332,11 +343,12 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   // With CoachHelm off (CH-13305), Ask is off too, so the strip that leads there is not drawn.
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Coach">{players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}</Head>
-      {!phone && tabs}
+      <Head who="Coach" phone={phone} aside={!phone ? tabs : undefined}>
+        {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
+      </Head>
       {body}
     </main>
   );
@@ -361,6 +373,14 @@ function PulseBody({ pulse }: { pulse: ChPulse }) {
   return (
     <>
       {pulse.rows.length > 0 && <PulseList rows={pulse.rows} />}
+      {/* Every read came in (no gaps), so what is not listed was checked and is clear: say so in the card's held space
+          instead of leaving it empty. Up to four items, the two rows the desktop's reserve leaves room under. */}
+      {!gaps && pulse.rows.length > 0 && pulse.rows.length <= 4 && (
+        <p className="ch-hl-pulse__clear">
+          <Icon icon={Check} size={13} />
+          Nothing else is flagged across the program.
+        </p>
+      )}
       {/* CH-13206: a read the pulse is made from failed, so what is not listed was not checked: never "nothing is flagged". */}
       {gaps && pulse.missing && (
         <RefreshNotice

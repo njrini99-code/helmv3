@@ -1,13 +1,15 @@
 'use client';
 
-import { Copy, Link2, Share2, UserPlus } from 'lucide-react';
+import { Copy, Link2, Share2, UserMinus, UserPlus } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
+import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
 import { Segmented } from '../../ui/Segmented';
-import { distinctStaffTitle, pendingCoachName, staffInviteNote, staffRoleLabel, STAFF_ROLE_HELP, STAFF_ROLE_OPTIONS, type ChSettingsWrites } from './model';
+import { DECLINE_NOTE, distinctStaffTitle, pendingCoachName, staffInviteNote, staffRoleLabel, STAFF_ROLE_HELP, STAFF_ROLE_OPTIONS, type ChPendingCoach, type ChSettingsWrites } from './model';
 import { useCoachingStaff, useStaffInvite } from './hooks';
-import { Card, Row } from './parts';
+import { Card, Row, useWarnOnOpen } from './parts';
 
 /**
  * The coaching staff on Team (coach): who is on it, the assistants waiting to be approved, and invites. The reads and
@@ -19,6 +21,9 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
   const invite = useStaffInvite(writes.staff);
   const { members, requests, requestsFailed } = staff;
   const deciding = staff.approve.pending || staff.decline.pending;
+  // Decline sits beside Approve, so it asks first (CH-8511); Approve does not.
+  const [declining, setDeclining] = useState<ChPendingCoach | null>(null);
+  useWarnOnOpen(!!declining);
   return (
     <>
       {members && members.length > 0 && (
@@ -35,7 +40,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
       )}
       {requestsFailed ? (
         <Card id="set-requests" title="Assistant coach requests">
-          <InlineNotice code="CH-8213" title="Requests didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={staff.retry} />
+          <InlineNotice code="CH-8213" title="Requests didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={staff.retry} />
         </Card>
       ) : (
         requests.length > 0 && (
@@ -47,7 +52,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
           >
             {requests.map((c) => (
               <Row key={c.coachId} label={pendingCoachName(c)} help={c.fullName?.trim() ? c.email : null}>
-                <Button size="sm" variant="secondary" disabled={deciding} onClick={() => void staff.decline.run(c)}>
+                <Button size="sm" variant="secondary" disabled={deciding} onClick={() => setDeclining(c)}>
                   {staff.decline.pending && staff.busyId === c.coachId ? 'Declining…' : 'Decline'}
                 </Button>
                 <Button size="sm" variant="primary" disabled={deciding} onClick={() => void staff.approve.run(c)}>
@@ -58,6 +63,32 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
           </Card>
         )
       )}
+      <Modal
+        open={!!declining}
+        code="CH-8511"
+        onClose={() => setDeclining(null)}
+        icon={UserMinus}
+        title={declining ? `Decline ${pendingCoachName(declining)}?` : 'Decline this request?'}
+        description={DECLINE_NOTE}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeclining(null)}>
+              Keep request
+            </Button>
+            <Button
+              variant="danger"
+              feel={null}
+              onClick={() => {
+                const c = declining;
+                setDeclining(null);
+                if (c) void staff.decline.run(c);
+              }}
+            >
+              Decline
+            </Button>
+          </>
+        }
+      />
       {!staff.isAssistant && (
         <Card id="set-staffinv" title="Staff invitations" description="Add an assistant coach or a program admin. They sign up with the code or the link.">
           <Row label="Role" help={STAFF_ROLE_HELP[invite.role]}>

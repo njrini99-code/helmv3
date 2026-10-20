@@ -406,7 +406,7 @@ features:
         # no-op rather than a wrong answer. It belongs here: stages.ts reads
         # the `baseball_pipeline_stage` enum and its only importers are 3
         # baseball files + src/lib/validation. The entry NAMED `recruiting`
-        # is golf's (golf routes, *golf_recruits*.sql) and is correct as-is.
+        # is golf's (golf routes, *recruit_documents*.sql) and is correct as-is.
         - src/lib/recruiting/**
       db:
         - supabase/migrations/*baseball*.sql
@@ -883,6 +883,10 @@ features:
         # glob (Phase 5 registry glob lint).
         - supabase/migrations/*player_classes*.sql
         - supabase/migrations/*coach_today_schedule*.sql
+        - supabase/migrations/*home_event_rpcs*.sql
+        # golf_events table policies (2026-10-18: meetings visible to their
+        # invitees only).
+        - supabase/migrations/*golf_events_*.sql
       tests:
         - src/test/lib/calendar/**
         - src/test/api/calendar/**
@@ -1316,6 +1320,7 @@ features:
         - src/clubhouse/screens/recruiting/**
         - src/clubhouse/data/recruiting.ts
         - src/clubhouse/data/recruiting-shape.ts
+        - src/clubhouse/data/recruiting-calendar.ts
         - src/clubhouse/routes/recruiting.tsx
       api: []
       actions:
@@ -1326,6 +1331,7 @@ features:
       services: []
       db:
         - supabase/migrations/*recruit_documents*.sql
+        - supabase/migrations/*golf_recruits_next_step*.sql
       tests:
         - src/clubhouse/__tests__/recruiting.test.tsx
         - src/clubhouse/__tests__/recruiting-upload.test.tsx

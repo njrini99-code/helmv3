@@ -62,8 +62,8 @@
     "diagnostics:health": "node scripts/diagnostics-health.mjs",
     "enforcement:check": "node scripts/gen-enforcement-inventory.mjs --check",
     "enforcement:regen": "node scripts/gen-enforcement-inventory.mjs",
-    "evals": "promptfoo eval -c evals/round-review.yaml",
-    "evals:view": "promptfoo view",
+    "evals": "npx --yes promptfoo@0.124.0 eval -c evals/round-review.yaml",
+    "evals:view": "npx --yes promptfoo@0.124.0 view",
     "flags:check": "node scripts/flags/generate-flags.mjs --check && node --test scripts/flags/__tests__/*.test.mjs scripts/__tests__/check-feature-flags.test.mjs && node scripts/check-feature-flags.mjs",
     "flags:generate": "node scripts/flags/generate-flags.mjs",
     "clubhouse:check": "node --test scripts/clubhouse/__tests__/*.test.mjs && node scripts/clubhouse/check.mjs",
@@ -118,8 +118,8 @@
     "markdown:ratchet": "node scripts/markdown-lint-ratchet.mjs",
     "orphans:mounts": "node scripts/find-orphan-mounts.mjs",
     "postbuild": "node scripts/strip-next-tsconfig-injection.mjs",
-    "prebuild": "node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs",
-    "preflight": "npm run typecheck && npm run lint && npm run lint:ratchet && npm run lint:any-ratchet && npm run lint:test-location && npm run audit:supabase-errors && npm run audit:fail-open && npm run markdown:ratchet && npm run docs:schema-drift && npm run docs:path-drift && npm run knowledge:globs && npm run lint:duplicate-exports && npm run guards && echo 'PREFLIGHT GREEN \u2014 a LOCAL subset of the static gates, not the CI set. CI also runs docs:check, check:cycles, the other ratchets, the unit shards, the build and the Supabase/RLS job. Inner loop: npm run check:changed. Review preview: npm run gates:review.'",
+    "prebuild": "node scripts/flags/generate-flags.mjs --check && node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs",
+    "preflight": "npm run typecheck && npm run lint && npm run lint:ratchet && npm run lint:any-ratchet && npm run lint:test-location && npm run audit:supabase-errors && npm run audit:fail-open && npm run markdown:ratchet && npm run docs:schema-drift && npm run docs:path-drift && npm run knowledge:globs && npm run lint:duplicate-exports && npm run guards && echo 'PREFLIGHT GREEN — a LOCAL subset of the static gates, not the CI set. CI also runs docs:check, check:cycles, the other ratchets, the unit shards, the build and the Supabase/RLS job. Inner loop: npm run check:changed. Review preview: npm run gates:review.'",
     "pr:land": "node scripts/pr-land.mjs",
     "repo:doctor": "node scripts/repo-doctor/cli.mjs",
     "routes:hygiene:p0p1": "node scripts/check-route-hygiene-p0-p1.mjs",
@@ -180,7 +180,7 @@
     "clubhouse:perf:check": "node scripts/clubhouse/perf-budget.mjs",
     "clubhouse:tools": "node scripts/clubhouse/tools.mjs",
     "clubhouse:tools:setup": "node scripts/clubhouse/tools.mjs --setup",
-    "clubhouse:profile": "react-devtools",
+    "clubhouse:profile": "npx --yes react-devtools@8.0.0",
     "clubhouse:materials": "node scripts/clubhouse/material-inventory.mjs",
     "clubhouse:premium": "node scripts/clubhouse/premium-capture.mjs"
   },
@@ -306,12 +306,9 @@
     "knip": "^6.39.0",
     "madge": "^8.0.0",
     "markdownlint-cli2": "^0.23.3",
-    "momentic": "^3.63.1",
     "next-devtools-mcp": "0.4.0",
     "postcss-load-config": "^6.0.1",
     "postgres": "^3.4.9",
-    "promptfoo": "^0.124.0",
-    "react-devtools": "8.0.0",
     "stylelint": "16.25.0",
     "supabase": "^2.119.0",
     "tsx": "^4.23.15",
@@ -339,6 +336,15 @@
     },
     "@vercel/container": {
       "tar": "^7.5.22"
+    },
+    "next-devtools-mcp": {
+      "@modelcontextprotocol/sdk": "^1.31.0"
+    },
+    "smol-toml": "^1.9.0",
+    "katex": "^0.18.2",
+    "@tootallnate/once": "^2.0.1",
+    "@vercel/node": {
+      "undici": "^5.29.0"
     }
   },
   "allowScripts": {

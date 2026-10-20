@@ -6,14 +6,16 @@ import { X } from 'lucide-react';
 import { buildEvidencePanel, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
+import { Tooltip } from '../../../ui/Tooltip';
 import { DataTable, Tiles, Trend } from './Evidence';
 import '../../../styles/coachhelm-thread.css';
 
 /** The figures behind an action card, beside the conversation on desktop and in a sheet on a phone. */
-export function AskEvidencePanel({ focus, messages, phone, onClose }: { focus: EvidenceFocus; messages: UIMessage[]; phone: boolean; onClose: () => void }) {
+export function AskEvidencePanel({ focus, messages, phone, onClose, open = true }: { focus: EvidenceFocus; messages: UIMessage[]; phone: boolean; onClose: () => void; open?: boolean }) {
   const model = useMemo(() => buildEvidencePanel(messages, focus), [messages, focus]);
   const body = (
-    <div className="ch-th-evp__body">
+    // `is-phone`: the sheet's figures are rows on the sheet, not tiles (coachhelm-thread.css, the cardless pass).
+    <div className={'ch-th-evp__body' + (phone ? ' is-phone' : '')}>
       {model.empty ? (
         <p className="ch-th-read" data-ch-code="CH-13255">
           <b>Nothing in this conversation speaks to this player yet.</b> Ask about their putting or their recent rounds and the figures show here.
@@ -37,7 +39,7 @@ export function AskEvidencePanel({ focus, messages, phone, onClose }: { focus: E
 
   if (phone) {
     return (
-      <Modal open onClose={onClose} title="Evidence" description={model.subtitle} code="CH-13851">
+      <Modal open={open} onClose={onClose} title="Evidence" description={model.subtitle} code="CH-13851">
         {body}
       </Modal>
     );
@@ -76,9 +78,11 @@ function DesktopPanel({ subtitle, onClose, children }: { subtitle: string; onClo
           <b>Evidence</b>
           <span>{subtitle}</span>
         </span>
-        <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn" aria-label="Close evidence" onClick={onClose}>
-          <Icon icon={X} size={16} />
-        </button>
+        <Tooltip>
+          <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn" aria-label="Close evidence" onClick={onClose}>
+            <Icon icon={X} size={16} />
+          </button>
+        </Tooltip>
       </div>
       {children}
     </aside>

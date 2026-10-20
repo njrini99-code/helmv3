@@ -85,6 +85,7 @@ import {
   deleteGolfEventPermanently,
   respondToEvent,
 } from '../calendar-events';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ---------------------------------------------------------------------------
 // Seed data
@@ -286,13 +287,26 @@ describe('createGolfEvent RSVP config', () => {
     const tables = seedAs('u-coach', withUuidPlayers(baseTables()));
     tables.golf_event_attendance = [];
 
-    const result = await createGolfEvent({ title: 'Practice', eventType: 'practice', startDate: '2099-07-01', attendeeIds: [P1] });
+    const result = await createGolfEvent({ title: 'Practice', eventType: 'practice', startDate: '2099-07-01', attendeeIds: [P1], requiresRsvp: true });
     expect(result.success).toBe(true);
     await runAfterCallbacks();
 
     const told = (tables.golf_calendar_notifications as Array<{ user_id: string }>).map((n) => n.user_id);
     expect([...new Set(told)]).toEqual(['u-p1']);
     expect(sendEmailNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('an event that does not ask for replies tells nobody, but still records its invitees (owner, 2026-10-08)', async () => {
+    const tables = seedAs('u-coach', withUuidPlayers(baseTables()));
+    tables.golf_event_attendance = [];
+
+    const result = await createGolfEvent({ title: 'Practice', eventType: 'practice', startDate: '2099-07-01', attendeeIds: [P1] });
+    expect(result.success).toBe(true);
+    await runAfterCallbacks();
+
+    expect(tables.golf_calendar_notifications).toHaveLength(0);
+    expect(sendEmailNotification).not.toHaveBeenCalled();
+    expect((tables.golf_event_attendance as Array<{ player_id: string }>).map((a) => a.player_id)).toEqual([P1]);
   });
 });
 
@@ -341,6 +355,38 @@ describe('updateGolfEvent attendee semantics', () => {
     // RSVP state preserved exactly; the new invite is pending.
     expect(tables.golf_event_attendance.find((r) => r.player_id === P1)!.status).toBe('accepted');
     expect(tables.golf_event_attendance.find((r) => r.player_id === P3)!.status).toBe('pending');
+  });
+
+  it('a failed existing-attendance read invites nobody, so no reply is reset to pending, and says so', async () => {
+    const tables = seedAs('u-coach', withUuidPlayers(withEvent(baseTables())));
+    // Only the action's `select('player_id')` read fails; the invitation upsert would still work.
+    const origFrom = fake.from.bind(fake);
+    fake.from = ((table: string) => {
+      const api = origFrom(table);
+      if (table !== 'golf_event_attendance') return api;
+      return {
+        ...api,
+        select(columns?: string) {
+          if (columns === 'player_id') {
+            return { eq: async () => ({ data: null, error: { message: 'timeout', code: '57014' } }) };
+          }
+          return api.select(columns);
+        },
+      };
+    }) as typeof fake.from;
+
+    // Fairway sends the whole roster (existing + new) as attendeeIds.
+    const result = await updateGolfEvent('event-1', { attendeeIds: [P1, P2, P3] });
+
+    expect(result.success).toBe(true);
+    expect(result.data?.invitationsError).toBe("The changes were saved, but the new invitations didn't go out.");
+    expect(tables.golf_event_attendance).toHaveLength(2);
+    expect(tables.golf_event_attendance.find((r) => r.player_id === P1)!.status).toBe('accepted');
+    expect(vi.mocked(logServerError)).toHaveBeenCalledWith(
+      expect.stringContaining('attendance read failed for event event-1'),
+      expect.objectContaining({ action: 'golf.updateGolfEvent.invitations' }),
+      'error',
+    );
   });
 
   it('addAttendeeIds behaves identically to legacy attendeeIds (additive)', async () => {

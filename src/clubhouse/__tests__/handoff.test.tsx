@@ -38,10 +38,14 @@ describe('the hand-off curtain', () => {
     expect(document.querySelectorAll('#ch-handoff-curtain')).toHaveLength(1);
   });
 
-  it('on the phone it is the canvas alone, full bleed', () => {
+  it("on the phone it is the dashboard's frame: the green bar, then the parchment sheet with its 16px top corners", () => {
     media(true, false);
     dropHandoffCurtain();
-    expect(curtain()!.children).toHaveLength(0);
+    const c = curtain()!;
+    expect(c.children).toHaveLength(1);
+    const sheet = c.firstElementChild as HTMLElement;
+    expect(sheet.style.borderRadius).toMatch(/^16px 16px 0(px)? 0(px)?$/);
+    expect(sheet.style.top).toContain('safe-area-inset-top');
   });
 
   it('lifts when the dashboard says it is there (reduced motion: at once)', async () => {
@@ -50,6 +54,16 @@ describe('the hand-off curtain', () => {
     liftHandoffCurtain();
     await vi.advanceTimersByTimeAsync(700);
     expect(curtain()).toBeNull();
+  });
+
+  it('holds what waits for the dashboard to be seen while it is up, and lets it go when it lifts', async () => {
+    media(false, true);
+    dropHandoffCurtain();
+    // The sidebar brand's entrance holds on this (shell.css), so it plays after the dashboard is visible.
+    expect(document.documentElement.hasAttribute('data-ch-handoff')).toBe(true);
+    liftHandoffCurtain();
+    await vi.advanceTimersByTimeAsync(700);
+    expect(document.documentElement.hasAttribute('data-ch-handoff')).toBe(false);
   });
 
   it('lifts on its own if the dashboard never mounts, so a wrong destination is never covered', async () => {

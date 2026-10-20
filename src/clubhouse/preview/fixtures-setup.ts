@@ -61,6 +61,6 @@ export const PREVIEW_SETUP_QUALIFIERS: ChSetupQualifier[] = [
     nextRound: null,
     rounds: 2,
     completed: 2,
-    blocked: 'Both rounds are in; your coach is selecting.',
+    blocked: 'All 2 rounds are in. Ask your coach to add a round if you need another.',
   },
 ];

@@ -1,5 +1,840 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-19 — CoachHelm on an iPad: the views head, the Ask cards and the evidence side sheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (821 to 1180px, end blocks of `coachhelm.css` and `coachhelm-ask.css`): a player's views head puts the view switch under the sentence when the page holds under 781px, where the sentence had a 56px column and ran a word to a line.
+- Ask: the "Since you were last here" cards take as many columns as fit (three at 1180, one at 834), their title no longer wraps to three lines, the chats panel is 216px on a canvas under 781px, and the evidence panel lays over the conversation as a side sheet there instead of taking a third column.
+
+### Why
+
+- The canvas is 618px at 834 with the sidebar open; Ask gave the conversation 338px and the cards 70px each.
+
+### Verification
+
+- WebKit, touch: 834 and 1024 before and after looked at (profile, ask home, ask answer, ask with evidence); the rules sit in a `screen and (821px to 1180px)` media query.
+
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (coachhelm.css, coachhelm-ask.css, coachhelm-dive.css, coachhelm-profile.css, coachhelm-standing.css, coachhelm-thread.css, coachhelm-views.css)
+
+- Figures and labels still in pixels (the dive hero and measure values, the standing "you" figures, the focus and bars values, the thread's bar and rank values) follow the iPhone's text size. The thread's chart axis and reference labels keep theirs (SVG text).
+- Radii on the 5, 7, 10, 14, 20 scale.
+- The phone's chat header keys, history keys and rows, question pills, composer chips, the thread's copy key, pills, chips and the "View as table" toggle reach 44px; the toggle, the work row, "Why we think this", the profile measure disclosure and the ask finder link have a hover state.
+- The thread's bar and rank values, and the profile's measure, standing and score figures, use tabular numerals.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — In-flight actions are busy; one spinner; icon buttons have tooltips; chip and player rows fade a clipped edge
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Accept, Decline, Assign as focus, Dismiss, Undo and a chat action's Confirm are busy while they run; only the one pressed shows the ring and its neighbours stay disabled.
+- The thread's working step draws the shared `Spinner`.
+- Chats, New chat, Add to your question, Send, Stop, Mention, Copy and Close evidence show their name on hover and focus.
+- The phone's view chips and the player list fade only the clipped edge.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — Off, empty and first-run CoachHelm told apart; Deep dive empties join the shared state
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-13301, CH-13302, CH-13304, CH-13305, CH-13306, CH-13307, CH-13360, CH-13370, CH-13382, CH-13383, CH-13384
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- CoachHelm turned off for a player, or off for everyone for a coach, is the restricted state: a lock and who can change it, with no action that would fail. A coach's own switch-off keeps Open CoachHelm settings.
+- First-run boards, Game profile and Standing draw rows under the sentence; the coach's board draws portrait rows.
+- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan) use the shared compact state; `.ch-hd-none` is gone.
+- The player's phone eyebrow (`.ch-hl-role`) no longer carries 0.14em tracking.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/coachhelm?state=empty` and `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted state) was captured after only, phone, light. The Deep dive empties have unit tests but no capture.
+
+## 2026-10-18 — Wave 10: inviting from an empty CoachHelm
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-13301 CH-13307 CH-13321 CH-13360
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- No players (CH-13307, and Ask's CH-13321): Invite players (UserPlus,
+  Roster's invite sheet) replaces Open roster, as Home has. CH-13307's body
+  no longer repeats the lede: "Invite your players. Each one’s insights show
+  up here once they post rounds."
+- An empty Game profile (CH-13360) lists its measures as the compact locked
+  tiles the loaded view uses, not seven full cards.
+- The player's Start a round uses Plus, as Home and Rounds do (Board, Game
+  profile, Standing, Deep dive).
+- A player with no round reads the lede "One thing to work on each week, from
+  the rounds you post." (it claimed rounds already posted).
+
+## 2026-10-18 — Wave 7: player CoachHelm
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (the miner's floor and window, the proposing coach)
+Held items:     none
+```
+
+### Changed (2026-10-18, player CoachHelm)
+
+- Decision C: Decline is held under a toast with Undo (CH-13912) and
+  written when the toast goes, or at once when the page is left; Undo
+  writes nothing. The declined row offers "Tell coach why", which opens
+  Messages to the coach who proposed it. A failed write puts Accept and
+  Decline back with CH-13005.
+- The empty board says how many rounds are still to come ("Post 2 more
+  rounds and CoachHelm starts reading your game."), counted as the pattern
+  miner counts them: its floor (the coach's `min_rounds_for_signal`, never
+  under the miner's minimum) less the countable rounds in its window.
+- No "Player" eyebrow over a player's CoachHelm or its views (skeletons
+  match); the coach keeps "Coach".
+- "What is working is listed below" on the phone; "beside this" stays on
+  the desktop, where it is.
+
+## 2026-10-18 — Wave 6: honest projections, units and words
+
+```text
+Design package: none (wave-6 CoachHelm review, review6-ch)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads 6 more stats-cache columns; focus areas save the
+                typeset title
+Held items:     Priority vs "Worth closing"; Standing hero "0 of 19 stats"
+```
+
+### Changed (2026-10-18, wave 6)
+
+- Standing: "Most to gain" and the headline never lead with Strokes gained:
+  total (the sum of the rows). A putt band and sand scrambling are sized by
+  the player's own attempts a round from `golf_player_stats_cache`, as their
+  insight cards are; without attempts, a part of the game is capped at what
+  its strokes-gained category is behind (3–5 ft no longer reads 1.7 strokes
+  while all of putting is 0.63). The early notice names the team floor only
+  when a row is short of teammates. Dates and dots no longer break a line.
+- Profile: driver usage and miss side are never a strength or a watch-out.
+- Board and Deep dive: "What’s working" headings, "Needs work" on the tile,
+  and a bare number says what it counts ("gap", "a round", "made").
+  Distances keep their unit on the line ("4–6 ft"). The slope read says
+  "from 4–6 ft", drops its "(n=…)" aside and labels its chart "Make rate,
+  downhill vs level, same distance" (stored rows refresh on the next
+  generator run; until then the page drops their "(n=…)" aside). A
+  proposal says `From the read “…”`. A focus area is saved with the
+  typeset title.
+- Coach board: players with no insights are named; the pulse says "scoring
+  worse over their last three rounds" with "+2.1 strokes".
+- Ask: the trend averages a rate by its sample and names its player; the
+  table column is "Rate". The action card says "On confirm:", "Sent:",
+  "Notifies:" or "Nothing was sent." by its state. The rate-limit notice
+  reads "Too many questions in a row." Below 1440px, opening the evidence
+  moves the chats aside without changing the kept choice.
+
+### Verification (2026-10-18, wave 6)
+
+- Updated and new cases in `coachhelm-standing`, `coachhelm-thread`,
+  `coachhelm-thread-ui`, `coachhelm`, `coachhelm-audit`, `coachhelm-dive`,
+  `coachhelm-profile`; engine: `genome-ui`, `putt-slope-bias`,
+  `program-pulse-movement` (new).
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Assigning…", "Dismissing…", "Undoing…" (CH-13403) and
+  "Accepting…" / "Declining…" (CH-13404) while those writes run.
+
+## 2026-10-18 — Wave 4: the Ask box fits again under Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Ask box fit)
+
+- The Ask composer's text box (`Composer.tsx`) measures again when its text
+  wraps differently with no new text: when the iPhone's Text Size lands on
+  `<html>` after the box first measured (the shell writes it in a later
+  layout effect), and when the box's width changes. At XXL the two-line hint
+  was cut in half; it now shows whole. Nothing changes at the default size.
+
+### Verification (2026-10-18, Ask box fit)
+
+- `composer-autosize.test.tsx` (new): a Text Size write re-measures, other
+  style writes on `<html>` don't, a new width re-measures and the height it
+  set does not, and the observers stop on unmount.
+- WebKit 390 (`coachhelm-ask`): scale-1 screenshot identical to before; at
+  XXL the hint shows on three lines in a 104px box.
+
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `coachhelm.css`, `coachhelm-ask.css`, `coachhelm-thread.css`,
+  `coachhelm-views.css`, `coachhelm-profile.css`, `coachhelm-standing.css`,
+  `coachhelm-dive.css`: the phone's text (board, pulse, focus cards, Ask,
+  the thread, history, the view chips, Game profile, Standing, Deep dive) is
+  set in `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size
+  up to XXL. The composer stays 16px on the phone: `globals.css`'s iOS zoom
+  floor outranks its rule (which keeps a 16px `max()` floor of its own).
+- Left fixed on purpose: figures and values (the measure figures, standing
+  values, dive values), chart axis text and the thread's data table.
+- At XXL (390 wide) the unscaled text drops from 46 to 14 (board), 40 to 7
+  (player), 11 to 2 (Ask), 112 to 11 (Game profile), 278 to 68 (Standing),
+  41 to 9 (Deep dive). The rest is the shared shell and the figures. At the
+  default size every value is the same pixel.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): scale 1 screenshots of the board,
+  player, Ask and the three views are pixel-identical to before; at XXL no
+  overflow or visible overlap, also in an answered thread, an action, a
+  receipt, the evidence sheet and the history drawer.
+
+## 2026-10-18 — Wave 3 accessibility: Ask accents, view chips
+
+```text
+Design package: none (wave-3 accessibility review, items 8, 17)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- Ask: the accent words (the find cards' category and question, the history
+  and head accent buttons, the state link, a set chip) take `--ch-green-600`,
+  not the fill colour `--ch-accent`. Light is unchanged; dark reads 7.99:1
+  (was 3.06).
+- Player CoachHelm, phone: the view chips mark the shown view with
+  `aria-current` instead of a pressed toggle.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `coachhelm-views.test.tsx` (asserts `aria-current`).
+- WebKit (Playwright, dev preview, 1280): Ask's weakest accent word 7.99:1
+  dark, 6.66:1 light (unchanged).
+
+## 2026-10-18 — Wave 3: the head on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The role line is 4px shorter than the eyebrow,
+  so the top adds 4px; on the light sheet its 12px inset comes off the top.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: the pulse says replied
+
+```text
+Design package: none (wave-3 design review, items 3)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, RSVP pulse wording)
+
+- The program pulse's RSVP item reads "2 players haven’t replied to Team
+  dinner" over "4 of 6 replied", in the words Home and the calendar use for
+  replies, where it said "have not responded for" and "responded"
+  (`src/lib/coachhelm/v3/chat/program-pulse.ts`, shared with Fairway's
+  ProgramOpening; preview fixture and tests follow).
+
+### Verification (2026-10-18, RSVP pulse wording)
+
+- New `program-pulse-rsvp.test.ts` runs the pulse over events and replies
+  and checks both forms ("2 players haven’t", "1 player hasn’t") and "N of M
+  replied". `npm run test:file` on it, the CoachHelm tests and the other
+  `program-pulse-*` tests.
+
+## 2026-10-18 — Polish: typeset insight text; Ask hovers; chip @ on Escape
+
+```text
+Design package: none (wave-2 interaction review rows 6, 11, 12, 17)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Insight text spoken for a viewer is typeset: curly apostrophes and
+  quotes, and an en dash in number ranges ("4–6 ft"). Text with no viewer is
+  left as stored. A focus area's saved description is the typeset text.
+- Ask: New chat, the + key and the Players/Any dates chips have desktop
+  hovers; history rows draw their focus ring inside the scroller.
+- Ask: Escape on a picker the Players chip (or the `@` key) opened takes
+  back the `@` it added; an `@` the coach typed, or the Add player
+  starter's, stays.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: history titles end in a clean ellipsis
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- Ask's history rows are blocks centred by their line height, not flex rows,
+  so a long title ends in an ellipsis instead of being cut mid-letter
+  (`coachhelm-ask.css`, the drawer's 44px rows too).
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+- WebKit (Playwright, dev preview, 1280px): a 72-letter history title is
+  a 36px block row ending in an ellipsis.
+
+## 2026-10-17 — Polish: tabular figures in rows
+
+```text
+Design package: none (polish review row 18; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tabular figures come back on 2 rules in `coachhelm.css` whose `font` shorthand
+  reset `.ch-num` (the row figures and the player chips).
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check` and
+  `typecheck:fast` pass. The WebKit pass is the coordinator's.
+
+## 2026-10-17 — Wiring checked against production; moved links open their Clubhouse screen
+
+```text
+Design package: none (links only; no visual change)
+PR/commit:      uncommitted (Clubhouse wiring pass, P001-P015 remaining screens)
+Contract IDs:   none new
+Actions:        none changed (ACT-P013-* checked)
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- **Ask's receipt chips and pulse findings link where production's do**
+  (`data/coachhelm-chat-links.ts` `askLinkHref`, used by `chat/ActionCard.tsx`
+  `AskReceiptCard` and by `loadAskCoachHelm`'s findings). The chat engine
+  (`lib/coachhelm/v3/chat`) writes Fairway addresses: `/golf/dashboard/tasks`
+  ("1 task"), `/announcements`, `/intelligence?view=players|signals` ("Open
+  development"). Those screens moved in Clubhouse, so `rebuiltHref` answered
+  null and the chip or link was drawn as plain text, where production links it.
+  They now open the screen the address's own alias redirect opens for a coach,
+  in one step: Team Hub's Tasks (`?task=` carried), Team Hub's Announcements,
+  the CoachHelm board (`?player=` carried, `?view=chat` to Ask). Anything else
+  is still a link only when it is rebuilt for a coach.
+- **The Game profile's "What CoachHelm sees" rows are a client link**
+  (`views/Profile.tsx`). They were a plain `<a>`, so opening a read in Deep dive
+  reloaded the whole app (shell, session, fonts); every other link between the
+  views is a `next/link`.
+- **The route follows the dashboard role, not "has a coach row"**
+  (`routes/coachhelm.tsx`, `ClubhouseCoachHelmRoute`). A user whose onboarded
+  profile is the player one, with an unfinished coach profile beside it, is
+  drawn as a player by the layout, but took the coach branch here and got the
+  coach's "You aren't on a team yet" (CH-13308) instead of their own CoachHelm.
+  The coach branch now runs only when `pickGolfDashboardRole` (the role
+  `resolveClubhouseTeam` and the layout use) is the coach; the player branch
+  needs no team, as before. Same rule as `routes/roster.tsx`.
+
+### Checked, no change
+
+- Assign as focus, Dismiss and Undo call `createFocusAreaFromInsightV2`,
+  `dismissInsight` and `reactivateInsight` (`actions/insights-feed.ts`, the same
+  module Fairway's Game fingerprint imports) with the insight's own title,
+  description, area type, metric and current value; `verifyPlayerAccess` /
+  `verifyInsightAccess` admit a coach of the player's team. Accept and Decline
+  call `acceptFocusArea` / `declineFocusArea` on the player's own proposed row,
+  as Stats Development does.
+- Ask uses production's own `useCoachHelmChat` (the same `POST
+  /api/coachhelm/v3/chat/stream` body: messages, conversation id, turn key;
+  approvals resubmit through the hook). The conversation list and a thread read
+  the same columns and order as `listConversations` / `listMessages` (RLS:
+  `coach_id = current_coach_id()`).
+- The loaders' filters match production's: the coach's roster is the team's
+  `status = 'active'` members (as `getCoachChatContext`); round reads are
+  `is_test = false`, `status = 'completed'`.
+- `?view=development` (77 of production's 228 `dev_plan_assigned` notifications,
+  every one to a player) redirects to Stats' Development tab
+  (`/golf/dashboard/stats?tab=dev`), which `StatsPlayer` opens; the other 151
+  open the player's board. No realtime on this page.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/wiring-p013-links.test.tsx`,
+  `wiring-p013-route.test.tsx` and the existing CoachHelm tests touching the
+  changed files (results in the session report). The engine guard reads every
+  `href:` the chat engine writes and asserts each opens a Clubhouse screen.
+
+## 2026-10-16 — The Game profile reads what CoachHelm says; Standing is greener and organized
+
+Owner, 2026-10-16: base the profile on actual CoachHelm output ("make it based
+on actual CoachHelm output"). The genome alone read 3 rounds (the last 90 days,
+countable rounds only) while the Board's insights read 23.
+
+- **The profile leads with CoachHelm's insights** (`Profile.tsx`,
+  `coachhelm-profile.ts`). `loadPlayerProfile` now also calls
+  `loadPlayerCoachHelm`, the Board's own ranked read for the player, and carries
+  it as `ChProfile.sees`. On the green board the top insight is the headline
+  with its lede, sample, window and date, then **Costing you** and **Working**
+  (up to four each), every row opening its evidence in Deep dive. Insights that
+  are out of date are left off, and the text is the engine's, nothing written
+  for the page. The genome follows as a quieter section, "The shape of your
+  game". The intro line now reads "What CoachHelm reads in your rounds, and the
+  shape of your game."
+- **The insights not loading** is its own notice, CH-13261 ("What CoachHelm sees
+  didn’t load", with Try again), never "nothing to say"; the measures stay. A
+  new screen test and a loader test cover it, and CH-13261 is in the catalog.
+- **The genome's section is organized and greener** (`coachhelm-profile.css`):
+  how many measures are read is a row of dots, the measures split into "With a
+  read" and "Still filling in" (green-tinted tiles that each say what they still
+  need), and a measure with no stance draws on green. Inside a green board the
+  ledger heading ink resets to the board's.
+- **Standing is greener and organized** (`Standing.tsx`,
+  `coachhelm-standing.css`): the headline and Most to gain sit on the green
+  board; each group's head carries its tally against the Tour ("n ahead, n
+  behind") over a green rule; a stat ahead of the Tour sits on a faint green
+  wash. The data is unchanged (`golf_player_standing`, the nightly read).
+
+- **Standing's bars show the gap** (`Standing.tsx`, `coachhelm-standing.css`): a
+  new `.ch-hs-tr__gap` fills the space from the Tour's mark to the player's,
+  green when ahead and amber when behind. The track is green-tinted and the
+  marker solid. The Game profile's scales get the same track, a full-strength
+  fill and a solid marker (`coachhelm-profile.css`).
+- **Deep dive at more contrast** (`DeepDive.tsx`, `coachhelm-dive.css`): the
+  hero is a green board (`ch-scoreboard`), the rail a bright panel with the open
+  read lit green, the heads field green, and the gauge track green-tinted. The
+  open read no longer has a green side bar (see the shared entry).
+
+Checked: the vitest above; the Standing and profile tests (64) and the CoachHelm
+tests passed in the main session. No visual check is recorded for these commits,
+and no migration is involved.
+
+## 2026-10-16 — CoachHelm and Ask at full contrast; CoachHelm on a bright sheet
+
+Owner, 2026-10-16: "more contrast on this and the other ones", "coachhelm
+contrast is the same". In light mode only (`coachhelm.css` `.ch-hl`,
+`coachhelm-ask.css` `.ch-ask`; dark mode is unchanged):
+
+- Both screens take the page-scoped contrast step the Qualifiers page took: text
+  one grade darker (secondary copy reads as primary, tertiary as secondary), and
+  the Increase Contrast rules and borders.
+- The whole ink ramp is darker, 700 down to 300, so copy that names a mid ink
+  directly (a locked measure, a quiet caption) is darker as well. The same ramp
+  change is in Qualifiers' block (P009).
+- On the desktop (above 820px), CoachHelm sits on one bright surface sheet over
+  the parchment, on 24px corners, so its copy reads on a white ground. The phone
+  is unchanged.
+
+Checked by the main session in Chrome on Board, Game profile, Standing and Deep
+dive; Ask and the phone were not reported as checked, and nothing was checked in
+Safari.
+
+## 2026-10-16 — The other views are fetched whole once the page is idle
+
+The view strip never prefetched, so on the desktop every switch between Board,
+Ask and the rest waited on the server for the whole page (owner, desktop
+Safari). `useViewSwitch` takes the list of views (`CoachBoard`, `PlayerBoard`
+and `views/Frame.tsx` pass theirs; the player's is `PLAYER_HELM_VIEWS`) and
+fetches the others whole once the page is idle, as the phone's tabs are
+(`use-prefetch-tabs`). Data Saver and offline skip it. No visible change.
+
+## 2026-10-16 — The phone Evidence sheet slides out; ivory ink holds at night
+
+- **Evidence on the phone (audit A-18):** the sheet stays mounted after its
+  first opening and keeps the evidence it showed, so closing it slides it out
+  instead of making it vanish (`Ask.tsx`, `AskEvidencePanel` takes `open`).
+- **Dark mode:** ivory ink on a green fill in the profile, the thread and the
+  views uses the `--ch-on-fill-*` tokens, which stay light at night (the shared
+  2026-10-15 ink entry).
+
+## 2026-10-15 — Ask's suggestion cards are plain data
+
+No visible change. The phone's Ask suggestion cards built their second line
+with a function handed from the server to the client Ask Home, which made the
+RSC render throw "Functions cannot be passed directly to Client Components"
+(Sentry JAVASCRIPT-NEXTJS-158). `sub` is now a string with a `{team}` token,
+filled on the client by `askSuggestionSub`; the cards read the same.
+
+## 2026-10-13 — The History drawer slides on the shared spring, over the shared backdrop
+
+The phone's History drawer slides in and out on the smooth spring instead of the
+260ms ease-out, and its backdrop
+fades in on the shared `--ch-scrim` instead of appearing at 0.45 (dark 0.6).
+Shared change:
+docs/clubhouse/CHANGELOG.md (popups).
+
+## 2026-10-12 — /intelligence keeps the player and Ask
+
+- The old `/golf/dashboard/intelligence` address (coach insight pushes, CRM
+  demo invites) keeps `?player=<id>` when it moves to CoachHelm, and
+  `view=chat` opens Ask (`view=ask`); other views are dropped. The page's role
+  is the dashboard layout's (`getGolfDashboardRole`).
+
+## 2026-10-10 — The desktop board in the phone's lit-card language
+
+Presentation only. The focus's claim is the page's one lit green card at the
+head of the focus column (the phone's card, now one shared
+block so the two cannot drift), with its evidence as one reading, a large figure
+over a gradient track, under it; bars and the
+confidence meter take gradient fills; section heads take a short gold lead; the
+chosen player gets a green rail. "Decision first,
+pulse second" stays not built (the owner declined it).
+
+## 2026-10-08 — Ask: the @ picker is cmdk, and offers the stats
+
+```text
+Design package: none; no owner board draws the picker (phone spec note in docs/clubhouse/phone/coachhelm.md)
+Contract IDs:   CH-13821 (catalog row widened: stats, docked list, Tab, the select haptic)
+Data impact:    none; the stats are the agent's metric catalog (metrics-catalog.ts), no new read
+Held items:     before and after screenshots (no dev server in this pass)
+```
+
+- **One picker, phone and desktop:** typing `@` (or the `@` key, the Players
+  chip, the Add player starter) opens a
+  cmdk list of the roster and, under it, the stats CoachHelm can read (the
+  agent's own metric catalog, so a stat the
+  coach names is one the model can measure). Both narrow as the coach types;
+  `@gir` and `@sg` find a metric by its short
+  name. A player or stat already in the question is not offered again.
+- **The phone's sheet is gone:** on the phone the list docks above the composer,
+  about four and a half 44px rows tall
+  and never more than two fifths of the space the keyboard leaves. The text box
+  keeps the focus throughout (the `@` key
+  and a row press never take it), so the keyboard stays up; the composer's
+  keyboard-height layout is untouched.
+- **Keys:** the arrows move and wrap, Enter and Tab pick, Esc closes;
+  Shift+Enter is still a new line, and a closed
+  picker never takes a key. VoiceOver hears cmdk's listbox through the box's
+  `aria-controls` and
+  `aria-activedescendant`, the two groups by their headings, and a fragment that
+  matches nothing as one dimmed row.
+- **Never clipped:** the composer measures the room between its box and the
+  nearest edge that would cut the list off
+  (a clipping ancestor such as the Ask sheet's panel, or the visible viewport
+  above the keyboard) and the CSS caps the
+  list to the smaller of that and its own height (296px, the phone's 212px).
+- **Without a roster:** a host that loads no roster passes `roster={false}` (the
+  shell's Ask sheet does); its picker
+  offers the stats alone, named "Mention a stat", with no Players group and no
+  "No active players" that is not true of
+  the team. A fragment no stat matches is one dimmed row, "No stat by that
+  name".
+- **Look:** rows are 44px everywhere (were 38px on the desktop): a player's
+  initials coin or a stat's chart coin, then
+  the name. The list floats on the overlay elevation with a 180ms fade and rise,
+  none under reduced motion or with
+  Animations off. A pick ticks the select haptic.
+
+## 2026-10-08 — the cardless pass: Ask on the phone
+
+Phone only; the desktop is unchanged.
+
+- **New chat:** the opener and the questions sit together at the foot of the
+  screen, just above the composer,
+  instead of a centered greeting over an empty page with a sideways rail of
+  outlined 164px cards at the bottom. The
+  opener is left-aligned (28px), and the three questions are action rows between
+  the Ledger's soft seams, their
+  words in the green ink as an iPhone action row's are, a 60px row with a
+  full-width tap area and a press tint, no
+  chevron (a row asks; it does not go somewhere).
+- **Evidence:** the figure stays the one object. Its metric tiles are no longer
+  cards inside it but its rows: the
+  label at the left with the sample under it, the value at the right, parted by
+  the figure's hairline and closed by
+  one above and below. The Evidence sheet draws the same rows, and its trend
+  sits on the sheet under a hairline
+  instead of in a ringed card. The scrolling table keeps its card.
+- **Action card:** the notes (who is told, and the impact) are lines under the
+  facts' hairline, not filled boxes
+  inside the card; the impact's icon keeps the warning ink.
+- **Loading:** the phone skeleton draws the new chat's shape (the opener's
+  lines, three rows, the composer) at the
+  foot of the screen, not the desktop's centered block.
+
+## 2026-10-08 — The green card is where the light lands (P013-A3)
+
+Approved by the owner on 2026-10-08. On the phone the focus's claim, the page's
+one green card, takes the only light-aimed rim: a 1px rim of the shell's light
+on its sun-facing top and side, a darker hairline opposite. Its "Worth closing"
+stance is gilt that catches the light on its sun side. Nothing else on the page
+gains depth, no figure is lit, nothing moves, and the rim goes under Increase
+Contrast.
+
+## 2026-10-08 — Premium pass findings (D3 to D13)
+
+The premium audit's CoachHelm findings, checked in WebKit at 1440x900 and
+390x844, light and dark. A1 (decision above the pulse) is not built: the owner
+said no.
+
+- **Ask trend (D3):** the chart is drawn at its measured width (ResizeObserver),
+  so a viewBox unit is a pixel and its axis type is 10.5px on the desktop and
+  12px on the phone, not about 20px scaled up. The reference label takes the
+  first place clear of the line (above or below the dashed line, at the right
+  or the left); when none is clear it is a key under the chart. The Deep dive
+  and the evidence panel draw the same trend.
+- **Standing (D4):** the hero leads with the most to gain and gives one count,
+  against the Tour's denominator; strokes gained is named against the Tour, as
+  Stats says it (Q-88), never "field average".
+- **Game profile fixture (D5):** scrambling is 35%, "Reliable", the live
+  dimension's own label. "Mixed" under Strong is the live persona's call
+  (driver usage peaks at a 60% mix in `normalize.ts`), not the fixture's.
+- **Deep dive (D6, D13):** the full write-up drops the sentence that repeats
+  the drill "This week" draws; the diagnosis lines end with a full stop; the
+  hero says "In your plan" overlaps the two lists. Even ("E") is ink on the
+  plain plate, not mint.
+- **Ask fixture (D7):** the slope bars are Uphill 76%, Level 81%, Downhill 58%,
+  as the board's level 81% says; the ranking's footer counts what its rows list
+  (24 attempts, not the first row's 9), asserted in the tests.
+- **One h1 (D8):** on the phone the page's large "CoachHelm" is text (the top
+  bar has the h1) and still labels the main landmark; every skeleton has a
+  hidden h1; Standing's rows are h3 under their group's h2.
+- **Reach (D9):** the Ask step toggle and the ranked list's name links have a
+  44px hit area.
+- **One primary (D10):** with more than one proposal each Accept is secondary.
+- **Card in card (D11):** the Ask ranking and tables inside a figure are rows on
+  rules in the figure's one card.
+- **Coach board (D12):** a player with no open signal shows no count (it was
+  "0"); generator labels are sentence case ("Penalties per round"); the gauge
+  legend keeps the spaces round its dot.
+
+## 2026-10-08 — States and native feel
+
+The states audit's CoachHelm findings and the owner's native-feel pass, verified
+in WebKit at 390x844 with touch.
+
+- **Coach board, players and no signal yet (CH-13306):** it was the page's empty
+  medallion under the pulse, its View roster below the fold on the desktop and
+  the phone. The pulse is on the page, so it is now the players' section with
+  nothing in it: "Your players" under its rule, the empty line and View roster
+  under it, in view.
+- **Ask:** the canvas is the Ledger's (it was the near-white surface). A
+  conversation that is not available (CH-13320) is the page's empty state, calm
+  on the canvas, not a boxed tan card, and still an alert. A program that did
+  not load (CH-13221) and a conversation whose messages did not read (CH-13224)
+  stand where the welcome would be, centred in the column on the desktop, not at
+  the top of a blank page. The thread fades into the dock with a wash, not a
+  shadow.
+- **Told once:** when two or more of a read's parts did not load (its category
+  trends, its rounds, its focus areas and goals), the read says so once under
+  its head with one Try again (CH-1209) and each part keeps its title in place;
+  Standing's scoring average and team's Tour the same. One failed part keeps its
+  own notice.
+- **Standing:** the headline closes without a full stop. With the scoring
+  average failed, the headline stays: it compares the stats with the Tour and
+  the team, which loaded, and the notice says the comparisons are not affected.
+- **Press:** Why we think this and How it is measured deepen to the row press
+  tint; the composer's add and mention keys compress like every key
+  (`data-ch-press`).
+- **Loading:** the phone skeletons hold the loaded geometry, measured at 390:
+  the player's two-line intro, the claim's card per role, the views' cards and
+  the Deep dive's three-line brief, so nothing moves when the page lands. The
+  pulse still grows past its three reserved rows when it has more (CH-13405).
+- **Loading at every phone width:** the Game profile's and Standing's cards in
+  waiting follow the loaded card as the phone widens and its lines wrap fewer
+  (they were 48 and 64px too tall at 430), on the CoachHelm container's width.
+  Measured in WebKit from 355 to 445px; within 0.2px at 390 and 430.
+- **Ask, the program did not load (CH-13221):** the page failure (CH-1211),
+  drawn as the route error is (a brick medallion, the title, Try again first),
+  where it was a notice.
+- **Ask, Show and Hide chats (CH-13620):** the rail's column switches at once;
+  it no longer animates the grid's columns (layout never animates). Shown, the
+  rail fades in over base while its content slides 12px in from the edge, inside
+  the rail's own clip; hidden, it goes at once. Reduced motion and Animations
+  off show it at once. The phone's drawer is unchanged.
+- **Copy:** the page's words take the curly apostrophe, as the shell's offline
+  line now does: the coach's no-team page (CH-13308, "You aren’t on a team
+  yet"), Ask's send while offline (CH-13920, "Couldn’t send: you’re offline"),
+  "Couldn’t copy" (CH-13051), the evidence control's "See Jonah’s numbers" and
+  "See Jonah’s stats", and Ask's suggestions ("What’s on this week?", "who’s
+  improving this month", "what’s coming up"). A failed answer's offline line
+  (CH-1905) is the shared one (`OFFLINE_LINE`) instead of its own copy, contract
+  130702 quotes the curly line, and the copy-apostrophes guard covers CoachHelm.
+  Ask's failure sentences (`coachhelm-chat-error.ts`, identical to PR #2105
+  until it lands) and the server's note for a rejected turn (CH-13252) are shown
+  as the server words them.
+
+## 2026-10-08 — Phone: Mobile clubhouse pass
+
+The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home
+"Mobile clubhouse pass" board, round 3: "fewer containers, one feature card"),
+carried to every CoachHelm phone screen. Phone only: each new rule sits inside
+`@media (max-width: 820px)`, and on desktop the focus's new wrapper draws
+nothing (`display: contents`).
+
+- **Title:** "CoachHelm" was a 400-weight display title on the phone. The header
+  is now the Ledger's intro under the engraved double rule: the role as the
+  tracked brown eyebrow, CoachHelm in the 600 sans at 31px, the live line.
+- **No stacked cards:** the program pulse, Proposed for you, Also worth knowing
+  and Working are sections flush on the parchment, each heading under the double
+  rule, their rows between soft seams (the pulse's glyphs are flat keys). The
+  one green card is the focus's claim (category, stance, claim, first sentence);
+  its evidence, the week's drill and Why we think this follow flush under it,
+  set off by rules. Before, the focus was a white card holding the evidence's
+  card and the drill's well. A dismissed insight is a row between rules.
+- **Views:** the Game profile, Standing and the Deep dive open on their one
+  green feature card (the persona with Strong and Worth watching; where you
+  stand with Most to gain in champagne; what CoachHelm has found with its three
+  counts as a figure line), and every measure, group of stats and list of reads
+  is a section of rows. A read's pushed screen opens on its own feature card and
+  its parts follow flush. This fixes the Game profile's figure beside a strength
+  (62%), which was ivory on a white card on the phone. When a whole view is
+  empty (Standing's first run, CH-13370; the Deep dive's, CH-13380 and CH-13381)
+  the phone draws the page's empty state, centred on the parchment like the
+  Board's first run; the Game profile's first run keeps its line, since what it
+  will read follows it.
+- **Chips:** the player chips and the view chips are drawn with a hairline (the
+  chosen one green), not lifted plates, and take the page's 20px edge.
+- **Ask:** the bar's title ("CoachHelm", or the chat's name) was dark ink on the
+  green bar and could not be read; it is ivory. The page sits on the parchment,
+  its suggestions are hairline chips, and the no-rounds note is a line. A failed
+  answer (CH-13251) is a flush notice like the page's others: the danger rule at
+  its left, the message in the danger ink, no pink fill, Try again under the
+  words.
+- **Loading:** the board's and the views' skeletons draw the phone's shapes (the
+  intro's lines at their loaded heights, the pulse's head and reserved rows, the
+  chips, the feature card's place, sections of rows).
+
+Kept as material: the view switch, the chips, the bars and the gauge, the pills,
+the buttons, the thread, the composer, the notices and the sheets. No motion,
+copy, behaviour or catalog code changed.
+
 ## 2026-10-08 — Server-action imports follow the golf.ts split
 
 ```text
@@ -11,8 +846,113 @@ Held items:     none
 ```
 
 The screen's imports and test mocks now point at the files that own the server
-actions (insights-feed.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
-by domain. No behavior change.
+actions (insights-feed.ts) after `golf.ts`, `insights.ts` and `admin-data.ts`
+were split by domain. No behavior change.
+
+## 2026-10-07 — Rows answer the press
+
+On desktop an insight row or a player in By player now deepens to the row press
+tint over the press beat, as the deep dive's list, read and plan rows do
+(CH-13602, now referenced in `InsightRow`). The contract no longer says the
+Assigned chip rises under reduced motion: it appears at once, as the catalog
+says.
+
+## 2026-10-07 — The Ledger: the board and the views on the canvas
+
+On desktop CoachHelm's reading cards now sit on the framed canvas, under
+headings and engraved rules. Phone is unchanged.
+
+- **Board:** the program pulse is a section under its heading and rule. The
+  first row of each column sits on the rule, the rows are split by soft seams,
+  and its notice and quiet line clear the rule as a row does. By player (or the
+  player's other reads) and the focus are two columns whose heads share one
+  ruled line. A chosen player is a soft green tint, not a lifted plate, and
+  the tint hangs 12px past the column so the avatars align with it. The
+  evidence is part of the focus, set off by one soft rule; the week's drill
+  keeps its well. A dismissed insight is said on the focus column's head line,
+  with Undo, instead of on a card. Proposed for you is a section whose note
+  carries the rule.
+- **Game profile:** the shape of the game is a section: label and window over
+  the rule, the headline, then Strong and Worth watching as two columns split
+  by a soft rule. Every measure is one ruled table: columns split by a soft
+  rule and rows by soft seams, with no card or stance wash per measure (the
+  stance stays in the word, the tag and the scale). Keep reading is the
+  table's last cell.
+- **Standing:** the label and window head the section; the headline sits
+  beside Most to gain, a column split off by a soft rule. Each group of stats
+  is a section under its heading and rule.
+- **Deep dive:** the three counts are one figure line split by soft rules.
+  The list of reads and the open read are two columns whose heads share a
+  ruled line; the read's parts follow on soft rules, and the plan is rows, as
+  the rounds are.
+- **Fixes:** the Game profile's figure beside a strength (for example 62%) was
+  ivory on ivory and could not be read on desktop. The Development link beside
+  the views was the old green canopy's mint, barely visible on the ivory head;
+  it is the ghost button's green.
+- **Loading:** every skeleton flattens the same way and draws the rules where
+  the page does. Measured in WebKit at 1440 (the board also at 1000), the head
+  and section tops don't move when the page lands: the pulse section is 236.8px
+  (a 22.8px heading, 12px to its rule, and a 202px reserve on the canvas), the
+  Game profile's hero 221px, Standing's 282px and the Deep dive's 156px.
+  Standing's and the Deep dive's two-line head is held at 183px (the skeleton
+  held 159px before, a 24px shift), and the Game profile's hero no longer
+  shifts by 31px.
+
+## 2026-10-07 — The pulse's held space says something
+
+The program pulse holds three rows of space so nothing below moves when it
+streams in. With four items or fewer that left an empty band in the card. When
+every read the pulse is made from came in (no gaps), the foot of that space now
+says "Nothing else is flagged across the program", with a check, over a
+hairline. When a read failed it stays silent: the existing CH-13206 notice says
+what wasn't checked, never "nothing is flagged". The card keeps its height.
+
+## 2026-10-07 — Digits in serif titles
+
+Data-fed serif titles set their digits in the sans (shared `SerifText`; see the
+cross-page log), so a name or title with figures reads cleanly.
+
+## 2026-10-07 — Loading holds the loaded page
+
+The pulse keeps its reserved height (CH-13405) whether the rows, a notice or the
+skeleton are in it. Desktop loading draws on the canopy with the view strip
+level with the title, as the page does, and holds the measured heights: a 194px
+title block and a 258px pulse. Measured in WebKit at 1440 and 1000, coach and
+player views: the header, pulse and grid tops don't move when the page lands.
+
+## 2026-10-07 — Views on ivory, serif headlines
+
+Game profile, Standing and Deep dive no longer open on dark green summary
+panels. They are ivory reading sheets whose headlines are set in the display
+serif in the field green, with the key figures in green italic (for example "0
+of 19"). Their inner panels are soft wells, and warning figures use the warning
+ink.
+
+Other details on the board:
+
+- The week's drill is a recessed ivory panel ruled in green, not a green block.
+- The Development link reads on the canopy.
+- The Ask question is set in the serif, without the mockup's spark tile (owner:
+  no stock AI marks).
+- The phone eyebrow returns to green on ivory; mint is used on the canopy only.
+
+## 2026-10-07 — Large-title header on the canopy
+
+CoachHelm opens on the canopy:
+
+- **Header:** the role as a mint eyebrow, then a serif CoachHelm title and the
+  live line. On desktop the view switch (Board/Ask, or the player's views) sits
+  level with the title instead of on its own row.
+- **Program pulse:** a serif title, seams between rows and round raised icon
+  keys. Its reserved height applies only while the pulse is streaming, so a
+  short pulse no longer leaves empty space.
+- **Focus card:** the insight title is set in the display serif.
+
+## 2026-10-06 — Display type relaxed
+
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
 
 ## 2026-10-06 — Mention picker accessibility
 
@@ -144,11 +1084,11 @@ Data impact:    none; the same tables, the same filters, read-only
 Held items:     none
 ```
 
-- **What changed.** The row, the settings and the staffed teams (a player's
-  row and memberships) start together; every team's settings come in one read
-  (`.in('team_id', ids)`; `team_id` is unique on `golf_team_coachhelm_settings`).
-  A coach gate is two round trips, not four; a closed gate with three teams
-  was six reads in turn and is four reads in two.
+- **What changed.** The row, the settings and the staffed teams (a player's row
+  and memberships) start together; every team's settings come in one read
+  (`.in('team_id', ids)`; `team_id` is unique on
+  `golf_team_coachhelm_settings`). A coach gate is two round trips, not four; a
+  closed gate with three teams was six reads in turn and is four reads in two.
 - **The answer is the same.** `gate-batching.test.ts` runs the batched gate
   and `gate-serial.reference.ts` (a frozen copy of the serial one) over the
   same fake database in every combination of each read's outcome (the row
@@ -764,7 +1704,7 @@ Data impact:    none (reads through the delivery actions and existing tables;
 Held items:     none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
 - The page: one route, `/golf/dashboard/coachhelm`, is the coach's board
   (program pulse, By player, the chosen player's focus with Assign as focus,
@@ -809,6 +1749,6 @@ Held items:     none
 - `docs/clubhouse/phone/coachhelm.md`, "Open questions for the owner", predates
   the `?view=` guard and the Stats Accept and Decline.
 
-### Verification
+### Verification (2026-09-30)
 
 - See VERIFY.md.

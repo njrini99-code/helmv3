@@ -10,7 +10,10 @@ import { CH_DUR } from '../../lib/motion';
  * piece carries its own delay, and the items' delay is their index times a step.
  *
  * Variants live out here so a render never builds them again. All of it animates
- * transform and opacity; greeting text stays sharp during its entrance.
+ * transform and opacity; greeting text stays sharp during its entrance. Transform as a
+ * string (`translate(x, y)`), not framer's `x`/`y`: Motion hands strings to the compositor
+ * (WAAPI), so the welcome keeps moving while the dashboard loads behind it (owner,
+ * 2026-10-15: right after Sign in it was choppy).
  * Times are seconds from when the welcome mounts.
  */
 export interface AuthCustom {
@@ -36,7 +39,7 @@ const tx = (takes: number, after: number, ease: Bezier, c: AuthCustom): Transiti
 
 /** The welcome leaving: each piece slides 28px left and fades, together. Reduced motion fades only, over the app's quick beat. */
 const leave = (c: AuthCustom) =>
-  c.reduced ? { opacity: 0, transition: { duration: CH_DUR.quick } } : { opacity: 0, x: -28, transition: tx(WELCOME_TAKES.leave, 0, OUT, c) };
+  c.reduced ? { opacity: 0, transition: { duration: CH_DUR.quick } } : { opacity: 0, transform: 'translate(-28px, 0px)', transition: tx(WELCOME_TAKES.leave, 0, OUT, c) };
 
 export const welcomeScrim: Variants = {
   hidden: { opacity: 0 },
@@ -49,27 +52,40 @@ export const welcomeMark: Variants = {
 };
 export const welcomeBody: Variants = { hidden: {}, show: {}, leave };
 export const welcomeDate: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.date, WELCOME_AT.date, OUT, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 10px)' },
+  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.date, WELCOME_AT.date, OUT, c) }),
 };
 /** The greeting rises without blurring readable text (owner clarity correction). */
 export const welcomeLine1: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.line1, WELCOME_AT.line1, OUT, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 16px)' },
+  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.line1, WELCOME_AT.line1, OUT, c) }),
 };
-/** The name rises out of its own clipped line. */
+/**
+ * The name rises out of its own clipped line. It also fades in, a beat behind the rise: while the name is still below the
+ * clip, its cap height is the first thing to cross the line, and unfaded that read as a dash under "Good morning," (a
+ * still captured in that half second showed the greeting with no name, only the bar of the T).
+ */
 export const welcomeName: Variants = {
-  hidden: { y: '108%' },
-  show: (c: AuthCustom) => ({ y: '0%', transition: tx(WELCOME_TAKES.name, WELCOME_AT.name, SMOOTH, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 108%)' },
+  show: (c: AuthCustom) => ({
+    opacity: 1,
+    transform: 'translate(0px, 0%)',
+    transition: c.reduced
+      ? tx(WELCOME_TAKES.name, WELCOME_AT.name, SMOOTH, c)
+      : {
+          transform: { duration: WELCOME_TAKES.name, delay: WELCOME_AT.name, ease: [...SMOOTH] },
+          opacity: { duration: CH_DUR.base, delay: WELCOME_AT.name + 0.12, ease: [...OUT] },
+        },
+  }),
 };
 export const welcomeCard: Variants = {
-  hidden: { opacity: 0, y: 18 },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.card, WELCOME_AT.card, SMOOTH, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 18px)' },
+  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.card, WELCOME_AT.card, SMOOTH, c) }),
   leave,
 };
 export const welcomeItem: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.item, WELCOME_AT.items + (c.index ?? 0) * WELCOME_AT.itemStep, OUT, c) }),
+  hidden: { opacity: 0, transform: 'translate(0px, 10px)' },
+  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.item, WELCOME_AT.items + (c.index ?? 0) * WELCOME_AT.itemStep, OUT, c) }),
 };
 export const welcomeHint: Variants = {
   hidden: { opacity: 0 },
@@ -86,3 +102,12 @@ export const HANDOFF_MS = { lift: 420, navigate: 1000, plain: 520, reducedNaviga
 export const WELCOME_PHONE_AUTO_MS = 3600;
 /** The form leaving on the sign-in page, before the welcome route takes over. */
 export const OPENING_MS = 720;
+/**
+ * When the welcome is asked for, into the opening: the sheet's slide is front-loaded (the auth ease), so at 430ms it is
+ * about 95% off the screen. Asked for at the end of the opening, the welcome came a full round trip after the sheet had
+ * gone, over an empty course (WebKit, 700ms latency: the opening ended at 1.75s, the welcome at 2.7s). A full prefetch
+ * at the start does not help: Next asks for the route's tree, then its data, one after the other.
+ */
+export const OPENING_PUSH_MS = 430;
+/** Where the phone's sign-in sheet rises over the keyboard (SignIn's useKeyboardLift): a touch screen at phone width. */
+export const KB_LIFT_QUERY = '(max-width: 820px) and (pointer: coarse)';

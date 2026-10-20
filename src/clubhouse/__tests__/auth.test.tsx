@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { hydrateRoot } from 'react-dom/client';
@@ -44,7 +44,8 @@ import { Welcome } from '../screens/auth/Welcome';
 import { WelcomeStage } from '../screens/auth/WelcomeStage';
 import { FixedClock } from '../screens/auth/use-hour';
 import { GolfScene } from '../screens/auth/GolfScene';
-import { HANDOFF_MS, OPENING_MS, WELCOME_PHONE_AUTO_MS } from '../screens/auth/auth-motion';
+import { HANDOFF_MS, OPENING_MS, OPENING_PUSH_MS, WELCOME_PHONE_AUTO_MS } from '../screens/auth/auth-motion';
+import { useGlide } from '../screens/auth/use-glide';
 
 let reduced = false;
 const setMedia = (opts: { reduced?: boolean; phone?: boolean } = {}) => {
@@ -128,12 +129,19 @@ describe('the sign-in screen', () => {
     expect(email()).toHaveFocus();
   });
 
-  it('keeps the button off until both fields are filled, and takes text put in before hydration', async () => {
+  it('P015 D2 Sign in is always there once the page is live, and checks the fields when pressed: nothing is sent until both are filled', async () => {
     const user = userEvent.setup();
     render(<SignIn signIn={login} />);
-    await waitFor(() => expect(submit()).toBeDisabled());
+    await waitFor(() => expect(submit()).toBeEnabled());
     await user.type(email(), 'coach@example.com');
-    expect(submit()).toBeDisabled();
+    await user.click(submit());
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveAttribute('data-ch-code', 'CH-15101');
+    expect(login).not.toHaveBeenCalled();
+    // A3: the ring marks only the field the refusal names.
+    expect(password()).toHaveAttribute('aria-invalid', 'true');
+    expect(password().closest('.ch-au-input')).toHaveAttribute('data-invalid', 'true');
+    expect(email().closest('.ch-au-input')).not.toHaveAttribute('data-invalid');
     await user.type(password(), 'hunter22');
     expect(submit()).toBeEnabled();
   });
@@ -150,6 +158,8 @@ describe('the sign-in screen', () => {
     expect(alert).toHaveClass('ch-au-notice--danger');
     expect(email()).toHaveAttribute('aria-invalid', 'true');
     expect(password()).toHaveAttribute('aria-invalid', 'true');
+    // P015-A3: credentials name neither field, so neither is ringed; the flush notice says it.
+    expect(document.querySelector('.ch-au-input[data-invalid]')).toBeNull();
     expect(email()).toHaveAttribute('aria-describedby', alert.id);
     await waitFor(() => expect(email()).toHaveFocus());
     expect(hapticSpy).toHaveBeenCalledWith('press');
@@ -247,6 +257,19 @@ describe('the sign-in screen', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     // F-29: refreshing /golf/login with the new session redirected to /golf/dashboard before the welcome.
     expect(router.refresh).not.toHaveBeenCalled();
+  });
+
+  it('asks for the welcome partway into the opening, once the sheet is nearly off the screen, not after it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    login.mockResolvedValue({ success: true, redirectTo: '/golf/dashboard' });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { container } = render(<SignIn signIn={login} />);
+    await fill(user);
+    await user.click(submit());
+    await waitFor(() => expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).toBe('opening'));
+    expect(OPENING_PUSH_MS).toBeLessThan(OPENING_MS);
+    await act(async () => void vi.advanceTimersByTime(OPENING_PUSH_MS + 20));
+    expect(router.push).toHaveBeenCalledWith('/golf/welcome?next=%2Fgolf%2Fdashboard');
   });
 
   it('CH-15902 goes straight to onboarding, with the invite code, when the person has no profile yet', async () => {
@@ -371,8 +394,11 @@ describe('the sign-in screen', () => {
     const hook = readFileSync('src/clubhouse/lib/use-phone.ts', 'utf8');
     expect(hook).toContain("CH_PHONE_QUERY = '(max-width: 820px)'");
     expect(css).toContain('@media (max-width: 820px)');
-    // Desktop and phone are one structure: a grouped-row sheet, not a second form.
-    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-fields\s*{[^}]*overflow: hidden/);
+    // Desktop and phone are one structure: a label over its own rounded box on both, the phone's on Sign in's radius
+    // (owner 2026-10-13; the grouped-row sheet is retired), not a second form.
+    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-fields\s*{[^}]*gap: 14px/);
+    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-input\s*{[^}]*border-radius: 13px/);
+    expect(css).not.toMatch(/\.ch-au-field \+ \.ch-au-field::before/);
     // Both "Forgot password?" links are in the markup and CSS shows one.
     render(<SignIn signIn={login} />);
     expect(screen.getAllByRole('link', { name: 'Forgot password?' })).toHaveLength(2);
@@ -395,6 +421,62 @@ describe('the sign-in screen', () => {
     await waitFor(() => expect(login).toHaveBeenCalledWith('coach@example.com', 'hunter22', undefined));
   });
 
+  it('phone keyboard lift: the sheet rises on focus, not on the touch, so a tap on Password lands on Password', async () => {
+    setMedia({ phone: true });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { container } = render(<SignIn signIn={login} />);
+    const root = container.querySelector<HTMLElement>('.ch-au')!;
+    // iOS focuses the field under the finger as it lifts; moving the sheet on the touch moved Password away first.
+    fireEvent.pointerDown(password());
+    expect(root.dataset.kb).toBeUndefined();
+    act(() => password().focus());
+    expect(root.dataset.kb).toBe('up');
+    // Email to Password is a blur and a focus in one turn: the sheet stays up.
+    act(() => email().focus());
+    await act(async () => void vi.advanceTimersByTime(100));
+    expect(root.dataset.kb).toBe('up');
+    act(() => email().blur());
+    await act(async () => void vi.advanceTimersByTime(100));
+    expect(root.dataset.kb).toBe('down');
+  });
+
+  it('phone keyboard lift: rises at once, with no held first frame and no scroll after it (owner, 2026-10-16)', async () => {
+    setMedia({ phone: true });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { container } = render(<SignIn signIn={login} />);
+    const panel = container.querySelector<HTMLElement>('.ch-au-panel')!;
+    act(() => email().focus());
+    expect(container.querySelector<HTMLElement>('.ch-au')!.dataset.kb).toBe('up');
+    expect(panel.hasAttribute('data-ch-hold')).toBe(false);
+    await act(async () => void vi.advanceTimersByTime(400));
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('phone keyboard lift: Sign in pressed keeps the sheet up while the attempt runs, and a refusal leaves it up', async () => {
+    setMedia({ phone: true });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let answer!: (r: unknown) => void;
+    login.mockReturnValue(new Promise((ok) => (answer = ok)));
+    const { container } = render(<SignIn signIn={login} />);
+    const root = container.querySelector<HTMLElement>('.ch-au')!;
+    act(() => email().focus());
+    fireEvent.change(email(), { target: { value: 'coach@example.com' } });
+    act(() => password().focus());
+    fireEvent.change(password(), { target: { value: 'hunter22' } });
+    expect(root.dataset.kb).toBe('up');
+    // The tap on Sign in blurs the field (the keyboard goes); the sheet does not drop with it.
+    fireEvent.pointerDown(submit());
+    act(() => password().blur());
+    fireEvent.click(submit());
+    await act(async () => void vi.advanceTimersByTime(1000));
+    expect(root.dataset.kb).toBe('up');
+    // Refused: the cursor goes back to a field, and the sheet never moved.
+    await act(async () => answer({ success: false, error: 'Invalid login credentials' }));
+    await act(async () => void vi.advanceTimersByTime(400));
+    expect(root.dataset.kb).toBe('up');
+    expect([email(), password()]).toContain(document.activeElement);
+  });
+
   it('carries the autofill and keyboard attributes password managers and iOS need', () => {
     render(<SignIn signIn={login} />);
     expect(email()).toHaveAttribute('autocomplete', 'username');
@@ -413,6 +495,131 @@ describe('the sign-in screen', () => {
     expect(src).not.toMatch(/signInWithPassword|supabase\/client|createClient/);
     const action = readFileSync('src/app/golf/actions/auth.ts', 'utf8');
     expect(action.indexOf('await resetSessionIdleMarker()')).toBeGreaterThan(-1);
+  });
+});
+
+describe('the sign-in micro-motion', () => {
+  const css = () => readFileSync('src/clubhouse/styles/auth.css', 'utf8');
+  const fields = () => document.querySelector('.ch-au-fields') as HTMLElement;
+
+  it('CH-15607 the key holds both labels in one cell, reads only the one showing, and is drawn unlit when off, lit in flight', async () => {
+    let finish: (v: unknown) => void = () => {};
+    login.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const user = userEvent.setup();
+    render(<SignIn signIn={login} />);
+    expect(document.querySelector('.ch-au-key__busy')).toHaveAttribute('aria-hidden', 'true');
+    expect(document.querySelector('.ch-au-key__idle')).not.toHaveAttribute('aria-hidden');
+    await fill(user);
+    await user.click(submit());
+    const busy = await screen.findByRole('button', { name: /^signing in…$/i });
+    expect(busy.querySelector('.ch-au-key')).toHaveAttribute('data-busy');
+    expect(busy.querySelector('.ch-au-key__idle')).toHaveAttribute('aria-hidden', 'true');
+    expect(busy.querySelector('.ch-au-key__busy')).not.toHaveAttribute('aria-hidden');
+    // Off is drawn, not faded: the shared opacity and desaturation are undone, the unlit face is the soft well, and in
+    // flight (also disabled) the face stays lifted so the key is the lit green.
+    expect(css()).toMatch(/\.ch-au-submit \.ch-btn:disabled \{\s*opacity: 1;\s*filter: none;/);
+    expect(css()).toMatch(/\.ch-au-submit \.ch-btn::before \{[^}]*background: var\(--ch-well-soft-bg\)/);
+    expect(css()).toMatch(/\.ch-au-submit \.ch-btn:disabled:not\(\[aria-busy='true'\]\)::before \{\s*opacity: 1;/);
+    await act(async () => finish({ success: false, error: 'Too many requests' }));
+  });
+
+  it('CH-15608 the last refusal stays, stepped back, while the next attempt is in flight, and the answer replaces it', async () => {
+    let finish: (v: unknown) => void = () => {};
+    login.mockResolvedValueOnce({ success: false, error: 'Invalid login credentials' }).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    const user = userEvent.setup();
+    render(<SignIn signIn={login} />);
+    await fill(user);
+    await user.click(submit());
+    const first = await screen.findByRole('alert');
+    expect(first.closest('.ch-au-err')).not.toHaveAttribute('data-stale');
+    await user.click(submit());
+    await screen.findByRole('button', { name: /signing in/i });
+    // Clearing it here pulled the button up under the pointer; it stays, at half strength.
+    expect(screen.getByRole('alert')).toBe(first);
+    expect(first.closest('.ch-au-err')).toHaveAttribute('data-stale');
+    await act(async () => finish({ success: false, error: 'Invalid login credentials' }));
+    await waitFor(() => expect(screen.getByRole('alert')).not.toBe(first));
+    expect(screen.getByRole('alert').closest('.ch-au-err')).not.toHaveAttribute('data-stale');
+    expect(screen.getByRole('alert')).toHaveAttribute('data-ch-code', 'CH-15001');
+  });
+
+  it('CH-15608 what a refusal moves glides from where it was drawn, on transform only, and not at all under reduced motion', () => {
+    const panel = document.createElement('div');
+    const form = document.createElement('form');
+    const row = document.createElement('div');
+    const hidden = document.createElement('a');
+    const tops = new Map<HTMLElement, number>([[panel, 8], [form, 184], [row, 585], [hidden, 0]]);
+    // WebKit makes an element whose transform is running its children's offsetParent: once the form glides, the row's
+    // offsetTop is measured from the form. Reading it against the panel then put the row 147px out (a glide upward).
+    let formGliding = false;
+    const animate = vi.fn(function (this: HTMLElement, _keyframes: Keyframe[], _options: KeyframeAnimationOptions) {
+      if (this === form) formGliding = true;
+    });
+    for (const el of [panel, form, row, hidden]) {
+      Object.defineProperty(el, 'offsetTop', { get: () => (el === row && formGliding ? tops.get(row)! - tops.get(form)! : tops.get(el)) });
+      Object.defineProperty(el, 'offsetParent', { get: () => (el === panel || el === hidden ? null : el === row && formGliding ? form : panel) });
+      Object.assign(el, { animate, getAnimations: () => [] });
+    }
+    const gliders = [{ ref: { current: form } }, { ref: { current: row }, within: { current: form } }, { ref: { current: hidden }, within: { current: form } }];
+    const { result, rerender } = renderHook(({ reduced }) => useGlide(reduced, gliders), { initialProps: { reduced: false } });
+    // A refusal lands: the centred form rises 37px and the button row, inside it, drops 75px below where it was.
+    result.current.capture();
+    tops.set(form, 147).set(row, 623);
+    result.current.play();
+    expect(animate).toHaveBeenCalledTimes(2);
+    expect(animate.mock.calls[0]?.[0]).toEqual([{ transform: 'translateY(37px)' }, { transform: 'translateY(0)' }]);
+    expect(animate.mock.calls[1]?.[0]).toEqual([{ transform: 'translateY(-75px)' }, { transform: 'translateY(0)' }]);
+    expect(animate.mock.calls[1]?.[1]).toMatchObject({ duration: 260, id: 'ch-au-glide' });
+    // Nothing captured, nothing played; and reduced motion takes the new layout at once.
+    animate.mockClear();
+    formGliding = false;
+    result.current.play();
+    rerender({ reduced: true });
+    result.current.capture();
+    tops.set(form, 184).set(row, 585);
+    result.current.play();
+    expect(animate).not.toHaveBeenCalled();
+  });
+
+  it('CH-15609 a refusal about the fields shakes them once, again on a second, and never for one that marks no field', async () => {
+    login.mockResolvedValue({ success: false, error: 'Invalid login credentials' });
+    const user = userEvent.setup();
+    render(<SignIn signIn={login} />);
+    expect(fields()).not.toHaveAttribute('data-shake');
+    await fill(user);
+    await user.click(submit());
+    await screen.findByRole('alert');
+    expect(fields()).toHaveAttribute('data-shake', 'a');
+    expect(fields()).toHaveAttribute('data-ch-code', 'CH-15609');
+    await user.click(submit());
+    await waitFor(() => expect(fields()).toHaveAttribute('data-shake', 'b'));
+    login.mockResolvedValue({ success: false, error: 'fetch failed' });
+    await user.click(submit());
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveAttribute('data-ch-code', 'CH-15004'));
+    expect(fields()).not.toHaveAttribute('data-shake');
+    // Reduced motion and Animations off hold the fields still: the shake's token is a millisecond in both.
+    const tokens = readFileSync('src/clubhouse/styles/auth-tokens.css', 'utf8');
+    expect(tokens.match(/--ch-au-t-shake: 1ms;/g)).toHaveLength(2);
+    expect(css()).toMatch(/\.ch-au-fields\[data-shake='a'\] \{\s*animation: chAuShakeA var\(--ch-au-t-shake\)/);
+  });
+
+  it('CH-15610 the eye crossfades between its two glyphs instead of swapping one', async () => {
+    const user = userEvent.setup();
+    render(<SignIn signIn={login} />);
+    const eye = screen.getByRole('button', { name: 'Show password' });
+    expect(eye.querySelector('.ch-au-eye__show')).not.toBeNull();
+    expect(eye.querySelector('.ch-au-eye__hide')).not.toBeNull();
+    await user.click(eye);
+    expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true');
+    expect(css()).toMatch(/\.ch-au-eye\[aria-pressed='true'\] > \.ch-au-eye__show \{\s*opacity: 0;/);
+    expect(css()).toMatch(/\.ch-au-eye\[aria-pressed='false'\] > \.ch-au-eye__hide \{\s*opacity: 0;/);
+  });
+
+  it('CH-15611 the Home link leans its chevron back only where a pointer can hover, and tints when pressed', () => {
+    render(<SignIn signIn={login} />);
+    expect(document.querySelector('.ch-au-back svg')).not.toBeNull();
+    expect(css()).toMatch(/@media \(hover: hover\) \{[^@]*\.ch-au-back:hover svg \{\s*transform: translateX\(-2px\);/);
+    expect(css()).toMatch(/\.ch-au-back:active \{\s*background:/);
   });
 });
 
@@ -541,7 +748,8 @@ describe('the welcome', () => {
     expect(screen.getByText('Your first time in')).toBeInTheDocument();
     expect(screen.queryByText('Since you last signed in')).toBeNull();
     expect(screen.getByText('Your team’s updates will show up here')).toBeInTheDocument();
-    expect(screen.getByText('Messages, posted rounds and RSVPs since your last visit.')).toBeInTheDocument();
+    expect(screen.getByText('Messages, posted rounds and RSVPs land here each time you sign in.')).toBeInTheDocument();
+    expect(screen.queryByText(/since your last visit/)).toBeNull();
     expect(document.querySelector('[data-ch-code="CH-15302"]')).not.toBeNull();
   });
 
@@ -599,10 +807,12 @@ describe('the welcome', () => {
     fireEvent.click(go);
     fireEvent.keyDown(window, { key: 'Enter' });
     expect(hapticSpy.mock.calls.filter(([k]) => k === 'commit')).toHaveLength(1);
+    // The fold's look lands a painted frame after the phase (AuthFrame), so the move starts on a calm frame.
+    act(() => void vi.advanceTimersByTime(40));
     expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).toBe('leaving');
     expect(container.querySelector('.ch-au-photo')?.hasAttribute('data-fold')).toBe(true);
     expect(screen.getByTestId('scene')).toHaveAttribute('data-camera', 'leave');
-    act(() => void vi.advanceTimersByTime(HANDOFF_MS.navigate - 1));
+    act(() => void vi.advanceTimersByTime(HANDOFF_MS.navigate - 41));
     expect(navigate).not.toHaveBeenCalled();
     act(() => void vi.advanceTimersByTime(1));
     expect(navigate).toHaveBeenCalledTimes(1);
@@ -660,10 +870,11 @@ describe('the welcome', () => {
     expect(navigate).toHaveBeenCalledTimes(1);
   });
 
-  it('prefetches the destination while the person reads', () => {
+  it('prefetches the destination in full, data and all, while the person reads', () => {
     at('/golf/welcome?next=%2Fgolf%2Fdashboard%2Fstats');
     render(<FixedClock.Provider value={PREVIEW_AUTH_NOW}><WelcomeStage><Welcome data={PREVIEW_WELCOME_COACH} /></WelcomeStage></FixedClock.Provider>);
-    expect(router.prefetch).toHaveBeenCalledWith('/golf/dashboard/stats');
+    // The default prefetch of a dynamic page stops at its loading boundary; the hand-off then waited a server render.
+    expect(router.prefetch).toHaveBeenCalledWith('/golf/dashboard/stats', { kind: 'full' });
   });
 
   it('CH-15401 draws the frame and the course while the greeting is still being read, and the course is not redrawn when it lands', () => {

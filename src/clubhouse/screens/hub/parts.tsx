@@ -1,8 +1,8 @@
 'use client';
 
-import { Bus, CalendarCheck, Check, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
+import { Bus, CalendarCheck, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, useState, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -11,7 +11,14 @@ import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
-import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
+import { normalise, useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
+import { SerifText } from '../../ui/SerifText';
+import { Tooltip } from '../../ui/Tooltip';
+import { useChPhone } from '../../lib/use-phone';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { radioKeys, rovingRadios } from './radio';
+import { HUB_UPLOAD_ACCEPT } from './upload-rules';
+import type { ChHubWrites } from './writes';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -49,6 +56,7 @@ export function Rsvps({
   isPending,
   onReply,
   compact = false,
+  covered = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['rsvps'];
@@ -57,6 +65,8 @@ export function Rsvps({
   onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
   /** The phone build: a reply line that leaves out the counts that are zero. */
   compact?: boolean;
+  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title under the heading. */
+  covered?: boolean;
 }) {
   const coach = role === 'coach';
   const mine = (r: ChHubRsvp) => replies.get(r.eventId) ?? r.mine ?? 'pending';
@@ -68,7 +78,7 @@ export function Rsvps({
         {!data.error && data.rows.length > 0 && <span className="ch-hb-muted">{coach ? 'This week' : open === 0 ? 'All answered' : `${open} need${open === 1 ? 's' : ''} a reply`}</span>}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10201" title={coach ? "This week's replies didn't load." : "Your events didn't load."} body="Nothing was lost. Try again; the error has been reported." />
+        <RefreshNotice code="CH-10201" title={coach ? "This week’s replies didn’t load." : "Your events didn’t load."} body="Nothing was lost. Try again; the error has been reported." covered={covered} />
       ) : !data.rows.length ? (
         <EmptyState
           compact
@@ -97,8 +107,12 @@ export function Rsvps({
                   {r.title}
                   {r.mandatory && <span className="ch-hb-req">Required</span>}
                 </b>
+                {/* P010 D9: the date tile says the day; the line keeps time and place, the date only for a screen reader. */}
                 <span className="ch-num">
-                  {r.weekday} {r.day} · {r.meta}
+                  <span className="ch-sr-only">
+                    {r.weekday} {r.day} ·{' '}
+                  </span>
+                  {r.meta}
                 </span>
               </Link>
               {coach ? (
@@ -132,13 +146,13 @@ function ReplyChoices({ r, mine, pending, onReply }: {
   onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
 }) {
   const save = useAction('hub.reply', onReply, (event, answer) => ({
-    done: answer === 'accepted' ? `You're going to ${event.title}` : answer === 'tentative' ? `Marked maybe for ${event.title}` : `Your coach knows you can't make ${event.title}`,
-    failed: `Couldn't send your reply for ${event.title}`,
+    done: answer === 'accepted' ? `You’re going to ${event.title}` : answer === 'tentative' ? `Marked maybe for ${event.title}` : `Your coach knows you can’t make ${event.title}`,
+    failed: `Couldn’t send your reply for ${event.title}`,
     code: 'CH-10001',
   }), quietBusy);
   return (
     <div className="ch-hb-rsvp__choice">
-      <span className="ch-hb-rsvp__a" role="radiogroup" aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
+      <span className="ch-hb-rsvp__a" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys(false)} aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
         {REPLIES.map(([answer, label]) => (
           <button key={answer} type="button" role="radio" aria-checked={mine === answer} disabled={pending} onClick={() => {
             if (mine === answer) return;
@@ -158,7 +172,7 @@ function Acknowledgement({ a, acked, pending, onAck }: {
   pending: boolean;
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
 }) {
-  const save = useAction('hub.acknowledge', onAck, (post) => ({ done: '', failed: `Couldn't acknowledge "${post.title}"`, code: 'CH-10002' }), quietBusy);
+  const save = useAction('hub.acknowledge', onAck, (post) => ({ done: '', failed: `Couldn’t acknowledge “${post.title}”`, code: 'CH-10002' }), quietBusy);
   if (pending) return <span className="ch-hb-saving" role="status" data-ch-code="CH-10409">Acknowledging {a.title}…</span>;
   if (acked) return <span className="ch-hb-acked"><Icon icon={Check} size={13} />Acknowledged</span>;
   return <Button size="sm" variant="primary" onClick={() => void save.run(a)}>Got it</Button>;
@@ -168,28 +182,66 @@ export function Announcement({
   a,
   role,
   featured = false,
+  rank,
   acked,
   pending,
   onAck,
   onEdit,
   onDelete,
+  files,
 }: {
   a: ChHubAnnouncement;
   role: ChTeamHub['role'];
   featured?: boolean;
+  /**
+   * P010-A3, the Announcements tab as an edited page: the newest is the lead (the 36px headline); the older ones step
+   * down to 22px with their date in the margin, and on the phone fold to the title and a first line until opened.
+   */
+  rank?: 'lead' | 'older';
   acked: boolean;
   pending: boolean;
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
   onEdit: (a: ChHubAnnouncement) => void;
   onDelete: (a: ChHubAnnouncement) => void;
+  /** Lists and opens the post's attachments; without it the count is plain text (a preview set with no read). */
+  files?: ChHubAttachments;
 }) {
   const coach = role === 'coach';
   const pct = a.recipients ? Math.round((a.ackCount / a.recipients) * 100) : 0;
+  const phone = useChPhone();
+  const [open, setOpen] = useState(false);
+  const fold = rank === 'older' && phone && !open && !!a.body;
+  // Coach: the count opens who hasn't acknowledged yet, when that read came back with anyone left.
+  const waiting = coach && a.needAck && a.notAcked && a.notAcked.length > 0 ? a.notAcked : null;
+  const [showWaiting, setShowWaiting] = useState(false);
+  const waitingId = `ch-hb-ann-wait-${a.id}`;
+  const reads = (
+    <>
+      <span className="ch-hb-reads__t" aria-hidden="true">
+        <i style={{ '--ch-hb-p': pct / 100 } as CSSProperties} />
+      </span>
+      {a.ackCount} of {a.recipients} {a.needAck ? 'acknowledged' : 'read'}
+    </>
+  );
   return (
-    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '')} aria-labelledby={`ch-hb-ann-${a.id}`}>
-      {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your reply' : 'Latest from your coaches'}</span>}
-      <h3 id={`ch-hb-ann-${a.id}`}>{a.title}</h3>
-      {a.body && <p>{a.body}</p>}
+    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
+      {rank === 'older' && (
+        <span className="ch-hb-ann__margin ch-num" aria-hidden="true">
+          {a.when}
+        </span>
+      )}
+      {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your acknowledgement' : 'Latest from your coaches'}</span>}
+      <h3 id={`ch-hb-ann-${a.id}`}>
+        <SerifText text={a.title} />
+      </h3>
+      {fold ? (
+        <button type="button" className="ch-hb-ann__fold" aria-expanded={false} onClick={() => (haptic('select'), setOpen(true))}>
+          <span>{a.body}</span>
+          <span className="ch-sr-only">, show all</span>
+        </button>
+      ) : (
+        a.body && <p>{a.body}</p>
+      )}
       <div className="ch-hb-ann__h">
         <Avatar name={a.by} size={32} />
         <div>
@@ -205,28 +257,133 @@ export function Announcement({
               { label: 'Delete announcement', icon: Trash2, danger: true, onSelect: () => onDelete(a) },
             ]}
             trigger={(p) => (
-              <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
-                <Icon icon={MoreHorizontal} size={16} />
-              </button>
+              <Tooltip>
+                <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
+                  <Icon icon={MoreHorizontal} size={16} />
+                </button>
+              </Tooltip>
             )}
           />
         )}
       </div>
       <div className="ch-hb-ann__f">
         {coach ? (
-          <span className="ch-hb-reads ch-num">
-            <span className="ch-hb-reads__t" aria-hidden="true">
-              <i style={{ width: `${pct}%` }} />
-            </span>
-            {a.ackCount} of {a.recipients} {a.needAck ? 'acknowledged' : 'read'}
-          </span>
+          waiting ? (
+            <button
+              type="button"
+              className="ch-hb-reads ch-hb-reads--open ch-num"
+              aria-expanded={showWaiting}
+              aria-controls={waitingId}
+              onClick={() => (haptic('select'), setShowWaiting((v) => !v))}
+            >
+              {reads}
+              <Icon icon={ChevronDown} size={13} />
+            </button>
+          ) : (
+            <span className="ch-hb-reads ch-num">{reads}</span>
+          )
         ) : a.needAck ? (
           <Acknowledgement a={a} acked={acked} pending={pending} onAck={onAck} />
         ) : null}
-        {a.documentCount > 0 && <span className="ch-hb-muted ch-num">{a.documentCount === 1 ? '1 attachment' : `${a.documentCount} attachments`}</span>}
+        {a.documentCount > 0 && !files && <span className="ch-hb-muted ch-num">{attachmentCount(a.documentCount)}</span>}
       </div>
+      {waiting && showWaiting && (
+        <p className="ch-hb-ann__wait" id={waitingId}>
+          <em>Not yet</em>
+          {waiting.join(', ')}
+        </p>
+      )}
+      {a.documentCount > 0 && files && <Attachments a={a} files={files} />}
     </article>
   );
+}
+
+const attachmentCount = (n: number) => (n === 1 ? '1 attachment' : `${n} attachments`);
+
+/** What a post's attachment list needs from the Hub: the read, and Documents' own open (one tab, one signed link). */
+export interface ChHubAttachments {
+  load: NonNullable<ChHubWrites['announcementFiles']>;
+  open: (f: ChHubFile) => void;
+  /** The file being opened, from Documents' open action. */
+  opening: string | null;
+}
+
+type AttachmentsState = { status: 'idle' } | { status: 'loading' } | { status: 'failed' } | { status: 'ready'; rows: ChHubFile[] };
+
+/**
+ * A post's attachments (production's FairwayPlayerAnnouncementCard lists them with the post and opens each through
+ * getPreviewUrl). The count is a disclosure; the list is read the first time it opens, and a failed read says so with a
+ * Try again in place.
+ */
+function Attachments({ a, files }: { a: ChHubAnnouncement; files: ChHubAttachments }) {
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<AttachmentsState>({ status: 'idle' });
+  const load = async () => {
+    setState({ status: 'loading' });
+    try {
+      const res = normalise(await files.load(a.id));
+      if (res.success && res.data) {
+        setState({ status: 'ready', rows: res.data.files.map((f) => ({ id: f.id, title: f.title, type: kindLabel(f.type), size: null, date: null, isPublic: true })) });
+      } else setState({ status: 'failed' });
+    } catch {
+      setState({ status: 'failed' });
+    }
+  };
+  const toggle = () => {
+    haptic('select');
+    const next = !open;
+    setOpen(next);
+    if (next && state.status === 'idle') void load();
+  };
+  const listId = `ch-hb-ann-files-${a.id}`;
+  return (
+    <div className="ch-hb-ann__files">
+      <button type="button" className="ch-hb-ann__files-t ch-num" aria-expanded={open} aria-controls={listId} onClick={toggle}>
+        <Icon icon={FileText} size={13} />
+        {attachmentCount(a.documentCount)}
+      </button>
+      {open && (
+        <div id={listId}>
+          {state.status === 'loading' || state.status === 'idle' ? (
+            <span className="ch-hb-muted" role="status">
+              Loading attachments…
+            </span>
+          ) : state.status === 'failed' ? (
+            <span className="ch-hb-ann__files-err" role="alert">
+              The attachments didn’t load.{' '}
+              <button type="button" className="ch-hb-ann__files-retry" onClick={() => void load()}>
+                Try again
+              </button>
+            </span>
+          ) : !state.rows.length ? (
+            <span className="ch-hb-muted">These files are no longer shared.</span>
+          ) : (
+            <ul>
+              {state.rows.map((f) => (
+                <li key={f.id}>
+                  <button type="button" className="ch-hb-ann__file" onClick={() => files.open(f)} disabled={files.opening === f.id} aria-label={`Open ${f.title}, ${f.type}`}>
+                    <span>{f.title}</span>
+                    <em className="ch-num">{files.opening === f.id ? 'Opening…' : f.type}</em>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A stored file type (MIME or extension) as the short label Documents shows. */
+function kindLabel(t: string | null): string {
+  const v = (t ?? '').toLowerCase();
+  if (v.includes('pdf')) return 'PDF';
+  if (v.startsWith('image/') || /^(png|jpe?g|gif|webp|heic)$/.test(v)) return 'IMG';
+  if (v.includes('word') || /^docx?$/.test(v)) return 'DOC';
+  if (v.includes('sheet') || v.includes('excel') || v.includes('csv') || /^(xlsx?|csv)$/.test(v)) return 'XLS';
+  if (v.startsWith('text/') || /^(txt|md)$/.test(v)) return 'TXT';
+  return 'FILE';
 }
 
 const TRANSPORT: Record<string, string> = { bus: 'Bus', van: 'Van', flight: 'Flight', carpool: 'Carpool' };
@@ -239,6 +396,8 @@ export function TripPass({
   role,
   onEdit,
   onDelete,
+  focus = false,
+  onFocused,
 }: {
   t: ChHubTrip;
   big?: boolean;
@@ -248,7 +407,19 @@ export function TripPass({
   /** A coach's Edit and Delete; a player's pass has neither. */
   onEdit?: (t: ChHubTrip) => void;
   onDelete?: (t: ChHubTrip) => void;
+  /** Calendar's View itinerary named this trip (`?trip=`): it scrolls into view once, as a notification's task does. */
+  focus?: boolean;
+  onFocused?: () => void;
 }) {
+  const pass = useRef<HTMLElement>(null);
+  const reduced = useChReducedMotion();
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!focus || scrolled.current) return;
+    scrolled.current = true;
+    pass.current?.scrollIntoView?.({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+    onFocused?.();
+  }, [focus, reduced, onFocused]);
   const manage = role === 'coach' && (onEdit || onDelete);
   const plan = [
     t.depart && ([t.depart, `${TRANSPORT[t.transport ?? ''] ?? 'Leave'}${t.from ? ` from ${t.from}` : ''}`] as const),
@@ -256,7 +427,8 @@ export function TripPass({
     t.back && ([t.back, 'Home'] as const),
   ].filter((x): x is readonly [string, string] => !!x);
   return (
-    <article className={'ch-hb-pass' + (big ? ' is-big' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
+    // P010-A1: the next trip is the page's one paper object (hub.css `.is-next`); the trips after it stay flat rows.
+    <article ref={pass} className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
         <div className="ch-hb-pass__top">
           <span className="ch-hb-eyebrow ch-num">
@@ -272,28 +444,40 @@ export function TripPass({
                 ...(onDelete ? [{ label: 'Delete trip', icon: Trash2, danger: true, onSelect: () => onDelete(t) }] : []),
               ]}
               trigger={(p) => (
-                <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
-                  <Icon icon={MoreHorizontal} size={16} />
-                </button>
+                <Tooltip>
+                  <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
+                    <Icon icon={MoreHorizontal} size={16} />
+                  </button>
+                </Tooltip>
               )}
             />
           )}
         </div>
-        <b id={`ch-hb-trip-${t.id}`}>{t.name}</b>
+        <b id={`ch-hb-trip-${t.id}`}>
+          <SerifText text={t.name} />
+        </b>
         {t.destination && <span className="ch-hb-muted">{t.destination}</span>}
+        {/* P010 D4: on the big pass the plan beside it already says when it leaves and where it stays. */}
         <dl className="ch-hb-pass__f">
-          <div>
-            <dt>Departs</dt>
-            <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
-          </div>
-          <div>
-            <dt>Stay</dt>
-            <dd>{t.hotel ?? 'Same day'}</dd>
-          </div>
-          <div>
-            <dt>{role === 'coach' ? 'Travelers' : 'You'}</dt>
-            <dd className="ch-num">{role === 'coach' ? (t.travelerCount ?? '—') : t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling'}</dd>
-          </div>
+          {!(big && t.depart) && (
+            <div>
+              <dt>Departs</dt>
+              <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
+            </div>
+          )}
+          {!(big && t.hotel) && (
+            <div>
+              <dt>Stay</dt>
+              <dd>{t.hotel ?? 'Same day'}</dd>
+            </div>
+          )}
+          {/* The big pass names the coach's travelers below; the count would say them twice. */}
+          {!(big && role === 'coach' && t.travelers && t.travelers.length > 0) && (
+            <div>
+              <dt>{role === 'coach' ? 'Travelers' : 'You'}</dt>
+              <dd className="ch-num">{role === 'coach' ? (t.travelerCount ?? '—') : t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling'}</dd>
+            </div>
+          )}
         </dl>
       </div>
       {big && (
@@ -334,8 +518,15 @@ export function TripPass({
   );
 }
 
-export function Updates({ data }: { data: ChTeamHub['updates'] }) {
-  const unread = data.rows.filter((n) => n.unread).length;
+export function Updates({ data, covered = false, read, onOpen }: {
+  data: ChTeamHub['updates'];
+  covered?: boolean;
+  /** Updates opened this visit: read now, whatever the page loaded. */
+  read?: ReadonlySet<string>;
+  onOpen?: (n: ChHubUpdate) => void;
+}) {
+  const isNew = (n: ChHubUpdate) => n.unread && !read?.has(n.id);
+  const unread = data.rows.filter(isNew).length;
   return (
     <section className="ch-hb-card ch-hb-feed" aria-labelledby="ch-hb-updates">
       <div className="ch-hb-card__h">
@@ -343,20 +534,20 @@ export function Updates({ data }: { data: ChTeamHub['updates'] }) {
         {unread > 0 && <span className="ch-hb-muted ch-num">{unread} new</span>}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10202" title="Updates didn't load." body="Your notifications are safe; the bell may still have them. Try again." />
+        <RefreshNotice code="CH-10202" title="Updates didn’t load." body="Your notifications are safe; the bell may still have them. Try again." covered={covered} />
       ) : !data.rows.length ? (
-        <EmptyState compact code="CH-10302" title="Nothing new." body="Posts, trips, tasks and qualifier moves show here as they happen." />
+        <EmptyState compact code="CH-10302" title="Nothing new" body="Posts, trips, tasks and qualifier moves show here as they happen." />
       ) : (
         <ol>
           {data.rows.map((n: ChHubUpdate) => (
-            <li key={n.id} className={n.unread ? 'is-new' : undefined}>
+            <li key={n.id} className={isNew(n) ? 'is-new' : undefined}>
               {n.href ? (
-                <Link href={n.href}>
-                  <UpdateBody n={n} />
+                <Link href={n.href} onClick={() => onOpen?.(n)}>
+                  <UpdateBody n={{ ...n, unread: isNew(n) }} />
                 </Link>
               ) : (
                 <div className="ch-hb-feed__row">
-                  <UpdateBody n={n} />
+                  <UpdateBody n={{ ...n, unread: isNew(n) }} />
                 </div>
               )}
             </li>
@@ -390,6 +581,9 @@ export function Tasks({
   onToggle,
   onAssign,
   onDelete,
+  focusTask = null,
+  onFocused,
+  covered = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['tasks'];
@@ -398,6 +592,12 @@ export function Tasks({
   onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
   onAssign?: () => void;
   onDelete?: (t: ChHubTask) => void;
+  /** The task a notification opened (`?task=`); a task outside the shown rows is left alone. */
+  focusTask?: string | null;
+  /** Called once the focused row has been scrolled to, so the hub can forget it. */
+  onFocused?: () => void;
+  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title under the heading. */
+  covered?: boolean;
 }) {
   const coach = role === 'coach';
   const open = data.rows.filter((t) => !isDone(t)).length;
@@ -414,12 +614,12 @@ export function Tasks({
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn't load." : "Your tasks didn't load."} body="Nothing was lost. Try again; the error has been reported." />
+        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn’t load." : "Your tasks didn’t load."} body="Nothing was lost. Try again; the error has been reported." covered={covered} />
       ) : !data.rows.length ? (
-        <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned.' : 'No tasks right now.'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
+        <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned' : 'No tasks right now'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
         <div className="ch-hb-tasks">
-          {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} />)}
+          {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} focus={focusTask === t.id} onFocused={onFocused} />)}
           {data.total != null && data.total > data.rows.length && (
             // C-20: the list is capped; it says so rather than passing for every task.
             <p className="ch-hb-muted ch-num">
@@ -433,26 +633,52 @@ export function Tasks({
 }
 
 /** One gate per task, shared by completing and reopening it; other tasks remain usable. */
-function TaskRow({ t, coach, d, pending, onToggle, onDelete }: {
+function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFocused }: {
   t: ChHubTask;
   coach: boolean;
   d: boolean;
   pending: boolean;
   onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
   onDelete?: (t: ChHubTask) => void;
+  focus?: boolean;
+  onFocused?: () => void;
 }) {
+  const row = useRef<HTMLDivElement>(null);
+  const reduced = useChReducedMotion();
+  // Lit from the first paint when a notification named this task; the wash fades once (or, with reduced motion, stays
+  // still until the row is used).
+  const [lit, setLit] = useState(focus);
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!focus || scrolled.current) return;
+    scrolled.current = true;
+    row.current?.scrollIntoView?.({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+    onFocused?.();
+  }, [focus, reduced, onFocused]);
+  // The wash ends with its own fade (a native listener: the row's animationend, not a child's).
+  useEffect(() => {
+    const el = row.current;
+    if (!lit || reduced || !el) return;
+    const done = (e: AnimationEvent) => e.target === el && setLit(false);
+    el.addEventListener('animationend', done);
+    return () => el.removeEventListener('animationend', done);
+  }, [lit, reduced]);
   const save = useAction(
     d ? 'hub.uncompleteTask' : 'hub.completeTask',
     onToggle,
     (task, nextDone) => ({
       done: nextDone ? `${task.title} done` : `${task.title} is open again`,
-      failed: nextDone ? `Couldn't mark ${task.title} done` : `Couldn't reopen ${task.title}`,
+      failed: nextDone ? `Couldn’t mark ${task.title} done` : `Couldn’t reopen ${task.title}`,
       code: nextDone ? 'CH-10003' : 'CH-10011',
     }),
     quietBusy,
   );
   return (
-    <div className={'ch-hb-task' + (d ? ' is-done' : '')}>
+    <div
+      ref={row}
+      className={'ch-hb-task' + (d ? ' is-done' : '') + (lit ? (reduced ? ' is-focus-still' : ' is-focus') : '')}
+      onPointerDown={lit && reduced ? () => setLit(false) : undefined}
+    >
       {coach ? (
         <span className="ch-hb-ring" style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? (t.done[0] / t.done[1]) * 100 : 0 }} aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
           <b className="ch-num">{t.done ? `${t.done[0]}/${t.done[1]}` : '—'}</b>
@@ -473,9 +699,11 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete }: {
           align="end"
           items={[{ label: 'Delete task', icon: Trash2, danger: true, onSelect: () => onDelete(t) }]}
           trigger={(p) => (
-            <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
-              <Icon icon={MoreHorizontal} size={16} />
-            </button>
+            <Tooltip>
+              <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
+                <Icon icon={MoreHorizontal} size={16} />
+              </button>
+            </Tooltip>
           )}
         />
       )}
@@ -493,6 +721,7 @@ export function Documents({
   onOpen,
   onUpload,
   onDelete,
+  covered = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['documents'];
@@ -501,6 +730,8 @@ export function Documents({
   onOpen: (f: ChHubFile) => void;
   onUpload: (files: File[]) => void;
   onDelete: (f: ChHubFile) => void;
+  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title. */
+  covered?: boolean;
 }) {
   const coach = role === 'coach';
   const input = useRef<HTMLInputElement>(null);
@@ -538,6 +769,7 @@ export function Documents({
             ref={input}
             type="file"
             multiple
+            accept={HUB_UPLOAD_ACCEPT}
             hidden
             aria-hidden="true"
             tabIndex={-1}
@@ -550,11 +782,9 @@ export function Documents({
         </>
       )}
       {data.error ? (
-        <RefreshNotice code="CH-10204" title="Documents didn't load." body="Your files are safe. Try again; the error has been reported." />
+        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
       ) : !data.folders.length ? (
-        <div className="ch-hb-card">
-          <EmptyState compact code="CH-10304" icon={Folder} title="No documents yet." body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
-        </div>
+        <EmptyState code="CH-10304" shape="rows" shapeCount={3} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
       ) : (
         data.folders.map((f) => (
           <section key={f.name} className="ch-hb-card ch-hb-folder" aria-labelledby={`ch-hb-f-${f.name}`}>
@@ -585,9 +815,11 @@ export function Documents({
                       align="end"
                       items={[{ label: 'Delete file', icon: Trash2, danger: true, onSelect: () => onDelete(d) }]}
                       trigger={(p) => (
-                        <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
-                          <Icon icon={MoreHorizontal} size={16} />
-                        </button>
+                        <Tooltip>
+                          <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
+                            <Icon icon={MoreHorizontal} size={16} />
+                          </button>
+                        </Tooltip>
                       )}
                     />
                   )}

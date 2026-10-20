@@ -13,16 +13,16 @@ export type ChSettingsSection = 'account' | 'notifications' | 'preferences' | 't
 export const SECTIONS: Record<'coach' | 'player', ReadonlyArray<{ id: ChSettingsSection; label: string; hint: string }>> = {
   coach: [
     { id: 'account', label: 'Account', hint: 'Profile, email, password' },
-    { id: 'notifications', label: 'Notifications', hint: 'Email and push' },
+    { id: 'notifications', label: 'Notifications', hint: 'Email, push' },
     { id: 'team', label: 'Team', hint: 'Scoring, reminders, invites' },
-    { id: 'coachhelm', label: 'CoachHelm', hint: 'Priorities and alerts' },
-    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics and units' },
+    { id: 'coachhelm', label: 'CoachHelm', hint: 'Priorities, alerts' },
+    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics, units' },
   ],
   player: [
     { id: 'account', label: 'Account', hint: 'Profile, email, password' },
-    { id: 'golf', label: 'Golf profile', hint: 'Handicap and team' },
+    { id: 'golf', label: 'Golf profile', hint: 'Handicap, team' },
     { id: 'notifications', label: 'Notifications', hint: 'Email, push, CoachHelm' },
-    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics and units' },
+    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics, units' },
   ],
 };
 
@@ -93,6 +93,11 @@ export interface ChSettingsData {
   playerRouting: Section<{ prefs: PrefsByCategory; quiet: boolean }> | null;
   /** Coaches only: the weekly team email. */
   digest: Section<boolean> | null;
+  /**
+   * Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED`, src/lib/email/outbound-gate.ts):
+   * the email switches still show what was chosen but can't be changed, and say why (CH-8901).
+   */
+  emailPaused: boolean;
   scoring: Section<ChScoring> | null;
   reminders: Section<ChReminders> | null;
   team: Section<ChTeamInfo> | null;
@@ -143,6 +148,13 @@ export const HANDICAP_OPTIONS = [
 ] as const;
 
 /** The distance a shot or a hole shows in. Display only: shots are stored in yards and feet either way. */
+/** Appearance (the GolfHelm theme, `golf_theme`): System follows the phone or computer. */
+export const THEME_OPTIONS = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+] as const;
+
 export const DISTANCE_OPTIONS = [
   { value: 'yards', label: 'Yards' },
   { value: 'meters', label: 'Meters' },
@@ -179,8 +191,10 @@ export function minutesLabel(m: number): string {
 export interface ChProblem {
   code: string;
   text: string;
+  /** The id of the field it is about, so that field can say it too (aria-invalid and its help line). */
+  field?: string;
 }
-const problem = (code: string, text: string): ChProblem => ({ code, text });
+const problem = (code: string, text: string, field?: string): ChProblem => (field ? { code, text, field } : { code, text });
 
 export function profileProblem(role: 'coach' | 'player', p: { fullName: string; firstName: string; lastName: string }): ChProblem | null {
   if (role === 'coach') return p.fullName.trim() ? null : problem('CH-8101', 'Add your name.');
@@ -190,7 +204,7 @@ export function profileProblem(role: 'coach' | 'player', p: { fullName: string; 
 export function passwordProblem(current: string, next: string, confirm: string): ChProblem | null {
   if (!current) return problem('CH-8105', 'Enter your current password.');
   if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.');
-  if (next !== confirm) return problem('CH-8107', "The new passwords don't match.");
+  if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.");
   return null;
 }
 
@@ -202,9 +216,9 @@ export function emailProblem(next: string, current: string | null): ChProblem | 
 }
 
 export function teamProblem(t: ChTeamInfo): ChProblem | null {
-  if (!t.name.trim()) return problem('CH-8108', 'The team needs a name.');
-  if (t.org && !t.org.name.trim()) return problem('CH-8109', 'The school needs a name.');
-  if (t.org && t.org.state.trim() && !/^[A-Za-z]{2}$/.test(t.org.state.trim())) return problem('CH-8110', 'Use the two-letter state code.');
+  if (!t.name.trim()) return problem('CH-8108', 'The team needs a name.', 'set-team-name');
+  if (t.org && !t.org.name.trim()) return problem('CH-8109', 'The school needs a name.', 'set-org-name');
+  if (t.org && t.org.state.trim() && !/^[A-Za-z]{2}$/.test(t.org.state.trim())) return problem('CH-8110', 'Use the two-letter state code.', 'set-org-state');
   return null;
 }
 
@@ -324,6 +338,12 @@ export function staffRoleLabel(role: string): string {
   return role === 'head_coach' ? 'Head coach' : 'Assistant coach';
 }
 
+/** The signed-in person's role on their identity line: a head coach is "Head coach", as the shell and the phone list say. */
+export function viewerRoleLabel(data: Pick<ChSettingsData, 'role' | 'coachhelm'>): string {
+  if (data.role !== 'coach') return 'Player';
+  return data.coachhelm && !data.coachhelm.error && data.coachhelm.value.team?.isHeadCoach ? staffRoleLabel('head_coach') : 'Coach';
+}
+
 const sameWords = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
 /** The coach's own title, or null when it is empty or only repeats the role pill ("Head Coach" beside "Head coach"). */
@@ -335,6 +355,9 @@ export function distinctStaffTitle(title: string | null | undefined, roleLabel: 
 export function pendingCoachName(c: ChPendingCoach): string {
   return c.fullName?.trim() || c.email || 'Unnamed coach';
 }
+
+/** What declining a request does, said before it is done (CH-8511): the server detaches them, it never deletes the account. */
+export const DECLINE_NOTE = 'Their request comes off the list and they get no access to this team. Their account stays, so they can ask again.';
 
 export interface ChSettingsWrites {
   saveProfile: (p: ChProfileInput) => Promise<ChResult>;
@@ -376,5 +399,7 @@ export interface ChDevice {
     pending: boolean;
     subscribe: () => Promise<{ ok: boolean; error?: string }>;
     unsubscribe: () => Promise<{ ok: boolean; error?: string }>;
+    /** P008-C3: one test push to the viewer's own devices (D1-6); absent where it can't be sent. */
+    test?: () => Promise<{ ok: boolean; sent?: number; error?: string }>;
   };
 }

@@ -35,14 +35,14 @@ describe('RouteFrame scroll', () => {
     scrollCanvas(640);
 
     view.rerender(frame('/roster/p1\u0000t1'));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
 
     // Back: the browser's popstate comes first, then the route change.
     act(() => {
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     view.rerender(frame('/roster\u0000t1'));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 640 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 640, behavior: 'instant' });
   });
 
   it('a tap through to a page seen before (not Back) still opens it at the top', () => {
@@ -53,6 +53,23 @@ describe('RouteFrame scroll', () => {
     vi.setSystemTime(Date.now() + 5000);
     view.rerender(frame('/stats\u0000t1'));
     vi.useRealTimers();
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
+  });
+
+  it('a screen picked by the query (Stats ?player=) is its own place: Back to the team list returns to where it was (Simulator, 2026-10-14)', () => {
+    const at = (player: string) => (
+      <RouteFrame routeKey={'/stats\u0000t1'} scrollKey={`/stats\u0000t1\u0000${player}`}>
+        <main>{player || 'team'}</main>
+      </RouteFrame>
+    );
+    const view = render(at(''), { container: canvas });
+    scrollCanvas(520);
+    view.rerender(at('p1'));
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    view.rerender(at(''));
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520, behavior: 'instant' });
   });
 });

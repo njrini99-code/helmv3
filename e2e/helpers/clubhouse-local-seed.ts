@@ -8,7 +8,7 @@
  */
 import { randomBytes, randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import pg from 'pg';
+import { PgClient } from './pg-client';
 import { tryGetSecretKey } from '../../src/lib/supabase/keys.mjs';
 import { PAR_LAYOUTS, genRound, makeRng, yardsFor, type GenRound, type RoundShape } from './clubhouse-team-data';
 
@@ -26,10 +26,15 @@ export function localSupabase(): { url: string; serviceKey: string } | null {
   return host === '127.0.0.1' || host === 'localhost' ? { url, serviceKey } : null;
 }
 
-/** The local database's connection string; refuses a host that is not 127.0.0.1 or localhost. `SUPABASE_DB_URL` overrides the stack's default. */
+/**
+ * The local database's connection string; refuses a host that is not 127.0.0.1 or localhost. `SUPABASE_DB_URL`
+ * overrides the stack's default. The default is the stack's superuser: the seed and its removal set
+ * `session_replication_role`, which the local `postgres` role is refused on current Supabase CLIs (the removal failed
+ * and left the test player behind, 2026-10-14).
+ */
 function localDbUrl(): string {
   if (!localSupabase()) throw new Error('clubhouse-local-seed: refusing a Supabase that is not local');
-  const dbUrl = process.env.SUPABASE_DB_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
+  const dbUrl = process.env.SUPABASE_DB_URL ?? 'postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres';
   const dbHost = new URL(dbUrl).hostname;
   if (dbHost !== '127.0.0.1' && dbHost !== 'localhost') throw new Error('clubhouse-local-seed: refusing a database that is not local');
   return dbUrl;
@@ -82,7 +87,7 @@ export async function scoredHoles(roundId: string): Promise<number> {
  * as its player. `SUPABASE_DB_URL` overrides the local default.
  */
 export async function removeSeed(ids: SeedIds): Promise<void> {
-  const db = new pg.Client({ connectionString: localDbUrl() });
+  const db = new PgClient({ connectionString: localDbUrl() });
   await db.connect();
   try {
     await db.query('begin');
@@ -219,10 +224,10 @@ function addDays(date: string, n: number): string {
   return ymd(new Date(Date.UTC(y!, m! - 1, d! + n)));
 }
 
-async function bulk(db: pg.Client, table: string, cols: string[], rows: object[]): Promise<void> {
+async function bulk(db: PgClient, table: string, cols: string[], rows: object[]): Promise<void> {
   if (!rows.length) return;
   const list = cols.join(', ');
-  await db.query(`insert into ${table} (${list}) select ${list} from json_populate_recordset(null::${table}, $1::json)`, [JSON.stringify(rows)]);
+  await db.query(`insert into ${table} (${list}) select ${list} from json_populate_recordset(null::${table}, $1::json)`, [rows]);
 }
 
 /** The columns (and the ids to look for in them) the cleanup sweeps for; a seed's ids are random UUIDs, so a hit is always the seed's own row. */
@@ -257,7 +262,7 @@ function entityTables(ids: SeededTeam): Array<[string, string[]]> {
   ];
 }
 
-async function tablesWith(db: pg.Client, col: string): Promise<string[]> {
+async function tablesWith(db: PgClient, col: string): Promise<string[]> {
   const res = await db.query(
     `select c.table_name from information_schema.columns c join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
      where c.table_schema = 'public' and c.column_name = $1 and t.table_type = 'BASE TABLE'`,
@@ -273,7 +278,7 @@ async function tablesWith(db: pg.Client, col: string): Promise<string[]> {
  * (their cascade clears public.users and the identities) and checks that nothing refers to the seed any more.
  */
 export async function removeTeamSeed(ids: SeededTeam): Promise<void> {
-  const db = new pg.Client({ connectionString: localDbUrl() });
+  const db = new PgClient({ connectionString: localDbUrl() });
   await db.connect();
   try {
     await db.query('begin');
@@ -362,7 +367,7 @@ export async function seedClubhouseTeam(options: SeedTeamOptions = {}): Promise<
   const dropUsers = async (): Promise<void> => {
     for (const id of userIds) await admin.auth.admin.deleteUser(id).catch(() => undefined);
     if (userIds.length) {
-      const db = new pg.Client({ connectionString: url });
+      const db = new PgClient({ connectionString: url });
       await db.connect();
       await db.query('delete from public.users where id = any($1::uuid[])', [userIds]).catch(() => undefined);
       await db.end();
@@ -466,7 +471,7 @@ export async function seedClubhouseTeam(options: SeedTeamOptions = {}): Promise<
     team.roundIds.push(plan.id);
   }
 
-  const db = new pg.Client({ connectionString: url });
+  const db = new PgClient({ connectionString: url });
   await db.connect();
   try {
     await db.query('begin');
@@ -597,10 +602,15 @@ export async function seedClubhouseTeam(options: SeedTeamOptions = {}): Promise<
     team.counts.shots = shotRows.length;
 
     // Completed through the one write the lifecycle guard allows, so the database's own trigger builds each round's stats cache.
+    // The guard's atomic path is open to `postgres` only (guard_golf_round_lifecycle, `current_user = 'postgres'`), and
+    // the seed connects as the stack's superuser so it may set session_replication_role: it takes the `postgres` role
+    // for this one write (without it every team seed failed "Completed rounds must be submitted...", 2026-10-14).
     await db.query("set local session_replication_role = 'origin'");
+    await db.query('set local role postgres');
     await db.query("select set_config('helm.golf_lifecycle_write', 'atomic', true)");
     await db.query("update golf_rounds set status = 'completed' where id = any($1::uuid[])", [team.roundIds]);
     await db.query("select set_config('helm.golf_lifecycle_write', '', true)");
+    await db.query('reset role');
     const cached = (await db.query('select count(*)::int as n from golf_round_stats_cache where round_id = any($1::uuid[])', [team.roundIds])).rows[0].n as number;
     if (cached !== team.roundIds.length) throw new Error(`seed: ${cached} stats cache rows for ${team.roundIds.length} rounds`);
     team.counts.rounds = team.roundIds.length;

@@ -69,9 +69,10 @@ skip to content, and Try again or Reload on a crashed page.
 ### Information hierarchy
 
 1. The page itself: the canvas takes the width.
-2. Where you are: the current page is marked in the navigation, the breadcrumb in the top bar, and
-   the title on the phone.
-3. What's new: the Messages unread count, the Roster join-request badge (coach), and the bell.
+2. Where you are: the current page is marked in the navigation, the breadcrumb
+   in the top bar, and the title on the phone.
+3. What's new: the Messages unread count, the Roster join-request badge (coach),
+   and the bell.
 4. What's next: the sidebar's next-event card, with who has confirmed.
 
 ### User should notice first

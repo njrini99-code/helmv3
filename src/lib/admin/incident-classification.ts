@@ -42,6 +42,9 @@
  */
 
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
+// Dependency LEAF (no imports): the ONE registry of genuinely-empty outcome
+// codes, shared with the soft-failure observer and the UI empty states.
+import { isExpectedEmptyStateCode } from '@/lib/view-state/expected-empty-states';
 
 export type IncidentClass =
   /** A genuine unexpected failure. Belongs in triage. */
@@ -371,6 +374,21 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
     );
   }
 
+  // 3c'. The designed stale-shot reconciliation. golf.ts returns
+  //       `code: 'shot_not_found'` when a client still holds a locally
+  //       persisted ID for a shot another tab or an earlier retry already
+  //       deleted; the round-entry hook drops the stale reference. Keyed on
+  //       the stable error code, not the prose, so a "Shot not found" from any
+  //       other path still falls through and stays visible. 20ae8f27 was
+  //       reopened 4× (2026-09-19 → 2026-10-07) for this designed path.
+  if (errorCode === 'shot_not_found') {
+    return done(
+      'degradation',
+      false,
+      'Stale local shot reference (shot_not_found) — the client reconciles it by design',
+    );
+  }
+
   // 3d. Client disconnected mid-response. Unlike 3c these arrive with a
   //     SERVER `source` (Next's onRequestError hook tags the RSC render /
   //     route handler / server action that was streaming when the socket
@@ -420,6 +438,23 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
   }
 
   // 5. Product empty states surfaced through the error path.
+  //
+  //    5a. By stable CODE first. The withAdminObserved wrapper files a
+  //        registered empty-state envelope at 'info' with only its
+  //        user-facing sentence ("0 completed rounds so far — CoachHelm speaks
+  //        after 3 …"), which no phrase below matches, so it fell to the
+  //        severity ladder (`matched: false`) and Diagnose left it open as
+  //        quiet-unrecognised every night (ecb08865, 2026-10-07 → 10-12).
+  //        Codes survive copy edits; prose does not. Never for an
+  //        error/critical row: the registry contract forbids reusing these
+  //        codes for failures, and if one ever is, it must stay visible.
+  if (
+    severity !== 'error' &&
+    severity !== 'critical' &&
+    isExpectedEmptyStateCode(input.errorCode)
+  ) {
+    return done('empty_state', false, `Empty state, not a failure (${input.errorCode})`);
+  }
   const emptyHit = matchesAny(haystack, EMPTY_STATE_PHRASES);
   if (emptyHit) {
     return done('empty_state', false, `Empty state, not a failure ("${emptyHit}")`);

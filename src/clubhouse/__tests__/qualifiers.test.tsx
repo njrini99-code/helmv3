@@ -62,13 +62,17 @@ import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { useLiveStandings } from '../screens/qualifiers/live';
-import { buildBoard, roundPars, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
+import { buildBoard, roundPars, stageNoteText, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
 import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '../preview/fixtures-qualifiers';
 import { isRebuilt } from '../shell/nav';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
+import { formatDate, localToday } from '../ui/date-time';
+
+/** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
+const fieldDate = (iso: string) => formatDate(iso, { omitYear: iso.slice(0, 4) === localToday().slice(0, 4) });
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -179,8 +183,9 @@ describe('Qualifiers · the standings model', () => {
       ['e', 5, false],
     ]);
     // Two places on score (3 places, 1 pick). B and C are level at the second place, so they share a tie at the cut
-    // until the coach chooses (Q-114); D is on the bubble; the rest are out.
-    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', 'bubble', null]);
+    // until the coach chooses (Q-114). D is fourth of a squad of three, below the travel cut, so D is out, not on the
+    // Bubble: the Bubble is inside the squad (DESIGN.md, production's tiers; the parity fix of 2026-10-17).
+    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', null, null]);
     expect(b.submitted).toBe(6);
   });
   it('averages full rounds only, and counts the shorter ones it left out', () => {
@@ -306,10 +311,40 @@ describe('Qualifiers · the loader', () => {
     tables.current = { golf_qualifiers: { data: [other, Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds } };
     const all = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'all' });
     expect(all.items.map((i) => i.id)).toEqual(['q1', 'q2']);
-    expect(all.items[0]!.mine).toEqual({ entered: true, position: '2', toPar: 2, played: 1 });
+    // Live, so the next round (2, at the qualifier's course with none set for it); the squad confirmed, and Bea not on it.
+    expect(all.items[0]!.mine).toEqual({ entered: true, position: '2', toPar: 2, played: 1, next: { round: 2, course: 'Finley GC' }, squad: false });
     expect(all.items[1]!.mine?.entered).toBe(false);
     const mine = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
     expect(mine.items.map((i) => i.id)).toEqual(['q1']);
+  });
+
+  it('CH-09906 CH-09907 wave 7: a player’s own squad result, their next round at its own course, and "You" on the leaders; a failed read is the plain line', async () => {
+    const asked: Array<Array<[string, unknown[]]>> = [];
+    tables.current = {
+      golf_qualifiers: { data: [Q] },
+      golf_qualifier_entries: { data: entries },
+      golf_rounds: { data: rounds },
+      golf_qualifier_round_courses: { data: [{ qualifier_id: 'q1', round_number: 2, course_name: 'Hope Valley CC' }] },
+      golf_qualifier_selections: (f) => {
+        asked.push(f);
+        return { data: [{ qualifier_id: 'q1' }] };
+      },
+    };
+    const list = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    expect(list.items[0]!.mine).toMatchObject({ next: { round: 2, course: 'Hope Valley CC' }, squad: true });
+    // Only their own row is asked for, never the squad.
+    expect(asked[0]!.find(([k, a]) => k === 'eq' && a[0] === 'player_id')?.[1][1]).toBe('p2');
+    expect(list.items[0]!.leaders.find((l) => l.playerId === 'p2')?.isYou).toBe(true);
+    expect(list.items[0]!.leaders.find((l) => l.playerId === 'p1')?.isYou).toBeUndefined();
+    tables.current = { ...tables.current, golf_qualifier_selections: { error: { message: 'boom' } }, golf_qualifier_round_courses: { error: { message: 'boom' } } };
+    const failed = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    // Unknown, never "not selected"; the course falls back to the qualifier's.
+    expect(failed.items[0]!.mine).toMatchObject({ next: { round: 2, course: 'Finley GC' }, squad: null });
+    expect(logServer).toHaveBeenCalledWith('qualifiers', 'ownSelections', expect.anything(), 'qualifiers');
+    // A coach is never asked for theirs.
+    const coach = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' });
+    expect(coach.items[0]!.mine).toBeNull();
+    expect(coach.items[0]!.leaders.some((l) => l.isYou)).toBe(false);
   });
 
   it('90806 90807 a player gets only their own scorecards and never the pick reasoning', async () => {
@@ -380,7 +415,7 @@ describe('Qualifiers · the loader', () => {
     wrap(<QualifierForm data={previewEditForm()} writes={fakeWrites()} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Pinehurst qualifier' })).toBeTruthy();
     expect((screen.getByLabelText('Qualifier name') as HTMLInputElement).value).toBe('Pinehurst qualifier');
-    expect((screen.getByLabelText('Start date') as HTMLInputElement).value).toBe('2026-09-22');
+    expect((screen.getByLabelText('Start date') as HTMLInputElement).value).toBe(fieldDate('2026-09-22'));
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy();
   });
 
@@ -469,7 +504,9 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
     wrap(<QualifiersList data={data} />);
     await expectCode('CH-09222', /Your qualifiers didn’t load/);
     expect(code('CH-09306')).toBeNull();
+    // The counts failed: the eyebrow is the name alone, never dashes (the pills carry the counts, and there are none to show).
     expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers');
+    expect(document.body.textContent).not.toMatch(/— active|— concluded/);
     router.refresh.mockClear();
     await user.click(within(code('CH-09222') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
@@ -562,17 +599,21 @@ describe('Qualifiers · list', () => {
     const data = list();
     wrap(<QualifiersList data={data} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Lineup decisions' })).toBeTruthy();
-    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers · 2 active · 3 concluded');
+    // The pills carry the counts; the eyebrow does not repeat them.
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
+    expect(screen.getByRole('button', { name: /^Active\s*2$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Concluded\s*3$/ })).toBeTruthy();
+    expect(screen.getByText('Rank players over counted rounds and pick who travels.')).toBeTruthy();
     expect([...document.querySelectorAll('.ch-qf-pill')].map((b) => b.textContent)).toEqual(['All5', 'Active2', 'Concluded3']);
     expect(screen.getByRole('link', { name: 'Create qualifier' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers/new');
     // The live one leads, with its leaders; the other active one is a card under Active.
     const hero = document.querySelector('.ch-qf-hero') as HTMLAnchorElement;
     expect(hero.getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${data.items[0]!.id}`);
     expect(hero.textContent).toMatch(/Pinehurst qualifier.*View leaderboard/);
-    expect(within(hero).getByText('Leaders')).toBeTruthy();
+    expect(within(hero).getByText(/^Standings · top \d+$/)).toBeTruthy();
     const titles = (heading: string) =>
       [...(screen.getByRole('heading', { level: 2, name: heading }).closest('section') as HTMLElement).querySelectorAll('h3')].map((h) => h.textContent);
-    expect(titles('Active')).toEqual(['Conference qualifier']);
+    expect(titles('Also active')).toEqual(['Conference qualifier']);
     expect(titles('Concluded')).toEqual(['Fall invitational qualifier', 'Preseason qualifier', 'Spring conference qualifier']);
   });
 
@@ -582,6 +623,9 @@ describe('Qualifiers · list', () => {
     expect(within(code('CH-09301') as HTMLElement).getByRole('link', { name: 'Create qualifier' })).toBeTruthy();
     // One primary per screen: the header's Create qualifier steps aside (D-71).
     expect(screen.getAllByRole('link', { name: 'Create qualifier' })).toHaveLength(1);
+    // The eyebrow is the name alone (the phone, whose bar names the page, hides it).
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
+    expect(document.querySelector('.ch-qf-eyebrow')!.classList.contains('is-bare')).toBe(true);
     unmount();
     wrap(<QualifiersList data={list('player', 'all', { items: [] })} />);
     expect(code('CH-09301')!.textContent).toMatch(/Your coach’s qualifiers show here/);
@@ -609,8 +653,30 @@ describe('Qualifiers · list', () => {
 
   it('a player sees where they stand on each card', () => {
     wrap(<QualifiersList data={list('player')} />);
-    expect(screen.getByText('You’re 3 · +4 · 2 of 3 rounds')).toBeTruthy();
+    expect(screen.getByText('You’re 3rd · +4 · 2 of 3 rounds')).toBeTruthy();
     expect(screen.getAllByText('You’re entered · no rounds in yet').length).toBeGreaterThan(0);
+  });
+
+  it('CH-09906 CH-09907 wave 7: the live card offers your next round (outside the card’s own link), marks you on the leaders, and a confirmed squad says if you made it', () => {
+    wrap(<QualifiersList data={list('player')} />);
+    const play = screen.getByRole('link', { name: 'Play round 3 · Hope Valley CC' });
+    expect(play.getAttribute('href')).toBe('/golf/dashboard/rounds/new?qualifier=10000000-0000-4000-8000-000000000001');
+    // Never a link inside the card's link.
+    expect(play.closest('.ch-qf-hero, .ch-qf-card')).toBeNull();
+    expect(code('CH-09906')).not.toBeNull();
+    const me = document.querySelector('.ch-qf-lead__r.is-me')!;
+    expect(me.textContent).toMatch(/Jonah Okafor\s*You/);
+    expect(document.querySelectorAll('.ch-qf-lead__r.is-me')).toHaveLength(1);
+    // The Fall invitational's squad is confirmed with Jonah on it.
+    expect(screen.getByText(/^You made the squad · /)).toBeTruthy();
+    cleanup();
+    const base = list('player');
+    wrap(<QualifiersList data={{ ...base, items: base.items.map((i) => (i.mine?.squad === true ? { ...i, mine: { ...i.mine, squad: false } } : i)) }} />);
+    expect(screen.getByText(/^You’re .* · not selected$/)).toBeTruthy();
+    cleanup();
+    // Unknown (the read failed): the plain standing.
+    wrap(<QualifiersList data={{ ...base, items: base.items.map((i) => (i.mine?.squad === true ? { ...i, mine: { ...i.mine, squad: null } } : i)) }} />);
+    expect(screen.queryByText(/made the squad|not selected/)).toBeNull();
   });
 
   it('CH-09211 a crash stays inside the list', () => {
@@ -628,12 +694,18 @@ describe('Qualifiers · one qualifier', () => {
     const d = detail();
     wrap(<QualifierDetail data={d} writes={fakeWrites()} live={false} />);
     const fact = (k: string) => [...document.querySelectorAll('.ch-qf-facts > div')].find((f) => f.querySelector('dt')!.textContent === k)!.textContent;
-    expect([...document.querySelectorAll('.ch-qf-facts dt')].map((t) => t.textContent)).toEqual(['Dates', 'Entry deadline', 'Entrants', 'Rounds submitted', 'Course', 'Spots']);
+    expect([...document.querySelectorAll('.ch-qf-facts dt')].map((t) => t.textContent)).toEqual(['Dates', 'Entrants', 'Rounds submitted', 'Course', 'Spots']);
     expect(fact('Dates')).toMatch(/2026 · 3 rounds$/);
     expect(fact('Entrants')).toBe('Entrants8players');
     expect(fact('Rounds submitted')).toBe('Rounds submitted13of 24');
     expect(fact('Course')).toBe('CourseFinley GCPar by round');
     expect(fact('Spots')).toBe('Spots54 on score · 1 pick');
+    // Two facts drawn (decorative): 13 of 24 rounds along a bar, and five seats, four won on score and one pick.
+    const facts = document.querySelector('.ch-qf-facts')!;
+    expect((facts.querySelector('.ch-qf-bar i') as HTMLElement).style.width).toBe(`${(13 / 24) * 100}%`);
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-score')).toHaveLength(4);
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-pick')).toHaveLength(1);
+    for (const v of facts.querySelectorAll('.ch-qf-facts__viz')) expect(v.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('heading', { level: 1, name: 'Pinehurst qualifier' })).toBeTruthy();
     for (const h of ['Leaderboard', 'Round-by-round scores', 'Selections', 'Course per round', 'Scoring rules']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Manage selections' }).getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${d.id}/selection`);
@@ -662,7 +734,7 @@ describe('Qualifiers · one qualifier', () => {
     wrap(<QualifierDetail data={detail()} writes={writes} live={false} />);
     await user.click(screen.getByRole('button', { name: 'Close qualifier' }));
     await user.click(within(code('CH-09501') as HTMLElement).getByRole('button', { name: 'Close qualifier' }));
-    await expectCode('CH-09405', /Closing/);
+    await expectCode('CH-09405', /Closing…/);
     await act(async () => finish({ success: true }));
     await expectCode('CH-09901', /Players can’t enter or submit rounds in it, including rounds already started, until you reopen it/);
     expect(router.refresh).toHaveBeenCalled();
@@ -674,7 +746,7 @@ describe('Qualifiers · one qualifier', () => {
     const writes = fakeWrites({ setStatus: vi.fn(never) });
     const { unmount } = wrap(<QualifierDetail data={detail('selected')} writes={writes} live={false} />);
     await user.click(screen.getByRole('button', { name: 'Reopen qualifier' }));
-    await expectCode('CH-09406', /Reopening/);
+    await expectCode('CH-09406', /Reopening…/);
     unmount();
     wrap(<QualifierDetail data={detail('completed')} writes={fakeWrites({ setStatus: vi.fn(fail) })} live={false} />);
     await user.click(screen.getByRole('button', { name: 'Reopen qualifier' }));
@@ -738,6 +810,25 @@ describe('Qualifiers · one qualifier', () => {
     expect(screen.getAllByText('You').length).toBeGreaterThan(0);
   });
 
+  it('CH-09906 wave 7: your next round in a live qualifier is a link to round setup on it; one tie for best is marked once; a coach and an ended qualifier get no link', () => {
+    const { unmount } = wrap(<QualifierDetail data={detail('live', 'player')} writes={fakeWrites()} live={false} />);
+    const rounds = screen.getByRole('region', { name: 'Your rounds' });
+    // Round 3 is at Hope Valley, not the qualifier's Finley GC: the round's own course, from the streamed part.
+    const play = within(rounds).getByRole('link', { name: /^Play round 3\W*Hope Valley CC$/ });
+    expect(play.getAttribute('href')).toBe('/golf/dashboard/rounds/new?qualifier=10000000-0000-4000-8000-000000000001');
+    expect(within(rounds).queryByText('Still to play')).toBeNull();
+    unmount();
+    // Past its last day it has ended: no way into a round.
+    const ended = wrap(<QualifierDetail data={detail('live', 'player', { today: '2026-10-09' })} writes={fakeWrites()} live={false} />);
+    expect(screen.queryByRole('link', { name: /Play round/ })).toBeNull();
+    ended.unmount();
+    // Two rounds level on the best total: only the first is the best round.
+    const d = detail('live', 'player');
+    const tied = { ...d, board: { ...d.board!, rows: d.board!.rows.map((r) => (r.playerId === PLAYER_ID.jonah ? { ...r, rounds: r.rounds.map((rd) => ({ ...rd, total: 72 })) } : r)) } };
+    wrap(<QualifierDetail data={tied} writes={fakeWrites()} live={false} />);
+    expect(screen.getAllByText(/Best round/)).toHaveLength(1);
+  });
+
   it('CH-09205 CH-09308 scorecards that do not load, and a round with no card', async () => {
     const user = userEvent.setup();
     const d = detail();
@@ -767,7 +858,7 @@ describe('Qualifiers · one qualifier', () => {
     expect(screen.queryByText(/Two top-10s last spring/)).toBeNull();
   });
 
-  it('CH-09212 CH-09213 CH-09214 CH-09215 a crash stays inside its section', () => {
+  it('CH-09212 CH-09213 CH-09214 CH-09215 CH-09223 a crash stays inside its section', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const d = detail();
     const broken = { ...d, roundCourses: d.roundCourses.map((c) => ({ ...c, course: {} as never })), board: { ...d.board!, rows: d.board!.rows.map((r, i) => (i === 0 ? { ...r, name: null as never, rounds: null as never } : r)) } };
@@ -776,6 +867,8 @@ describe('Qualifiers · one qualifier', () => {
     expect(code('CH-09213')!.textContent).toMatch(/Round-by-round scores couldn’t be shown/);
     expect(code('CH-09214')!.textContent).toMatch(/Selections couldn’t be shown/);
     expect(code('CH-09215')!.textContent).toMatch(/Course per round couldn’t be shown/);
+    // The coach's panel falls back to the first row, the one broken above.
+    expect(code('CH-09223')!.textContent).toMatch(/A player’s rounds couldn’t be shown/);
     expect(screen.getByRole('heading', { name: 'Pinehurst qualifier' })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -1503,7 +1596,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
 
     // The qualifier opens at the top (a new page), the filter and the place are kept.
     view.rerender(tree(page(DETAIL, <QualifierDetail data={{ ...d, id: link.getAttribute('href')!.split('/').pop()! }} writes={fakeWrites()} live={false} />)));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
 
     // Back: a step back in history (a popstate), then the list again, restored once by the frame, with its filter and search.
     await user.click(backLink());
@@ -1513,7 +1606,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     });
     const sends = (canvas.scrollTo as Mock).mock.calls.length;
     view.rerender(tree(page(TEAM_LIST, <QualifiersList data={list()} />)));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520, behavior: 'instant' });
     expect(pill(/^Active/)).toBe('true');
     expect(searchBox().value).toBe('pine');
     // One restore, the frame's: it settled on the first try (the canvas reached 520), and the list sent nothing of its own.
@@ -1618,17 +1711,41 @@ describe('Qualifiers · create and edit', () => {
     expect(router.push).not.toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new');
   });
 
+  it('wave-6 the Players head has one Select all or Clear all; Clear all keeps a player with a round in', async () => {
+    const user = userEvent.setup();
+    const data = form({ initial: { ...form().initial, playerIds: [] } });
+    const active = data.players.filter((p) => !p.inactive);
+    const { unmount } = wrap(<QualifierForm data={data} writes={fakeWrites()} />);
+    await user.click(screen.getByRole('button', { name: 'Select all' }));
+    expect(screen.getByText(`${active.length} of ${active.length} active players entered`)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Clear all' }));
+    expect(screen.getByText(`0 of ${active.length} active players entered`)).toBeTruthy();
+    unmount();
+    const locked = { ...data, players: data.players.map((p, i) => (i === 0 ? { ...p, locked: 'round' as const } : p)), initial: { ...data.initial, playerIds: active.map((p) => p.id) } };
+    wrap(<QualifierForm data={locked} writes={fakeWrites()} />);
+    await user.click(screen.getByRole('button', { name: 'Clear all' }));
+    expect(screen.getByText(`${data.players[0]!.inactive ? 0 : 1} of ${active.length} active players entered`)).toBeTruthy();
+  });
+
+  it('wave-6 the squad help says the limit, a round with no course says how to set one, and the end date starts at the start date', async () => {
+    wrap(<QualifierForm data={form({ initial: { ...form().initial, course: '', startDate: '2026-10-19' } })} writes={fakeWrites()} />);
+    expect(screen.getByText('Players who make the trip, up to 12.')).toBeTruthy();
+    expect(screen.getAllByText('Choose one, or set the qualifier’s course above')).toHaveLength(3);
+    expect(screen.queryByText('Uses the qualifier’s course')).toBeNull();
+    expect((document.getElementById('qf-end') as HTMLInputElement).dataset.min).toBe('2026-10-19');
+  });
+
   it('CH-09404 a create in flight reads Creating and cannot be sent twice', async () => {
     const user = userEvent.setup();
     const writes = fakeWrites({ create: vi.fn(never) });
     wrap(<QualifierForm data={form({ initial: { ...form().initial, name: 'Q', startDate: '2026-10-19' } })} writes={writes} />);
     await user.click(screen.getByRole('button', { name: 'Create qualifier' }));
-    await expectCode('CH-09404', /Creating/);
+    await expectCode('CH-09404', /Creating…/);
     expect((code('CH-09404')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
     expect(writes.create).toHaveBeenCalledTimes(1);
   });
 
-  it('CH-09002 CH-09902 91202 a partial edit save: the toast says it failed, the form keeps what saved and what to do', async () => {
+  it('CH-09902 91202 a partial edit save: the form’s notice says it failed, what saved and what to do, and no toast says it again', async () => {
     const api = {
       details: vi.fn(async () => ({ success: true as const, data: undefined })),
       rounds: vi.fn(async () => ({ success: true as const, data: undefined })),
@@ -1641,12 +1758,31 @@ describe('Qualifiers · create and edit', () => {
     const user = userEvent.setup();
     const writes = fakeWrites({ saveEdit: vi.fn(async () => res) });
     wrap(<QualifierForm data={previewEditForm()} writes={writes} />);
+    hapticSpy.mockClear();
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
-    await expectCode('CH-09002', /Couldn’t save the qualifier.*Check the form and save again/);
-    await expectCode('CH-09902', /Saved the details .* but not the players\. One player has a round.* Save again to finish\./);
+    await expectCode('CH-09902', /^Couldn’t save the qualifierSaved the details .* but not the players\. One player has a round.* Save again to finish\.$/);
+    // Told once: the notice over the form (lead, 2026-10-08), with the error haptic, and no toast saying the same words.
+    expect(code('CH-09002')).toBeNull();
+    expect(document.querySelector('.ch-toast')).toBeNull();
+    expect(screen.getAllByText('Couldn’t save the qualifier')).toHaveLength(1);
+    expect(hapticSpy).toHaveBeenCalledWith('error');
     writes.saveEdit.mockImplementation(async () => ({ success: true }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(code('CH-09902')).toBeNull());
+  });
+
+  it('CH-09002 a save whose request fails with no reason is told by its toast, with Retry: there is no notice to tell it', async () => {
+    const user = userEvent.setup();
+    const writes = fakeWrites({
+      saveEdit: vi.fn(async () => {
+        throw new Error('network');
+      }),
+    });
+    wrap(<QualifierForm data={previewEditForm()} writes={writes} />);
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-09002', /Couldn’t save the qualifier.*Check the form and save again/);
+    expect(code('CH-09902')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
   });
 
   it('90513 editing: a player with a round stays entered; a changed squad and entrants are sent, an unchanged one is not', async () => {
@@ -1669,12 +1805,38 @@ describe('Qualifiers · create and edit', () => {
     const { unmount } = wrap(<QualifierForm data={form({ playersError: true })} writes={fakeWrites()} />);
     expect(code('CH-09208')!.textContent).toMatch(/The roster didn’t load/);
     expect((screen.getByRole('button', { name: 'Create qualifier' }) as HTMLButtonElement).disabled).toBe(true);
+    // Said over the form, where the Create that is off is explained, with Try again; the Players section keeps the title
+    // alone, marking the gap, with no second alert or button (states audit c14).
+    const top = code('CH-09208') as HTMLElement;
+    expect(top.compareDocumentPosition(document.querySelector('.ch-qf-form')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(top).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    const players = screen.getByRole('group', { name: 'Players' });
+    expect(players.querySelector('.ch-notice--covered')!.textContent).toBe('The roster didn’t load');
+    expect(within(players).queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
     unmount();
     const u2 = wrap(<QualifierForm data={form({ players: [], initial: { ...form().initial, playerIds: [] } })} writes={fakeWrites()} />);
     expect(code('CH-09305')!.textContent).toMatch(/No active players on the roster/);
+    // Nobody to enter: said first, over the form (not under Players after ten fields), with Invite players; Create waits,
+    // and the Players head has no "0 of 0".
+    expect(code('CH-09305')!.compareDocumentPosition(document.querySelector('.ch-qf-form')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(code('CH-09305') as HTMLElement).getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
+    expect((screen.getByRole('button', { name: 'Create qualifier' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole('group', { name: 'Players' }).textContent).not.toMatch(/0 of 0/);
     u2.unmount();
     wrap(<QualifierForm data={{ ...previewEditForm(), coursesError: true, roundCourses: [] }} writes={fakeWrites()} />);
     expect(code('CH-09217')!.textContent).toMatch(/Saving keeps the courses already set/);
+  });
+
+  it('the squad readout wraps whole segments with its dots drawn between them, so no line ends on a dot (states audit c14)', () => {
+    wrap(<QualifierForm data={form()} writes={fakeWrites()} />);
+    const row = document.querySelector('.ch-qf-readout__in')!;
+    expect([...row.children].map((seg) => [seg.className, seg.textContent])).toEqual([
+      ['ch-qf-seg', '4 qualify on score'],
+      ['ch-qf-seg', '1 coach pick'],
+      ['ch-qf-seg', '5-player squad'],
+    ]);
+    expect(document.querySelector('.ch-qf-readout')!.textContent).not.toContain('·');
   });
 
   it('CH-09502 leaving with unsaved changes asks first', async () => {
@@ -1935,7 +2097,7 @@ describe('Qualifiers · races and pending scope (owner rules 2 and 4, 2026-10-01
     await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
     // Cal's row says it is saving; nobody else's does.
     const calRow = screen.getByText('Cal', { selector: 'b' }).closest('li') as HTMLElement;
-    expect(within(calRow).getByText('Saving').getAttribute('data-ch-code')).toBe('CH-09408');
+    expect(within(calRow).getByText('Saving…').getAttribute('data-ch-code')).toBe('CH-09408');
     expect(document.querySelectorAll('li [data-ch-code="CH-09408"]')).toHaveLength(1);
     expect((within(calRow).getByRole('button') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Give the place Ben' }) as HTMLButtonElement).disabled).toBe(false);
@@ -1971,7 +2133,7 @@ describe('Qualifiers · races and pending scope (owner rules 2 and 4, 2026-10-01
       const sheet = () => screen.getByRole('dialog', { name: d.name });
       await user.click(within(await screen.findByRole('dialog', { name: d.name })).getByRole('button', { name: 'Reopen qualifier' }));
       // In flight: the sheet is still there and its button says what it is doing.
-      const busy = within(sheet()).getByText('Reopening');
+      const busy = within(sheet()).getByText('Reopening…');
       expect(busy.getAttribute('data-ch-code')).toBe('CH-09406');
       expect((busy.closest('button') as HTMLButtonElement).disabled).toBe(true);
       // Refused: the sheet stays, the button is back, the toast says so.
@@ -1999,6 +2161,12 @@ describe('Qualifiers · loading', () => {
     expect(code('CH-09401')!.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-09402')!.getAttribute('aria-label')).toBe('Loading the qualifier');
     expect(code('CH-09403')!.getAttribute('aria-label')).toBe('Loading the qualifier form');
+    // The detail's skeleton holds the loaded head and facts (measured 2026-10-07): a coach's three actions, and each fact's four lines.
+    const detailSk = code('CH-09402') as HTMLElement;
+    expect(detailSk.querySelector('.ch-qf-head .ch-qf-head__act')!.children).toHaveLength(3);
+    for (const f of detailSk.querySelectorAll('.ch-qf-facts > div')) expect(f.children).toHaveLength(4);
+    // The phone's two figures (Rounds in, Spots) in their two columns: a third wrapped to a second row, 62px (2026-10-18).
+    expect(detailSk.querySelector('.ch-qfm-skel .ch-qfm-facts')!.children).toHaveLength(2);
   });
 });
 
@@ -2011,7 +2179,10 @@ describe('Qualifiers · Manage selections loads in its own shape (2026-10-01)', 
     expect(sk.classList.contains('ch-qfs')).toBe(true);
     expect(sk.querySelectorAll('.ch-qfs-steps > li')).toHaveLength(3);
     expect(sk.querySelector('.ch-qf-note')).not.toBeNull();
-    expect(sk.querySelectorAll('.ch-qf-body .ch-qf-panel')).toHaveLength(2);
+    expect(sk.querySelectorAll(':scope > .ch-qf-body .ch-qf-panel')).toHaveLength(2);
+    // The phone's own shape (hidden on desktop): the two lists at four rows each, the picks, and the foot's one key.
+    const phone = sk.querySelector('.ch-qf-skel-phone') as HTMLElement;
+    expect([phone.querySelectorAll('.ch-qf-body .ch-qf-panel').length, phone.querySelectorAll('.ch-qf-list > li').length, phone.querySelectorAll('.ch-qf-side').length, phone.querySelectorAll('.ch-qfs-foot').length]).toEqual([2, 8, 1, 1]);
     expect(sk.querySelector('.ch-qf-facts')).toBeNull();
     // The route's loading file draws it, not the qualifier's skeleton.
     const loading = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/qualifiers/[id]/selection/loading.tsx'), 'utf8');
@@ -2040,6 +2211,10 @@ describe('Qualifiers · Manage selections', () => {
     unmount();
     wrap(<QualifierSelection data={previewSelection('picking')} writes={selWrites()} />);
     expect(steps().map((s) => s.getAttribute('aria-current'))).toEqual([null, 'step', null]);
+    // Progress, not a switch: the step before is done (checked, no number), the one you are on is marked, the one ahead is plain.
+    expect(steps().map((s) => s.className)).toEqual(['is-done', 'is-now', '']);
+    expect(steps().map((s) => s.querySelector('.ch-qfs-steps__n')!.querySelector('svg') !== null)).toEqual([true, false, false]);
+    expect(steps().map((s) => s.querySelector('.ch-qfs-steps__l')!.textContent)).toEqual(['Standings', 'Coach’s picks', 'Squad confirmed']);
     expect(screen.getByText('Choose a player and say why')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Confirm squad' })).toBeTruthy();
   });
@@ -2197,7 +2372,7 @@ describe('Qualifiers · Manage selections', () => {
     await user.click(open('Confirm squad'));
     await expectCode('CH-09505', /5 players make the trip: Sofia Alvarez, Theo Marchetti, .*Eli Brandt/);
     await user.click(inDialog('CH-09505', 'Confirm squad'));
-    await expectCode('CH-09408', /Confirming/);
+    await expectCode('CH-09408', /Confirming…/);
     await act(async () => settle({ success: false }));
     await expectCode('CH-09008', /nobody was told/);
     expect(router.push).not.toHaveBeenCalled();
@@ -2210,6 +2385,30 @@ describe('Qualifiers · Manage selections', () => {
     await user.click(inDialog('CH-09505', 'Confirm squad'));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${previewSelection().id}`));
     expect(hapticSpy).toHaveBeenCalledWith('success');
+  });
+
+  it('wave-6 while a pick is open, a player in the rest of the field has Pick, which opens the dialog with them chosen; the note counts down', async () => {
+    const user = userEvent.setup();
+    const data = previewSelection('picking');
+    const { unmount } = wrap(<QualifierSelection data={data} writes={selWrites()} />);
+    expect(screen.getByText('Choose 1 coach’s pick, with a reason, to confirm the squad.')).toBeTruthy();
+    const rest = screen.getByRole('region', { name: 'Rest of the field' });
+    const first = data.candidates.filter((c) => c.rank != null && !c.onScore).sort((a, b) => a.rank! - b.rank!)[0]!;
+    await user.click(within(rest).getByRole('button', { name: `Pick ${first.name}` }));
+    const dialog = await screen.findByRole('dialog', { name: 'Choose a coach’s pick' });
+    expect((within(dialog).getByRole('radio', { name: new RegExp(first.name) }) as HTMLInputElement).checked).toBe(true);
+    unmount();
+    // Once the one pick is made, no row offers Pick and the note moves on.
+    wrap(<QualifierSelection data={previewSelection('picked')} writes={selWrites()} />);
+    expect(within(screen.getByRole('region', { name: 'Rest of the field' })).queryByRole('button', { name: /^Pick / })).toBeNull();
+    expect(screen.getByText('Every pick is made. Confirm the squad to tell the players.')).toBeTruthy();
+  });
+
+  it('wave-6 the stage note counts the picks left and a missing reason', () => {
+    expect(stageNoteText(1, { topN: 4, picks: 2 })).toBe('Choose 2 coach’s picks, each with a reason, to confirm the squad.');
+    expect(stageNoteText(1, { topN: 4, picks: 1, made: 1 })).toBe('Choose 1 more coach’s pick, with a reason, to confirm the squad.');
+    expect(stageNoteText(1, { topN: 4, picks: 1, made: 1, reasons: 1 })).toBe('Choose 1 more coach’s pick, with a reason, to confirm the squad. Add the missing reason too.');
+    expect(stageNoteText(1, { topN: 4, picks: 0, made: 2, reasons: 2 })).toBe('Every pick is chosen. Add the 2 missing reasons, then confirm the squad.');
   });
 
   it('Confirm squad stays off until every pick is made with a reason', () => {
@@ -2257,10 +2456,10 @@ describe('Qualifiers · Manage selections', () => {
     expect(selectionReason('reasoning required for coach-pick')).toBe('Say why you picked this player.');
     expect(selectionReason('That player is not on this team')).toBe('That player isn’t on this team.');
     expect(selectionReason("Couldn't confirm your roster just now. Please try again.")).toBe('The roster couldn’t be checked just now. Try again.');
-    expect(selectionReason('could not verify remaining coach-pick slots; please try again')).toBe('The roster couldn’t be checked just now. Try again.');
+    expect(selectionReason('could not verify remaining coach-pick slots; please try again')).toBe('The picks already made couldn’t be checked just now. Try again.');
     expect(selectionReason('cannot confirm: state must be closed, all coach picks chosen with reasoning')).toBe('Choose every pick, each with a reason, before confirming.');
     expect(selectionReason('Qualifier not found')).toMatch(/couldn’t be found/);
-    expect(selectionReason('workspace not loadable')).toMatch(/couldn’t be found/);
+    expect(selectionReason('workspace not loadable')).toMatch(/couldn’t be read just now/);
     expect(selectionReason(undefined)).toBeNull();
   });
 
@@ -2345,8 +2544,13 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
   it('91901 board 02: facts, the leaderboard as cards, and Manage selections for the coach', () => {
     wrap(<QualifierDetail data={detail('live')} writes={fakeWrites()} live={false} />);
     const facts = document.querySelector('.ch-qfm-facts')!;
-    expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots', 'Deadline']);
+    expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots']);
     expect(facts.textContent).toMatch(/4\+1/);
+    // Drawn, decoratively: the rounds posted along the rounds due, and the squad's seats (four won on score, one pick).
+    expect(facts.querySelector('.ch-qf-bar i')).not.toBeNull();
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-score')).toHaveLength(4);
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-pick')).toHaveLength(1);
+    for (const v of facts.querySelectorAll('.ch-qfm-facts__viz')) expect(v.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('link', { name: 'Manage selections' }).getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${detail('live').id}/selection`);
     expect(document.querySelectorAll('.ch-qfm-lb__row').length).toBeGreaterThan(3);
     // Round-by-round stays on desktop (Q-20).
@@ -2422,13 +2626,18 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const writes = fakeWrites();
     inPhone(<QualifierForm data={previewCreateForm()} writes={writes} />);
     const top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'New qualifier' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('New qualifier');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
     expect(screen.getByTestId('tabs-hidden').textContent).toBe('true');
     await user.click(within(top).getByRole('button', { name: 'Create' }));
     await expectCode('CH-09101', /Give the qualifier a name/);
     expect(writes.create).not.toHaveBeenCalled();
     await user.type(screen.getByLabelText('Qualifier name'), 'Conference qualifier');
-    await user.type(screen.getByLabelText('Start date'), '2026-10-19');
+    // On the phone the date is chosen, not typed: the field opens its sheet, and Today is in it.
+    await user.click(screen.getByLabelText('Start date'));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Start date' })).getByRole('button', { name: 'Today' }));
     await user.click(within(top).getByRole('button', { name: 'Cancel' }));
     await expectCode('CH-09502', /Discard your changes/);
     await user.click(inDialog('CH-09502', 'Keep editing'));
@@ -2442,23 +2651,30 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const data = previewSelection('standings');
     inPhone(<QualifierSelection data={data} writes={selWrites()} />);
     const top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'Selections' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('Selections');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
     await user.click(within(top).getByRole('button', { name: 'Back to Qualifier' }));
     expect(router.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${data.id}`);
     expect(within(document.querySelector('.ch-qfs-foot') as HTMLElement).getByRole('button', { name: 'Start selecting' })).toBeTruthy();
   });
 
-  it('91904 the list is topped by "‹ More" and its title, and a player’s own list reads My qualifiers', async () => {
-    const user = userEvent.setup();
+  it('91904 the list is a section root topped by its title (no "‹ More"), and a player’s own list reads My qualifiers', async () => {
     const first = inPhone(<QualifiersList data={list()} />);
     let top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'Qualifiers' })).toBeTruthy();
-    await user.click(within(top).getByRole('button', { name: 'Back to More' }));
-    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBe(1);
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('Qualifiers');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
+    expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     first.unmount();
     inPhone(<QualifiersList data={list('player', 'mine')} />);
     top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'My qualifiers' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('My qualifiers');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
   });
 
   it('90808 on the phone a player has no Qualifier actions, no Edit and no Manage selections, and the coach has all three', () => {
@@ -2683,7 +2899,7 @@ describe('Qualifiers · live standings (background refresh)', () => {
   }
   afterEach(() => vi.useRealTimers());
 
-  it('90304 a live qualifier listens for signed rounds, a burst of them re-reads the page once, and a dropped feed is reported rather than shown', () => {
+  it('90304 a live qualifier listens for signed rounds, a burst of them re-reads the page once, and a dropped feed is reported (and shown as Paused: P009-B2, qualifiers-premium.test)', () => {
     vi.useFakeTimers();
     const { chan, handle } = openChannel();
     const { unmount } = renderHook(() => useLiveStandings('q1', true));
@@ -2737,9 +2953,11 @@ describe('Qualifiers · every write', () => {
     write: (c: Ctx) => Mock;
     render: (c: Ctx) => ReactNode;
     act: (user: User) => Promise<void>;
-    /** The toast that names what landed, and the toast that names what failed. */
+    /** The toast that names what landed, and the words that name what failed. */
     done: string;
     failed: string;
+    /** A refusal the server explains is told by this notice over the form, not by a toast (a save, CH-09902). */
+    notice?: string;
     /** Where the page goes once it lands, or null when it stays put. */
     goes: string | null;
     /** How it gets there: a form that has done its job is replaced (Back does not return to it), a step on is pushed. */
@@ -2781,6 +2999,7 @@ describe('Qualifiers · every write', () => {
       act: (user) => press(user, 'Save changes'),
       done: 'Qualifier saved',
       failed: 'Couldn’t save the qualifier',
+      notice: 'CH-09902',
       goes: `/golf/dashboard/qualifiers/${previewEditForm().id}`,
       via: 'replace',
       reads: true,
@@ -2799,7 +3018,7 @@ describe('Qualifiers · every write', () => {
       goes: null,
       reads: true,
       landed: () => {
-        expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Completed');
+        expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Concluded');
         expect(screen.queryByText('Close this qualifier?')).toBeNull();
       },
     },
@@ -2891,6 +3110,12 @@ describe('Qualifiers · every write', () => {
     return { c, view };
   }
   const refuse = (write: Mock) => write.mockImplementation(async () => ({ success: false, error: 'nope' }));
+  /** A refused write is told once: by its failure toast, or by the form's notice with no toast saying it again. */
+  const toldOnce = async (sc: Scenario) => {
+    if (!sc.notice) return void (await screen.findByText(sc.failed, { selector: '.ch-toast *' }));
+    await screen.findByText(sc.failed, { selector: `[data-ch-code="${sc.notice}"] *` });
+    expect([sc.name, screen.getAllByText(sc.failed).length, document.querySelectorAll('.ch-toast').length]).toEqual([sc.name, 1, 0]);
+  };
 
   it('CH-09009 a squad confirmed while telling the players failed says so (Q-116)', async () => {
     const sc = scenarios.find((x) => x.name === 'confirm the squad')!;
@@ -2931,17 +3156,19 @@ describe('Qualifiers · every write', () => {
     landed.view.unmount();
     clearNav();
     const refused = await drive(sc, refuse);
-    await screen.findByText(sc.failed);
+    await toldOnce(sc);
     expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length, router.replace.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
     refused.view.unmount();
   });
 
-  it('91401 Retry in a failure toast runs the same write again with the same arguments, and everything a landed write does follows this time too', async () => {
+  it('91401 Retry in a failure toast (for a save, saving again under the form’s notice) runs the same write again with the same arguments, and everything a landed write does follows this time too', async () => {
     for (const sc of scenarios) {
       clearNav();
       const { c, view } = await drive(sc, (write) => write.mockResolvedValueOnce({ success: false, error: 'nope' }));
-      await screen.findByText(sc.failed);
-      await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
+      await toldOnce(sc);
+      // The notice has no Retry of its own: the coach saves again, which is the same write.
+      if (sc.notice) await sc.act(userEvent.setup());
+      else await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
       await waitFor(() => expect(sc.write(c)).toHaveBeenCalledTimes(2));
       expect([sc.name, sc.write(c).mock.calls[1]]).toEqual([sc.name, sc.write(c).mock.calls[0]]);
       await screen.findByText(sc.done);
@@ -2959,7 +3186,7 @@ describe('Qualifiers · every write', () => {
         hapticSpy.mockClear();
         clearNav();
         const { c, view } = await drive(sc);
-        await expectCode('CH-1903', new RegExp(`^${sc.failed}: you're offline`));
+        await expectCode('CH-1903', new RegExp(`^${sc.failed}: you’re offline`));
         expect([sc.name, sc.write(c).mock.calls.length, hapticSpy.mock.calls.some(([kind]) => kind === 'error')]).toEqual([sc.name, 0, true]);
         expect([sc.name, router.push.mock.calls.length, router.replace.mock.calls.length, router.refresh.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
         view.unmount();
@@ -2987,7 +3214,7 @@ describe('Qualifiers · when a write is slow or refused, and when a read did not
     const pill = () => document.querySelector('.ch-qf-status')!.textContent;
     await user.click(screen.getByRole('button', { name: 'Close qualifier' }));
     await user.click(inDialog('CH-09501', 'Close qualifier'));
-    await expectCode('CH-09405', /Closing/);
+    await expectCode('CH-09405', /Closing…/);
     expect([pill(), code('CH-09901')]).toEqual(['Live', null]);
     await act(async () => settleClose({ success: false, error: 'nope' }));
     expect([pill(), code('CH-09901')]).toEqual(['Live', null]);
@@ -2996,7 +3223,7 @@ describe('Qualifiers · when a write is slow or refused, and when a read did not
     let settlePick: (v: { success: boolean }) => void = () => {};
     const second = wrap(<QualifierSelection data={previewSelection('picking')} writes={selWrites({ setPick: vi.fn(() => new Promise((r) => (settlePick = r))) })} />);
     await chooseEli(user);
-    await expectCode('CH-09408', /Saving/);
+    await expectCode('CH-09408', /Saving…/);
     expect(screen.getByText('0 of 1 chosen')).toBeTruthy();
     await act(async () => settlePick({ success: true }));
     expect(await screen.findByText('1 of 1 chosen')).toBeTruthy();
@@ -3006,7 +3233,7 @@ describe('Qualifiers · when a write is slow or refused, and when a read did not
     wrap(<QualifierSelection data={previewSelection('picked')} writes={selWrites({ removePick: vi.fn(() => new Promise((r) => (settleRemove = r))) })} />);
     await user.click(screen.getByRole('button', { name: 'Remove Eli Brandt' }));
     await user.click(inDialog('CH-09504', 'Remove'));
-    await expectCode('CH-09408', /Removing/);
+    await expectCode('CH-09408', /Removing…/);
     expect(screen.getByText('1 of 1 chosen')).toBeTruthy();
     await act(async () => settleRemove({ success: false, error: 'nope' }));
     expect(screen.getByText('1 of 1 chosen')).toBeTruthy();

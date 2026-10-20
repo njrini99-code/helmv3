@@ -8,7 +8,7 @@ export function ReviewLoadFailed() {
   const { refresh, refreshing } = useRefresh();
   return (
     <main className="ch-rv" aria-label="Round">
-      <InlineNotice code="CH-11206" title="This round didn't load" body="Nothing is lost; the round is still saved. Try again in a moment." onRetry={refresh} retrying={refreshing} />
+      <InlineNotice code="CH-11206" title="This round didn’t load" body="Nothing is lost; the round is still saved. Try again in a moment." onRetry={refresh} retrying={refreshing} />
     </main>
   );
 }

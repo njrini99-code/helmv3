@@ -83,13 +83,19 @@ async function getEventRSVPSummary(
   eventId: string,
   supabase: SupabaseClient
 ): Promise<RSVPSummary> {
-  const { data: attendances } = await supabase
+  const { data: attendances, error } = await supabase
     .from('golf_event_attendance')
     .select(`
       *,
       player:golf_players(id, first_name, last_name, avatar_url)
     `)
     .eq('event_id', eventId);
+
+  // A failed read is not an empty roster: it used to come back as zero invitees, so the event's People section said
+  // "No one invited yet" instead of offering a retry.
+  if (error) {
+    throw new Error(`Could not load the event's attendance: ${error.message}`);
+  }
 
   const attendanceRows = (attendances || []) as AttendanceWithPlayer[];
   const attendees = attendanceRows.map(attendance => {
@@ -239,6 +245,10 @@ export async function sendEventInvitations(
     .select('id');
   requireWriteSuccess(inviteResult, 'sendEventInvitations');
 
+  // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+  // that doesn't ask for replies. The attendance rows above still record who is on the event.
+  if (!event.requires_rsvp) return;
+
   // Create notifications for each player
   const notifications = players
     .filter(p => p.user_id)
@@ -282,6 +292,9 @@ export async function notifyEventUpdate(
     .single();
 
   if (!event) return;
+  // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+  // that doesn't ask for replies.
+  if (!event.requires_rsvp) return;
 
   // Get all attendees
   const { data: attendances } = await supabase

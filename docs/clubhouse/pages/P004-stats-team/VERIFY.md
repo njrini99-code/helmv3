@@ -1,5 +1,13 @@
 # P004 — Stats (team): verification
 
+## 2026-10-19 — Scorecard pass (lane L6a)
+
+Putting rings, par swatch, scrambling dial reference, no captions under an em dash, print.
+
+Vitest `stats-tape` (the tick, the empty caption) and the stats suites pass (20 files, 432 tests, exit 0). Print was checked as a Letter PDF
+from headless Chromium, light and dark: head line (GolfHelm, team and season, day), no controls, trend card, tape, leg grid, putting and
+season bests each whole on a sheet. Not checked: the scrambling tick on screen (the preview fixture gives the dial no reference), a real Safari print.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 
@@ -280,6 +288,11 @@ before, after, baseline or evidence.
 | `P004__premium-audit__coach__1280__case-019-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-019-chromium-normal; /clubhouse-preview/stats; synthetic preview |
 | `P004__premium-audit__coach__390__case-003-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-003-webkit-reduce; /clubhouse-preview/stats; synthetic preview |
 | `P004__premium-audit__coach__390__case-019-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-019-chromium-normal; /clubhouse-preview/stats; synthetic preview |
+| `P004__figures-lead__coach__1600__default__after__d16567c.png` | after | d16567c | figures-lead (coach), 1600px window, Safari Technology Preview 253; strokes gained lead card beside one supporting surface; loaded row 208px = loading row 208px; /clubhouse-preview/stats; synthetic preview |
+| `P004__figures-lead__coach__1100__narrow-rows__after__d16567c.png` | after | d16567c | figures-lead (coach), 1100px window (767px canvas), Safari TP 253; full-width lead, supporting figures as rows; loaded 559px = loading 559px; /clubhouse-preview/stats; synthetic preview |
+| `P004__figures-lead__coach__1280__loading__after__d16567c.png` | after | d16567c | figures-lead (coach), 1280px window, Safari TP 253; skeleton in the lead layout; loading row 213px = loaded 213px; /clubhouse-preview/stats?state=loading; synthetic preview |
+| `P004__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P004__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -320,7 +333,8 @@ before, after, baseline or evidence.
   written as text now (40501), and the test fails with the fix taken out
   (checked).
 - v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet"
-  (D-71); not built, owner decision.
+  (D-71): built for Team stats (`StatsTeamFirstRun.tsx`; corrected
+  2026-10-17).
 
 ## 2026-10-02 — Settled WebKit filter-sheet targets
 

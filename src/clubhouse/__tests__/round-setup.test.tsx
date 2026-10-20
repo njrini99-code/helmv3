@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { PREVIEW_SETUP_COURSES, PREVIEW_SETUP_QUALIFIERS, PREVIEW_SETUP_TEES, PREVIEW_SETUP_TODAY, previewTeeHoles } from '../preview/fixtures-setup';
@@ -62,12 +62,23 @@ describe('Round setup: rules', () => {
 
   it('110510 names the one thing that stops Start, in the order a player fixes it (CH-11107, CH-11109)', () => {
     expect(setupBlocker({ ...form, pick: null }, PREVIEW_SETUP_TODAY)).toBe('Choose a course to start');
-    expect(setupBlocker({ ...form, date: '2026-10-15' }, PREVIEW_SETUP_TODAY)).toBe("The round's date can't be after today");
+    expect(setupBlocker({ ...form, date: '2026-10-15' }, PREVIEW_SETUP_TODAY)).toBe("The round’s date can’t be after today");
     expect(setupBlocker({ ...form, type: 'qualifier' }, PREVIEW_SETUP_TODAY)).toBe('Choose the qualifier round');
     expect(setupBlocker({ ...form, holes: holes.slice(0, 9) }, PREVIEW_SETUP_TODAY)).toBe('This card has 9 holes; play 9');
-    expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4 needs a yardage');
+    // Yardages follow Fairway's rule for the same course (yardageRule, 2026-10-17). A course typed in by hand needs every one.
+    const typed = { ...form.pick!, courseId: null, teeId: null };
+    expect(setupBlocker({ ...form, pick: typed, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4 needs a yardage');
     // A blank hole on the unplayed nine doesn't stop a 9-hole round.
-    expect(setupBlocker({ ...form, count: 9, holes: holes.map((h) => (h.n === 14 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, pick: typed, count: 9, holes: holes.map((h) => (h.n === 14 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    // A library tee's card starts on its pars: a blank yardage starts at 0, as Fairway's preloaded start allows; one over
+    // the limit still stops it.
+    expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, holes: holes.map((h) => ({ ...h, yards: '' })) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '1200' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4: 1200 yards is too long (999 at most)');
+    // A saved course needs a yardage on at least one hole.
+    const saved = { ...form.pick!, teeId: null, savedId: 'sc1' };
+    expect(setupBlocker({ ...form, pick: saved, holes: holes.map((h) => (h.n === 4 ? h : { ...h, yards: '' })) }, PREVIEW_SETUP_TODAY)).toBeNull();
+    expect(setupBlocker({ ...form, pick: saved, holes: holes.map((h) => ({ ...h, yards: '' })) }, PREVIEW_SETUP_TODAY)).toBe('Add a yardage for at least one hole');
     expect(setupBlocker(form, PREVIEW_SETUP_TODAY)).toBeNull();
     expect(holeIssue({ n: 2, par: 4, yards: '0' })).toBe('Hole 2 needs a yardage');
   });
@@ -105,6 +116,10 @@ describe('112401 Round setup: picking a course', () => {
   it('110103 CH-11309 before a course, Start waits and the scorecard holds its place', () => {
     setup();
     expect(code('CH-11309')).toHaveTextContent('Your scorecard appears here once you pick a course and tees.');
+    // Wave 10 (D): the hole numbers hold the place, with no grey bars that read as loading.
+    const ghost = code('CH-11309')!.querySelector('.ch-rsu-hc__ghost')!;
+    expect([...ghost.querySelectorAll('b')].map((b) => b.textContent)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9']);
+    expect(ghost.querySelectorAll('i, .ch-skel')).toHaveLength(0);
     expect(dock()).toHaveTextContent('Choose a course to start');
     expect(startBtn()).toBeDisabled();
   });
@@ -122,6 +137,18 @@ describe('112401 Round setup: picking a course', () => {
     expect(screen.getByRole('button', { name: /Play the Gold tees, not ready yet/ })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Courses' }));
     expect(await screen.findByRole('region', { name: 'Team courses' })).toBeInTheDocument();
+  });
+
+  it('CH-11404 a course\u2019s tees are asked for as the hand reaches its card, once, and the tee list opens on them', async () => {
+    const { user, ports } = setup();
+    await user.click(screen.getByRole('button', { name: /Browse courses/ }));
+    const card = await within(code('CH-11510')!).findByRole('button', { name: /^Finley GC/ });
+    await user.hover(card);
+    expect(ports.listTees).toHaveBeenCalledTimes(1);
+    expect(ports.listTees).toHaveBeenCalledWith('finley');
+    await user.click(card);
+    expect(await screen.findByRole('button', { name: 'Play the Blue tees, 6,984 yards' })).toBeEnabled();
+    expect(ports.listTees).toHaveBeenCalledTimes(1);
   });
 
   it('CH-11403 the library is on its way, in the shape of its rows', async () => {
@@ -148,6 +175,8 @@ describe('112401 Round setup: picking a course', () => {
     await pickFinleyBlue(user);
     expect(dock()).toHaveTextContent('Finley GC · Blue · 9 holes · Par 36');
     expect(within(screen.getByRole('radiogroup', { name: 'Holes' })).getByRole('radio', { name: '18 holes' })).toBeDisabled();
+    // Why 18 is off.
+    expect(screen.getByText('These tees have 9 holes')).toBeInTheDocument();
   });
 
   it('111503 a slow tee read for a course left behind never replaces the next course’s tees', async () => {
@@ -171,14 +200,15 @@ describe('112401 Round setup: picking a course', () => {
     await user.click(screen.getByRole('radio', { name: 'Back 9' }));
     expect(screen.getByRole('radiogroup', { name: 'Hole 10 par' })).toBeInTheDocument();
     expect(screen.queryByRole('radiogroup', { name: 'Hole 1 par' })).toBeNull();
-    expect(dock()).toHaveTextContent('9 holes · Par 36');
+    // Nine of an 18-hole card: the dock says which nine.
+    expect(dock()).toHaveTextContent('Finley GC · Blue · Back nine · Par 36');
   });
 
   it('111402 CH-11209 the library didn’t load, with Try again', async () => {
     const listCourses = vi.fn().mockReturnValueOnce(fail()).mockReturnValue(ok(PREVIEW_SETUP_COURSES));
     const { user } = setup({ listCourses });
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
-    await waitFor(() => expect(code('CH-11209')).toHaveTextContent("The course library didn't load"));
+    await waitFor(() => expect(code('CH-11209')).toHaveTextContent("The course library didn’t load"));
     await user.click(within(code('CH-11209')!).getByRole('button', { name: /Try again/ }));
     expect(await screen.findByRole('region', { name: 'Recently played' })).toBeInTheDocument();
   });
@@ -187,7 +217,7 @@ describe('112401 Round setup: picking a course', () => {
     const { user } = setup({ listTees: vi.fn((id: string) => (id === 'finley' ? fail() : ok(PREVIEW_SETUP_TEES[id] ?? []))) });
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
     await user.click(await within(code('CH-11510')!).findByRole('button', { name: /^Finley GC/ }));
-    await waitFor(() => expect(code('CH-11208')).toHaveTextContent("The tees at Finley GC didn't load"));
+    await waitFor(() => expect(code('CH-11208')).toHaveTextContent("The tees at Finley GC didn’t load"));
     await user.click(screen.getByRole('button', { name: 'Courses' }));
     await user.click(await screen.findByRole('button', { name: /Chapel Ridge GC/ }));
     await waitFor(() => expect(code('CH-11311')).toHaveTextContent('Chapel Ridge GC has no tees ready to play yet'));
@@ -220,7 +250,7 @@ describe('Round setup: details and starting', () => {
     const { user, onStarted } = setup({ start });
     await pickFinleyBlue(user);
     await user.click(startBtn());
-    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn't start your round at Finley GC"));
+    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
     expect(onStarted).not.toHaveBeenCalled();
     expect(start.mock.calls[0]![0]).toMatchObject({ pick: { teeId: 'finley-blue' }, count: 18, type: 'practice', date: PREVIEW_SETUP_TODAY });
     await user.click(within(code('CH-11007')!).getByRole('button', { name: 'Retry' }));
@@ -234,7 +264,7 @@ describe('Round setup: details and starting', () => {
     await user.clear(date);
     await user.type(date, '2026-10-20');
     expect(code('CH-11109')).not.toBeNull();
-    expect(dock()).toHaveTextContent("The round's date can't be after today");
+    expect(dock()).toHaveTextContent("The round’s date can’t be after today");
     expect(startBtn()).toBeDisabled();
   });
 
@@ -255,7 +285,7 @@ describe('Round setup: details and starting', () => {
     document.body.innerHTML = '';
     const second = setup({}, null);
     await second.user.click(screen.getByRole('radio', { name: 'Qualifier' }));
-    expect(code('CH-11211')).toHaveTextContent("Your qualifiers didn't load");
+    expect(code('CH-11211')).toHaveTextContent("Your qualifiers didn’t load");
   });
 
   it('closing Add a course goes back to the course picker it was opened from, as on the board', async () => {
@@ -284,12 +314,43 @@ describe('Round setup: details and starting', () => {
     expect(code('CH-11108')).toHaveTextContent('Hole 1 needs a yardage');
     for (let n = 1; n <= 9; n++) await user.type(within(sheet).getByLabelText(`Hole ${n} yardage`), String(300 + n));
     await user.click(next());
-    expect(within(sheet).getByText('Chapel Ridge GC')).toBeInTheDocument();
+    // The review's summary and the preview beside it both name the course.
+    expect(within(sheet.querySelector('.ch-acs-sum') as HTMLElement).getByText('Chapel Ridge GC')).toBeInTheDocument();
     expect(within(sheet).getByRole('checkbox')).toBeChecked();
     await user.click(next());
     expect(dock()).toHaveTextContent('Chapel Ridge GC · Blue · 9 holes · Par 36');
     await user.click(startBtn());
     await waitFor(() => expect(ports.start).toHaveBeenCalled());
     expect(vi.mocked(ports.start).mock.calls[0]![0]).toMatchObject({ pick: { courseId: null, teeId: null, courseName: 'Chapel Ridge GC' }, count: 9, saveCourse: true });
+  });
+
+  it('CH-11511 the photo chosen for a typed course goes with the round\u2019s start, and only a real image is taken', async () => {
+    const { user, ports } = setup();
+    await user.click(screen.getByRole('button', { name: /Browse courses/ }));
+    await user.click(await screen.findByRole('button', { name: /Add a course/ }));
+    const sheet = code('CH-11511')!;
+    const slot = sheet.querySelector('.ch-acs__photo input[type=file]') as HTMLInputElement;
+    fireEvent.change(slot, { target: { files: [new File(['x'], 'notes.txt', { type: 'text/plain' })] } });
+    expect(within(sheet).getByRole('alert')).toHaveTextContent('Use a JPG, PNG, WebP or AVIF photo');
+    const photo = new File(['img'], 'course.webp', { type: 'image/webp' });
+    fireEvent.change(slot, { target: { files: [photo] } });
+    expect(within(sheet).queryByRole('alert')).toBeNull();
+    // The preview is drawn from the file's pixels (a canvas), never from a URL made of the file.
+    expect(sheet.querySelector('.ch-acs__photo canvas')).not.toBeNull();
+    expect(sheet.querySelector('.ch-acs__photo img')).toBeNull();
+    expect(within(sheet).getByRole('button', { name: 'Remove photo' })).toBeInTheDocument();
+    const next = () => within(sheet).getByRole('button', { name: /Next|Use this course/ });
+    await user.type(within(sheet).getByLabelText('Course name'), 'Chapel Ridge GC');
+    await user.click(within(sheet).getByRole('radio', { name: '9 holes' }));
+    await user.click(next());
+    await user.click(within(sheet).getByRole('radio', { name: 'Blue' }));
+    await user.click(next());
+    for (let n = 1; n <= 9; n++) await user.type(within(sheet).getByLabelText(`Hole ${n} yardage`), String(300 + n));
+    await user.click(next());
+    await user.click(next());
+    await user.click(startBtn());
+    await waitFor(() => expect(ports.start).toHaveBeenCalled());
+    expect(vi.mocked(ports.start).mock.calls[0]![0].coursePhoto).toBe(photo);
+    vi.restoreAllMocks();
   });
 });

@@ -4,9 +4,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { localDayIso } from '@/lib/golf/local-day';
 import { useNewRoundSession } from '@/lib/golf/round-session/use-new-round-session';
+import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { haptic } from '../../../lib/haptics';
 import { useToast } from '../../../ui/Toast';
 import { RoundEntrySkeleton } from '../RoundsSkeleton';
+import { clearSetupDraft, useSetupDraftKey } from '../setup/draft';
 import { RoundSetup } from '../setup/RoundSetup';
 import type { ChSetupPorts, ChSetupQualifier } from '../setup/shape';
 import { reasonText } from './labels';
@@ -15,7 +17,8 @@ import { useRoundPorts } from './ports';
 import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRuntime';
 import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
-import { loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
+import { afterSavedCourseStart, loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
+import { canvasScrollNow } from '../../../lib/smooth-scroll';
 
 const LIBRARY = '/golf/dashboard/rounds';
 
@@ -71,7 +74,12 @@ export function NewRound({ playerId }: { playerId: string }) {
       ...SETUP_READ_PORTS,
       start: async (form) => {
         const result = await latest.current.start(toStartForm(form));
-        if (result.ok) return { ok: true, data: { roundId: result.roundId } };
+        if (result.ok) {
+          // A round from one of the player's saved courses: its use is noted, and one with no library course behind it
+          // is offered to the library, as Fairway's saved-course start does. Both best-effort, never awaited.
+          if (form.pick?.savedId) afterSavedCourseStart(form);
+          return { ok: true, data: { roundId: result.roundId } };
+        }
         const { open, ...refusal } = startRefusal(result);
         if (open) {
           // CH-11907: the qualifier's round is already under way, so it opens; starting is refused for good.
@@ -116,10 +124,16 @@ export function NewRound({ playerId }: { playerId: string }) {
   }, [conflictAttempt, engine.step]);
 
   const tracking = engine.step === 'tracking' || engine.step === 'submitting';
+  // The setup kept for this tab is spent once a round is under way (however it started: setup, or the in-progress
+  // dialog's Start a new round), and again once it posts.
+  const draftKey = useSetupDraftKey(playerId);
+  useEffect(() => {
+    if (tracking || engine.completedRoundId) clearSetupDraft(draftKey);
+  }, [tracking, engine.completedRoundId, draftKey]);
   // The setup and the round are different screens on one address: the new one opens at its top.
   useEffect(() => {
-    document.getElementById('ch-canvas')?.scrollTo({ top: 0 });
-    window.scrollTo({ top: 0 });
+    canvasScrollNow(0);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [tracking]);
 
   const completed = engine.completedHoleStats[engine.currentHoleIndex];
@@ -129,6 +143,7 @@ export function NewRound({ playerId }: { playerId: string }) {
     heading: roundHeading(engine.setupData),
     holes: engine.holes,
     currentHoleIndex: engine.currentHoleIndex,
+    startHole: normalizeStartHole(engine.setupData.startHole, engine.holes.length),
     setCurrentHoleIndex: engine.setCurrentHoleIndex,
     completedHoleStats: engine.completedHoleStats,
     activeHoleShots,
@@ -180,6 +195,7 @@ export function NewRound({ playerId }: { playerId: string }) {
           onStarted={() => undefined}
           preselectQualifierId={params.get('qualifier')}
           isOffline={offline}
+          viewerId={playerId}
         />
       )}
       <RecoveryHost

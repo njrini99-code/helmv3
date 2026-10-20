@@ -2,15 +2,21 @@
 
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
+import { Swap } from '../../ui/Swap';
 import { AuthFrame, type AuthPhase } from './AuthFrame';
+import { useAuthView } from './auth-view';
+import { ResetForm, ResetSent } from './ForgotPassword';
 import { SceneMount } from './SceneMount';
 import { SignInForm, type SignInPreview } from './SignInForm';
-import type { loginAction } from '@/app/golf/actions/auth';
-import { isDarkSky } from './scene-sky';
-import { useLocalHour } from './use-hour';
+import type { loginAction, requestPasswordResetAction } from '@/app/golf/actions/auth';
+import { isDarkSky, paperTint } from './scene-sky';
+import { useGlide, type Glider } from './use-glide';
+import { useKeyboardLift } from './use-keyboard-lift';
+import { useSkyHour } from './use-hour';
 import { useQueryParam } from './use-query-param';
 
 /**
@@ -18,17 +24,48 @@ import { useQueryParam } from './use-query-param';
  * right (a sheet under the course on a phone). When a sign-in lands, the form
  * leaves and the course takes the frame; the welcome route then draws itself
  * over the same frame. Everything that signs in is `SignInForm`.
+ *
+ * The panel also holds the reset form and its check-your-email (CH-15920, owner
+ * 2026-10-07, up for owner review): the course stays put and the panel's content
+ * slides between the views (CH-15612), the lockup and the panel's chrome still.
  */
-export function SignIn({ signIn, initial, navigate }: { signIn?: typeof loginAction; initial?: SignInPreview; navigate?: (href: string) => void } = {}) {
+export function SignIn({
+  signIn,
+  requestReset,
+  initial,
+  navigate,
+}: {
+  signIn?: typeof loginAction;
+  requestReset?: typeof requestPasswordResetAction;
+  initial?: SignInPreview;
+  navigate?: (href: string) => void;
+} = {}) {
   const [phase, setPhase] = useState<AuthPhase>('login');
   const [native, setNative] = useState(false);
   useEffect(() => setNative(isNativeApp()), []);
+  const reduced = useChReducedMotion();
+  // The stage is centred in the desktop panel: a view of another height recentres it, and it glides there (CH-15612).
+  const stageRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  useKeyboardLift(panelRef);
+  const stageGliders = useMemo<Glider[]>(() => [{ ref: stageRef }], []);
+  const glide = useGlide(reduced, stageGliders);
+  const { view, dir, moved, openForgot, showSent, backToSignIn } = useAuthView(glide.capture);
+  // The address travels between the views, so it is typed once.
+  const [carried, setCarried] = useState('');
+  const [sentTo, setSentTo] = useState('');
+  useLayoutEffect(() => {
+    if (moved) glide.play();
+  }, [view, moved, glide]);
   const returnTo = useQueryParam('returnTo');
   const signupHref = returnTo ? `/golf/signup?returnTo=${encodeURIComponent(returnTo)}` : '/golf/signup';
   const opening = phase === 'opening';
-  const hour = useLocalHour();
+  // P015-A1: the sun decides dusk, as it does for the sky behind.
+  const hour = useSkyHour();
   // At dusk and night the wordmark over the sky flips to ivory, as the welcome's type does.
   const dark = hour !== null && isDarkSky(hour);
+  // P015-A2: the sheet takes a few percent of the light outside.
+  const tint = hour === null ? null : paperTint(hour);
 
   return (
     <AuthFrame screen="signin" phase={phase}>
@@ -52,9 +89,10 @@ export function SignIn({ signIn, initial, navigate }: { signIn?: typeof loginAct
           </p>
         </div>
       </div>
-      <main className="ch-au-panel" aria-label="Sign in" aria-hidden={opening || undefined} inert={opening || undefined}>
+      <main ref={panelRef} className="ch-au-panel" style={tint ? ({ ['--ch-au-paper' as string]: tint } as CSSProperties) : undefined} aria-label={view === 'signin' ? 'Sign in' : 'Reset your password'} aria-hidden={opening || undefined} inert={opening || undefined}>
         <div className="ch-au-top">
-          {/* The App Store build has no marketing home to go back to (the proxy sends "/" straight back here), and no sign-up (Guideline 3.1.1). */}
+          {/* The App Store build has no marketing home to go back to (the proxy sends "/" straight back here), and no sign-up (Guideline 3.1.1).
+              CH-15611: hovered, its chevron leans back the way it goes; pressed, it tints. */}
           {!native && (
             <Link href="/" className="ch-au-back" aria-label="Back to home" data-ch-code="CH-15905">
               <Icon icon={ChevronLeft} size={16} />
@@ -62,7 +100,51 @@ export function SignIn({ signIn, initial, navigate }: { signIn?: typeof loginAct
             </Link>
           )}
         </div>
-        <SignInForm onOpening={() => setPhase('opening')} signIn={signIn} initial={initial} navigate={navigate} />
+        <div className="ch-au-stage" id="ch-au-form" ref={stageRef}>
+          <div className="ch-au-lock">
+            <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={46} height={46} />
+            <span>
+              Golf<b>Helm</b>
+            </span>
+          </div>
+          {/* CH-15612: the views slide 12px the way the person is going (on to the reset form and the email, back to sign
+              in) and crossfade; the leaving one is hidden from assistive technology at once (CH-15820). */}
+          <Swap swapKey={view} kind="slide" dir={dir} className="ch-au-views">
+            {view === 'signin' ? (
+              <SignInForm
+                onOpening={() => setPhase('opening')}
+                signIn={signIn}
+                // Back from the reset form, the address comes back with it; the first paint draws what the preview asked for.
+                initial={moved ? { email: carried } : initial}
+                navigate={navigate}
+                onForgot={(email) => {
+                  setCarried(email);
+                  openForgot();
+                }}
+                focusOnMount={moved}
+                stageRef={stageRef}
+              />
+            ) : view === 'forgot' ? (
+              <ResetForm
+                initialEmail={carried}
+                focusOnMount={moved}
+                stageRef={stageRef}
+                requestReset={requestReset}
+                onSent={(email) => {
+                  setSentTo(email);
+                  setCarried(email);
+                  showSent();
+                }}
+                onBack={(email) => {
+                  setCarried(email);
+                  backToSignIn();
+                }}
+              />
+            ) : (
+              <ResetSent email={sentTo} focusOnMount={moved} onBack={backToSignIn} />
+            )}
+          </Swap>
+        </div>
         <div className="ch-au-bottom">
           <div className="ch-au-foot">
             {!native && (

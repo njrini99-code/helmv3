@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -60,6 +60,10 @@ import {
   screenFile,
   sharesOf,
   sortProspects,
+  isNextStepDue,
+  isNextStepLate,
+  nextStepKind,
+  nextStepSummary,
   telHref,
   toDocument,
   toProspect,
@@ -79,10 +83,13 @@ import { ClubhouseMarker } from '../shell/context';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
-import { PREVIEW_DOCUMENTS, PREVIEW_PROSPECTS, PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED, PREVIEW_RECRUITING_NOW } from '../preview/fixtures-recruiting';
+import { PREVIEW_DOCUMENTS, PREVIEW_PROSPECTS, PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED, PREVIEW_RECRUITING_NEXT, PREVIEW_RECRUITING_NO_DIVISION, PREVIEW_RECRUITING_NOW } from '../preview/fixtures-recruiting';
 
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
-const codes = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)];
+// A swap's leaving copy (ui/Swap.tsx: the list as a stage is picked, CH-14603) is hidden from assistive tech while it
+// fades; jsdom never finishes the fade, so read the live copy only.
+const LEAVING = '.ch-swap__body[aria-hidden]';
+const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((e) => !e.closest(LEAVING)) ?? null;
+const codes = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].filter((e) => !e.closest(LEAVING));
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -273,7 +280,7 @@ describe('Recruiting · the loader, the route and the page', () => {
     expect(await loadRecruiting()).toEqual({ kind: 'noTeam' });
     session.current = { coach: { id: 'c1' } };
     render(<ToastProvider>{await ClubhouseRecruitingRoute()}</ToastProvider>);
-    expect(code('CH-14306')?.textContent).toMatch(/You aren't on a team yet/);
+    expect(code('CH-14306')?.textContent).toMatch(/You aren’t on a team yet/);
     expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
   });
 
@@ -360,10 +367,11 @@ describe('Recruiting · the loader, the route and the page', () => {
     click.mockRestore();
   });
 
-  it('Recruiting is in the coach\'s sidebar under Team, after Roster, and is a rebuilt route for coaches only', () => {
+  it('Recruiting is in the coach\'s sidebar under Team, after Roster (not beside it), and is a rebuilt route for coaches only', () => {
     const i = CH_NAV_COACH.findIndex((n) => n.id === 'recruiting');
     expect(CH_NAV_COACH[i]).toMatchObject({ label: 'Recruiting', href: '/golf/dashboard/recruiting', section: 'Team' });
-    expect(CH_NAV_COACH[i - 1]?.id).toBe('roster');
+    // Not next to Roster any more: Team Hub, Roster, Stats, Qualifiers, then Recruiting (owner, 2026-10-16).
+    expect(i).toBeGreaterThan(CH_NAV_COACH.findIndex((n) => n.id === 'roster'));
     expect(isRebuilt('/golf/dashboard/recruiting', 'coach')).toBe(true);
     expect(isRebuilt('/golf/dashboard/recruiting', 'player')).toBe(false);
     expect(CH_REBUILT_ROUTES.player).not.toContain('/golf/dashboard/recruiting');
@@ -381,10 +389,11 @@ describe('Recruiting · desktop', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Recruiting' })).toBeTruthy();
     const group = screen.getByRole('group', { name: 'Filter by stage' });
     expect(group.getAttribute('data-ch-code')).toBe('CH-14801');
-    for (const [name, pct] of [['Watched, 3 prospects', '38% of list'], ['Recruiting, 3 prospects', '38% of list'], ['Offered, 1 prospect', '12% of list'], ['Committed, 1 prospect', '12% of list']] as const) {
+    // P014 finding #4 (intentional change): the share of the list is no longer drawn; the count and its label carry it.
+    for (const name of ['Watched, 3 prospects', 'Recruiting, 3 prospects', 'Offered, 1 prospect', 'Committed, 1 prospect']) {
       const b = within(group).getByRole('button', { name });
       expect(b.getAttribute('aria-pressed')).toBe('false');
-      expect(b.textContent).toContain(pct);
+      expect(b.textContent).not.toContain('% of list');
     }
     expect(screen.getByText('8 prospects · 1 committed')).toBeTruthy();
     expect(screen.getByRole('table').getAttribute('data-ch-code')).toBe('CH-14802');
@@ -423,6 +432,23 @@ describe('Recruiting · desktop', () => {
     await user.type(screen.getByRole('searchbox', { name: 'Search prospects' }), 'tampa');
     expect(screen.getByRole('button', { name: 'Watched, 3 prospects' })).toBeTruthy();
     expect(screen.getByText('8 prospects · 1 committed')).toBeTruthy();
+  });
+
+  it('CH-14603 the kept stage comes back in place and a search narrows in place; picking or letting go of a stage settles the list in', async () => {
+    const user = userEvent.setup();
+    const leaving = () => document.querySelector('.ch-rec-list .ch-swap__body[aria-hidden]');
+    localStorage.setItem('ch-recruiting-stage', 'offered');
+    wrap(PREVIEW_RECRUITING, fakeWrites(), null);
+    await waitFor(() => expect(rowNames()).toEqual(['Mason Reilly']));
+    expect(leaving()).toBeNull();
+    const search = screen.getByRole('searchbox', { name: 'Search prospects' });
+    await user.type(search, 'zzz');
+    await user.clear(search);
+    expect(leaving()).toBeNull();
+    await user.click(screen.getByRole('button', { name: /^Show all/ }));
+    // The one-prospect list fades out behind all eight (jsdom never finishes the fade), hidden from assistive tech.
+    expect(leaving()?.textContent).toContain('Mason Reilly');
+    expect(rowNames()).toHaveLength(8);
   });
 
   it('search finds a prospect by name, hometown, state, email or notes, Esc clears it, and the list keeps the open prospect', async () => {
@@ -468,14 +494,14 @@ describe('Recruiting · desktop', () => {
   it('CH-14302 a search and a stage that match nothing say so, and Search all stages and Clear search are the ways back; the open prospect stays open', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_RECRUITING, fakeWrites(), { query: 'Tampa', stage: 'offered', openId: 'p-owen' });
-    expect(code('CH-14302')?.textContent).toContain('No prospects match "Tampa" in Offered');
-    expect(code('CH-14302')?.textContent).toContain('Search looks at names, hometowns, email and notes. Try another word, or look across every stage.');
+    expect(code('CH-14302')?.textContent).toContain('No prospects match “Tampa” in Offered');
+    expect(code('CH-14302')?.textContent).toContain('Search looks at names, hometowns, states, email and notes. Try another word, or look across every stage.');
     expect(panel('Owen Park')).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
     expect(screen.getByRole('button', { name: 'Offered, 1 prospect' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(screen.getByRole('button', { name: 'Search all stages' }));
     // The search is kept; only the stage goes.
-    expect(code('CH-14302')?.textContent).toContain('No prospects match "Tampa"');
+    expect(code('CH-14302')?.textContent).toContain('No prospects match “Tampa”');
     expect(code('CH-14302')?.textContent).not.toContain('in Offered');
     expect(screen.queryByRole('button', { name: 'Search all stages' })).toBeNull();
     await user.click(within(code('CH-14302') as HTMLElement).getByRole('button', { name: 'Clear search' }));
@@ -491,16 +517,17 @@ describe('Recruiting · desktop', () => {
     expect(rowNames()).toHaveLength(7);
   });
 
-  it('CH-14301 first run is its own page: four zeros with their buttons off, no header Add, and Add your first prospect, which opens the dialog', async () => {
+  it('CH-14301 first run is its own page: the page empty alone under the head (no four-zero pipeline), no header Add, and Add your first prospect, which opens the dialog', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_RECRUITING_EMPTY);
     expect(code('CH-14301')?.textContent).toContain('Your prospect list starts here');
     expect(code('CH-14301')?.textContent).toContain('move them through Watched, Recruiting, Offered and Committed.');
-    expect(screen.getByText('Nobody yet. Stages fill as you add prospects.')).toBeTruthy();
+    // States audit c2: four empty stages said nothing the page empty doesn't, and pushed its Add below the fold.
+    expect(screen.queryByText('Nobody yet. Stages fill as you add prospects.')).toBeNull();
     for (const name of ['Watched, 0 prospects', 'Recruiting, 0 prospects', 'Offered, 0 prospects', 'Committed, 0 prospects']) {
-      expect((screen.getByRole('button', { name }) as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.queryByRole('button', { name })).toBeNull();
     }
-    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4);
+    expect(document.querySelector('.ch-rec-pipe')).toBeNull();
     expect(screen.queryByRole('searchbox')).toBeNull();
     expect(screen.getAllByRole('button', { name: /^Add/ })).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Add your first prospect' }));
@@ -510,7 +537,7 @@ describe('Recruiting · desktop', () => {
   it('CH-14201 CH-14911 a list that did not load says so with Try again, which asks the server again; it is never "your list starts here"', async () => {
     const user = userEvent.setup();
     const { again } = wrap(PREVIEW_RECRUITING_FAILED);
-    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn't load.*Nothing was lost; this page just couldn't reach them/);
+    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn’t load.*Nothing was lost; this page just couldn’t reach them/);
     expect(code('CH-14301')).toBeNull();
     expect(screen.queryByRole('group', { name: 'Filter by stage' })).toBeNull();
     // The board keeps Add prospect in the header beside the notice.
@@ -597,6 +624,9 @@ describe('Recruiting · desktop', () => {
     await act(async () => save.resolve({ success: true }));
     await waitFor(() => expect(document.querySelector('p[data-ch-code="CH-14803"]')?.textContent).toBe('Mason Reilly is now Committed'));
     expect(document.querySelector('p[data-ch-code="CH-14803"]')?.getAttribute('role')).toBe('status');
+    // P014 B1 (intentional change): a commit's success haptic lands as its gilt rule finishes drawing, not as the save lands.
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    fireEvent.animationEnd(document.querySelector('.ch-rec-commit.is-drawing')!);
     expect(hapticSpy).toHaveBeenCalledWith('success');
     // A picked stage is the most recently updated.
     expect(rowNames()[0]).toBe('Mason Reilly');
@@ -608,7 +638,7 @@ describe('Recruiting · desktop', () => {
     w.update.mockImplementation(() => fail('Failed to update recruit'));
     wrap(PREVIEW_RECRUITING, w);
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
-    await expectCode('CH-14003', /Couldn't move Mason Reilly to Committed/);
+    await expectCode('CH-14003', /Couldn’t move Mason Reilly to Committed/);
     expect(code('CH-14003')!.textContent).toMatch(/Failed to update recruit\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     // Back where they were, everywhere.
@@ -641,7 +671,7 @@ describe('Recruiting · desktop', () => {
     await waitFor(() => expect(w.update).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(stageOf('Mason Reilly')).toBe('Offered'));
     expect(report).toHaveBeenCalledWith(expect.objectContaining({ message: 'network down' }), expect.objectContaining({ action: 'recruiting.stage' }));
-    await waitFor(() => expect(codes('CH-14003').map((t) => t.textContent).join(' ')).toMatch(/Couldn't move Mason Reilly to Recruiting/));
+    await waitFor(() => expect(codes('CH-14003').map((t) => t.textContent).join(' ')).toMatch(/Couldn’t move Mason Reilly to Recruiting/));
   });
 
   it('CH-14901 offline a stage change is refused before it moves anything: the shell says so, nothing is sent and nothing has to be put back', async () => {
@@ -650,7 +680,7 @@ describe('Recruiting · desktop', () => {
     wrap(PREVIEW_RECRUITING, w);
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
-    await expectCode('CH-1903', /Couldn't move Mason Reilly to Committed: you're offline/);
+    await expectCode('CH-1903', /Couldn’t move Mason Reilly to Committed: you’re offline/);
     expect(w.update).not.toHaveBeenCalled();
     expect(stageOf('Mason Reilly')).toBe('Offered');
     // Back online, Retry does it.
@@ -671,24 +701,31 @@ describe('Recruiting · desktop', () => {
 
   // ── Delete, and the question first ─────────────────────────────────────────
 
+  /** P014 finding #3 (intentional change): on desktop Delete sits in the panel's overflow menu, not as a link always in view. */
+  const askDelete = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+    expect(within(panel(name)).queryByRole('button', { name: 'Delete prospect' })).toBeNull();
+    await user.click(within(panel(name)).getByRole('button', { name: `More for ${name}` }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete prospect' }));
+  };
+
   it('CH-14501 CH-14702 CH-14907 CH-14406 delete asks first, with a warning felt before the question; Keep them leaves everything; Delete removes the prospect and opens the next', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
     wrap(PREVIEW_RECRUITING, w);
-    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Delete prospect' }));
+    await askDelete(user, 'Mason Reilly');
     expect(hapticSpy).toHaveBeenCalledWith('warning');
-    expect(code('CH-14501')?.textContent).toMatch(/Delete Mason Reilly\?.*This removes them from your list, with their notes and documents\. This can't be undone\./);
+    expect(code('CH-14501')?.textContent).toMatch(/Delete Mason Reilly\?.*This removes them from your list, with their notes and documents\. This can’t be undone\./);
     expect(w.remove).not.toHaveBeenCalled();
     await user.click(within(dlg()).getByRole('button', { name: 'Keep them' }));
     expect(w.remove).not.toHaveBeenCalled();
     expect(rowNames()).toHaveLength(8);
-    // Delete, answered slowly: "Deleting" and nothing can be double-tapped.
+    // Delete, answered slowly: "Deleting…" and nothing can be double-tapped.
     const slow = deferred<{ success: boolean }>();
     w.remove.mockReturnValue(slow.promise);
-    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Delete prospect' }));
+    await askDelete(user, 'Mason Reilly');
     await user.click(within(dlg()).getByRole('button', { name: 'Delete prospect' }));
-    expect(code('CH-14406')?.textContent).toBe('Deleting');
-    expect((within(dlg()).getByRole('button', { name: 'Deleting' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(code('CH-14406')?.textContent).toBe('Deleting…');
+    expect((within(dlg()).getByRole('button', { name: 'Deleting…' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => slow.resolve({ success: true }));
     await waitFor(() => expect(rowNames()).toHaveLength(7));
     expect(w.remove).toHaveBeenCalledTimes(1);
@@ -706,9 +743,9 @@ describe('Recruiting · desktop', () => {
     const w = fakeWrites();
     w.remove.mockImplementation(() => fail());
     wrap(PREVIEW_RECRUITING, w);
-    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Delete prospect' }));
+    await askDelete(user, 'Mason Reilly');
     await user.click(within(dlg()).getByRole('button', { name: 'Delete prospect' }));
-    await expectCode('CH-14004', /Couldn't delete Mason Reilly/);
+    await expectCode('CH-14004', /Couldn’t delete Mason Reilly/);
     expect(code('CH-14501')).not.toBeNull();
     expect(rowNames()).toHaveLength(8);
     w.remove.mockImplementation(() => ok());
@@ -799,10 +836,10 @@ describe('Recruiting · desktop', () => {
     await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'Ellie');
     await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
     await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
-    expect(code('CH-14403')?.textContent).toBe('Saving');
-    expect((within(dlg()).getByRole('button', { name: 'Saving' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(code('CH-14403')?.textContent).toBe('Saving…');
+    expect((within(dlg()).getByRole('button', { name: 'Saving…' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => answer.resolve({ success: false, error: 'Failed to add recruit' }));
-    await expectCode('CH-14001', /Couldn't add Ellie.*Failed to add recruit\./);
+    await expectCode('CH-14001', /Couldn’t add Ellie.*Failed to add recruit\./);
     expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('Ellie');
     expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Wilmington');
     expect(rowNames()).toHaveLength(8);
@@ -811,6 +848,31 @@ describe('Recruiting · desktop', () => {
     await waitFor(() => expect(rowNames()).toHaveLength(9));
     expect(w.create).toHaveBeenCalledTimes(2);
     expect(w.create).toHaveBeenLastCalledWith(expect.objectContaining({ first_name: 'Ellie', hometown: 'Wilmington' }), expect.any(String));
+  });
+
+  it('CH-14910 CH-14915 Cancel keeps what was typed for the next Add, under the same request id; a landed Add starts the next one empty (wave 5 #7)', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    w.create.mockImplementationOnce(() => Promise.resolve({ success: false, error: 'Failed to add recruit' }) as never);
+    wrap(PREVIEW_RECRUITING, w);
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'Ellie');
+    await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
+    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await expectCode('CH-14001');
+    await user.click(within(dlg()).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(dlg()).toBeNull());
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('Ellie');
+    expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Wilmington');
+    w.create.mockImplementation(() => ok({ id: 'new-2' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await waitFor(() => expect(dlg()).toBeNull());
+    expect(w.create).toHaveBeenCalledTimes(2);
+    const ids = w.create.mock.calls.map((c) => (c as unknown as [unknown, string])[1]);
+    expect(ids[1]).toBe(ids[0]);
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('');
   });
 
   it('CH-14906 Edit opens the form on the prospect as they are; Save sends everything, updates the row, the panel and the list, and says so', async () => {
@@ -860,7 +922,7 @@ describe('Recruiting · desktop', () => {
     await user.clear(hometown);
     await user.type(hometown, 'Raleigh');
     await user.click(within(dlg()).getByRole('button', { name: 'Save changes' }));
-    await expectCode('CH-14002', /Couldn't save Mason Reilly's changes.*Failed to update recruit\./);
+    await expectCode('CH-14002', /Couldn’t save Mason Reilly’s changes.*Failed to update recruit\./);
     expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Raleigh');
     expect(within(panel('Mason Reilly')).getByText('Class of 2027 · Charlotte, NC')).toBeTruthy();
     w.update.mockImplementation(() => ok());
@@ -892,7 +954,7 @@ describe('Recruiting · desktop', () => {
     const w = fakeWrites();
     w.documents.list.mockImplementation(() => fail('Failed to load documents'));
     wrap(PREVIEW_RECRUITING, w);
-    await expectCode('CH-14202', /Documents didn't load.*Nothing is lost/);
+    await expectCode('CH-14202', /Documents didn’t load.*Nothing is lost/);
     expect(within(panel('Mason Reilly')).getByText(/Saw Mason at the Carolinas Junior/)).toBeTruthy();
     expect(code('CH-14305')).toBeNull();
     w.documents.list.mockImplementation((id: string) => ok((PREVIEW_DOCUMENTS[id] ?? []).map((d) => ({ ...d }))));
@@ -923,7 +985,7 @@ describe('Recruiting · desktop', () => {
     expect(code('CH-14007')).toBeNull();
     w.documents.open.mockImplementation(() => fail('Failed to open document'));
     await user.click(row);
-    await expectCode('CH-14007', /Couldn't open Fall tournament schedule\.pdf.*Failed to open document\./);
+    await expectCode('CH-14007', /Couldn’t open Fall tournament schedule\.pdf.*Failed to open document\./);
   });
 
   it('CH-14502 CH-14405 CH-14908 CH-14006 removing a document asks first; the list is read again, inside the action, so a failed first try can be retried to the end', async () => {
@@ -932,12 +994,12 @@ describe('Recruiting · desktop', () => {
     wrap(PREVIEW_RECRUITING, w);
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Remove Fall tournament schedule.pdf' }));
-    expect(code('CH-14502')?.textContent).toMatch(/Remove this document\?.*Fall tournament schedule\.pdf is deleted from Mason's documents\. This can't be undone\./);
+    expect(code('CH-14502')?.textContent).toMatch(/Remove this document\?.*Fall tournament schedule\.pdf is deleted from Mason’s documents\. This can’t be undone\./);
     expect(w.documents.remove).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     w.documents.remove.mockImplementation(() => fail('Failed to delete document'));
     await user.click(within(dlg()).getByRole('button', { name: 'Remove document' }));
-    await expectCode('CH-14006', /Couldn't remove Fall tournament schedule\.pdf.*Failed to delete document\./);
+    await expectCode('CH-14006', /Couldn’t remove Fall tournament schedule\.pdf.*Failed to delete document\./);
     expect(code('CH-14502')).not.toBeNull();
     // Retry: it lands, the question closes, the list is read again without the file.
     w.documents.remove.mockImplementation(() => ok());
@@ -945,7 +1007,7 @@ describe('Recruiting · desktop', () => {
     const slow = deferred<{ success: boolean }>();
     w.documents.remove.mockReturnValueOnce(slow.promise as never);
     await user.click(within(code('CH-14006') as HTMLElement).getByRole('button', { name: 'Retry' }));
-    expect(code('CH-14405')?.textContent).toBe('Removing');
+    expect(code('CH-14405')?.textContent).toBe('Removing…');
     await act(async () => slow.resolve({ success: true }));
     await waitFor(() => expect(screen.queryByText('Fall tournament schedule.pdf')).toBeNull());
     expect(document.querySelector('dialog[open]')).toBeNull();
@@ -972,7 +1034,7 @@ describe('Recruiting · desktop', () => {
     const slow = deferred<{ success: boolean; data: { id: string } }>();
     w.documents.upload.mockReturnValue(slow.promise as never);
     await user.click(d.getByRole('button', { name: 'Upload' }));
-    expect(code('CH-14404')?.textContent).toBe('Uploading');
+    expect(code('CH-14404')?.textContent).toBe('Uploading…');
     w.documents.list.mockImplementation(() => ok([{ ...PREVIEW_DOCUMENTS['p-mason']![0]!, id: 'd-new', title: 'Spring transcript, junior', category: 'transcript' }, ...PREVIEW_DOCUMENTS['p-mason']!.map((x) => ({ ...x }))]));
     await act(async () => slow.resolve({ success: true, data: { id: 'd-new' } }));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
@@ -990,7 +1052,7 @@ describe('Recruiting · desktop', () => {
     await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'Film notes.txt', { type: 'text/plain' }));
     await user.click(within(dlg()).getByRole('button', { name: 'Film' }));
     await user.click(within(dlg()).getByRole('button', { name: 'Upload' }));
-    await expectCode('CH-14005', /Couldn't upload Film notes/);
+    await expectCode('CH-14005', /Couldn’t upload Film notes/);
     // The server's sentence is the reason (a refusal for someone who is not the team's coach).
     expect(code('CH-14005')!.textContent).toContain("Only this team's coaches can add recruit documents.");
     expect(dlg()).not.toBeNull();
@@ -1012,7 +1074,7 @@ describe('Recruiting · desktop', () => {
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'a.pdf', { type: 'application/pdf' }));
     await user.click(within(dlg()).getByRole('button', { name: 'Upload' }));
-    await expectCode('CH-14005', /Couldn't upload a.*Check your connection and try again\./);
+    await expectCode('CH-14005', /Couldn’t upload a.*Check your connection and try again\./);
     expect(report).toHaveBeenCalledWith(expect.objectContaining({ message: 'body too large' }), expect.objectContaining({ action: 'recruiting.upload' }));
   });
 
@@ -1065,13 +1127,11 @@ describe('Recruiting · phone', () => {
   const detail = () => document.querySelector('section.ch-recm-screen') as HTMLElement | null;
   const names = () => within(screen.getByRole('list')).getAllByRole('button').map((b) => b.querySelector('b')!.textContent);
 
-  it('CH-14914 CH-14904 the phone opens as the board does: "‹ More", the title, Add, search, the compact timeline, the count with its sort, and rows', async () => {
-    const user = userEvent.setup();
+  it('CH-14914 CH-14904 the phone opens as the board does, a section root: the title, Add, search, the compact timeline, the count with its sort, and rows', async () => {
     wrap();
     expect(code('CH-14904')?.tagName).toBe('MAIN');
     expect(top().getByRole('heading', { level: 1, name: 'Recruiting' })).toBeTruthy();
-    await user.click(top().getByRole('button', { name: 'Back to More' }));
-    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBeGreaterThan(0);
+    expect(top().queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(top().getByRole('button', { name: 'Add prospect' })).toBeTruthy();
     expect(screen.getByRole('searchbox', { name: 'Search prospects' })).toBeTruthy();
     const group = screen.getByRole('group', { name: 'Filter by stage' });
@@ -1108,8 +1168,9 @@ describe('Recruiting · phone', () => {
     expect(d.getAllByText('Mason Reilly').length).toBeGreaterThanOrEqual(1);
     expect(d.getByText('Class of 2027 · Charlotte, NC')).toBeTruthy();
     expect(d.getByRole('button', { name: /Offered/ })).toBeTruthy();
-    expect(d.getByRole('link', { name: 'Email' }).getAttribute('href')).toBe('mailto:mason.reilly@example.com');
-    expect(d.getByRole('link', { name: 'Call' }).getAttribute('href')).toBe('tel:5550104418');
+    // Each key shows the address or number it uses.
+    expect(d.getByRole('link', { name: 'Email mason.reilly@example.com' }).getAttribute('href')).toBe('mailto:mason.reilly@example.com');
+    expect(d.getByRole('link', { name: 'Call (555) 010-4418' }).getAttribute('href')).toBe('tel:5550104418');
     expect(d.getByText(/Saw Mason at the Carolinas Junior/)).toBeTruthy();
     expect(await d.findByRole('button', { name: /^Fall tournament schedule\.pdf/ })).toBeTruthy();
     expect(d.getByText('Added Aug 12 · Updated 2 days ago')).toBeTruthy();
@@ -1124,7 +1185,7 @@ describe('Recruiting · phone', () => {
     await user.click(within(screen.getByRole('list')).getByRole('button', { name: /^Owen Park/ }));
     const d = within(detail()!);
     expect(d.getByRole('button', { name: /Stage\s*Watched/ })).toBeTruthy();
-    expect(d.queryByRole('link', { name: 'Email' })).toBeNull();
+    expect(d.queryByRole('link', { name: /^Email/ })).toBeNull();
     expect(d.getByText('No contact details yet')).toBeTruthy();
     expect(d.getByText('Add an email or phone number to reach Owen or their family from here.')).toBeTruthy();
     expect(d.getByText('No notes yet')).toBeTruthy();
@@ -1148,7 +1209,7 @@ describe('Recruiting · phone', () => {
     // A pick that fails goes back, with the toast inside the sheet.
     w.update.mockImplementation(() => fail('Failed to update recruit'));
     await user.click(sheet.getByRole('radio', { name: /Watched/ }));
-    await expectCode('CH-14003', /Couldn't move Mason Reilly to Watched/);
+    await expectCode('CH-14003', /Couldn’t move Mason Reilly to Watched/);
     await waitFor(() => expect(sheet.getByRole('radio', { name: /Committed/ }).getAttribute('aria-checked')).toBe('true'));
     await user.click(sheet.getByRole('button', { name: 'Done' }));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
@@ -1185,11 +1246,11 @@ describe('Recruiting · phone', () => {
     await user.click(within(dlg()).getByRole('button', { name: 'Delete prospect' }));
     const act1 = document.querySelectorAll('dialog[open]');
     const actionSheet = within(act1[act1.length - 1] as HTMLElement);
-    expect(code('CH-14501')?.textContent).toMatch(/Delete Mason Reilly\?.*can't be undone/);
+    expect(code('CH-14501')?.textContent).toMatch(/Delete Mason Reilly\?.*can’t be undone/);
     expect(w.remove).not.toHaveBeenCalled();
     w.remove.mockImplementation(() => fail());
     await user.click(actionSheet.getByRole('button', { name: 'Delete prospect' }));
-    await expectCode('CH-14004', /Couldn't delete Mason Reilly/);
+    await expectCode('CH-14004', /Couldn’t delete Mason Reilly/);
     expect(detail()).not.toBeNull();
     w.remove.mockImplementation(() => ok());
     await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Retry' }));
@@ -1219,20 +1280,20 @@ describe('Recruiting · phone', () => {
   it('CH-14302 no match on the phone reads "No match for", with Search all stages first and Clear search after it', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_RECRUITING, fakeWrites(), { query: 'Tampa', stage: 'offered', openId: 'p-owen' });
-    expect(code('CH-14302')?.textContent).toContain('No match for "Tampa" in Offered');
+    expect(code('CH-14302')?.textContent).toContain('No match for “Tampa” in Offered');
     expect(code('CH-14302')?.textContent).toContain('Try another word, or look across every stage.');
     const buttons = within(code('CH-14302') as HTMLElement).getAllByRole('button').map((b) => b.textContent);
     expect(buttons).toEqual(['Search all stages', 'Clear search']);
     expect(detail()).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Search all stages' }));
-    expect(code('CH-14302')?.textContent).toContain('No match for "Tampa"');
+    expect(code('CH-14302')?.textContent).toContain('No match for “Tampa”');
     expect(code('CH-14302')?.textContent).not.toContain('in Offered');
   });
 
   it('CH-14301 CH-14201 first run and a failed read have no Add in the top bar: the page\'s own action is the way in', async () => {
     const user = userEvent.setup();
     const first = wrap(PREVIEW_RECRUITING_EMPTY);
-    expect(code('CH-14301')?.textContent).toContain('Add the golfers you\'re watching and move them through Watched, Recruiting, Offered and Committed.');
+    expect(code('CH-14301')?.textContent).toContain('Add the golfers you’re watching and move them through Watched, Recruiting, Offered and Committed.');
     expect(top().queryByRole('button', { name: 'Add prospect' })).toBeNull();
     expect(screen.queryByRole('searchbox')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Add your first prospect' }));
@@ -1243,5 +1304,292 @@ describe('Recruiting · phone', () => {
     expect(top().queryByRole('button', { name: 'Add prospect' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('CH-14802 sorted by next step every step shows its plate, an undated one after the dated; a past step is overdue', async () => {
+    const w = { ...fakeWrites(), nextStepWrites: true };
+    wrap(PREVIEW_RECRUITING_NEXT, w, { sort: 'next' });
+    const plate = (name: string) => within(screen.getByRole('list')).getByRole('button', { name: new RegExp(`^${name}`) }).querySelector('.ch-rec-plate');
+    expect(names().slice(0, 5)).toEqual(['Lila Brennan', 'Mason Reilly', 'Caleb Nguyen', 'Owen Park', 'Hannah Duarte']);
+    expect(plate('Lila Brennan')?.className).toContain('is-late');
+    expect(plate('Lila Brennan')?.textContent).toBe('Overdue: Decision due · Sep 20');
+    // Beyond the two-week plate, and a label with no day: both shown while sorted by the step.
+    expect(plate('Caleb Nguyen')?.textContent).toBe('Next step: Call · Oct 28');
+    expect(plate('Owen Park')?.textContent).toBe('Next step: Unofficial visit');
+    expect(plate('Hannah Duarte')).toBeNull();
+  });
+});
+
+// ── The premium pass (P014 B1, C1, C2) ───────────────────────────────────────
+
+const mediaWith = (matches: (q: string) => boolean) =>
+  ((q: string) => ({
+    matches: matches(q),
+    media: q,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as never;
+
+describe('Recruiting · next step (C1)', () => {
+  it('CH-14802 with the columns absent, nothing about a next step is drawn, offered or sent; a kept "Next step due" sort falls back', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('ch-recruiting-sort', 'next');
+    // Writes that can store a next step, as the live set does: with the columns absent (before the migration is
+    // applied) the page still never sends one, so the live page neither breaks nor writes them.
+    const w = { ...fakeWrites(), nextStepWrites: true };
+    wrap(PREVIEW_RECRUITING, w, null);
+    expect(screen.queryByRole('columnheader', { name: 'Next step' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Next step' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'Next step due' })).toBeNull();
+    expect(rowNames()[0]).toBe('Mason Reilly');
+    expect(screen.queryByText(/visits? this month|decisions? due/)).toBeNull();
+    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Edit' }));
+    expect(within(dlg()).queryByRole('textbox', { name: 'Next step' })).toBeNull();
+    await user.click(within(dlg()).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(w.update).toHaveBeenCalled());
+    const sent = (w.update.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
+    expect(Object.keys(sent)).not.toContain('next_step_label');
+    expect(Object.keys(sent)).not.toContain('next_step_date');
+  });
+
+  it('with the columns present but writes that cannot store a next step, it is read-only and never sent', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    wrap(PREVIEW_RECRUITING_NEXT, w);
+    expect(within(panel('Mason Reilly')).getByRole('region', { name: 'Next step' }).textContent).toContain('Official visit · Sep 30');
+    expect(within(panel('Mason Reilly')).queryByRole('button', { name: /Change/ })).toBeNull();
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Hannah Duarte/ }));
+    expect(within(panel('Hannah Duarte')).queryByRole('region', { name: 'Next step' })).toBeNull();
+    expect(code('CH-14307')).toBeNull();
+    await user.click(within(panel('Hannah Duarte')).getByRole('button', { name: 'Edit' }));
+    expect(within(dlg()).queryByRole('combobox', { name: 'Next step' })).toBeNull();
+    await user.click(within(dlg()).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(w.update).toHaveBeenCalled());
+    expect(Object.keys((w.update.mock.calls[0] as unknown[])[1] as object)).not.toContain('next_step_label');
+    // The live set stores a next step (only once the page's probe found the columns; see the test above).
+    expect(createLiveRecruitingWrites().nextStepWrites).toBe(true);
+    // A save that didn't send the step keeps the one the prospect had.
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }));
+    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Edit' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-14906');
+    expect(within(panel('Mason Reilly')).getByRole('region', { name: 'Next step' }).textContent).toContain('Official visit · Sep 30');
+  });
+
+  it('CH-14802 CH-14307 with the columns present: the column, the panel field, the head count, the sort, and the edit sends the step', async () => {
+    const user = userEvent.setup();
+    const w = { ...fakeWrites(), nextStepWrites: true };
+    wrap(PREVIEW_RECRUITING_NEXT, w);
+    expect(screen.getByRole('columnheader', { name: 'Next step' })).toBeTruthy();
+    const masonRow = within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }).closest('tr')!;
+    expect(within(masonRow).getByText('Official visit · Sep 30')).toBeTruthy();
+    // Lila's decision is past, but she has committed: the head counts no decision for her.
+    expect(screen.getByText(/1 visit this month$/)).toBeTruthy();
+    expect(screen.queryByText(/decisions? due/)).toBeNull();
+    expect(within(panel('Mason Reilly')).getByRole('region', { name: 'Next step' }).textContent).toContain('Official visit · Sep 30');
+    // Sorted by the soonest step: Lila (past), Mason, Caleb, then Owen (a step with no day), then everyone without a
+    // step by recency. Each row carries its step for a list too narrow for the column; Lila's is overdue.
+    await user.click(screen.getByRole('radio', { name: 'Next step due' }));
+    expect(rowNames().slice(0, 5)).toEqual(['Lila Brennan', 'Mason Reilly', 'Caleb Nguyen', 'Owen Park', 'Hannah Duarte']);
+    const lilaRow = within(screen.getByRole('table')).getByRole('button', { name: /^Lila Brennan/ });
+    expect(lilaRow.querySelector('.ch-rec-plate.is-late')?.textContent).toBe('Overdue: Decision due · Sep 20');
+    expect(lilaRow.closest('tr')!.querySelector('td.is-next.is-late')?.textContent).toBe('Overdue: Decision due · Sep 20');
+    expect(within(screen.getByRole('table')).getByRole('button', { name: /^Caleb Nguyen/ }).querySelector('.ch-rec-plate:not(.is-late)')?.textContent).toBe('Next step: Call · Oct 28');
+    // A prospect with no step offers to add one, straight into the form's field.
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Hannah Duarte/ }));
+    await user.click(within(code('CH-14307') as HTMLElement).getByRole('button', { name: 'Add' }));
+    const form = within(dlg());
+    await waitFor(() => expect(document.activeElement).toBe(form.getByRole('combobox', { name: 'Next step' })));
+    await user.type(form.getByRole('combobox', { name: 'Next step' }), 'Unofficial visit');
+    fireEvent.change(form.getByLabelText('Due'), { target: { value: '2026-10-03' } });
+    await user.click(form.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(w.update).toHaveBeenCalledWith('p-hannah', expect.objectContaining({ next_step_label: 'Unofficial visit', next_step_date: '2026-10-03' })));
+    await waitFor(() => expect(within(panel('Hannah Duarte')).getByRole('region', { name: 'Next step' }).textContent).toContain('Unofficial visit · Oct 3'));
+  });
+
+  it('the rules: kinds, due, the head count and the sort', () => {
+    const now = new Date(PREVIEW_RECRUITING_NOW);
+    expect(nextStepKind('Official visit')).toBe('visit');
+    expect(nextStepKind('Decision due')).toBe('decision');
+    expect(nextStepKind('Commitment deadline')).toBe('decision');
+    expect(nextStepKind('Call the parents')).toBe('other');
+    expect(isNextStepDue({ nextStepDate: '2026-10-09' }, now, 'UTC')).toBe(true);
+    expect(isNextStepDue({ nextStepDate: '2026-10-10' }, now, 'UTC')).toBe(false);
+    expect(isNextStepDue({ nextStepDate: null }, now, 'UTC')).toBe(false);
+    // A committed prospect has decided: Lila's past decision is not counted; the same step on an offer is.
+    expect(nextStepSummary(PREVIEW_RECRUITING_NEXT.prospects, now, 'UTC')).toBe('1 visit this month');
+    const lilaOffered = PREVIEW_RECRUITING_NEXT.prospects.map((x) => (x.id === 'p-lila' ? { ...x, stage: 'offered' as const } : x));
+    expect(nextStepSummary(lilaOffered, now, 'UTC')).toBe('1 visit this month · 1 decision due');
+    // Late is before today; today's step is due, not late.
+    expect(isNextStepLate({ nextStepDate: '2026-09-24' }, now, 'UTC')).toBe(true);
+    expect(isNextStepLate({ nextStepDate: '2026-09-25' }, now, 'UTC')).toBe(false);
+    expect(isNextStepLate({ nextStepDate: null }, now, 'UTC')).toBe(false);
+    expect(nextStepSummary(PREVIEW_PROSPECTS, now, 'UTC')).toBeNull();
+    expect(checkDraft({ ...draftOf(null), first: 'A', nextDate: '2026-02-30' })).toEqual([expect.objectContaining({ field: 'nextDate', code: 'CH-14111' })]);
+    expect(inputFromDraft({ ...draftOf(null), first: 'A', nextLabel: ' Call ', nextDate: '' }, { nextStep: true })).toMatchObject({ next_step_label: 'Call', next_step_date: null });
+    expect('next_step_label' in inputFromDraft({ ...draftOf(null), first: 'A', nextLabel: 'Call' })).toBe(false);
+    // A row read before the migration has no next-step fields at all; after it, they are read.
+    expect('nextStepLabel' in toProspect({ id: 'x', team_id: 't', first_name: 'A', last_name: null, hs_class: null, email: null, phone: null, hometown: null, state: null, notes: null, status: 'watched', created_at: '', updated_at: '' })).toBe(false);
+    expect(
+      toProspect({ id: 'x', team_id: 't', first_name: 'A', last_name: null, hs_class: null, email: null, phone: null, hometown: null, state: null, notes: null, status: 'watched', created_at: '', updated_at: '', next_step_label: 'Call', next_step_date: '2026-10-01' } as never),
+    ).toMatchObject({ nextStepLabel: 'Call', nextStepDate: '2026-10-01' });
+  });
+});
+
+describe('Recruiting · Committed is a moment, once (B1)', () => {
+  const realMatchMedia = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+  });
+
+  it('CH-14806 a successful move to Committed draws the gilt rule and the success haptic lands at its end, not on the tap; it never replays', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    const save = deferred<{ success: boolean }>();
+    w.update.mockReturnValue(save.promise);
+    wrap(PREVIEW_RECRUITING, w);
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    await act(async () => save.resolve({ success: true }));
+    const rule = await waitFor(() => {
+      const r = document.querySelector('.ch-rec-commit.is-drawing');
+      expect(r).not.toBeNull();
+      return r!;
+    });
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    expect(panel('Mason Reilly').querySelector('.ch-rec-av.is-gilt')).not.toBeNull();
+    fireEvent.animationEnd(rule);
+    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    expect(code('CH-14806')).not.toBeNull();
+    // Away and back: the committed prospect shows the rule at rest, with no second beat.
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Caleb Nguyen/ }));
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }));
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
+  });
+
+  it('CH-14806 leaving the prospect before the rule finishes drops the moment: coming back never replays it', async () => {
+    const user = userEvent.setup();
+    wrap();
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
+    await waitFor(() => expect(document.querySelector('.ch-rec-commit.is-drawing')).not.toBeNull());
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Caleb Nguyen/ }));
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }));
+    expect(panel('Mason Reilly').querySelector('.ch-rec-commit')).not.toBeNull();
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+  });
+
+  it('a move to another stage, or a commit that fails, has no moment', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    wrap(PREVIEW_RECRUITING, w);
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Recruiting' }));
+    await waitFor(() => expect(w.update).toHaveBeenCalled());
+    expect(document.querySelector('.ch-rec-commit')).toBeNull();
+    // An ordinary move keeps the save's own success haptic.
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
+    hapticSpy.mockClear();
+    w.update.mockImplementation(() => fail());
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
+    await expectCode('CH-14003');
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+  });
+
+  it('with reduced motion the rule is simply there and the haptic fires at once', async () => {
+    window.matchMedia = mediaWith((q) => q === '(prefers-reduced-motion: reduce)');
+    const user = userEvent.setup();
+    wrap();
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
+    expect(document.querySelector('.ch-rec-commit')).not.toBeNull();
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+  });
+
+  it('on the phone the moment waits under the stage sheet and plays as Done closes it', async () => {
+    window.matchMedia = mediaWith((q) => q === '(max-width: 820px)');
+    window.history.replaceState(null, '', '/golf/dashboard/recruiting');
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    wrap(PREVIEW_RECRUITING, w);
+    await user.click(within(screen.getByRole('list')).getByRole('button', { name: /^Mason Reilly/ }));
+    const d = document.querySelector('section.ch-recm-screen') as HTMLElement;
+    // P014 finding #8: Stage is the full-width row; Email and Call are the two actions under it.
+    expect(within(d).getByRole('button', { name: /Stage\s*Offered/ })).toBeTruthy();
+    expect(within(d).getByRole('link', { name: /^Email/ })).toBeTruthy();
+    await user.click(within(d).getByRole('button', { name: /Stage\s*Offered/ }));
+    await user.click(within(dlg()).getByRole('radio', { name: /Committed/ }));
+    await waitFor(() => expect(w.update).toHaveBeenCalledWith('p-mason', { status: 'committed' }));
+    await waitFor(() => expect(d.querySelector('.ch-rec-commit.is-waiting')).not.toBeNull());
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    await user.click(within(dlg()).getByRole('button', { name: 'Done' }));
+    const rule = await waitFor(() => {
+      const r = d.querySelector('.ch-rec-commit.is-drawing');
+      expect(r).not.toBeNull();
+      return r!;
+    });
+    fireEvent.animationEnd(rule);
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    window.history.replaceState(null, '', '/');
+  });
+});
+
+describe('Recruiting · the recruiting calendar (C2)', () => {
+  it('CH-14808 the team’s division and gender give the quiet line; nothing to pick', () => {
+    wrap(PREVIEW_RECRUITING_NEXT);
+    expect(code('CH-14808')?.textContent).toBe('Division I · Contact period through Nov 8 · in-person contact for prospects from Aug 1 before their junior year');
+    expect(screen.queryByRole('button', { name: /Choose your division/ })).toBeNull();
+  });
+
+  it('CH-14808 with no division on the team, the coach picks one, kept on this device', async () => {
+    const user = userEvent.setup();
+    wrap(PREVIEW_RECRUITING_NO_DIVISION, fakeWrites(), null);
+    expect(code('CH-14808')?.textContent).toContain('Recruiting calendar');
+    await user.click(screen.getByRole('button', { name: /Choose your division/ }));
+    await user.click(await screen.findByRole('menuitemradio', { name: 'NCAA Division III' }));
+    expect(code('CH-14808')?.textContent).toContain('No recruiting calendar in Division III');
+    expect(localStorage.getItem('ch-recruiting-division')).toBe('ncaa-d3');
+  });
+
+  it('CH-14807 Division I: Email and Call carry a quiet note for a prospect before June 15 of sophomore year; never blocked', async () => {
+    const user = userEvent.setup();
+    const data = { ...PREVIEW_RECRUITING_NEXT, prospects: PREVIEW_RECRUITING_NEXT.prospects.map((p) => (p.id === 'p-owen' ? { ...p, email: 'owen@example.com' } : p)) };
+    wrap(data);
+    expect(code('CH-14807')).toBeNull();
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Owen Park/ }));
+    expect(code('CH-14807')?.textContent).toBe('Division I: no calls or email before June 15, 2027, the end of sophomore year');
+    expect(within(panel('Owen Park')).getByRole('link', { name: /Email/ }).getAttribute('href')).toBe('mailto:owen@example.com');
+  });
+});
+
+describe('Recruiting · findings (P014 #1, #6, #7)', () => {
+  it('the Add form’s short fields carry hints, not plausible values; the search names state; the privacy line moved to first run', async () => {
+    const user = userEvent.setup();
+    wrap();
+    expect(screen.getByRole('searchbox', { name: 'Search prospects' }).getAttribute('placeholder')).toBe('Search prospects');
+    // The search covers state too, and the no-match line says so (P014 finding #7).
+    await user.type(screen.getByRole('searchbox', { name: 'Search prospects' }), 'zz');
+    expect(code('CH-14302')?.textContent).toContain('names, hometowns, states, email and notes');
+    await user.clear(screen.getByRole('searchbox', { name: 'Search prospects' }));
+    expect(screen.queryByText(/Only coaches see this page/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    const form = within(dlg());
+    expect(form.getByRole('textbox', { name: 'State' }).getAttribute('placeholder')).toBeNull();
+    expect(form.getByRole('textbox', { name: 'Class of' }).getAttribute('placeholder')).toBe('e.g. 2028');
+    expect(form.getByRole('textbox', { name: 'Notes' }).getAttribute('placeholder')).toBe('Where you saw them, what stood out, next steps');
+  });
+
+  it('with a Next step field in the form, the Notes placeholder no longer asks for next steps', async () => {
+    const user = userEvent.setup();
+    const w = { ...fakeWrites(), nextStepWrites: true };
+    wrap(PREVIEW_RECRUITING_NEXT, w);
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    expect(within(dlg()).getByRole('textbox', { name: 'Notes' }).getAttribute('placeholder')).toBe('Where you saw them, what stood out');
   });
 });

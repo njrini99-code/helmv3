@@ -105,7 +105,7 @@ describe('Calendar · links · CH-6504 CH-6013 New link (D3)', () => {
     await user.click(within(row).getByRole('button', { name: 'Make a new link' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Couldn't make a new Team schedule link/);
+    expect(alert.textContent).toMatch(/Couldn’t make a new Team schedule link/);
     expect(alert.textContent).toMatch(/Failed to regenerate feed/);
     expect(code('CH-6013')).not.toBeNull();
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
@@ -166,7 +166,7 @@ describe('Calendar · links · CH-6505 CH-6014 Remove (D3)', () => {
     await user.click(within(row).getByRole('button', { name: 'Remove link' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Couldn't remove the Team schedule link/);
+    expect(alert.textContent).toMatch(/Couldn’t remove the Team schedule link/);
     expect(alert.textContent).toMatch(/Failed to disable calendar feed/);
     expect(code('CH-6014')).not.toBeNull();
     expect(row.querySelector('code')).not.toBeNull();

@@ -10,43 +10,52 @@ action mappings are in the October audit.
 [SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records confirmed motion findings.
 Physical Safari/iPhone acceptance and production-build profiling remain open.
 
-Compiled 2026-09-30 on branch `agent/clubhouse` at `96445d13a`, from a read of the working tree.
-The owner's rule for this list: "if a button in the design UI leads to nothing, then build it."
+Compiled 2026-09-30 on branch `agent/clubhouse` at `96445d13a`, from a read of
+the working tree. The owner's rule for this list: "if a button in the design UI
+leads to nothing, then build it."
 
-**What was read.** Only the v2 boards in `design/handoff/` (`Coach - *.html`, `Player - *.html`,
-`Coach and Player - *.html`, each with the `.jsx` and `.js` it loads and the empty and loading
-states in `gh-states.jsx`), against `src/clubhouse/screens/**`, `shell/**`, `routes/**`, `data/**`
-and the server actions they call. The v1 boards (`Coach Home v3.html`, `Calendar.html`,
-`Messages.html`, `Roster.html`, `Stats.html`, `Qualifiers.html`, `mobile/`) and `Index.html` were
-left out on purpose (`design/handoff/VERSIONS.md`). Decisions were read from
-`docs/clubhouse/PROGRESS.md` (D-n, Q-n, Data gaps), the catalogs, the phone specs, the page docs
-under `docs/clubhouse/pages/`, `ROUNDS_PLAN.md` and the held-feature docs.
+**What was read.** Only the v2 boards in `design/handoff/` (`Coach - *.html`,
+`Player - *.html`, `Coach and Player - *.html`, each with the `.jsx` and `.js`
+it loads and the empty and loading states in `gh-states.jsx`), against
+`src/clubhouse/screens/**`, `shell/**`, `routes/**`, `data/**` and the server
+actions they call. The v1 boards (`Coach Home v3.html`, `Calendar.html`,
+`Messages.html`, `Roster.html`, `Stats.html`, `Qualifiers.html`, `mobile/`) and
+`Index.html` were left out on purpose (`design/handoff/VERSIONS.md`). Decisions
+were read from `docs/clubhouse/PROGRESS.md` (D-n, Q-n, Data gaps), the catalogs,
+the phone specs, the page docs under `docs/clubhouse/pages/`, `ROUNDS_PLAN.md`
+and the held-feature docs.
 
-**How a row was judged.** Every control on a board got a row. A `works` row cites the file and line
-of the handler or link that was opened and read (the citation lines were checked to exist, and a
-sample of about 50 were re-read by hand and matched their claims); it is not inferred from a name, a catalog row or the
-generated action map, which is partly stale. The board scaffolding (state switchers, the iOS
-frame, frame labels) is not a product control and is skipped; each board says what it skipped.
-Loading skeletons, sidebar section labels, identity blocks and crumbs are not clickable, so they have no rows; the one
+**How a row was judged.** Every control on a board got a row. A `works` row
+cites the file and line of the handler or link that was opened and read (the
+citation lines were checked to exist, and a sample of about 50 were re-read by
+hand and matched their claims); it is not inferred from a name, a catalog row or
+the generated action map, which is partly stale. The board scaffolding (state
+switchers, the iOS frame, frame labels) is not a product control and is skipped;
+each board says what it skipped. Loading skeletons, sidebar section labels,
+identity blocks and crumbs are not clickable, so they have no rows; the one
 finding among them (Stats has no phone-shaped skeleton) is in the Stats notes.
-Where a board draws a button with no handler of its own, the row says "no handler on the board"
-and is judged the same way.
+Where a board draws a button with no handler of its own, the row says "no
+handler on the board" and is judged the same way.
 
-**Statuses.** `works` built and does what the board implies. `hidden-until-rebuilt` not drawn
-because its destination is not rebuilt for that role (`rebuiltHref` returns null). `decided`
-dropped, held or changed by a recorded decision (D-n, Q-n, catalog or spec line). `data-gap` cannot
-be honest without data or a schema change. `GAP` drawn on the board but missing or wrong in
-Clubhouse, with no decision or data reason on record. Tags in a Note: `[preview-only]` the screen
-is built but reachable only in `/clubhouse-preview/...` (Q-78); `[no-phone-build]` no phone
-layout exists (none was found).
+**Statuses.** `works` built and does what the board implies.
+`hidden-until-rebuilt` not drawn because its destination is not rebuilt for that
+role (`rebuiltHref` returns null). `decided` dropped, held or changed by a
+recorded decision (D-n, Q-n, catalog or spec line). `data-gap` cannot be honest
+without data or a schema change. `GAP` drawn on the board but missing or wrong
+in Clubhouse, with no decision or data reason on record. Tags in a Note:
+`[preview-only]` the screen is built but reachable only in
+`/clubhouse-preview/...` (Q-78); `[no-phone-build]` no phone layout exists (none
+was found).
 
-**Not on the boards, so not here.** There is no v2 Settings board (see the Settings section).
-Calendar, Messages, Stats and Qualifiers have no v2 player board; players use the same built screens
-with the permissions players already have (D-1, D-66).
+**Not on the boards, so not here.** There is no v2 Settings board (see the
+Settings section). Calendar, Messages, Stats and Qualifiers have no v2 player
+board; players use the same built screens with the permissions players already
+have (D-1, D-66).
 
-**Line numbers** are from the working tree at `96445d13a`. Other sessions were editing
-`src/clubhouse/screens/roster`, `settings` and CoachHelm docs at the same time, so a cited line
-can be a few lines off in those files; the file and the symbol are right.
+**Line numbers** are from the working tree at `96445d13a`. Other sessions were
+editing `src/clubhouse/screens/roster`, `settings` and CoachHelm docs at the
+same time, so a cited line can be a few lines off in those files; the file and
+the symbol are right.
 
 ## Counts, per page
 
@@ -69,11 +78,12 @@ Every page in the requested order was reached; nothing was left out.
 | Shell | 4 | 58 | 41 | 0 | 11 | 0 | 6 |
 | **All pages** | 30 | **666** | **405** | **13** | **205** | **2** | **41** |
 
-`hidden-until-rebuilt`: 13 rows, all held by one thing, round entry (Q-78, below).
-Of the `decided` rows, 121 are Rounds setup and shot tracking controls that are built
-and work in `/clubhouse-preview/setup` and `/clubhouse-preview/track`, and are held there by Q-78
-until the round engine move gives them a product route; they are one item, not 121.
-Rounds' `works` count is low for the same reason. Rows tagged `[no-phone-build]`: 0.
+`hidden-until-rebuilt`: 13 rows, all held by one thing, round entry (Q-78,
+below). Of the `decided` rows, 121 are Rounds setup and shot tracking controls
+that are built and work in `/clubhouse-preview/setup` and
+`/clubhouse-preview/track`, and are held there by Q-78 until the round engine
+move gives them a product route; they are one item, not 121. Rounds' `works`
+count is low for the same reason. Rows tagged `[no-phone-build]`: 0.
 
 Per board:
 
@@ -113,9 +123,10 @@ Per board:
 ## The GAP list, ranked by how often a real coach or player would hit it
 
 41 GAP rows, 24 items once a control that appears on both the desktop and phone
-boards, or in both roles, is counted once. Ranked by my own read of how often the control is met in
-a normal week (the units' own Reach labels were calibrated separately and are in each row's Note).
-The "Where" column is the file to build in.
+boards, or in both roles, is counted once. Ranked by my own read of how often
+the control is met in a normal week (the units' own Reach labels were calibrated
+separately and are in each row's Note). The "Where" column is the file to build
+in.
 
 | # | Control | Page and boards (rows) | Why it ranks here | Where to build |
 | ---: | --- | --- | --- | --- |
@@ -146,55 +157,68 @@ The "Where" column is the file to build in.
 
 ## Not a GAP, but the biggest thing still not reachable: round entry (Q-78)
 
-- A player cannot start or continue a round in Clubhouse. New round, Continue, Start a round (idle
-  card, empty state, and on Home the header and first-run) and Post a round are
-  `hidden-until-rebuilt`: `/golf/dashboard/rounds/new` and `/rounds/continue/<id>` are not in
-  `CH_REBUILT_ROUTES` or `CH_REBUILT_PATTERNS` (`src/clubhouse/shell/nav.ts:123`, `:141`). CoachHelm's
-  empty state says Open Rounds instead. The setup and shot-tracking screens exist and are built to
-  the board, but mount only in the preview. `docs/clubhouse/ROUNDS_PLAN.md` steps 3 to 5 and Q-78
-  hold this. To follow the owner's rule, give the engine a Clubhouse renderer (the ports and
-  `start(form)`) and add the two routes to `nav.ts`. Every `[preview-only]` row and every Start a
-  round or Post a round row then flips together, and the N shortcut on player Home needs a handler.
-- The library and the round review are live for players; the review is also live for coaches.
+- A player cannot start or continue a round in Clubhouse. New round, Continue,
+  Start a round (idle card, empty state, and on Home the header and first-run)
+  and Post a round are `hidden-until-rebuilt`: `/golf/dashboard/rounds/new` and
+  `/rounds/continue/<id>` are not in `CH_REBUILT_ROUTES` or
+  `CH_REBUILT_PATTERNS` (`src/clubhouse/shell/nav.ts:123`, `:141`). CoachHelm's
+  empty state says Open Rounds instead. The setup and shot-tracking screens
+  exist and are built to the board, but mount only in the preview.
+  `docs/clubhouse/ROUNDS_PLAN.md` steps 3 to 5 and Q-78 hold this. To follow the
+  owner's rule, give the engine a Clubhouse renderer (the ports and
+  `start(form)`) and add the two routes to `nav.ts`. Every `[preview-only]` row
+  and every Start a round or Post a round row then flips together, and the N
+  shortcut on player Home needs a handler.
+- The library and the round review are live for players; the review is also live
+  for coaches.
 
 ## Decided rows the owner's "build it" rule may reopen
 
-These are drawn on a board, absent in Clubhouse, and covered by a record; each is a call for the
-owner, so none is a GAP above. Grouped by record.
+These are drawn on a board, absent in Clubhouse, and covered by a record; each
+is a call for the owner, so none is a GAP above. Grouped by record.
 
-- **Top-bar search field and the ⌘K hint** (every desktop board): hidden until it has a spec
-  (`PROGRESS.md:387`); the board's own `onSearch` is a no-op, so there is no behaviour to copy.
-- **Messages Details** (D-48, Q-53 to Q-63): Call (minors' numbers), in-thread Search, Only coaches
-  can post, Edit group, Delete chat, and the thread event card; Pinned and the travel squad quick
-  group also. Several need a column, a policy or an action change first.
-- **Team Hub compose and trips** (Q-70): Pin to the top (no column), Schedule (the action has no
-  publish time), the Rooms editor.
+- **Top-bar search field and the ⌘K hint** (every desktop board): hidden until
+  it has a spec (`PROGRESS.md:387`); the board's own `onSearch` is a no-op, so
+  there is no behaviour to copy.
+- **Messages Details** (D-48, Q-53 to Q-63): Call (minors' numbers), in-thread
+  Search, Only coaches can post, Edit group, Delete chat (built 2026-10-08 as a
+  per-person hide, 71103), and the thread event card; Pinned and the travel
+  squad quick group also. Several need a column, a policy or an action change
+  first.
+- **Team Hub compose and trips** (Q-70): Pin to the top (no column), Schedule
+  (the action has no publish time), the Rooms editor.
 - **CoachHelm** Share with {first name}: an unnumbered open owner question
   (`docs/clubhouse/phone/coachhelm.md:34`), so it has no Q-n to answer yet.
-- **Classes** (Q-75, `phone/classes.md`): the Sync calendar button (needs a sync timestamp), the
-  pencil on an imported row, Share class times with coach (no column).
-- **Calendar** phone (Q-67), D-11, D-12: Message invitees, the compact New event form, Workout type,
-  the competition-only feed.
-- **Roster** status pill popover (Q-1, the availability migration is written and unapplied).
-- **Home and shell** (Q-66): the team chip on the Home hero bar (the switcher itself is built, in the
-  sidebar and the More sheet), the Workout chip.
+- **Classes** (Q-75, `phone/classes.md`): the Sync calendar button (needs a sync
+  timestamp), the pencil on an imported row, Share class times with coach (no
+  column).
+- **Calendar** phone (Q-67), D-11, D-12: Message invitees, the compact New event
+  form, Workout type, the competition-only feed.
+- **Roster** status pill popover (Q-1, the availability migration is written and
+  unapplied).
+- **Home and shell** (Q-66): the team chip on the Home hero bar (the switcher
+  itself is built, in the sidebar and the More sheet), the Workout chip.
 
 ## Records that are stale (fix when building)
 
-- Q-66, Q-69, D-17 and the Data gaps line "Open recap needs a single-round screen"
-  (`PROGRESS.md:176, :292, :295, :386`), and `phone/home.md:27`, `phone/home-player.md:24, :29`: the
-  round review exists now. Q-69's "Add classes waits for Classes" is also stale; Add classes is drawn.
-- `PROGRESS.md:392` ("Schedule 1:1 and View insights wait for Calendar and CoachHelm"): both are
-  rebuilt; `P003-roster/VERIFY.md:127` already says so.
-- `PROGRESS.md:406` (Print week and Duplicate "not built") gives no reason; `PROGRESS.md:410`
-  (a shared-files list has no backend) is stale since D-48; threaded replies are recorded as no
-  backend though `golf_messages.reply_to_id` exists.
-- `phone/foundation.md:124` and `PROGRESS.md:430` ("no board draws the More screen"): the coach
-  phone board `Coach - Home - Mobile.html` draws it (board "more"), including Settings, Help and Sign
-  out, all built.
-- `src/clubhouse/shell/nav.ts:30` still says CoachHelm and Team Hub are not rebuilt.
-- P004 and P005 `VERIFY.md` and the CHANGELOG say Team stats first-run is not built; it is (CH-4310),
-  but only in the Season window, so a coach on the default Last 10 sees "Show the season" first.
+- Q-66, Q-69, D-17 and the Data gaps line "Open recap needs a single-round
+  screen" (`PROGRESS.md:176, :292, :295, :386`), and `phone/home.md:27`,
+  `phone/home-player.md:24, :29`: the round review exists now. Q-69's "Add
+  classes waits for Classes" is also stale; Add classes is drawn.
+- `PROGRESS.md:392` ("Schedule 1:1 and View insights wait for Calendar and
+  CoachHelm"): both are rebuilt; `P003-roster/VERIFY.md:127` already says so.
+- `PROGRESS.md:406` (Print week and Duplicate "not built") gives no reason;
+  `PROGRESS.md:410` (a shared-files list has no backend) is stale since D-48;
+  threaded replies are recorded as no backend though `golf_messages.reply_to_id`
+  exists.
+- `phone/foundation.md:124` and `PROGRESS.md:430` ("no board draws the More
+  screen"): the coach phone board `Coach - Home - Mobile.html` draws it (board
+  "more"), including Settings, Help and Sign out, all built.
+- `src/clubhouse/shell/nav.ts:30` still says CoachHelm and Team Hub are not
+  rebuilt.
+- P004 and P005 `VERIFY.md` and the CHANGELOG say Team stats first-run is not
+  built; it is (CH-4310), but only in the Season window, so a coach on the
+  default Last 10 sees "Show the season" first.
 
 ---
 
@@ -204,7 +228,17 @@ owner, so none is a GAP above. Grouped by record.
 
 ### `Coach - Home.html` (coach, desktop)
 
-Built counterpart: src/clubhouse/screens/home/CoachHome.tsx, HomeActions.tsx, Week.tsx, LatestRound.tsx, Leaderboard.tsx, HomeSkeleton.tsx; loader src/clubhouse/data/home.ts; page src/app/golf/(dashboard)/dashboard/page.tsx (no adapter in src/clubhouse/routes/). Phone build: n/a for desktop. Skipped scaffolding: FairwaySidebar (incl. its Next event card and identity), FairwayTopBar search/bell/settings, GHLayer state switcher; coach-home-v3.jsx defines NowCard, Figures and Attention (Plan 1:1, Send reminder, Review lineup) but CoachHomeV3 never renders them, so they are not listed; the Week day cells and agenda rows have no handler and are not styled as controls; gh-states.jsx draws no failed state or Try again for Home (loading is a skeleton with no controls).
+Built counterpart: src/clubhouse/screens/home/CoachHome.tsx, HomeActions.tsx,
+Week.tsx, LatestRound.tsx, Leaderboard.tsx, HomeSkeleton.tsx; loader
+src/clubhouse/data/home.ts; page src/app/golf/(dashboard)/dashboard/page.tsx (no
+adapter in src/clubhouse/routes/). Phone build: n/a for desktop. Skipped
+scaffolding: FairwaySidebar (incl. its Next event card and identity),
+FairwayTopBar search/bell/settings, GHLayer state switcher; coach-home-v3.jsx
+defines NowCard, Figures and Attention (Plan 1:1, Send reminder, Review lineup)
+but CoachHomeV3 never renders them, so they are not listed; the Week day cells
+and agenda rows have no handler and are not styled as controls; gh-states.jsx
+draws no failed state or Try again for Home (loading is a skeleton with no
+controls).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -222,7 +256,18 @@ Built counterpart: src/clubhouse/screens/home/CoachHome.tsx, HomeActions.tsx, We
 
 ### `Coach - Home - Mobile.html` (coach, phone)
 
-Built counterpart: src/clubhouse/screens/home/HomePhone.tsx (rendered when useChPhone is true, CoachHome.tsx:25), the shell hero bar src/clubhouse/shell/TopBar.tsx:44 via usePhoneHero, src/clubhouse/ui/Modal.tsx for the round sheet; first-run is CoachHome.tsx HomeFirstRun on both widths. Phone build: HomePhone.tsx. Skipped scaffolding: IOSDevice frames, board captions, GHBoards loading/empty switch rows, MTabs tab bar, MSafari, the hero bell (the shell's Bell, src/clubhouse/shell/Bell.tsx:101), board 06 "More" (MoreM from m-ch.jsx, the shell's More sheet). m-ch.jsx is loaded AND partly rendered: only MoreM (board 06); CoachHelmM is defined there but not rendered on this board. The Needs you rail (Needs in m-home.jsx) is defined but never drawn by HomeM. Today timeline rows and week-strip days have no handler on the board and are not listed.
+Built counterpart: src/clubhouse/screens/home/HomePhone.tsx (rendered when
+useChPhone is true, CoachHome.tsx:25), the shell hero bar
+src/clubhouse/shell/TopBar.tsx:44 via usePhoneHero, src/clubhouse/ui/Modal.tsx
+for the round sheet; first-run is CoachHome.tsx HomeFirstRun on both widths.
+Phone build: HomePhone.tsx. Skipped scaffolding: IOSDevice frames, board
+captions, GHBoards loading/empty switch rows, MTabs tab bar, MSafari, the hero
+bell (the shell's Bell, src/clubhouse/shell/Bell.tsx:101), board 06 "More"
+(MoreM from m-ch.jsx, the shell's More sheet). m-ch.jsx is loaded AND partly
+rendered: only MoreM (board 06); CoachHelmM is defined there but not rendered on
+this board. The Needs you rail (Needs in m-home.jsx) is defined but never drawn
+by HomeM. Today timeline rows and week-strip days have no handler on the board
+and are not listed.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -243,16 +288,34 @@ Built counterpart: src/clubhouse/screens/home/HomePhone.tsx (rendered when useCh
 
 #### Notes
 
-- Open recap (desktop) and Round recap (phone) are GAP rows here, reclassified from `decided`: D-17 and Q-66 (docs/clubhouse/PROGRESS.md:176, :292) rest on "no single-round review is rebuilt", which stopped being true: `/golf/dashboard/rounds/<uuid>` is rebuilt for coaches (src/clubhouse/shell/nav.ts:140) and Stats already links it (src/clubhouse/screens/stats/StatsPlayer.tsx:384). Both should link `rebuiltHref('/golf/dashboard/rounds/' + r.id)`, with Player stats as the fallback.
-- docs/clubhouse/phone/home.md:27 and P002 DESIGN.md:75,97 repeat the stale "no round review" premise.
-- Besides the two recap rows, the only GAP is the phone Latest rounds "All" link; a coach has no Rounds library, so its destination needs a choice (Team stats is the nearest existing surface).
-- Built Home adds links the boards do not draw as controls (phone Today rows and week-strip days to Calendar, Try again on every failed section); they are not rows here.
+- Open recap (desktop) and Round recap (phone) are GAP rows here, reclassified
+  from `decided`: D-17 and Q-66 (docs/clubhouse/PROGRESS.md:176, :292) rest on
+  "no single-round review is rebuilt", which stopped being true:
+  `/golf/dashboard/rounds/<uuid>` is rebuilt for coaches
+  (src/clubhouse/shell/nav.ts:140) and Stats already links it
+  (src/clubhouse/screens/stats/StatsPlayer.tsx:384). Both should link
+  `rebuiltHref('/golf/dashboard/rounds/' + r.id)`, with Player stats as the
+  fallback.
+- docs/clubhouse/phone/home.md:27 and P002 DESIGN.md:75,97 repeat the stale "no
+  round review" premise.
+- Besides the two recap rows, the only GAP is the phone Latest rounds "All"
+  link; a coach has no Rounds library, so its destination needs a choice (Team
+  stats is the nearest existing surface).
+- Built Home adds links the boards do not draw as controls (phone Today rows and
+  week-strip days to Calendar, Try again on every failed section); they are not
+  rows here.
 
 ## Home, player
 
 ### `Player - Home.html` (player, desktop)
 
-Built counterpart: src/clubhouse/screens/home/PlayerHome.tsx, LatestRound.tsx, PlayerGame.tsx, player-links.ts, Week.tsx, Countdown.tsx; loader src/clubhouse/data/player-home.ts. Phone build: n/a. Skipped scaffolding: sidebar and its "Next event" card, top bar search/bell/settings (shell), GHLayer state switcher; Up next card, day cells, agenda rows and stat rows have no handler on the board; loading skeleton has no controls; gh-states defines no failed or Try again state for home.
+Built counterpart: src/clubhouse/screens/home/PlayerHome.tsx, LatestRound.tsx,
+PlayerGame.tsx, player-links.ts, Week.tsx, Countdown.tsx; loader
+src/clubhouse/data/player-home.ts. Phone build: n/a. Skipped scaffolding:
+sidebar and its "Next event" card, top bar search/bell/settings (shell), GHLayer
+state switcher; Up next card, day cells, agenda rows and stat rows have no
+handler on the board; loading skeleton has no controls; gh-states defines no
+failed or Try again state for home.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -267,7 +330,14 @@ Built counterpart: src/clubhouse/screens/home/PlayerHome.tsx, LatestRound.tsx, P
 
 ### `Player - Home - Mobile.html` (player, phone)
 
-Built counterpart: src/clubhouse/screens/home/PlayerHomePhone.tsx, PlayerGame.tsx (phone), player-links.ts; first-run state PlayerHome.tsx (renders before the phone switch, PlayerHome.tsx:33). Phone build: PlayerHomePhone. Skipped scaffolding: hero bar team logo and bell (shell green top bar, src/clubhouse/shell/phone-chrome.tsx:70), MTabs, MSafari, IOSDevice frame, GHBoards and board labels; Up next card, week day cells and today timeline have no handler on the board; loading skeleton has no controls; no failed or Try again state is drawn.
+Built counterpart: src/clubhouse/screens/home/PlayerHomePhone.tsx,
+PlayerGame.tsx (phone), player-links.ts; first-run state PlayerHome.tsx (renders
+before the phone switch, PlayerHome.tsx:33). Phone build: PlayerHomePhone.
+Skipped scaffolding: hero bar team logo and bell (shell green top bar,
+src/clubhouse/shell/phone-chrome.tsx:70), MTabs, MSafari, IOSDevice frame,
+GHBoards and board labels; Up next card, week day cells and today timeline have
+no handler on the board; loading skeleton has no controls; no failed or Try
+again state is drawn.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -279,17 +349,29 @@ Built counterpart: src/clubhouse/screens/home/PlayerHomePhone.tsx, PlayerGame.ts
 | Start a round | Empty state board (EMPTY.home.player, phone), primary | Not drawn: first-run renders PlayerFirstRun on the phone too (PlayerHome.tsx:33), `postRoundHref()` null at PlayerHome.tsx:96,111-115; `/rounds/new` not rebuilt for player (nav.ts:123, 141) | `hidden-until-rebuilt` | [preview-only] Q-69 and Q-78 (PROGRESS.md:295, 304). Board target is Player - Rounds.html; the library's Start a round is hidden too (RoundsLibrary.tsx:29). |
 | Add classes | Empty state board (EMPTY.home.player, phone), secondary | Link to /golf/dashboard/classes, src/clubhouse/screens/home/PlayerHome.tsx:97,118-122; rebuilt for player (nav.ts:123) | `works` | Actions stack at 44px on the phone (D-71, PROGRESS.md:243). Q-69's Add classes clause is stale (Classes built, PROGRESS.md:534). |
 
-#### Notes
+#### Notes (again)
 
-- Q-69 (PROGRESS.md:295) and phone/home-player.md:24 and :29 have two stale clauses: Add classes now draws (Classes rebuilt for players), and Open recap's "until a round recap exists" is met by the round review at /golf/dashboard/rounds/<id>. The Home line under Data gaps (PROGRESS.md:386) is stale for the same reason.
-- Every Post a round and Start a round row turns `works` once `/golf/dashboard/rounds/new` joins CH_REBUILT_ROUTES.player (Q-78); the N shortcut then still needs a handler on player Home.
-- The two Open recap GAPs are one change in two files (LatestRound.tsx `mine` branch and PlayerHomePhone.tsx Latest); no new data is needed.
+- Q-69 (PROGRESS.md:295) and phone/home-player.md:24 and :29 have two stale
+  clauses: Add classes now draws (Classes rebuilt for players), and Open recap's
+  "until a round recap exists" is met by the round review at
+  /golf/dashboard/rounds/<id>. The Home line under Data gaps (PROGRESS.md:386)
+  is stale for the same reason.
+- Every Post a round and Start a round row turns `works` once
+  `/golf/dashboard/rounds/new` joins CH_REBUILT_ROUTES.player (Q-78); the N
+  shortcut then still needs a handler on player Home.
+- The two Open recap GAPs are one change in two files (LatestRound.tsx `mine`
+  branch and PlayerHomePhone.tsx Latest); no new data is needed.
 
 ## Roster (coach)
 
 ### `Coach - Roster.html` (coach, desktop)
 
-Built counterpart: src/clubhouse/screens/roster/Roster.tsx, RosterPeek.tsx, RosterRequests.tsx, useJoinRequests.ts, useCopyText.ts, src/clubhouse/routes/roster.tsx, src/clubhouse/data/roster.ts. Phone build: n/a for desktop. Skipped scaffolding: sidebar, top bar crumbs/search/bell/settings, the `GHLayer` loading/empty switcher, the header avatar stack (decoration, no handler), recent-round rows in the panel (no handler).
+Built counterpart: src/clubhouse/screens/roster/Roster.tsx, RosterPeek.tsx,
+RosterRequests.tsx, useJoinRequests.ts, useCopyText.ts,
+src/clubhouse/routes/roster.tsx, src/clubhouse/data/roster.ts. Phone build: n/a
+for desktop. Skipped scaffolding: sidebar, top bar crumbs/search/bell/settings,
+the `GHLayer` loading/empty switcher, the header avatar stack (decoration, no
+handler), recent-round rows in the panel (no handler).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -327,7 +409,13 @@ Built counterpart: src/clubhouse/screens/roster/Roster.tsx, RosterPeek.tsx, Rost
 
 ### `Coach - Roster - Mobile.html` (coach, phone)
 
-Built counterpart: src/clubhouse/screens/roster/RosterPhone.tsx (RosterPhone, RosterPhoneRow, RequestsBanner, RequestsSheet, PlayerActions), RosterProfile.tsx, useJoinRequests.ts, useCopyText.ts, picked by useChPhone in Roster.tsx:231. Phone build: RosterPhone.tsx. Skipped scaffolding: board frames and labels, the `GHBoards` state boards' frame, the tab bar (MTabs), MSafari bar, iOS status bar and home indicator, sheet scrim, recent-round rows (no handler).
+Built counterpart: src/clubhouse/screens/roster/RosterPhone.tsx (RosterPhone,
+RosterPhoneRow, RequestsBanner, RequestsSheet, PlayerActions),
+RosterProfile.tsx, useJoinRequests.ts, useCopyText.ts, picked by useChPhone in
+Roster.tsx:231. Phone build: RosterPhone.tsx. Skipped scaffolding: board frames
+and labels, the `GHBoards` state boards' frame, the tab bar (MTabs), MSafari
+bar, iOS status bar and home indicator, sheet scrim, recent-round rows (no
+handler).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -349,20 +437,40 @@ Built counterpart: src/clubhouse/screens/roster/RosterPhone.tsx (RosterPhone, Ro
 | Invite players | Empty state board (EMPTY.roster), primary | Opens the Invite players sheet, src/clubhouse/screens/roster/RosterPhone.tsx:155 | `works` | No handler on the board |
 | Copy team code | Empty state board (EMPTY.roster), secondary | Not drawn on the phone; Invite players opens the sheet with Copy, src/clubhouse/screens/roster/RosterPhone.tsx:148 | `decided` | No handler on the board. Catalog CH-3301 scopes it to desktop (docs/clubhouse/catalog/roster.md:47); phone spec lists empty state with Invite players only (docs/clubhouse/phone/roster.md:157) |
 
-#### Notes
+#### Notes (again, 2)
 
-- gh-states.jsx draws no failed state and no Try again for roster; the loading boards (desktop GHSkeleton, phone GHSkeletonM) have no controls. The build's Try again notices (CH-3201, CH-3202, CH-3203, CH-3207) exist but come from no board control, so they have no rows.
-- Both desktop GAPs come from one stale hold, docs/clubhouse/PROGRESS.md:392 ("wait for Calendar and CoachHelm"): both routes are now in CH_REBUILT_ROUTES for coach (src/clubhouse/shell/nav.ts:113-114). docs/clubhouse/pages/P003-roster/VERIFY.md:127 already flags it. Update or remove that line when building.
-- View insights needs CoachHelm to accept a player selection (for example ?player=id); src/clubhouse/routes/coachhelm.tsx:25 takes only view today.
-- Many board controls have no handler on the board: the phone board's buttons and both EMPTY.roster actions (EMPTY.roster has no href). Where a D-n set the destination (D-52 to D-55), the row is `decided`; where the label implies it, `works`.
-- No `[no-phone-build]` and no `[preview-only]` rows: RosterPhone is the product phone build via useChPhone (src/clubhouse/screens/roster/Roster.tsx:231).
-- Another session (p003-roster) may be editing src/clubhouse/screens/roster; line numbers are from the working tree as read at HEAD 96445d13a.
+- gh-states.jsx draws no failed state and no Try again for roster; the loading
+  boards (desktop GHSkeleton, phone GHSkeletonM) have no controls. The build's
+  Try again notices (CH-3201, CH-3202, CH-3203, CH-3207) exist but come from no
+  board control, so they have no rows.
+- Both desktop GAPs come from one stale hold, docs/clubhouse/PROGRESS.md:392
+  ("wait for Calendar and CoachHelm"): both routes are now in CH_REBUILT_ROUTES
+  for coach (src/clubhouse/shell/nav.ts:113-114).
+  docs/clubhouse/pages/P003-roster/VERIFY.md:127 already flags it. Update or
+  remove that line when building.
+- View insights needs CoachHelm to accept a player selection (for example
+  ?player=id); src/clubhouse/routes/coachhelm.tsx:25 takes only view today.
+- Many board controls have no handler on the board: the phone board's buttons
+  and both EMPTY.roster actions (EMPTY.roster has no href). Where a D-n set the
+  destination (D-52 to D-55), the row is `decided`; where the label implies it,
+  `works`.
+- No `[no-phone-build]` and no `[preview-only]` rows: RosterPhone is the product
+  phone build via useChPhone (src/clubhouse/screens/roster/Roster.tsx:231).
+- Another session (p003-roster) may be editing src/clubhouse/screens/roster;
+  line numbers are from the working tree as read at HEAD 96445d13a.
 
 ## Stats, team and player (coach)
 
 ### `Coach - Stats.html` (coach, desktop)
 
-Built counterpart: src/clubhouse/routes/stats.tsx, src/clubhouse/screens/stats/StatsTeam.tsx, StatsTeamIslands.tsx, StatsTeamFirstRun.tsx, StatsPlayer.tsx, GameDetail.tsx, links.ts, WindowSwitch.tsx, StatsRouteSkeleton.tsx. Phone build: n/a for desktop. Skipped scaffolding: FairwaySidebar, FairwayTopBar (crumbs, search, bell, settings), the GHLayer state switcher, the `?player=`/localStorage board routing; `StatSheet` (stats-sheet.jsx) is loaded but never rendered, so its group toggles are not drawn; gh-states defines no failed state or Try again for stats.
+Built counterpart: src/clubhouse/routes/stats.tsx,
+src/clubhouse/screens/stats/StatsTeam.tsx, StatsTeamIslands.tsx,
+StatsTeamFirstRun.tsx, StatsPlayer.tsx, GameDetail.tsx, links.ts,
+WindowSwitch.tsx, StatsRouteSkeleton.tsx. Phone build: n/a for desktop. Skipped
+scaffolding: FairwaySidebar, FairwayTopBar (crumbs, search, bell, settings), the
+GHLayer state switcher, the `?player=`/localStorage board routing; `StatSheet`
+(stats-sheet.jsx) is loaded but never rendered, so its group toggles are not
+drawn; gh-states defines no failed state or Try again for stats.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -386,7 +494,12 @@ Built counterpart: src/clubhouse/routes/stats.tsx, src/clubhouse/screens/stats/S
 
 ### `Coach - Stats - Mobile.html` (coach, phone)
 
-Built counterpart: src/clubhouse/screens/stats/StatsTeamPhone.tsx (placed by StatsTeamFrame, StatsTeamIslands.tsx:80), StatsPlayerPhone.tsx (inside StatsPlayer.tsx:128), GameDetail.tsx phone mode, StatsTeamFirstRun.tsx. Phone build: yes, both views. Skipped scaffolding: MApp shell, MTop's default Notifications bell on the team board (the shell's), tab bar, iOS frame, Safari bar, the `B` board list and the GHBoards state row.
+Built counterpart: src/clubhouse/screens/stats/StatsTeamPhone.tsx (placed by
+StatsTeamFrame, StatsTeamIslands.tsx:80), StatsPlayerPhone.tsx (inside
+StatsPlayer.tsx:128), GameDetail.tsx phone mode, StatsTeamFirstRun.tsx. Phone
+build: yes, both views. Skipped scaffolding: MApp shell, MTop's default
+Notifications bell on the team board (the shell's), tab bar, iOS frame, Safari
+bar, the `B` board list and the GHBoards state row.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -398,20 +511,42 @@ Built counterpart: src/clubhouse/screens/stats/StatsTeamPhone.tsx (placed by Sta
 | Section chips: Scoring / Off the tee / Approach / Short game / Putting (x 5) | Player view, under the figures | Chips switch one Game detail section at a time, src/clubhouse/screens/stats/GameDetail.tsx:191 (phone branch :108 to :111) | `works` | Board opens on Approach; the build opens on Scoring (GameDetail.tsx:90) |
 | View roster | Empty state (EMPTY.stats), GHBoards "Coach · Empty state" | CH-4310 View roster, src/clubhouse/screens/stats/StatsTeamPhone.tsx:44 (StatsTeamFirstRun.tsx:22), for the Season window only; Last 10 shows CH-4301 with Show the season | `decided` | docs/clubhouse/catalog/stats-team.md:45 and D-71 (PROGRESS.md:243). Same one-click gap as desktop |
 
-#### Notes
+#### Notes (again, 3)
 
-- First-run empty (both boards): the board shows EMPTY.stats on landing, but the build shows View roster only in the Season window; the default Last 10 shows CH-4301 "Show the season" first. It is recorded (catalog/stats-team.md:45), so it is `decided`. If the owner wants the board's behaviour, StatsTeam.tsx:43 and StatsTeamPhone.tsx:43 should test "no countable round all season", not the window. P004 and P005 VERIFY.md:124/128 and CHANGELOG still say first-run is "not built", which is stale.
-- Failed states: gh-states.jsx defines none for stats. The built Try again notices (CH-4201 to CH-4203, CH-5201 to CH-5203) have no board counterpart, so there are no rows for them.
-- Not drawn as controls on the board, so no rows: StatSheet (never rendered; DESIGN.md:137 says the owner removed it), PredictionCard "Thursday at Pinehurst" (not interactive; data gap PROGRESS.md:405), Season bests rows and Rounds table rows (no onClick on the board; the build links them anyway).
-- Not a control, so not a row: the phone loading state (`GHSkeletonM`) is phone-shaped, but Clubhouse shows the desktop `StatsSkeleton` at 390px (`src/clubhouse/screens/stats/StatsRouteSkeleton.tsx:10`). A phone skeleton would go in `src/clubhouse/screens/stats/StatsSkeleton.tsx`.
-- The only real build item is Schedule 1:1 in the desktop player hero. D-52's Calendar seed `?new=1&with=` already exists, so it is a one-link change.
-- The Data gaps line PROGRESS.md:392 ("Schedule 1:1 ... hidden") is about Roster only and is stale since D-52. It does not cover Stats.
+- First-run empty (both boards): the board shows EMPTY.stats on landing, but the
+  build shows View roster only in the Season window; the default Last 10 shows
+  CH-4301 "Show the season" first. It is recorded (catalog/stats-team.md:45), so
+  it is `decided`. If the owner wants the board's behaviour, StatsTeam.tsx:43
+  and StatsTeamPhone.tsx:43 should test "no countable round all season", not the
+  window. P004 and P005 VERIFY.md:124/128 and CHANGELOG still say first-run is
+  "not built", which is stale.
+- Failed states: gh-states.jsx defines none for stats. The built Try again
+  notices (CH-4201 to CH-4203, CH-5201 to CH-5203) have no board counterpart, so
+  there are no rows for them.
+- Not drawn as controls on the board, so no rows: StatSheet (never rendered;
+  DESIGN.md:137 says the owner removed it), PredictionCard "Thursday at
+  Pinehurst" (not interactive; data gap PROGRESS.md:405), Season bests rows and
+  Rounds table rows (no onClick on the board; the build links them anyway).
+- Not a control, so not a row: the phone loading state (`GHSkeletonM`) is
+  phone-shaped, but Clubhouse shows the desktop `StatsSkeleton` at 390px
+  (`src/clubhouse/screens/stats/StatsRouteSkeleton.tsx:10`). A phone skeleton
+  would go in `src/clubhouse/screens/stats/StatsSkeleton.tsx`.
+- The only real build item is Schedule 1:1 in the desktop player hero. D-52's
+  Calendar seed `?new=1&with=` already exists, so it is a one-link change.
+- The Data gaps line PROGRESS.md:392 ("Schedule 1:1 ... hidden") is about Roster
+  only and is stale since D-52. It does not cover Stats.
 
 ## Calendar (coach)
 
 ### `Coach - Calendar.html` (coach, desktop)
 
-Built counterpart: src/clubhouse/screens/calendar/Calendar.tsx, views.tsx, inspector.tsx, editor.tsx, extras.tsx, CalendarFirstRun.tsx, CalendarSkeleton.tsx; src/clubhouse/data/calendar.ts; src/clubhouse/routes/calendar.tsx. Phone build: n/a for desktop. Skipped scaffolding: FairwaySidebar, FairwayTopBar (search, bell, settings), GHLayer state switcher, the legend dots (not controls), the loading skeleton (GHSkeleton calendar draws no actions; gh-states defines no Try again for calendar).
+Built counterpart: src/clubhouse/screens/calendar/Calendar.tsx, views.tsx,
+inspector.tsx, editor.tsx, extras.tsx, CalendarFirstRun.tsx,
+CalendarSkeleton.tsx; src/clubhouse/data/calendar.ts;
+src/clubhouse/routes/calendar.tsx. Phone build: n/a for desktop. Skipped
+scaffolding: FairwaySidebar, FairwayTopBar (search, bell, settings), GHLayer
+state switcher, the legend dots (not controls), the loading skeleton (GHSkeleton
+calendar draws no actions; gh-states defines no Try again for calendar).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -485,7 +620,12 @@ Built counterpart: src/clubhouse/screens/calendar/Calendar.tsx, views.tsx, inspe
 
 ### `Coach - Calendar - Mobile.html` (coach, phone)
 
-Built counterpart: src/clubhouse/screens/calendar/CalendarPhone.tsx (rendered from Calendar.tsx:408-449 when useChPhone is true), with the desktop inspector.tsx and editor.tsx in Modal sheets. Phone build: CalendarPhone. Skipped scaffolding: iOS frame, MTabs tab bar, MSafari bar, qm-board frame labels and captions, GHBoards state row, the loading skeleton (GHSkeletonM calendar has no actions), RSVP counts and people chips (not controls).
+Built counterpart: src/clubhouse/screens/calendar/CalendarPhone.tsx (rendered
+from Calendar.tsx:408-449 when useChPhone is true), with the desktop
+inspector.tsx and editor.tsx in Modal sheets. Phone build: CalendarPhone.
+Skipped scaffolding: iOS frame, MTabs tab bar, MSafari bar, qm-board frame
+labels and captions, GHBoards state row, the loading skeleton (GHSkeletonM
+calendar has no actions), RSVP counts and people chips (not controls).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -509,18 +649,36 @@ Built counterpart: src/clubhouse/screens/calendar/CalendarPhone.tsx (rendered fr
 | Create and invite 6 | New event sheet, footer | Publish event runs createGolfEvent or createRecurringEvent, src/clubhouse/screens/calendar/editor.tsx:380 and :265-297 | `works` | No handler on the board. Label is Publish event (full editor, Q-67) |
 | Create event | Empty state (EMPTY.calendar, phone) | CalendarFirstRun renders before the phone branch and opens the editor, src/clubhouse/screens/calendar/Calendar.tsx:399-402, CalendarFirstRun.tsx:22 | `works` | No handler on the board. D-71, CH-6309 |
 
-#### Notes
+#### Notes (again, 4)
 
-- Five desktop GAPs. Duplicate is medium reach. The other four are low: Print week, the jump panel Close (x), Compare schedules on a class, and Repeat when editing a one-off event. The last needs server work, because recurring-events.ts has no action that turns an event into a series.
-- Print week and Duplicate are listed as not built under "Data gaps" (PROGRESS.md:406), but no data reason is given, so they are marked GAP. If the owner confirms that record as a decision, both become `decided`.
-- The phone board's differences (top bar, Message invitees, the compact New event form, the Move to buttons) are covered by Q-67 and phone/calendar.md. Q-67 is still open, so if the owner rejects it those rows become GAPs.
-- Server actions I checked are real, not stubs: createGolfEvent, updateGolfEvent, deleteGolfEvent, respondToEvent, addCoachBlockedTime, deleteCoachBlockedTime (golf.ts); markAttendance (attendance.ts); createCalendarFeed (calendar-feeds.ts); attach and detach (event-documents.ts); the recurring-event actions.
+- Five desktop GAPs. Duplicate is medium reach. The other four are low: Print
+  week, the jump panel Close (x), Compare schedules on a class, and Repeat when
+  editing a one-off event. The last needs server work, because
+  recurring-events.ts has no action that turns an event into a series.
+- Print week and Duplicate are listed as not built under "Data gaps"
+  (PROGRESS.md:406), but no data reason is given, so they are marked GAP. If the
+  owner confirms that record as a decision, both become `decided`.
+- The phone board's differences (top bar, Message invitees, the compact New
+  event form, the Move to buttons) are covered by Q-67 and phone/calendar.md.
+  Q-67 is still open, so if the owner rejects it those rows become GAPs.
+- Server actions I checked are real, not stubs: createGolfEvent,
+  updateGolfEvent, deleteGolfEvent, respondToEvent, addCoachBlockedTime,
+  deleteCoachBlockedTime (golf.ts); markAttendance (attendance.ts);
+  createCalendarFeed (calendar-feeds.ts); attach and detach
+  (event-documents.ts); the recurring-event actions.
 
 ## Messages (coach)
 
 ### `Coach - Messages.html` (coach, desktop)
 
-Built counterpart: src/clubhouse/screens/messages/MessagesView.tsx (Rail, Bubble, Composer, Thread, Details, MuteControl, NewMessage, MessagesDesktop), Messages.tsx (the api over the realtime hooks and actions), MessagesFirstRun.tsx, announcements.tsx, routes/messages.tsx. Phone build: n/a for desktop. Skipped scaffolding: sidebar, top bar crumbs/search/bell/settings, ToastStack dismiss (shell), GHLayer state switcher; the loading skeleton (GHSkeleton messages) draws no control and no failed state is drawn for messages.
+Built counterpart: src/clubhouse/screens/messages/MessagesView.tsx (Rail,
+Bubble, Composer, Thread, Details, MuteControl, NewMessage, MessagesDesktop),
+Messages.tsx (the api over the realtime hooks and actions),
+MessagesFirstRun.tsx, announcements.tsx, routes/messages.tsx. Phone build: n/a
+for desktop. Skipped scaffolding: sidebar, top bar crumbs/search/bell/settings,
+ToastStack dismiss (shell), GHLayer state switcher; the loading skeleton
+(GHSkeleton messages) draws no control and no failed state is drawn for
+messages.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -558,7 +716,13 @@ Built counterpart: src/clubhouse/screens/messages/MessagesView.tsx (Rail, Bubble
 
 ### `Coach - Messages - Mobile.html` (coach, phone)
 
-Built counterpart: src/clubhouse/screens/messages/MessagesPhone.tsx (MessagesPhone, PhoneInbox, PhoneThread, PhoneDetails, FilesPanel, PhoneNewMessage), reusing ConvRow, Bubble and Composer from MessagesView.tsx. Phone build: MessagesPhone.tsx, rendered below 820px (MessagesView.tsx:1830). Skipped scaffolding: iOS frame, MSafari, tab bar and More sheet (shell), board labels, GHBoards state row; the loading skeleton (GHSkeletonM messages) draws no control and no failed state is drawn for messages.
+Built counterpart: src/clubhouse/screens/messages/MessagesPhone.tsx
+(MessagesPhone, PhoneInbox, PhoneThread, PhoneDetails, FilesPanel,
+PhoneNewMessage), reusing ConvRow, Bubble and Composer from MessagesView.tsx.
+Phone build: MessagesPhone.tsx, rendered below 820px (MessagesView.tsx:1830).
+Skipped scaffolding: iOS frame, MSafari, tab bar and More sheet (shell), board
+labels, GHBoards state row; the loading skeleton (GHSkeletonM messages) draws no
+control and no failed state is drawn for messages.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -598,18 +762,33 @@ Built counterpart: src/clubhouse/screens/messages/MessagesPhone.tsx (MessagesPho
 | Delete chat | Details, settings panel (1:1) | Not drawn, D-48 (PROGRESS.md:196; phone/messages.md:169) | `decided` | No delete policy on golf_conversations. No handler on the board |
 | New message | Empty state (EMPTY.messages) | Page empty state pushes New message, src/clubhouse/screens/messages/MessagesFirstRun.tsx:22 (onNew from MessagesPhone.tsx:249 and :136) | `works` | No handler on the board; CH-7309 |
 
-#### Notes
+#### Notes (again, 5)
 
-- Desktop Details has no Files section, although D-48 built getGolfConversationFiles and the phone's FilesPanel (MessagesPhone.tsx:666) already renders it; the data gap at PROGRESS.md:410 ("shared-files list ... no backend") is stale on that point.
-- Desktop's thread-header calendar icon goes to /golf/dashboard/calendar, not the editor (?new=1) that D-47 names and the phone tile uses: a one-line fix.
-- Reply is recorded as a data gap (PROGRESS.md:410), but golf_messages.reply_to_id already exists; building it is a hook and render change, not a migration.
-- Most drawn board controls in the phone Details and several in New message have no handler on the board itself; statuses above judge them by D-44 to D-49.
+- Desktop Details has no Files section, although D-48 built
+  getGolfConversationFiles and the phone's FilesPanel (MessagesPhone.tsx:666)
+  already renders it; the data gap at PROGRESS.md:410 ("shared-files list ... no
+  backend") is stale on that point.
+- Desktop's thread-header calendar icon goes to /golf/dashboard/calendar, not
+  the editor (?new=1) that D-47 names and the phone tile uses: a one-line fix.
+- Reply is recorded as a data gap (PROGRESS.md:410), but
+  golf_messages.reply_to_id already exists; building it is a hook and render
+  change, not a migration.
+- Most drawn board controls in the phone Details and several in New message have
+  no handler on the board itself; statuses above judge them by D-44 to D-49.
 
 ## Team Hub (coach and player)
 
 ### `Coach - Team Hub.html` (coach, desktop)
 
-Built counterpart: src/clubhouse/screens/hub/TeamHub.tsx, parts.tsx, sheets.tsx, writes.ts, HubSkeleton.tsx; src/clubhouse/data/hub.ts; src/clubhouse/routes/hub.tsx (route /golf/dashboard/team-hub rebuilt for coach, src/clubhouse/shell/nav.ts:120). Phone build: n/a. Loading (GHSkeleton hub) has no controls; built as HubSkeleton via src/app/golf/(dashboard)/dashboard/team-hub/loading.tsx:8. The board draws no failed state. Skipped scaffolding: sidebar, top bar (crumbs, search "Search announcements, trips, files", bell, Team Hub settings icon), ToastStack, GHLayer state switcher.
+Built counterpart: src/clubhouse/screens/hub/TeamHub.tsx, parts.tsx, sheets.tsx,
+writes.ts, HubSkeleton.tsx; src/clubhouse/data/hub.ts;
+src/clubhouse/routes/hub.tsx (route /golf/dashboard/team-hub rebuilt for coach,
+src/clubhouse/shell/nav.ts:120). Phone build: n/a. Loading (GHSkeleton hub) has
+no controls; built as HubSkeleton via
+src/app/golf/(dashboard)/dashboard/team-hub/loading.tsx:8. The board draws no
+failed state. Skipped scaffolding: sidebar, top bar (crumbs, search "Search
+announcements, trips, files", bell, Team Hub settings icon), ToastStack, GHLayer
+state switcher.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -640,7 +819,12 @@ Built counterpart: src/clubhouse/screens/hub/TeamHub.tsx, parts.tsx, sheets.tsx,
 
 ### `Player - Team Hub.html` (player, desktop)
 
-Built counterpart: same files as the coach board, rendered for the player role (nav.ts:123 lists /golf/dashboard/team-hub for players). Phone build: n/a. EMPTY.hub player has no action (gh-states.jsx:19); built CH-10306 matches, TeamHub.tsx:312-324. Loading has no controls (HubSkeleton). No failed state on the board. Skipped scaffolding: sidebar, top bar (crumbs, search, bell, settings), GHLayer state switcher.
+Built counterpart: same files as the coach board, rendered for the player role
+(nav.ts:123 lists /golf/dashboard/team-hub for players). Phone build: n/a.
+EMPTY.hub player has no action (gh-states.jsx:19); built CH-10306 matches,
+TeamHub.tsx:312-324. Loading has no controls (HubSkeleton). No failed state on
+the board. Skipped scaffolding: sidebar, top bar (crumbs, search, bell,
+settings), GHLayer state switcher.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -652,7 +836,14 @@ Built counterpart: same files as the coach board, rendered for the player role (
 
 ### `Coach and Player - Team Hub - Mobile.html` (coach and player, phone)
 
-Built counterpart: the same TeamHub, phone layout via useChPhone (src/clubhouse/screens/hub/TeamHub.tsx:81, PhoneTop :270-271) and CSS at 820px (src/clubhouse/styles/hub.css:862); forms are bottom sheets. Phone build: yes (no [no-phone-build] rows). Board's inline compose and trip builder are sheets in the build (docs/clubhouse/phone/team-hub.md:38). Loading boards (GHSkeletonM) have no controls; no failed state drawn; EMPTY.hub player has no action. Skipped scaffolding: MTop bell, MTabs tab bar, MSafari, iOS frame, board labels, GHBoards state row.
+Built counterpart: the same TeamHub, phone layout via useChPhone
+(src/clubhouse/screens/hub/TeamHub.tsx:81, PhoneTop :270-271) and CSS at 820px
+(src/clubhouse/styles/hub.css:862); forms are bottom sheets. Phone build: yes
+(no [no-phone-build] rows). Board's inline compose and trip builder are sheets
+in the build (docs/clubhouse/phone/team-hub.md:38). Loading boards (GHSkeletonM)
+have no controls; no failed state drawn; EMPTY.hub player has no action. Skipped
+scaffolding: MTop bell, MTabs tab bar, MSafari, iOS frame, board labels,
+GHBoards state row.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -686,19 +877,37 @@ Built counterpart: the same TeamHub, phone layout via useChPhone (src/clubhouse/
 | New announcement | Coach: Empty state (EMPTY.hub coach, GHBoards) | src/clubhouse/screens/hub/TeamHub.tsx:318-323 | `works` | Board's action has no destination |
 | Plan a trip | Coach: Empty state (EMPTY.hub coach, GHBoards) | src/clubhouse/screens/hub/TeamHub.tsx:325-336 | `works` | Board's action has no destination |
 
-#### Notes
+#### Notes (again, 6)
 
-- The Edit pencil is a GAP here, reclassified from `decided`: the only record is the implementer's non-goal in docs/clubhouse/pages/P010-hub/DESIGN.md:129-131, not an owner D-n or Q-n, and `updateAnnouncement` already exists (src/app/golf/actions/announcements.ts:1442), so building it needs no new action.
-- The trip builder's travelers and Event step have no path, because `ChTripInput` (writes.ts:31-43) carries no `event_id`. Fix that one thing and the travelers chips, the "Pinehurst travelers" audience and the player's "You're traveling" line (Q-70) all get a source.
-- Q-74: coach upload and delete stay `works`, but `uploadGolfDocument` checks only sign-in and `deleteGolfDocument` lets any team member through. A security review is due before the flag turns on.
-- Every board sheet (compose, trip builder) is drawn inline. The build uses Modal sheets on both desktop and phone (phone/team-hub.md:38). Inline versus sheet is not counted as a gap.
-- Player task ticks are one-way in the build: there is no uncomplete action in tasks.ts. The board lets a player untick, so the task check box rows are GAP rows here (reclassified from `works`).
+- The Edit pencil is a GAP here, reclassified from `decided`: the only record is
+  the implementer's non-goal in docs/clubhouse/pages/P010-hub/DESIGN.md:129-131,
+  not an owner D-n or Q-n, and `updateAnnouncement` already exists
+  (src/app/golf/actions/announcements.ts:1442), so building it needs no new
+  action.
+- The trip builder's travelers and Event step have no path, because
+  `ChTripInput` (writes.ts:31-43) carries no `event_id`. Fix that one thing and
+  the travelers chips, the "Pinehurst travelers" audience and the player's
+  "You're traveling" line (Q-70) all get a source.
+- Q-74: coach upload and delete stay `works`, but `uploadGolfDocument` checks
+  only sign-in and `deleteGolfDocument` lets any team member through. A security
+  review is due before the flag turns on.
+- Every board sheet (compose, trip builder) is drawn inline. The build uses
+  Modal sheets on both desktop and phone (phone/team-hub.md:38). Inline versus
+  sheet is not counted as a gap.
+- Player task ticks are one-way in the build: there is no uncomplete action in
+  tasks.ts. The board lets a player untick, so the task check box rows are GAP
+  rows here (reclassified from `works`).
 
 ## Qualifiers (coach; the player reads the same list and detail)
 
 ### `Coach - Qualifiers.html` (coach, desktop)
 
-Built counterpart: src/clubhouse/screens/qualifiers/ (QualifiersList, QualifierDetail, QualifierSections, QualifierForm, writes), src/clubhouse/routes/qualifiers.tsx, src/clubhouse/data/qualifiers.ts. Phone build: n/a for desktop. Skipped scaffolding: FairwaySidebar, FairwayTopBar (crumbs, search, bell, settings), ToastStack, the GHLayer state switcher; round-by-round header tooltips (title on R1..Rn) are not controls.
+Built counterpart: src/clubhouse/screens/qualifiers/ (QualifiersList,
+QualifierDetail, QualifierSections, QualifierForm, writes),
+src/clubhouse/routes/qualifiers.tsx, src/clubhouse/data/qualifiers.ts. Phone
+build: n/a for desktop. Skipped scaffolding: FairwaySidebar, FairwayTopBar
+(crumbs, search, bell, settings), ToastStack, the GHLayer state switcher;
+round-by-round header tooltips (title on R1..Rn) are not controls.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -729,7 +938,13 @@ Built counterpart: src/clubhouse/screens/qualifiers/ (QualifiersList, QualifierD
 
 ### `Coach - Qualifiers - Mobile.html` (coach, phone)
 
-Built counterpart: list and form are the desktop QualifiersList and QualifierForm with phone CSS and PhoneTop; detail is src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx (chosen by useChPhone at QualifierDetail.tsx:115) with the PlayerRounds sheet. Phone build: yes (as the phone spec, docs/clubhouse/phone/qualifiers.md:50, describes). Skipped scaffolding: board labels, SafariBar, inline qm-tabs tab bar, the top bar bell (shell top bar), GHBoards frames and their MTop/MTabs.
+Built counterpart: list and form are the desktop QualifiersList and
+QualifierForm with phone CSS and PhoneTop; detail is
+src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx (chosen by useChPhone
+at QualifierDetail.tsx:115) with the PlayerRounds sheet. Phone build: yes (as
+the phone spec, docs/clubhouse/phone/qualifiers.md:50, describes). Skipped
+scaffolding: board labels, SafariBar, inline qm-tabs tab bar, the top bar bell
+(shell top bar), GHBoards frames and their MTop/MTabs.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -757,19 +972,38 @@ Built counterpart: list and form are the desktop QualifiersList and QualifierFor
 | Player checkboxes (x 7) | 04 Create, Players | Toggle entrants, src/clubhouse/screens/qualifiers/QualifierForm.tsx:378 | `works` | |
 | Create qualifier | Empty state (EMPTY.qualifiers, GHBoards empty phone) | Link to /qualifiers/new, src/clubhouse/screens/qualifiers/QualifiersList.tsx:111 | `works` | No handler on the board (gh-states.jsx:24 has no href) |
 
-#### Notes
+#### Notes (again, 7)
 
-- No GAP in this unit: every drawn Qualifiers control leads somewhere. The only desktop difference is "Open selection workspace", built as "Manage selections" in the header (Q-65). Manage selections is really there: QualifierDetail.tsx:152, QualifierDetailPhone.tsx:82, and the route (qualifiers.tsx:46, nav.ts:132 allows /selection).
-- The desktop board does not draw Selection or a course picker. The course picker (CoursePicker.tsx) and the selection screen (QualifierSelection.tsx) are Clubhouse additions (D-33, Q-65), so they have no rows.
-- gh-states.jsx defines no failed state and no Try again for qualifiers, only empty (EMPTY.qualifiers) and loading. Clubhouse still has Try again on its failure notices (CH-09201 and others).
-- The board draws a bell in the phone top bar on List and Detail. I skipped it as shell. Clubhouse draws "‹ More" on the list (D-66) and a "Qualifier actions" ellipsis on the detail (QualifierDetailPhone.tsx:68), which the board does not draw.
-- docs/clubhouse/phone/qualifiers.md:3 cites the v1 path `design/handoff/mobile/Qualifiers Mobile.html`. The v2 `qual-mobile.jsx` is byte-identical to `mobile/qual-mobile.jsx`, so the spec still holds.
+- No GAP in this unit: every drawn Qualifiers control leads somewhere. The only
+  desktop difference is "Open selection workspace", built as "Manage selections"
+  in the header (Q-65). Manage selections is really there:
+  QualifierDetail.tsx:152, QualifierDetailPhone.tsx:82, and the route
+  (qualifiers.tsx:46, nav.ts:132 allows /selection).
+- The desktop board does not draw Selection or a course picker. The course
+  picker (CoursePicker.tsx) and the selection screen (QualifierSelection.tsx)
+  are Clubhouse additions (D-33, Q-65), so they have no rows.
+- gh-states.jsx defines no failed state and no Try again for qualifiers, only
+  empty (EMPTY.qualifiers) and loading. Clubhouse still has Try again on its
+  failure notices (CH-09201 and others).
+- The board draws a bell in the phone top bar on List and Detail. I skipped it
+  as shell. Clubhouse draws "‹ More" on the list (D-66) and a "Qualifier
+  actions" ellipsis on the detail (QualifierDetailPhone.tsx:68), which the board
+  does not draw.
+- docs/clubhouse/phone/qualifiers.md:3 cites the v1 path
+  `design/handoff/mobile/Qualifiers Mobile.html`. The v2 `qual-mobile.jsx` is
+  byte-identical to `mobile/qual-mobile.jsx`, so the spec still holds.
 
 ## Rounds (player; the review is also open to a coach)
 
 ### `Player - Rounds.html` (player, desktop), part A: library, course picker, add a course, setup
 
-Built counterpart: src/clubhouse/screens/rounds/RoundsLibrary.tsx, parts.tsx, setup/RoundSetup.tsx, setup/CoursePicker.tsx, setup/AddCourseSheet.tsx, setup/HoleConfig.tsx, routes/rounds.tsx, preview/PreviewSetup.tsx (setup is mounted only by the preview). Phone build: n/a for desktop. Skipped scaffolding: sidebar, top bar (search, bell, settings), GHLayer state switcher; tracking and review controls belong to Rounds part B; the season ribbon bars only carry a hover title (no action).
+Built counterpart: src/clubhouse/screens/rounds/RoundsLibrary.tsx, parts.tsx,
+setup/RoundSetup.tsx, setup/CoursePicker.tsx, setup/AddCourseSheet.tsx,
+setup/HoleConfig.tsx, routes/rounds.tsx, preview/PreviewSetup.tsx (setup is
+mounted only by the preview). Phone build: n/a for desktop. Skipped scaffolding:
+sidebar, top bar (search, bell, settings), GHLayer state switcher; tracking and
+review controls belong to Rounds part B; the season ribbon bars only carry a
+hover title (no action).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -814,7 +1048,13 @@ Built counterpart: src/clubhouse/screens/rounds/RoundsLibrary.tsx, parts.tsx, se
 
 ### `Player - Rounds - Mobile.html` (player, phone), part A: library, course picker, add a course, setup
 
-Built counterpart: the same components, phone-aware (no separate *Phone.tsx): RoundsLibrary.tsx:55 useChPhone and PhoneTop :99, RoundSetup.tsx:61 usePhoneTabsHidden, Modal as a draggable bottom sheet (src/clubhouse/ui/Modal.tsx:79). Phone build: yes, as above. Skipped scaffolding: iOS frame, MTop bell, MTabs, MSafari, frame labels, ONLY filter, GHBoards switcher; tracking and review frames (Rounds part B); the Started view (no frame draws it); sheet grab handles (no handler).
+Built counterpart: the same components, phone-aware (no separate *Phone.tsx):
+RoundsLibrary.tsx:55 useChPhone and PhoneTop :99, RoundSetup.tsx:61
+usePhoneTabsHidden, Modal as a draggable bottom sheet
+(src/clubhouse/ui/Modal.tsx:79). Phone build: yes, as above. Skipped
+scaffolding: iOS frame, MTop bell, MTabs, MSafari, frame labels, ONLY filter,
+GHBoards switcher; tracking and review frames (Rounds part B); the Started view
+(no frame draws it); sheet grab handles (no handler).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -856,17 +1096,34 @@ Built counterpart: the same components, phone-aware (no separate *Phone.tsx): Ro
 | Start round | 09 to 13 Setup, dock | start.run(form), RoundSetup.tsx:346-354; port only in the preview (PreviewSetup.tsx:25) | `decided` | [preview-only] Q-78 (ROUNDS_PLAN.md:68) |
 | Start a round | Player · Empty state (EMPTY.rounds) | Not drawn, RoundsLibrary.tsx:120 | `hidden-until-rebuilt` | No handler on the board (gh-states.jsx:25, :32). /rounds/new not in nav.ts:123. Q-78; catalog/rounds.md:64 |
 
-#### Notes
+#### Notes (again, 8)
 
-- The whole setup flow (picker, tees, add a course, setup, scorecard, Start) is built but mounted only in /clubhouse-preview/setup; the product /golf/dashboard/rounds/new is not rebuilt (nav.ts:123), so every setup row flips from `decided` [preview-only] to live once Q-78 supplies real ChSetupPorts and the route is added to CH_REBUILT_ROUTES.player.
-- New round, Start a round (idle card and EMPTY.rounds) and Continue are all gated by rebuiltHref (RoundsLibrary.tsx:29-30); adding /golf/dashboard/rounds/new and a continue/<id> pattern to nav.ts draws them at once, as with Home's Q-69 controls.
-- gh-states.jsx defines no failed state or Try again for rounds; the loading skeletons have no controls.
-- The only real GAP: closing Add a course returns to setup instead of the course picker (board rounds-flow.jsx:249).
-- The board's Started screen (rounds-flow.jsx:216) is not drawn on any frame; it was listed once (desktop) as `decided`.
+- The whole setup flow (picker, tees, add a course, setup, scorecard, Start) is
+  built but mounted only in /clubhouse-preview/setup; the product
+  /golf/dashboard/rounds/new is not rebuilt (nav.ts:123), so every setup row
+  flips from `decided` [preview-only] to live once Q-78 supplies real
+  ChSetupPorts and the route is added to CH_REBUILT_ROUTES.player.
+- New round, Start a round (idle card and EMPTY.rounds) and Continue are all
+  gated by rebuiltHref (RoundsLibrary.tsx:29-30); adding
+  /golf/dashboard/rounds/new and a continue/<id> pattern to nav.ts draws them at
+  once, as with Home's Q-69 controls.
+- gh-states.jsx defines no failed state or Try again for rounds; the loading
+  skeletons have no controls.
+- The only real GAP: closing Add a course returns to setup instead of the course
+  picker (board rounds-flow.jsx:249).
+- The board's Started screen (rounds-flow.jsx:216) is not drawn on any frame; it
+  was listed once (desktop) as `decided`.
 
 ### `Player - Rounds.html` (player, desktop), part B: shot tracking, hole complete, submit, review
 
-Built counterpart: src/clubhouse/screens/rounds/track/ (RoundTracking, ShotEntry, parts, sheets, round-sheets, HoleReview, labels), src/clubhouse/preview/PreviewTracking.tsx, src/clubhouse/screens/rounds/RoundReview.tsx, ReviewLoadFailed.tsx, src/clubhouse/routes/round-review.tsx, src/clubhouse/data/round-review.ts. Phone build: n/a for desktop. Skipped scaffolding: shell sidebar and top bar, GHLayer, the RoundsFlow view switcher, library, setup and course picker (Rounds part A), EMPTY.rounds and the rounds skeleton (library states, Rounds part A).
+Built counterpart: src/clubhouse/screens/rounds/track/ (RoundTracking,
+ShotEntry, parts, sheets, round-sheets, HoleReview, labels),
+src/clubhouse/preview/PreviewTracking.tsx,
+src/clubhouse/screens/rounds/RoundReview.tsx, ReviewLoadFailed.tsx,
+src/clubhouse/routes/round-review.tsx, src/clubhouse/data/round-review.ts. Phone
+build: n/a for desktop. Skipped scaffolding: shell sidebar and top bar, GHLayer,
+the RoundsFlow view switcher, library, setup and course picker (Rounds part A),
+EMPTY.rounds and the rounds skeleton (library states, Rounds part A).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -912,7 +1169,14 @@ Built counterpart: src/clubhouse/screens/rounds/track/ (RoundTracking, ShotEntry
 
 ### `Player - Rounds - Mobile.html` (player, phone), part B: shot tracking, hole complete, submit, review
 
-Built counterpart: the same files; tracking is RoundTracking with usePhoneTabsHidden (src/clubhouse/screens/rounds/track/RoundTracking.tsx:52) and phone CSS, sheets are Modal bottom sheets that drag to close, the review draws PhoneTop on a phone (src/clubhouse/screens/rounds/RoundReview.tsx:210). Phone build: RoundTracking (responsive, phone spec docs/clubhouse/phone/rounds.md:82-91) and the RoundReview phone branch. Skipped scaffolding: the B board list, ONLY filter, qm-board labels, IOSDevice, MSafari, GHBoards, MTop and MTabs, library and setup frames (Rounds part A).
+Built counterpart: the same files; tracking is RoundTracking with
+usePhoneTabsHidden (src/clubhouse/screens/rounds/track/RoundTracking.tsx:52) and
+phone CSS, sheets are Modal bottom sheets that drag to close, the review draws
+PhoneTop on a phone (src/clubhouse/screens/rounds/RoundReview.tsx:210). Phone
+build: RoundTracking (responsive, phone spec
+docs/clubhouse/phone/rounds.md:82-91) and the RoundReview phone branch. Skipped
+scaffolding: the B board list, ONLY filter, qm-board labels, IOSDevice, MSafari,
+GHBoards, MTop and MTabs, library and setup frames (Rounds part A).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -957,18 +1221,37 @@ Built counterpart: the same files; tracking is RoundTracking with usePhoneTabsHi
 | Previous hole | Round review frame, hole card | Steps back, src/clubhouse/screens/rounds/RoundReview.tsx:135 | `works` | CH-11704 |
 | Next hole | Round review frame, hole card | Steps forward, src/clubhouse/screens/rounds/RoundReview.tsx:139 | `works` | CH-11704 |
 
-#### Notes
+#### Notes (again, 9)
 
-- Every tracking, hole complete, summary and submit control is built, but only in `/clubhouse-preview/track` (src/app/clubhouse-preview/[screen]/page.tsx:199). Nothing in src imports RoundTracking or round-sheets outside the preview and the tests. Q-78 holds it. When `/rounds/new` and `/continue/<id>` are rebuilt, all 34 desktop and 35 phone tracking rows change status together.
-- The round screen that owns Exit, Save for later, Discard, submit and the success navigation does not exist yet. The preview fakes that part (src/clubhouse/preview/PreviewTracking.tsx:81-99). docs/clubhouse/ROUNDS_PLAN.md:63-68 (step 5) lists what the second renderer must take on.
-- The review is live for both roles at `/golf/dashboard/rounds/<uuid>` (src/clubhouse/shell/nav.ts:140-141). Its only gap is the score row, which can't be tapped.
-- The library states (EMPTY.rounds, the rounds skeleton) and the library's Continue and New round belong to Rounds part A. The review's states (CH-11204, 11205, 11206, 11307) are not drawn on the board, so they have no rows here.
+- Every tracking, hole complete, summary and submit control is built, but only
+  in `/clubhouse-preview/track`
+  (src/app/clubhouse-preview/[screen]/page.tsx:199). Nothing in src imports
+  RoundTracking or round-sheets outside the preview and the tests. Q-78 holds
+  it. When `/rounds/new` and `/continue/<id>` are rebuilt, all 34 desktop and 35
+  phone tracking rows change status together.
+- The round screen that owns Exit, Save for later, Discard, submit and the
+  success navigation does not exist yet. The preview fakes that part
+  (src/clubhouse/preview/PreviewTracking.tsx:81-99).
+  docs/clubhouse/ROUNDS_PLAN.md:63-68 (step 5) lists what the second renderer
+  must take on.
+- The review is live for both roles at `/golf/dashboard/rounds/<uuid>`
+  (src/clubhouse/shell/nav.ts:140-141). Its only gap is the score row, which
+  can't be tapped.
+- The library states (EMPTY.rounds, the rounds skeleton) and the library's
+  Continue and New round belong to Rounds part A. The review's states (CH-11204,
+  11205, 11206, 11307) are not drawn on the board, so they have no rows here.
 
 ## CoachHelm (coach and player)
 
 ### `Coach - CoachHelm.html` (coach, desktop)
 
-Built counterpart: src/clubhouse/routes/coachhelm.tsx, src/clubhouse/screens/coachhelm/CoachBoard.tsx, parts.tsx, writes.ts, CoachHelmSkeleton.tsx, src/app/golf/(dashboard)/dashboard/coachhelm/loading.tsx. Phone build: n/a. Skipped scaffolding: sidebar and its footer, top bar (search "Ask about a player or a stat", bell, "CoachHelm settings" icon), ToastStack (never called), GHLayer switcher; program pulse rows are plain li with no handler on the board, not controls.
+Built counterpart: src/clubhouse/routes/coachhelm.tsx,
+src/clubhouse/screens/coachhelm/CoachBoard.tsx, parts.tsx, writes.ts,
+CoachHelmSkeleton.tsx, src/app/golf/(dashboard)/dashboard/coachhelm/loading.tsx.
+Phone build: n/a. Skipped scaffolding: sidebar and its footer, top bar (search
+"Ask about a player or a stat", bell, "CoachHelm settings" icon), ToastStack
+(never called), GHLayer switcher; program pulse rows are plain li with no
+handler on the board, not controls.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -983,7 +1266,11 @@ Built counterpart: src/clubhouse/routes/coachhelm.tsx, src/clubhouse/screens/coa
 
 ### `Player - CoachHelm.html` (player, desktop)
 
-Built counterpart: src/clubhouse/routes/coachhelm.tsx, src/clubhouse/screens/coachhelm/PlayerBoard.tsx, parts.tsx, CoachHelmSkeleton.tsx, src/app/golf/(dashboard)/dashboard/coachhelm/loading.tsx. Phone build: n/a. Skipped scaffolding: sidebar and its footer, top bar (search, bell, settings), GHLayer switcher.
+Built counterpart: src/clubhouse/routes/coachhelm.tsx,
+src/clubhouse/screens/coachhelm/PlayerBoard.tsx, parts.tsx,
+CoachHelmSkeleton.tsx, src/app/golf/(dashboard)/dashboard/coachhelm/loading.tsx.
+Phone build: n/a. Skipped scaffolding: sidebar and its footer, top bar (search,
+bell, settings), GHLayer switcher.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -994,7 +1281,12 @@ Built counterpart: src/clubhouse/routes/coachhelm.tsx, src/clubhouse/screens/coa
 
 ### `Coach and Player - CoachHelm - Mobile.html` (coach and player, phone)
 
-Built counterpart: same CoachBoard.tsx and PlayerBoard.tsx, phone layout when useChPhone() is true (is-phone class, PhoneTop, CoachBoard.tsx:258, PlayerBoard.tsx:50), spec docs/clubhouse/phone/coachhelm.md:61. Phone build: yes, the shared boards with phone CSS. Skipped scaffolding: MTop, MTabs, MSafari, iOS frame, board frames' initial props (why, sel, player, hidePulse), GHBoards state switcher; pulse rows are plain li with no handler.
+Built counterpart: same CoachBoard.tsx and PlayerBoard.tsx, phone layout when
+useChPhone() is true (is-phone class, PhoneTop, CoachBoard.tsx:258,
+PlayerBoard.tsx:50), spec docs/clubhouse/phone/coachhelm.md:61. Phone build:
+yes, the shared boards with phone CSS. Skipped scaffolding: MTop, MTabs,
+MSafari, iOS frame, board frames' initial props (why, sel, player, hidePulse),
+GHBoards state switcher; pulse rows are plain li with no handler.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -1011,20 +1303,46 @@ Built counterpart: same CoachBoard.tsx and PlayerBoard.tsx, phone layout when us
 | Start a round | Player empty-state frame (EMPTY.coachhelm player) | "Open Rounds" link to /golf/dashboard/rounds, src/clubhouse/screens/coachhelm/PlayerBoard.tsx:93 | `decided` | catalog/coachhelm.md:41; /rounds/new not rebuilt (nav.ts:141), Q-78. Rounds is a player phone tab too |
 | View roster | Coach empty-state frame (EMPTY.coachhelm coach) | Link to /golf/dashboard/roster, src/clubhouse/screens/coachhelm/CoachBoard.tsx:164 | `works` | Roster rebuilt for coach, nav.ts:116 (reached from More on the phone) |
 
-#### Notes
+#### Notes (again, 10)
 
-- None of the three boards loads ch2-data.js, and coachhelm2.css (phone board only) is a stylesheet. The boards draw only helm3.jsx CoachHelm3 and PlayerHelm, so the signals queue, morning brief, standing and player focus view in the prompt have no rows: they are not on these boards.
-- gh-states.jsx has no failed state for coachhelm (only GHEmpty and GHSkeleton, no Try again). The built Try again notices (CH-13201 to CH-13203) are not board controls and have no rows.
-- Share with {first name} is recorded only as an unnumbered open owner question (phone/coachhelm.md:34, DESIGN.md:106), not a Q-n in PROGRESS.md. Under "build it" the owner may want it numbered and answered.
-- Cross-page disagreement: CoachHelm's empty state draws "Open Rounds" (catalog:41) while Player Home hides its Start a round under Q-69. Both are justified by round entry not being rebuilt (Q-78), but the two pages treat it differently.
-- The program pulse rows are not clickable on the board, but the pulse items carry action.href (src/lib/coachhelm/v3/chat/program-pulse.ts:49), which pulseRows drops (src/clubhouse/data/coachhelm-shape.ts:193). This is an optional improvement, not a gap.
-- The board's ?view=development or profile or standing drills are not drawn on these boards. They show the not-rebuilt notice (Q-76, routes/coachhelm.tsx:23), so they have no rows.
+- None of the three boards loads ch2-data.js, and coachhelm2.css (phone board
+  only) is a stylesheet. The boards draw only helm3.jsx CoachHelm3 and
+  PlayerHelm, so the signals queue, morning brief, standing and player focus
+  view in the prompt have no rows: they are not on these boards.
+- gh-states.jsx has no failed state for coachhelm (only GHEmpty and GHSkeleton,
+  no Try again). The built Try again notices (CH-13201 to CH-13203) are not
+  board controls and have no rows.
+- Share with {first name} is recorded only as an unnumbered open owner question
+  (phone/coachhelm.md:34, DESIGN.md:106), not a Q-n in PROGRESS.md. Under "build
+  it" the owner may want it numbered and answered.
+- Cross-page disagreement: CoachHelm's empty state draws "Open Rounds"
+  (catalog:41) while Player Home hides its Start a round under Q-69. Both are
+  justified by round entry not being rebuilt (Q-78), but the two pages treat it
+  differently.
+- The program pulse rows are not clickable on the board, but the pulse items
+  carry action.href (src/lib/coachhelm/v3/chat/program-pulse.ts:49), which
+  pulseRows drops (src/clubhouse/data/coachhelm-shape.ts:193). This is an
+  optional improvement, not a gap.
+- The board's ?view=development or profile or standing drills are not drawn on
+  these boards. They show the not-rebuilt notice (Q-76,
+  routes/coachhelm.tsx:23), so they have no rows.
 
 ## Classes (player)
 
 ### `Player - Classes.html` (player, desktop)
 
-Built counterpart: src/clubhouse/screens/classes/ (ClassesView, parts, ClassForm, ClassDetail, ImportSchedule, import-read, writes, ClassesSkeleton), src/clubhouse/data/classes.ts, classes-shape.ts, src/clubhouse/routes/classes.tsx, src/app/golf/(dashboard)/dashboard/classes/page.tsx:13 (player in Clubhouse only; a coach gets LegacyClassesPage, nav.ts:123 lists /classes for players only). Phone build: n/a for desktop. Skipped scaffolding: sidebar, top bar crumbs/search/bell/settings (shell), GHLayer state switcher, unrendered classes.jsx components (Ribbon, Dial, AddInline, Week, CourseCard are defined but ClassesPage never draws them), TermBar hover titles; the loading skeleton (GHSkeleton classes) has no controls, built as ClassesSkeleton via classes/loading.tsx:19.
+Built counterpart: src/clubhouse/screens/classes/ (ClassesView, parts,
+ClassForm, ClassDetail, ImportSchedule, import-read, writes, ClassesSkeleton),
+src/clubhouse/data/classes.ts, classes-shape.ts,
+src/clubhouse/routes/classes.tsx,
+src/app/golf/(dashboard)/dashboard/classes/page.tsx:13 (player in Clubhouse
+only; a coach gets LegacyClassesPage, nav.ts:123 lists /classes for players
+only). Phone build: n/a for desktop. Skipped scaffolding: sidebar, top bar
+crumbs/search/bell/settings (shell), GHLayer state switcher, unrendered
+classes.jsx components (Ribbon, Dial, AddInline, Week, CourseCard are defined
+but ClassesPage never draws them), TermBar hover titles; the loading skeleton
+(GHSkeleton classes) has no controls, built as ClassesSkeleton via
+classes/loading.tsx:19.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -1062,7 +1380,13 @@ Built counterpart: src/clubhouse/screens/classes/ (ClassesView, parts, ClassForm
 
 ### `Player - Classes - Mobile.html` (player, phone)
 
-Built counterpart: same ClassesView; phone mode via useChPhone (src/clubhouse/screens/classes/ClassesView.tsx:42) draws PhoneTop and every sheet as a draggable bottom sheet (src/clubhouse/ui/Modal.tsx:44). Phone build: ClassesView in phone mode (no separate *Phone.tsx). Skipped scaffolding: iOS frame, MTabs tab bar, MSafari, qm-board labels, GHBoards loading frame (skeleton has no controls; built ClassesSkeleton, classes/loading.tsx:19), unrendered classes.jsx components.
+Built counterpart: same ClassesView; phone mode via useChPhone
+(src/clubhouse/screens/classes/ClassesView.tsx:42) draws PhoneTop and every
+sheet as a draggable bottom sheet (src/clubhouse/ui/Modal.tsx:44). Phone build:
+ClassesView in phone mode (no separate *Phone.tsx). Skipped scaffolding: iOS
+frame, MTabs tab bar, MSafari, qm-board labels, GHBoards loading frame (skeleton
+has no controls; built ClassesSkeleton, classes/loading.tsx:19), unrendered
+classes.jsx components.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -1097,27 +1421,46 @@ Built counterpart: same ClassesView; phone mode via useChPhone (src/clubhouse/sc
 | Import N classes | 06 Review, footer (primary) | Inserts then syncs, src/clubhouse/screens/classes/ImportSchedule.tsx:185, writes.ts:158 | `works` |  |
 | View classes | 07 Imported, footer | Closes onto the updated list, src/clubhouse/screens/classes/ImportSchedule.tsx:171 | `works` |  |
 
-#### Notes
+#### Notes (again, 11)
 
-- No GAP rows: every drawn control either works on the live player route or is covered by Q-75b/Q-75d or phone/classes.md:27-31.
-- Q-75a (Delete all) is held for the owner (PROGRESS.md:301, phone/classes.md:33) but is not drawn on either v2 board, so it has no row here; do not build it without the owner.
-- Several board buttons have no handler on the board itself (detail Remove class and Edit class, AddClass sheet's Add class, review Edit pencil); the built ones do the obvious action, except the pencil, which is decided.
-- The live page is the Clubhouse screen only for a player with isClubhouseFor('player') (page.tsx:13); a coach gets LegacyClassesPage, and nav.ts gives coaches no /classes.
-- The board's always-visible "Sync calendar" button is intentionally absent (phone/classes.md:29); if the owner wants a manual re-sync, it needs a sync timestamp column first.
+- No GAP rows: every drawn control either works on the live player route or is
+  covered by Q-75b/Q-75d or phone/classes.md:27-31.
+- Q-75a (Delete all) is held for the owner (PROGRESS.md:301,
+  phone/classes.md:33) but is not drawn on either v2 board, so it has no row
+  here; do not build it without the owner.
+- Several board buttons have no handler on the board itself (detail Remove class
+  and Edit class, AddClass sheet's Add class, review Edit pencil); the built
+  ones do the obvious action, except the pencil, which is decided.
+- The live page is the Clubhouse screen only for a player with
+  isClubhouseFor('player') (page.tsx:13); a coach gets LegacyClassesPage, and
+  nav.ts gives coaches no /classes.
+- The board's always-visible "Sync calendar" button is intentionally absent
+  (phone/classes.md:29); if the owner wants a manual re-sync, it needs a sync
+  timestamp column first.
 
 ## Settings (no v2 board)
 
-There is no v2 Settings board. The controls that lead to Settings are drawn on other boards and are listed under the Shell section: the top-bar gear on the desktop boards, and Settings, Help and Sign out in the coach phone More sheet. Settings itself was built from the design system (D-18, docs/clubhouse/PROGRESS.md:177), so it has no board to check against. Nothing to inventory here.
+There is no v2 Settings board. The controls that lead to Settings are drawn on
+other boards and are listed under the Shell section: the top-bar gear on the
+desktop boards, and Settings, Help and Sign out in the coach phone More sheet.
+Settings itself was built from the design system (D-18,
+docs/clubhouse/PROGRESS.md:177), so it has no board to check against. Nothing to
+inventory here.
 
 ## Shell: sidebar, top bar, tab bar, More sheet, bell, and the Settings entry (coach and player)
 
 ### Coach desktop shell (same wiring on every `Coach - *.html`; read from `Coach - Home.html`)
 
-Built counterpart: src/clubhouse/shell/Sidebar.tsx, NextEventCard.tsx, TopBar.tsx, Bell.tsx, crumbs.tsx, nav.ts, data/shell.ts (same shell wiring checked in Coach - CoachHelm, Calendar, Team Hub, Messages, Roster, Stats, Qualifiers .html; FairwaySidebar/FairwayTopBar/IconButton in _ds_bundle.js:1260, 2067, 2127). Phone build: n/a. Skipped scaffolding: GHLayer state overlay, the board's "isn't designed yet" placeholder, ToastStack.
+Built counterpart: src/clubhouse/shell/Sidebar.tsx, NextEventCard.tsx,
+TopBar.tsx, Bell.tsx, crumbs.tsx, nav.ts, data/shell.ts (same shell wiring
+checked in Coach - CoachHelm, Calendar, Team Hub, Messages, Roster, Stats,
+Qualifiers .html; FairwaySidebar/FairwayTopBar/IconButton in _ds_bundle.js:1260,
+2067, 2127). Phone build: n/a. Skipped scaffolding: GHLayer state overlay, the
+board's "isn't designed yet" placeholder, ToastStack.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
-| Varsity · Fall 2026 (chevrons-up-down team chip) | Sidebar, brand block | Menu button for a head coach on two or more teams (a listbox of the teams, `setActiveTeam` then `router.refresh()`), plain label otherwise, src/clubhouse/shell/TeamSwitch.tsx (`BrandTeamSwitch`), Sidebar.tsx | `works` | No handler on the board. Built 2026-10-01 on the owner's answer to Q-130; gate `canSwitchTeams` and two or more teams, catalog CH-1813, CH-1305 |
+| Varsity · Fall 2026 (chevrons-up-down team chip) | Sidebar, brand block | Menu button for a head coach on two or more teams (a listbox of the teams, `setActiveTeam` then `router.refresh()`), plain label otherwise, src/clubhouse/shell/TeamSwitch.tsx (`TeamSwitch`), Sidebar.tsx | `works` | No handler on the board. Built 2026-10-01 on the owner's answer to Q-130; gate `canSwitchTeams` and two or more teams, catalog CH-1813, CH-1305 |
 | Home | Sidebar, main group | Link to /golf/dashboard, src/clubhouse/shell/Sidebar.tsx:65 (href from nav.ts:35) | `works` | Board GH.go (gh-nav.js:29) |
 | CoachHelm | Sidebar, main group | Link to /golf/dashboard/coachhelm, src/clubhouse/shell/Sidebar.tsx:65 (nav.ts:36), rebuilt for coach nav.ts:113 | `works` | nav.ts:30 comment calling it not rebuilt is stale (D-66) |
 | Calendar | Sidebar, main group | Link to /golf/dashboard/calendar, src/clubhouse/shell/Sidebar.tsx:65 (nav.ts:37) | `works` | |
@@ -1140,7 +1483,11 @@ Built counterpart: src/clubhouse/shell/Sidebar.tsx, NextEventCard.tsx, TopBar.ts
 
 ### Player desktop shell (same wiring on every `Player - *.html`; read from `Player - Home.html`)
 
-Built counterpart: src/clubhouse/shell/Sidebar.tsx, NextEventCard.tsx, TopBar.tsx, Bell.tsx, nav.ts:50 (same shell wiring checked in Player - CoachHelm, Team Hub, Rounds, Classes .html). Phone build: n/a. Skipped scaffolding: GHLayer state overlay; the player brand block has no chevron and no handler, so no row.
+Built counterpart: src/clubhouse/shell/Sidebar.tsx, NextEventCard.tsx,
+TopBar.tsx, Bell.tsx, nav.ts:50 (same shell wiring checked in Player -
+CoachHelm, Team Hub, Rounds, Classes .html). Phone build: n/a. Skipped
+scaffolding: GHLayer state overlay; the player brand block has no chevron and no
+handler, so no row.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -1159,7 +1506,14 @@ Built counterpart: src/clubhouse/shell/Sidebar.tsx, NextEventCard.tsx, TopBar.ts
 
 ### Coach phone shell (tab bar, More sheet, top bars; read from `Coach - Home - Mobile.html` and the other coach phone boards)
 
-Built counterpart: src/clubhouse/shell/TabBar.tsx, TopBar.tsx, Bell.tsx, phone-chrome.tsx, ui/PhoneBar.tsx, shell.css:786-860. Board sources: m-shell.jsx (MTop, MTabs), m-ch.jsx MoreM (board "more"), m-home.jsx:110 hero bar, plus the top bars on Coach - Calendar/Stats/Roster/Messages/Qualifiers - Mobile and Coach and Player - CoachHelm/Team Hub - Mobile. Phone build: TabBar and More sheet. Skipped scaffolding: MSafari (dropped, D-43), iOS frame, GHBoards loading/empty phones, page-owned top-bar actions and in-page back links (Roster, Chat, Team, Helm).
+Built counterpart: src/clubhouse/shell/TabBar.tsx, TopBar.tsx, Bell.tsx,
+phone-chrome.tsx, ui/PhoneBar.tsx, shell.css:786-860. Board sources: m-shell.jsx
+(MTop, MTabs), m-ch.jsx MoreM (board "more"), m-home.jsx:110 hero bar, plus the
+top bars on Coach - Calendar/Stats/Roster/Messages/Qualifiers - Mobile and Coach
+and Player - CoachHelm/Team Hub - Mobile. Phone build: TabBar and More sheet.
+Skipped scaffolding: MSafari (dropped, D-43), iOS frame, GHBoards loading/empty
+phones, page-owned top-bar actions and in-page back links (Roster, Chat, Team,
+Helm).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -1184,7 +1538,13 @@ Built counterpart: src/clubhouse/shell/TabBar.tsx, TopBar.tsx, Bell.tsx, phone-c
 
 ### Player phone shell (tab bar, top bars; read from `Player - Home - Mobile.html` and the other player phone boards)
 
-Built counterpart: src/clubhouse/shell/TabBar.tsx, TopBar.tsx, Bell.tsx, phone-chrome.tsx, shell.css:786-860. Board sources: m-player-home.jsx:148 hero bar and :157 tabs, m-shell.jsx MTop/MTabs, plus top bars on Player - Rounds - Mobile, Player - Classes - Mobile, and the player frames of Coach and Player - CoachHelm/Team Hub - Mobile. Phone build: TabBar and More sheet. Skipped scaffolding: MSafari, iOS frame, GHBoards phones; the player hero team label is a span (no row); no board draws a player More sheet.
+Built counterpart: src/clubhouse/shell/TabBar.tsx, TopBar.tsx, Bell.tsx,
+phone-chrome.tsx, shell.css:786-860. Board sources: m-player-home.jsx:148 hero
+bar and :157 tabs, m-shell.jsx MTop/MTabs, plus top bars on Player - Rounds -
+Mobile, Player - Classes - Mobile, and the player frames of Coach and Player -
+CoachHelm/Team Hub - Mobile. Phone build: TabBar and More sheet. Skipped
+scaffolding: MSafari, iOS frame, GHBoards phones; the player hero team label is
+a span (no row); no board draws a player More sheet.
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
@@ -1197,11 +1557,24 @@ Built counterpart: src/clubhouse/shell/TabBar.tsx, TopBar.tsx, Bell.tsx, phone-c
 | ‹ More (back) | Top bar left, Classes board | Back via useBackFromMore, src/clubhouse/shell/phone-chrome.tsx:117 (ClassesView.tsx:234) | `works` | No handler on the board (no onBack). D-41 |
 | Settings | More sheet (player sheet not drawn; top bar has no gear) | Link to /golf/dashboard/settings, src/clubhouse/shell/TabBar.tsx:228 | `works` | D-41, PROGRESS.md:189 |
 
-#### Notes
+#### Notes (again, 12)
 
-- The top-bar gear is not the only v2 route to Settings: MoreM (m-ch.jsx:47-57, board "more" in Coach - Home - Mobile.html:48) draws Settings, Help and Sign out, all built (TabBar.tsx:228, :234, :240). phone/foundation.md:124 and PROGRESS.md:430 ("no board draws the More screen") are stale.
-- Phone bell: any PhoneTop, even the `start` tab-root variant, sets data-phone='page', and shell.css:812 hides the bell. Players lose it on three of four tabs and coaches on CoachHelm. One fix in TopBar/shell.css closes all four GAP rows.
-- The player sidebar and More sheet also carry built screens v2 does not draw: Calendar, Messages (with an unread badge), My stats and Qualifiers (nav.ts:53-58, D-66). The coach More sheet carries Team Hub, which MoreM omits.
-- MoreM is out of step with gh-nav.js: it lists Calendar (now a coach tab), Lineups and Courses. Courses is `decided` only by inference from D-66; ask the owner if they want it.
-- Crumb drift: board "Program › Qualifiers" and "Team › Messages" against Clubhouse "Team › Qualifiers" and "Messages". Not controls.
-- Pull to refresh and the push soft ask are not drawn on any v2 board (D-43 holds them), so they get no rows.
+- The top-bar gear is not the only v2 route to Settings: MoreM (m-ch.jsx:47-57,
+  board "more" in Coach - Home - Mobile.html:48) draws Settings, Help and Sign
+  out, all built (TabBar.tsx:228, :234, :240). phone/foundation.md:124 and
+  PROGRESS.md:430 ("no board draws the More screen") are stale.
+- Phone bell: any PhoneTop, even the `start` tab-root variant, sets
+  data-phone='page', and shell.css:812 hides the bell. Players lose it on three
+  of four tabs and coaches on CoachHelm. One fix in TopBar/shell.css closes all
+  four GAP rows.
+- The player sidebar and More sheet also carry built screens v2 does not draw:
+  Calendar, Messages (with an unread badge), My stats and Qualifiers
+  (nav.ts:53-58, D-66). The coach More sheet carries Team Hub, which MoreM
+  omits.
+- MoreM is out of step with gh-nav.js: it lists Calendar (now a coach tab),
+  Lineups and Courses. Courses is `decided` only by inference from D-66; ask the
+  owner if they want it.
+- Crumb drift: board "Program › Qualifiers" and "Team › Messages" against
+  Clubhouse "Team › Qualifiers" and "Messages". Not controls.
+- Pull to refresh and the push soft ask are not drawn on any v2 board (D-43
+  holds them), so they get no rows.

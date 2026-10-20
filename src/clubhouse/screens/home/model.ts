@@ -1,3 +1,5 @@
+import type { ChCoachHome } from '../../data/home';
+import type { ChPlayerHome } from '../../data/player-home';
 import type { ChForm } from '../../data/season';
 
 /**
@@ -24,12 +26,15 @@ export function firstName(full: string): string {
  * "Practice green · 6 players", "Green 2 · Priya, Ava". Names only for up to
  * three invitees, and not when the title already names the one invitee ("1:1
  * with Jonah"). With no invitee rows, or when the attendance read failed, only
- * the location.
+ * the location. A number is a count without identities (a player's Home reads
+ * counts, never teammates' rows): always "N players".
  */
-export function inviteDetail(input: { location: string | null; title: string; invitees: string[] | null; names: Map<string, string> }): string | null {
+export function inviteDetail(input: { location: string | null; title: string; invitees: string[] | number | null; names: Map<string, string> }): string | null {
   const { location, title, invitees, names } = input;
   let who: string | null = null;
-  if (invitees && invitees.length > 0) {
+  if (typeof invitees === 'number') {
+    if (invitees > 0) who = `${invitees} ${invitees === 1 ? 'player' : 'players'}`;
+  } else if (invitees && invitees.length > 0) {
     const firsts = invitees.map((id) => names.get(id)).filter((n): n is string => !!n).map(firstName);
     if (invitees.length <= 3 && firsts.length === invitees.length) {
       const named = firsts.length === 1 && title.toLowerCase().includes(firsts[0]!.toLowerCase());
@@ -41,10 +46,11 @@ export function inviteDetail(input: { location: string | null; title: string; in
   return [location, who].filter(Boolean).join(' · ') || null;
 }
 
-/** "5 of 6 confirmed" from RSVP rows; null without invitees or when the read failed. */
-export function confirmedLine(invitees: string[] | null, accepted: number): string | null {
-  if (!invitees || invitees.length === 0) return null;
-  return `${accepted} of ${invitees.length} confirmed`;
+/** "5 of 6 going" from RSVP rows, or from an invitee count; null without invitees or when the read failed. */
+export function confirmedLine(invitees: string[] | number | null, accepted: number): string | null {
+  const n = typeof invitees === 'number' ? invitees : (invitees?.length ?? 0);
+  if (n === 0) return null;
+  return `${accepted} of ${n} going`;
 }
 
 export interface ChSublineRow {
@@ -56,9 +62,9 @@ export interface ChSublineRow {
 function reason(r: ChSublineRow): string {
   const quiet = r.quietDays != null && r.quietDays >= QUIET_DAYS;
   const who = firstName(r.name);
-  if (r.status === 'slipping' && quiet) return `${who} is slipping and hasn't posted a round in ${r.quietDays} days`;
+  if (r.status === 'slipping' && quiet) return `${who} is slipping and hasn’t posted a round in ${r.quietDays} days`;
   if (r.status === 'slipping') return `${who} is slipping`;
-  return `${who} hasn't posted a round in ${r.quietDays} days`;
+  return `${who} hasn’t posted a round in ${r.quietDays} days`;
 }
 
 function list(parts: string[]): string {
@@ -88,4 +94,42 @@ export function homeSubline(rows: ChSublineRow[], opts: { roundsError: boolean; 
   if (opts.nextCompetition) out.push(`${opts.nextCompetition.title} is ${opts.nextCompetition.when}.`);
   if (flagged.length > 0 && onTrack.length > 0) out.push(early.length ? 'The others with enough rounds are on track.' : 'The rest of the team is on track.');
   return out.length ? out.join(' ') : null;
+}
+
+/**
+ * The parts of Home whose reads failed, named as they read inside the page notice's sentence (CH-1209: "This week’s
+ * schedule, recent rounds and the leaderboard didn’t load"). Two or more get the one page notice with the one Try
+ * again, and each part's own notice keeps only its title (`covered`). Each entry tests the flag that draws that part's
+ * notice, so the sentence never names a part with no gap under it. The phone draws team scoring where the desktop
+ * draws the leaderboard.
+ */
+export function coachFailedParts(data: Pick<ChCoachHome, 'week' | 'latestRounds' | 'leaderboard' | 'phone'>, phone: boolean): string[] {
+  const parts: string[] = [];
+  if (data.week.error) parts.push('this week’s schedule');
+  if (phone && data.latestRounds.error && !data.phone.form) parts.push('team scoring');
+  if (data.latestRounds.error) parts.push('recent rounds');
+  if (!phone && data.leaderboard.error) parts.push('the leaderboard');
+  return parts;
+}
+
+/**
+ * The player's (the phone and the desktop draw the same parts). The latest round and the scoring line read the same
+ * rounds, so they fail together and are named by their sections, not twice as "rounds".
+ */
+/**
+ * A player with no round posted yet, both rounds reads answered: a failed read is never taken for "new" (CH-2312). A
+ * malformed read is not "none" either; it is left to its section's boundary.
+ */
+export function noRoundsYet(data: Pick<ChPlayerHome, 'latest' | 'scoring'>): boolean {
+  const { latest, scoring } = data;
+  return !latest.error && !scoring.error && Array.isArray(scoring.points) && scoring.points.length === 0 && Array.isArray(latest.rounds) && latest.rounds.length === 0;
+}
+
+export function playerFailedParts(data: Pick<ChPlayerHome, 'week' | 'latest' | 'scoring' | 'legs'>): string[] {
+  const parts: string[] = [];
+  if (data.week.error) parts.push('this week’s schedule');
+  if (data.latest.error) parts.push('your latest round');
+  if (data.scoring.error) parts.push('your scoring');
+  if (data.legs?.cacheError) parts.push('some of your figures');
+  return parts;
 }

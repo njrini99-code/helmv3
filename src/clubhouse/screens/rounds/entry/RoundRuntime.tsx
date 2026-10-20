@@ -14,12 +14,14 @@ import type { RoundNotices } from './ports';
 import { RecoveryDialog } from './RecoveryDialog';
 import { ReloadBanner, RoundErrorBanner } from './ReloadBanner';
 import { QUALIFIER_CLOSED_REASON, SaveAsPracticeSheet } from './SaveAsPracticeSheet';
-import { cardHoles, outcomeOf, recoveryFacts, summaryHoles, type ChRecovery, type ChRoundSession } from './session';
+import { cardHoles, outcomeOf, postedScore, recoveryFacts, summaryHoles, type ChRecovery, type ChRoundSession } from './session';
 import { useEntryFailureToast } from './failures';
 import '../../../styles/rounds-track.css';
 
 /** After a round posts, its review opens once the check has had a moment (the legacy overlay counted three seconds). */
 export const POSTED_OPEN_MS = 2500;
+/** The review a posted round opens carries this, so the review knows it was just posted and lets its card settle in once (card/just-submitted.ts). */
+const JUST_SUBMITTED = '?just=submitted';
 /** Submitting for this long says it is slow and names a way out (the legacy overlay's 15 second escape). CH-11909. */
 export const SUBMIT_SLOW_MS = 15_000;
 
@@ -63,10 +65,16 @@ export function RoundRuntime({
   capture,
   routes,
   errorsHeld = false,
+  roundType,
 }: {
   session: ChRoundSession;
   capture: Capture;
   routes: RoundRuntimeRoutes;
+  /**
+   * A continued round's Change round type row on the Exit sheet: what the round counts as now, and what opens the
+   * sheet (the continue screen owns it, CH-11521). The Exit sheet closes first.
+   */
+  roundType?: { label: string; onChange: () => void };
   /** A dialog outside the runtime (the recovery dialog) holds the engine's error line, so no banner says it twice. */
   errorsHeld?: boolean;
 }) {
@@ -88,6 +96,9 @@ export function RoundRuntime({
   const exitOpen = sheet === 'exit' || session.engineExitOpen;
   const closedOpen = session.submitting && session.qualifierClosed && !session.completedRoundId;
   const overlayOpen = session.submitting && !closedOpen;
+  // Mounted from the first submit on, so Go back fades it out instead of dropping it in one frame (audit A-18).
+  const [submitShown, setSubmitShown] = useState(false);
+  if (overlayOpen && !submitShown) setSubmitShown(true);
   const overlayState = session.completedRoundId ? 'done' : session.error && !session.qualifierClosed ? 'failed' : 'saving';
   const finishOpen = !!session.pendingFinalStats && session.showFinishConfirm && !session.submitting;
 
@@ -225,7 +236,7 @@ export function RoundRuntime({
       ticked.current = id;
       haptic('success');
     }
-    const t = window.setTimeout(() => routerRef.current.push(routesRef.current.review(id)), POSTED_OPEN_MS);
+    const t = window.setTimeout(() => routerRef.current.push(`${routesRef.current.review(id)}${JUST_SUBMITTED}`), POSTED_OPEN_MS);
     return () => window.clearTimeout(t);
   }, [session.completedRoundId]);
 
@@ -256,10 +267,10 @@ export function RoundRuntime({
       <div className="ch-rt-note" data-ch-code="CH-11910">
         <Icon icon={Send} size={15} />
         <span>
-          <b>All holes are in.</b> Review the round, then submit it.
+          <b>All holes are in.</b> Review the round, then post it.
         </span>
-        <Button variant="primary" size="sm" onClick={() => s.current.setShowFinishConfirm(true)}>
-          Review and submit
+        <Button variant="secondary" size="sm" onClick={() => s.current.setShowFinishConfirm(true)}>
+          Review and post
         </Button>
       </div>
     ) : null;
@@ -275,6 +286,7 @@ export function RoundRuntime({
         round={session.round}
         holes={session.holes}
         currentHoleIndex={session.currentHoleIndex}
+        startHole={session.startHole}
         initialShots={session.activeHoleShots}
         initialShotNumber={session.activeShotNumber}
         onHoleComplete={session.onHoleComplete}
@@ -283,6 +295,8 @@ export function RoundRuntime({
         onExit={() => setSheet('exit')}
         onNavigateToHole={session.setCurrentHoleIndex}
         onOpenScorecard={() => setSheet('card')}
+        holeShots={(i) => session.completedHoleStats[i]?.shots ?? null}
+        onReviewRound={session.pendingFinalStats && !session.submitting ? () => s.current.setShowFinishConfirm(true) : undefined}
         onAutoSave={session.onAutoSave}
         autoSaveInterval={15000}
         autoSaveDisabled={session.autoSaveDisabled}
@@ -306,12 +320,22 @@ export function RoundRuntime({
         onSave={() => void save.run('exit')}
         onKeep={closeExit}
         onDiscard={() => void discard.run('exit')}
+        roundType={
+          roundType && {
+            label: roundType.label,
+            onChange: () => {
+              closeExit();
+              roundType.onChange();
+            },
+          }
+        }
       />
       <ScorecardSheet open={sheet === 'card'} onClose={() => setSheet(null)} course={course} tee={session.round.teeLabel} holes={card} current={current} />
       <RoundCompleteSheet
         open={finishOpen}
         heading={session.heading}
         holes={summaryHoles(session.holes, session.pendingFinalStats ?? [])}
+        backHole={current}
         onBack={() => s.current.setShowFinishConfirm(false)}
         onSubmit={() => {
           const stats = s.current.pendingFinalStats;
@@ -320,13 +344,15 @@ export function RoundRuntime({
           void s.current.submit(stats);
         }}
       />
-      {overlayOpen && (
+      {submitShown && (
         <SubmitOverlay
+          open={overlayOpen}
           state={overlayState}
           course={course}
           shots={shots}
           coach={null}
-          reviewHref={session.completedRoundId ? routes.review(session.completedRoundId) : null}
+          score={postedScore(card)}
+          reviewHref={session.completedRoundId ? `${routes.review(session.completedRoundId)}${JUST_SUBMITTED}` : null}
           error={session.error || null}
           onRetry={() => s.current.submitRetry()}
           onGoBack={() => s.current.submitGoBack()}

@@ -41,9 +41,9 @@ export function WindowSwitch({ value, onChange, custom = false }: { value: ChWin
 export function changeWords(from: ChFilter, to: ChFilter): { slow: string; offline: string; still: string } {
   const still = isFiltered(from) ? 'The figures shown are still the rounds you had.' : `The figures shown are still ${WINDOW_WORDS[from.window]}.`;
   if (isWindowChange(from, to)) {
-    return { slow: `Still loading ${WINDOW_WORDS[to.window]}…`, offline: `Couldn't open ${WINDOW_WORDS[to.window]}: you're offline`, still };
+    return { slow: `Still loading ${WINDOW_WORDS[to.window]}…`, offline: `Couldn’t open ${WINDOW_WORDS[to.window]}: you’re offline`, still };
   }
-  return { slow: 'Still loading the filtered rounds…', offline: "Couldn't apply the filter: you're offline", still };
+  return { slow: 'Still loading the filtered rounds…', offline: 'Couldn’t apply the filter: you’re offline', still };
 }
 
 /** What a change in flight says it is showing and loading ("Showing the season, loading the last 10 rounds"). */

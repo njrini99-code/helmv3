@@ -22,7 +22,7 @@ export const PREVIEW_WELCOME_COACH: ChWelcome = {
     failed: false,
     items: [
       { id: 'n1', category: 'messages', title: '4 new messages', body: 'Sofia, Eli and 2 others' },
-      { id: 'n2', category: 'announcements', title: 'Jonah posted a round', body: '74 (+2) at Pine Needles' },
+      { id: 'n2', category: 'announcements', title: 'Jonah posted a round', body: '74 · +2 · Pine Needles' },
       { id: 'n3', category: 'events', title: '5 of 6 RSVPs for Pinehurst', body: 'Eli hasn’t replied yet' },
     ],
   },

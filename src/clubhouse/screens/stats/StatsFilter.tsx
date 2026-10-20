@@ -30,6 +30,7 @@ import {
 } from '../../data/stats-filter';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
+import { DateField } from '../../ui/DateField';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { EmptyState } from '../../ui/States';
@@ -97,7 +98,7 @@ export function StatsFilter({
   return (
     <section className={'ch-sf' + (phone ? ' is-phone' : '')} aria-label="Round filter">
       <div className="ch-sf__bar">
-        <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm ch-sf__open" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        <button type="button" className={'ch-btn ch-btn--ghost ch-btn--sm ch-sf__open' + (phone ? '' : ' ch-btn--flush-start')} aria-haspopup="dialog" onClick={() => setOpen(true)}>
           <Icon icon={SlidersHorizontal} size={14} />
           <span>Filter</span>
           {chips.length > 0 && <span className="ch-sf__n ch-num" aria-label={`${chips.length} on`}>{chips.length}</span>}
@@ -175,8 +176,27 @@ export function EarlyRead({ code, count, whole = count }: { code: string; count:
   );
 }
 
-/** The empty state when the filter matches nothing: says so, and Clear filters is the way back. */
-export function FilterEmpty({ code, onClear }: { code: string; onClear: () => void }) {
+/**
+ * The empty state when the filter matches nothing: says so, and Clear filters is the way back. `page` when it is the
+ * whole page body (the team page, CH-4313), so it has the page empty's anatomy as CH-4301 does; the player's stands in
+ * for a tab's content beside Development, so it stays a section's (CH-5320).
+ */
+export function FilterEmpty({ code, onClear, page = false }: { code: string; onClear: () => void; page?: boolean }) {
+  if (page)
+    return (
+      <EmptyState
+        size="page"
+        code={code}
+        icon={SlidersHorizontal}
+        title="No rounds match these filters."
+        body="Try a wider time, fewer round types, or clear the filters to see every round again."
+        action={
+          <Button variant="primary" leftIcon={X} onClick={onClear}>
+            Clear filters
+          </Button>
+        }
+      />
+    );
   return (
     <div className="ch-st-card">
       <EmptyState
@@ -344,30 +364,33 @@ function FilterSheet({
           <div className="ch-sf-range">
             <label className="ch-field" htmlFor={`${uid}-from`}>
               <span className="ch-field__label">From</span>
-              <input
+              <DateField
                 id={`${uid}-from`}
-                type="date"
+                label="From"
                 className="ch-input ch-num"
                 value={from}
                 min="2000-01-01"
                 max="2100-12-31"
+                clearable
                 aria-invalid={touched && badRange}
                 aria-describedby={`${uid}-range-help`}
-                onChange={(e) => setFrom(e.target.value)}
+                onChange={setFrom}
               />
             </label>
             <label className="ch-field" htmlFor={`${uid}-to`}>
               <span className="ch-field__label">To</span>
-              <input
+              <DateField
                 id={`${uid}-to`}
-                type="date"
+                label="To"
                 className="ch-input ch-num"
                 value={to}
-                min="2000-01-01"
+                min={from || '2000-01-01'}
                 max="2100-12-31"
+                anchor={from || undefined}
+                clearable
                 aria-invalid={touched && badRange}
                 aria-describedby={`${uid}-range-help`}
-                onChange={(e) => setTo(e.target.value)}
+                onChange={setTo}
               />
             </label>
           </div>

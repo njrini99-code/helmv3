@@ -4,9 +4,10 @@ import { getDetailedStats } from '@/app/golf/actions/stats-data';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
-import { classYearLabel, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
+import { classYearLabel, displayHandicap, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
   bandPutts,
+  cachedPutts,
   earlierInFilter,
   filterOptions,
   loadPutts,
@@ -59,6 +60,11 @@ export const DETAIL_MAX_ROUNDS = 100;
 
 export type ChViewer = 'coach' | 'player';
 
+/** A made-over-attempted count as a percentage; null with no attempts (never a zero for a round that had none). */
+function pct(made: number | null | undefined, total: number | null | undefined): number | null {
+  return typeof made === 'number' && typeof total === 'number' && total > 0 ? (made / total) * 100 : null;
+}
+
 export interface ChProfileRound {
   id: string;
   course: string;
@@ -70,6 +76,10 @@ export interface ChProfileRound {
   score: number;
   toPar: number | null;
   gir: string | null;
+  /** The round's own fairways, greens and scrambling as percentages, from the round cache; null for a round with none to count (a total only, or no attempts). */
+  fairwaysPct: number | null;
+  girPct: number | null;
+  scramblePct: number | null;
   putts: number | null;
   sg: number | null;
   /** Off the tee, approach, around the green, putting; null where the round has none. */
@@ -168,6 +178,8 @@ export interface ChPlayerProfile {
   devError: boolean;
   nav: { index: number; total: number; prev: string; next: string } | null;
   roundsError: boolean;
+  /** The team's primary coach by name, for the personal-best card's attesting line (P005-C2); null when unknown or unread. */
+  attestingCoach?: string | null;
 }
 
 /**
@@ -211,6 +223,8 @@ export async function loadPlayerProfile(input: {
   // Coaches compare against the active team and page through it; players see only themselves.
   const teamMembersRead = coach ? Promise.resolve(supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active')) : null;
   const ownRoundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f) });
+  // The personal-best card's attesting coach (P005-C2): the team's primary coach on staff. A failed read only drops the line.
+  const coachRead = attestingCoachName(supabase, input.teamId);
   const focusRead = Promise.resolve(
     supabase
       .from('golf_player_focus_areas')
@@ -373,6 +387,9 @@ export async function loadPlayerProfile(input: {
   const teamRate = (made: keyof ChRoundCache, total: keyof ChRoundCache) => (t ? rate(teamCache, made, total) : null);
   const per = (rs: ChRound[], key: keyof ChRoundCache) => weightedMean(rs, (r) => cacheNum(r, key));
   const teamPer = (key: keyof ChRoundCache) => (t ? per(teamHole, key) : null);
+  // Putts and three-putts a round over the rounds with putts recorded (cachedPutts), as the calculator and the Fairway pages count them.
+  const perPutts = (rs: ChRound[], key: 'total_putts' | 'three_putts') => weightedMean(rs, (r) => cachedPutts(cache.byRound.get(r.id), key));
+  const teamPerPutts = (key: 'total_putts' | 'three_putts') => (t ? perPutts(teamHole, key) : null);
   const bigNumbersPct = (rs: ChRound[]) =>
     bigNumberRate(
       rs.flatMap((r) => {
@@ -434,8 +451,8 @@ export async function loadPlayerProfile(input: {
     row('Short game', 'Scrambling from the fairway', s?.scramblingPctFairway ?? null, null, 'scrambling_pct_fairway', '%', 0, false),
     row('Short game', 'Scrambling from the rough', s?.scramblingPctRough ?? null, null, 'scrambling_pct_rough', '%', 0, false),
     row('Short game', 'Sand saves', rate(mineCache, 'sand_saves', 'sand_attempts'), teamRate('sand_saves', 'sand_attempts'), 'scrambling_pct_sand', '%', 0, false),
-    row('Putting', 'Putts per round', per(holeWin, 'total_putts'), teamPer('total_putts'), null, '', 1, true),
-    row('Putting', '3-putts per round', per(holeWin, 'three_putts'), teamPer('three_putts'), null, '', 2, true),
+    row('Putting', 'Putts per round', perPutts(holeWin, 'total_putts'), teamPerPutts('total_putts'), null, '', 1, true),
+    row('Putting', '3-putts per round', perPutts(holeWin, 'three_putts'), teamPerPutts('three_putts'), null, '', 2, true),
     row('Putting', 'Make 3–5 ft', makeRate('3–5 ft'), null, 'putts_made_3_5ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
     row('Putting', 'Make 5–10 ft', makeRate('5–10 ft'), null, 'putts_made_5_10ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
     row('Putting', 'Make 10–15 ft', makeRate('10–15 ft'), null, 'putts_made_10_15ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
@@ -462,7 +479,9 @@ export async function loadPlayerProfile(input: {
     }
   }
 
+  const attestingCoach = await coachRead;
   return {
+    attestingCoach,
     viewer: input.viewer,
     window: f.window,
     filter: f,
@@ -474,7 +493,7 @@ export async function loadPlayerProfile(input: {
     gradYear: p.graduation_year,
     hometown: [p.hometown, p.state].filter(Boolean).join(', ') || null,
     status: memberRes.data.status === 'inactive' ? 'inactive' : 'active',
-    handicap: p.handicap_index ?? p.handicap,
+    handicap: displayHandicap(p),
     season,
     win,
     teamAvg,
@@ -514,7 +533,11 @@ export async function loadPlayerProfile(input: {
         score: r.total_score as number,
         toPar: r.score_to_par,
         gir: total ? null : c?.greens_total ? `${c.greens_hit ?? 0}/${c.greens_total}` : r.total_gir != null && r.total_gir_possible ? `${r.total_gir}/${r.total_gir_possible}` : null,
-        putts: total ? null : (c?.total_putts ?? r.total_putts),
+        fairwaysPct: total ? null : pct(c?.fairways_hit, c?.fairways_total),
+        girPct: total ? null : c?.greens_total ? pct(c.greens_hit, c.greens_total) : pct(r.total_gir, r.total_gir_possible),
+        scramblePct: total ? null : pct(c?.scrambles_converted, c?.scramble_attempts),
+        // No putt recorded is no putts figure, never "0 putts" (cachedPutts).
+        putts: total ? null : c ? cachedPutts(c) : r.total_putts != null && r.total_putts > 0 ? r.total_putts : null,
         sg: r.strokes_gained_total,
         sgLegs: [r.strokes_gained_tee, r.strokes_gained_approach, r.strokes_gained_around_green, r.strokes_gained_putting],
       };
@@ -545,4 +568,17 @@ export async function loadPlayerProfile(input: {
     nav,
     roundsError: seasonRes.error,
   };
+}
+
+/** The team's primary coach's name (else any coach on its staff), or null; never throws. */
+async function attestingCoachName(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<string | null> {
+  try {
+    const staff = await supabase.from('golf_team_coach_staff').select('coach_id, is_primary').eq('team_id', teamId).limit(10);
+    if (staff.error || !staff.data?.length) return null;
+    const lead = [...staff.data].sort((a, b) => Number(!!b.is_primary) - Number(!!a.is_primary))[0]!;
+    const coach = await supabase.from('golf_coaches').select('full_name').eq('id', lead.coach_id).maybeSingle();
+    return coach.error ? null : coach.data?.full_name?.trim() || null;
+  } catch {
+    return null;
+  }
 }

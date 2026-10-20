@@ -189,6 +189,30 @@ legacy `is_recurring` flag in sync for older consumers.
 - Recurring event edits must respect scope: this, thisAndFuture, or all.
 - Feed tokens must be treated as secrets and rate limited.
 - Calendar conflict detection should consider classes, blocked time, and exclusions.
+- **No player notifications unless the event asks for replies** (owner,
+  2026-10-08). RSVPs are off unless the coach turns `golf_events.requires_rsvp`
+  on. With it off, players get no new-event, invitation, update, cancellation or
+  reminder notification (in-app, email or push): the gates are in
+  `createGolfEvent` / `deleteGolfEvent` (`calendar-events.ts`),
+  `sendEventInvitations` / `notifyEventUpdate` (`src/lib/calendar/rsvp.ts`), the
+  recurring series create and delete fan-outs (`recurring-events.ts`) and the
+  reminder cron's query (`api/cron/event-reminders`). Invitations still write
+  attendance rows, so who is on the event is unchanged. Tests: `rsvp.test.ts`,
+  `golf-events.test.ts`, `event-reminders.test.ts`.
+- **RSVP is opt-in; every reply surface follows the flag** (owner, 2026-10-10).
+  Every create path sends `requires_rsvp=false` unless the coach turns on
+  Require RSVP (Clubhouse and Fairway editors; CoachHelm's practice planner now
+  defaults to false; the column default is already `false` in production and the
+  baseline). Reads treat null as off (`=== true`). Off hides: Clubhouse detail
+  responses, reply badges, player reply, Needs attention, peek count and Nudge,
+  home going/awaiting/confirmed, hub RSVP rows (coach query
+  `.eq('requires_rsvp',
+  true)`, player `replyIsClosed`), sidebar confirmed count; Fairway drawer coach
+  summary and people pills, the player's Respond pick, the coach dashboard's
+  "N/M confirmed" (`dashboard-data.ts` reads the flag beside the
+  `get_coach_today_schedule` RPC); CoachHelm `get_upcoming_events` reply counts.
+  Attendance taking stays independent of RSVP. `editRecurringEvent` accepts
+  `updates.requiresRsvp`.
 - **Only players are invitable.** The golf calendar page passes the editor a
   roster merged with every organisation coach (`role: 'coach'`);
   `FairwayEventEditor` drops coach rows from the invite picker. Attendance
@@ -208,7 +232,42 @@ legacy `is_recurring` flag in sync for older consumers.
   `src/test/lib/calendar/availability.test.ts`,
   `src/app/golf/actions/__tests__/conflict-inbox.test.ts`,
   `src/test/golf/actions/rsvp-failure-vs-refusal.test.ts`.
+- **A meeting is visible to a player only when they are invited to it**
+  (owner-approved 2026-10-18; Clubhouse's `playerSeesMeeting`, Decision B).
+  A meeting is `event_type = 'meeting'`; invited means the player has their
+  own `golf_event_attendance` row on it. A meeting nobody is invited to is the
+  coach's own. Every other event type stays visible to the whole team, invite
+  list or not; coaches see every meeting. Fairway applies it in app code
+  (`src/lib/calendar/meeting-visibility.ts` + `meeting-invites.ts`) on every
+  player read that carries titles: the calendar page and its client range
+  fetch (in the query, not after), player Home, the player hub, Travel's
+  "Linked to" title, `GET /api/calendar/events`, the iCal team feed (admin
+  client: owner not a coach of the team ⇒ player view), and busy periods
+  (`getUserBusyPeriodsWithStatus`: a meeting is busy time only for its
+  invitees). `respondToEvent` refuses a reply to a meeting the player is not
+  on ("Event not found"). A failed invite read hides every meeting (server
+  reads log `[meetings] invite read failed`; the client range fetch shows its
+  retryable range error; busy periods are marked `partial`). Coach reads skip
+  the invite read entirely. The database enforces the same rule once the held
+  migration `20261018120000_golf_events_meetings_invitees_only.sql` is applied
+  (`golf_events_select_team` + `get_player_hub_events`; Realtime payloads
+  follow the SELECT policy, so only the migration closes them). Tests:
+  `src/lib/calendar/__tests__/meeting-visibility.test.ts` and one
+  `*meeting*` test beside each surface; pgTAP: the migration's test of the
+  same name under `supabase/tests/rls/`.
 - Event state transitions should not skip lifecycle logging when status changes.
+- **A failed read never resets or hides attendance** (2026-10-17).
+  `updateGolfEventImpl` invites nobody when its existing-attendance read fails
+  (the upsert would reset replies to pending) and returns `invitationsError`;
+  Fairway's create, series create and update toasts warn on `invitationsError`.
+  `getEventRSVPStats` throws on a failed attendance read, so `getEventRSVP`
+  returns `success: false` and the People section shows Retry, never "No one
+  invited yet"; it shows "N invited" when a viewer gets fewer rows than the
+  total. An emptied location or notes on edit is sent as a clear. Series RSVP
+  deadlines carry the team zone's offset on the deadline's own date (rows stored
+  before this are not backfilled). Tests: `golf-events.test.ts`,
+  `FairwayCalendar.saveEvent.test.tsx`, `rsvp-summary-read-failure.test.ts`,
+  `recurring-events.test.ts`, `FairwayEventDetailDrawer.test.tsx`.
 
 ## UI Contract
 

@@ -53,10 +53,11 @@ Tests: src/clubhouse/__tests__/hub.test.tsx
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P010-hub.json` (`actions`), and the whole list is
-readable in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is refused before
-anything is sent (the shell's 10703, CH-1903; 100701). Every failure toast carries Retry, which runs the
-whole action again (101401).
+Each action's record is in `config/clubhouse/pages/P010-hub.json` (`actions`),
+and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Offline, every write is
+refused before anything is sent (the shell's 10703, CH-1903; 100701). Every
+failure toast carries Retry, which runs the whole action again (101401).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -65,13 +66,16 @@ whole action again (101401).
 | ACT-P010-COMPLETE-TASK | A task's box (player) | `onToggle` → `complete.run` | `writes.completeTask` → `completeTask` | golf_task_assignments | done 100901 · refused 100603 · optimistic 101301 |
 | ACT-P010-UNCOMPLETE-TASK | A done task's box (player) | `onToggle` → `uncomplete.run` | `writes.uncompleteTask` → `uncompleteTask` | golf_task_assignments | refused CH-10011 · optimistic |
 | ACT-P010-OPEN-FILE | A file row in Documents | `onOpen` → `open.run` | `writes.openDocument` → `getPreviewUrl` | golf_documents, storage documents | refused 100604 · opens in a tab of its own, closed again on a failure |
+| ACT-P010-OPEN-ATTACHMENT | "N attachments" on a post, then a file in the list (both roles) | `Attachments` `toggle` (reads once), `files.open` → TeamHub's `open.run` | `writes.announcementFiles` → `getAnnouncementDetail` (recipient-gated for a player); `writes.openDocument` → `getPreviewUrl` | golf_announcement_documents, golf_documents, storage documents | a failed list says so with Try again · a refused file 100604 · offline 10703 |
+| ACT-P010-OPEN-UPDATE | An update row in Updates | `Updates` link `onClick` → `onOpenUpdate` (unread rows only) | `writes.markUpdateRead` → `markNotificationRead(id, source)`, then the badge reads again | notifications, golf_calendar_notifications | the row stops counting as new at once; a failed mark is silent (the bell's rule) |
+| ACT-P010-MARK-TRAVEL-SEEN | A player's Travel tab, shown (once a visit) | `travelSeen` effect in TeamHub | `writes.markTravelSeen` → `markTravelSeen`, then the badge reads again | golf_player_notification_state | failure leaves the badge as it was |
 | ACT-P010-POST-ANNOUNCEMENT | Post in New announcement (coach), with the files chosen in Attach from Documents | `ComposeSheet` `submit` → `create.run` | `writes.postAnnouncement` → `createEnrichedAnnouncement` (`documentIds`: the chosen files, in the order chosen) | golf_announcements, golf_announcement_recipients, golf_announcement_documents | fields 100501 · 100502 · sending 100202 · done 100901 · refused 100605 · text and files kept 101201 · page reads again 101501 · files not loaded 100619 · no files yet 100412 · only files players can open are offered CH-10314 · the files didn't attach CH-10012 (an error toast with no Retry: the post exists and is never replayed) |
 | ACT-P010-EDIT-ANNOUNCEMENT | Edit announcement in a post's More menu, then Save changes (coach) | `Announcement` `onEdit` → `ComposeSheet` (edit) `submit` → `save.run(id, input)` | `writes.editAnnouncement` → `updateAnnouncement` (headline, message, acknowledgement; urgency as posted) | golf_announcements | field 100501 · saving 100206 · done 100901 · refused 100618 · words kept 101201 · card shows it at once, then the page reads again 101501 · Retry 101401 |
 | ACT-P010-PLAN-TRIP | Publish in Plan a trip, the board's four steps: Event, Travelers, Logistics, Itinerary, with Back and Next (coach) | `TripSheet` `submit` → `plan.run` (the trip once, kept by id; then the travelers) | `writes.planTrip` → `createGolfTravelItinerary` (with `event_id`); `writes.setTravelers` → `updateGolfEvent` (`addAttendeeIds`, `removeAttendeeIds`) | golf_travel_itineraries, golf_event_attendance | fields 100503 to 100506 · saving 100203 · done 100901 · refused 100606 · text kept 101201 · reads again 101501 · classes during the trip CH-10110, CH-10212, CH-10315, CH-10407 |
 | ACT-P010-TRAVELER-CLASSES | The Travelers step and the Itinerary summary of Plan a trip (coach): which chosen travelers have a class during the trip. A read, asked once the travelers settle and again when they or the days change | `TripSheet` → `useClassCheck` (350ms settle, stale answers dropped) → `ClassClashes` | `writes.travelerClasses` → `getTravelerClassConflicts` (travel.ts): coach staffed on the team, every traveler on its active roster, then the availability layer's busy periods of type `class` for each traveler with an account | golf_player_classes (through `getUserBusyPeriodsWithStatus`: synced meetings, unsynced classes, academic exclusions), golf_events (class occurrences), golf_team_members, golf_players | warning CH-10110 · not loaded CH-10212 · none CH-10315 · asking CH-10407 · never blocks Publish |
 | ACT-P010-TRAVELERS-AUDIENCE | "<trip> travelers · N" in New announcement's Send to (coach) | `ComposeSheet` `travel` (the next upcoming trip with known travelers) | `writes.postAnnouncement` with those player ids | golf_announcements | hub.test › next trip's travelers |
 | ACT-P010-ASSIGN-TASK | Assign in Assign a task (coach) | `AssignSheet` `submit` → `give.run` | `writes.assignTask` → `createTask` | golf_tasks, golf_task_assignments | fields 100507 · 100508 · assigning 100204 · done 100901 · refused 100607 · text kept 101201 · reads again 101501 |
-| ACT-P010-UPLOAD-FILE | The drop zone and its file picker (coach) | `onUpload` → `upload.run` (once per file) | `writes.uploadDocument` → `uploadGolfDocument`, then `createGolfDocument` (into the Team folder, visible to players) | storage documents, golf_documents | uploading 100201 · done 100901 · refused 100608, per file · reads again 101501 |
+| ACT-P010-UPLOAD-FILE | The drop zone and its file picker (coach; `accept` is Fairway Documents' list) | `onUpload` → `uploadRefusal` (type or over 25 MB: an error toast by name, not sent) → `upload.run` (once per file sent) | `writes.uploadDocument` → `uploadGolfDocument`, then `createGolfDocument` (into the Team folder, visible to players) | storage documents, golf_documents | uploading 100201 · done 100901 · refused 100608, per file · reads again 101501 |
 | ACT-P010-DELETE | Delete in the confirm dialog (coach) | `onConfirmDelete` → `remove.run` | `writes.deleteAnnouncement` → `deleteAnnouncement`, `writes.deleteTask` → `deleteTask`, `writes.deleteDocument` → `deleteGolfDocument` | golf_announcements, golf_tasks, golf_documents | confirm 101101 · 101102 · 101103 · done 100901 · refused 100609 · row leaves on success only · reads again 101501 |
 | ACT-P010-TRY-AGAIN | Try again on a failed-read notice | `RefreshNotice` → `router.refresh` | the server route, read again | (every read) | recovery 101402 · failed notices 100610 to 100616 |
 
@@ -82,6 +86,7 @@ whole action again (101401).
 | `screens/hub/TeamHub.tsx` | The container: header, tabs, the empty page, the optimistic state and every action; holds the post open in the edit sheet and the edits that have landed | 100101, 100102, 100410, CH-10305, CH-10306, every toast |
 | `screens/hub/parts.tsx` | `Rsvps`, `Announcement` (a coach's More menu: Edit announcement, Delete announcement), `TripPass`, `Updates`, `Tasks`, `Documents`, `NewAnnouncementLine` | 101xx empties and 102xx notices, CH-10401 |
 | `screens/hub/sheets.tsx` | `ComposeSheet` (New announcement, and the same sheet in edit mode: two instances, so a new post's draft survives an edit), `DocumentPicks` (chips and the list to attach from), `TripSheet`, `AssignSheet` (each with its own action), `ConfirmDelete` | 101xx validation, CH-10209, CH-10311, CH-10402 to CH-10404, CH-10406, CH-10501 to CH-10503 |
+| `screens/hub/upload-rules.ts` | `HUB_UPLOAD_TYPES` / `HUB_UPLOAD_ACCEPT` (the bucket's and Fairway Documents' types), `HUB_UPLOAD_MAX_BYTES` (25 MB), `uploadRefusal` | the refusal toasts |
 | `screens/hub/TravelerClasses.tsx` | `useClassCheck` (the read, its settle time, dropping an answer for travelers or days no longer on screen) and `ClassClashes` (the warning row and what else the check can say) | CH-10110, CH-10212, CH-10315, CH-10407 |
 | `data/hub-shape.ts` | `tripWindow` (the days a trip covers), `checkKey`, `clashSummary` (the lines, three at most): plain functions the sheet and the tests share | — |
 | `screens/hub/writes.ts` | The writes interface and `LIVE_HUB_WRITES`; preview and tests pass their own set | — |
@@ -112,7 +117,9 @@ There are no realtime hooks: the page is read once on the server.
 | getTravelerClassConflicts | actions/travel.ts | New 2026-09-30 | the trip builder's class check: a coach's read of the chosen travelers' classes that overlap the trip, returning only `{ playerId, title, days, time }` (no name, avatar, instructor, room or other busy time) |
 | getPlayerHubSummaryData | actions/player-hub-data.ts | Existing (the player hub's aggregate) | a player's events, trips, tasks and posts |
 | getPlayerHubAnnouncements | actions/player-notifications.ts | Existing | a player's posts when the aggregate fails |
-| getUnifiedNotifications | actions/unified-notifications.ts | Existing (the bell's feed) | Updates |
+| getUnifiedNotifications, markNotificationRead | actions/unified-notifications.ts | Existing (the bell's feed and its open) | Updates, and opening one |
+| getAnnouncementDetail | actions/announcements.ts | Existing (production's announcement card) | a post's attachments, listed on request |
+| markTravelSeen | actions/player-notifications.ts | Existing (production's Travel page) | a player's Travel tab clears the travel part of the badge |
 
 ## Data resources
 
@@ -135,29 +142,48 @@ Write path: the server actions above, through writes.ts
 
 ## Held dependencies
 
-None. The design's Pin to the top, Schedule and Mandatory each need data or an action change the owner
-has not approved (Q-70, Q-71).
+None. The design's Pin to the top, Schedule and Mandatory each need data or an
+action change the owner has not approved (Q-70, Q-71).
 
 ## Impact notes
 
-- `respondToEvent`, `acknowledgeAnnouncement`, `completeTask`, `createTask` and the document actions are
-  shared with Fairway's Calendar, Team Hub and coach pages: a change there changes both UIs.
-- `getPlayerHubSummaryData` is the player hub's own aggregate; the loader relies on its shape, and on it
-  throwing when the events, travel or tasks read fails (the loader catches that and flags those three
-  sections).
-- The announcements a coach posts go to the coach's active team as the server action resolves it
-  (`resolveCoachTeamIdWithCookie`), while this page's team comes from `resolveClubhouseTeam`; both read the
-  active-team cookie, and nothing here proves they can never differ.
-- An edit changes only headline, message and acknowledgement (`updateAnnouncement` takes no audience and no attachments), and
-  sends the post's urgency back as it was read (`ChHubAnnouncement.urgency`): Messages posts `urgent`, and a fixed `normal`
-  would downgrade those. New announcement offers only documents players can open (`ChHubFile.isPublic`, from `is_public`), which Fairway's
-  composer does not check (Q-83): a coach-only file is left out of the list, and a line says how many (CH-10314).
-- `createEnrichedAnnouncement` links the files in a separate insert after the post exists. When that insert fails the post stands,
-  `success` stays true and `attachmentsError` is set; Clubhouse says so once (CH-10012) and offers no Retry, since the post is not
-  replayed. Fairway's composer and Messages ignore the field, as they did the failure. The recipients insert just above it also
+- `respondToEvent`, `acknowledgeAnnouncement`, `completeTask`, `createTask` and
+  the document actions are shared with Fairway's Calendar, Team Hub and coach
+  pages: a change there changes both UIs.
+- `getPlayerHubSummaryData` is the player hub's own aggregate; the loader relies
+  on its shape, and on it throwing when the events, travel or tasks read fails
+  (the loader catches that and flags those three sections). Its trips select no
+  `event_id`, so the loader reads each trip's event itself (`tripEventIds`,
+  `golf_travel_itineraries` by id); a failed read leaves "You" unknown (C-19).
+- A player's write (Got it, a task's tick or untick) reads the shell's badge
+  again (`useNotificationBadges().refetch`), as production's hub does.
+- Updates link only to addresses inside GolfHelm (`isSafeInternalPath`, on the
+  server), as the bell follows them.
+- A Clubhouse upload stores the file's MIME type in `file_type`
+  (`resolveMimeType`), as Fairway's Documents does; the file label reads a MIME
+  type or an extension (`fileKind`).
+- The announcements a coach posts go to the coach's active team as the server
+  action resolves it (`resolveCoachTeamIdWithCookie`), while this page's team
+  comes from `resolveClubhouseTeam`; both read the active-team cookie, and
+  nothing here proves they can never differ.
+- An edit changes only headline, message and acknowledgement
+  (`updateAnnouncement` takes no audience and no attachments), and sends the
+  post's urgency back as it was read (`ChHubAnnouncement.urgency`): Messages
+  posts `urgent`, and a fixed `normal` would downgrade those. New announcement
+  offers only documents players can open (`ChHubFile.isPublic`, from
+  `is_public`), which Fairway's composer does not check (Q-83): a coach-only
+  file is left out of the list, and a line says how many (CH-10314).
+- `createEnrichedAnnouncement` links the files in a separate insert after the
+  post exists. When that insert fails the post stands, `success` stays true and
+  `attachmentsError` is set; Clubhouse says so once (CH-10012) and offers no
+  Retry, since the post is not replayed. Fairway's composer and Messages ignore
+  the field, as they did the failure. The recipients insert just above it also
   discards its error (found, not changed here).
-- `getTravelerClassConflicts` is a new read of student data, gated three ways (a coach staffed on the team, every traveler on the
-  team's active roster, only the chosen travelers asked about) and sends only the class and its hours. A player's classes stay
-  visible to the coach who could already read them under `golf_classes_select_coaches`; nothing widens.
-- Every follow-up to a write lives inside its `useAction` function. Anything added after `await x.run()` in
-  a handler is skipped when the toast's Retry lands (101401).
+- `getTravelerClassConflicts` is a new read of student data, gated three ways (a
+  coach staffed on the team, every traveler on the team's active roster, only
+  the chosen travelers asked about) and sends only the class and its hours. A
+  player's classes stay visible to the coach who could already read them under
+  `golf_classes_select_coaches`; nothing widens.
+- Every follow-up to a write lives inside its `useAction` function. Anything
+  added after `await x.run()` in a handler is skipped when the toast's Retry
+  lands (101401).

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global document -- the sideways check runs inside the page (tab.evaluate) */
+/* global document, MutationObserver -- the sideways check and the dark-theme pin run inside the page */
 /**
  * Accessibility scan of every Clubhouse preview screen and state with axe-core
  * (WCAG 2.1 and 2.2 AA, contrast included). Needs the dev server:
@@ -10,6 +10,9 @@
  *
  * CH_ENGINES=chromium,webkit CH_MOTION=no-preference,reduce CH_WIDTHS=390,430
  * CH_HEIGHTS=480,844 customizes the engine/motion/viewport cross product.
+ * CH_SCHEME=light,dark adds the night palette (default light). Dark pins
+ * html[data-fw-theme='dark'], the attribute the app's theme script sets on
+ * /golf routes, because the preview routes do not run that script.
  * These are development fixtures, not production/device evidence.
  *
  * Exits 1 when any page has a violation. The catalog's accessibility rows
@@ -26,7 +29,7 @@ const BASE = process.env.CH_BASE ?? 'http://localhost:3100';
  * screen two taps deep on the phone).
  */
 export const CH_A11Y_PAGES = [
-  ['shell', '/clubhouse-preview/settings', { wide: '.ch-topbar button[aria-label^="Notifications"]', phone: '.ch-tabbar button[aria-controls="ch-more"]' }],
+  ['shell', '/clubhouse-preview/settings', { wide: '.ch-topbar button[aria-label^="Notifications"]', phone: ['.ch-topbar .ch-sw:visible', '.ch-strip__me'] }],
   ['shell', '/clubhouse-preview/settings?bell=empty', { wide: '.ch-topbar button[aria-label^="Notifications"]' }],
   // The phone Settings screen draws its own large title with no bell, so the phone bell is opened from Home.
   ['shell', '/clubhouse-preview/home?bell=empty', { phone: '.ch-topbar button[aria-label^="Notifications"]' }],
@@ -90,13 +93,14 @@ export const CH_A11Y_PAGES = [
   ['messages', '/clubhouse-preview/messages-player'],
   ['messages', '/clubhouse-preview/messages?state=announcement'],
   ['messages', '/clubhouse-preview/messages?state=ann-failed'],
-  ['messages', '/clubhouse-preview/messages', { wide: 'button[aria-label="Details"]', phone: 'button[aria-label="Details"]' }],
+  // The phone Messages board opens on the conversation list: open the first thread before its Details.
+  ['messages', '/clubhouse-preview/messages', { wide: 'button[aria-label="Details"]', phone: ['.ch-msp-list .ch-ms-sec.is-date button', 'button[aria-label="Details"]'] }],
   ['messages', '/clubhouse-preview/messages?state=rail'],
   ['messages', '/clubhouse-preview/messages?state=rail', { wide: 'button[aria-label="New message"]', phone: 'button[aria-label="New message"]' }],
   ['messages', '/clubhouse-preview/messages?state=rail', { phone: ['button[aria-label="New message"]', '.ch-msp-new button:has-text("Announcement")'] }],
   ['messages', '/clubhouse-preview/messages-player?state=rail', { phone: 'button[aria-label="New message"]' }],
-  ['messages', '/clubhouse-preview/messages?state=files-failed', { phone: 'button[aria-label="Details"]' }],
-  ['messages', '/clubhouse-preview/messages', { phone: ['button[aria-label="Details"]', '.ch-msp-details .ch-msp-link:has-text("Add")'] }],
+  ['messages', '/clubhouse-preview/messages?state=files-failed', { phone: ['.ch-msp-list .ch-ms-sec.is-date button', 'button[aria-label="Details"]'] }],
+  ['messages', '/clubhouse-preview/messages', { phone: ['.ch-msp-list .ch-ms-sec.is-date button', 'button[aria-label="Details"]', '.ch-msp-details .ch-msp-link:has-text("Add")'] }],
   ['settings', '/clubhouse-preview/settings'],
   ['settings', '/clubhouse-preview/settings?section=notifications'],
   ['settings', '/clubhouse-preview/settings?section=team'],
@@ -188,7 +192,7 @@ export const CH_A11Y_PAGES = [
   ['recruiting', '/clubhouse-preview/recruiting?state=delete'],
   ['recruiting', '/clubhouse-preview/recruiting?state=docsfailed'],
   ['recruiting', '/clubhouse-preview/recruiting', { phone: '.ch-recm-sort' }],
-  ['recruiting', '/clubhouse-preview/recruiting?state=detail', { phone: '.ch-recm-tile.is-stage' }],
+  ['recruiting', '/clubhouse-preview/recruiting?state=detail', { phone: '.ch-recm-stagerow' }],
 ];
 
 /**
@@ -229,11 +233,12 @@ export function scanOptions(env = process.env, only = []) {
   const motions = list('CH_MOTION', 'reduce', ['reduce', 'no-preference']);
   const widths = dimensions('CH_WIDTHS', '1280,390');
   const heights = env.CH_HEIGHTS === undefined ? null : dimensions('CH_HEIGHTS', '844');
-  return { pages, engines, motions, widths, heights };
+  const schemes = list('CH_SCHEME', 'light', ['light', 'dark']);
+  return { pages, engines, motions, widths, heights, schemes };
 }
 
 async function main() {
-  const { pages, engines, motions, widths, heights } = scanOptions(process.env, process.argv.slice(2));
+  const { pages, engines, motions, widths, heights, schemes } = scanOptions(process.env, process.argv.slice(2));
   const browsers = await import('playwright');
   const { default: AxeBuilder } = await import('@axe-core/playwright');
   let failed = 0;
@@ -241,12 +246,21 @@ async function main() {
   for (const engine of engines) {
     const browser = await browsers[engine].launch();
     try {
-    for (const motion of motions) for (const width of widths) for (const height of heights ?? [width < 600 ? 844 : 800]) {
-    const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: motion });
+    for (const scheme of schemes) for (const motion of motions) for (const width of widths) for (const height of heights ?? [width < 600 ? 844 : 800]) {
+    const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: motion, colorScheme: scheme });
+    if (scheme === 'dark') {
+      await ctx.addInitScript(() => {
+        const pin = () => { if (document.documentElement.dataset.fwTheme !== 'dark') document.documentElement.dataset.fwTheme = 'dark'; };
+        pin();
+        new MutationObserver(pin).observe(document.documentElement, { attributes: true, attributeFilter: ['data-fw-theme'] });
+      });
+    }
     try {
     for (const [page, path, open] of pages) {
       const tab = await ctx.newPage();
-      const response = await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
+      let response = await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
+      // A dev server's first render of a route can fail while it compiles (a 500 that a reload clears): one retry.
+      if (!response?.ok()) response = await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
       if (!response?.ok()) throw new Error(`Preview unavailable: ${path} (${response?.status() ?? 'no response'}). Use next dev; production previews return 404.`);
       const opener = open?.[width < 600 ? 'phone' : 'wide'];
       if (open && !opener) {
@@ -254,7 +268,7 @@ async function main() {
         continue;
       }
       // Only the Clubhouse tree: the dev overlay and Next's portal are not ours.
-      const label = `${engine} ${motion} ${page.padEnd(12)} ${width}x${height} ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
+      const label = `${engine} ${scheme} ${motion} ${page.padEnd(12)} ${width}x${height} ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
       let stuck = null;
       for (const step of [opener ?? []].flat()) {
         try {

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand } from '../../data/stats-common';
 import type { ChProfileExtra } from '../../data/stats-player';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { InlineNotice } from '../../ui/Notices';
 import { Compare } from './charts';
 import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
@@ -15,7 +15,7 @@ import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type 
  * nothing behind it says so (CH-5317), never a zero.
  */
 
-const pct = (v: number | null | undefined, d = 0) => (v == null ? NO_DATA : `${v.toFixed(d)}%`);
+const pct = formatPct;
 const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.toFixed(d));
 const ft = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : `${v.toFixed(d)} ft`);
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
@@ -32,7 +32,7 @@ function ByRound({ points, unit, digits, label, what }: { points: Array<{ label:
 /** A shot read that failed is said, not shown as none logged. */
 function Shots({ error, code, what, onRetry, children }: { error: boolean; code: string; what: string; onRetry?: () => void; children: ReactNode }) {
   if (!error) return <>{children}</>;
-  return <InlineNotice code={code} title={`${what} didn't load.`} body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />;
+  return <InlineNotice code={code} title={`${what} didn’t load.`} body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />;
 }
 
 export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra; onRetry?: () => void }) {
@@ -72,7 +72,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           ]}
         />
       </Panel>
-      <Panel title="Outcomes by par" wide note="Share of that par's holes, with the average to par a hole.">
+      <Panel title="Outcomes by par" wide note="Share of that par’s holes, with the average to par a hole.">
         <div className="ch-gx-pars">
           {parMix.map(({ p, d }) =>
             d.total === 0 ? (
@@ -119,7 +119,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           )}
         </div>
       </Panel>
-      <Panel title="By round type" note={mixed ? "Average score per 18 holes of each type's rounds in this window: a 9-hole score counts as half a round." : 'Average score of 18-hole rounds of each type in this window.'}>
+      <Panel title="By round type" note={mixed ? 'Average score per 18 holes of each type’s rounds in this window: a 9-hole score counts as half a round.' : 'Average score of 18-hole rounds of each type in this window.'}>
         <Tiles
           label="Scoring by round type"
           items={types.map(([l, avg, n]) => ({
@@ -138,7 +138,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
             { label: 'Most birdies in a round', value: String(s.mostBirdiesRound) },
             { label: 'Most birdies in a row', value: String(s.mostBirdiesRow) },
             { label: 'Most pars in a row', value: String(s.mostParsRow) },
-            { label: 'Longest no-3-putt streak', value: String(s.longestNo3PuttStreak), sub: 'Holes' },
+            { label: 'Longest no-3-putt streak', value: String(s.longestNo3PuttStreak), sub: 'holes' },
             { label: 'Longest hole-out', value: s.longestHoleOut == null ? NO_DATA : `${s.longestHoleOut.toFixed(0)} yds`, empty: s.longestHoleOut == null, code: NOTHING },
           ]}
         />
@@ -449,7 +449,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
           <Empty code={NOTHING}>No putts with a break are logged in this window.</Empty>
         )}
       </Panel>
-      <Panel title="Short, low and high misses by break" note="Share of the missed putts on each break. Low is a miss that didn't break enough; high broke too much.">
+      <Panel title="Short, low and high misses by break" note="Share of the missed putts on each break. Low is a miss that didn’t break enough; high broke too much.">
         {missRows.length ? (
           <DataTable label="Putt misses by break" cols={['Break', 'Short', 'Low', 'High']} rows={missRows.map(({ k, label, b }) => ({ key: k, head: label, cells: [pct(b.missShortPct), pct(b.missLowPct), pct(b.missHighPct)] }))} />
         ) : (
@@ -474,7 +474,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
               const you = b.attempts ? (b.made / b.attempts) * 100 : null;
               const verdict = !b.attempts ? 'No putts yet' : b.attempts < GRADE_MIN ? `Under ${GRADE_MIN} putts` : you! >= b.bench! ? 'At or above the Tour' : 'Below the Tour';
               const t: Tone = b.attempts >= GRADE_MIN ? tone(you, b.bench) : undefined;
-              return { key: b.label, head: b.label, cells: [{ v: pct(you), tone: t }, pct(b.bench, 1), String(b.attempts), { v: verdict, tone: t }] };
+              return { key: b.label, head: b.label, cells: [{ v: pct(you), tone: t }, pct(b.bench), String(b.attempts), { v: verdict, tone: t }] };
             })}
           />
         ) : (

@@ -288,6 +288,7 @@ export function RouteErrorBoundary({
         retryCount={retryCount}
         onRetry={handleRetry}
         homePath={showHomeButton ? homePath : undefined}
+        route={route}
         digest={error.digest}
         devDetail={process.env.NODE_ENV === 'development' ? `${error.message}${error.stack ? `\n\n${error.stack}` : ''}` : undefined}
       />

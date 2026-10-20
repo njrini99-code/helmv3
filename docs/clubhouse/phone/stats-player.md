@@ -22,13 +22,13 @@ Status: approved. The owner's v2 phone board is the spec (D-22): `design/handoff
 | Avatar, name, "year · rounds · hcp" | `.ch-spm-head`; a coach also gets a Message button to the player's thread |
 | Scoring avg, SG / round, Trend | Three figures: the window's average (a coach sees the team's under it), strokes gained a round against D1, and form (newer rounds against older, lower is better, green or amber) |
 | Section chips: Scoring, Off the tee, Approach, Short game, Putting | Game detail in its phone mode: the chips switch one section at a time, each with its sentence, four figures and the desktop's panels stacked (proximity by distance, greens by lie, make rate, and the rest) |
-| Scoring trend | `ScoreLine` over the last ten rounds |
+| Scoring trend | `ScoreLine` over every round in the window, lower scores higher and labelled "Lower is better". It is the phone's one scoring chart: the Rounds part has no Score by round (P005-D1, 2026-10-08), and Personal bests carry Share best score (P005-C2) |
 
 Below the board, from the desktop's other tabs, because a phone has no tabs for them: **Rounds** (five, then All N; Roster's "All N" link opens the list in full and scrolls to it) and **Development** (focus areas and goals; a coach adds a focus area here, the page's one primary action).
 
 ## Differences from the board (Q-68)
 
-- **Trend figure**: the board prints a phrase ("Down 1.2"); the phone prints the signed change, coloured, labelled "Newer rounds".
+- **Trend figure**: the board prints a phrase ("Down 1.2"); the phone prints the change in words, coloured ("2.1 higher", "2.1 lower", "level"), over the halves compared ("Newest 5 vs first 5"; wave 7).
 - **Coach comparison table** (desktop Overview's "Jonah vs. team") isn't on the phone; the three figures and the team average under Scoring avg carry the headline.
 - **Previous / next player** isn't on the phone; back to Team and choose the next row.
 - **Rounds and Development** are added under the board's content (above).

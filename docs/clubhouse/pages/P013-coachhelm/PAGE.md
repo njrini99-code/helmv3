@@ -145,7 +145,7 @@ role's four tabs, D-66).
 
 ### Exits to
 
-Roster, from Open roster and View roster (a coach), and CoachHelm settings, from
+Roster, from Invite players (its invite sheet) and View roster (a coach), and CoachHelm settings, from
 Open CoachHelm settings (`/golf/dashboard/settings/coaching-intelligence`);
 Rounds, from Open Rounds or Start a round (a player). A control whose target is
 not rebuilt is not drawn (`rebuiltHref`), so no control leads nowhere. Stats'

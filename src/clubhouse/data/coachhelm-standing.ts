@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { chLogServer } from '../lib/track-server';
 import { toChStanding, type ChStandBaselineRead, type ChStanding } from './coachhelm-standing-shape';
 import type { ChViewLoad } from './coachhelm-views-shape';
@@ -18,13 +19,39 @@ const log = (what: string, err: unknown) => chLogServer('coachhelm', what, err, 
  * for a failed read as it does for "under five rounds", so it cannot tell the two apart; this read can, and logs the failure.
  */
 async function readBaseline(supabase: Supabase, playerId: string): Promise<ChStandBaselineRead> {
-  const res = await supabase.from('golf_player_stats_cache').select('rounds_played, scoring_average').eq('player_id', playerId).maybeSingle();
+  const res = await supabase
+    .from('golf_player_stats_cache')
+    .select('rounds_played, scoring_average, sand_attempts, putt_attempts_3_5ft, putt_attempts_5_10ft, putt_attempts_10_15ft, putt_attempts_15_25ft, putt_attempts_25_plus_ft')
+    .eq('player_id', playerId)
+    .maybeSingle();
   if (res.error) {
     log('standing.baseline', res.error);
     return { status: 'failed' };
   }
-  return { status: 'ok', roundsPlayed: res.data?.rounds_played ?? null, scoringAverage: res.data?.scoring_average ?? null };
+  const row = res.data;
+  const rounds = row?.rounds_played ?? null;
+  // The player's own attempts a round, as the putt-distance and scrambling generators size the same projections (DC-ATTEMPT-1).
+  const attemptsPerRound: Partial<Record<MetricId, number>> = {};
+  if (row && rounds != null && rounds > 0) {
+    const per = (n: number | null) => (n != null && n > 0 ? n / rounds : null);
+    for (const metric of Object.keys(PUTT_ATTEMPTS) as Array<keyof typeof PUTT_ATTEMPTS>) {
+      const v = per(row[PUTT_ATTEMPTS[metric]]);
+      if (v != null) attemptsPerRound[metric] = v;
+    }
+    const sand = per(row.sand_attempts);
+    if (sand != null) attemptsPerRound.scrambling_pct_sand = sand;
+  }
+  return { status: 'ok', roundsPlayed: rounds, scoringAverage: row?.scoring_average ?? null, attemptsPerRound };
 }
+
+/** Each putt band's attempts column in `golf_player_stats_cache` (the putt-distance generator's own map). */
+const PUTT_ATTEMPTS = {
+  putts_made_3_5ft_pct: 'putt_attempts_3_5ft',
+  putts_made_5_10ft_pct: 'putt_attempts_5_10ft',
+  putts_made_10_15ft_pct: 'putt_attempts_10_15ft',
+  putts_made_15_25ft_pct: 'putt_attempts_15_25ft',
+  putts_made_25_plus_ft_pct: 'putt_attempts_25_plus_ft',
+} as const satisfies Partial<Record<MetricId, string>>;
 
 /**
  * Whether the player's cohort (their team's gender, which picks the Tour the rows are graded against) reads. `loadPlayerStandingMap`

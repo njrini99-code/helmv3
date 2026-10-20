@@ -16,13 +16,13 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `helm-ui-worker` | Agent | Premium frontend implementer for Helm UI work (GolfHelm Fairway design system). Takes one screen/tab brief with screenshots and owner notes, redesigns and implements it with high visual taste, runs… |
 | `helm-worker` | Agent | Delegated implementer for a bounded Helm slice — a clearly scoped change on named files or in a worktree, often run in parallel with other work. Implements, runs the checks that fit the change, and… |
 | `security-reviewer` | Agent | Security review of Helm changes touching auth, roles, RLS, service-role use, PII (including minors' data), server-to-client data exposure, API routes, webhooks, storage, or secrets. Use when a diff… |
-| `ui-polish-reviewer` | Agent | UI/UX review of Helm screens against the Fairway design system — hierarchy, density, loading/empty/error states, motion, accessibility, mobile behavior, and reuse of src/components/fairway… |
+| `ui-polish-reviewer` | Agent | UI/UX review of Helm Fairway screens only (not src/clubhouse/**; use clubhouse-polish-reviewer there) against the Fairway design system — hierarchy, density, loading/empty/error states, motion,… |
 | `verifier` | Agent | Independent check that a completion claim is true — reads the diff and runs the fitting gates itself instead of trusting the implementer's summary. Use before reporting a risky, broad, schema, auth,… |
 | `/cleanup-db` | Command | Report (never change) Supabase tables and columns with no references in code, SQL, or infra |
 | `/context` | Command | Build a feature-context pack for the given files/task and load the first mapped doc |
 | `/gates` | Command | Run the checks relevant to the changed behavior and report real exit codes |
 | `/held` | Command | List migrations still on HOLD in supabase/migrations/HELD.md (read-only) |
-| `/land` | Command | Land a PR through the sole landing script and report the result |
+| `/land` | Command | Land a PR through the preferred landing script and report the result |
 | `/status` | Command | Repo/branch/worktree/control-plane health, summarized in under ten lines |
 | `/worktree` | Command | Create an isolated task workspace when concurrent writes need one |
 | `app-store-screenshots` | Skill | App Store and Google Play screenshot creation with exact platform specs. Covers iOS/Android dimensions, gallery ordering, device mockups, and preview videos. Use for: app store optimization, ASO, app… |
@@ -32,10 +32,10 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `finish-task` | Skill | Use when an implementation should be carried through to verified completion rather than stopping after the edits look right. Encodes this repo's gate sequence and the specific ways green gates have… |
 | `framer-motion` | Skill | Framer Motion performance optimization guidelines. This skill should be used when writing, reviewing, or refactoring React animations with Framer Motion to ensure optimal performance patterns.… |
 | `golfhelm-creative-engine` | Skill | Generate premium Instagram creatives, social media ads, and marketing mockups for GolfHelm — an AI-powered golf coaching SaaS for college teams. Use this skill whenever the user mentions Instagram… |
+| `helm-safari-performance` | Skill | Measure and fix how Helm feels in Safari, WebKit, the iPhone and the Capacitor app: page switches, sheets, keyboard, scroll, Calendar, Messages, Stats, the course renderer, 'choppy', 'janky',… |
 | `helm-sentry` | Skill | Investigate a Sentry issue, alert email, production error, or a 'what is breaking' question for Helm Sports Labs (org helm-xs). Use whenever the request points at a Sentry issue id/link, a paging… |
 | `helm-supabase` | Skill | Traps and tooling for any Supabase/Postgres work in this repo — key precedence, the 1,000-row PostgREST cap, the .in() URL-length limit, applied-vs-recorded migrations, and connected database access.… |
 | `modern-saas-ui` | Skill | Generic premium-SaaS UI craft guidance — visual hierarchy, density, motion, empty states, when a surface should feel like chrome vs. data. Use for reasoning about how a screen should FEEL. It does… |
 | `pencil-golfhelm` | Skill | Supercharged Pencil design system for GolfHelm — UI mockups, marketing creatives, and feature prototypes using the Lunaris component library. Use when designing anything in Pencil for GolfHelm… |
 | `supabase` | Skill | Use when doing ANY task involving Supabase. Triggers: Supabase products (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues); client libraries and SSR integrations (supabase-js,… |
 | `supabase-postgres-best-practices` | Skill | Postgres best practices maintained by Supabase, for Postgres running anywhere. Load this skill BEFORE writing or changing anything that lives in a Postgres database: creating or altering tables and… |
-| `supabase-server` | Skill | Use when planning or writing server-side code that uses `@supabase/server` — Edge Functions, Hono apps, webhook handlers, or any backend that creates Supabase clients or validates inbound auth.… |

@@ -196,17 +196,23 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
     expect(b?.kind).toBe('bars');
     if (b?.kind !== 'bars') return;
     expect(b.rows.map((r) => [r.label, r.display, r.of, r.tone])).toEqual([
-      ['Uphill', '81%', 'of 44', 'good'],
-      ['Flat', '76%', 'of 51', 'good'],
+      ['Uphill', '76%', 'of 51', 'good'],
+      ['Level', '81%', 'of 44', 'good'],
       ['Downhill', '58%', 'of 31', 'loss'],
     ]);
-    expect(b.table.columns).toEqual(['Range', 'Make rate from 4 to 6 feet, by slope', 'Sample']);
+    expect(b.table.columns).toEqual(['Range', 'Rate', 'Sample']);
     expect(b.source).toBe('126 attempts · Sep 1 to Sep 29 · computed Sep 29');
   });
   it('three players on one metric are a ranking; two players are a comparison table', () => {
     const [r] = evidenceBlocks(ASK_EV_RANKING);
     expect(r?.kind).toBe('ranking');
     if (r?.kind === 'ranking') expect(r.rows.map((x) => [x.rank, x.label, x.display, x.of])).toEqual([[1, 'Jonah Okafor', '6', 'of 9'], [2, 'Eli Brandt', '4', 'of 8'], [3, 'Sofia Alvarez', '2', 'of 7']]);
+    // P013 D7: the footer's sample is the total the rows list (9 + 8 + 7), not the first row's.
+    if (r?.kind === 'ranking') {
+      const listed = r.rows.reduce((sum, x) => sum + Number(x.of?.replace(/^of /, '')), 0);
+      expect(listed).toBe(24);
+      expect(r.source).toBe(`${listed} attempts · Sep 1 to Sep 29 · computed Sep 29`);
+    }
     const two = { ...ASK_EV_RANKING, measurements: ASK_EV_RANKING.measurements.slice(0, 2) };
     expect(evidenceBlocks(two)[0]?.kind).toBe('compare');
   });
@@ -217,6 +223,21 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
     const [t] = evidenceBlocks({ ...ASK_EV_JONAH, measurements: [] });
     expect(t?.kind).toBe('trend');
     if (t?.kind === 'trend') expect(t.reference?.label).toBe('Average');
+  });
+  it("a rate's trend averages by its sample, as the panel's made count does, and is titled for its player", () => {
+    const [t] = evidenceBlocks({ ...ASK_EV_JONAH, measurements: [] });
+    if (t?.kind !== 'trend') throw new Error('not a trend');
+    // 1 + 0 + 1 + 1 + 0 made of 2, 1, 2, 2, 2 putts: 3 of 9, never the 30% of the five rounds' rates averaged plainly.
+    expect(t.reference?.value).toBeCloseTo(100 / 3, 5);
+    expect(t.title).toBe('Make rate by round, Jonah Okafor');
+    expect(t.table.columns).toEqual(['Round', 'Rate', 'Sample']);
+    // A series with no samples is averaged plainly; a count keeps its metric as the column.
+    const s = ASK_EV_JONAH.series[0]!;
+    const bare = { ...s, unit: 'count' as const, points: s.points.map((p) => ({ ...p, sample_size: 0 })) };
+    const [c] = evidenceBlocks({ ...ASK_EV_JONAH, measurements: [], series: [bare] });
+    if (c?.kind !== 'trend') throw new Error('not a trend');
+    expect(c.reference?.value).toBeCloseTo(30, 5);
+    expect(c.table.columns[1]).toBe(s.metric_label);
   });
   it('strokes gained by leg is a diverging chart; a true minus and a plus', () => {
     const sg = { ...ASK_EV_PARTIAL, coverage: 'complete' as const, coverage_note: null, measurements: [
@@ -274,7 +295,7 @@ describe('buildEvidencePanel: the figures behind an action card', () => {
     expect(m.tiles.map((t) => [t.label, t.value, t.sub])).toEqual([
       ['Downhill, 4 to 6 feet', '33%', '3 of 9'],
       ['Team, Downhill, 4 to 6 feet', '58%', '18 of 31'],
-      ['Uphill, 4 to 6 feet', '78%', '7 of 9'],
+      ['Level, 4 to 6 feet', '78%', '7 of 9'],
     ]);
     expect(m.trend?.reference).toEqual({ label: 'Team 58%', value: 58 });
     expect(m.table?.rows[0]).toEqual(['Sep 5', '50%', '2']);

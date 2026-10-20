@@ -10,7 +10,7 @@ import '../styles/shell.css';
  * The Clubhouse frame's silhouette for route boundaries that sit ABOVE the
  * dashboard layout (`/golf/loading.tsx`, `(dashboard)/loading.tsx`), where the
  * shell and its role are not known yet. Same chrome as ClubhouseFrame (sidebar
- * on wide screens, top bar, phone tab bar) so the hand-off to the real shell
+ * on wide screens, top bar) so the hand-off to the real shell
  * changes only what is inside it. Swap audit F-30: these boundaries painted
  * Fairway's shell and dashboard skeleton on every cold entry, flag on or off.
  * Server-safe: no hooks, no context.
@@ -29,14 +29,6 @@ export function ClubhouseShellSkeleton({ children }: { children: ReactNode }) {
           {children}
         </div>
       </div>
-      <nav className="ch-tabbar" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((k) => (
-          <span key={k} className="ch-tab">
-            <Skeleton width={22} height={22} radius={6} />
-            <Skeleton width={40} height={9} />
-          </span>
-        ))}
-      </nav>
     </div>
   );
 }

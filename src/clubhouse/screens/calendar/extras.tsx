@@ -1,13 +1,17 @@
 'use client';
 
-import { ChevronLeft, Clock, FileText, Lock, Paperclip, Repeat, Text, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, ChevronLeft, Clock, FileText, Lock, Paperclip, Plane, Repeat, Text, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { getItineraryForEvent } from '@/app/golf/actions/travel';
 import { addCoachBlockedTime, deleteCoachBlockedTime } from '@/app/golf/actions/calendar-blocked-time';
 import { attachDocumentToEvent, detachDocumentFromEvent, getEventDocuments } from '@/app/golf/actions/event-documents';
 import { getDocuments } from '@/app/golf/actions/documents';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
+import { DateField } from '../../ui/DateField';
+import { TimeField } from '../../ui/TimeField';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
@@ -15,8 +19,10 @@ import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
+import { Tooltip } from '../../ui/Tooltip';
 import { isOffline, normalise, useAction } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
+import { newRequestId } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
 import { addDays, dayLabel, dayNum, dowOf, monthName, rangeLabel, type ChCalEvent } from './model';
 import type { ChNow } from './views';
@@ -51,7 +57,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
     },
     {
       done: `Removed · ${e.title}`,
-      failed: `Couldn't remove ${e.title}`,
+      failed: `Couldn’t remove ${e.title}`,
       code: 'CH-6005',
     },
   );
@@ -60,13 +66,15 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
       <Button className="ch-in__back" size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={onBack}>
         Today
       </Button>
-      <div className="ch-in__kick">
-        <Badge tone="neutral">
-          <Icon icon={Lock} size={11} />
-          Your busy time
-        </Badge>
+      <div className="ch-in__plate" data-tone="champagne">
+        <div className="ch-in__kick">
+          <Badge tone="neutral">
+            <Icon icon={Lock} size={11} />
+            Your busy time
+          </Badge>
+        </div>
+        <h2 className="ch-in__title" tabIndex={-1}>{e.title}</h2>
       </div>
-      <h2 className="ch-in__title">{e.title}</h2>
       <div className="ch-in__facts">
         <div className="ch-in__fact">
           <Icon icon={Clock} size={15} />
@@ -113,7 +121,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
             <Button
               variant="danger"
               feel="warning"
-              disabled={remove.pending}
+              busy={remove.pending}
               onClick={() => void remove.run()}
             >
               {remove.pending ? 'Removing…' : 'Remove'}
@@ -121,6 +129,46 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
           </>
         }
       />
+    </div>
+  );
+}
+
+/**
+ * The trip linked to an event (golf_travel_itineraries.event_id), as Fairway's event drawer shows it: "View itinerary"
+ * with the destination, to Team Hub's Travel with that trip scrolled to. Read when the event opens, for every viewer (RLS scopes it to the
+ * team). Nothing is drawn while it reads, when there is no trip, or when the read fails (reported, never shown as a trip).
+ */
+export function LinkedTrip({ eventId, preview }: { eventId: string; preview?: boolean }) {
+  const [trip, setTrip] = useState<{ id: string; event_name: string; destination: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    setTrip(null);
+    if (preview) return;
+    getItineraryForEvent(eventId)
+      .then((res) => {
+        if (!live) return;
+        if (!res.success) chReport(new Error(res.error || 'linked trip read failed'), { surface: 'calendar.trip', severity: 'low' });
+        setTrip(res.success ? (res.data ?? null) : null);
+      })
+      .catch((err) => {
+        if (live) chReport(err, { surface: 'calendar.trip', severity: 'low' });
+      });
+    return () => {
+      live = false;
+    };
+  }, [eventId, preview]);
+  if (!trip) return null;
+  return (
+    <div className="ch-in__fact">
+      <Icon icon={Plane} size={15} />
+      <div>
+        {/* Team Hub's Travel with the trip scrolled to: /travel redirects there in Clubhouse, and a layout's redirect
+            can't carry `?trip=`. */}
+        <Link className="ch-in__trip" href={`/golf/dashboard/team-hub?tab=travel&trip=${encodeURIComponent(trip.id)}`}>
+          View itinerary · <b>{trip.destination || trip.event_name || 'the trip'}</b>
+          <Icon icon={ArrowRight} size={13} />
+        </Link>
+      </div>
     </div>
   );
 }
@@ -144,11 +192,23 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
     setTouched(false);
   }, [open, today]);
   const bad = !title.trim() || (!allDay && win[1] <= win[0]);
+  // One request id per set of contents until an add lands: the same block sends the same id, whether the toast's
+  // Retry replays it, Add is pressed again, or the sheet was closed and opened again in between, so a reply that was
+  // lost after the server stored the block cannot add it a second time. Different contents get a new id, and so does
+  // the next add once one has landed. A ref, not state: the toast's Retry runs an earlier render's action.
+  const attempt = useRef<{ sig: string; id: string } | null>(null);
+  const requestIdFor = (payload: unknown) => {
+    const sig = JSON.stringify(payload);
+    if (attempt.current?.sig === sig) return attempt.current.id;
+    const id = newRequestId();
+    attempt.current = { sig, id };
+    return id;
+  };
   // Closing the sheet and re-reading (or moving to the block's day) follow a landed add inside the action, so the toast's Retry does them too.
   const save = useAction(
     'calendar.addBusy',
     async () => {
-      const res = await addCoachBlockedTime({
+      const block = {
         title: title.trim(),
         startDate: date,
         endDate: date,
@@ -156,11 +216,15 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
         endTime: allDay ? undefined : toHHMM(win[1]),
         allDay,
         recurrenceRule: repeat === 'weekly' ? serializeRecurrenceRule({ frequency: 'weekly', weekdays: [new Date(`${date}T12:00:00Z`).getUTCDay()], until }) : undefined,
-      });
-      if (normalise(res).success) onSaved(date);
+      };
+      const res = await addCoachBlockedTime({ ...block, requestId: requestIdFor(block) });
+      if (normalise(res).success) {
+        attempt.current = null;
+        onSaved(date);
+      }
       return res;
     },
-    () => ({ done: `Busy time added · ${title.trim()}`, failed: "Couldn't add your busy time", hint: 'Your entry is still here. Try again.', code: 'CH-6006' }),
+    () => ({ done: `Busy time added · ${title.trim()}`, failed: "Couldn’t add your busy time", hint: 'Your entry is still here. Try again.', code: 'CH-6006' }),
   );
   return (
     <Modal
@@ -176,7 +240,7 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
           </Button>
           <Button
             variant="primary"
-            disabled={save.pending}
+            busy={save.pending}
             onClick={() => {
               setTouched(true);
               if (bad) {
@@ -202,9 +266,9 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
           )}
         </label>
         <div className="ch-ed__row">
-          <input className="ch-input" type="date" aria-label="Date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
-          <input className="ch-input" type="time" aria-label="Start time" step={900} disabled={allDay} value={toHHMM(win[0])} onChange={(e) => e.target.value && setWin([fromHHMM(e.target.value), Math.max(fromHHMM(e.target.value) + 0.25, win[1])])} />
-          <input className="ch-input" type="time" aria-label="End time" step={900} disabled={allDay} value={toHHMM(win[1])} onChange={(e) => e.target.value && setWin([win[0], fromHHMM(e.target.value)])} />
+          <DateField label="Date" row value={date} onChange={(v) => v && setDate(v)} />
+          <TimeField label="Start time" disabled={allDay} value={toHHMM(win[0])} onChange={(v) => v && setWin([fromHHMM(v), Math.max(fromHHMM(v) + 0.25, win[1])])} />
+          <TimeField label="End time" disabled={allDay} min={toHHMM(win[0] + 0.25)} value={toHHMM(win[1])} onChange={(v) => v && setWin([win[0], fromHHMM(v)])} />
         </div>
         {touched && !allDay && win[1] <= win[0] && (
           <span className="ch-field__help is-error" data-ch-code="CH-6104">
@@ -227,10 +291,10 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
             ]}
           />
           {repeat === 'weekly' && (
-            <label className="ch-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <div className="ch-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <span className="ch-field__label">Until</span>
-              <input className="ch-input" type="date" value={until} min={date} onChange={(e) => e.target.value && setUntil(e.target.value)} />
-            </label>
+              <DateField label="Until" value={until} min={date} onChange={(v) => v && setUntil(v)} />
+            </div>
           )}
         </div>
       </div>
@@ -279,7 +343,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
     // Same rule as every save (CH-1903): offline, nothing is sent and nothing changes.
     if (isOffline()) {
       haptic('error');
-      toast({ tone: 'error', title: `Couldn't remove ${f.title}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+      toast({ tone: 'error', title: `Couldn’t remove ${f.title}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
       return;
     }
     const prev = files;
@@ -292,7 +356,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
       const undoFailed = (why: string, err: unknown) => {
         chReport(err instanceof Error ? err : new Error(why), { surface: 'calendar.files', action: 'calendar.undoDetach', severity: 'low' });
         haptic('error');
-        toast({ tone: 'error', title: `Couldn't put ${f.title} back`, body: 'Attach it again from Documents.', code: 'CH-6009' });
+        toast({ tone: 'error', title: `Couldn’t put ${f.title} back`, body: 'Attach it again from Documents.', code: 'CH-6009' });
       };
       toast({
         title: `Removed · ${f.title}`,
@@ -301,7 +365,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
           run: () => {
             if (isOffline()) {
               haptic('error');
-              toast({ tone: 'error', title: `Couldn't put ${f.title} back: you're offline`, body: 'Reconnect, then attach it again from Documents. Nothing was changed.', code: 'CH-1903' });
+              toast({ tone: 'error', title: `Couldn’t put ${f.title} back: you’re offline`, body: 'Reconnect, then attach it again from Documents. Nothing was changed.', code: 'CH-1903' });
               return;
             }
             attachDocumentToEvent(eventId, f.id, f.note ?? undefined)
@@ -317,11 +381,13 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
       setFiles(prev);
       chReport(err, { surface: 'calendar.files', action: 'calendar.detachFile' });
       haptic('error');
-      toast({ tone: 'error', title: `Couldn't remove ${f.title}`, body: 'It’s still attached. Try again in a moment.', code: 'CH-6008' });
+      toast({ tone: 'error', title: `Couldn’t remove ${f.title}`, body: 'It’s still attached. Try again in a moment.', code: 'CH-6008' });
     }
   };
 
-  if (!canEdit && files && !files.length) return null;
+  // A player sees Files only when the event has some. Not while they load either: the placeholder then went away for
+  // the usual event with none, and the sheet dropped 95px just after it rose (WebKit, 2026-10-15).
+  if (!canEdit && !failed && !files?.length) return null;
   return (
     <div className="ch-in__sec">
       <div className="ch-in__sechead">
@@ -335,7 +401,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
         )}
       </div>
       {failed ? (
-        <InlineNotice code="CH-6207" title="Files didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6207" title="Files didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !files ? (
         <div aria-busy="true" data-ch-code="CH-6403">
           <Skeleton height={36} />
@@ -356,9 +422,11 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
                 <span>{[fileSize(f.size), f.note].filter(Boolean).join(' · ')}</span>
               </a>
               {canEdit ? (
-                <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Remove ${f.title}`} onClick={() => void detach(f)}>
-                  <Icon icon={X} size={14} />
-                </button>
+                <Tooltip>
+                  <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Remove ${f.title}`} onClick={() => void detach(f)}>
+                    <Icon icon={X} size={14} />
+                  </button>
+                </Tooltip>
               ) : (
                 <span />
               )}
@@ -433,7 +501,7 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
     },
     (id) => ({
       done: `Attached · ${docs?.find((d) => d.id === id)?.title ?? 'file'}`,
-      failed: "Couldn't attach the file",
+      failed: "Couldn’t attach the file",
       code: 'CH-6007',
     }),
   );
@@ -444,7 +512,7 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
       width={520}
       icon={Paperclip}
       title="Attach a file"
-      description="From your team's Documents. Everyone invited can open it."
+      description="From your team’s Documents. Everyone invited can open it."
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -452,7 +520,8 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
           </Button>
           <Button
             variant="primary"
-            disabled={!pick || attach.pending}
+            busy={attach.pending}
+            disabled={!pick}
             onClick={() => {
               if (pick) void attach.run(pick);
             }}
@@ -465,7 +534,7 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
       <div style={{ display: 'grid', gap: 12 }}>
         <SearchField value={q} onChange={setQ} placeholder="Find a document" label="Find a document" />
         {failed ? (
-          <InlineNotice code="CH-6208" title="Documents didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+          <InlineNotice code="CH-6208" title="Documents didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
         ) : !docs ? (
           <div style={{ display: 'grid', gap: 8 }} aria-busy="true" data-ch-code="CH-6404">
             <Skeleton height={44} />

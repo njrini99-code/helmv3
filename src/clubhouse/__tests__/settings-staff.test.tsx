@@ -83,7 +83,7 @@ function show(staff: ChStaffWrites = staffWrites()) {
       <ToastProvider>
         <PhoneChromeProvider>
           <div className="ch-root" data-ui="clubhouse">
-            <SettingsView data={coachData()} writes={writes} device={device} initialSection="team" onDeleted={vi.fn()} />
+            <SettingsView data={coachData()} writes={writes} device={device} initialSection="team" opened onDeleted={vi.fn()} />
           </div>
         </PhoneChromeProvider>
       </ToastProvider>
@@ -152,7 +152,7 @@ describe('Settings · Team · CH-8026 CH-8027 approving and declining (D1)', () 
     await user.click(within(requests).getByRole('button', { name: 'Approve' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Couldn't approve Avery Lee/);
+    expect(alert.textContent).toMatch(/Couldn’t approve Avery Lee/);
     expect(alert.textContent).toMatch(/Only a head coach of this team can do that/);
     expect(within(requests).getByText('Avery Lee')).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -165,11 +165,18 @@ describe('Settings · Team · CH-8026 CH-8027 approving and declining (D1)', () 
     expect(approve).toHaveBeenLastCalledWith('avery');
   });
 
-  it('Decline calls decline with the coach and tells who was declined', async () => {
+  it('CH-8511 Decline asks first: Keep request leaves it, Decline calls decline with the coach and tells who was declined', async () => {
     const { user, staff } = show();
     const requests = await card('Assistant coach requests');
     vi.mocked(staff!.pending).mockResolvedValue({ success: true, data: [] });
     await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    const ask = await screen.findByRole('dialog', { name: 'Decline Avery Lee?' });
+    expect(ask.getAttribute('data-ch-code')).toBe('CH-8511');
+    await user.click(within(ask).getByRole('button', { name: 'Keep request' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Decline Avery Lee?' })).toBeNull());
+    expect(staff!.decline).not.toHaveBeenCalled();
+    await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Decline Avery Lee?' })).getByRole('button', { name: 'Decline' }));
 
     await waitFor(() => expect(staff!.decline).toHaveBeenCalledWith('avery'));
     expect(staff!.approve).not.toHaveBeenCalled();
@@ -181,8 +188,9 @@ describe('Settings · Team · CH-8026 CH-8027 approving and declining (D1)', () 
     const { user } = show(staffWrites({ decline: vi.fn(() => refused('We could not decline that request.')) }));
     const requests = await card('Assistant coach requests');
     await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Decline Avery Lee?' })).getByRole('button', { name: 'Decline' }));
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Couldn't decline Avery Lee/);
+    expect(alert.textContent).toMatch(/Couldn’t decline Avery Lee/);
     expect(alert.textContent).toMatch(/could not decline that request/);
     expect(document.querySelector('[data-ch-code="CH-8027"]')).not.toBeNull();
     expect(within(requests).getByText('Avery Lee')).toBeTruthy();
@@ -245,7 +253,7 @@ describe('Settings · Team · CH-8028 staff invitations (D1)', () => {
     await user.click(within(invites).getByRole('button', { name: 'Create invite' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Couldn't make the assistant coach invite/);
+    expect(alert.textContent).toMatch(/Couldn’t make the assistant coach invite/);
     expect(alert.textContent).toMatch(/Only a head coach of this team can invite staff/);
     expect(within(invites).queryByText('STAFF7QX')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -270,7 +278,7 @@ describe('Settings · Team · CH-8028 staff invitations (D1)', () => {
     const copy = vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
     await user.click(within(invites).getByRole('button', { name: 'Copy staff code' }));
     await waitFor(() => expect(document.querySelector('[data-ch-code="CH-8013"]')).not.toBeNull());
-    expect(document.querySelector('[data-ch-code="CH-8013"]')!.textContent).toMatch(/Couldn't copy/);
+    expect(document.querySelector('[data-ch-code="CH-8013"]')!.textContent).toMatch(/Couldn’t copy/);
     copy.mockRestore();
   });
 });
@@ -301,7 +309,7 @@ describe('Settings · Team · CH-8213 what the server refuses or cannot read (D1
     const pending = vi.fn().mockImplementationOnce(() => refused('We could not load pending requests.')).mockImplementation(() => Promise.resolve({ success: true, data: [WAITING] }));
     const { user } = show(staffWrites({ pending }));
     const requests = await card('Assistant coach requests');
-    expect(requests.textContent).toMatch(/Requests didn't load/);
+    expect(requests.textContent).toMatch(/Requests didn’t load/);
     expect(document.querySelector('[data-ch-code="CH-8213"]')).not.toBeNull();
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'pending', severity: 'low' }));
     await user.click(within(requests).getByRole('button', { name: 'Try again' }));
@@ -365,7 +373,7 @@ describe('Settings · phone · Team · coaching staff (D1)', () => {
     const { user } = await openTeam(staffWrites({ pending }));
     const failed = await group('Assistant coach requests');
     expect(failed.getAttribute('data-ch-code')).toBe('CH-8213');
-    expect(failed.textContent).toMatch(/Requests didn't load/);
+    expect(failed.textContent).toMatch(/Requests didn’t load/);
     await user.click(within(failed).getByRole('button', { name: 'Try again' }));
     await group('Assistant coach requests · 1');
     expect(pending).toHaveBeenCalledTimes(2);
@@ -375,8 +383,12 @@ describe('Settings · phone · Team · coaching staff (D1)', () => {
     const { user } = await openTeam(staffWrites({ decline: vi.fn(() => refused('We could not decline that request.')) }));
     const requests = await group('Assistant coach requests · 1');
     await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    // The phone asks in an action sheet (CH-8511), with Keep request as its cancel.
+    const ask = await screen.findByRole('alertdialog', { name: 'Decline Avery Lee?' });
+    expect(within(ask).getByRole('button', { name: 'Keep request' })).toBeTruthy();
+    await user.click(within(ask).getByRole('button', { name: 'Decline' }));
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Couldn't decline Avery Lee/);
+    expect(alert.textContent).toMatch(/Couldn’t decline Avery Lee/);
   });
 
   it('picks the role, makes the invite and shows its code with Copy code and Copy link', async () => {
@@ -402,7 +414,7 @@ describe('Settings · phone · Team · coaching staff (D1)', () => {
     const invites = await group('Staff invitations');
     await user.click(within(invites).getByRole('button', { name: 'Create invite' }));
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Couldn't make the assistant coach invite/);
+    expect(alert.textContent).toMatch(/Couldn’t make the assistant coach invite/);
     expect(alert.textContent).toMatch(/Only a head coach of this team can invite staff/);
   });
 

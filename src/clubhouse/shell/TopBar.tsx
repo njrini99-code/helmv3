@@ -1,13 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useRef } from 'react';
 import { ChevronRight, Settings } from 'lucide-react';
 import { Icon } from '../ui/Icon';
-import { routeLabel, type ChNavItem } from './nav';
+import { routeLabel, type ChNavItem, type ChPhonePushedTop } from './nav';
 import { Bell } from './Bell';
 import { useCrumbTrail } from './crumbs';
-import { usePhoneChromeState } from './phone-chrome';
+import { PushedTopStandIn, usePhoneChromeState } from './phone-chrome';
 import { useClubhouseRole } from './context';
+import { AskSheetButton } from './AskSheet';
+import { usePhoneLargeTitle } from './large-title';
+import { SectionTrigger, useSectionGestures, useSectionSwitch } from './section-switch';
 
 /** The board's page gears: on CoachHelm and Team Hub a coach's gear opens that page's Settings section (?section=). */
 const PAGE_SETTINGS: ReadonlyArray<{ path: string; section: string; label: string }> = [
@@ -24,12 +28,34 @@ const PAGE_SETTINGS: ReadonlyArray<{ path: string; section: string; label: strin
  * Below 820px it is the owner's phone top bar (foundation.md): the tab root
  * shows the page's title and the bell; a page that renders `PhoneTop` gets
  * the pushed variant instead (back link, centred title, one action), which
- * lands in the slot here. Settings lives in the More sheet on the phone (D-41).
+ * lands in the slot here. On the phone the title is the section switcher
+ * (section-strip.md): tap it, pull the bar down, or swipe the bar sideways on
+ * a section's own page.
+ * On a pushed address (`pushed`, from `phonePushedTop`) the shell draws that
+ * variant itself until the page's own arrives (CH-1402), so the loading
+ * skeleton and the server's first paint never show the tab root's title and bell.
  */
-export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | undefined; pathname: string; teamName?: string | null }) {
+export function TopBar({
+  item,
+  pathname,
+  teamName = null,
+  pushed = null,
+}: {
+  item: ChNavItem | undefined;
+  pathname: string;
+  teamName?: string | null;
+  pushed?: ChPhonePushedTop | null;
+}) {
   const pageTrail = useCrumbTrail();
   const { pageTop, rootTitle, immersive, setSlot } = usePhoneChromeState();
+  // The phone's large titles: the bar's title waits until the page's own large title scrolls under it.
+  const bar = useRef<HTMLElement>(null);
+  usePhoneLargeTitle(bar);
+  const standIn = pageTop ? null : pushed;
   const role = useClubhouseRole();
+  const sections = useSectionSwitch();
+  const swipeable = !!sections?.root && !standIn && !immersive;
+  useSectionGestures(bar, swipeable);
   const pageSettings = role === 'coach' ? PAGE_SETTINGS.find((p) => pathname === p.path || pathname.startsWith(`${p.path}/`)) : undefined;
   const crumbs =
     pageTrail ??
@@ -41,7 +67,16 @@ export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | 
           ? ['Home']
           : ([item.section, item.label].filter(Boolean) as string[]));
   return (
-    <header className="ch-topbar" data-phone={rootTitle ? 'start' : pageTop ? 'page' : 'root'} inert={immersive || undefined}>
+    <header
+      ref={bar}
+      className="ch-topbar"
+      data-phone={rootTitle ? 'start' : pageTop || standIn ? 'page' : 'root'}
+      data-sections={swipeable ? '' : undefined}
+      data-switching={sections?.switching ? '' : undefined}
+      // Only Home's bar changes shape on arrival (its team mark); elsewhere the title is already where it lands.
+      data-arrived={sections?.arrived && pathname.replace(/\/$/, '') === '/golf/dashboard' ? '' : undefined}
+      inert={immersive || undefined}
+    >
       <nav className="ch-topbar__crumbs" aria-label="Breadcrumb">
         {crumbs.map((c, i) => (
           <span key={c} className="ch-topbar__crumb">
@@ -51,14 +86,21 @@ export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | 
         ))}
       </nav>
       {/* The phone's tab-root title. Only one of it and the breadcrumbs is displayed at a width. */}
-      <b className="ch-topbar__ptitle">{crumbs[crumbs.length - 1]}</b>
-      {/* The green hero's bar (usePhoneHero, the phone Home): the team in place of the title. */}
-      <span className="ch-topbar__team" aria-hidden="true">
+      <b className="ch-topbar__ptitle">
+        <SectionTrigger>{crumbs[crumbs.length - 1]}</SectionTrigger>
+      </b>
+      {/* The green hero's bar (usePhoneHero, the phone Home): the team's mark beside the title. */}
+      <span className="ch-topbar__team" aria-hidden="true" title={teamName ?? 'GolfHelm'}>
         <span className="ch-topbar__mark"><img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={20} height={20} /></span>
-        {teamName ?? 'GolfHelm'}
       </span>
       <div className="ch-topbar__pslot" ref={setSlot} />
+      {standIn && (
+        <div className="ch-topbar__pstand" data-ch-code="CH-1402">
+          <PushedTopStandIn top={standIn} />
+        </div>
+      )}
       <div className="ch-topbar__actions">
+        <AskSheetButton />
         <Bell />
         <Link
           href={pageSettings ? `/golf/dashboard/settings?section=${pageSettings.section}` : '/golf/dashboard/settings'}

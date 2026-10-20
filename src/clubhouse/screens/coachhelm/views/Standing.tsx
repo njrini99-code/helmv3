@@ -1,10 +1,11 @@
 'use client';
 
-import { Play, Scale as ScaleIcon } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { ChStandRow, ChStanding, ChStandSense } from '../../../data/coachhelm-standing-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
+import { useChPhone } from '../../../lib/use-phone';
 import { Button } from '../../../ui/Button';
-import { RefreshNotice } from '../../../ui/RefreshNotice';
+import { PageRefreshNotice, RefreshNotice } from '../../../ui/RefreshNotice';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
 import { coachHelmLinks } from '../PlayerBoard';
@@ -25,12 +26,25 @@ function Count({ ahead, of }: { ahead: number; of: number }) {
   );
 }
 
+/** A section's tally against the Tour: how many of its stats are ahead and how many behind, so the group reads at a glance. */
+function Tally({ rows }: { rows: ChStandRow[] }) {
+  const ahead = rows.filter((r) => senseOf(r) === 'ahead').length;
+  const behind = rows.filter((r) => senseOf(r) === 'behind').length;
+  if (!ahead && !behind) return null;
+  return (
+    <span className="ch-hs-tally ch-num">
+      {ahead > 0 && <span className="is-ahead">{ahead} ahead</span>}
+      {behind > 0 && <span className="is-behind">{behind} behind</span>}
+    </span>
+  );
+}
+
 function Row({ r }: { r: ChStandRow }) {
   const sense = senseOf(r);
   return (
     <li className={'ch-hs-r is-' + sense}>
       <div className="ch-hs-r__h">
-        <h4>{r.label}</h4>
+        <h3>{r.label}</h3>
         <p>
           {r.vsTour && <span className={'ch-hs-vs is-' + r.vsTour.sense}>{r.vsTour.text}</span>}
           {r.percentile && <span className="ch-hs-pct">{r.percentile}</span>}
@@ -38,6 +52,10 @@ function Row({ r }: { r: ChStandRow }) {
         </p>
       </div>
       <div className="ch-hs-tr" aria-hidden="true">
+        {/* The gap to the Tour, filled in the row's colour so how far you sit from it reads at a glance (owner, 2026-10-16). */}
+        {r.tour && (
+          <i className="ch-hs-tr__gap" style={{ left: `${Math.min(r.tour.pct, r.youPct)}%`, width: `${Math.abs(r.youPct - r.tour.pct)}%` }} />
+        )}
         {r.team && <i className="ch-hs-tr__team" style={{ left: `${r.team.pct}%` }} />}
         {r.tour && <i className="ch-hs-tr__tour" style={{ left: `${r.tour.pct}%` }} />}
         <i className="ch-hs-tr__you" style={{ left: `${r.youPct}%` }} />
@@ -81,38 +99,41 @@ function Row({ r }: { r: ChStandRow }) {
 }
 
 function Hero({ s }: { s: ChStanding }) {
-  const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed}` : null].filter(Boolean);
+  const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
   const { tour, team } = s.counts;
+  const top = s.gaps[0];
+  const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
   return (
-    <section className={'ch-hs-hero' + (s.gaps.length > 0 ? '' : ' is-solo')} aria-labelledby="ch-hs-hero-t">
+    // On the team board's green (owner, 2026-10-16: "same with standing"): the headline and what is most to gain.
+    <section className={'ch-hs-hero ch-scoreboard' + (s.gaps.length > 0 ? '' : ' is-solo')} aria-labelledby="ch-hs-hero-t">
       <div className="ch-hs-hero__main">
         <div className="ch-hs-hero__k">
           <span>Where you stand</span>
-          {meta.length > 0 && <span className="ch-num">{meta.join(' · ')}</span>}
+          {/* No-break spaces keep a date whole ("Sep 30") and a dot off the start of a line. */}
+          {meta.length > 0 && <span className="ch-num">{meta.join('\u00a0· ')}</span>}
         </div>
+        {/* A headline, so no closing full stop (states audit, 2026-10-08). It leads with the most to gain; the counts say one
+            denominator, the Tour's, under it (P013 D4). */}
         <h2 id="ch-hs-hero-t">
-          {tour.of > 0 ? (
+          {top ? (
             <>
-              Ahead of {s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour'} on <Count ahead={tour.ahead} of={tour.of} /> stats
-              {team.of > 0 ? (
-                <>
-                  {' '}
-                  and ahead of your team on <Count ahead={team.ahead} of={team.of} />.
-                </>
-              ) : (
-                '.'
-              )}
+              {top.label} is worth about <span className="ch-hs-count ch-num">{top.strokes} strokes</span> a round
+            </>
+          ) : tour.of > 0 ? (
+            <>
+              Ahead of {tourName} on <Count ahead={tour.ahead} of={tour.of} /> stats
             </>
           ) : team.of > 0 ? (
             <>
-              Ahead of your team on <Count ahead={team.ahead} of={team.of} /> stats.
+              Ahead of your team on <Count ahead={team.ahead} of={team.of} /> stats
             </>
           ) : (
-            'Your numbers are in. The comparisons fill in as they are ready.'
+            'Your numbers are in, and the comparisons fill in as they are ready'
           )}
         </h2>
         <p className="ch-hs-hero__sub">
-          {s.counts.measures} {s.counts.measures === 1 ? 'stat' : 'stats'} tracked. Strokes gained is against the field average, not a Tour player’s score; every other stat is against {s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour'}.
+          {top && tour.of > 0 ? `Ahead of ${tourName} on ${tour.ahead} of ${tour.of} stats. ` : top && team.of > 0 ? `Ahead of your team on ${team.ahead} of ${team.of} stats. ` : ''}
+          Every stat, strokes gained included, is against {tourName}.
         </p>
       </div>
       {s.gaps.length > 0 && (
@@ -142,6 +163,7 @@ function Hero({ s }: { s: ChStanding }) {
  * says why in place (a team too small, a Tour value that is not comparable); it is never drawn as a zero.
  */
 export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
+  const phone = useChPhone();
   const startHref = coachHelmLinks.startRound();
 
   if (load.status === 'off') {
@@ -164,14 +186,17 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
       {s.state === 'empty' ? (
         <>
           {s.baselineFailed && <RefreshNotice code="CH-13271" title="Your scoring average didn’t load" body="Standing is empty for now, and projections need it. Try again in a moment." />}
+          {/* The whole view is empty: on the phone it is the page's empty state, centred on the parchment like the Board's first run
+              (the Mobile clubhouse pass, 2026-10-08); desktop keeps the line on the Ledger. */}
           <EmptyState
             code="CH-13370"
-            icon={ScaleIcon}
+            size={phone ? 'page' : 'section'}
+            shape="rows"
             title="Standing starts with a few rounds"
             body={`Standing puts your stats next to the Tour and your team. It fills in once your first rounds are in, and refreshes overnight.${s.rounds ? ` You have posted ${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}.` : ''}`}
             action={
               startHref ? (
-                <Button variant="primary" leftIcon={Play} href={startHref.href}>
+                <Button variant="primary" leftIcon={Plus} href={startHref.href}>
                   {startHref.label}
                 </Button>
               ) : undefined
@@ -180,19 +205,26 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
         </>
       ) : (
         <SectionBoundary surface="coachhelm.standing" label="Your standing" code="CH-13204">
-          {s.baselineFailed && <RefreshNotice code="CH-13271" title="Your projections didn’t load" body="Your scoring average, which every projection starts from, didn’t load. The comparisons below are not affected. Try again in a moment." />}
+          {/* Both reads beside the rows failed: said once, with one Try again (CH-1209), and each keeps its title (states audit, 2026-10-08). */}
+          <PageRefreshNotice parts={[s.baselineFailed && 'your scoring average', s.cohortFailed && 'your team’s Tour'].filter((x): x is string => !!x)} />
+          {s.baselineFailed && <RefreshNotice code="CH-13271" title="Your projections didn’t load" body="Your scoring average, which every projection starts from, didn’t load. The comparisons below are not affected. Try again in a moment." covered={s.cohortFailed} />}
           {/* CH-13272: the Tour the rows are against is the men's default because the cohort lookup failed; it is not stated as theirs. */}
-          {s.cohortFailed && <RefreshNotice code="CH-13272" title="Your team’s Tour couldn’t be confirmed" body="The rows below are against the men’s Tour, the default, which may not be the one for your team. Your stats and your team’s are not affected. Try again in a moment." />}
+          {s.cohortFailed && <RefreshNotice code="CH-13272" title="Your team’s Tour couldn’t be confirmed" body="The rows below are against the men’s Tour, the default, which may not be the one for your team. Your stats and your team’s are not affected. Try again in a moment." covered={s.baselineFailed} />}
           {s.state === 'early' && (
             <p className="ch-hs-early" role="note" data-ch-code="CH-13371">
-              <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds, and a comparison with your team needs 5 teammates with the stat.
+              <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds
+              {/* The team clause only where a row is short of teammates: rows with team values say otherwise. */}
+              {s.groups.some((g) => g.rows.some((r) => r.teamNote)) ? ', and a comparison with your team needs 5 teammates with the stat' : ''}.
             </p>
           )}
           <Hero s={s} />
           {s.groups.map((g) => (
             <section key={g.id} className="ch-hs-g" aria-labelledby={`ch-hs-g-${g.id}`}>
               <div className="ch-hs-g__h">
-                <h2 id={`ch-hs-g-${g.id}`}>{g.label}</h2>
+                <div className="ch-hs-g__t">
+                  <h2 id={`ch-hs-g-${g.id}`}>{g.label}</h2>
+                  <Tally rows={g.rows} />
+                </div>
                 <p>{g.description}</p>
               </div>
               <ol className="ch-hs-rows">

@@ -80,6 +80,8 @@ vi.mock('@/lib/golf/round-start-guard-signal', () => ({
 import { useNewRoundSession, type NewRoundStartForm } from '@/lib/golf/round-session/use-new-round-session';
 import { isAutoSaveHeld, type AutoSaveHeldError } from '@/hooks/golf/use-shot-state-machine';
 import { loadEmergencySave, wasRoundDiscarded } from '@/lib/utils/emergency-save';
+import { submitGolfRoundComprehensive } from '@/app/golf/actions/round-submit';
+import type { HoleStats } from '@/lib/types/golf';
 
 const ports = { showToast: vi.fn(), hideMobileNav: vi.fn(), showMobileNav: vi.fn(), haptic: vi.fn() };
 const holes = Array.from({ length: 18 }, (_, i) => ({ holeNumber: i + 1, par: 4, yardage: 400 + i }));
@@ -237,5 +239,69 @@ describe('R-1: an auto-save that did not reach the server says so', () => {
     const after = await autoSave(blockedHook, [TEE]);
     expect(isAutoSaveHeld(after) && (after as AutoSaveHeldError).reason).toBe('blocked');
     expect(mocks.savePartialRound).not.toHaveBeenCalled();
+  });
+});
+
+describe('Q-120: a stale-device submit that the server refuses as a conflict', () => {
+  const T0 = created.data.updatedAt;
+  const CONFLICT_MESSAGE = 'This round was updated on another device. Please reload.';
+  const finished = holes.map((h) => ({ holeNumber: h.holeNumber, par: 4, yardage: h.yardage, score: 4, putts: 2, shots: [] }) as unknown as HoleStats);
+  const submit = vi.mocked(submitGolfRoundComprehensive);
+  const submitted = { success: true as const, data: { roundId: 'round-1' } };
+
+  async function runSubmit(hook: Awaited<ReturnType<typeof started>>) {
+    let thrown: unknown = null;
+    await act(async () => {
+      try {
+        await hook.result.current.handleRoundSubmit(finished);
+      } catch (error) {
+        thrown = error;
+      }
+    });
+    return thrown;
+  }
+
+  it('sends the last acknowledged updated_at once the round exists server-side', async () => {
+    const hook = await started();
+    staleness.check.mockResolvedValue({ success: true, data: { isStale: false, currentUpdatedAt: T0, status: 'in_progress' } });
+    submit.mockResolvedValue(submitted);
+
+    expect(await runSubmit(hook)).toBeNull();
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(submit.mock.calls[0]![0]).toMatchObject({ expectedUpdatedAt: T0 });
+    expect(submit.mock.calls[0]![1]).toBe('round-1');
+    expect(hook.result.current.completedRoundId).toBe('round-1');
+  });
+
+  it('a genuine collision blocks the round with the reload sentence, keeps the device snapshot, and never shows the raw key', async () => {
+    const hook = await started();
+    staleness.check
+      .mockResolvedValueOnce({ success: true, data: { isStale: false, currentUpdatedAt: T0, status: 'in_progress' } })
+      .mockResolvedValue({ success: true, data: { isStale: true, currentUpdatedAt: '2026-09-30T12:05:00.000Z', status: 'in_progress' } });
+    submit.mockResolvedValue({ success: false, error: 'conflict' });
+
+    expect(await runSubmit(hook)).toBeNull();
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.error).toBe(CONFLICT_MESSAGE);
+    expect(hook.result.current.roundConflictBlocked).toBe(true);
+    expect(hook.result.current.step).toBe('tracking');
+    expect(hook.result.current.completedRoundId).toBeNull();
+    expect(loadEmergencySave('round-1', 'player-1')?.completedHoleStats).toHaveLength(holes.length);
+    expect(mocks.router.push).not.toHaveBeenCalled();
+
+    submit.mockClear();
+    await runSubmit(hook);
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('a self-caused mismatch (the server agrees with the token now) is re-sent once and completes', async () => {
+    const hook = await started();
+    staleness.check.mockResolvedValue({ success: true, data: { isStale: false, currentUpdatedAt: T0, status: 'in_progress' } });
+    submit.mockResolvedValueOnce({ success: false, error: 'conflict' }).mockResolvedValueOnce(submitted);
+
+    expect(await runSubmit(hook)).toBeNull();
+    expect(submit).toHaveBeenCalledTimes(2);
+    expect(hook.result.current.roundConflictBlocked).toBe(false);
+    expect(hook.result.current.completedRoundId).toBe('round-1');
   });
 });

@@ -10,6 +10,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifiers } from '@/components/fairway/pages/qualifiers/FairwayQualifiers';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 export const metadata: Metadata = {
   title: 'Qualifiers',
@@ -27,7 +28,7 @@ export default async function GolfQualifiersPage() {
   if (!session) redirect('/golf/login');
 
   // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
-  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) return <ClubhouseQualifiersRoute view="list" />;
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) return <ClubhouseQualifiersRoute view="list" />;
 
   const { role, coach, player } = session;
   const isCoach = role === 'coach';

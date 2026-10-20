@@ -387,11 +387,11 @@ jobs:
               exit 0
             fi
             mkdir -p evals/results
-            npx promptfoo eval \
+            npx --yes promptfoo@0.124.0 eval \
               --config evals/round-review.yaml \
               --output evals/results/round-review.json || true
             # Print the human-readable summary to the job log
-            npx promptfoo view --no-open evals/results/round-review.json || true
+            npx --yes promptfoo@0.124.0 view --no-open evals/results/round-review.json || true
       - store_artifacts:
           path: evals/results/
           destination: promptfoo

@@ -69,8 +69,8 @@ function RecoverCard({
         {why && <p className="ch-rcv-why">{why}</p>}
         {ago && <p className="ch-rcv-saved">Saved {ago}</p>}
         <div className="ch-rcv-acts" role="group" aria-label={`Actions for the round at ${round.course}`}>
-          <Button variant="primary" size={size} leftIcon={History} disabled={busy} onClick={onResume}>
-            {resuming ? 'Restoring' : round.finished ? 'Submit round' : 'Restore round'}
+          <Button variant="primary" size={size} leftIcon={History} busy={resuming} disabled={busy && !resuming} onClick={onResume}>
+            {resuming ? 'Restoring…' : round.finished ? 'Post round' : 'Restore round'}
           </Button>
           {round.queued && (
             <Button size={size} leftIcon={RotateCw} disabled={busy} onClick={onRetry}>
@@ -196,7 +196,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
 
   return (
     <main className={'ch-rcv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rcv-title">
-      {phone && <PhoneTop title="Recover" back={{ label: 'Rounds', onBack: () => router.push(ROUNDS_LIBRARY) }} />}
+      {phone && <PhoneTop heading={false} title="Recover" back={{ label: 'Rounds', onBack: () => router.push(ROUNDS_LIBRARY) }} />}
       <header className="ch-rcv-h">
         <div>
           <span className="ch-rcv-k">Saved on this device</span>
@@ -288,8 +288,8 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
             <Button variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
-            <Button variant="danger" disabled={discard.pending} feel={null} onClick={() => asking && void discard.run(asking)}>
-              {discard.pending ? 'Discarding' : 'Discard round'}
+            <Button variant="danger" busy={discard.pending} feel={null} onClick={() => asking && void discard.run(asking)}>
+              {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>
         }

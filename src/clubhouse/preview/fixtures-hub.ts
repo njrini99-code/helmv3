@@ -25,6 +25,7 @@ const ANNS: ChHubAnnouncement[] = [
     acked: false,
     ackCount: 5,
     recipients: 6,
+    notAcked: ['Jonah Okafor'],
     documentCount: 1,
   },
   { id: 'a2', title: 'Short-game block moves to Green 2', urgency: 'normal', body: 'Maintenance on the practice green through Friday. Same time, 3:30.', by: 'Dan Whitfield', byRole: 'Assistant coach', when: 'Yesterday', createdAt: '2026-10-13T15:00:00Z', needAck: false, acked: false, ackCount: 6, recipients: 6, documentCount: 0 },
@@ -38,7 +39,7 @@ const TRIPS: ChHubTrip[] = [
     destination: 'Pine Needles · Southern Pines, NC',
     dates: 'Mon 3 – Wed 5 Nov',
     departDate: '2026-11-03',
-    depart: 'Mon 12:00 PM',
+    depart: 'Mon · 12:00 PM',
     departTime: '12:00',
     from: 'Finley lot',
     back: 'Wed · 5:00 PM',
@@ -64,7 +65,7 @@ const TRIPS: ChHubTrip[] = [
     destination: 'Country Club of Landfall · Wilmington, NC',
     dates: 'Fri 14 – Sun 16 Nov',
     departDate: '2026-11-14',
-    depart: 'Fri 11:00 AM',
+    depart: 'Fri · 11:00 AM',
     departTime: '11:00',
     from: 'Finley lot',
     back: 'Sun',
@@ -166,6 +167,17 @@ export const PREVIEW_HUB_COACH: ChTeamHub = {
     ],
   },
   announcements: { rows: ANNS.map((a) => ({ ...a, acked: false })), error: false },
+  // P010 D3: the coach's own notifications (the loader reads the viewer's), not the player's copy.
+  updates: {
+    error: false,
+    rows: [
+      { id: 'n1', title: 'Theo acknowledged', body: 'Pairings for Thursday · 5 of 6 have now', href: '/golf/dashboard/team-hub?tab=ann', when: 'Today 2:31 PM', unread: true },
+      { id: 'n2', title: 'Eli can’t make Team dinner', body: 'Thu 16 · 7:30 PM · Carolina Inn', href: '/golf/dashboard/calendar?event=r2', when: 'Today 1:52 PM', unread: true },
+      { id: 'n3', title: 'Join request', body: 'Avery Lee asked to join Varsity', href: '/golf/dashboard/roster', when: 'Today 10:15 AM', unread: true },
+      { id: 'n4', title: 'Task done', body: 'Priya signed the travel waiver', href: '/golf/dashboard/team-hub?tab=tasks', when: 'Yesterday', unread: false },
+      { id: 'n5', title: 'Round posted', body: 'Jonah · 74, +2 at Finley GC', href: null, when: 'Yesterday', unread: false },
+    ],
+  },
   rsvps: {
     error: false,
     rows: [

@@ -1,0 +1,5 @@
+// Clubhouse docs: every changelog entry repeats Changed, Why and Verification under its own dated heading
+// (docs/clubhouse/templates/CHANGELOG.md), so a repeated heading is only a defect between siblings.
+{
+  "MD024": { "siblings_only": true }
+}

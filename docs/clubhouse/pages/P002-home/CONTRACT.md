@@ -43,13 +43,28 @@ write changes.
 
 Status: DEFINED
 
-Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag on gets Coach Home (20101): the date, the greeting and a one-sentence brief; Message team and New event; the week beside the latest round in one sheet; and the season leaderboard. A player gets Player Home (20102): the date, the greeting and a sentence from their own rounds; Message coach; the week, with Up next and its countdown, beside My latest round; then Scoring and the four parts of the game. Both are read on the server, so the first paint has its data. A team with nothing yet gets the first-run page (20408 for a coach, 20412 for a player, D-71). Every link Home hands out is 20103. Home reads no Clubhouse query parameter: the Fairway dashboard's `?range=` is ignored here, and there is no deep link into Home.
+Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag
+on gets Coach Home (20101): the date, the greeting and a one-sentence brief;
+Message team and New event; the week beside the latest round in one sheet; and
+the season leaderboard. A player gets Player Home (20102): the date and the
+greeting, with no brief line under it (owner, 2026-10-06); Message coach; the
+week beside Up next with its countdown and Your latest round; then Scoring and
+the four parts of the game. Both are read on the server, so the first paint has
+its data. A team with nobody on it yet gets the first-run page (20408 for a
+coach, events or not, the week above it once there are some), and a player with
+no round gets it with nothing on the calendar (20412, D-71); with the team's
+events, that player's loaded page keeps the week and shows the welcome in place
+of the rounds. The coach first run's Invite players opens Roster with its invite
+sheet (`/golf/dashboard/roster?invite=1`, P003 30102). Every
+link Home hands out is 20103. Home reads no Clubhouse query parameter: the
+Fairway dashboard's `?range=` is ignored here, and there is no deep link into
+Home.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 20101 | — | `COACH_HOME_READY` | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
-| 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date, the greeting and one sentence from the player's own rounds, Message coach, the week beside My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
-| 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, and Message coach the coach's thread (?user=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
+| 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and Your latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
+| 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), and the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
@@ -57,7 +72,7 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS
 
 Status: DEFINED
 
-One route skeleton (20201) in Coach Home's shape: the header, two panes and five leaderboard rows. `dashboard/loading.tsx` shows it for both roles and every width, so a player and a phone see the coach's desktop shape until the data arrives; Player Home's own skeleton and a phone-shaped one are not built (open gap, VERIFY.md). Nothing on either Home loads by itself after first paint, so there is no skeleton per section. v2 timing (nothing for 150ms, then a fade) is the shell's 11609.
+One route skeleton (20201), `HomeSkeleton`, for both roles. On a desktop width it is Coach Home's shape (the header, two panes and five leaderboard rows) for both roles: Player Home's own desktop skeleton is not built (open gap, VERIFY.md). On a phone it is the phone Home's shape in the reader's role (since 2026-10-08, `SkeletonPhoneHero` reads the shell's role): the coach's brief lines above Up next, or the player's two keys under it. Nothing on either Home loads by itself after first paint, so there is no skeleton per section. v2 timing (nothing for 150ms, then a fade) is the shell's 11609.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -67,7 +82,7 @@ One route skeleton (20201) in Coach Home's shape: the header, two panes and five
 
 Status: DEFINED
 
-Home does not poll, has no realtime and no pull to refresh: the page is `force-dynamic`, so a new visit reads afresh (going back or forward may show Next's client cache; not tested). What moves on its own is the clock (20301): the phone's Up next line (In 50 min, Happening now) is recomputed every minute, and the player's countdown every second, from the device's clock. The phone's Today marks (Now, past, and for a player Next) follow the same clock; the player's are tested (`player-home-phone.test`), the coach's are read from the code. The desktop agenda's Next badge is set on the server when the page loads and does not move. A page left open past midnight in the team's timezone keeps the day it loaded until the next visit or Try again.
+Home does not poll, has no realtime and no pull to refresh: the page is `force-dynamic`, so a new visit reads afresh (going back or forward may show Next's client cache; not tested). What moves on its own is the clock (20301): the phone's Up next line (In 50 min, Happening now) is recomputed every minute, and the player's countdown every second, from the device's clock. The phone's Today marks (Now, past, and for a player Next) follow the same clock; the player's are tested (`player-home-phone.test`), the coach's are read from the code. The desktop agenda's Next badge is set on the server when the page loads and does not move. "Today", "Tomorrow" and the weekday compare the event's team-local date with the team-local date now, both on the team's clock (`whenLabel`). A page left open past midnight in the team's timezone reads itself again (`router.refresh`) when the team-local date turns: at the team's next midnight, and when the page comes back into view (visibilitychange, focus, pageshow), at most three times for one new day if the server still answers with the old one (`useHomeDayRollover`, home-day-rollover.test).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -88,11 +103,11 @@ First-run states and section empties. Home has no filter or search, so there is 
 | 20405 | CH-2305 | `PLAYERS_BUT_NO_18_HOLE_ROUNDS` | Players, but no 18-hole rounds |
 | 20406 | CH-2306 | `A_PLAYER_HAS_FEWER_THAN_THREE_ROUNDS` | A player has fewer than three rounds |
 | 20407 | CH-2307 | `A_COACH_WITH_NO_ACTIVE_TEAM` | A coach with no active team |
-| 20408 | CH-2308 | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | A team with nothing yet: no players, no events this week, no rounds, and every read answered |
-| 20409 | CH-2309 | `NOTHING_ON_THE_CALENDAR_AHEAD` | Nothing on the calendar ahead (phone). A player: "Your coach's practices and events will show here with a countdown.", no quick adds |
+| 20408 | CH-2308 | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | A team with nobody on it yet: no players, no rounds, and every read answered (events or not: it rests on the people, not the calendar) |
+| 20409 | CH-2309 | `NOTHING_ON_THE_CALENDAR_AHEAD` | Nothing on the calendar ahead (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds |
 | 20410 | CH-2310 | `FEWER_THAN_TWO_18_HOLE_ROUNDS` | Fewer than two 18-hole rounds (player Home Scoring) |
 | 20411 | CH-2311 | `NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED` | No fairways, greens, scrambling or putts logged (player Home) |
-| 20412 | CH-2312 | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71) |
+| 20412 | CH-2312 | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | A new player: no rounds, every read answered (v2 first-run, D-71) |
 | 20413 | CH-2313 | `A_PLAYER_ON_NO_ACTIVE_TEAM` | A player on no active team |
 
 ## 05 — Validation
@@ -105,7 +120,7 @@ Its controls are links, the latest-round pager, the Scoring window (a choice of 
 
 Status: DEFINED
 
-Home only reads, so it has no error toasts. Every section that fails to load shows its own notice with Try again and never an empty state (20601 to 20604 for the week, the rounds, the hole-by-hole scores and the leaderboard; 20611 for the phone's team form; 20615 and 20616 for the player's rounds and scrambling). A crash stays in its section (SectionBoundary): 20605 to 20607 on the desktop, 20612 to 20614 on the phone, 20617 for the player's scoring and parts of the game. Three reads change a link or a line instead of showing a notice: the team chat (20608, Message team opens Messages), the event replies (20609, an agenda row drops who is invited and the confirmed count, never "0 players") and the timezone (20610, Eastern). A stored timezone that is not a real zone is read the same way (20618), where before it failed the whole page. The route's own errors are the shell's (10603 to 10607); a player's membership read that fails is one of them (20802). A figure with no source is left out rather than invented: a part of the game without a D1 benchmark draws no D1 mark, and a team without a known coach opens Messages plain (20805).
+Home only reads, so it has no error toasts. Every section that fails to load shows its own notice with Try again and never an empty state (20601 to 20604 for the week, the rounds, the hole-by-hole scores and the leaderboard; 20611 for the phone's team form; 20615 and 20616 for the player's rounds and scrambling). A crash stays in its section (SectionBoundary): 20605 to 20607 on the desktop, 20612 to 20614 on the phone, 20617 for the player's scoring and parts of the game. Three reads change a link or a line instead of showing a notice: the team chat (20608, Message team opens Messages), the event replies (20609, an agenda row drops who is invited and the "going" count, never "0 players") and the timezone (20610, Eastern). A stored timezone that is not a real zone is read the same way (20618), where before it failed the whole page. The route's own errors are the shell's (10603 to 10607); a player's membership read that fails is one of them (20802). A figure with no source is left out rather than invented: a part of the game without a D1 benchmark draws no D1 mark, and a team without a known coach opens Messages plain (20805).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -134,7 +149,7 @@ Status: DEFINED
 
 Home has no saves, so a slow save (10702) and a save refused offline (10703) never fire here. What applies is the shell's: the offline banner (10701), and Try again on a notice while offline, which says so and asks nothing (10704; proved on Home's own notices by the 21402 test). Following a link while offline is the browser's, not tested here.
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -146,9 +161,9 @@ Which team (20802). Neither Home takes a team from the address. The coach's team
 
 No team. A coach with no organisation or no active team gets "You aren't on a team yet" (20407), and a player with no active membership gets the same title with their own advice (20413); in both, nothing is read (20802). A player whose membership read fails does not get that page: the read throws to the route error view with its Try again (20802; the shell's 10603 to 10607), so an outage is never told to a player as "you have no team". A failed coach team resolution was not tested.
 
-What a player sees of others. Player Home reads the player's own rounds only (20803): rounds filtered to their player id, their own player row and the D1 benchmarks. It reads no roster, no teammate's rounds and no leaderboard, and the strokes gained and the parts of the game are set against D1, never against teammates. The team's week comes through the loader Coach Home uses, but a player's copy is given no names (20804): an agenda row reads at most a count ("Green 2 · 2 players", "First tee 8:42 · 1 of 2 confirmed"), and no teammate's name or id is in what the page receives. Whether the policies on `golf_event_attendance` would hand a player the other players' replies was not checked; the screen never has a name to draw.
+What a player sees of others. Player Home reads the player's own rounds only (20803): rounds filtered to their player id, their own player row and the D1 benchmarks. It reads no roster, no teammate's rounds and no leaderboard, and the strokes gained and the parts of the game are set against D1, never against teammates. The team's week comes through the loader Coach Home uses, but a player's copy is given no names (20804): an agenda row reads at most a count ("Green 2 · 2 players", "First tee 8:42 · 1 of 2 going"), and no teammate's name or id is in what the page receives. Whether the policies on `golf_event_attendance` would hand a player the other players' replies was not checked; the screen never has a name to draw.
 
-Controls (20806). Each role's Home draws its own role's controls only. A player has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread; a coach has no Message coach, Post a round or countdown. Post a round and Add classes are not drawn for a player until round entry and Classes are rebuilt (Q-69), so a control never leads to a screen the player's Clubhouse does not have.
+Controls (20806). Each role's Home draws its own role's controls only. A player has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread; a coach has no Message coach, Start a round or countdown. Start a round and Add classes are not drawn for a player until round entry and Classes are rebuilt (Q-69), so a control never leads to a screen the player's Clubhouse does not have.
 
 Message coach (20805). It opens Messages on `?user=<the coach's user id>`: the coach who created the team (`golf_teams.created_by` is a `golf_coaches.id`, not a user id, which the first version got wrong), else a coach of the organisation who has an account (the query sets no order, so which one is not fixed), else Messages plain. Messages then opens the thread only for someone in the team directory, which is the program's coaches and the team's players: anyone else gets "Couldn't open that conversation" (CH-7001, 70801, that page's contract). Home and the directory read the organisation's coaches from the same table with the same limit of 50, so the coach Home names is in the directory unless a program has more than 50 coaches; that edge was not tested end to end.
 
@@ -157,9 +172,9 @@ Message coach (20805). It opens Messages on `?user=<the coach's user id>`: the c
 | 20801 | — | `ROLE_PICKS_THE_HOME` | /golf/dashboard hands a coach with the Clubhouse flag on Coach Home and a player with it on Player Home, and everyone else the existing GolfHelm dashboard; a session holding both profiles is treated as a coach, no session is sent to sign in, and a session with neither profile to sign up. |
 | 20802 | — | `TEAM_COMES_FROM_THE_SESSION` | The team Home reads is the coach's active team or the player's own active membership, taken from the session and never from the address; with no team nothing is read and the no-team page shows (CH-2307, CH-2313), and a player membership read that fails is the error page with Try again, never the no-team page. |
 | 20803 | — | `PLAYER_READS_ONLY_OWN_ROUNDS` | Player Home asks only for the signed-in player's own rounds (golf_rounds filtered to their player id) and their own player row, reads no roster or teammate's figures, and sets the player against D1 benchmarks, never against teammates. |
-| 20804 | — | `PLAYER_WEEK_NAMES_NO_ONE` | A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 confirmed), and no teammate's name or id is in what the page receives. |
+| 20804 | — | `PLAYER_WEEK_NAMES_NO_ONE` | A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 going), and no teammate's name or id is in what the page receives. |
 | 20805 | — | `MESSAGE_COACH_FINDS_THE_TEAMS_COACH` | Message coach opens Messages on ?user=<the coach's user id>: the coach who created the team (golf_teams.created_by is a golf_coaches.id) if they have an account, else a coach of the organisation who has one (the query sets no order, so which one is not fixed), else plain Messages; Messages itself opens the thread only for someone in the team directory (CH-7001, 70801). |
-| 20806 | — | `CONTROLS_STAY_WITH_THEIR_ROLE` | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Post a round or countdown. |
+| 20806 | — | `CONTROLS_STAY_WITH_THEIR_ROLE` | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Start a round or countdown. |
 
 From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
@@ -206,20 +221,26 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: N/A — Home has no cache, polling or realtime to keep in step.
 
-The page is `force-dynamic` and a new visit reads afresh (going back or forward may show Next's client cache; not tested); Try again (21402) reads it again, and the device clock keeps its own times moving (20301). Not handled: a page left open past midnight keeps the day it loaded.
+The page is `force-dynamic` and a new visit reads afresh (going back or forward may show Next's client cache; not tested); Try again (21402) reads it again, and the device clock keeps its own times moving (20301). A page left open past the team's midnight reads itself again when the date turns (20301).
 
 ## 16 — Micro animation
 
 Status: DEFINED
 
-Home's own motion is two states, both seen in the preview only: paging the latest round slides the card 12px out and the next in from that side, or fades when motion is reduced (21601), and a leaderboard row lifts on hover and shrinks on press (21602). The player's countdown ticks in place (20301). The shell's: the v2 press, the first-paint reveal, sheets and skeletons (11601 to 11612, D-64).
+Home's own motion is two states, both seen in the preview only: paging the
+latest round slides the card 12px out and the next in from that side, instantly
+when motion is reduced (21601), and on desktop a leaderboard row takes the
+Ledger tint on hover as its chevron slides in, and a deeper tint on press, never
+a lift or a scale (21602). The player's countdown ticks in place (20301). The
+shell's: the page crossfade, the press on keys, sheets and skeletons (11601 to
+11613, D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 21601 | CH-2601 | `PAGING_THE_LATEST_ROUND` | Paging the latest round |
 | 21602 | CH-2602 | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | Hovering or pressing a leaderboard row |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -233,13 +254,19 @@ Home's catalogued haptics: a selection tick when paging the latest round (21701)
 | 21702 | CH-2702 | `NEW_EVENT` | New event (button or the N key) |
 | 21703 | — | `TAPS_FOLLOW_THE_GRAMMAR` | Home's taps follow the haptic grammar: a selection tick for paging the latest round, opening a round's card, choosing a quick event type and choosing the Scoring window, the light tap for New event (button or N), Add event and, on the phone, Message coach, and nothing for Message team; Home makes no change, so none of its own controls fires a success or error haptic. |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
 Status: DEFINED
 
 Home's own (21801 to 21806): N opens a new event but never while typing or in a dialog, each day of the week is read as words, the leaderboard and both nines are tables, the round pager announces its position, the phone's scorecard scrolls as a named, focusable region, and axe finds nothing in any preview state at 1280 and 390 (`clubhouse:a11y`, not run for this pass). The player's countdown is a timer named "Starts in 1 day, 18 hours and 2 minutes" whose digits are hidden from a screen reader, so it is heard once and not every second (21807). Known, not changed: a leaderboard row is a link with the role row, so the table reads correctly (21803), which hides that it is a link from a screen reader; not tried with one. The shell's skip link, landmarks and dialog behaviour are 11801 to 11811.
+
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -251,7 +278,7 @@ Home's own (21801 to 21806): N opens a new event but never while typing or in a 
 | 21806 | CH-2806 | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 21807 | — | `COUNTDOWN_IS_A_NAMED_TIMER` | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 
@@ -261,7 +288,7 @@ At 820px and below both roles get the phone Home (21901, `useChPhone`); wider ca
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 21901 | — | `PHONE_HOME` | At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, My latest round, Scoring and the parts of the game; wider canvases get the desktop Home. |
+| 21901 | — | `PHONE_HOME` | At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, Your latest round, Scoring and the parts of the game; wider canvases get the desktop Home. |
 
 From the shell (P001): 11901 PHONE_CHROME.
 
@@ -279,7 +306,7 @@ Each Home is read on the server in one request before its first paint, and no Ho
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 22101 | — | `LOADERS_NEVER_THROW` | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', <read>) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
+| 22101 | — | `LOADERS_NEVER_THROW` | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
 
 From the shell (P001): 12101 CH-1954.
 
@@ -299,7 +326,7 @@ A section that crashes is reported through `chReport` with surface `home.<sectio
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 22301 | — | `FAILURES_REPORTED` | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', <read>), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
+| 22301 | — | `FAILURES_REPORTED` | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
 
 ## 24 — CI / automated test
 

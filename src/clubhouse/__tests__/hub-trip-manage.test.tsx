@@ -183,24 +183,25 @@ describe('Team Hub · Travel · CH-10013 CH-10103 CH-10104 CH-10105 CH-10106 Edi
     expect((d.getByLabelText('Trip') as HTMLInputElement).value).toBe(SEA);
     expect((d.getByLabelText('Where') as HTMLInputElement).value).toBe('Country Club of Landfall · Wilmington, NC');
     expect(d.getByRole('radio', { name: 'Bus' })).toHaveAttribute('aria-checked', 'true');
-    expect((d.getByLabelText('Leaves') as HTMLInputElement).value).toBe('2026-11-14');
-    expect((d.getByLabelText('From') as HTMLInputElement).value).toBe('Finley lot');
-    expect((d.getByLabelText('Back') as HTMLInputElement).value).toBe('2026-11-16');
-    expect((d.getByLabelText('Hotel (optional)') as HTMLInputElement).value).toBe('Hotel Ballast');
-    const [leaveAt, backAt] = d.getAllByLabelText('At') as HTMLInputElement[];
-    expect(leaveAt!.value).toBe('11:00');
+    expect((d.getByLabelText('Departs') as HTMLInputElement).value).toBe('2026-11-14');
+    expect((d.getByLabelText('From Optional') as HTMLInputElement).value).toBe('Finley lot');
+    expect((d.getByLabelText('Returns') as HTMLInputElement).value).toBe('2026-11-16');
+    expect((d.getByLabelText('Hotel Optional') as HTMLInputElement).value).toBe('Hotel Ballast');
+    const leaveAt = d.getByLabelText('Departure time') as HTMLInputElement;
+    const backAt = d.getByLabelText('Return time') as HTMLInputElement;
+    expect(leaveAt.value).toBe('11:00');
     // This trip has no return time saved.
-    expect(backAt!.value).toBe('');
+    expect(backAt.value).toBe('');
   });
 
   it('Save calls editTrip with every field, then closes, says so and reads the page again', async () => {
     const { user, w } = show();
     await openMenu(user, SEA, 'Edit trip');
     const d = await editSheet();
-    await user.clear(d.getByLabelText('Hotel (optional)'));
-    await user.type(d.getByLabelText('Hotel (optional)'), 'Hotel Ballast Wilmington');
+    await user.clear(d.getByLabelText('Hotel Optional'));
+    await user.type(d.getByLabelText('Hotel Optional'), 'Hotel Ballast Wilmington');
     await user.click(d.getByRole('radio', { name: 'Van' }));
-    fireDate(d.getByLabelText('Back') as HTMLInputElement, '2026-11-17');
+    fireDate(d.getByLabelText('Returns') as HTMLInputElement, '2026-11-17');
     await user.click(d.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() =>
@@ -228,9 +229,9 @@ describe('Team Hub · Travel · CH-10013 CH-10103 CH-10104 CH-10105 CH-10106 Edi
     const { user, w } = show();
     await openMenu(user, CFI, 'Edit trip');
     const d = await editSheet();
-    fireDate(d.getByLabelText('Leaves') as HTMLInputElement, '2026-11-04');
-    const [leaveAt] = d.getAllByLabelText('At') as HTMLInputElement[];
-    fireDate(leaveAt!, '13:30');
+    fireDate(d.getByLabelText('Departs') as HTMLInputElement, '2026-11-04');
+    const leaveAt = d.getByLabelText('Departure time') as HTMLInputElement;
+    fireDate(leaveAt, '13:30');
     await user.click(d.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(w.editTrip).toHaveBeenCalledWith(expect.objectContaining({ id: 'cfi', departDate: '2026-11-04', departTime: '13:30', returnDate: '2026-11-05', returnTime: '17:00' })));
   });
@@ -267,7 +268,7 @@ describe('Team Hub · Travel · CH-10013 CH-10103 CH-10104 CH-10105 CH-10106 Edi
     await user.clear(d.getByLabelText('Trip'));
     await user.type(d.getByLabelText('Trip'), 'Ab');
     await user.clear(d.getByLabelText('Where'));
-    await user.clear(d.getByLabelText('Leaves'));
+    await user.clear(d.getByLabelText('Departs'));
     await user.click(d.getByRole('button', { name: 'Save changes' }));
 
     expect(d.getByText('Name the trip, at least three characters.')).toBeTruthy();
@@ -281,7 +282,7 @@ describe('Team Hub · Travel · CH-10013 CH-10103 CH-10104 CH-10105 CH-10106 Edi
 
     await user.type(d.getByLabelText('Trip'), 'c');
     await user.type(d.getByLabelText('Where'), 'Landfall');
-    fireDate(d.getByLabelText('Leaves') as HTMLInputElement, '2026-11-20');
+    fireDate(d.getByLabelText('Departs') as HTMLInputElement, '2026-11-20');
     await user.click(d.getByRole('button', { name: 'Save changes' }));
     expect(d.getByText('The return can’t be before the departure.')).toBeTruthy();
     expect(code('CH-10106')).not.toBeNull();
@@ -298,8 +299,8 @@ describe('Team Hub · Travel · CH-10013 CH-10103 CH-10104 CH-10105 CH-10106 Edi
     await openMenu(user, CFI, 'Edit trip');
     d = await editSheet();
     expect((d.getByLabelText('Trip') as HTMLInputElement).value).toBe(CFI);
-    expect((d.getByLabelText('Hotel (optional)') as HTMLInputElement).value).toBe('Mid Pines Inn');
-    expect((d.getByLabelText('Back') as HTMLInputElement).value).toBe('2026-11-05');
+    expect((d.getByLabelText('Hotel Optional') as HTMLInputElement).value).toBe('Mid Pines Inn');
+    expect((d.getByLabelText('Returns') as HTMLInputElement).value).toBe('2026-11-05');
   });
 });
 

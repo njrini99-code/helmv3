@@ -31,12 +31,19 @@ Team Hub opens on Home, or on the tab in `?tab=`, for a coach and for a player. 
 | --- | --- | --- | --- |
 | 100101 | — | `HUB_READY` | Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents, and Tasks for a coach). A player's Home shows their RSVPs, the post waiting on them, the next trip, Updates and their tasks; a coach's shows this week's replies as counts, the newest post with its read receipts, the next trip and Updates, and a coach also gets New announcement. |
 | 100102 | — | `TAB_LINK_OPENS_A_TAB` | ?tab=home\|ann\|travel\|docs\|tasks opens that tab; a tab the role does not have (tasks, for a player) or a value that is not a tab opens Home. |
+| 100103 | — | `TASK_LINK_OPENS_THE_TASK` | ?task={id} (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it. |
 
 ## 02 — Initial loading / skeleton
 
 Status: DEFINED
 
-The route skeleton (CH-10405) is the Clubhouse one inside the shell and the Fairway one outside it; nothing shows for the first 150ms, then a fade (the shell's 11609). Team Hub loads no section on its own after the server render, so there are no section skeletons; a save in flight says what it is doing on its button (Uploading, Posting, Saving, Assigning).
+The route skeleton (CH-10405) is the Clubhouse one inside the shell and the
+Fairway one outside it; on the phone it takes the signed-in role's shape from
+the shell (a coach's New announcement, a coach's five tabs or a player's four),
+so the page lands without moving; nothing shows for the first 150ms, then a fade
+(the shell's 11609). Team Hub loads no section on its own after the server
+render, so there are no section skeletons; a save in flight says what it is
+doing on its button (Uploading, Posting, Saving, Assigning).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -59,7 +66,13 @@ Status: N/A — Team Hub has no realtime, polling or pull to refresh: the server
 
 Status: DEFINED
 
-First run is the whole-page empty state, one for a coach (CH-10305, with New announcement and Plan a trip) and one for a player (CH-10306); each section has its own empty too (CH-10301 to CH-10304, CH-10307, CH-10308). A failed read is never shown as empty, and the page empty state is only for a page where every read answered and was empty, Updates included (100410). No team is CH-10309. Team Hub has no search or filter, so it has no filtered empty state.
+First run is the whole-page empty state, one for a coach (CH-10305, with Plan a
+trip; the head's New announcement stays the page's one primary action, states
+audit b9) and one for a player (CH-10306); each section has its own empty too
+(CH-10301 to CH-10304, CH-10307, CH-10308). A failed read is never shown as
+empty, and the page empty state is only for a page where every read answered and
+was empty, Updates included (100410). No team is CH-10309. Team Hub has no
+search or filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -76,7 +89,7 @@ First run is the whole-page empty state, one for a coach (CH-10305, with New ann
 | 100411 | CH-10310 | `A_TEAM_WITH_NOBODY_ON_THE_ROSTER` | A team with nobody on the roster |
 | 100412 | CH-10311 | `A_TEAM_WITH_NO_DOCUMENTS` | A team with no documents |
 | 100413 | CH-10312 | `PLAN_A_TRIP_NO_UPCOMING_EVENTS_IN` | Plan a trip: no upcoming events in the next four months |
-| 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step with no calendar event |
+| 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step) |
 | 100415 | CH-10314 | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | New announcement: files that players can't open are left out of the attach list |
 | 100416 | CH-10315 | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | Plan a trip: nobody chosen has a class during the trip |
 
@@ -85,6 +98,12 @@ First run is the whole-page empty state, one for a coach (CH-10305, with New ann
 Status: DEFINED
 
 Checked before anything is sent, with the message under the field and the warning haptic (focus does not move to the first invalid field: the checklist's rule is not met): a headline of at least three characters and at least one player when the audience is chosen (CH-10101, CH-10102); a trip's name, place, leaving day and a return that is not before it, on Plan a trip and on Edit trip (CH-10103 to CH-10106); a task's name and at least one player (CH-10107, CH-10108). The drop zone has no client-side check on a file: one the server refuses says so by name (CH-10008).
+
+Uploads (a coach's Documents): the picker offers the `documents` bucket's types, the same list as Fairway's Documents
+(`HUB_UPLOAD_ACCEPT`); a dropped or picked file of another type, or over the bucket's 25 MB, is refused by name before
+anything is sent ("<name> can’t be shared" with the types it takes, "<name> is too large" with "Files can be up to 25
+MB."), with the error haptic, and the other files go on. No Bridge ID is minted for the refusal yet; it carries
+CH-10008's code.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -103,7 +122,14 @@ Checked before anything is sent, with the message under the field and the warnin
 
 Status: DEFINED
 
-Every write has its own toast naming what failed and what to do, with Retry (CH-10001 to CH-10009); every section that fails to load has its own notice with Try again (CH-10201 to CH-10204, CH-10206, CH-10207); a crash stays in its section (CH-10205, SectionBoundary). The toast's Retry runs the whole change again, follow-ups included (101401).
+Every write has its own toast naming what failed and what to do, with Retry
+(CH-10001 to CH-10009); every section that fails to load has its own notice with
+Try again (CH-10201 to CH-10204, CH-10206, CH-10207), and when more than one
+does, the page says so once under its head with one Try again that reads the
+page again (the shell's CH-1209, 2026-10-08) while each failed section keeps
+only its title under its heading; a crash stays in its section (CH-10205,
+SectionBoundary). The toast's Retry runs the whole change again, follow-ups
+included (101401).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -143,7 +169,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | --- | --- | --- | --- |
 | 100701 | — | `WRITES_REFUSE_OFFLINE` | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -240,6 +266,15 @@ Status: DEFINED
 
 Nothing refreshes in the background: the page is as fresh as its last read. After a coach's change lands, the page reads again (101501); every date and time is resolved on the server in the team's zone.
 
+Team Hub's badge (a player's posts, open tasks and new trips; the shell's polled count) is read again at once when a
+player's Got it, task tick or untick lands, as production's hub does; a refused write leaves it alone. A player's Travel
+tab, and no other tab or opening of the page, marks travel seen once a visit (`markTravelSeen`, what production's Travel page does on a visit, now that
+`/golf/dashboard/travel` opens that tab), and the badge is read again. Opening an update marks that notification read in
+its own feed (`markNotificationRead`), as the bell does, and the row stops counting as new. A post's attachment count
+lists its files on request (`getAnnouncementDetail`, read the first time it opens; a failed read says so with Try
+again) and each opens as a Documents file does (100604 on a refusal). Bridge IDs for these are not minted yet (no new
+rows in `bridge-contracts.json`).
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 101501 | — | `PAGE_READS_AGAIN_AFTER_A_CHANGE` | After a coach's post, trip, task, upload or delete lands, the page reads again from the server (router.refresh). |
@@ -248,9 +283,16 @@ Nothing refreshes in the background: the page is as fresh as its last read. Afte
 
 Status: DEFINED
 
-Team Hub adds no motion of its own (`hub.css` has no transition or animation): its sections rise once at first paint and every press, sheet and skeleton fade is the shell's (D-64).
+Team Hub's own motion is its tabs: the underline slides to the chosen tab on the
+press and the panel swaps behind it (CH-10602, CH-10603). Every press, sheet and
+skeleton fade is the shell's (D-64); there is no first-paint rise.
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 101601 | CH-10602 | `CHANGING_TABS` | Changing tabs |
+| 101602 | CH-10603 | `THE_TABS_PANEL_SWAPS` | The tab's panel swaps |
+
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -263,20 +305,26 @@ Team Hub's own (CH-10701, CH-10702) on the v2 grammar (D-70): a tick for a tab, 
 | 101701 | CH-10701 | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | A tab, an RSVP reply, an audience or transport choice, a player chip, a file to attach or take off |
 | 101702 | CH-10702 | `DELETE_A_FORM_SENT_WITH_A_MISTAKE` | Delete (before the question), a form sent with a mistake |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
 Status: DEFINED
 
-The tabs are a real tablist, each controlling its panel; a reply is a radio group named for its event; a task's box names the task and says when it is done; each card is a section named by its heading, and a failed-read or crash notice is an alert (101801). Toasts are announced by the shell. Axe over every preview state at 1280 and 390 is reserved: it was not run in this pass (101802). Not built: arrow keys moving between tabs (Tab visits each).
+The tabs are a real tablist, each controlling its panel; a reply is a radio group named for its event; a task's box names the task and says when it is done; each card is a section named by its heading, and a failed-read or crash notice is an alert (101801). Toasts are announced by the shell. Axe over every preview state at 1280 and 390 is reserved: it was not run in this pass (101802). The tabs are one stop: the arrows, Home and End move between them (102001).
+
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 101801 | CH-10801 | `THE_SECTIONS_ARE_REAL_TABS_AN_RSVP` | The sections are real tabs (selected state, each controls its panel); an RSVP is a radio group named for its event; a task's box names the task and says when it's done |
 | 101802 | CH-10802 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 
@@ -328,7 +376,7 @@ Failed reads are logged by name, failed writes are reported under the `hub` surf
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 102301 | — | `FAILURES_REPORTED` | A read that fails in the loader is logged through chLogServer("hub", <read>) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab <tab>, action hub.<name>); a section that crashes reports under its own surface (hub.updates and the rest). |
+| 102301 | — | `FAILURES_REPORTED` | A read that fails in the loader is logged through chLogServer("hub", {read}) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab {tab}, action hub.{name}); a section that crashes reports under its own surface (hub.updates and the rest). |
 
 From the shell (P001): 12301 FAILURES_REPORTED.
 

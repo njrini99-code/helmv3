@@ -19,7 +19,7 @@ import {
   setCourseImageUrl, removeCourseImage, setTeamCoursePinned, setTeamCourseDefaultTee,
   softDeleteCourse, softDeleteTee,
 } from '@/app/golf/actions/course-library';
-import { uploadCourseImage } from '@/lib/golf/upload-course-image';
+import { discardCourseImageUpload, uploadCourseImage } from '@/lib/golf/upload-course-image';
 import { safeCourseWebsiteUrl } from '@/lib/golf/course-library';
 import type {
   GolfCourse, GolfCourseTee, GolfCourseTeeHole, GolfCourseTeeWithHoles, GolfTeamSavedCourseWithCourse,
@@ -150,7 +150,12 @@ export function CourseDetailDrawer({
       const up = await uploadCourseImage(courseId, file);
       if (!up.ok) { showToast(up.error, 'error'); return; }
       const res = await setCourseImageUrl(courseId, up.url);
-      if (!res.success) { showToast(res.error, 'error'); return; }
+      if (!res.success) {
+        // The save was refused, so nothing points at the uploaded object.
+        void discardCourseImageUpload(up.path);
+        showToast(res.error, 'error');
+        return;
+      }
       showToast('Photo updated', 'success');
       await afterMutation();
     } finally {

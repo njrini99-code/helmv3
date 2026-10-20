@@ -10,17 +10,20 @@ import type { ChJoinRequestsState } from './useJoinRequests';
 
 /**
  * Join requests. The list and its actions live in useJoinRequests, so the
- * phone's banner and this card read the same optimistic state.
+ * phone's banner and this card read the same optimistic state. `covered`: the
+ * page's one notice (CH-1209) already says they failed, so only the title stays.
  */
 export function RosterRequests({
   teamName,
   jr,
   error,
+  covered = false,
   onRetry,
 }: {
   teamName: string;
   jr: ChJoinRequestsState;
   error: boolean;
+  covered?: boolean;
   onRetry: () => void;
 }) {
   const { reqs, busy, decide } = jr;
@@ -29,9 +32,10 @@ export function RosterRequests({
     return (
       <InlineNotice
         code="CH-3203"
-        title="Join requests didn't load."
-        body="Pending requests are safe. Try again, and if it keeps happening the error has already been reported."
+        title="Join requests didn’t load"
+        body="Pending requests are safe. Try again; the error has been reported."
         onRetry={onRetry}
+        covered={covered}
       />
     );
   }
@@ -63,7 +67,8 @@ export function RosterRequests({
             <Button size="sm" variant="ghost" disabled={busy != null} onClick={() => void decide(r, false)}>
               Decline
             </Button>
-            <Button size="sm" variant="primary" disabled={busy != null} onClick={() => void decide(r, true)} feel={null}>
+            {/* Secondary, as on the phone (P003 #5): Invite players stays the screen's one primary. */}
+            <Button size="sm" variant="secondary" disabled={busy != null} onClick={() => void decide(r, true)} feel={null}>
               Approve
             </Button>
           </div>

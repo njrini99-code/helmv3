@@ -34,6 +34,39 @@ export type ServiceResult<T = void> =
  * Move the qualifier's selection_state forward by exactly one step.
  * Rejects skip/reverse transitions.
  */
+/**
+ * The selection row is written in two statements. Held migration 20260929200000 grants `authenticated` SELECT
+ * on golf_qualifier_selections' columns except coach_reasoning, and an upsert that carries coach_reasoning
+ * reads it (`ON CONFLICT DO UPDATE SET coach_reasoning = excluded.coach_reasoning`), which Postgres then
+ * refuses ("permission denied for table"): checked 2026-10-18 on the local stack with that grant. An upsert of
+ * the granted columns plus a plain UPDATE of the reason pass with and without that migration. The UPDATE is
+ * keyed by the primary key, so a retry after a failure in between repeats both steps to the same end state.
+ */
+async function writeSelections(
+  supabase: Sb,
+  rows: Array<{ qualifier_id: string; player_id: string; selection_type: 'coach_pick' | 'top_score'; coach_reasoning: string | null; selected_by_user_id: string; selected_at: string }>,
+): Promise<{ error: { message: string } | null }> {
+  if (rows.length === 0) return { error: null };
+  const granted = rows.map(({ coach_reasoning: _reason, ...rest }) => rest);
+  const { error: upsertError } = await supabase
+    .from('golf_qualifier_selections')
+    .upsert(granted, { onConflict: 'qualifier_id,player_id' });
+  if (upsertError) return { error: upsertError };
+  // One UPDATE per distinct reason (in practice one: a coach's pick, or null for places on score).
+  const byReason = new Map<string | null, string[]>();
+  for (const r of rows) byReason.set(r.coach_reasoning, [...(byReason.get(r.coach_reasoning) ?? []), r.player_id]);
+  const qualifierId = rows[0]!.qualifier_id;
+  for (const [reason, playerIds] of byReason) {
+    const { error } = await supabase
+      .from('golf_qualifier_selections')
+      .update({ coach_reasoning: reason })
+      .eq('qualifier_id', qualifierId)
+      .in('player_id', playerIds);
+    if (error) return { error };
+  }
+  return { error: null };
+}
+
 export async function transitionSelectionState(
   supabase: Sb,
   qualifier_id: string,
@@ -155,7 +188,7 @@ export async function setCoachPick(
     return { ok: false, error: `all ${q.selection_slots_coach_pick} coach-pick slots filled` };
   }
 
-  const { error } = await supabase.from('golf_qualifier_selections').upsert(
+  const { error } = await writeSelections(supabase, [
     {
       qualifier_id: args.qualifier_id,
       player_id: args.player_id,
@@ -164,8 +197,7 @@ export async function setCoachPick(
       selected_by_user_id: args.user_id,
       selected_at: new Date().toISOString(),
     },
-    { onConflict: 'qualifier_id,player_id' },
-  );
+  ]);
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: undefined };
 }
@@ -192,7 +224,7 @@ export async function chooseTiePlace(
   if (args.give) {
     if (cand.is_top_score_slot) return { ok: true, data: undefined };
     if (tie.chosen >= tie.places) return { ok: false, error: `all ${tie.places} places at the cut are chosen` };
-    const { error } = await supabase.from('golf_qualifier_selections').upsert(
+    const { error } = await writeSelections(supabase, [
       {
         qualifier_id: args.qualifier_id,
         player_id: args.player_id,
@@ -201,8 +233,7 @@ export async function chooseTiePlace(
         selected_by_user_id: args.user_id,
         selected_at: new Date().toISOString(),
       },
-      { onConflict: 'qualifier_id,player_id' },
-    );
+    ]);
     if (error) return { ok: false, error: error.message };
     return { ok: true, data: undefined };
   }
@@ -242,10 +273,20 @@ export async function removeCoachPick(
  * expected to already exist (gated by canConfirmSelection).
  *
  * After commit, pushes a travel brief into the primary coach's chat (W32).
+ *
+ * `opts.briefClient` is the client that brief is written with (default: the
+ * caller's). The primary coach's CoachHelm chat is theirs alone
+ * (chat_conversations_coach_only / chat_messages_coach_only: coach_id =
+ * current_coach_id()), so when an ASSISTANT confirms, their session is
+ * refused and the brief was lost (P009). The server action passes the
+ * service-role client, having already verified the caller staffs the
+ * qualifier's team. It is a factory so a missing service key fails inside the
+ * best-effort block below, never the confirmation.
  */
 export async function confirmSelection(
   supabase: Sb,
   args: { qualifier_id: string; user_id: string },
+  opts: { briefClient?: () => Sb } = {},
 ): Promise<ServiceResult<{ notified: boolean }>> {
   const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id);
   if (!workspace) return { ok: false, error: 'workspace not loadable' };
@@ -301,9 +342,7 @@ export async function confirmSelection(
   }
 
   if (topScoreRows.length > 0) {
-    const { error: insErr } = await supabase
-      .from('golf_qualifier_selections')
-      .upsert(topScoreRows, { onConflict: 'qualifier_id,player_id' });
+    const { error: insErr } = await writeSelections(supabase, topScoreRows);
     if (insErr) return { ok: false, error: insErr.message };
   }
 
@@ -329,15 +368,20 @@ export async function confirmSelection(
   // W32: push travel brief to coach chat (best-effort — never blocks selection).
   try {
     const brief = composeTravelBrief(committed);
-    const { data: staff } = await supabase
+    // The primary-coach lookup uses the same client as the write: an
+    // assistant's session may not see the primary's staff row, and a null
+    // there skipped the brief without a word.
+    const briefClient = opts.briefClient ? opts.briefClient() : supabase;
+    const { data: staff, error: staffErr } = await briefClient
       .from('golf_team_coach_staff')
       .select('coach_id')
       .eq('team_id', workspace.team_id)
       .eq('is_primary', true)
       .limit(1)
       .maybeSingle();
+    if (staffErr) throw new Error(`primary coach lookup: ${describeError(staffErr)}`);
     if (staff) {
-      await pushTravelBriefToChat(supabase, staff.coach_id, brief);
+      await pushTravelBriefToChat(briefClient, staff.coach_id, brief);
     }
   } catch (err) {
     await logServerError(

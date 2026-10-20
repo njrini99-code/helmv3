@@ -81,6 +81,16 @@ export function NavRow({
   );
 }
 
+/** A row that only tells (Text size follows the iPhone): a label, its value and a line of help. */
+export function InfoRow({ label, value, help }: { label: string; value: ReactNode; help?: ReactNode }) {
+  return (
+    <div className={'ch-setm-row is-info' + (help ? ' has-help' : '')}>
+      <span className="ch-setm-row__l">{label}</span> <span className="ch-setm-row__v">{value}</span>
+      {help && <span className="ch-setm-help">{help}</span>}
+    </div>
+  );
+}
+
 /** A row that is a link (Privacy policy, Terms of service). */
 export function LinkRow({ label, href }: { label: string; href: string }) {
   return (

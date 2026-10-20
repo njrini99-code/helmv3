@@ -24,12 +24,60 @@ import {
   type ChClass,
   type ChConflict,
   type ChConflictGroup,
+  type ChTeamEvent,
   type ChTerm,
 } from '../../data/classes-shape';
+
+/** Minutes from "HH:MM". */
+const minutesOf = (t: string | null | undefined): number | null => {
+  const m = t ? /^(\d{1,2}):(\d{2})/.exec(t) : null;
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+};
+
+/** A meeting's length as a share of the longest the timetable draws (three hours), so a lab reads longer than a lecture. */
+function lengthShare(c: Pick<ChClass, 'start' | 'end'>): number {
+  const a = minutesOf(c.start);
+  const b = minutesOf(c.end);
+  if (a == null || b == null || b <= a) return 0.3;
+  return Math.max(0.22, Math.min(1, (b - a) / 180));
+}
+
+/** The days the timetable shows: the weekdays, and the weekend only when a class meets then. */
+export function timetableDays(classes: readonly ChClass[]): readonly string[] {
+  return classes.some((c) => c.days.some((d) => d === 'Sa' || d === 'Su')) ? CH_DAYS : CH_WEEKDAYS;
+}
+
+/**
+ * P012-A1/A2: the one header over Your classes. The days once (not 25 raised keys), today a soft light band down the
+ * list, and a team event this week that meets a class drawn where it happens: a field-green band on its day, named.
+ * Drawing only: each class says when it meets in its own name (CH-12801), and the overlaps are said in words beside.
+ */
+export function TimetableHead({ days, todayIso, weekDates, conflicts }: { days: readonly string[]; todayIso: string; weekDates: readonly string[]; conflicts: readonly ChConflict[] }) {
+  const today = dayToken(todayIso);
+  const byDay = new Map<string, ChTeamEvent>();
+  for (const x of conflicts) if (weekDates.includes(x.date) && !byDay.has(dayToken(x.date))) byDay.set(dayToken(x.date), x.event);
+  return (
+    <div className="ch-cl-tthead" aria-hidden="true" style={{ ['--ch-cl-cols' as string]: days.length }}>
+      <span className="ch-cl-tthead__lead">This week</span>
+      <span className="ch-cl-tthead__days">
+        {days.map((d) => {
+          const ev = byDay.get(d);
+          return (
+            <span key={d} className={(d === today ? 'is-today' : '') + (ev ? ' is-team' : '')}>
+              <em>{DAY_SHORT[d]}</em>
+              {ev && <i title={eventLabel(ev)}>{eventLabel(ev)}</i>}
+            </span>
+          );
+        })}
+      </span>
+    </div>
+  );
+}
 import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
+import { Spinner } from '../../ui/Spinner';
 import { EmptyState } from '../../ui/States';
 
 /** "3 credits · 5 classes". */
@@ -118,7 +166,8 @@ export function TermBar({
                   style={{ flex: c.credits && c.credits > 0 ? c.credits : 1 }}
                   title={`${c.code || c.name}${c.credits != null ? ` · ${c.credits} cr` : ''}`}
                 >
-                  <b>{(c.credits ?? 1) > 1 ? tabParts(c).top : tabParts(c).top.slice(0, 1)}</b>
+                  {/* D4: a one-credit class is tone only (its name is in the title): "E" read as even par. */}
+                  <b>{(c.credits ?? 1) > 1 ? tabParts(c).top : ''}</b>
                 </i>
               ))}
             </div>
@@ -156,7 +205,8 @@ export function TermBar({
  * A class with days but no start and end time says so, and that it isn't on the calendar, as one with times but no days does.
  * CH-12801: the whole card is one button named for the class and when it meets.
  * CH-12802: the week strip is drawing, so it is hidden from screen readers.
- * CH-12701: opening a class is a selection tap. CH-12601: hovering lifts the card (quick).
+ * CH-12701: opening a class is a selection tap. CH-12601: on the desktop Ledger it takes the row tint on hover (quick)
+ * and a deeper one on press, no lift.
  */
 export function ClassCard({
   c,
@@ -165,6 +215,8 @@ export function ClassCard({
   overlaps,
   unsynced,
   onOpen,
+  days = CH_WEEKDAYS,
+  teamDays,
 }: {
   c: ChClass;
   todayIso: string;
@@ -172,13 +224,19 @@ export function ClassCard({
   overlaps: readonly ChConflict[];
   unsynced: boolean;
   onOpen: (c: ChClass) => void;
+  /** The timetable's days (the deck's, so every row lines up under one header). */
+  days?: readonly string[];
+  /** The days a team event this week meets a class: the green band runs down the whole list on those days. */
+  teamDays?: ReadonlySet<string>;
 }) {
   const flexible = isFlexible(c);
   const noDays = hasNoDays(c);
   const noTime = hasNoTime(c);
   const tab = tabParts(c);
   const today = dayToken(todayIso);
-  const strip = c.days.some((d) => d === 'Sa' || d === 'Su') ? CH_DAYS : CH_WEEKDAYS;
+  const strip = days;
+  const clash = new Set(overlaps.map((x) => dayToken(x.date)));
+  const share = lengthShare(c);
   const range = timeRange(c.start, c.end);
   const when = flexible ? (noTime ? `${daysLabel(c.days)}, no time set` : 'no fixed meeting') : `${daysLabel(c.days)} ${range}`;
   const overlap = conflictFlag(overlaps);
@@ -209,10 +267,13 @@ export function ClassCard({
         <span className="ch-cl-card__week" aria-hidden="true" style={{ ['--ch-cl-cols' as string]: strip.length }}>
           {strip.map((d) => {
             const on = c.days.includes(d);
+            // A1: a meeting is an ink bar as long as the class, its start in the cell numeral; a day off is empty paper.
+            // A2: a meeting a team event overlaps carries the amber notch.
             return (
-              <span key={d} className={(on ? 'is-on' : '') + (d === today ? ' is-today' : '')}>
+              <span key={d} className={(on ? 'is-on' : '') + (d === today ? ' is-today' : '') + (on && clash.has(d) ? ' is-clash' : '') + (teamDays?.has(d) ? ' is-team' : '')}>
                 <em>{DAY_LETTER[d]}</em>
                 {on && <b className="ch-num">{clockLabel(c.start)}</b>}
+                {on && <i className="ch-cl-tt__bar" style={{ ['--ch-cl-len' as string]: share }} />}
               </span>
             );
           })}
@@ -226,13 +287,13 @@ export function ClassCard({
           </span>
         )}
         {noDays && (
-          <span className="ch-cl-flag" data-ch-code="CH-12304" title="Times are set but no days, so it isn't on your calendar. Edit the class to add them.">
+          <span className="ch-cl-flag" data-ch-code="CH-12304" title="Times are set but no days, so it isn’t on your calendar. Edit the class to add them.">
             <Icon icon={TriangleAlert} size={12} />
             No meeting days, not on your calendar
           </span>
         )}
         {noTime && (
-          <span className="ch-cl-flag" title="Days are set but not a start and an end time, so it isn't on your calendar. Edit the class to add them.">
+          <span className="ch-cl-flag" title="Days are set but not a start and an end time, so it isn’t on your calendar. Edit the class to add them.">
             <Icon icon={TriangleAlert} size={12} />
             No meeting time, not on your calendar
           </span>
@@ -274,8 +335,8 @@ export function OverlapsCard({ groups, error, onRetry }: { groups: readonly ChCo
     return (
       <InlineNotice
         code="CH-12202"
-        title="The team's events didn't load"
-        body="Overlaps with practice and travel can't be checked right now. Nothing has changed. Try again in a moment."
+        title="The team’s events didn’t load"
+        body="Overlaps with practice and travel can’t be checked right now. Nothing has changed. Try again in a moment."
         onRetry={onRetry}
       />
     );
@@ -311,7 +372,8 @@ export function OverlapsCard({ groups, error, onRetry }: { groups: readonly ChCo
             <span className="ch-cl-over__c">
               {g.classes.map((c) => (
                 <span key={c.id} className="ch-cl-over__r">
-                  <i className={`ch-cl-dot ch-cl-t-${c.tone}`} />
+                  {/* D1: the department key, as in the list, not a box that reads as a checkbox. */}
+                  <b className={`ch-cl-key ch-cl-t-${c.tone}`}>{tabParts(c).top}</b>
                   <span>
                     <b>{c.code || c.name}</b>
                     <em className="ch-num">
@@ -336,7 +398,7 @@ export function CoachNote() {
       <Icon icon={Eye} size={16} />
       <div>
         <b>What your coach sees</b>
-        <span>Your coach can see your classes, when they meet and where, so practice and travel are planned around them. Your teammates don&apos;t see them.</span>
+        <span>Your coach can see your classes, when they meet and where, so practice and travel are planned around them. Your teammates don’t see them.</span>
       </div>
     </section>
   );
@@ -352,7 +414,7 @@ export function SyncStatus({ failed, syncing, onRetry }: { failed: number; synci
     return (
       <div className="ch-cl-sync" role="status" data-ch-code="CH-12403">
         <span className="ch-cl-sync__st">
-          <span className="ch-cl-sync__sp" aria-hidden="true" />
+          <Spinner size="sm" />
           Adding to your calendar…
         </span>
       </div>

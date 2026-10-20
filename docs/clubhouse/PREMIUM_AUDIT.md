@@ -56,7 +56,8 @@ raw assessments and detailed geometry: `.helm/runtime/premium-audit/`.
   Status.
 - **P1 — Equal-weight six-card team metric grid, stats.css .ch-fg__c.**
   Correction: One metric group, scoring/SG priority and quiet supporting
-  figures. Status: Design proposal needed; preserve loading geometry.
+  figures. Status: Owner chose lead + supporting (2026-10-06); built on
+  `agent/clubhouse-stats-lead`, loading geometry re-measured.
 - **P1 — Player profile identity block plus five desktop metric cards.**
   Correction: Compact identity/context; adapt the stronger phone metric strip.
   Status: Design proposal needed.

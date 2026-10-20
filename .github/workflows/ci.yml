@@ -831,8 +831,32 @@ jobs:
         id: nextkey
         run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
 
-      - name: Restore Next build cache
+      # A change to src/lib/types/database.ts forces a full TypeScript
+      # re-check, and on top of a warm webpack cache that ran the hosted
+      # runner out of memory: #2179 was cancelled in "Running TypeScript" on
+      # every attempt (2026-10-11..12) while tsgo and a local `tsc --noEmit`
+      # (6.0 GB) passed on the same head, and #2163 built cold. Such builds
+      # skip the restore. Slower, not weaker: every check still runs.
+      # PRs use the `db_types` paths-filter class; pushes read the event's
+      # commit file lists.
+      - name: Schema types changed? (build cold)
         if: steps.gate.outputs.run == 'true'
+        id: dbtypes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FILTER_DB_TYPES: ${{ steps.filter.outputs.db_types }}
+        run: |
+          changed=false
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            if [ "$FILTER_DB_TYPES" = "true" ]; then changed=true; fi
+          elif jq -e '[.commits[]? | (.added // [])[], (.modified // [])[]] | index("src/lib/types/database.ts")' "$GITHUB_EVENT_PATH" >/dev/null 2>&1; then
+            changed=true
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          if [ "$changed" = "true" ]; then echo "::notice::database.ts changed: building without the restored .next/cache."; fi
+
+      - name: Restore Next build cache
+        if: steps.gate.outputs.run == 'true' && steps.dbtypes.outputs.changed != 'true'
         id: nextcache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:

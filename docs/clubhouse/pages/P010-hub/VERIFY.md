@@ -113,7 +113,7 @@ Result:       built to the approved spec and seen at 390 in that pass; the iPhon
 ```text
 Keyboard:       the tabs are one stop, moved by the arrows, Home and End; Enter or Space presses a reply (hub.test 102001); Esc
                 closes a sheet and focus returns to its opener (hub.test 102001, on the sheet's cancel event).
-                Not built: arrow keys between tabs. A full keyboard walk at 1280 and 390 is open.
+                (hub.test 102001 presses ArrowRight, End, ArrowLeft and Home). A full keyboard walk at 1280 and 390 is open.
 VoiceOver:      not tried on a device.
 Focus:          validation does not move focus to the first invalid field (the checklist's rule is not met).
 Reduced motion: the shell's; nothing of this page's own.
@@ -146,6 +146,10 @@ before, after, baseline or evidence.
 | `P010__premium-audit__coach__1280__case-109-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-109-chromium-normal; /clubhouse-preview/hub; synthetic preview |
 | `P010__premium-audit__coach__390__case-015-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-015-webkit-reduce; /clubhouse-preview/hub; synthetic preview |
 | `P010__premium-audit__coach__390__case-109-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-109-chromium-normal; /clubhouse-preview/hub; synthetic preview |
+| `P010__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P010__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P010__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
+| `P010__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -194,14 +198,19 @@ before, after, baseline or evidence.
 - The toast's Retry inside a real modal dialog: the tests run the shell's
   dialog-hosted toast (CH-1812)
   in jsdom, which has no top layer.
-- Found and not fixed (see the report to the parent): a failed roster read
-  leaves a coach's audience and
-  assignee pickers empty with no notice; a second reply tapped while the first
-  is saving is ignored without a
-  message (`useAction` keeps one busy flag per action); `deleteGolfDocument` and
-  `uploadGolfDocument` do not
-  check for a coach (100804); validation does not move focus; a tablist without
-  arrow keys.
+- Found and not fixed (see the report to the parent): a second reply tapped
+  while the first is saving is ignored without a message (`useAction` keeps one
+  busy flag per action); validation does not move focus.
+- Fixed since (source and tests, 2026-10-17): a failed roster read is told on
+  the page for a coach (CH-10208, "The team list didn’t load", with Try again;
+  named in the page notice when another read failed too), and each picker shows
+  the same notice instead of an empty list; a trip's travelers read as unknown,
+  not "0", and Plan a trip never says "0 of 0" (hub.test › CH-10208). Upload and
+  delete do check for a coach: `uploadGolfDocument` at
+  `src/app/golf/actions/documents.ts:1270-1272`, `deleteGolfDocument` through
+  `deleteDocumentImpl` at `documents.ts:631-632` (100804 stays reserved: no test
+  forces a refusal from Team Hub). The tablist has arrow keys, Home and End
+  (102001).
 - Q-70 and Q-71 are open owner questions; the page is built on their
   recommendations.
 

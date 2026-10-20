@@ -117,7 +117,7 @@ describe('CH-13852 View as table', () => {
     await userEvent.click(slope);
     expect(slope.getAttribute('aria-pressed')).toBe('true');
     const table = screen.getByRole('table', { name: 'Make rate from 4 to 6 feet, by slope for Finley University' });
-    expect(within(table).getAllByRole('row').map((r) => r.textContent)).toEqual(['RangeMake rate from 4 to 6 feet, by slopeSample', 'Uphill81%44', 'Flat76%51', 'Downhill58%31']);
+    expect(within(table).getAllByRole('row').map((r) => r.textContent)).toEqual(['RangeRateSample', 'Uphill76%51', 'Level81%44', 'Downhill58%31']);
     expect(screen.queryByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' })).toBeNull();
     await userEvent.click(slope);
     expect(screen.queryByRole('table', { name: /by slope/ })).toBeNull();
@@ -125,7 +125,7 @@ describe('CH-13852 View as table', () => {
   it('the bars carry the sample beside each and the source line under them', () => {
     show();
     const figure = screen.getByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' });
-    expect(within(figure).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Uphill81% of 44', 'Flat76% of 51', 'Downhill58% of 31']);
+    expect(within(figure).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Uphill76% of 51', 'Level81% of 44', 'Downhill58% of 31']);
     expect(screen.getByText('126 attempts · Sep 1 to Sep 29 · computed Sep 29')).toBeTruthy();
   });
   it('a ranking names each player with the value and the sample', () => {
@@ -152,7 +152,7 @@ describe('CH-13251 a failed answer', () => {
   it('a rate limit reads as a sentence with Try again, and no raw JSON', async () => {
     const { p } = show({ messages: coachAsked, error: ASK_ERRORS.rate });
     const alert = screen.getByRole('alert');
-    expect(within(alert).getByText("You're asking quickly. Wait a moment, then try again.")).toBeTruthy();
+    expect(within(alert).getByText("Too many questions in a row. Give it a few seconds and try again.")).toBeTruthy();
     expect(alert.textContent).not.toMatch(/\{"error"/);
     await userEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
     expect(p.onRetry).toHaveBeenCalledTimes(1);
@@ -181,7 +181,7 @@ describe('CH-13251 a failed answer', () => {
   it('CH-1905 offline: Try again is held and the line says why', () => {
     show({ messages: coachAsked, error: ASK_ERRORS.rate, offline: true });
     const alert = screen.getByRole('alert');
-    expect(code('CH-1905')?.textContent).toBe("You're offline. Reconnect, then try again.");
+    expect(code('CH-1905')?.textContent).toBe('You’re offline. Reconnect, then try again.');
     expect((within(alert).getByRole('button', { name: 'Try again' }) as HTMLButtonElement).disabled).toBe(true);
   });
   it('says "Nothing was changed." only when it is true of the turn', () => {
@@ -229,7 +229,7 @@ describe('Copy, follow-ups and the coach\'s line', () => {
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
     show();
     await user.click(screen.getByRole('button', { name: 'Copy' }));
-    expect(await screen.findByText("Couldn't copy")).toBeTruthy();
+    expect(await screen.findByText("Couldn’t copy")).toBeTruthy();
     expect(code('CH-13051')).not.toBeNull();
   });
   it('CH-13752 a follow-up sends its text with a selection tick, on the last answer only, and not while it works', async () => {
@@ -287,7 +287,7 @@ describe('CH-13951 the action card', () => {
     expect(within(card).getByText('Needs your OK')).toBeTruthy();
     const facts = Array.from(card.querySelectorAll('dl > div')).map((d) => d.textContent);
     expect(facts).toEqual(['PlayerJonah Okafor', 'FocusDownhill putts, 4 to 6 feet', 'GoalMake 7 of 10 in two practices', 'Review onTue, Oct 14']);
-    expect(within(card).getByText('Will send.').parentElement?.textContent).toBe('Will send. Jonah gets a notification and sees the focus area on his Home.');
+    expect(within(card).getByText('On confirm:').parentElement?.textContent).toBe('On confirm: Jonah gets a notification and sees the focus area on his Home.');
   });
   it('an action that sends nothing says so, and a missing fact says what it will be created without', () => {
     const quiet = { ...ASK_PROPOSAL, notifications: [], missing: ['Location'], facts: [...ASK_PROPOSAL.facts, { label: 'Location', value: '', missing: true }] };
@@ -333,6 +333,21 @@ describe('CH-13951 the action card', () => {
     expect(code('CH-13952')?.textContent).toBe('Cancelled. Nothing was created.');
     expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
   });
+  it('the notifications line is a promise before Confirm and what happened after: sent, still going, or nothing sent', () => {
+    const line = () => screen.getByRole('region', { name: 'Create focus area' }).querySelector('.ch-th-act__note b')?.textContent;
+    const views = [
+      [ASK_MSGS_RECEIPT, 'Sent:'],
+      [ASK_MSGS_CONFIRMED, 'Notifies:'],
+      [ASK_MSGS_RECEIPT_FAILED, 'Nothing was sent.'],
+      [ASK_MSGS_CANCELLED, 'Nothing was sent.'],
+      [ASK_MSGS_ABANDONED, 'Nothing was sent.'],
+    ] as const;
+    for (const [messages, word] of views) {
+      const a = show({ messages });
+      expect(line()).toBe(word);
+      a.unmount();
+    }
+  });
   it('CH-13254 a card the conversation moved past has no buttons and says nothing was created', () => {
     show({ messages: ASK_MSGS_ABANDONED });
     expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
@@ -349,13 +364,13 @@ describe('CH-13951 the action card', () => {
 });
 
 describe('the receipt', () => {
-  it('CH-13953 a created action says what was created, links only to a screen that is rebuilt, and Confirmed is stated once', () => {
+  it('CH-13953 a created action says what was created, links where its screen opens in Clubhouse, and Confirmed is stated once', () => {
     show({ messages: ASK_MSGS_RECEIPT });
     expect(code('CH-13953')).not.toBeNull();
     expect(screen.getByText('Created a focus area for Jonah Okafor on downhill putts.')).toBeTruthy();
-    // Focus areas live in Intelligence, which is not rebuilt: the chip is text, not a dead link.
-    expect(screen.queryByRole('link', { name: /1 focus area/ })).toBeNull();
-    expect(screen.getByText('1 focus area')).toBeTruthy();
+    // The engine links focus areas to Fairway's Intelligence Players view; in Clubhouse that address opens the CoachHelm board
+    // (its alias redirect), so the chip goes there, as production's chip links (P013 wiring pass, 2026-10-17).
+    expect(screen.getByRole('link', { name: /1 focus area/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm');
     expect(screen.getByText('Confirmed.')).toBeTruthy();
   });
   it('a failed action that is not safe to ask again offers no Ask again', () => {
@@ -416,7 +431,7 @@ describe('CH-13851 the evidence control', () => {
   });
   it("phone: a row that reads See Jonah's numbers", () => {
     show({ messages: ASK_MSGS_ACTION, phone: true });
-    expect(screen.getByRole('button', { name: /See Jonah's numbers/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /See Jonah’s numbers/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Evidence' })).toBeNull();
   });
   it("when the conversation has no figures for that player, it links to their stats instead", () => {
@@ -425,7 +440,7 @@ describe('CH-13851 the evidence control', () => {
       { type: 'data-action-proposal', id: 'proposal-k', data: { ...ASK_PROPOSAL, idempotency_key: 'k', affects: [{ kind: 'player', id: 'p-ava', label: 'Ava Lindqvist' }] } },
     ]);
     show({ messages: [m] });
-    const link = screen.getByRole('link', { name: "See Ava's stats" }) as HTMLAnchorElement;
+    const link = screen.getByRole('link', { name: "See Ava’s stats" }) as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/golf/dashboard/stats?player=p-ava');
     expect(screen.queryByRole('button', { name: 'Evidence' })).toBeNull();
   });
@@ -446,7 +461,7 @@ describe('the evidence panel', () => {
     const aside = screen.getByRole('complementary', { name: 'Evidence' });
     expect(within(aside).getByText('Jonah Okafor, downhill putts, 4 to 6 feet')).toBeTruthy();
     const tiles = Array.from(aside.querySelectorAll('.ch-th-tile')).map((t) => t.textContent);
-    expect(tiles).toEqual(['Downhill, 4 to 6 feet33%3 of 9', 'Team, Downhill, 4 to 6 feet58%18 of 31', 'Uphill, 4 to 6 feet78%7 of 9']);
+    expect(tiles).toEqual(['Downhill, 4 to 6 feet33%3 of 9', 'Team, Downhill, 4 to 6 feet58%18 of 31', 'Level, 4 to 6 feet78%7 of 9']);
     expect(within(aside).getByRole('img', { name: /Make rate by round for Jonah Okafor: 50% to 0% across 5 rounds/ })).toBeTruthy();
     expect(within(aside).getByText('Team 58%')).toBeTruthy();
     expect(within(aside).getByText('Small sample: 9 attempts. Treat it as a direction, not a verdict.')).toBeTruthy();

@@ -6,7 +6,8 @@
   gap: 28px;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 40px 36px 80px;
+  /* The eyebrow line sits 2px lower than the page head's (tokens.css), so the top gives it back. */
+  padding: calc(var(--ch-page-head-top) - 2px) var(--ch-page-gutter) 80px;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-st-panel {
@@ -76,10 +77,9 @@
   gap: 20px;
 }
 .ch-st-head h1 {
-  font: 600 38px/1.08 var(--ch-font-sans);
+  font: 400 52px/1.02 var(--ch-font-serif);
   color: var(--ch-text-primary);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.01em;
 }
 .ch-st-head p {
   margin-top: 8px;
@@ -114,8 +114,9 @@
   padding: 12px;
 }
 .ch-st-card__head h2 {
-  margin-bottom: 3px;
-  font: 600 16px/1.25 var(--ch-font-sans);
+  margin-bottom: 4px;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.004em;
   color: var(--ch-text-primary);
 }
 .ch-st-card__head span {
@@ -135,20 +136,28 @@
 }
 
 /* Figure cards */
+/* One stat line, not a row of cards (owner, 2026-10-06: "card heavy crap", then "even worse" for a sheet around them):
+   the figures are set straight on the page, divided by seams, between gilt rules. */
 .ch-fg {
   display: grid;
-  /* Five cards, or six on Team stats where strokes gained leads (FigureCards sets --ch-fg-n). */
+  /* Five figures, or six on Team stats where strokes gained leads (FigureCards sets --ch-fg-n). */
   grid-template-columns: repeat(var(--ch-fg-n, 5), minmax(0, 1fr));
-  gap: 12px;
+  gap: 0;
+  /* No surface at all: the figures sit on the page between two fine gilt rules, like a printed stat line. */
+  border-top: 1px solid var(--ch-champagne-rule);
+  border-bottom: 1px solid var(--ch-champagne-rule);
 }
 .ch-fg__c {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 18px 18px 16px;
-  border-radius: 14px;
-  background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  padding: 20px 22px 18px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-fg__c + .ch-fg__c {
+  box-shadow: var(--ch-seam-y);
 }
 .ch-fg__l {
   font: 500 13.5px/1.25 var(--ch-font-sans);
@@ -161,25 +170,51 @@
   display: flex;
   align-items: center;
 }
-/* The loaded team card's height in each layout (`.ch-fg--hold` below; measured, perf 2026-10-01): six across, one line label; six across on a
+/* The loaded team figure's height in each layout (`.ch-fg--hold` below; measured, perf 2026-10-01, and re-measured in WebKit
+   2026-10-07 for the stat-line padding, +4px): six across, one line label; six across on a
    canvas up to 1116px, where "Greens in regulation" and the like take a second line; two across. */
 .ch-fg {
-  --ch-fg-h: 196px;
+  --ch-fg-h: 200px;
+}
+/* With strokes gained leading (`.ch-fg--lead`, Team stats), its larger value, two-line note and gauge set the row at every
+   canvas wider than 900px: 248px, measured in WebKit 2026-10-07 at canvases of 1120, 980, 880 and 860px. Doubled up so it
+   holds against the width rules below. */
+.ch-fg.ch-fg--lead {
+  --ch-fg-h: 248px;
 }
 @container (min-width: 901px) and (max-width: 1116px) {
   .ch-fg {
-    --ch-fg-h: 213px;
+    --ch-fg-h: 217px;
+  }
+}
+/* A player's overview (`.ch-fg--profile`): five figures with their gauges, measured in WebKit 2026-10-07 at 18 widths. 169px
+   everywhere but the middle band, where a canvas of 830 to 880px wraps a label to 193px. The loaded cards hold it as the
+   skeleton does, so the figures land without moving the page. Doubled up to hold against the width rules. */
+.ch-fg.ch-fg--profile {
+  --ch-fg-h: 169px;
+}
+.ch-fg--profile .ch-fg__c {
+  min-height: var(--ch-fg-h);
+}
+@container (min-width: 901px) and (max-width: 1116px) {
+  .ch-fg.ch-fg--profile {
+    --ch-fg-h: 194px;
+  }
+}
+@container (max-width: 900px) {
+  .ch-fg.ch-fg--profile {
+    --ch-fg-h: 169px;
   }
 }
 /* The narrowest six across (a canvas of 901 to 940px), where two cards' words take a third line. */
 @container (min-width: 901px) and (max-width: 940px) {
   .ch-fg {
-    --ch-fg-h: 229px;
+    --ch-fg-h: 233px;
   }
 }
 @container (max-width: 900px) {
   .ch-fg {
-    --ch-fg-h: 155px;
+    --ch-fg-h: 159px;
   }
 }
 /* The skeleton's card and the held team card are the same height, so nothing moves when the figures land or the window changes, even in a
@@ -193,12 +228,14 @@
   align-items: baseline;
   gap: 3px;
   font: 500 36px/1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
 }
 .ch-fg__v small {
   margin-left: 2px;
   font: 500 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
 }
@@ -211,7 +248,74 @@
 }
 .ch-fg__d > span:last-child {
   font: 400 12.5px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
+}
+/* A figure drawn against its reference (`FigureGauge`): a 6px recessed track, the figure as a fill, the reference as a
+   fine ink mark named under it. Every gauge is the same 26px tall and sits at the foot of its figure, so the stat line
+   keeps one baseline however the words above it wrap. */
+.ch-fg__gauge {
+  position: relative;
+  display: block;
+  margin-top: auto;
+  width: 100%;
+  max-width: 200px;
+  height: 26px;
+}
+.ch-fg__track {
+  position: absolute;
+  inset: 2px 0 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(28 25 18 / 0.07);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.1);
+}
+.ch-fg__track i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+.ch-fg__track i.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-fg__track i.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-fg__track b {
+  position: absolute;
+  top: -3px;
+  width: 1.5px;
+  height: 12px;
+  margin-left: -0.75px;
+  border-radius: 1px;
+  background: var(--ch-ink-700);
+}
+.ch-fg__gauge em {
+  position: absolute;
+  top: 14px;
+  transform: translateX(-50%);
+  font: 500 12px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+  white-space: nowrap;
+}
+/* Birdies: holes out of 18, the part hole filled to its fraction. */
+.ch-fg__gauge--holes {
+  display: grid;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  gap: 2px;
+  align-content: start;
+}
+.ch-fg__gauge--holes i {
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ch-chart-gain) var(--ch-fg-part, 100%), rgb(28 25 18 / 0.08) var(--ch-fg-part, 100%));
+}
+.ch-fg__gauge--holes em {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 /* What a figure is measured against, under its change (strokes gained: "vs Tour"). */
 .ch-fg__n {
@@ -235,6 +339,42 @@
     min-height: calc(1.3 * 12.5px);
   }
 }
+/* Team stats (FigureCards `lead`, owner decision 2026-10-06): strokes gained is the first read, on its own card with a larger value;
+   the five supporting figures share one quieter surface, divided by hairlines rather than floating as five more cards. Each figure keeps
+   `.ch-fg__c`, so the loading reserve above (`--ch-fg-h`) holds for both. */
+.ch-fg--lead {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 5fr);
+}
+/* On the stat line (no surfaces): the supporting figures sit on the page beside the lead, the group set off by a seam. */
+.ch-fg__group {
+  display: grid;
+  grid-template-columns: repeat(var(--ch-fg-n, 5), minmax(0, 1fr));
+  box-shadow: var(--ch-seam-y);
+}
+.ch-fg__group .ch-fg__c {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-fg__group .ch-fg__c + .ch-fg__c {
+  box-shadow: var(--ch-seam-y);
+}
+.ch-fg__c--lead .ch-fg__l {
+  color: var(--ch-text-primary);
+}
+.ch-fg__c--lead .ch-fg__v {
+  font-size: 48px;
+}
+/* Team stats reads as one line of figures: every value sits on the lead's 48px line (the supporting values at its foot,
+   sharing its baseline), and every gauge follows its words directly, so the six gauges share one line under the words
+   instead of dropping to the row's foot with a gap above them (owner, 2026-10-07). */
+.ch-fg--lead .ch-fg__group .ch-fg__v {
+  min-height: 48px;
+  align-items: flex-end;
+}
+.ch-fg--lead .ch-fg__gauge {
+  margin-top: 0;
+}
 /* A strokes gained change against the previous 10: the chip, then the words. */
 .ch-sgchg {
   display: inline-flex;
@@ -251,6 +391,18 @@
   font: var(--ch-type-caption);
   letter-spacing: normal;
 }
+/* One line at every width: on a canvas of about 680 to 770px the four figures are narrow enough that "vs previous 10"
+   wrapped under its chip and grew the hero 24px past its loading skeleton. The words shorten instead. */
+.ch-pf-hero__figs .ch-sgchg {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.ch-pf-hero__figs .ch-sgchg > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ch-delta {
   display: inline-flex;
   align-items: center;
@@ -259,9 +411,10 @@
   padding: 0 7px;
   border-radius: 6px;
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-delta.is-good {
-  background: var(--ch-green-700);
+  background: var(--ch-green-fill-700);
   color: #f4f1e8;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
 }
@@ -292,12 +445,14 @@
   padding: 14px 16px 10px;
 }
 .ch-sgt__head h2 {
-  margin-bottom: 4px;
-  font: 600 17px/1.25 var(--ch-font-sans);
+  margin-bottom: 5px;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.004em;
   color: var(--ch-text-primary);
 }
 .ch-sgt__head > div > span {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-sgt__tools {
@@ -318,14 +473,14 @@
   height: 0;
   margin-right: 6px;
   vertical-align: 3px;
-  border-top: 3px solid var(--ch-green-800);
+  border-top: 3px solid var(--ch-st-team-line);
   border-radius: 2px;
 }
 .ch-sgt__legend i.is-sel {
   border-top: 2px solid var(--ch-green-600);
 }
 .ch-sgt__legend i.is-other {
-  border-top: 1.5px solid var(--ch-ink-300);
+  border-top: 1.5px solid var(--ch-st-other-line);
 }
 .ch-sgt__plot {
   display: grid;
@@ -351,6 +506,13 @@
   font: 500 11px var(--ch-font-sans);
   fill: var(--ch-text-tertiary);
 }
+/* The team chart is drawn on a 900 unit canvas about 700px wide at 1280, so its ticks are set in those units: 14.5 reads
+   at about 11px there. The phone keeps its own floor (below). */
+@media (min-width: 821px) {
+  .ch-sgt__svg .ch-tick {
+    font-size: 14.5px;
+  }
+}
 .ch-sgt__ends {
   display: flex;
   flex-direction: column;
@@ -373,6 +535,7 @@
 }
 .ch-sgt__team b {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-800);
 }
 .ch-sgt__end {
@@ -390,11 +553,15 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-sgt__end:focus-visible {
+/* On the green card: a champagne ring, as the sidebar's (the global green one is 1.25:1 here). */
+.ch-root .ch-sgt__end:focus-visible {
+  outline-color: var(--ch-champagne-300);
   outline-offset: 0;
 }
-.ch-sgt__end:hover {
-  background: var(--ch-ivory-50);
+@media (hover: hover) {
+  .ch-sgt__end:hover {
+    background: var(--ch-ivory-50);
+  }
 }
 .ch-sgt__end.is-sel {
   background: #edf4ef;
@@ -402,14 +569,35 @@
 }
 .ch-sgt__end b {
   font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
+/* CH-4601: a player in focus turns green and comes forward while the others fade back, all over quick. Their line is
+   drawn again over the others (.ch-sgt__front), fading in, and the pointer meets each line along a wider band. */
 .ch-sgt__line {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  cursor: pointer;
+  pointer-events: none;
   transition: stroke var(--ch-dur-quick) var(--ch-ease), stroke-width var(--ch-dur-quick) var(--ch-ease),
     stroke-opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sgt__front {
+  pointer-events: none;
+  animation: ch-sgt-front var(--ch-dur-quick) var(--ch-ease);
+}
+@keyframes ch-sgt-front {
+  from {
+    opacity: 0;
+  }
+}
+.ch-sgt__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: stroke;
+  cursor: pointer;
 }
 /* Two classes, so the base reset (`.ch-root p`) doesn't take the margin. */
 .ch-sgt .ch-note {
@@ -423,29 +611,55 @@
 .ch-sgm-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 0;
+  padding: 6px 0;
+  border-top: 1px solid var(--ch-champagne-rule);
+  border-bottom: 1px solid var(--ch-champagne-rule);
 }
+/* The four legs are one selector set on the page: each a quiet tile, the chosen one a soft green key; seams between. */
 .ch-sgm {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 14px 16px;
   border: 0;
-  border-radius: 14px;
-  background: var(--ch-ivory-25);
+  border-radius: calc(var(--ch-radius-xl) - 6px);
+  background: transparent;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  box-shadow: var(--ch-elevation-reading);
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-sgm:hover {
-  box-shadow: var(--ch-elevation-reading-hover);
+.ch-sgm + .ch-sgm::before {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: -1px;
+  width: 2px;
+  box-shadow: var(--ch-seam-y);
+  content: '';
+  pointer-events: none;
+}
+.ch-sgm[aria-pressed='true']::before,
+.ch-sgm[aria-pressed='true'] + .ch-sgm::before {
+  opacity: 0;
+}
+@media (hover: hover) {
+  .ch-sgm:hover::before,
+.ch-sgm:hover + .ch-sgm::before {
+    opacity: 0;
+  }
+}
+@media (hover: hover) {
+  .ch-sgm:hover {
+    background: rgb(28 25 18 / 0.035);
+  }
 }
 .ch-sgm[aria-pressed='true'] {
-  background: var(--ch-green-50);
-  color: var(--ch-green-800);
-  box-shadow: var(--ch-elevation-reading-hover);
+  background: var(--ch-green-25);
+  color: var(--ch-forest-800);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.9);
 }
 .ch-sgm__top {
   display: flex;
@@ -458,6 +672,7 @@
 }
 .ch-sgm__v {
   font: 500 26px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   font-variation-settings: 'wdth' 92;
 }
@@ -477,38 +692,63 @@
   overflow-x: auto;
 }
 .ch-lg__r {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(200px, 1.4fr) repeat(4, minmax(84px, 1fr)) 70px 80px;
-  gap: 6px;
-  align-items: center;
+  gap: 0;
+  align-items: stretch;
   min-width: 760px;
-  padding: 6px 8px;
+  padding: 0 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 0;
   background: none;
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
   color: inherit;
   text-align: left;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-a.ch-lg__r {
-  text-decoration: none;
-  cursor: pointer;
+.ch-lg__r > * {
+  align-self: center;
 }
-a.ch-lg__r:hover,
 .ch-lg__r.is-sel {
-  background: var(--ch-ivory-50);
+  background: var(--ch-ledger-row-hover);
 }
-/* Inside the grid's scroller an outset ring would be clipped. */
-a.ch-lg__r:focus-visible {
+/* P004-D4: the name is the row's link; its hit area covers the row, so the whole row still opens the player. */
+.ch-lg__a {
+  color: inherit;
+  text-decoration: none;
+}
+.ch-lg__a::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+.ch-lg__a:focus-visible {
+  outline: none;
+}
+.ch-lg__a:focus-visible::after {
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
 }
+@media (hover: hover) {
+  .ch-lg__r:has(.ch-lg__a):hover {
+    background: var(--ch-ledger-row-hover);
+  }
+}
+/* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
+.ch-lg__r:has(.ch-lg__a:active) {
+  background: var(--ch-ledger-row-press);
+  transition-duration: var(--ch-dur-press);
+}
 .ch-lg__r--h {
-  padding-bottom: 8px;
+  padding-block: 0 8px;
   font: 500 11.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
 }
 .ch-lg__r .c {
-  text-align: center;
+  padding: 0 14px;
+  text-align: right;
 }
 .ch-lg__r .r {
   justify-self: end;
@@ -518,24 +758,68 @@ a.ch-lg__r:focus-visible {
   font-weight: 600;
   color: var(--ch-green-700);
 }
+/* P004-A1: the grid is a ruled ledger. A cell is its signed number, right-aligned in tabular figures and coloured only
+   by sign, over a hairline track: a short tick at the team's median for the leg and a dot at the player's value. The
+   chosen leg is a 2px column rule and a 4% wash; the worst losing leg in a row keeps an 8% amber wash. */
 .ch-lg__cell {
   display: grid;
-  place-items: center;
-  height: 36px;
-  border-radius: 8px;
+  grid-template-rows: auto 6px;
+  align-content: center;
+  gap: 5px;
+  align-self: stretch;
+  min-height: 44px;
+  padding: 0 14px;
   font: 600 13.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 .ch-lg__cell.is-col {
-  box-shadow: inset 0 0 0 1.5px rgb(21 90 57 / 0.35);
+  background: color-mix(in oklab, var(--ch-green-600) 4%, transparent);
+  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--ch-green-600) 55%, transparent);
+}
+.ch-lg__cell.is-worst {
+  background: color-mix(in oklab, var(--ch-chart-loss) 8%, transparent);
+}
+.ch-lg__cell.is-col.is-worst {
+  background: color-mix(in oklab, var(--ch-chart-loss) 10%, transparent);
+}
+.ch-lg__track {
+  position: relative;
+  height: 6px;
+  background: linear-gradient(var(--ch-ledger-rule-soft), var(--ch-ledger-rule-soft)) center / 100% 1px no-repeat;
+}
+.ch-lg__track i {
+  position: absolute;
+  translate: -50% 0;
+}
+.ch-lg__med {
+  top: 0;
+  width: 1px;
+  height: 6px;
+  background: var(--ch-ink-500);
+}
+.ch-lg__dot {
+  top: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+.ch-lg__dot.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-lg__dot.is-loss {
+  background: var(--ch-chart-loss);
 }
 .ch-lg__tot {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-lg__ch {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font: 500 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-who {
   display: flex;
@@ -557,6 +841,7 @@ a.ch-lg__r:focus-visible {
 .ch-who__m {
   display: block;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 
@@ -580,9 +865,11 @@ a.ch-lg__r:focus-visible {
   padding: 2px 2px 12px;
   border-bottom: 1px solid rgb(28 25 18 / 0.12);
 }
-.ch-yb__head h3 {
-  font: 600 15px/1.25 var(--ch-font-sans);
-  letter-spacing: -0.012em;
+/* The card's title in the display serif, as the trend card and every page's panels (words only; its digits, if any,
+   in the sans through SerifText). */
+.ch-yb__head h2 {
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.006em;
   color: var(--ch-ink-900);
 }
 .ch-yb__meta {
@@ -640,12 +927,13 @@ a.ch-lg__r:focus-visible {
   background: #fff;
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 2px rgb(28 25 18 / 0.06);
   font: 600 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-board__n.is-under {
   color: var(--ch-chart-flag);
 }
 .ch-board__n.is-even {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 /* Strokes gained route (design system StrokesGainedRoute). */
 .ch-yb .ch-route {
@@ -692,10 +980,12 @@ a.ch-lg__r:focus-visible {
   height: 44px;
   border-top: 1px solid rgb(28 25 18 / 0.1);
   font: 600 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 .ch-ft td:first-child {
   font: 500 13.5px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-ink-700);
 }
 .ch-ft__you span {
@@ -727,12 +1017,12 @@ a.ch-lg__r:focus-visible {
   stroke: rgb(28 25 18 / 0.35);
   stroke-width: 1;
 }
-.ch-pg-lbl {
+.ch-pg-band,
+.ch-pg-pct {
   font: 500 12px var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
 .ch-pg-band {
-  font-style: italic;
   fill: var(--ch-ink-600);
 }
 .ch-pg-pct {
@@ -758,6 +1048,7 @@ a.ch-lg__r:focus-visible {
 }
 .ch-best__v {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-best__v.is-under {
   color: var(--ch-score-under);
@@ -854,15 +1145,14 @@ a.ch-lg__r:focus-visible {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-pf-tag.is-inactive i {
   background: var(--ch-ink-400);
 }
 .ch-pf-hero__id h1 {
-  font: 600 32px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  font: 400 46px/1.04 var(--ch-font-serif);
+  letter-spacing: -0.01em;
 }
 .ch-pf-hero__id p {
   font: var(--ch-type-body-s);
@@ -874,30 +1164,28 @@ a.ch-lg__r:focus-visible {
   gap: 8px;
   margin-top: 12px;
 }
+/* The hero's figures sit on the hero itself, not on a card inside it (owner: no card soup): four figures in a row,
+   divided by seams. */
 .ch-pf-hero__figs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(110px, 1fr));
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(96px, 1fr));
   align-self: end;
   margin: 0;
-  padding: 6px;
-  border-radius: 14px;
-  background: rgb(253 252 248 / 0.92);
-  box-shadow: var(--ch-elevation-reading);
+  padding-top: 18px;
+  box-shadow: var(--ch-seam-x);
+}
+.ch-pf-hero__figs div:first-child {
+  padding-left: 0;
 }
 .ch-pf-hero__figs div {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: 10px 14px;
+  padding: 6px 18px;
 }
-.ch-pf-hero__figs div:nth-child(odd) {
-  box-shadow: inset -1px 0 0 rgb(28 25 18 / 0.06);
-}
-.ch-pf-hero__figs div:nth-child(-n + 2) {
-  box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.06);
-}
-.ch-pf-hero__figs div:first-child {
-  box-shadow: inset -1px 0 0 rgb(28 25 18 / 0.06), inset 0 -1px 0 rgb(28 25 18 / 0.06);
+.ch-pf-hero__figs div + div {
+  box-shadow: var(--ch-seam-y);
 }
 .ch-pf-hero__figs dt {
   font: 500 11.5px/1 var(--ch-font-sans);
@@ -906,6 +1194,7 @@ a.ch-lg__r:focus-visible {
 .ch-pf-hero__figs dd {
   margin: 0;
   font: 500 24px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   font-variation-settings: 'wdth' 92;
 }
@@ -929,7 +1218,9 @@ a.ch-lg__r:focus-visible {
   margin-top: 4px;
   border-bottom: 1px solid var(--ch-border-hairline);
 }
-.ch-pf-tabs .ch-seg {
+/* The skeleton's window switch keeps the same foot, so a wrapped row is as tall loading as loaded. */
+.ch-pf-tabs .ch-seg,
+.ch-pf-tabs > .ch-skel:last-child {
   margin-bottom: 8px;
 }
 .ch-tabs {
@@ -950,11 +1241,13 @@ a.ch-lg__r:focus-visible {
   cursor: pointer;
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-tab-t:hover {
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-tab-t:hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-tab-t[aria-selected='true'] {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   font-weight: 600;
 }
 .ch-tab-t__bar {
@@ -964,7 +1257,7 @@ a.ch-lg__r:focus-visible {
   left: 8px;
   height: 2px;
   border-radius: 2px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 /* Design system .fw-tab__count: a pressed-in pill, green on the selected tab. */
 .ch-tab-t__n {
@@ -1030,10 +1323,12 @@ a.ch-lg__r:focus-visible {
   color: inherit;
   text-decoration: none;
 }
-.ch-tr__link:hover {
-  color: var(--ch-green-700);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+@media (hover: hover) {
+  .ch-tr__link:hover {
+    color: var(--ch-green-700);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 .ch-tr__link:focus-visible {
   outline: 2px solid var(--ch-green-600);
@@ -1042,13 +1337,16 @@ a.ch-lg__r:focus-visible {
 }
 .ch-n {
   font: 500 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-n2 {
   font: 500 13.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-topar {
   font: 500 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-topar.is-under {
@@ -1083,7 +1381,7 @@ a.ch-lg__r:focus-visible {
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-pf-goal {
   display: grid;
@@ -1103,7 +1401,7 @@ a.ch-lg__r:focus-visible {
   box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
 }
 .ch-pf-goal__c.is-done {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   box-shadow: none;
 }
 
@@ -1114,19 +1412,13 @@ a.ch-lg__r:focus-visible {
   gap: 18px;
 }
 .ch-gd__nav {
-  position: sticky;
-  top: calc(var(--ch-topbar-h) + 8px);
-  z-index: 5;
+  /* Scrolls away with the page (owner, 2026-10-16: a bar riding over the sections "looks bad"). */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin: 0 -8px;
   padding: 8px;
-  border-radius: 14px;
-  background: rgb(244 242 234 / 0.86);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
 }
 .ch-gd__src {
   margin-left: auto;
@@ -1159,13 +1451,12 @@ a.ch-lg__r:focus-visible {
 }
 .ch-gm__t h2 {
   margin-bottom: 6px;
-  font: 600 21px/1.2 var(--ch-font-sans);
-  letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font: var(--ch-type-serif-m);
+  letter-spacing: -0.006em;
 }
 .ch-gm__t p {
   max-width: 68ch;
-  font: 400 14.5px/1.55 var(--ch-font-sans);
+  font: 400 calc(14.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -1193,12 +1484,13 @@ a.ch-lg__r:focus-visible {
   box-shadow: inset 1px 0 0 var(--ch-border-hairline);
 }
 .ch-gm__figs dt {
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-gm__figs dd {
   margin: 0;
   font: 500 26px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   font-variation-settings: 'wdth' 92;
 }
@@ -1226,10 +1518,10 @@ a.ch-lg__r:focus-visible {
   grid-column: 1 / -1;
 }
 .ch-gm-p__t {
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
 }
 .ch-gm-p__n {
-  font: italic 400 13px/1.45 var(--ch-font-sans);
+  font: italic 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-gm-p__empty {
@@ -1246,7 +1538,7 @@ a.ch-lg__r:focus-visible {
   display: flex;
   height: 34px;
   overflow: hidden;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
 }
 .ch-mix__s + .ch-mix__s {
@@ -1286,6 +1578,7 @@ a.ch-lg__r:focus-visible {
 }
 .ch-mix__k b {
   font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-par3 {
@@ -1303,19 +1596,22 @@ a.ch-lg__r:focus-visible {
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
 }
 .ch-par3__l {
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-par3__v {
   font: 500 28px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
 }
 .ch-par3__to {
   font: 500 12.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-par3__d {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-fws {
@@ -1340,6 +1636,7 @@ a.ch-lg__r:focus-visible {
 }
 .ch-fws__z b {
   font: 600 17px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-fws__z em {
   font: 500 11.5px/1 var(--ch-font-sans);
@@ -1395,11 +1692,12 @@ a.ch-lg__r:focus-visible {
   display: block;
   height: 100%;
   border-radius: 4px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-cmp__r b {
   justify-self: end;
   font: 600 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-lad {
   position: relative;
@@ -1416,6 +1714,7 @@ a.ch-lg__r:focus-visible {
 }
 .ch-lad__v {
   font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-lad__col {
   position: relative;
@@ -1454,6 +1753,7 @@ a.ch-lg__r:focus-visible {
 }
 .ch-lad__b {
   font: 500 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-lad__axis {
@@ -1483,7 +1783,9 @@ a.ch-lg__r:focus-visible {
 }
 .ch-gmiss__c b {
   font: 600 16px/1 var(--ch-font-sans);
-  color: #6b4610;
+  font-variant-numeric: tabular-nums;
+  /* 5:1 on the heaviest miss fill (#ceb998 on the darker page tone); #6b4610 held 4.39 there. */
+  color: #5f3e0c;
 }
 .ch-gmiss__c em,
 .ch-gmiss__g em {
@@ -1552,10 +1854,11 @@ a.ch-lg__r:focus-visible {
   align-items: center;
   gap: 2px;
   font: 500 11px/1 var(--ch-font-sans);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-cup__lbl b {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-cup__lbl.is-long {
@@ -1604,6 +1907,7 @@ a.ch-lg__r:focus-visible {
 .ch-cup__split b {
   margin-bottom: 3px;
   font: 600 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-cup__split .is-low {
   background: rgb(154 101 18 / 0.16);
@@ -1630,18 +1934,76 @@ a.ch-lg__r:focus-visible {
     grid-column: 1 / -1;
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .ch-pf-hero__figs div {
-    box-shadow: none;
-  }
-  .ch-pf-hero__figs div:nth-child(-n + 2),
-  .ch-pf-hero__figs div:nth-child(odd),
-  .ch-pf-hero__figs div:first-child {
-    box-shadow: none;
-  }
 }
 @container (max-width: 900px) {
   .ch-fg {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* Two across: a seam between the pair, and one above every row after the first. */
+  .ch-fg__c + .ch-fg__c {
+    box-shadow: none;
+  }
+  .ch-fg__c:nth-child(even) {
+    box-shadow: var(--ch-seam-y);
+  }
+  .ch-fg__c:nth-child(n + 3) {
+    box-shadow: var(--ch-seam-x);
+  }
+  .ch-fg__c:nth-child(even):nth-child(n + 3) {
+    box-shadow: var(--ch-seam-x), var(--ch-seam-y);
+  }
+  /* Strokes gained across the top (208px with its gauge, measured at a 680px canvas); the supporting figures as rows under it,
+     the label and change on the left, the gauge, then the value on the right, seams between rows. Each row holds one
+     height so a window change moves nothing. */
+  .ch-fg.ch-fg--lead {
+    --ch-fg-h: 208px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-fg__group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-fg__group .ch-fg__c {
+    display: grid;
+    /* The value column is one width in every row, so the gauges line up down the list. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 160px) 96px;
+    grid-template-areas:
+      'label gauge value'
+      'change gauge value';
+    align-items: center;
+    gap: 6px 16px;
+    min-height: 76px;
+    padding: 14px 18px;
+  }
+  .ch-fg__group .ch-fg__c + .ch-fg__c {
+    box-shadow: var(--ch-seam-x);
+  }
+  .ch-fg__group .ch-fg__l {
+    grid-area: label;
+  }
+  .ch-fg__group .ch-fg__v,
+.ch-fg--lead .ch-fg__group .ch-fg__v {
+    grid-area: value;
+    justify-self: end;
+    /* As rows, the value sits beside its words: the wide layout's 48px line does not apply. */
+    min-height: 0;
+    align-items: baseline;
+    font-size: 30px;
+  }
+  .ch-fg__group .ch-fg__d {
+    grid-area: change;
+  }
+  /* The gauge between the words and the value, across both lines. */
+  .ch-fg__group .ch-fg__gauge {
+    grid-area: gauge;
+    align-self: center;
+    margin-top: 0;
+  }
+  .ch-fg--hold .ch-fg__group .ch-fg__d {
+    min-height: 22px;
+  }
+  /* The skeleton's value bar takes both rows, as the loaded value does. */
+  .ch-fg__group .ch-fg__c--skel > :nth-child(2) {
+    grid-row: span 2;
   }
   .ch-sgm-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1651,7 +2013,7 @@ a.ch-lg__r:focus-visible {
   }
   /* The players wrap in rows under the chart here, so their count no longer sets a height. */
   .ch-sgt__plot,
-  .ch-sgt__hold {
+.ch-sgt__hold {
     min-height: 0;
   }
   .ch-sgt__ends {
@@ -1698,7 +2060,7 @@ a.ch-lg__r:focus-visible {
 @media (max-width: 820px) {
   /* The server renders desktop; on a phone it stays hidden until the phone view takes over at hydration. */
   .ch-st-desk,
-  .ch-st.is-desk > * {
+.ch-st.is-desk > * {
     visibility: hidden;
   }
   .ch-st.is-phone {
@@ -1719,12 +2081,12 @@ a.ch-lg__r:focus-visible {
   }
   .ch-stm-head span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-stm-head h1 {
-    font: 600 28px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.034em;
-    font-variation-settings: 'wdth' 88;
+    font: 400 calc(38 * var(--ch-type-k))/1.05 var(--ch-font-serif);
+    letter-spacing: -0.008em;
     color: var(--ch-text-primary);
   }
   /* One card, the figures side by side split by hairlines (m.css .m-figs), never a grid of cards. */
@@ -1749,7 +2111,7 @@ a.ch-lg__r:focus-visible {
     border-left: 1px solid var(--ch-border-hairline);
   }
   .ch-stm-figs dt {
-    font: 500 11.5px/1.35 var(--ch-font-sans);
+    font: 500 calc(11.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
     overflow-wrap: anywhere;
   }
@@ -1758,16 +2120,54 @@ a.ch-lg__r:focus-visible {
   }
   .ch-stm-figs dd:first-of-type {
     font: 500 20px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     color: var(--ch-text-primary);
     white-space: nowrap;
   }
   .ch-stm-figs dd + dd {
     min-height: 1em;
-    font: 500 11.5px/1.4 var(--ch-font-sans);
+    font: 500 calc(11.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-stm-figs:not(.is-three) dd + dd {
     min-height: 1.4em;
+  }
+  /* Team stats: the figures on the stat line, as on the desktop (owner, 2026-10-07: no card around figures, no bare
+     numbers). No surface; a gilt rule above the figures and one under their gauges, seams between the columns running
+     through both rows. */
+  .ch-stm-figs.is-line {
+    padding: 14px 0 10px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    border-top: 1px solid var(--ch-champagne-rule);
+  }
+  .ch-stm-figs.is-line > div + div,
+.ch-stm-gauges > span + span {
+    border-left: 0;
+    box-shadow: var(--ch-seam-y);
+  }
+  .ch-stm-figs.is-line dt {
+    font-size: calc(12 * var(--ch-type-k));
+  }
+  .ch-stm-gauges {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    /* The loaded row's height (a 26px gauge, 12px under it, the rule), so the skeleton's empty row holds it. */
+    min-height: 39px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ch-champagne-rule);
+  }
+  .ch-stm-gauges > span {
+    display: flex;
+    min-width: 0;
+    padding: 0 10px;
+  }
+  .ch-stm-gauges .ch-fg__gauge {
+    margin-top: 0;
+    max-width: none;
   }
   .ch-stm-cover {
     min-height: 1.4em;
@@ -1791,19 +2191,21 @@ a.ch-lg__r:focus-visible {
     gap: 10px;
   }
   .ch-stm-panel__h h2 {
-    font: 600 16px/1.2 var(--ch-font-sans);
+    font: 400 calc(23 * var(--ch-type-k))/1.15 var(--ch-font-serif);
     color: var(--ch-text-primary);
   }
   .ch-stm-panel__h > span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
     text-align: right;
   }
-  /* The one-line reading under a panel (m.css .m-note): italic, green. */
+  /* The one-line reading under a panel (m.css .m-note): italic, in the secondary ink. The board's green read as a gain,
+     but the reading as often says a leg is losing strokes (green is gains only). */
   .ch-stm-note {
     margin: 0;
-    font: italic 400 13px/1.45 var(--ch-font-sans);
-    color: var(--ch-green-700);
+    font: italic 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
     text-wrap: pretty;
   }
   .ch-stm-chart {
@@ -1818,9 +2220,10 @@ a.ch-lg__r:focus-visible {
     aspect-ratio: 340 / 120;
     text-align: center;
   }
-  /* A panel of bars (strokes gained by leg: four legs and the total, then a line) with nothing to draw is as tall as the one with bars (250px). */
+  /* A panel of bars (strokes gained by leg: four legs and the total, then a line) with nothing to draw is as tall as the one with bars
+     (258px as a flush section under its double rule, the Mobile clubhouse pass; WebKit 390, 2026-10-08). */
   .ch-stm-panel--bars {
-    min-height: 250px;
+    min-height: 258px;
   }
   /* The putting reading is one line or two; its panel holds two. */
   .ch-stm-putt + .ch-stm-note {
@@ -1848,15 +2251,20 @@ a.ch-lg__r:focus-visible {
     font: 500 10px/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     fill: var(--ch-text-tertiary);
+    /* A halo in the panel's ivory, should the line ever pass close by. */
+    paint-order: stroke;
+    stroke: var(--ch-ivory-25);
+    stroke-width: 3px;
+    stroke-linejoin: round;
   }
   .ch-stm-legs,
-  .ch-stm-putt {
+.ch-stm-putt {
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
   .ch-stm-leg,
-  .ch-stm-putt__r {
+.ch-stm-putt__r {
     display: grid;
     grid-template-columns: 96px minmax(0, 1fr) 44px;
     align-items: center;
@@ -1868,8 +2276,9 @@ a.ch-lg__r:focus-visible {
     grid-template-columns: 52px minmax(0, 1fr) 40px;
   }
   .ch-stm-leg b,
-  .ch-stm-putt__r b {
+.ch-stm-putt__r b {
     font: 600 13px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     text-align: right;
     color: var(--ch-text-primary);
   }
@@ -1877,11 +2286,11 @@ a.ch-lg__r:focus-visible {
     color: var(--ch-chart-gain);
   }
   .ch-stm-leg b.ch-loss,
-  .ch-stm-putt__r b.ch-loss {
+.ch-stm-putt__r b.ch-loss {
     color: var(--ch-chart-loss);
   }
   .ch-stm-leg__bar,
-  .ch-stm-putt__bar {
+.ch-stm-putt__bar {
     position: relative;
     height: 8px;
     border-radius: 999px;
@@ -1918,7 +2327,7 @@ a.ch-lg__r:focus-visible {
     position: absolute;
     inset: 0 auto 0 0;
     border-radius: 999px;
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
   }
   .ch-stm-putt__bar i.is-low {
     background: var(--ch-chart-loss);
@@ -1960,14 +2369,15 @@ a.ch-lg__r:focus-visible {
   }
   .ch-stm-row__b b {
     overflow: hidden;
-    font: 600 15px/1.2 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .ch-stm-row__b span,
-  .ch-stm-row__v span {
+.ch-stm-row__v span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-stm-row__v {
@@ -1978,6 +2388,7 @@ a.ch-lg__r:focus-visible {
   }
   .ch-stm-row__v b {
     font: 600 17px/1.1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
   }
   .ch-stm-row__v span.ch-gain {
@@ -1994,7 +2405,7 @@ a.ch-lg__r:focus-visible {
 /* Player stats on the phone (m-stats.jsx `Player`) */
 @media (max-width: 820px) {
   .ch-stm-figs.is-three dd:first-of-type {
-    font-size: 20px;
+    font-size: calc(20 * var(--ch-type-k));
   }
   .ch-stm-figs.is-three dd:last-of-type {
     color: var(--ch-text-tertiary);
@@ -2020,16 +2431,20 @@ a.ch-lg__r:focus-visible {
   }
   .ch-spm-head h1 {
     overflow: hidden;
-    font: 600 24px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.03em;
-    font-variation-settings: 'wdth' 88;
+    font: 400 calc(34 * var(--ch-type-k))/1.05 var(--ch-font-serif);
+    letter-spacing: -0.008em;
+    font-variation-settings: normal;
     color: var(--ch-text-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .ch-spm-head p {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
+  }
+  .ch-spm-head p > span {
+    white-space: nowrap;
   }
   .ch-spm-head__msg {
     display: grid;
@@ -2058,7 +2473,7 @@ a.ch-lg__r:focus-visible {
     padding: 0 16px;
     border: 0;
     background: none;
-    font: 600 14px/1 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-700);
     cursor: pointer;
     touch-action: manipulation;
@@ -2069,11 +2484,12 @@ a.ch-lg__r:focus-visible {
     justify-content: space-between;
     gap: 8px;
     padding-top: 4px;
-    font: 600 14px/1.2 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-spm-sub span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-spm-dev {
@@ -2091,7 +2507,7 @@ a.ch-lg__r:focus-visible {
     border-top: 1px solid var(--ch-border-hairline);
   }
   .ch-spm-dev b {
-    font: 500 14px/1.3 var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-spm-dev li.is-done b {
@@ -2099,6 +2515,7 @@ a.ch-lg__r:focus-visible {
   }
   .ch-spm-dev span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
 
@@ -2145,10 +2562,10 @@ a.ch-lg__r:focus-visible {
     height: 32px;
   }
   .ch-gd.is-phone .ch-gm__t h2 {
-    font-size: 18px;
+    font-size: calc(18 * var(--ch-type-k));
   }
   .ch-gd.is-phone .ch-gm__t p {
-    font-size: 14px;
+    font-size: calc(14 * var(--ch-type-k));
   }
   .ch-gd.is-phone .ch-gm__figs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2179,6 +2596,33 @@ a.ch-lg__r:focus-visible {
   }
 }
 
+/* P005-A2: one surface in Game detail on desktop (the phone pass's rule, "never a card inside a card"). Each section
+   is the one card; inside it the tiles lose their boxes and sit between hairlines, divided by soft rules, as the
+   phone's ledger tiles. Each tile draws the rule to its left and above it, and the grid clips the outer ones. */
+@media (min-width: 821px) {
+  .ch-gd:not(.is-phone) :is(.ch-gx-tiles,
+.ch-par3,
+.ch-gx-pars) {
+    gap: 0;
+    overflow: hidden;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div,
+.ch-par3__t,
+.ch-gx-pm) {
+    padding: 14px 16px;
+    border-radius: 0;
+    background: none;
+    box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  :where(html[data-fw-theme='dark']) .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div,
+.ch-par3__t,
+.ch-gx-pm) {
+    box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+}
+
 /* Game detail, the parity pass (PARITY.md): the rules line, More detail, tiles, tables, per-round lines, sectors. */
 .ch-gx-rule {
   margin: 0;
@@ -2198,7 +2642,7 @@ a.ch-lg__r:focus-visible {
   gap: 8px;
   min-height: 48px;
   padding: 0 24px;
-  font: 600 13.5px/1 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
   cursor: pointer;
   list-style: none;
@@ -2242,12 +2686,13 @@ a.ch-lg__r:focus-visible {
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
 }
 .ch-gx-tiles dt {
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-gx-tiles dd {
   margin: 0;
   font: 500 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-gx-tiles dd.ch-gx-sub {
@@ -2271,6 +2716,7 @@ a.ch-lg__r:focus-visible {
   padding: 9px 10px 9px 0;
   border-top: 1px solid var(--ch-border-hairline);
   font: 500 13.5px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   text-align: left;
   white-space: nowrap;
 }
@@ -2314,9 +2760,11 @@ a.ch-lg__r:focus-visible {
 }
 .ch-gx-sec__c b {
   font: 600 17px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-gx-sec__c i {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -2349,9 +2797,11 @@ a.ch-lg__r:focus-visible {
 }
 .ch-gx-pm > b {
   font: 600 13.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-gx-pm > span {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-gx-pm.is-empty > span {
@@ -2364,6 +2814,7 @@ a.ch-lg__r:focus-visible {
   display: block;
   margin-left: 4px;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-gx-rank {
@@ -2385,15 +2836,17 @@ a.ch-lg__r:focus-visible {
   border-top: 0;
 }
 .ch-gx-rank b {
-  font: 500 14px/1.2 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-gx-rank em {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-gx-rank__n {
   font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-gx-target {
@@ -2469,9 +2922,10 @@ a.ch-lg__r:focus-visible {
   min-width: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
   font: 600 11px/18px var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 .ch-sf__chips {
@@ -2492,14 +2946,16 @@ a.ch-lg__r:focus-visible {
   border-radius: 999px;
   background: #edf4ef;
   color: var(--ch-green-700);
-  font: 600 12.5px/28px var(--ch-font-sans);
+  font: 600 calc(12.5 * var(--ch-type-k))/28px var(--ch-font-sans);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.28);
   cursor: pointer;
   touch-action: manipulation;
   transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-sf__chip:hover {
-  background: #e3eee7;
+@media (hover: hover) {
+  .ch-sf__chip:hover {
+    background: #e3eee7;
+  }
 }
 .ch-sf__chip:focus-visible,
 .ch-sf__clear:focus-visible {
@@ -2512,18 +2968,21 @@ a.ch-lg__r:focus-visible {
   border: 0;
   background: transparent;
   color: var(--ch-text-secondary);
-  font: 500 12.5px/28px var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/28px var(--ch-font-sans);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
   touch-action: manipulation;
 }
-.ch-sf__clear:hover {
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-sf__clear:hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-sf__count {
   margin: 0;
   font: var(--ch-type-body-s);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 /* How a 9-hole round counts, said under the figures whenever the filter lets one in. */
@@ -2569,8 +3028,10 @@ a.ch-lg__r:focus-visible {
   padding: 9px 10px;
   border-radius: 8px;
 }
-.ch-sf-list .ch-check:hover {
-  background: var(--ch-ivory-100);
+@media (hover: hover) {
+  .ch-sf-list .ch-check:hover {
+    background: var(--ch-ivory-100);
+  }
 }
 .ch-sf-row {
   display: flex;
@@ -2616,11 +3077,11 @@ a.ch-lg__r:focus-visible {
   }
   /* Every control's hit area reaches 44 x 44 without changing how it is drawn (the shell does the same for buttons and pills). */
   .ch-sf.is-phone .ch-sf__chip,
-  .ch-sf.is-phone .ch-sf__clear {
+.ch-sf.is-phone .ch-sf__clear {
     position: relative;
   }
   .ch-sf.is-phone .ch-sf__chip::after,
-  .ch-sf.is-phone .ch-sf__clear::after {
+.ch-sf.is-phone .ch-sf__clear::after {
     content: '';
     position: absolute;
     inset: min(0px, calc(50% - 22px));
@@ -2648,12 +3109,23 @@ a.ch-lg__r:focus-visible {
   .ch-stm-controls > :first-child {
     min-width: 0;
   }
+  /* P004-D10: the window switch fills its share of the row, its segments evenly, not packed to the left. */
+  .ch-stm-controls > :first-child .ch-seg {
+    display: flex;
+    width: 100%;
+  }
+  .ch-stm-controls > :first-child .ch-seg__b {
+    flex: 1;
+    justify-content: center;
+  }
+  /* Drawn as tall as the window switch's 40px track, with its 14px radius, so the row's two controls share one edge;
+     the shared button reach (controls.css) still takes a 44px tap. */
   .ch-stm-controls .ch-sf.is-phone .ch-sf__open {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     padding: 0;
     justify-content: center;
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-control);
   }
@@ -2675,7 +3147,7 @@ a.ch-lg__r:focus-visible {
    with 20px values and 11.5px captions (the old rule sized the captions as values), and the panels' titles plain. */
 @media (max-width: 820px) {
   .ch-stm-figs.is-three dd.is-words {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
     letter-spacing: -0.01em;
   }
   .ch-gd.is-phone .ch-gm {
@@ -2692,28 +3164,29 @@ a.ch-lg__r:focus-visible {
   }
   .ch-gd.is-phone .ch-gm__t h2 {
     margin-bottom: 6px;
-    font: 600 15.5px/1.2 var(--ch-font-sans);
+    font: 600 calc(15.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.01em;
     font-variation-settings: normal;
   }
   .ch-gd.is-phone .ch-gm__t p {
-    font: italic 400 13px/1.45 var(--ch-font-sans);
+    font: italic 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
     color: var(--ch-green-700);
   }
   .ch-gd.is-phone .ch-gm__figs {
     margin: 0 16px;
   }
   .ch-gd.is-phone .ch-gm__figs dt {
-    font: 500 11.5px/1.15 var(--ch-font-sans);
+    font: 500 calc(11.5 * var(--ch-type-k))/1.15 var(--ch-font-sans);
   }
   .ch-gd.is-phone .ch-gm__figs dd:not(.ch-gm__sub) {
     font: 500 20px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     font-variation-settings: normal;
   }
   .ch-gd.is-phone .ch-gm__figs dd.ch-gm__sub {
     padding-top: 0;
-    font: 500 11.5px/1.2 var(--ch-font-sans);
+    font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
     white-space: normal;
   }
@@ -2729,7 +3202,7 @@ a.ch-lg__r:focus-visible {
     background: transparent;
   }
   .ch-gd.is-phone .ch-gm-p__t {
-    font: 600 14.5px/1.25 var(--ch-font-sans);
+    font: 600 calc(14.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   }
   .ch-gd.is-phone .ch-gx-more > summary {
     padding: 0 16px;
@@ -2738,10 +3211,18 @@ a.ch-lg__r:focus-visible {
 
 /* Phone overview: figure baselines and a shared sample/comparison footer. */
 @media (max-width: 820px) {
+  /* On the stat line, as Team stats (owner, 2026-10-07: no sheet around figures): no surface, the gauge row's rule
+     under the figures, the window's words beneath. */
   .ch-stm-overview {
-    border-radius: 16px;
-    background: var(--ch-sheet-bg);
-    box-shadow: var(--ch-sheet-shadow);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-stm-overview .ch-stm-gauges {
+    padding-top: 2px;
+  }
+  .ch-stm-overview__meta {
+    padding-inline: 2px;
   }
   .ch-stm-overview .ch-stm-figs {
     padding-bottom: 0;
@@ -2799,37 +3280,40 @@ a.ch-lg__r:focus-visible {
    quiet line as the scope, not a second headline. A figure with nothing behind it says why, in a few words, not a bare dash. */
 .ch-gm__figs dd.ch-gm__none {
   font: 500 14px/20px var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0;
   color: var(--ch-text-secondary);
 }
 @media (max-width: 820px) {
   .ch-gd.is-phone .ch-gm__figs dt {
-    font: 500 13.5px/19px var(--ch-font-sans);
+    font: 500 calc(13.5 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-gd.is-phone .ch-gm__figs dd:not(.ch-gm__sub) {
     font: 600 28px/32px var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
   }
   .ch-gd.is-phone .ch-gm__figs dd.ch-gm__none {
     display: flex;
     align-items: center;
     min-height: 32px;
-    font: 500 14px/20px var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0;
     color: var(--ch-text-secondary);
   }
   .ch-gd.is-phone .ch-gm__figs dd.ch-gm__sub {
-    font: 400 13px/18px var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   /* A panel's note is one short plain line; the method is behind "How this is measured". */
   .ch-gd.is-phone .ch-gm-p__n {
-    font: 400 13px/18px var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-gd.is-phone .ch-gx-rule {
-    font: 400 13px/18px var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
 }
@@ -2840,7 +3324,7 @@ a.ch-lg__r:focus-visible {
   gap: 8px;
   min-height: 44px;
   padding: 0;
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
   cursor: pointer;
   list-style: none;
@@ -2867,7 +3351,7 @@ a.ch-lg__r:focus-visible {
 }
 .ch-gm-how > p {
   margin: 0 0 6px;
-  font: 400 13px/1.5 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-gx-rule + .ch-gm-how {
@@ -2913,7 +3397,7 @@ a.ch-lg__r:focus-visible {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 999px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-brow__bar i.is-loss {
   background: var(--ch-chart-loss);
@@ -2936,6 +3420,7 @@ a.ch-lg__r:focus-visible {
 }
 .ch-brow__v b {
   font: 600 15px/1.1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-brow__v b.ch-gain {
@@ -2946,6 +3431,7 @@ a.ch-lg__r:focus-visible {
 }
 .ch-brow__v small {
   font: 400 12px/1.1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-brow__v.is-none {
@@ -2973,28 +3459,3011 @@ a.ch-lg__r:focus-visible {
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
 @media (max-width: 820px) {
   .ch-tick,
+  .ch-tab-t__n,
+  .ch-mk__v,
+  .ch-mk__b,
+  .ch-mk__n,
+  .ch-sf__n {
+    font-size: 12px;
+  }
   .ch-lg__r--h,
   .ch-board__d,
   .ch-pf-tag,
   .ch-pf-hero__figs dt,
-  .ch-tab-t__n,
   .ch-fws__z em,
   .ch-lad__b,
   .ch-gmiss__c em,
   .ch-gmiss__g em,
-  .ch-mk__v,
-  .ch-mk__b,
-  .ch-mk__n,
   .ch-cup__lbl,
   .ch-cup__split span,
   .ch-stm-figs dt,
   .ch-stm-figs dd + dd,
   .ch-gx-sec__c em,
-  .ch-gx-type,
-  .ch-sf__n {
-    font-size: 12px;
+  .ch-gx-type {
+    font-size: calc(12 * var(--ch-type-k));
   }
   .ch-stm-chart__t {
     font-size: 12.5px;
+  }
+}
+
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"; sub-screens take the page head). On desktop the profile's
+   striped banner card becomes the framed page head: the avatar beside a heavy sans name, the actions under it, and
+   the four figures on the canvas under an engraved rule. Stats sections lose their card and sit on the canvas. */
+@media (min-width: 821px) {
+  .ch-st[data-canopy] .ch-st-back {
+    margin: -8px 0 -14px;
+  }
+  .ch-st[data-canopy] .ch-pf-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 22px;
+    row-gap: 26px;
+    align-items: center;
+    padding: 30px 4px 0;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+  }
+  .ch-st[data-canopy] .ch-pf-hero::before {
+    background: none;
+  }
+  .ch-st[data-canopy] .ch-pf-hero::after {
+    content: none;
+  }
+  .ch-st[data-canopy] .ch-pf-hero__av {
+    align-self: start;
+    margin-top: 4px;
+    box-shadow: var(--ch-ledger-avatar-ring);
+  }
+  .ch-st[data-canopy] .ch-pf-hero__av .ch-avatar {
+    font-size: 28px;
+  }
+  .ch-st[data-canopy] .ch-pf-hero__id {
+    padding-top: 0;
+  }
+  .ch-st[data-canopy] .ch-pf-hero__tags {
+    position: static;
+    margin-bottom: 6px;
+  }
+  .ch-st[data-canopy] .ch-pf-tag {
+    background: none;
+    box-shadow: 0 0 0 1px var(--ch-ledger-rule);
+  }
+  .ch-st[data-canopy] .ch-pf-hero__id p {
+    color: var(--ch-text-secondary);
+  }
+  .ch-st[data-canopy] .ch-pf-hero__act {
+    margin-top: 14px;
+  }
+  .ch-st[data-canopy] .ch-pf-hero__figs {
+    padding: 18px 0 20px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-st[data-canopy] .ch-pf-hero__figs div + div {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-st[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
+.ch-pf-hero__chg) {
+    font-size: 28px;
+  }
+  .ch-st[data-canopy] .ch-pf-tabs {
+    border-bottom-color: var(--ch-ledger-rule);
+  }
+  .ch-st[data-canopy] .ch-st-card {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-st[data-canopy] .ch-st-card__head {
+    margin-bottom: 8px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-st[data-canopy] .ch-st-grid2 {
+    gap: 40px;
+  }
+  .ch-st[data-canopy] .ch-st-panel {
+    gap: 40px;
+  }
+  .ch-st[data-canopy] .ch-yb {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-st[data-canopy] .ch-yb__head {
+    padding: 0 0 12px;
+    border-bottom-color: var(--ch-ledger-rule);
+  }
+  .ch-st[data-canopy] .ch-yb__head h2 {
+    color: var(--ch-ledger-ink);
+  }
+  .ch-st[data-canopy] :is(.ch-sgt,
+.ch-lg) {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-st[data-canopy] .ch-sgt__head {
+    margin-bottom: 10px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-st[data-canopy] .ch-sgt .ch-note {
+    margin-inline: 0;
+  }
+  .ch-st[data-canopy] .ch-lg__tbl {
+    padding: 0;
+  }
+}
+
+/* Stats on the phone: the "Mobile clubhouse pass" (owner, 2026-10-08), the Coach Home board's round 3 carried to
+   m-stats.jsx, Team stats and a player's stats alike. The page is the chassis' parchment sheet with no white cards: it
+   opens on the Ledger's page intro (ui/Ledger.tsx PageIntro: the eyebrow and the bold condensed title under an
+   engraved double rule); the figures sit between hairlines as the Ledger's figure row; every panel is a section flush
+   under its double rule (ui/Section.tsx on the phone); lists are rows on seams that tint on press. Real objects keep
+   their material: the window switch, the filter, the sort, the chips and the avatar. Phone only, under `.ch-stm`. */
+@media (max-width: 820px) {
+  .ch-stm {
+    gap: 16px;
+    padding: 26px 20px 36px;
+  }
+  .ch-stm .ch-stm-head {
+    gap: 10px;
+    padding: 14px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  /* The team's context line over the title: plain sentence case, never tracked (doctrine; direction A, 2026-10-08). */
+  .ch-stm .ch-stm-head span {
+    font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-tertiary);
+  }
+  .ch-stm .ch-stm-head h1 {
+    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  /* A player's head: the avatar in the Ledger's ring beside the name in the same bold condensed sans. */
+  .ch-stm .ch-spm-head {
+    gap: 14px;
+    padding: 16px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  /* Inset by the ring's 4px, so the ring (not the coin) meets the column's 20px edge. */
+  .ch-stm .ch-spm-head > .ch-avatar {
+    margin-inline-start: 4px;
+    box-shadow: var(--ch-ledger-avatar-ring);
+  }
+  .ch-stm .ch-spm-head h1 {
+    font: 600 calc(26 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    letter-spacing: -0.032em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  /* The figures as the Ledger's figure row (ui/Ledger.tsx FigureRow): a hairline above the values and one under their
+     drawings, soft rules between the columns, the values in the bold sans. */
+  .ch-stm .ch-stm-figs.is-line {
+    padding: 14px 0 10px;
+    border-top: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-stm .ch-stm-figs.is-line > div + div {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-stm-gauges > span + span {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-stm-figs.is-line > div:first-child {
+    padding-left: 0;
+  }
+  .ch-stm .ch-stm-gauges > span:first-child {
+    padding-left: 0;
+  }
+  .ch-stm .ch-stm-gauges {
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-stm .ch-stm-figs dt {
+    font: 500 calc(12 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-stm .ch-stm-figs dd:first-of-type {
+    font: 600 22px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+  .ch-stm .ch-stm-figs.is-three dd.is-words {
+    font: 600 calc(16 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.015em;
+  }
+  /* The hole-coverage caption belongs to the figures: it sits just under their rule, its line held when empty, and
+     that held line stands in for part of the gap to the first section. */
+  .ch-stm .ch-stm-cover {
+    margin: -6px 0 0;
+  }
+  .ch-stm .ch-stm-cover + .ch-stm-panel {
+    margin-top: 8px;
+  }
+  .ch-stm .ch-stm-overview__meta {
+    padding: 12px 0 4px;
+  }
+  /* A profile's gauge row carries 2px more on top than the team's, so its held height is 41px: the skeleton's empty
+     row then matches the loaded one (it was 2px short, and the sections below landed 2px low). */
+  .ch-stm .ch-stm-overview .ch-stm-gauges {
+    min-height: 41px;
+  }
+  /* Every panel is a section on the sheet: no card, its head under the engraved double rule. */
+  .ch-stm .ch-stm-panel {
+    gap: 14px;
+    margin-top: 20px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  /* As the Section kit: the caption sits under the title, so a long one never squeezes the title onto two lines; a
+     head with a control (the sort, Add focus area) keeps it on the right. */
+  .ch-stm .ch-stm-panel__h {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 3px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-stm .ch-stm-panel__h > span {
+    text-align: left;
+  }
+  .ch-stm .ch-stm-panel__h:has(.ch-seg) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .ch-stm .ch-stm-panel__h:has(.ch-btn) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  /* A panel with no head of its own (Game detail with no shot-by-shot rounds) still opens under the double rule. */
+  .ch-stm .ch-stm-panel:not(:has(> .ch-stm-panel__h)) {
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-stm .ch-stm-panel__h h2 {
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-stm .ch-stm-chart__t {
+    stroke: var(--ch-workspace);
+  }
+  .ch-stm .ch-stm-chart__dot.is-last {
+    stroke: var(--ch-workspace);
+  }
+  .ch-stm .ch-stm-leg.is-total {
+    border-top: 1px solid var(--ch-ledger-rule-soft);
+  }
+  /* Lists are the Ledger's rows (ui/Ledger.tsx LedgerRow): on seams, flush with the section's edge, the tap area running
+     12px past the text on each side, a press tint. */
+  .ch-stm .ch-stm-list {
+    margin: 0;
+  }
+  .ch-stm .ch-stm-list li + li {
+    border-top: 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-stm-row {
+    gap: 14px;
+    min-height: 64px;
+    margin-inline: -12px;
+    padding: 10px 12px;
+    border-radius: var(--ch-radius-md);
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it (CH-1606). */
+  .ch-stm .ch-stm-row:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-stm .ch-stm-row:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
+  .ch-stm .ch-stm-row__b b {
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  .ch-stm .ch-stm-row__v b {
+    font: 600 17px/1.1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .ch-stm .ch-stm-row__chev {
+    color: var(--ch-ink-400);
+  }
+  .ch-stm .ch-spm-round {
+    gap: 14px;
+    min-height: 64px;
+    padding: 12px 0;
+  }
+  .ch-stm .ch-spm-more {
+    align-self: flex-start;
+    margin-left: -16px;
+    border-radius: var(--ch-radius-md);
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  /* All N rounds and the Message key answer a press as a ghost button and a key do: a tint, and the shrink every
+     button takes (`data-ch-press`, CH-1606). */
+  .ch-stm .ch-spm-more:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-stm .ch-spm-head__msg {
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-stm .ch-spm-head__msg:active {
+    background: var(--ch-green-50);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-stm .ch-spm-dev li + li {
+    border-top: 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-spm-dev li {
+    padding: 12px 0;
+  }
+  .ch-stm .ch-spm-sub {
+    padding-top: 6px;
+    font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    color: var(--ch-ledger-ink);
+  }
+  /* A filter that leaves nothing: the empty state alone, centred on the sheet, no card around it. */
+  .ch-stm .ch-st-card {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  /* Game detail: the chips (real controls) open the section under its double rule; the section itself is flush. */
+  .ch-stm .ch-gd.is-phone {
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 8px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gd__nav {
+    margin: 0 -20px;
+    padding: 4px 20px 6px;
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm {
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm__head {
+    padding: 2px 0 12px;
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm__t h2 {
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm__figs {
+    margin: 0;
+    border-top-color: var(--ch-ledger-rule);
+    border-bottom-color: var(--ch-ledger-rule);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm__figs div {
+    padding-right: 12px;
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm__figs div + div {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm__figs div:nth-child(3) {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm__figs div:nth-child(4) {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft), inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gx-rule {
+    padding: 10px 0 0;
+  }
+  .ch-stm .ch-gd.is-phone .ch-gx-rule + .ch-gm-how {
+    padding: 0;
+  }
+  /* "How this is measured" opens like a row: the tap area runs 12px past its words and a press tints it (CH-1606). */
+  .ch-stm .ch-gd.is-phone .ch-gm-how > summary {
+    margin-inline: -12px;
+    padding-inline: 12px;
+    border-radius: var(--ch-radius-md);
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm-how > summary:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm__body {
+    gap: 0;
+    margin-top: 4px;
+    border-top: 0;
+    background: none;
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm-p {
+    padding: 16px 0;
+    background: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gx-more {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gx-more > summary {
+    padding: 0;
+  }
+  /* Tiles inside a section (personal bests and the like) lose their boxes: two columns of figures between hairlines,
+     divided by soft rules, as the figure row. */
+  .ch-stm .ch-gx-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-stm .ch-gx-tiles > div {
+    padding: 14px 12px 14px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-stm .ch-gx-tiles > div:nth-child(even) {
+    padding-left: 14px;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gx-tiles > div:nth-child(n + 3) {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gx-tiles > div:nth-child(even):nth-child(n + 3) {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft), inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gx-tiles dd:not(.ch-gx-sub) {
+    font-weight: 600;
+  }
+  .ch-stm .ch-par3 {
+    gap: 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-stm .ch-par3__t {
+    padding: 14px 12px 14px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-stm .ch-par3__t + .ch-par3__t {
+    padding-left: 12px;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-par3__v {
+    font: 600 24px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+  .ch-stm .ch-gx-pars {
+    gap: 0;
+  }
+  .ch-stm .ch-gx-pm {
+    padding: 14px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gx-pm:first-child {
+    padding-top: 2px;
+    box-shadow: none;
+  }
+  /* A ranked hole keeps its figure on its own line's right, with the plays under the name (the parity pass's phone
+     grid sent the figure to a third row under the rank). */
+  .ch-stm .ch-gx-rank li > span:last-child {
+    grid-row: 1;
+    grid-column: 3;
+    text-align: right;
+  }
+  .ch-stm .ch-gx-rank li > em {
+    grid-row: 2;
+  }
+  .ch-stm .ch-gx-rank li {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  /* Band rows read their band on one line ("10–15 ft") now the section runs the sheet's full width. */
+  .ch-stm .ch-stm-putt__r {
+    grid-template-columns: 64px minmax(0, 1fr) 44px;
+  }
+  .ch-stm .ch-gx-tbl th {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-stm .ch-gx-tbl td {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+}
+
+/* Dark (Clubhouse at night). The tokens carry most of the page; these are the literals that were drawn for ivory paper:
+   ink hairlines and tracks turn to ivory ink at the same weight, mint tints to the dark selected green, the fairway
+   figures to the night chart greens. `:where()` keeps each override at its light rule's specificity, so hover and
+   selected states still win as they do in light. The properties below are read by the trend charts' SVG. */
+[data-ui='clubhouse'] {
+  --ch-st-mean-rule: rgb(28 25 18 / 0.35);
+  --ch-st-dot-paper: #fbf8ef;
+  --ch-st-miss-heat: rgb(154 101 18);
+  --ch-st-team-line: var(--ch-green-800);
+  --ch-st-other-line: var(--ch-ink-300);
+}
+html[data-fw-theme='dark'] [data-ui='clubhouse'] {
+  --ch-st-mean-rule: rgb(237 231 216 / 0.4);
+  --ch-st-dot-paper: var(--ch-chart-paper);
+  --ch-st-miss-heat: var(--ch-warning-600);
+  /* Lighter than the lit player line (green-600) by lightness, not hue alone. */
+  --ch-st-team-line: #b4dfc4;
+  --ch-st-other-line: var(--ch-ink-400);
+}
+:where(html[data-fw-theme='dark']) .ch-st-updating {
+  color: var(--ch-bg-surface);
+}
+:where(html[data-fw-theme='dark']) .ch-st-head {
+  border-bottom-color: var(--ch-champagne-rule);
+}
+:where(html[data-fw-theme='dark']) .ch-fg__track {
+  background: rgb(237 231 216 / 0.09);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.35);
+}
+:where(html[data-fw-theme='dark']) .ch-fg__gauge--holes i {
+  background: linear-gradient(90deg, var(--ch-chart-gain) var(--ch-fg-part, 100%), rgb(237 231 216 / 0.1) var(--ch-fg-part, 100%));
+}
+:where(html[data-fw-theme='dark']) .ch-delta.is-good {
+  color: var(--ch-text-on-accent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+:where(html[data-fw-theme='dark']) .ch-delta.is-bad,
+:where(html[data-fw-theme='dark']) .ch-pf-early {
+  box-shadow: inset 0 0 0 1px rgb(227 169 79 / 0.24);
+}
+:where(html[data-fw-theme='dark']) .ch-sgt__team b,
+:where(html[data-fw-theme='dark']) .ch-sgt__end.is-sel,
+:where(html[data-fw-theme='dark']) .ch-sgm[aria-pressed='true'],
+:where(html[data-fw-theme='dark']) .ch-board__n.is-even,
+:where(html[data-fw-theme='dark']) .ch-pf-tag,
+:where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'],
+:where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n,
+:where(html[data-fw-theme='dark']) .ch-fws__z.is-fw,
+:where(html[data-fw-theme='dark']) .ch-cup__lbl {
+  color: var(--ch-green-700);
+}
+:where(html[data-fw-theme='dark']) .ch-sgt__end.is-sel,
+:where(html[data-fw-theme='dark']) .ch-sf__chip {
+  background: var(--ch-bg-selected);
+}
+@media (hover: hover) {
+  :where(html[data-fw-theme='dark']) .ch-sgm:hover {
+    background: rgb(237 231 216 / 0.04);
+  }
+  :where(html[data-fw-theme='dark']) .ch-sf__chip:hover {
+    background: var(--ch-green-100);
+  }
+}
+:where(html[data-fw-theme='dark']) .ch-sgm[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.22), inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+:where(html[data-fw-theme='dark']) .ch-lg__cell.is-col {
+  background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
+  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--ch-green-600) 70%, transparent);
+}
+:where(html[data-fw-theme='dark']) .ch-yb__head {
+  border-bottom-color: var(--ch-border-subtle);
+}
+:where(html[data-fw-theme='dark']) .ch-board__n {
+  background: var(--ch-ivory-100);
+  box-shadow: 0 0 0 1px var(--ch-border-subtle), var(--ch-elevation-bubble);
+}
+:where(html[data-fw-theme='dark']) .ch-ft td,
+:where(html[data-fw-theme='dark']) .ch-ft__g th {
+  border-top-color: var(--ch-border-subtle);
+}
+:where(html[data-fw-theme='dark']) .ch-ft__you span {
+  background: rgb(107 187 140 / 0.1);
+}
+:where(html[data-fw-theme='dark']) .ch-pg-leader {
+  stroke: var(--ch-st-mean-rule);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-hero::before {
+  background: repeating-linear-gradient(90deg, var(--ch-chart-fairway) 0 42px, var(--ch-chart-fairway-alt) 42px 84px);
+  box-shadow: inset 0 -1px 0 rgb(107 187 140 / 0.18);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-hero::after {
+  background: linear-gradient(180deg, rgb(0 0 0 / 0.25), transparent);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-hero__av {
+  box-shadow: 0 0 0 4px var(--ch-ivory-25), 0 0 0 5px rgb(107 187 140 / 0.3), var(--ch-elevation-cast);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-tag {
+  background: rgb(27 32 28 / 0.85);
+  box-shadow: 0 0 0 1px rgb(107 187 140 / 0.22);
+}
+:where(html[data-fw-theme='dark']) .ch-tab-t__n {
+  background: linear-gradient(180deg, var(--ch-ivory-200), var(--ch-ivory-150));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 0 0 1px var(--ch-border-hairline);
+}
+:where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n {
+  background: linear-gradient(180deg, var(--ch-green-100), var(--ch-green-50));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 0 0 1px rgb(107 187 140 / 0.22);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-bar,
+:where(html[data-fw-theme='dark']) .ch-cmp__bar {
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.35);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-goal__c {
+  color: var(--ch-text-on-accent);
+}
+:where(html[data-fw-theme='dark']) .ch-gm__ic {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.16);
+}
+:where(html[data-fw-theme='dark']) .ch-mix__bar,
+:where(html[data-fw-theme='dark']) .ch-par3__t,
+:where(html[data-fw-theme='dark']) .ch-lad__col,
+:where(html[data-fw-theme='dark']) .ch-cup__split .is-high,
+:where(html[data-fw-theme='dark']) .ch-gx-tiles > div,
+:where(html[data-fw-theme='dark']) .ch-gx-sec__c,
+:where(html[data-fw-theme='dark']) .ch-gx-pm {
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+}
+/* The score mix keeps its order by lightness as well as hue: eagle the deep red, birdie the light one, then par, bogey
+   and double stepping up from the card. */
+:where(html[data-fw-theme='dark']) .ch-mix__s + .ch-mix__s {
+  box-shadow: inset 1px 0 0 rgb(17 21 18 / 0.9);
+}
+:where(html[data-fw-theme='dark']) .ch-mix .is-eagle {
+  background: #b0473a;
+}
+:where(html[data-fw-theme='dark']) .ch-mix .is-par {
+  background: var(--ch-ivory-300);
+}
+:where(html[data-fw-theme='dark']) .ch-mix .is-bogey {
+  background: #7a7569;
+}
+:where(html[data-fw-theme='dark']) .ch-fws__z.is-rough {
+  background: repeating-linear-gradient(135deg, var(--ch-chart-rough) 0 6px, #2e3529 6px 7px);
+  color: var(--ch-text-secondary);
+}
+:where(html[data-fw-theme='dark']) .ch-fws__z.is-fw {
+  background: repeating-linear-gradient(90deg, var(--ch-chart-fairway) 0 18px, var(--ch-chart-fairway-alt) 18px 36px);
+}
+/* Large chart fills take the deep fill greens at night; the light text greens are for strokes and figures. */
+:where(html[data-fw-theme='dark']) .ch-lad__fill.is-gain,
+:where(html[data-fw-theme='dark']) .ch-lad__fill.is-neutral {
+  background: linear-gradient(180deg, var(--ch-green-fill-500), var(--ch-green-fill-700));
+}
+:where(html[data-fw-theme='dark']) .ch-lad__fill.is-loss {
+  background: linear-gradient(180deg, #edc07a, var(--ch-chart-loss));
+}
+:where(html[data-fw-theme='dark']) .ch-gmiss__c b {
+  color: var(--ch-text-primary);
+}
+:where(html[data-fw-theme='dark']) .ch-gmiss__g {
+  background: radial-gradient(circle at 50% 50%, var(--ch-chart-fairway) 0 60%, var(--ch-chart-fairway-alt) 61%);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.24);
+}
+:where(html[data-fw-theme='dark']) .ch-cup__ring {
+  background: radial-gradient(circle, #2a4a36 0 40%, var(--ch-chart-fairway) 41% 70%, var(--ch-chart-fairway-alt) 71%);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.22);
+}
+:where(html[data-fw-theme='dark']) .ch-cup__hole {
+  background: #070908;
+  box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.6), 0 0 0 3px var(--ch-ink-700);
+}
+:where(html[data-fw-theme='dark']) .ch-cup__split .is-low {
+  background: rgb(227 169 79 / 0.16);
+  color: var(--ch-chart-loss-on-tint);
+}
+:where(html[data-fw-theme='dark']) .ch-gx-sec__c.is-top {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.24);
+}
+:where(html[data-fw-theme='dark']) .ch-sf__chip {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.32);
+}
+
+/* The personal-best card (P005-C2): Share under the bests, and the card's preview in its sheet at the card's own 4:5. */
+.ch-bestcard__act {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.ch-bestcard {
+  display: grid;
+  place-items: center;
+}
+.ch-bestcard img,
+.ch-bestcard__hold {
+  display: block;
+  width: min(100%, 300px);
+  aspect-ratio: 4 / 5;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-reading);
+}
+@media (max-width: 820px) {
+  .ch-bestcard__act .ch-btn {
+    min-height: 44px;
+  }
+}
+
+/* Team stats on the phone, direction A "native analysis" (owner, 2026-10-08; StatsTeamPhone). One hero figure with its
+   trend under it, then iOS inset groups: a flat tint a step lighter than the sheet, no ring and no shadow (the phone
+   pages are cardless), hairlines inset to the text, small sentence-case headers over each group. Scoped to
+   `.ch-stm.is-team`: a player's phone page shares the `.ch-stm-*` names and keeps its own look. Every height here is
+   fixed, so the loading skeleton (StatsTeamPhoneSkeleton) draws the same geometry without measuring. */
+@media (max-width: 820px) {
+  .ch-stm.is-team {
+    gap: 16px;
+    padding: 18px 16px 40px;
+  }
+  .ch-stm.is-team > .ch-stm-head,
+.ch-stm.is-team > .ch-stm-controls,
+.ch-stm.is-team > .ch-stm-hero,
+.ch-stm.is-team > .ch-stm-trend {
+    padding-inline: 4px;
+  }
+  /* The large title: the team and its sample on one quiet line, then the title (the shell's bar takes it once tucked). */
+  .ch-stm.is-team .ch-stm-head {
+    gap: 2px;
+    padding-top: 4px;
+    border-top: 0;
+  }
+  .ch-stm.is-team .ch-stm-head h1 {
+    font: 650 calc(34 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    font-variation-settings: normal;
+    color: var(--ch-text-primary);
+  }
+
+  /* The hero: the scoring average at 64px, its change and what it is against on the value's baseline. */
+  .ch-stm.is-team .ch-stm-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'k p' 'v c';
+    align-items: baseline;
+    column-gap: 12px;
+    row-gap: 6px;
+    margin: 10px 0 0;
+  }
+  .ch-stm.is-team .ch-stm-hero dt {
+    grid-area: k;
+    font: 500 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  /* Against par, over the change: the two lines of context share the column to the value's right. */
+  .ch-stm.is-team .ch-stm-hero__par {
+    grid-area: p;
+    font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-tertiary);
+  }
+  .ch-stm.is-team .ch-stm-hero dd {
+    margin: 0;
+  }
+  .ch-stm.is-team .ch-stm-hero__v {
+    grid-area: v;
+    font: 560 64px/1 var(--ch-font-sans);
+    letter-spacing: -0.035em;
+    color: var(--ch-text-primary);
+  }
+  .ch-stm.is-team .ch-stm-hero__c {
+    grid-area: c;
+    min-width: 0;
+    min-height: 1.3em;
+    font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-stm.is-team .ch-stm-hero__c b {
+    margin-right: 2px;
+    font: 600 17px/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-secondary);
+  }
+
+  /* The trend, right under the hero: the plot at the hold's 340:120, then the reading and the mean's key on one line. */
+  .ch-stm.is-team .ch-stm-trend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: -6px;
+  }
+  .ch-stm.is-team .ch-stm-plot {
+    aspect-ratio: 340 / 120;
+    margin-inline: -4px;
+    /* A scroll that starts on the plot still scrolls the page; a finger held on it reads a round day. */
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Nothing in the plot takes focus on purpose (it is pointer-only; the reading carries it), so a stray focus draws no ring. */
+  /* TeamTrendChart's observed box: the plot's full size, read by a ResizeObserver. */
+  .ch-stm.is-team .ch-stm-plot__box {
+    width: 100%;
+    height: 100%;
+  }
+  .ch-stm.is-team .ch-stm-plot :focus {
+    outline: none;
+  }
+  .ch-stm.is-team .ch-stm-plot .ch-stm-chart__t {
+    stroke: var(--ch-workspace);
+  }
+  .ch-stm.is-team .ch-stm-tip {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 7px 10px 8px;
+    border-radius: var(--ch-radius-md);
+    background: var(--ch-ink-900);
+    color: var(--ch-bg-surface);
+    font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    box-shadow: var(--ch-elevation-overlay);
+  }
+  .ch-stm.is-team .ch-stm-tip b {
+    font: 600 16px/1.1 var(--ch-font-sans);
+  }
+  /* The hold (one round day, and the skeleton) is the plot's own box: the same bleed past the trend's inset. */
+  .ch-stm.is-team .ch-stm-trend .ch-stm-chart-hold {
+    margin-inline: -4px;
+  }
+  /* The reading wraps beside the mean's key on a 390px phone, so its line pair is held in every state. */
+  .ch-stm.is-team .ch-stm-trend .ch-stm-note {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: calc(2 * 1.4 * 14px);
+  }
+  .ch-stm.is-team .ch-stm-mean {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+  }
+  .ch-stm.is-team .ch-stm-mean i {
+    width: 14px;
+    border-top: 1.5px dashed var(--ch-border-strong);
+  }
+
+  /* Every note under a group: plain footnote type, inset to the group's text. */
+  .ch-stm.is-team .ch-stm-note {
+    font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-stm.is-team .ch-stm-panel > .ch-stm-note,
+.ch-stm.is-team .ch-stm-panel > .ch-stm-cover {
+    margin: 0;
+    padding-inline: 16px;
+  }
+  /* A group's reading is one line or two ("Approach is the only leg losing strokes, 0.7 a round."); it holds two. */
+  .ch-stm.is-team .ch-stm-panel > .ch-stm-note {
+    min-height: calc(2 * 1.4 * 14px);
+  }
+  .ch-stm.is-team .ch-stm-cover {
+    min-height: 1.4em;
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+
+  /* A section: its small header, its group, its note. */
+  .ch-stm.is-team .ch-stm-panel {
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .ch-stm.is-team .ch-stm-panel__h {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 19px;
+    padding: 0 16px;
+    border-top: 0;
+  }
+  .ch-stm.is-team .ch-stm-panel__h:has(.ch-seg) {
+    align-items: center;
+    padding-right: 4px;
+  }
+  .ch-stm.is-team .ch-stm-panel__h h2 {
+    font: 500 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+    letter-spacing: 0;
+    font-variation-settings: normal;
+    color: var(--ch-text-secondary);
+  }
+  .ch-stm.is-team .ch-stm-panel__h > span,
+.ch-stm.is-team .ch-stm-gh > span {
+    font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-tertiary);
+    text-align: right;
+  }
+  .ch-stm.is-team .ch-stm-gh {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    min-width: 0;
+  }
+  .ch-stm.is-team .ch-stm-gh > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-stm.is-team .ch-stm-gh > span::before {
+    content: '· ';
+  }
+  .ch-stm.is-team .ch-stm-group {
+    margin: 0;
+    border-radius: 12px;
+    background: var(--ch-bg-surface);
+  }
+  /* A hairline between rows, inset to where the text starts (iOS separator inset). */
+  .ch-stm.is-team .ch-stm-group .ch-stm-figrow + .ch-stm-figrow::before,
+.ch-stm.is-team .ch-stm-group li + li::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: var(--ch-stm-inset, 16px);
+    border-top: 1px solid var(--ch-border-subtle);
+    content: '';
+    pointer-events: none;
+  }
+
+  /* The round: greens, putts, scrambling. Each row is 60px whether or not it carries a reference line, and grows when
+     Dynamic Type wraps its label. */
+  .ch-stm.is-team .ch-stm-figrow {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 3.2em;
+    align-items: center;
+    column-gap: 12px;
+    min-height: 60px;
+    padding: 8px 16px;
+  }
+  .ch-stm.is-team .ch-stm-figrow dt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    font: 400 calc(17 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+  .ch-stm.is-team .ch-stm-figrow__ref {
+    font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-stm.is-team .ch-stm-figrow dd {
+    margin: 0;
+    text-align: right;
+  }
+  .ch-stm.is-team .ch-stm-figrow__v {
+    font: 600 17px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    color: var(--ch-text-primary);
+  }
+  .ch-stm.is-team .ch-stm-figrow__d {
+    font: 500 14px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-tertiary);
+  }
+  .ch-stm.is-team :is(.ch-stm-figrow__d,
+.ch-stm-hero__c b,
+.ch-stm-sgfig b,
+.ch-stm-leg b,
+.ch-stm-row__v span).ch-gain {
+    color: var(--ch-chart-gain);
+  }
+  .ch-stm.is-team :is(.ch-stm-figrow__d,
+.ch-stm-hero__c b,
+.ch-stm-sgfig b,
+.ch-stm-leg b,
+.ch-stm-row__v span,
+.ch-stm-putt__r b).ch-loss {
+    color: var(--ch-chart-loss);
+  }
+
+  /* Strokes gained: the chosen leg's team figure, then the legs as rows that pick it. */
+  .ch-stm.is-team .ch-stm-sgfig {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    box-sizing: border-box;
+    height: 64px;
+    margin: 0;
+    padding: 16px 16px 0;
+  }
+  .ch-stm.is-team .ch-stm-sgfig b {
+    font: 560 40px/1 var(--ch-font-sans);
+    letter-spacing: -0.04em;
+    color: var(--ch-text-primary);
+  }
+  .ch-stm.is-team .ch-stm-sgfig > span {
+    overflow: hidden;
+    font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-stm.is-team .ch-stm-legs {
+    position: relative;
+    gap: 0;
+    padding: 4px 0 6px;
+  }
+  .ch-stm.is-team .ch-stm-leg {
+    position: relative;
+    z-index: 1;
+    grid-template-columns: 7.4em minmax(0, 1fr) 3.2em;
+    gap: 12px;
+    box-sizing: border-box;
+    height: 44px;
+    margin: 0 6px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--ch-radius-md);
+    background: transparent;
+    font: 400 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-stm.is-team .ch-stm-leg > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-stm.is-team .ch-stm-leg[data-active] {
+    font-weight: 600;
+  }
+  /* The press tint waits a beat, as a row's does (CH-1606); the chosen row has nothing to change. */
+  .ch-stm.is-team .ch-stm-leg:not([data-active]):active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-stm.is-team .ch-stm-leg:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
+  .ch-stm.is-team .ch-stm-leg b {
+    font: 600 16px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--ch-text-primary);
+  }
+  .ch-stm.is-team .ch-stm-leg__bar {
+    height: 6px;
+  }
+  /* The total sits under the legs on the same scale, a hairline over it that leaves the row's height alone. */
+  .ch-stm.is-team .ch-stm-leg.is-total {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .ch-stm.is-team .ch-stm-leg.is-total::before {
+    position: absolute;
+    top: 0;
+    right: 10px;
+    left: 10px;
+    border-top: 1px solid var(--ch-border-subtle);
+    content: '';
+  }
+  /* The chosen row's wash, sliding between rows on the base ease-out; reduced motion and Animations off move it at once
+     (the duration tokens are zero there, and the reduced-motion floor in base.css covers the media query). */
+  .ch-stm.is-team .ch-stm-legpick {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    right: 6px;
+    left: 6px;
+    height: 44px;
+    border-radius: var(--ch-radius-md);
+    background: var(--ch-bg-selected);
+    box-shadow: inset 0 0 0 1px var(--ch-green-ring);
+    /* Every row is 44px under the list's 4px top padding, so the chosen row's index is its place: nothing is measured. */
+    translate: 0 calc(4px + var(--ch-stm-pick-i, 0) * 44px);
+    transition: translate var(--ch-dur-base) var(--ch-ease);
+  }
+  /* The empty window holds the loaded section's height: a 19px header, the 64px figure and five 44px rows in their
+     group (294px with its padding), the note's two held lines (39.2px), and the two 8px gaps. */
+  .ch-stm.is-team .ch-stm-panel--bars {
+    min-height: 369px;
+  }
+
+  /* The players: an inset list, the separator starting at the name. */
+  .ch-stm.is-team .ch-stm-list {
+    --ch-stm-inset: 64px;
+    margin: 0;
+  }
+  .ch-stm.is-team .ch-stm-list li {
+    position: relative;
+  }
+  .ch-stm.is-team .ch-stm-list li + li {
+    box-shadow: none;
+  }
+  .ch-stm.is-team .ch-stm-list li:first-child .ch-stm-row {
+    border-radius: 12px 12px 0 0;
+  }
+  .ch-stm.is-team .ch-stm-list li:last-child .ch-stm-row {
+    border-radius: 0 0 12px 12px;
+  }
+  .ch-stm.is-team .ch-stm-list li:only-child .ch-stm-row {
+    border-radius: 12px;
+  }
+  .ch-stm.is-team .ch-stm-row {
+    gap: 12px;
+    box-sizing: border-box;
+    min-height: 64px;
+    margin-inline: 0;
+    padding: 10px 12px 10px 16px;
+    border-radius: 0;
+  }
+  .ch-stm.is-team .ch-stm-row__b b {
+    font: 500 calc(17 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+    letter-spacing: -0.01em;
+  }
+  .ch-stm.is-team .ch-stm-row__b span {
+    font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .ch-stm.is-team .ch-stm-row__v span {
+    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  /* The rolling figure inside the strokes gained line takes its line's type and colour. */
+  .ch-stm.is-team .ch-stm-row__v span span {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Putting by distance: a bar per band in the group, the Tour's make rate as a mark. */
+  .ch-stm.is-team .ch-stm-putt {
+    gap: 0;
+    padding: 6px 16px;
+  }
+  .ch-stm.is-team .ch-stm-putt__r {
+    grid-template-columns: 4.6em minmax(0, 1fr) 3em;
+    gap: 12px;
+    height: 40px;
+    font: 400 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-stm.is-team .ch-stm-putt__r b {
+    font: 600 15px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .ch-stm.is-team .ch-stm-putt__bar em {
+    top: -4px;
+    bottom: -4px;
+  }
+}
+
+/* P004 trend-first (owner, 2026-10-08: "premium sleek, visual first and trend first", not cards). The team's trend is the
+   page: the window's strokes gained set large over a wide line whose wash is green above the baseline and amber below,
+   then one open tape of the other figures (a hairline between, a weekly line under each at one height), then the legs
+   and the grid. No tile, no plate. Every selector reaches the canopy's specificity (`.ch-st[data-canopy]`). */
+.ch-st[data-canopy] .ch-sgt {
+  display: block;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-sgt__hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px 32px;
+  margin: 0;
+  padding: 6px 0 4px;
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-sgt__k {
+  margin: 0 0 4px;
+  font: var(--ch-type-label);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-sgt__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 22px;
+}
+.ch-st[data-canopy] .ch-sgt__n {
+  font: 500 clamp(64px, 7vw, 96px) / 0.94 var(--ch-font-sans);
+  letter-spacing: -0.055em;
+  font-variation-settings: 'wdth' 90;
+  color: var(--ch-ledger-ink);
+}
+.ch-st[data-canopy] .ch-sgt__chg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 18px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-st[data-canopy] .ch-sgt__chg em {
+  margin-left: 6px;
+  font: var(--ch-type-caption);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-sgt__chg.is-good {
+  color: var(--ch-green-700);
+}
+.ch-st[data-canopy] .ch-sgt__chg.is-bad {
+  color: var(--ch-warning-600);
+}
+.ch-st[data-canopy] .ch-sgt__chg.is-flat {
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-sgt__vs {
+  display: block;
+  margin-top: 10px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-sgt__wash {
+  stroke: none;
+  opacity: 1;
+}
+.ch-st[data-canopy] .ch-sgt__reflab {
+  fill: var(--ch-champagne-600, var(--ch-text-tertiary));
+}
+.ch-st[data-canopy] .ch-sgt__scrub {
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-sgt__scrub line {
+  stroke: var(--ch-text-tertiary);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.ch-st[data-canopy] .ch-sgt__scrub circle {
+  fill: var(--ch-ivory-25);
+  stroke: var(--ch-st-team-line);
+  stroke-width: 2.5;
+}
+.ch-st[data-canopy] .ch-sgt__scrub text {
+  font: 600 14.5px var(--ch-font-sans);
+  fill: var(--ch-text-primary);
+}
+
+/* The tape: five figures on one rule. */
+.ch-st[data-canopy] .ch-tp {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--ch-ledger-rule);
+  border-bottom: 1px solid var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-tp__c {
+  display: grid;
+  grid-template-rows: auto auto 16px 46px auto;
+  gap: 4px;
+  min-width: 0;
+  padding: 18px 20px 16px;
+}
+.ch-st[data-canopy] .ch-tp__c:first-child {
+  padding-left: 0;
+}
+.ch-st[data-canopy] .ch-tp__c + .ch-tp__c {
+  box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+}
+.ch-st[data-canopy] .ch-tp__l {
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-tp__v {
+  font: 500 34px / 1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.045em;
+  font-variation-settings: 'wdth' 92;
+  color: var(--ch-ledger-ink);
+}
+.ch-st[data-canopy] .ch-tp__v small {
+  margin-left: 2px;
+  font-size: 18px;
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-tp__d {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  font: 600 13px / 1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ch-st[data-canopy] .ch-tp__d em {
+  margin-left: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--ch-type-caption);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-tp__d.is-good {
+  color: var(--ch-green-700);
+}
+.ch-st[data-canopy] .ch-tp__d.is-bad {
+  color: var(--ch-warning-600);
+}
+.ch-st[data-canopy] .ch-tp__d.is-flat {
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-tp__svg {
+  display: block;
+  width: 100%;
+  height: 46px;
+  overflow: visible;
+}
+.ch-st[data-canopy] .ch-tp__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-st[data-canopy] .ch-tp__area {
+  stroke: none;
+}
+.ch-st[data-canopy] .ch-tp__dot {
+  stroke-width: 2;
+  fill: var(--ch-ivory-25);
+}
+.ch-st[data-canopy] .ch-tp__svg.is-good :is(.ch-tp__line,
+.ch-tp__dot) {
+  stroke: var(--ch-chart-gain);
+}
+.ch-st[data-canopy] .ch-tp__svg.is-bad :is(.ch-tp__line,
+.ch-tp__dot) {
+  stroke: var(--ch-chart-loss);
+}
+.ch-st[data-canopy] .ch-tp__svg.is-flat :is(.ch-tp__line,
+.ch-tp__dot) {
+  stroke: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-tp__n {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-sgt__plot {
+  align-items: start;
+  padding: 0;
+}
+
+/* P004 stage (owner, 2026-10-08: "the color and separation needs to look better … more premium and contrast and cool
+   widgets"). The trend sits on a deep-green stage: ivory figure, mint gains, gold losses and baseline, the team's line
+   in ivory over a wash that glows green above the baseline and gold below it. The tape under it reads on a faint green
+   band between gold rules, each cell with a ring (or the distance from par) for the figure's own reference. */
+.ch-st[data-canopy] .ch-sgt {
+  position: relative;
+  padding: 30px 32px 22px;
+  overflow: hidden;
+  border-radius: 24px;
+  background: radial-gradient(120% 90% at 85% -10%, rgb(79 138 100 / 0.38), transparent 60%), linear-gradient(165deg, var(--ch-green-700), var(--ch-green-900) 70%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(176 149 96 / 0.28), var(--ch-elevation-feature);
+  color: var(--ch-on-fill-100);
+}
+/* The stage is deep green and its ink ivory in both themes (overnight polish, 2026-10-15): drawn from the palette, it
+   turned mint with dark ink at night, and the players, axis and summary fell under 2:1. At night it keeps the day's
+   palette, as Home's form card does with the --ch-stage-* tokens. */
+html[data-fw-theme='dark'] .ch-st .ch-sgt {
+  --ch-ivory-0: #ffffff;
+  --ch-ivory-25: #fdfcf8;
+  --ch-ivory-50: #f9f7f1;
+  --ch-ivory-100: #f4f2ea;
+  --ch-ivory-150: #eeebe2;
+  --ch-ivory-200: #e7e3d8;
+  --ch-ivory-300: #dcd6c8;
+  --ch-ivory-400: #c9c2b1;
+  --ch-ink-950: #141412;
+  --ch-ink-900: #1c1b18;
+  --ch-ink-700: #3a3833;
+  --ch-ink-600: #46433d;
+  --ch-ink-500: #5f5c55;
+  --ch-ink-400: #8f8b81;
+  --ch-ink-300: #b3afa5;
+  --ch-green-25: #f5f9f6;
+  --ch-green-50: #eef5f0;
+  --ch-green-100: #ddebe1;
+  --ch-green-200: #bcd6c4;
+  --ch-green-400: #4f8a64;
+  --ch-green-500: #1f6b45;
+  --ch-green-600: #155a39;
+  --ch-green-700: #0f4a2f;
+  --ch-green-800: #0b3a25;
+  --ch-green-900: #082b1c;
+  --ch-forest-800: #0b3a25;
+  --ch-forest-900: #082b1c;
+  --ch-green-fill-500: #1f6b45;
+  --ch-green-fill-600: #155a39;
+  --ch-green-fill-700: #0f4a2f;
+  --ch-champagne-100: #efe6d2;
+  --ch-champagne-300: #dccda6;
+  --ch-champagne-500: #b09560;
+  /* Its Strokes gained / Scoring switch: the day's well and raised pill, as it is drawn in light. */
+  --ch-well-bg: linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%);
+  --ch-control-bg: linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%);
+  color: var(--ch-ivory-100);
+}
+.ch-st[data-canopy] .ch-sgt::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.05), transparent 24%);
+  content: '';
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-sgt__hero {
+  padding: 0 0 8px;
+}
+.ch-st[data-canopy] .ch-sgt__k {
+  color: var(--ch-champagne-300);
+  font-weight: 600;
+}
+.ch-st[data-canopy] .ch-sgt__n {
+  color: var(--ch-on-fill-25);
+  text-shadow: 0 2px 24px rgb(0 0 0 / 0.25);
+}
+.ch-st[data-canopy] .ch-sgt__n.ch-gain {
+  color: var(--ch-green-200);
+}
+.ch-st[data-canopy] .ch-sgt__n.ch-loss {
+  color: var(--ch-champagne-300);
+}
+.ch-st[data-canopy] .ch-sgt__chg {
+  padding: 5px 10px 5px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+.ch-st[data-canopy] .ch-sgt__chg.is-good {
+  color: var(--ch-green-200);
+}
+.ch-st[data-canopy] .ch-sgt__chg.is-bad {
+  color: var(--ch-champagne-300);
+}
+.ch-st[data-canopy] .ch-sgt__chg.is-flat,
+.ch-st[data-canopy] .ch-sgt__chg em,
+.ch-st[data-canopy] .ch-sgt__vs {
+  color: var(--ch-ivory-300);
+}
+.ch-st[data-canopy] .ch-sgt__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 34px;
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+}
+.ch-st[data-canopy] .ch-sgt__facts dt {
+  margin-bottom: 4px;
+  font: var(--ch-type-label-s);
+  color: var(--ch-ivory-300);
+}
+.ch-st[data-canopy] .ch-sgt__facts dd {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font: 600 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--ch-on-fill-25);
+}
+.ch-st[data-canopy] .ch-sgt__facts em {
+  font: var(--ch-type-caption);
+  font-style: normal;
+  letter-spacing: 0;
+  color: var(--ch-ivory-400);
+}
+.ch-st[data-canopy] .ch-sgt__pips {
+  display: inline-flex;
+  gap: 3px;
+  align-self: center;
+}
+.ch-st[data-canopy] .ch-sgt__pips i {
+  width: 7px;
+  height: 14px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.16);
+}
+.ch-st[data-canopy] .ch-sgt__pips i.is-up {
+  background: var(--ch-green-200);
+}
+.ch-st[data-canopy] .ch-sgt__legend {
+  color: var(--ch-ivory-300);
+}
+.ch-st[data-canopy] .ch-sgt__legend i {
+  border-top-color: var(--ch-ivory-25);
+}
+.ch-st[data-canopy] .ch-sgt__legend i.is-other {
+  border-top-color: rgb(255 255 255 / 0.4);
+}
+.ch-st[data-canopy] .ch-sgt .ch-tick {
+  fill: var(--ch-ivory-400);
+}
+.ch-st[data-canopy] .ch-sgt__svg line:not(.ch-sgt__scrub line) {
+  stroke: rgb(255 255 255 / 0.1);
+}
+.ch-st[data-canopy] .ch-sgt__team {
+  stroke: var(--ch-ivory-25);
+  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.35));
+}
+.ch-st[data-canopy] .ch-sgt__tdot,
+.ch-st[data-canopy] .ch-sgt__scrub circle {
+  fill: var(--ch-green-800);
+  stroke: var(--ch-ivory-25);
+}
+.ch-st[data-canopy] .ch-sgt__line {
+  stroke: var(--ch-ivory-100);
+}
+.ch-st[data-canopy] .ch-sgt__line.is-on,
+.ch-st[data-canopy] .ch-sgt__front {
+  stroke: var(--ch-champagne-300);
+}
+.ch-st[data-canopy] circle.ch-sgt__front {
+  fill: var(--ch-green-800);
+}
+.ch-st[data-canopy] .ch-sgt__reflab {
+  fill: var(--ch-champagne-300);
+}
+.ch-st[data-canopy] .ch-sgt__svg line[stroke='var(--ch-champagne-500)'] {
+  stroke: var(--ch-champagne-300);
+}
+.ch-st[data-canopy] .ch-sgt__scrub line {
+  stroke: var(--ch-ivory-300);
+}
+.ch-st[data-canopy] .ch-sgt__scrub text {
+  fill: var(--ch-ivory-25);
+}
+.ch-st[data-canopy] .ch-sgt__team-row,
+.ch-st[data-canopy] .ch-sgt__team {
+  color: var(--ch-on-fill-25);
+}
+.ch-st[data-canopy] .ch-sgt__ends .ch-sgt__team span,
+.ch-st[data-canopy] .ch-sgt__end {
+  color: var(--ch-ivory-200);
+}
+.ch-st[data-canopy] .ch-sgt__ends .ch-sgt__team b,
+.ch-st[data-canopy] .ch-sgt__end.is-sel {
+  color: var(--ch-on-fill-25);
+}
+.ch-st[data-canopy] .ch-sgt__end.is-sel {
+  background: rgb(255 255 255 / 0.12);
+}
+.ch-st[data-canopy] .ch-sgt__end b.ch-gain {
+  color: var(--ch-green-200);
+}
+.ch-st[data-canopy] .ch-sgt__end b.ch-loss {
+  color: var(--ch-champagne-300);
+}
+@media (hover: hover) {
+  .ch-st[data-canopy] .ch-sgt__end:hover {
+    background: rgb(255 255 255 / 0.08);
+  }
+}
+.ch-st[data-canopy] .ch-sgt .ch-note {
+  margin-top: 10px;
+  color: var(--ch-green-200);
+}
+
+/* The tape on its band. */
+.ch-st[data-canopy] .ch-tp {
+  margin-top: 4px;
+  border-top: 0;
+  border-bottom: 0;
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--ch-green-50), rgb(238 245 240 / 0.2));
+  box-shadow: inset 0 0 0 1px rgb(176 149 96 / 0.34), inset 0 1px 0 rgb(255 255 255 / 0.9);
+}
+.ch-st[data-canopy] .ch-tp__c {
+  position: relative;
+}
+.ch-st[data-canopy] .ch-tp__c:first-child {
+  padding-left: 22px;
+}
+.ch-st[data-canopy] .ch-tp__c + .ch-tp__c {
+  box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.34);
+}
+.ch-st[data-canopy] .ch-tp__c::before {
+  position: absolute;
+  top: 0;
+  right: 20px;
+  left: 20px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--ch-border-strong);
+  content: '';
+}
+.ch-st[data-canopy] .ch-tp__c.is-good::before {
+  background: var(--ch-green-500);
+}
+.ch-st[data-canopy] .ch-tp__c.is-bad::before {
+  background: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-tp__l {
+  padding-right: 52px;
+  color: var(--ch-text-primary);
+  font-weight: 600;
+}
+.ch-st[data-canopy] .ch-tp__v {
+  color: var(--ch-forest-800);
+}
+.ch-st[data-canopy] .ch-tp__dial {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 44px;
+  height: 44px;
+}
+.ch-st[data-canopy] .ch-tp__ring {
+  fill: none;
+  stroke: var(--ch-ivory-200);
+  stroke-width: 5;
+}
+.ch-st[data-canopy] .ch-tp__arc {
+  fill: none;
+  stroke: var(--ch-green-500);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.ch-st[data-canopy] .ch-tp__dial.is-bad .ch-tp__arc {
+  stroke: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-tp__dial.is-flat .ch-tp__arc {
+  stroke: var(--ch-ink-400);
+}
+.ch-st[data-canopy] .ch-tp__tick {
+  stroke: var(--ch-green-900);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.ch-st[data-canopy] .ch-tp__par {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  display: grid;
+  justify-items: end;
+  font: 600 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.ch-st[data-canopy] .ch-tp__par em {
+  margin-top: 4px;
+  font: var(--ch-type-caption);
+  font-style: normal;
+  letter-spacing: 0;
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-tp__par.is-good {
+  color: var(--ch-green-600);
+}
+.ch-st[data-canopy] .ch-tp__par.is-bad {
+  color: var(--ch-warning-600);
+}
+
+/* More air between the page's sections, set apart by a gold rule. */
+.ch-st[data-canopy] .ch-sgm-row {
+  margin-top: 14px;
+  border-color: rgb(176 149 96 / 0.34);
+}
+.ch-st[data-canopy] .ch-lg {
+  margin-top: 14px;
+}
+.ch-st[data-canopy] .ch-tp__l {
+  padding-right: 0;
+  white-space: nowrap;
+}
+.ch-st[data-canopy] .ch-tp__dial {
+  top: 44px;
+  right: 18px;
+}
+.ch-st[data-canopy] .ch-tp__par {
+  top: 46px;
+}
+.ch-st[data-canopy] .ch-sgm-row,
+.ch-st[data-canopy] .ch-lg {
+  margin-top: 0;
+}
+.ch-st[data-canopy] .ch-tp__c {
+  grid-template-rows: auto auto auto 46px auto;
+}
+.ch-st[data-canopy] .ch-tp__d {
+  flex-wrap: wrap;
+  row-gap: 5px;
+  min-height: 16px;
+}
+.ch-st[data-canopy] .ch-tp__d em {
+  flex-basis: 100%;
+  margin-left: 0;
+}
+.ch-st[data-canopy] .ch-tp__dial {
+  top: 38px;
+}
+.ch-st[data-canopy] .ch-tp__par {
+  top: 40px;
+}
+
+/* P004 polish: contour texture on the stage, the latest-value callout, the best-week marker, the players' bars. */
+.ch-st[data-canopy] .ch-sgt {
+  background:
+    radial-gradient(120% 90% at 85% -10%, rgb(79 138 100 / 0.38), transparent 60%),
+    repeating-radial-gradient(circle at 92% -18%, rgb(255 255 255 / 0.028) 0 1px, transparent 1px 34px),
+    linear-gradient(165deg, var(--ch-green-700), var(--ch-green-900) 70%);
+}
+.ch-st[data-canopy] .ch-sgt::before {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  left: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ch-champagne-300), transparent);
+  content: '';
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-sgt__callout {
+  font: 700 15px var(--ch-font-sans);
+  fill: var(--ch-ivory-25);
+  paint-order: stroke;
+  stroke: var(--ch-green-800);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-sgt__best {
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-sgt__best circle {
+  fill: var(--ch-champagne-300);
+  stroke: var(--ch-green-800);
+  stroke-width: 2;
+}
+.ch-st[data-canopy] .ch-sgt__best text {
+  font: 600 14.5px var(--ch-font-sans);
+  fill: var(--ch-champagne-300);
+  paint-order: stroke;
+  stroke: var(--ch-green-800);
+  stroke-width: 4px;
+}
+.ch-st[data-canopy] .ch-sgt__end {
+  grid-template-columns: 22px minmax(0, 1fr) 46px auto;
+}
+.ch-st[data-canopy] .ch-sgt__bar {
+  position: relative;
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.1);
+}
+.ch-st[data-canopy] .ch-sgt__bar::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--ch-bar, 0%);
+  border-radius: 2px;
+  background: var(--ch-champagne-300);
+  content: '';
+}
+.ch-st[data-canopy] .ch-sgt__bar.is-up::after {
+  background: var(--ch-green-200);
+}
+.ch-st[data-canopy] .ch-tp__v {
+  font-size: 38px;
+}
+.ch-st[data-canopy] .ch-tp__c::before {
+  height: 4px;
+}
+
+.ch-st[data-canopy] .ch-sgt__plot {
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 16px;
+}
+.ch-st[data-canopy] .ch-sgt__end {
+  grid-template-columns: 22px minmax(0, 1fr) 44px 34px;
+}
+.ch-st[data-canopy] .ch-sgt__end b {
+  text-align: right;
+}
+.ch-st[data-canopy] .ch-tp + .ch-st-cover {
+  margin-top: -18px;
+}
+
+/* Scaled down (owner, 2026-10-08: "that's up very large"): a compact stage. */
+.ch-st[data-canopy] .ch-sgt {
+  padding: 20px 26px 16px;
+  border-radius: 20px;
+}
+.ch-st[data-canopy] .ch-sgt__n {
+  font-size: clamp(44px, 4.4vw, 62px);
+}
+.ch-st[data-canopy] .ch-sgt__chg {
+  padding: 4px 9px 4px 7px;
+  font-size: 15px;
+}
+.ch-st[data-canopy] .ch-sgt__k {
+  margin-bottom: 2px;
+  font-size: 12.5px;
+}
+.ch-st[data-canopy] .ch-sgt__vs {
+  margin-top: 6px;
+}
+.ch-st[data-canopy] .ch-sgt__facts {
+  gap: 8px 28px;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.ch-st[data-canopy] .ch-sgt__facts dd {
+  font-size: 18px;
+}
+.ch-st[data-canopy] .ch-sgt__plot {
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 12px;
+  min-height: calc(26px + var(--ch-ends, 0) * 27px);
+}
+.ch-st[data-canopy] .ch-sgt__end {
+  padding: 3px 6px;
+  font-size: 12.5px;
+}
+.ch-st[data-canopy] .ch-sgt__ends {
+  gap: 0;
+}
+.ch-st[data-canopy] .ch-sgt .ch-note {
+  margin-top: 6px;
+  font-size: 13px;
+}
+.ch-st[data-canopy] .ch-tp__v {
+  font-size: 32px;
+}
+.ch-st[data-canopy] .ch-tp__c {
+  padding: 14px 18px 12px;
+}
+.ch-st[data-canopy] .ch-tp__svg {
+  height: 38px;
+}
+.ch-st[data-canopy] .ch-tp__c {
+  grid-template-rows: auto auto auto 38px auto;
+}
+.ch-st[data-canopy] .ch-tp__dial {
+  top: 34px;
+  width: 38px;
+  height: 38px;
+}
+.ch-st[data-canopy] .ch-tp__par {
+  top: 36px;
+}
+
+/* P005: on a wide canvas the four figures sit beside the name instead of under it, so the trend stage opens in view
+   ("that's up very large": the page head had grown to over 500px). The route skeleton (aria-busy, no is-desk) takes
+   the same layout, so the tabs land where its bars were. */
+@media (min-width: 1280px) {
+  /* The name column holds the three actions on one row at 1280 (Add focus area wrapped alone at 22px gaps and 14px
+     button padding): 16px gaps and 12px padding leave it about 9px to spare (WebKit, 2026-10-18). */
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 16px;
+    row-gap: 0;
+    align-items: end;
+    padding-top: 14px;
+  }
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__act .ch-btn {
+    padding-inline: 12px;
+  }
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs {
+    grid-row: 1;
+    grid-column: 3;
+    grid-template-columns: repeat(4, minmax(92px, auto));
+    padding: 0 0 6px;
+    box-shadow: none;
+  }
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs div {
+    padding: 4px 16px;
+  }
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
+.ch-pf-hero__chg) {
+    font-size: 24px;
+  }
+}
+/* The stage's own colours as tokens (the team page's deep green). */
+.ch-st[data-canopy] .ch-sgt {
+  --ch-stage-up: var(--ch-green-200);
+  --ch-stage-down: var(--ch-champagne-300);
+}
+
+/* P005 (owner, 2026-10-09: no big panel on the player profile): the scoring form as a flush ribbon. */
+.ch-st[data-canopy] .ch-fm {
+  display: grid;
+  gap: 14px;
+  padding: 18px 0 8px;
+  border-top: 1px solid rgb(176 149 96 / 0.4);
+}
+.ch-st[data-canopy] .ch-fm__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 32px;
+}
+.ch-st[data-canopy] .ch-fm__head h2 {
+  margin: 0 0 4px;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.004em;
+  color: var(--ch-forest-800);
+}
+.ch-st[data-canopy] .ch-fm__head p {
+  margin: 0;
+  font: italic 400 14px/1.45 var(--ch-font-sans);
+  color: var(--ch-green-700);
+}
+.ch-st[data-canopy] .ch-fm__facts {
+  display: flex;
+  gap: 28px;
+  margin: 0;
+}
+.ch-st[data-canopy] .ch-fm__facts dt {
+  margin-bottom: 3px;
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-fm__facts dd {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  font: 600 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--ch-forest-800);
+}
+.ch-st[data-canopy] .ch-fm__facts em {
+  font: var(--ch-type-caption);
+  font-style: normal;
+  letter-spacing: 0;
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-fm__bars {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--ch-n, 10), minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-st[data-canopy] .ch-fm__c {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+/* The plot is 132px: the average runs through its middle, a bar reaches at most 54px either way, the score sits past its tip. */
+.ch-st[data-canopy] .ch-fm__plot {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 132px;
+  background: linear-gradient(var(--ch-champagne-500), var(--ch-champagne-500)) center / 100% 1px no-repeat;
+}
+.ch-st[data-canopy] .ch-fm__bar {
+  position: absolute;
+  left: 50%;
+  width: min(26px, 70%);
+  height: calc(var(--ch-bar, 0%) * 0.82 * 0.5);
+  min-height: 3px;
+  transform: translateX(-50%);
+  border-radius: 6px;
+}
+.ch-st[data-canopy] .ch-fm__c.is-up .ch-fm__bar {
+  bottom: 50%;
+  background: linear-gradient(0deg, var(--ch-green-600), var(--ch-green-400));
+  box-shadow: var(--ch-elevation-mark);
+}
+.ch-st[data-canopy] .ch-fm__c.is-down .ch-fm__bar {
+  top: 50%;
+  background: linear-gradient(180deg, var(--ch-champagne-500), var(--ch-champagne-300));
+  box-shadow: var(--ch-elevation-mark-warn);
+}
+.ch-st[data-canopy] .ch-fm__c:not(.is-up,
+.is-down) .ch-fm__bar {
+  top: 50%;
+  height: 3px;
+  background: var(--ch-ink-400);
+}
+.ch-st[data-canopy] .ch-fm__score {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font: 600 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-fm__c.is-up .ch-fm__score {
+  bottom: calc(50% + var(--ch-bar, 0%) * 0.82 * 0.5 + 6px);
+  color: var(--ch-green-700);
+}
+.ch-st[data-canopy] .ch-fm__c.is-down .ch-fm__score {
+  top: calc(50% + var(--ch-bar, 0%) * 0.82 * 0.5 + 6px);
+  color: var(--ch-warning-600);
+}
+.ch-st[data-canopy] .ch-fm__c:not(.is-up,
+.is-down) .ch-fm__score {
+  top: calc(50% + 10px);
+}
+.ch-st[data-canopy] .ch-fm__c.is-last .ch-fm__d {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-fm__c.is-last .ch-fm__tp {
+  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-fm__d {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+}
+.ch-st[data-canopy] .ch-fm__tp {
+  min-width: 36px;
+  padding: 3px 0;
+  border-radius: 8px;
+  background: var(--ch-ivory-100);
+  box-shadow: inset 0 0 0 1px rgb(110 98 62 / 0.14);
+  text-align: center;
+  font: 600 13px/1.1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-fm__tp.is-under {
+  background: var(--ch-green-50);
+  color: var(--ch-green-600);
+}
+/* Reading a round: the ribbon takes a drag across it (a finger scrolls the page up and down, never sideways here) and the arrow keys. */
+.ch-st[data-canopy] .ch-fm__bars {
+  touch-action: pan-y;
+  cursor: default;
+}
+.ch-st[data-canopy] .ch-fm__bars:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 8px;
+  border-radius: 10px;
+}
+.ch-st[data-canopy] .ch-fm__head p.ch-fm__read {
+  font: 600 14px/1.45 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-fm__c.is-read {
+  border-radius: 10px;
+  background: rgb(176 149 96 / 0.12);
+}
+.ch-st[data-canopy] .ch-fm__c.is-read .ch-fm__d {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-fm__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-fm__key .is-up::before,
+.ch-st[data-canopy] .ch-fm__key .is-down::before {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 3px;
+  content: '';
+}
+.ch-st[data-canopy] .ch-fm__key .is-up::before {
+  background: var(--ch-green-500);
+}
+.ch-st[data-canopy] .ch-fm__key .is-down::before {
+  background: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-fm__empty {
+  margin: 0;
+  font: var(--ch-type-body);
+  color: var(--ch-text-secondary);
+}
+
+/* P005: strokes gained by leg as aligned bars (LegBars). */
+.ch-st[data-canopy] .ch-lb {
+  display: grid;
+  gap: 4px;
+  padding: 4px 0 2px;
+}
+.ch-st[data-canopy] .ch-lb__axis,
+.ch-st[data-canopy] .ch-lb__r {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.1fr) minmax(0, 2.4fr) 64px;
+  align-items: center;
+  gap: 18px;
+}
+.ch-st[data-canopy] .ch-lb__axis {
+  padding-bottom: 6px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-lb__axis span:first-child {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+}
+.ch-st[data-canopy] .ch-lb__axis span:nth-child(2) {
+  display: none;
+}
+.ch-st[data-canopy] .ch-lb__axis span:last-child {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+}
+.ch-st[data-canopy] .ch-lb__r {
+  padding: 10px 0;
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+}
+.ch-st[data-canopy] .ch-lb__who {
+  display: grid;
+  gap: 2px;
+}
+.ch-st[data-canopy] .ch-lb__who b {
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-lb__who span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-lb__rail {
+  position: relative;
+  height: 22px;
+  background: linear-gradient(var(--ch-champagne-500), var(--ch-champagne-500)) center / 1px 100% no-repeat;
+}
+.ch-st[data-canopy] .ch-lb__rail::before {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--ch-ledger-rule);
+  content: '';
+}
+.ch-st[data-canopy] .ch-lb__bar {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 6px;
+}
+.ch-st[data-canopy] .ch-lb__bar.is-gain {
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-600));
+}
+.ch-st[data-canopy] .ch-lb__bar.is-loss {
+  background: linear-gradient(270deg, var(--ch-champagne-300), var(--ch-champagne-500));
+}
+.ch-st[data-canopy] .ch-lb__team {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--ch-ink-700);
+  text-decoration: none;
+}
+.ch-st[data-canopy] .ch-lb__v {
+  text-align: right;
+  font: 600 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.ch-st[data-canopy] .ch-lb__key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-lb__key u {
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--ch-ink-700);
+}
+
+/* P005: the player Overview as seven zones (OverviewZones). Each stat area is a band set off by a gold rule, an alternating tint
+   and, left, what the stat is with one big reading; right, the picture that fits it. Prefix .ch-z. */
+.ch-st[data-canopy] .ch-znbig.is-good {
+  color: var(--ch-green-600);
+}
+.ch-st[data-canopy] .ch-znbig.is-bad {
+  color: var(--ch-warning-600);
+}
+.ch-st[data-canopy] .ch-zsvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: inherit;
+}
+.ch-st[data-canopy] .ch-zgreen {
+  max-width: 400px;
+}
+.ch-st[data-canopy] .ch-zmeta {
+  margin: 18px 0 0;
+  font: 400 13.5px/1.4 var(--ch-font-sans, inherit);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-zmeta b {
+  font-weight: 700;
+  color: var(--ch-text-primary);
+}
+
+/* a bar against the team and Tour marks */
+.ch-st[data-canopy] .ch-ztrack {
+  position: relative;
+  /* The size container for its ticks, which move along it by `translate` in container units. */
+  container-type: inline-size;
+  height: 12px;
+  border-radius: 99px;
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-ztrack__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border-radius: 99px;
+  background: var(--ch-green-500);
+  /* The span from --ch-z-a to --ch-z-a + --ch-z-w (0 to 1 of the track), drawn by transform so a change glides without
+     relayout. */
+  transform: translateX(calc(var(--ch-z-a, 0) * 100%)) scaleX(var(--ch-z-w, 0));
+  transform-origin: left center;
+}
+.ch-st[data-canopy] .ch-ztrack__fill.is-bad {
+  background: var(--ch-warning-600);
+}
+.ch-st[data-canopy] .ch-ztrack__tick {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  left: 0;
+  translate: calc(var(--ch-z-x, 0) * 1cqw) 0;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  text-decoration: none;
+}
+.ch-st[data-canopy] .ch-ztrack__tick.is-team {
+  background: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-ztrack__tick.is-tour {
+  background: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-zpin {
+  position: relative;
+  height: 22px;
+}
+.ch-st[data-canopy] .ch-zpin span {
+  position: absolute;
+  bottom: 4px;
+  transform: translateX(-50%);
+  font: 700 14px/1 var(--ch-font-sans, inherit);
+  white-space: nowrap;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zlegend {
+  display: flex;
+  gap: 18px;
+  margin-top: 12px;
+  font: 500 13px/1 var(--ch-font-sans, inherit);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-zlegend i {
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  margin-right: 7px;
+  vertical-align: -2px;
+  border-radius: 2px;
+}
+.ch-st[data-canopy] .ch-zlegend i.is-team {
+  background: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zlegend i.is-tour {
+  background: var(--ch-champagne-500);
+}
+
+/* every hole by result */
+.ch-st[data-canopy] .ch-zmix {
+  display: flex;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-zmix i {
+  flex: var(--ch-z-n, 0) 1 0;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  font: 700 13px/1 var(--ch-font-sans, inherit);
+  font-style: normal;
+}
+.ch-st[data-canopy] .ch-zmix .is-eagle,
+.ch-st[data-canopy] .ch-zmixkey i.is-eagle {
+  background: #7f2a21;
+  color: #fff;
+}
+.ch-st[data-canopy] .ch-zmix .is-birdie,
+.ch-st[data-canopy] .ch-zmixkey i.is-birdie {
+  background: var(--ch-chart-flag);
+  color: #fff;
+}
+/* At night the flag is a salmon that white reads 2.5:1 on; the page's near-black holds 7.3:1. */
+html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmixkey i.is-birdie) {
+  color: var(--ch-bg-page);
+}
+.ch-st[data-canopy] .ch-zmix .is-par,
+.ch-st[data-canopy] .ch-zmixkey i.is-par {
+  background: var(--ch-ivory-300);
+  color: var(--ch-ink-900);
+}
+/* The par swatch is parchment on parchment: a hairline ring keeps it a swatch, not a gap. */
+.ch-st[data-canopy] .ch-zmixkey i.is-par {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-st[data-canopy] .ch-zmix .is-bogey,
+.ch-st[data-canopy] .ch-zmixkey i.is-bogey {
+  background: #6f6b62;
+  color: #fff;
+}
+.ch-st[data-canopy] .ch-zmix .is-double,
+.ch-st[data-canopy] .ch-zmixkey i.is-double {
+  background: #1c1b18;
+  color: #fff;
+}
+.ch-st[data-canopy] .ch-zmixkey {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.ch-st[data-canopy] .ch-zmixkey div {
+  display: grid;
+  gap: 3px;
+  font: 500 12.5px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-zmixkey b {
+  font: 700 18px/1 var(--ch-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zmixkey i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 2px;
+}
+
+/* the fairway strip */
+.ch-st[data-canopy] .ch-zfw {
+  display: flex;
+  height: 74px;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-zfw > div {
+  display: grid;
+  flex-basis: 0;
+  min-width: 64px;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  font: 500 12.5px/1.1 var(--ch-font-sans, inherit);
+}
+.ch-st[data-canopy] .ch-zfw b {
+  font: 700 22px/1 var(--ch-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.ch-st[data-canopy] .ch-zfw .is-rough {
+  background: repeating-linear-gradient(135deg, var(--ch-ivory-300) 0 6px, var(--ch-ivory-200) 6px 12px);
+  color: var(--ch-ink-900);
+}
+.ch-st[data-canopy] .ch-zfw .is-other {
+  background: var(--ch-ivory-200);
+  color: var(--ch-text-secondary);
+  text-align: center;
+}
+.ch-st[data-canopy] .ch-zfw .is-fw {
+  background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-600));
+  color: #fff;
+}
+
+/* the funnel */
+.ch-st[data-canopy] .ch-zfn {
+  display: grid;
+  gap: 10px;
+}
+.ch-st[data-canopy] .ch-zfn .r {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 54px;
+  align-items: center;
+  gap: 14px;
+}
+.ch-st[data-canopy] .ch-zfn .r.is-gap {
+  margin-top: 14px;
+}
+.ch-st[data-canopy] .ch-zfn .r > span {
+  font: 600 14px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zfn .r > span small {
+  display: block;
+  margin-top: 2px;
+  font: 400 12px/1.3 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-zfn .r > div {
+  position: relative;
+  height: 34px;
+  overflow: hidden;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-zfn .r > div i {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--ch-radius-md);
+  /* Full width, slid in from the left by its share (--ch-z-p, 0 to 1); the row's clip draws the start. */
+  transform: translateX(calc((var(--ch-z-p, 0) - 1) * 100%));
+  background: var(--ch-ivory-400);
+}
+.ch-st[data-canopy] .ch-zfn .r > div i.is-win {
+  background: var(--ch-green-500);
+}
+.ch-st[data-canopy] .ch-zfn .r > div i.is-sand {
+  background: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-zfn .r > b {
+  text-align: right;
+  font: 700 20px/1 var(--ch-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zfn .r > b.is-win {
+  color: var(--ch-green-600);
+}
+
+/* readings side by side, and proximity rows */
+.ch-st[data-canopy] .ch-zpair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.ch-st[data-canopy] .ch-zmini {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-zmini .l {
+  font: 600 14px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zmini .l span {
+  display: block;
+  margin-top: 3px;
+  font: 400 12.5px/1.35 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-zmini > b {
+  font: 600 30px/1 var(--ch-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  color: var(--ch-forest-800);
+}
+.ch-st[data-canopy] .ch-zmini > b small {
+  font-size: 14px;
+  letter-spacing: 0;
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-zrows {
+  display: grid;
+  gap: 14px;
+}
+.ch-st[data-canopy] .ch-zrow {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: 14px;
+}
+.ch-st[data-canopy] .ch-zrow .l {
+  font: 600 14px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zrow .l small {
+  display: block;
+  margin-top: 2px;
+  font: 400 12px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-zrow > b {
+  text-align: right;
+  font: 700 17px/1 var(--ch-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zn .ch-fm {
+  border-top: 0;
+  padding-top: 0;
+}
+@media (max-width: 960px) {
+  .ch-st[data-canopy] .ch-zpair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ch-st[data-canopy] .ch-zfloor {
+  font: italic 400 13px/1.35 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+
+/* P005: Game detail on desktop in the same zone style as the Overview: each area is a band under a gold rule, what it is and its four
+   figures on the left, the pictures and More detail on the right. The phone keeps its stacked sections (the wrappers dissolve). */
+.ch-gd.is-phone .ch-gm__id,
+.ch-gd.is-phone .ch-gm__vis {
+  display: contents;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) {
+  gap: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 48px;
+  padding: 36px 36px 40px;
+  overflow: visible;
+  border-top: 3px solid var(--ch-champagne-500);
+  border-radius: 0;
+  background: var(--ch-ivory-25);
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) #gm-tee,
+.ch-st[data-canopy] .ch-gd:not(.is-phone) #gm-short {
+  background: var(--ch-bg-subtle);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__id {
+  display: grid;
+  position: sticky;
+  /* Below the sticky top bar, never behind it. */
+  top: calc(var(--ch-topbar-h) + 24px);
+  align-content: start;
+  align-self: start;
+  gap: 18px;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__head {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__ic {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ch-green-800);
+  color: var(--ch-on-fill-50);
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t h2 {
+  margin: 0 0 12px;
+  font: 600 27px/1.1 var(--ch-font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ch-forest-800);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t p {
+  font: 400 14.5px/1.5 var(--ch-font-sans);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__head > .ch-gm__sub {
+  padding: 0;
+  white-space: normal;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--ch-ledger-rule);
+  border-bottom: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs div {
+  padding: 16px 12px 6px 0;
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs div + div {
+  padding-left: 0;
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs div:nth-child(even) {
+  padding-left: 14px;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd:not(.ch-gm__sub) {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--ch-forest-800);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd.ch-gain {
+  color: var(--ch-green-600);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd.ch-loss {
+  color: var(--ch-warning-600);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm .ch-gx-rule {
+  padding: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__vis {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__body {
+  gap: 28px 40px;
+  margin-top: 0;
+  border-top: 0;
+  background: transparent;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm-p {
+  padding: 14px 0 0;
+  border-top: 1px solid var(--ch-ledger-rule);
+  background: transparent;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gx-more {
+  margin-top: 8px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gx-more > summary {
+  padding: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gx-more > .ch-gm__body {
+  margin-top: 12px;
+}
+
+/* the wide zone: what the stat is on one row above, the table full width */
+.ch-st[data-canopy] .ch-zt {
+  min-width: 0;
+}
+.ch-st[data-canopy] .ch-zt {
+  container: ch-rounds / inline-size;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr {
+  grid-template-columns: minmax(150px, 1fr) 56px 46px 46px 52px 46px 60px repeat(4, minmax(56px, 72px));
+  gap: 8px;
+  min-width: 0;
+}
+/* the rounds table fits the canvas it is in (880px at a 1280 window, more at 1440): where the canvas is narrower, GIR and putts
+   (both on Game detail) leave before anything scrolls, and the course keeps its line with an ellipsis */
+@container ch-rounds (max-width: 820px) {
+  .ch-st[data-canopy] .ch-zt .ch-tr {
+    grid-template-columns: minmax(120px, 1fr) 52px 44px 44px 56px repeat(4, minmax(52px, 64px));
+  }
+  .ch-st[data-canopy] .ch-zt .ch-tr > .ch-tr__x {
+    display: none;
+  }
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__course {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__course .ch-gx-type {
+  flex: none;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h):hover {
+    background: rgb(176 149 96 / 0.1);
+  }
+}
+.ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h) {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+
+/* Development: each focus area or goal as a track from where it started to its target, with the current value marked on it. */
+.ch-st[data-canopy] .ch-dvl {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-st[data-canopy] .ch-dv {
+  display: grid;
+  gap: 12px;
+  padding: 20px 0 8px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-dv:first-child {
+  padding-top: 4px;
+  border-top: 0;
+}
+.ch-st[data-canopy] .ch-dv__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.ch-st[data-canopy] .ch-dv__top b {
+  display: block;
+  font: 600 19px/1.2 var(--ch-font-sans);
+  color: var(--ch-forest-800);
+}
+.ch-st[data-canopy] .ch-dv__top span {
+  display: block;
+  margin-top: 4px;
+  font: 400 14px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-dv__top em {
+  flex: none;
+  padding: 5px 10px;
+  border-radius: 99px;
+  background: var(--ch-bg-inset);
+  font: 600 13px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-green-700);
+}
+.ch-st[data-canopy] .ch-dv.is-done .ch-dv__top em {
+  background: var(--ch-green-800);
+  color: var(--ch-on-fill-50);
+}
+.ch-st[data-canopy] .ch-dv__rail {
+  position: relative;
+  /* The size container for the dot, which moves along it by `translate` in container units. */
+  container-type: inline-size;
+  height: 12px;
+  margin: 30px 6px 40px;
+  border-radius: 99px;
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-dv__done {
+  position: absolute;
+  inset: 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-600));
+  transform: scaleX(var(--ch-dv-p, 0));
+  transform-origin: left center;
+}
+.ch-st[data-canopy] .ch-dv__dot {
+  position: absolute;
+  top: -5px;
+  left: 0;
+  translate: calc(var(--ch-dv-p, 0) * 100cqw) 0;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  border-radius: 50%;
+  background: var(--ch-green-600);
+  border: 3px solid var(--ch-ivory-25);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.25);
+}
+.ch-st[data-canopy] .ch-dv__now {
+  position: absolute;
+  top: -28px;
+  transform: translateX(-50%);
+  font: 700 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ch-green-700);
+}
+.ch-st[data-canopy] .ch-dv__end {
+  position: absolute;
+  top: 22px;
+  font: 500 13px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-dv__end b {
+  display: block;
+  font: 600 15px/1.1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-dv__end.is-start {
+  left: 0;
+}
+.ch-st[data-canopy] .ch-dv__end.is-target {
+  right: 0;
+  text-align: right;
+}
+.ch-st[data-canopy] .ch-dv__flag {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ch-champagne-500);
+  border: 3px solid var(--ch-ivory-25);
+}
+
+/* Micro motion on the stats zones: lengths glide to their new value when the window, the filter or a focus area changes, on
+   transform or translate (the mix and the fairway strip on flex-grow), and a row lifts a little under the pointer. Tokens only,
+   so Animations off and reduced motion make them instant. The strokes-gained leg bars are sized inline and do not glide. */
+.ch-st[data-canopy] .ch-ztrack__fill,
+.ch-st[data-canopy] .ch-zfn .r > div i,
+.ch-st[data-canopy] .ch-dv__done {
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-st[data-canopy] .ch-ztrack__tick,
+.ch-st[data-canopy] .ch-dv__dot {
+  transition: translate var(--ch-dur-base) var(--ch-ease);
+}
+.ch-st[data-canopy] .ch-zmix i,
+.ch-st[data-canopy] .ch-zfw > div {
+  transition:
+    flex-grow var(--ch-dur-base) var(--ch-ease),
+    filter var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-st[data-canopy] .ch-lb__r,
+.ch-st[data-canopy] .ch-zrow {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+  border-radius: 10px;
+}
+@media (hover: hover) {
+  .ch-st[data-canopy] .ch-lb__r:hover,
+  .ch-st[data-canopy] .ch-zrow:hover {
+    background: rgb(176 149 96 / 0.1);
+  }
+  .ch-st[data-canopy] .ch-zmix i:hover {
+    filter: brightness(1.12);
+  }
+}
+
+/* Print: one clean page of the figures. The shell already drops the sidebar, top bar and strip (shell.css); here the page's own
+   controls go, the page takes the paper's width, rules and fills keep their ink, and nothing that reads as one row or one card is
+   cut across two sheets. PrintHead puts GolfHelm, the subject and the day at the top. */
+.ch-st-print {
+  display: none;
+}
+@media print {
+  .ch-st-print {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12pt;
+    margin: 0 0 4pt;
+    padding-bottom: 6pt;
+    border-bottom: 1pt solid gray;
+    font: 500 9.5pt/1.2 var(--ch-font-sans);
+    color: black;
+  }
+  .ch-st-print b {
+    font-weight: 700;
+  }
+  /* Paper is under the phone breakpoint, which hides the desktop tree until the phone view takes over; on paper the desktop tree is the page. */
+  .ch-st-desk,
+  .ch-st.is-desk > * {
+    visibility: visible;
+  }
+  .ch-st,
+  .ch-st * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-st {
+    max-width: none;
+    padding: 0;
+    opacity: 1;
+    transition: none;
+  }
+  .ch-st .ch-hero__actions,
+  .ch-st .ch-st-back,
+  .ch-st .ch-pf-hero__act,
+  .ch-st .ch-pf-tabs,
+  .ch-st .ch-sf,
+  .ch-st .ch-gd__nav,
+  .ch-st .ch-st-updating {
+    display: none !important;
+  }
+  /* A plain page: white paper, and the shell's "Skip to content" (fixed, so it would print on every sheet) stays on screen. */
+  html:has(.ch-st),
+  html:has(.ch-st) body,
+  html:has(.ch-st) .ch-root,
+  html:has(.ch-st) .ch-app,
+  html:has(.ch-st) .ch-canvas {
+    background: white !important;
+  }
+  html:has(.ch-st) .ch-skip {
+    display: none !important;
+  }
+  .ch-st .ch-tbl {
+    overflow: visible;
+  }
+  .ch-st .ch-tr {
+    min-width: 0;
+  }
+  .ch-st .ch-tr,
+  .ch-st .ch-zrow,
+  .ch-st .ch-lb__r,
+  .ch-st .ch-ft tr,
+  .ch-st .ch-tp__c,
+  .ch-st .ch-fm,
+  .ch-st .ch-st-card,
+  .ch-st .ch-sgm,
+  .ch-st .ch-dv,
+  .ch-st .ch-best__r,
+  .ch-st .ch-par3__t,
+  .ch-st .ch-gm-p,
+  .ch-st .ch-lg {
+    break-inside: avoid;
+  }
+  .ch-st h2,
+  .ch-st h3 {
+    break-after: avoid;
+  }
+}
+
+/* -- W4c tablet tier (a canvas under 861px: an iPad portrait with the sidebar open leaves 618px) --------------------
+   Team stats was tuned from a canvas of about 860px up. Two things broke below it. The tape's five 110px cards put the
+   figure on top of its change and the label under the next card, so it takes two rows (three, then two) with the seam
+   between them. The leg grid forced 760px of minimum width, which scrolled sideways when the canvas could hold it with
+   narrower leg columns. The container is the canvas (shell.css). The media query keeps it to a tablet on screen: the
+   phone has its own tree, 1181px and wider is untouched, and paper keeps the desktop view as it is. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 720px) {
+    .ch-st[data-canopy] .ch-tp {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c {
+      grid-column: span 2;
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(n + 4) {
+      grid-column: span 3;
+      box-shadow: inset 0 1px 0 rgb(176 149 96 / 0.34);
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(4) {
+      padding-left: 22px;
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(5) {
+      box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.34), inset 0 1px 0 rgb(176 149 96 / 0.34);
+    }
+  }
+  @container (max-width: 860px) {
+    .ch-lg__r {
+      grid-template-columns: minmax(160px, 1.6fr) repeat(4, minmax(56px, 1fr)) 48px 60px;
+      min-width: 0;
+    }
+    .ch-lg__r .c {
+      padding: 0 8px;
+    }
   }
 }

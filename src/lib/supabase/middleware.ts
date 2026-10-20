@@ -553,6 +553,12 @@ async function checkRouteAuthorization(
  * This refreshes the user's session and is called on every route
  */
 export async function updateSession(request: NextRequest) {
+  // Layouts are never handed searchParams, so the Clubhouse alias redirects
+  // (src/clubhouse/routes/alias.ts) read the query from this request header.
+  // Set on the request itself (always overwriting a client-sent value) so every
+  // `NextResponse.next({ request })` below, including the one setAll rebuilds
+  // with refreshed cookies, forwards it.
+  request.headers.set('x-helm-search', request.nextUrl.search);
   const pathname = request.nextUrl.pathname;
   const sport = getSportFromPath(pathname);
   const onAdminPath = isAdminPath(pathname);

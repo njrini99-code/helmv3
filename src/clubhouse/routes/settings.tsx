@@ -15,5 +15,6 @@ export async function ClubhouseSettingsRoute({ section }: { section?: string }) 
   if (!session || (!session.coach && !session.player)) return null;
   const team = await resolveClubhouseTeam(session);
   const data = await loadSettings(session, team?.teamId ?? null);
-  return <Settings data={data} section={parseSection(section, data.role)} />;
+  const parsed = parseSection(section, data.role);
+  return <Settings data={data} section={parsed} opened={section === parsed} />;
 }

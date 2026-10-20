@@ -10,7 +10,7 @@ import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 import { getRoundRecoverySnapshot } from '@/lib/offline/shot-storage';
-import { useOfflineSyncStatus } from '@/stores/offline-sync-store';
+import { useOfflineSyncStatus, useOfflineSyncStore } from '@/stores/offline-sync-store';
 import {
   emergencySave,
   loadEmergencySave,
@@ -40,6 +40,7 @@ import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { useActiveWork } from '@/lib/recovery/use-active-work';
 import { resolveRoundRoutes, type RoundSessionRoutes } from '@/lib/golf/round-session/routes';
 import { CONFLICT_CHECK_TIMEOUT_MS, settleWithin } from '@/lib/golf/round-session/settle-within';
+import { decidePostHoleCompleteAction, nextPlayIndex, normalizeStartHole } from '@/lib/golf/round-session/play-order';
 
 export type Hole = RoundHole;
 
@@ -79,6 +80,8 @@ export interface RoundSetupData {
   roundDate: string;
   qualifierId?: string;
   qualifierRoundNumber?: number;
+  /** Shotgun start: the hole position the round started on (draft_data.startHole, play-order.ts). Omitted, hole 1. */
+  startHole?: number;
 }
 
 
@@ -548,6 +551,8 @@ export function useContinueRoundSession({
           terminalSubmission,
         },
       });
+      // The queue grew: refresh the count the offline banner and sync badge read, as the new-round hook does.
+      await useOfflineSyncStore.getState().updatePendingCount();
     } catch {
       // localStorage emergency save above remains the hard fallback
     }
@@ -715,6 +720,7 @@ export function useContinueRoundSession({
         roundType: setupData.roundType,
         roundDate: setupData.roundDate,
         currentHole: Math.max(1, Math.min(currentHole + 1, holesSnapshot.length)),
+        startHole: normalizeStartHole(setupData.startHole, holesSnapshot.length),
         holesToPlay: holesSnapshot.length as 9 | 18,
         holes: Array.from(
           { length: holesSnapshot.length },
@@ -817,6 +823,7 @@ export function useContinueRoundSession({
       qualifierId: setupData.qualifierId,
       qualifierRoundNumber: setupData.qualifierRoundNumber,
       currentHole: Math.max(1, Math.min(holeIndexToUse + 1, roundHoles.length)),
+      startHole: normalizeStartHole(setupData.startHole, roundHoles.length),
       holesToPlay: roundHoles.length as 9 | 18,
       holes: Array.from(
         { length: roundHoles.length },
@@ -1019,6 +1026,11 @@ export function useContinueRoundSession({
     inProgressShotsByHoleRef.current = inProgressAfter;
     setInProgressShotsByHole(inProgressAfter);
 
+    // The hole after this one in play order (shotgun start: hole 18 is followed by hole 1). A round from hole 1 keeps
+    // its old "one past the last hole" marker after the 18th, which the saves clamp.
+    const startHole = normalizeStartHole(setupData.startHole, holes.length);
+    const followingHole = startHole === 1 ? holeIndex + 1 : nextPlayIndex(holeIndex, holes.length, startHole);
+
     // Immediate localStorage backup of completed hole (synchronous, guaranteed)
     const emergencyTimestamp = Date.now();
     emergencySave({
@@ -1029,10 +1041,10 @@ export function useContinueRoundSession({
       holes: updatedHoles,
       completedHoleStats: updatedStats,
       inProgressShotsByHole: inProgressAfter,
-      currentHoleIndex: isReEdit ? activeProgressHoleIndex : holeIndex + 1,
+      currentHoleIndex: isReEdit ? activeProgressHoleIndex : followingHole,
     });
 
-    const nextHole = isReEdit ? activeProgressHoleIndex : holeIndex + 1;
+    const nextHole = isReEdit ? activeProgressHoleIndex : followingHole;
     const checkpointed = await persistCompletedHole(
       buildPartialRoundData(updatedStats, nextHole, inProgressAfter),
       emergencyTimestamp,
@@ -1045,28 +1057,29 @@ export function useContinueRoundSession({
     const allHolesScored = hasAllHolesScored(updatedStats, holes);
     allHolesCheckpointedRef.current = allHolesScored;
 
-    if (allHolesScored && holeIndex === holes.length - 1) {
-      // Last hole (re-)completed and all holes scored — always show finish confirmation
-      setPendingFinalStats(updatedStats);
-      setShowFinishConfirm(true);
-    } else if (isReEdit) {
-      if (allHolesScored) {
-        // All holes scored after re-edit — show finish confirmation
+    // The same decision the new-round engine makes (play order included: a shotgun start's last hole is the one
+    // before its start, and hole 18 advances to hole 1).
+    const decision = decidePostHoleCompleteAction({
+      allHolesScored,
+      isReEdit,
+      holeIndex,
+      totalHoles: holes.length,
+      startHole,
+    });
+    switch (decision.type) {
+      case 'finish':
+        // Last hole - ask for confirmation before submitting
         setPendingFinalStats(updatedStats);
         setShowFinishConfirm(true);
-      } else {
+        break;
+      case 'return-to-frontier':
         // Re-editing a previously completed hole — return to the active frontier
         setCurrentHoleIndex(activeProgressHoleIndex);
-      }
-    } else if (holeIndex < holes.length - 1) {
-      // Normal progression — advance to next hole
-      const nextHole = holeIndex + 1;
-      setCurrentHoleIndex(nextHole);
-      activeProgressHoleRef.current = nextHole;
-    } else {
-      // Last hole - ask for confirmation before submitting
-      setPendingFinalStats(updatedStats);
-      setShowFinishConfirm(true);
+        break;
+      case 'advance':
+        setCurrentHoleIndex(decision.nextHoleIndex);
+        activeProgressHoleRef.current = decision.nextHoleIndex;
+        break;
     }
     return true;
   };
@@ -1461,11 +1474,35 @@ export function useContinueRoundSession({
       // and completes it in one atomic call — instead of throwing the key at
       // the overlay, which rendered the literal string "round_missing". A
       // failed re-create comes back as a sentence; the snapshot above stays.
-      const { result } = await writeRoundRecreatingIfMissing(
+      // Q-120: the round exists server-side on this engine, so the submit
+      // carries the last acknowledged `updated_at` and the RPC refuses
+      // ('conflict') to replace a row another device moved since. Read fresh
+      // per attempt so a self-healed token is the one re-sent.
+      const submitWithLock = () => writeRoundRecreatingIfMissing(
         submitGolfRoundComprehensive,
-        roundData,
+        { ...roundData, expectedUpdatedAt: lastServerUpdatedAtRef.current },
         liveRoundId(),
       );
+      let { result } = await submitWithLock();
+      if (!result.success && result.error === 'conflict') {
+        // Same self-heal-or-block decision as every other write: a mismatch
+        // this device caused itself adopts the token and is re-sent once; a
+        // genuine collision blocks the round. Either way the pre-submit
+        // snapshot above stays on the device and the raw key never reaches
+        // the overlay.
+        const healed = await handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE);
+        if (healed) ({ result } = await submitWithLock());
+        if (!result.success && result.error === 'conflict') {
+          // A second conflict straight after a self-heal is escalated; if it
+          // still reads as self-caused, say so instead of dropping back silently.
+          if (healed && await handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE)) {
+            setError(ROUND_CONFLICT_RELOAD_MESSAGE);
+          }
+          isSubmittingRef.current = false;
+          setSubmitting(false);
+          return;
+        }
+      }
       if (!result.success) {
         // C3: distinguish the qualifier-closed refusal from the round itself
         // being complete BEFORE the (now-narrowed) completed-round check —

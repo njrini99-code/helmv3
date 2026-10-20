@@ -49,7 +49,7 @@ export function StatsNoTeam({ coach }: { coach: boolean }) {
         size="page"
         code="CH-4309"
         icon={Users}
-        title="You aren't on a team yet"
+        title="You aren’t on a team yet"
         body={coach ? 'Stats fill in once your team is set up and players post rounds.' : 'Your stats show here once a coach adds you to a team roster.'}
       />
     </main>

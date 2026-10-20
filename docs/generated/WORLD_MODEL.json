@@ -723,6 +723,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/clubhouse/data/recruiting-calendar.ts",
+        "pattern": "src/clubhouse/data/recruiting-calendar.ts",
+        "category": "components"
+      },
+      {
         "id": "components:src/clubhouse/data/recruiting-shape.ts",
         "pattern": "src/clubhouse/data/recruiting-shape.ts",
         "category": "components"
@@ -3748,7 +3753,7 @@
       },
       {
         "id": "get_coach_today_schedule",
-        "definedIn": "supabase/migrations/20260806020100_coach_today_schedule_excludes_classes.sql"
+        "definedIn": "supabase/migrations/20261017111000_golf_home_event_rpcs_skip_cancelled.sql"
       },
       {
         "id": "get_crm_coach_stage_history",
@@ -3784,7 +3789,7 @@
       },
       {
         "id": "get_golf_conversations_with_details",
-        "definedIn": "supabase/migrations/20260621041824_harden_get_golf_conversations_rpc.sql"
+        "definedIn": "supabase/migrations/20261008160000_golf_conversation_hidden_at.sql"
       },
       {
         "id": "get_my_baseball_player_id",
@@ -3793,6 +3798,10 @@
       {
         "id": "get_platform_health_stats",
         "definedIn": "supabase/migrations/20260708020000_gate_admin_telemetry_rpcs_pii.sql"
+      },
+      {
+        "id": "get_player_hub_events",
+        "definedIn": "supabase/migrations/20261018120000_golf_events_meetings_invitees_only.sql"
       },
       {
         "id": "get_qualifier_leaderboard",
@@ -3827,6 +3836,10 @@
         "definedIn": "supabase/migrations/20260613190000_course_library_normalize_unique.sql"
       },
       {
+        "id": "golf_event_attendance_counts",
+        "definedIn": "supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql"
+      },
+      {
         "id": "golf_join_team_with_code",
         "definedIn": "supabase/migrations/20260807030600_golf_join_one_team_rule_ignores_status.sql"
       },
@@ -3843,6 +3856,10 @@
         "definedIn": "supabase/migrations/20260819200000_preserve_golf_history_on_account_deletion.sql"
       },
       {
+        "id": "golf_player_invited_to_event",
+        "definedIn": "supabase/migrations/20261018120000_golf_events_meetings_invitees_only.sql"
+      },
+      {
         "id": "golf_qualifier_selection_reasons",
         "definedIn": "supabase/migrations/20260929200000_golf_qualifier_db_hardening.sql"
       },
@@ -3853,6 +3870,10 @@
       {
         "id": "golf_recruit_documents_touch_updated_at",
         "definedIn": "supabase/migrations/20260614020000_recruit_documents.sql"
+      },
+      {
+        "id": "golf_set_course_image",
+        "definedIn": "supabase/migrations/20261016220000_golf_set_course_image.sql"
       },
       {
         "id": "golf_team_by_join_code",
@@ -4100,7 +4121,7 @@
       },
       {
         "id": "recompute_golf_round_totals",
-        "definedIn": "supabase/migrations/20260606190000_fix_fairway_denominator.sql"
+        "definedIn": "supabase/migrations/20261017110000_golf_round_totals_null_putts.sql"
       },
       {
         "id": "recompute_team_sg",
@@ -4245,6 +4266,10 @@
       {
         "id": "user_is_coach_of_golf_player",
         "definedIn": "supabase/migrations/20260612130000_team_toggle_rls_staff_scope.sql"
+      },
+      {
+        "id": "validate_notification_preferences",
+        "definedIn": "supabase/migrations/20261017100000_notification_preferences_keep_all_keys.sql"
       }
     ],
     "jobs": [
@@ -5668,6 +5693,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/__tests__/change-timeline.test.ts",
           "anchor": "src/lib/admin/incidents/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/__tests__/incident-classification-benign-recurrences.test.ts",
+          "anchor": "src/lib/admin/incident-classification"
         },
         {
           "kind": "import_graph",
@@ -12355,6 +12385,11 @@
           "kind": "import_graph",
           "path": "src/lib/calendar/availability.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/calendar/meeting-invites.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
         }
       ]
     },
@@ -12444,6 +12479,18 @@
     },
     {
       "source": "calendar_events",
+      "target": "golf_event_attendance_counts",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/golf/actions/calendar-events.ts",
+          "anchor": "golf_event_attendance_counts"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
       "target": "golf_insight_action",
       "kind": "feature_table",
       "evidence": [
@@ -12514,6 +12561,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/schedule-image.ts",
           "anchor": "src/lib/golf/schedule-vision"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/calendar/__tests__/zoned-wall-clock-dst.test.ts",
+          "anchor": "src/lib/golf/timezone"
         },
         {
           "kind": "import_graph",
@@ -12636,6 +12688,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/clubhouse/**"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
+      "target": "golf_event_attendance_counts",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/data/attendance-counts.ts",
+          "anchor": "golf_event_attendance_counts"
         }
       ]
     },
@@ -15348,6 +15412,23 @@
           "kind": "import_graph",
           "path": "src/app/lifting/actions/invites.ts",
           "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/send-password-reset.ts",
+          "anchor": "src/lib/auth/golfhelm-reset-email"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "lift_lab",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/lifting/actions/invites.ts",
+          "anchor": "src/lib/lifting/invite-email"
         }
       ]
     },
@@ -16247,6 +16328,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/course-library.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/course-library.ts",
           "anchor": "src/lib/admin/observed-action"
         },
         {
@@ -16461,6 +16547,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-partial.ts",
+          "anchor": "src/lib/auth/get-golf-dashboard-role"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-partial.ts",
           "anchor": "src/lib/auth/resilient-get-user"
         },
         {
@@ -16532,6 +16623,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-submit.ts",
           "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-submit.ts",
+          "anchor": "src/lib/auth/get-golf-dashboard-role"
         },
         {
           "kind": "import_graph",
@@ -16852,6 +16948,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260923080000_recap_provenance_and_single_flight.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_set_course_image",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/golf/actions/course-library.ts",
+          "anchor": "golf_set_course_image"
         }
       ]
     },
@@ -17801,6 +17909,23 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/lifting/**"
+        }
+      ]
+    },
+    {
+      "source": "lift_lab",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/lifting/invite-email.ts",
+          "anchor": "src/lib/email/lifting-invite-template"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/lifting/invite-email.ts",
+          "anchor": "src/lib/email/outbound-gate"
         }
       ]
     },
@@ -20275,6 +20400,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/tasks.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tasks.ts",
           "anchor": "src/lib/admin/observed-action"
         },
         {
@@ -20357,6 +20487,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/dashboard-data.ts",
           "anchor": "src/lib/calendar/class-events"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/dashboard-data.ts",
+          "anchor": "src/lib/calendar/meeting-invites"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/player-hub-data.ts",
+          "anchor": "src/lib/calendar/meeting-invites"
         }
       ]
     },
@@ -20381,6 +20521,18 @@
           "kind": "rpc_call",
           "path": "src/app/golf/actions/dashboard-data.ts",
           "anchor": "get_coach_today_schedule"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "get_player_hub_events",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/golf/actions/player-hub-data.ts",
+          "anchor": "get_player_hub_events"
         }
       ]
     },
@@ -20461,6 +20613,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/player-hub-data.ts",
           "anchor": "src/lib/golf/task-overdue"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/player-hub-data.ts",
+          "anchor": "src/lib/golf/player-hub-events"
         },
         {
           "kind": "import_graph",
@@ -20976,6 +21133,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/qualifying.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/v3/qualifying.ts",
           "anchor": "src/lib/admin/observed-action"
         }
       ]
@@ -20989,6 +21151,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/__tests__/qualifier-setup.test.ts",
           "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/__tests__/qualifier-setup.test.ts",
+          "anchor": "src/lib/auth/session"
         },
         {
           "kind": "import_graph",
@@ -21029,6 +21196,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/qualifier-setup.ts",
           "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-setup.ts",
+          "anchor": "src/lib/auth/get-golf-dashboard-role"
         },
         {
           "kind": "import_graph",
@@ -21416,6 +21588,18 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/recruiting.ts",
           "anchor": "src/lib/supabase/server"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "components:src/clubhouse/data/recruiting-calendar.ts",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/recruiting-calendar.ts"
         }
       ]
     },
@@ -22508,6 +22692,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/round-session/__tests__/use-continue-round-session.preservation.test.tsx",
+          "anchor": "src/lib/golf/round-missing-recovery"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/__tests__/use-new-round-session.preservation.test.tsx",
+          "anchor": "src/app/golf/actions/round-submit"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/round-session/start-form.ts",
           "anchor": "src/lib/golf/local-day"
         },
@@ -22555,6 +22749,11 @@
           "kind": "import_graph",
           "path": "src/lib/golf/round-session/use-new-round-session.ts",
           "anchor": "src/app/golf/actions/course-library"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/lib/golf/upload-course-image"
         },
         {
           "kind": "import_graph",
@@ -24009,6 +24208,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/message-attachments.ts",
+          "anchor": "src/lib/auth/golf-dashboard-role"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/messages.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -24826,6 +25030,18 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
           "anchor": "src/lib/email/outbound-gate"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
+      "target": "get_player_hub_events",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/data/player-home.ts",
+          "anchor": "get_player_hub_events"
         }
       ]
     },

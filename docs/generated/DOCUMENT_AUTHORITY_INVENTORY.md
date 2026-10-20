@@ -38,19 +38,19 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
-| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
+| `GENERATED_TRUTH` | 45 | 5 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 43 | 5 | 17 | 63 |
-| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 35 |
-| `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
+| `PLAN` | 44 | 5 | 17 | 63 |
+| `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 35 |
+| `STATE_SNAPSHOT` | 8 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 49 | 15 | 2 | 4 |
+| `INCIDENT` | 56 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
-| `INDEX` | 28 | 2 | 11 | 5 |
+| `INDEX` | 29 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 322 | 13 | 70 | 92 |
+| `UNKNOWN` | 333 | 13 | 71 | 92 |
 
 ## Files
 
@@ -105,6 +105,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/golfhelm-creative-engine/references/creative-rules.md` | current | - | - | - | - |
 | `.claude/skills/golfhelm-creative-engine/references/design-tokens.md` | current | - | - | yes | - |
 | `.claude/skills/golfhelm-creative-engine/references/product-features.md` | current | - | - | - | - |
+| `.claude/skills/helm-safari-performance/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/helm-sentry/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/helm-supabase/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/modern-saas-ui/SKILL.md` | current | - | - | yes | - |
@@ -205,7 +206,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/supabase-postgres-best-practices/references/security-privileges.md` | current | - | - | - | - |
 | `.claude/skills/supabase-postgres-best-practices/references/security-rls-basics.md` | current | - | - | - | - |
 | `.claude/skills/supabase-postgres-best-practices/references/security-rls-performance.md` | current | - | - | - | - |
-| `.claude/skills/supabase-server/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/supabase/CHANGELOG.md` | current | - | - | - | - |
 | `.claude/skills/supabase/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/supabase/assets/feedback-issue-template.md` | current | - | - | - | - |
@@ -334,6 +334,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |
 | `docs/generated/contracts/coachhelm_ai.md` | generated | - | - | - | - |
@@ -343,6 +345,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/README.md` | generated | - | - | yes | - |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | - |
 | `memory/glossary.md` | current | yes | yes | yes | - |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | - |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | - |
 | `memory/projects/golfhelm.md` | current | yes | yes | - | - |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | - |
 
@@ -393,6 +397,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 4 |
 | `docs/clubhouse/AUDIT_PLAN.md` | current | - | - | - | - |
+| `docs/clubhouse/COMPLETION_PLAN_2026-10-18.md` | current | - | - | - | - |
 | `docs/clubhouse/ROUNDS_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
@@ -478,8 +483,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/DEPTH_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/HIGH_FIDELITY_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/INTUITIVE_SECONDARY_AUDIT.md` | current | - | - | - | - |
+| `docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md` | current | - | - | - | - |
 | `docs/clubhouse/POPUP_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/PREMIUM_AUDIT.md` | current | - | - | yes | - |
+| `docs/clubhouse/PREMIUM_PASS_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/SMOOTHNESS_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
@@ -509,6 +516,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/briefs/SUPABASE_ZERO_COST_OBSERVABILITY_BRIEF_2026-09-03.md` | current | yes | - | yes | - |
 | `docs/ai-system/selfheal/STATE-2026-08-28.md` | current | yes | - | yes | - |
 | `docs/baseball/COHERENCE_RULING_2026-07-08.md` | current | - | - | yes | - |
+| `docs/clubhouse/NATIVE_FEEL_RESEARCH_2026-10-08.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_2026-09-30.md` | current | - | - | yes | - |
 | `docs/reports/HELM_OS_TRUTH_CONVERGENCE_2026-08-30.md` | current | - | - | yes | - |
 | `docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md` | current | - | - | - | - |
@@ -568,7 +576,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md` | current | - | - | - | - |
 | `memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md` | current | - | - | - | - |
 | `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md` | current | - | - | - | - |
+| `memory/incidents/admin_selfheal/INC-2026-10-07-designed-paths-stamped-regressed.md` | current | - | - | - | - |
 | `memory/incidents/auth_onboarding_join/INC-2026-09-27-presence-webkit-abort-noise.md` | current | - | - | - | - |
+| `memory/incidents/baseball_core/INC-2026-10-13-use-server-object-export-breaks-coach-onboarding.md` | current | - | - | - | - |
 | `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md` | current | - | - | - | - |
@@ -578,6 +588,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-10-13-recap-style-fallback-logged-as-llm.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-10-15-ask-suggestion-function-prop.md` | current | - | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md` | current | yes | - | yes | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md` | current | yes | - | - | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md` | current | yes | - | - | - |
@@ -602,6 +614,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md` | current | - | - | - | - |
 | `memory/incidents/observability_sentry/INC-2026-09-27-webkit-stale-chunk-route-boundary.md` | current | - | - | - | - |
+| `memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md` | current | - | - | - | - |
+| `memory/incidents/observability_supabase/INC-2026-10-15-health-probe-stalled-connection.md` | current | - | - | - | - |
 | `memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md` | current | - | - | - | - |
 | `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md` | current | - | - | - | - |
@@ -612,6 +626,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md` | current | - | - | - | - |
+| `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md` | current | - | - | - | - |
 
 ### `ADR`
 
@@ -634,7 +649,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `design/handoff/auth/README.md` | current | - | - | yes | - |
 | `design/handoff/mobile/README.md` | current | - | - | - | - |
 | `docs/README.md` | current | - | - | yes | 1 |
-| `docs/clubhouse/README.md` | current | yes | - | - | - |
+| `docs/clubhouse/README.md` | current | yes | - | yes | - |
 | `docs/clubhouse/catalog/README.md` | current | - | - | - | - |
 | `docs/db/drafts/README.md` | current | - | - | - | - |
 | `e2e/README.md` | current | - | - | yes | 2 |
@@ -644,6 +659,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `public/images/README.md` | current | - | - | - | - |
 | `replay/README.md` | current | yes | - | yes | - |
 | `scripts/README.md` | current | - | - | yes | - |
+| `scripts/phone/README.md` | current | - | - | - | - |
 | `src/app/golf/README.md` | current | - | - | - | - |
 | `src/clubhouse/README.md` | current | - | - | - | - |
 | `src/components/baseball/living-annual/README.md` | current | - | - | - | - |
@@ -757,6 +773,7 @@ them would bury everything above.
 | `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
+| `docs/clubhouse/STATUS.md` | current | - | - | yes | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/auth.md` | current | - | - | - | - |
@@ -801,6 +818,7 @@ them would bury everything above.
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P001-shell/DESIGN.md` | current | - | - | - | - |
@@ -880,16 +898,25 @@ them would bury everything above.
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/classes.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/coach-onboarding.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/coach-pending.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/coachhelm.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/demo-entry.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home-player.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/join-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/messages.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/recruiting.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/reset-password.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/roster.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/round-card.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/rounds.md` | current | - | - | yes | - |
+| `docs/clubhouse/phone/section-strip.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/settings.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/shell-gestures.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/staff-invite.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/team-hub.md` | current | - | - | - | - |

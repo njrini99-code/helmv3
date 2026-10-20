@@ -211,7 +211,8 @@
         "offline": 10703
       },
       "tests": [
-        "src/clubhouse/__tests__/messages.test.tsx"
+        "src/clubhouse/__tests__/messages.test.tsx",
+        "src/clubhouse/__tests__/wiring-p007-messages.test.tsx"
       ]
     },
     {
@@ -231,6 +232,26 @@
       },
       "tests": [
         "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-REMOVE-MEMBER",
+      "label": "Remove someone from a group you created",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#RemoveMemberModal",
+      "handler": "api.removeMember",
+      "service": "src/app/golf/actions/messages.ts#removeGolfGroupMember",
+      "data": [
+        "golf_conversation_participants"
+      ],
+      "bridge": {
+        "confirm": 71104,
+        "optimistic": 71301,
+        "success": 70902,
+        "failure": 70636,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/wiring-p007-messages.test.tsx"
       ]
     },
     {
@@ -286,7 +307,8 @@
         "failure": 70619
       },
       "tests": [
-        "src/clubhouse/__tests__/messages.test.tsx"
+        "src/clubhouse/__tests__/messages.test.tsx",
+        "src/clubhouse/__tests__/wiring-p007-messages.test.tsx"
       ]
     },
     {
@@ -304,6 +326,23 @@
       },
       "tests": [
         "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-OPEN-ANNOUNCEMENT-FILE",
+      "label": "Open a file attached to an announcement",
+      "component": "src/clubhouse/screens/messages/announcements.tsx#AnnouncementPane",
+      "handler": "openDoc",
+      "service": "src/app/golf/actions/documents.ts#getPreviewUrl",
+      "data": [
+        "golf_documents",
+        "storage documents"
+      ],
+      "bridge": {
+        "failure": 70616
+      },
+      "tests": [
+        "src/clubhouse/__tests__/wiring-p007-messages.test.tsx"
       ]
     },
     {

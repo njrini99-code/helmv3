@@ -30,6 +30,7 @@ import { Button } from '@/components/fairway/controls/button';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { yardsToDisplay } from '@/lib/golf/distance-units';
 import type { RoundHole } from '@/lib/types/golf';
+import { isLastPlayIndex, nextPlayIndex, playedBefore, previousPlayIndex } from '@/lib/golf/round-session/play-order';
 
 type Hole = RoundHole;
 
@@ -39,6 +40,8 @@ interface FairwayScorecardHeaderProps {
   holes: Hole[];
   currentHoleIndex: number;
   currentHoleNumber: number;
+  /** Shotgun start: the hole position the round started on (play-order.ts). Omitted, hole 1. */
+  startHole?: number;
   autoSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
   onExit?: () => void;
   onNavigateToHole?: (holeIndex: number) => void;
@@ -188,6 +191,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
   holes,
   currentHoleIndex,
   currentHoleNumber,
+  startHole = 1,
   autoSaveStatus,
   onExit,
   onNavigateToHole,
@@ -233,7 +237,8 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
     const isCurrent = holeIndex === currentHoleIndex;
     const hasScore = hole.score !== null;
     const scoreToPar = hasScore ? (hole.score || 0) - hole.par : 0;
-    const canNavigate = onNavigateToHole && (hasScore || holeIndex < currentHoleIndex);
+    // "Earlier" is earlier in play order: a shotgun start's holes before its start are played last.
+    const canNavigate = onNavigateToHole && (hasScore || playedBefore(holeIndex, currentHoleIndex, holes.length, startHole));
 
     // Score-to-par color ramp → Fairway LIGHT tones. Same thresholds as legacy.
     const scoreColor = (() => {
@@ -320,12 +325,14 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
   // finished (audit 2026-09-02, UI-10). They now move to the hole, under the
   // same rule as the pills: earlier holes always, a later hole only once it
   // has a score. Anything else is disabled, with the reason on the control.
-  const prevIndex = currentHoleIndex - 1;
-  const nextIndex = currentHoleIndex + 1;
+  // Prev/Next walk the play order (a shotgun start wraps from hole 18 to hole 1); from hole 1 it is the plain order.
+  const prevIndex = previousPlayIndex(currentHoleIndex, holes.length, startHole) ?? -1;
+  const hasNext = !isLastPlayIndex(currentHoleIndex, holes.length, startHole);
+  const nextIndex = hasNext ? nextPlayIndex(currentHoleIndex, holes.length, startHole) : holes.length;
   const canGoPrev = Boolean(onNavigateToHole) && prevIndex >= 0;
-  const canGoNext = Boolean(onNavigateToHole) && nextIndex < holes.length && holes[nextIndex]?.score != null;
+  const canGoNext = Boolean(onNavigateToHole) && hasNext && holes[nextIndex]?.score != null;
   const nextBlockedReason =
-    !canGoNext && nextIndex < holes.length ? 'Finish this hole to move on' : undefined;
+    !canGoNext && hasNext ? 'Finish this hole to move on' : undefined;
 
   return (
     // New Round owns the status-bar padding here. Continue Round has an inset
@@ -349,7 +356,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
             variant="ghost"
             size="sm"
             onClick={() => {
-              scrollHoleIntoView(Math.max(1, currentHoleNumber - 1));
+              scrollHoleIntoView(holes[prevIndex]?.number ?? Math.max(1, currentHoleNumber - 1));
               if (canGoPrev) onNavigateToHole?.(prevIndex);
             }}
             disabled={!canGoPrev}
@@ -372,7 +379,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           variant="ghost"
           size="sm"
           onClick={() => {
-            scrollHoleIntoView(Math.min(holes.length, currentHoleNumber + 1));
+            scrollHoleIntoView(holes[nextIndex]?.number ?? Math.min(holes.length, currentHoleNumber + 1));
             if (canGoNext) onNavigateToHole?.(nextIndex);
           }}
           disabled={!canGoNext}

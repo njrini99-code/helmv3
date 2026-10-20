@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * The player's Roster (docs/clubhouse/catalog/roster.md: CH-3210, CH-3211, CH-3307, CH-3308, CH-3807; contracts 30804
+ * The player's Roster (docs/clubhouse/catalog/roster.md: CH-3210, CH-3211, CH-3307, CH-3308, CH-3309, CH-3807; contracts 30804
  * to 30806): the coach's screen, read-only, over a loader that reads nothing a teammate could not show.
  */
 
@@ -85,7 +85,7 @@ describe('Player roster · what the loader reads (30805)', () => {
     { status: 'active', player: null },
   ];
 
-  it('asks only for the team row and the team\'s active members, with no coach read, join code, request, note or round', async () => {
+  it('asks only for the team row, the team\'s active members and its coaches\' names and roles, with no join code, request, note or round', async () => {
     const asked: string[] = [];
     const filters: Record<string, Array<[string, unknown[]]>> = {};
     const answer = (table: string, data: unknown) => (f: Array<[string, unknown[]]>) => {
@@ -96,9 +96,24 @@ describe('Player roster · what the loader reads (30805)', () => {
     tables.current = {
       golf_teams: answer('golf_teams', { name: 'Varsity', season: 'Fall 2026', join_code: 'JOINME', head_coach_notes: 'private' }),
       golf_team_members: answer('golf_team_members', MEMBER_ROWS),
+      golf_team_coach_staff: answer('golf_team_coach_staff', [
+        { role: 'assistant', is_primary: false, coach: { id: 'c2', full_name: 'Dan Whitfield', title: 'Assistant coach', email: 'dan@school.edu' } },
+        { role: 'head_coach', is_primary: true, coach: { id: 'c1', full_name: 'Maya Reyes', title: null } },
+        { role: 'assistant', is_primary: false, coach: { id: 'c3', full_name: 'Ben Ortiz', title: null } },
+        { role: 'assistant', is_primary: false, coach: { id: 'c4', full_name: ' ', title: null } },
+      ]),
     };
     const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
-    expect([...new Set(asked)].sort()).toEqual(['golf_team_members', 'golf_teams']);
+    expect([...new Set(asked)].sort()).toEqual(['golf_team_coach_staff', 'golf_team_members', 'golf_teams']);
+    // Wave 7 (decision D): the staff of this team, by name and role, head coach first; a coach with no name is left out.
+    expect(String(filters['golf_team_coach_staff']!.find(([k]) => k === 'select')![1][0])).toBe('role, is_primary, coach:golf_coaches(id, full_name, title)');
+    expect(filters['golf_team_coach_staff']).toContainEqual(['eq', ['team_id', 't1']]);
+    expect(data.coaches).toEqual([
+      { id: 'c1', name: 'Maya Reyes', role: 'Head coach' },
+      { id: 'c3', name: 'Ben Ortiz', role: 'Coach' },
+      { id: 'c2', name: 'Dan Whitfield', role: 'Assistant coach' },
+    ]);
+    expect(JSON.stringify(data)).not.toContain('dan@school.edu');
     expect(teamActions.requests).not.toHaveBeenCalled();
     // The selects name the columns shown and no others: no email, phone, avatar, hometown, join code or notes.
     const selected = (t: string) => String(filters[t]!.find(([k]) => k === 'select')![1][0]);
@@ -117,6 +132,14 @@ describe('Player roster · what the loader reads (30805)', () => {
     expect(Object.keys(data.players[0]!).sort()).toEqual(['classYear', 'gradYear', 'handicap', 'id', 'isYou', 'name']);
     expect(data.teamName).toBe('Varsity');
     expect(data.season).toBe('Fall 2026');
+  });
+
+  it('CH-3808 a coaching staff read that fails leaves the Coaches group out, never "no coaches", and is logged; the players stand', async () => {
+    tables.current = { golf_teams: { data: { name: 'Varsity', season: null } }, golf_team_members: { data: MEMBER_ROWS }, golf_team_coach_staff: { error: { message: 'boom' } } };
+    const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
+    expect(data.coaches).toBeNull();
+    expect(data.players).toHaveLength(2);
+    expect(logServer).toHaveBeenCalledWith('roster', 'playerCoaches', expect.anything(), 'teams');
   });
 
   it('CH-3210 a members read that fails is a failed roster, never an empty team, and is logged', async () => {
@@ -162,8 +185,10 @@ describe('Player roster · who gets it (30804)', () => {
         <RosterNoTeam viewer="player" />
       </div>,
     );
-    expect(code('CH-3308')!.textContent).toMatch(/You aren't on a team yet/);
+    expect(code('CH-3308')!.textContent).toMatch(/You aren’t on a team yet/);
     expect(code('CH-3308')!.textContent).toMatch(/Your teammates appear here once your coach approves your request to join\./);
+    // A player joins a team from Golf profile (CH-8302).
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
   });
 
   it('the Roster is rebuilt for players: a sidebar entry under Team and a row in the phone More sheet, not a tab', () => {
@@ -176,6 +201,23 @@ describe('Player roster · who gets it (30804)', () => {
 });
 
 describe('Player roster · desktop', () => {
+  it('CH-3808 wave 7: the coaches head the page as plain text (name and role), and are left out when their read failed', () => {
+    const coaches = [
+      { id: 'c1', name: 'Maya Reyes', role: 'Head coach' },
+      { id: 'c2', name: 'Dan Whitfield', role: 'Assistant coach' },
+    ];
+    const { unmount } = wrap({ ...TEAM, coaches });
+    const table = screen.getByRole('table', { name: 'Coaches' });
+    expect(within(table).getAllByRole('row').slice(1).map((r) => r.textContent)).toEqual(['MRMaya ReyesHead coach', 'DWDan WhitfieldAssistant coach']);
+    expect(table.querySelectorAll(CONTROLS)).toHaveLength(0);
+    // Above the players.
+    expect(table.compareDocumentPosition(faces()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    unmount();
+    wrap({ ...TEAM, coaches: null });
+    expect(screen.queryByRole('table', { name: 'Coaches' })).toBeNull();
+    expect(code('CH-3808')).toBeNull();
+  });
+
   it('is the coach\'s page header with the player\'s words: Your team, the count, no invite, export or requests', () => {
     wrap(TEAM);
     expect(screen.getByRole('heading', { level: 1, name: 'Your team.' })).toBeTruthy();
@@ -247,7 +289,7 @@ describe('Player roster · desktop', () => {
   it('CH-3210 a roster that did not load says so with Try again, never "no players"', async () => {
     const user = userEvent.setup();
     wrap({ ...TEAM, players: [], playersError: true });
-    expect(code('CH-3210')!.textContent).toMatch(/The roster didn't load\./);
+    expect(code('CH-3210')!.querySelector('.ch-notice__title')!.textContent).toBe('The roster didn’t load');
     expect(screen.queryByText(/No one on the roster/)).toBeNull();
     expect(screen.queryByText(/players on the roster/)).toBeNull();
     await user.click(within(code('CH-3210') as HTMLElement).getByRole('button', { name: 'Try again' }));
@@ -257,8 +299,27 @@ describe('Player roster · desktop', () => {
   it('CH-3307 a team with nobody on it says so, with no action to take', () => {
     wrap({ ...TEAM, players: [] });
     expect(code('CH-3307')!.textContent).toMatch(/No one on the roster yet/);
-    expect(code('CH-3307')!.textContent).toMatch(/Your teammates appear here once your coach adds them\./);
+    expect(code('CH-3307')!.textContent).toMatch(/Teammates show up here as they join with the team code\./);
     expect(code('CH-3307')!.querySelectorAll(CONTROLS)).toHaveLength(0);
+    // Wave 10 (B): no "0 players on the roster."; the team and season stay.
+    expect(document.querySelector('.ch-rs-head p')).toBeNull();
+    expect(screen.getByText('Varsity · Fall 2026')).toBeTruthy();
+  });
+
+  it('CH-3309 a roster of one (the player, on a new team): their row, one quiet line, and no search, layout or sort', () => {
+    wrap({ ...TEAM, players: [mate('theo', 'Theo Marchetti', 'Senior', 2027, -0.8, true)] });
+    expect(within(faces()).getAllByRole('listitem')).toHaveLength(1);
+    expect(code('CH-3309')!.textContent).toBe('You’re the first one here. Teammates show up as they join.');
+    expect(screen.queryByRole('searchbox', { name: 'Search players' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Layout' })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'Sort players' }) ?? screen.queryByRole('radio', { name: 'Class' })).toBeNull();
+    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('1 player on the roster.');
+  });
+
+  it('CH-3309 one teammate who is not you is an ordinary roster, controls and all', () => {
+    wrap({ ...TEAM, players: [mate('ava', 'Ava Lindqvist', 'Junior', 2028, 2.4)] });
+    expect(code('CH-3309')).toBeNull();
+    expect(screen.getByRole('searchbox', { name: 'Search players' })).toBeTruthy();
   });
 
   it('CH-3211 a crash in the list stays in the list: the header and the controls remain', () => {
@@ -316,13 +377,21 @@ describe('Player roster · phone', () => {
       </LazyMotion>,
     );
 
-  it('the top bar reads "‹ More" and Roster with no action, and the page names the team and the count', () => {
+  it('CH-3808 wave 7: the coaches are a plain group above the players', () => {
+    phone({ ...TEAM, coaches: [{ id: 'c1', name: 'Maya Reyes', role: 'Head coach' }] });
+    const list = screen.getByRole('list', { name: 'Coaches' });
+    expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['MRMaya ReyesHead coach']);
+    expect(list.querySelectorAll(CONTROLS)).toHaveLength(0);
+    expect(screen.getByRole('heading', { level: 2, name: 'Players' })).toBeTruthy();
+  });
+
+  it('the top bar is the section title Roster with no back link and no action, and the page names the team and the count', () => {
     phone(TEAM);
     const top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('button', { name: /More/ })).toBeTruthy();
+    expect(within(top).queryByRole('button', { name: /More/ })).toBeNull();
     expect(within(top).getByText('Roster')).toBeTruthy();
-    // One control in the bar: the back link. No invite, no action.
-    expect(top.querySelectorAll('button, a')).toHaveLength(1);
+    // A section root (section-strip.md): its title is the switcher in the shell, and nothing else is in the bar.
+    expect(top.querySelectorAll('button, a')).toHaveLength(0);
     expect(screen.getByRole('main', { name: 'Roster' }).querySelector('.ch-rsm-kicker')!.textContent).toBe('Varsity · 4 players');
   });
 
@@ -368,5 +437,14 @@ describe('Player roster · phone', () => {
     phone({ ...TEAM, players: [] });
     expect(code('CH-3307')).not.toBeNull();
     expect(code('CH-3210')).toBeNull();
+    // Wave 10 (B): the kicker drops "0 players".
+    expect(screen.getByRole('main', { name: 'Roster' }).querySelector('.ch-rsm-kicker')!.textContent).toBe('Varsity');
+  });
+
+  it('CH-3309 a roster of one on the phone: the row and the quiet line, no sort', () => {
+    phone({ ...TEAM, players: [mate('theo', 'Theo Marchetti', 'Senior', 2027, -0.8, true)] });
+    expect(within(screen.getByRole('list', { name: 'Players' })).getAllByRole('listitem')).toHaveLength(1);
+    expect(code('CH-3309')!.textContent).toBe('You’re the first one here. Teammates show up as they join.');
+    expect(screen.queryByRole('radio', { name: 'Class' })).toBeNull();
   });
 });

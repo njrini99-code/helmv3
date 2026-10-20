@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
-import type { ChPerson } from '../screens/messages/model';
+import type { ChAnnouncement, ChPerson } from '../screens/messages/model';
 
 export interface ChMessagesData {
   role: 'coach' | 'player';
@@ -18,6 +18,15 @@ export interface ChMessagesData {
   /** Everyone the viewer may message: the program's coaches and the team's players, never themselves. */
   directory: ChPerson[];
   directoryError: boolean;
+  /** The program's coaches by golf_coaches.id, the viewer among them: who signs an announcement (P007-A1). */
+  signers?: Record<string, { name: string; title: string }>;
+  /**
+   * Read with the page so the inbox doesn't wait on them after it lands (Next runs server actions one at a time, and
+   * these two queued ahead of the conversation list: Simulator audit 2026-10-14). Absent: the client reads them itself;
+   * `announcements: null` means the server read failed and the client tries again.
+   */
+  canHide?: boolean;
+  announcements?: ChAnnouncement[] | null;
 }
 
 /**
@@ -48,9 +57,9 @@ export async function loadMessagesDirectory(input: {
   if (membersRes.error) chLogServer('messages', 'members', membersRes.error, 'teams');
 
   let coachesError = false;
-  let coaches: Array<{ user_id: string | null; full_name: string | null; title: string | null }> = [];
+  let coaches: Array<{ id: string; user_id: string | null; full_name: string | null; title: string | null }> = [];
   if (teamRes.data?.organization_id) {
-    const res = await supabase.from('golf_coaches').select('user_id, full_name, title').eq('organization_id', teamRes.data.organization_id).limit(50);
+    const res = await supabase.from('golf_coaches').select('id, user_id, full_name, title').eq('organization_id', teamRes.data.organization_id).limit(50);
     if (res.error) {
       chLogServer('messages', 'coaches', res.error, 'messaging');
       coachesError = true;
@@ -81,5 +90,6 @@ export async function loadMessagesDirectory(input: {
     now: new Date().toISOString(),
     directory,
     directoryError: !!membersRes.error || coachesError || !!teamRes.error,
+    signers: Object.fromEntries(coaches.map((c) => [c.id, { name: c.full_name?.trim() || 'Coach', title: c.title?.trim() || 'Coach' }])),
   };
 }

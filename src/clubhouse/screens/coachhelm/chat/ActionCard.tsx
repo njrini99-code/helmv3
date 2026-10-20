@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ArrowRight, CircleAlert, ClipboardCheck, Info } from 'lucide-react';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import { focusForProposal, type AskProposalView, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
-import { rebuiltHref } from '../../../shell/nav';
+import { askLinkHref } from '../../../data/coachhelm-chat-links';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { playerStatsHref } from './Prose';
@@ -49,17 +49,22 @@ export function AskActionCard({
     (approve ? onApprove : onDeny)(view.approvalId);
   };
   const subtitle = { live: 'Needs your OK', preparing: 'Getting it ready', confirmed: 'Confirmed', cancelled: 'Cancelled', abandoned: 'No decision made' }[status];
+  // What the notifications line claims, by where the action is: before Confirm it is a promise, after a receipt it is what happened.
+  // A failed, cancelled or undecided action sent nothing; one still running, or partly done (its receipt lists what failed), says
+  // what it notifies without claiming it went.
+  const receipt = view.receipt?.status ?? null;
+  const sendWord = waiting ? 'On confirm:' : status === 'confirmed' && receipt !== 'failed' ? (receipt === 'completed' ? 'Sent:' : 'Notifies:') : null;
   // A player already named in a fact row does not need a second pill.
   const pills = proposal.affects.filter((a) => !proposal.facts.some((f) => f.value.includes(a.label)));
 
   const evidenceControl = !focus ? null : hasEvidence ? (
     <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm ch-th-act__ev" aria-pressed={evidenceOpen} data-ch-code="CH-13851" onClick={() => onOpenEvidence(focus)}>
-      <span>{phone ? `See ${firstName(who?.label ?? '')}'s numbers` : 'Evidence'}</span>
+      <span>{phone ? `See ${firstName(who?.label ?? '')}’s numbers` : 'Evidence'}</span>
       {phone && <Icon icon={ArrowRight} size={14} />}
     </button>
   ) : statsHref ? (
     <Button variant="secondary" size="sm" href={statsHref} className="ch-th-act__ev">
-      {`See ${firstName(who?.label ?? '')}'s stats`}
+      {`See ${firstName(who?.label ?? '')}’s stats`}
     </Button>
   ) : null;
 
@@ -98,12 +103,14 @@ export function AskActionCard({
         <div className="ch-th-act__note">
           <Icon icon={Info} size={15} />
           <span>
-            {proposal.notifications.length > 0 ? (
+            {proposal.notifications.length === 0 ? (
+              <b>Nothing is sent.</b>
+            ) : sendWord ? (
               <>
-                <b>Will send.</b> {proposal.notifications.join(' ')}
+                <b>{sendWord}</b> {proposal.notifications.join(' ')}
               </>
             ) : (
-              <b>Nothing is sent.</b>
+              <b>Nothing was sent.</b>
             )}
           </span>
         </div>
@@ -124,7 +131,7 @@ export function AskActionCard({
               <Button variant="ghost" disabled={status === 'preparing' || deciding} onClick={() => answer(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" disabled={status === 'preparing' || deciding} onClick={() => answer(true)}>
+              <Button variant="primary" busy={deciding} disabled={status === 'preparing'} onClick={() => answer(true)}>
                 Confirm
               </Button>
             </>
@@ -164,8 +171,8 @@ export function AskReceiptCard({ receipt, onAskAgain }: { receipt: ActionReceipt
         <ul className="ch-th-receipt__chips">
           {receipt.created.map((c, i) => {
             const text = `${c.count} ${c.kind}${c.count === 1 ? '' : 's'}`;
-            // A chip is a link only when the screen it opens is rebuilt.
-            const href = c.href ? rebuiltHref(c.href) : null;
+            // A chip is a link only when the screen it opens is rebuilt; a moved Fairway address opens its Clubhouse screen.
+            const href = c.href ? askLinkHref(c.href) : null;
             return (
               <li key={i}>
                 {href ? (

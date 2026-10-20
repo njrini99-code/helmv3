@@ -1,27 +1,18 @@
 'use client';
 
-import { Sparkles, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import type { ChAskData, ChAskFinding, ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
+import { askSuggestionSub, type ChAskData, type ChAskFinding, type ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
 import { pulseGapsLabel } from '../../../data/coachhelm-shape';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 
-/** The Ask mark: the dark tile with the mint spark (mockup Main, PhoneHome). */
-export function AskMark() {
-  return (
-    <span className="ch-ask-mark" aria-hidden="true">
-      <Icon icon={Sparkles} size={22} />
-    </span>
-  );
-}
-
 function Greeting({ team, phone, children }: { team: string; phone: boolean; children?: ReactNode }) {
   return (
     <div className="ch-ask-greet">
-      <AskMark />
+      {/* The mockup's spark tile was dropped (owner, 2026-10-06: no stock AI marks); the serif question carries it. */}
       <h2>What do you want to know about {team}?</h2>
       <p>Answers come from your recorded rounds, signals and schedule.</p>
       {phone && children}
@@ -157,8 +148,8 @@ function Pills({ suggestions, onAsk }: { suggestions: ChAskSuggestion[]; onAsk: 
 
 /**
  * The new chat. Desktop: the greeting, the big composer, up to five questions, then the findings. Phone: the greeting (with
- * the nothing-to-report line when there are no rounds) and three shortcut cards; the composer is pinned by the screen, and
- * the findings are left to the desktop (the phone board draws none).
+ * the nothing-to-report line when there are no rounds) and up to three question rows under it, the two set at the foot of
+ * the screen just above the composer the screen pins; the findings are left to the desktop (the phone board draws none).
  */
 export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void }) {
   if (phone) {
@@ -170,6 +161,9 @@ export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData;
           {/* CH-13223: the phone draws no findings, but a pulse that did not load is still said, never drawn as a greeting with nothing under it. */}
           {!data.pulse && <RefreshNotice code="CH-13223" title="What’s new didn’t load" body="Asking still works. Your findings are not lost; try again in a moment." />}
         </Greeting>
+        {/* The cardless pass (owner, 2026-10-08): the questions are action rows under the opener, between seams, their
+            words in the green ink as an iPhone action row's are, not a sideways rail of outlined cards. The composer under
+            them stays the anchor. */}
         {cards.length > 0 && (
           <ul className="ch-ask-cards" aria-label="Questions to start with">
             {cards.map((s) => (
@@ -184,7 +178,7 @@ export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData;
                   }}
                 >
                   <b>{s.title}</b>
-                  <span>{s.sub(data.teamName)}</span>
+                  <span>{askSuggestionSub(s, data.teamName)}</span>
                 </button>
               </li>
             ))}

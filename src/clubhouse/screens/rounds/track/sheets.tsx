@@ -9,9 +9,10 @@ import { editedShotIssues, editResultUpdates, togglePuttMissTag, type EditShotHo
 import type { ShotRecord } from '@/lib/types/golf';
 import type { LieType } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
+import { roving } from '../../../ui/use-roving';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
-import { APPROACH_GRID, BREAK_OPTIONS, distanceText, PENALTY_OPTIONS, PUTT_TAGS, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
+import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, distanceText, isDistanceText, PENALTY_OPTIONS, PUTT_TAGS, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
 import { Seg } from './parts';
 
 const STROKE_AND_DISTANCE = new Set(['ob', 'lost']);
@@ -96,13 +97,13 @@ export function PenaltySheet({
         </>
       }
     >
-      <div className="ch-rt-opts" role="radiogroup" aria-label="Penalty">
+      <div className="ch-rt-opts" role="radiogroup" aria-label="Penalty" {...roving}>
         {PENALTY_OPTIONS.map(([v, title, detail]) => (
           <Choice key={v} checked={penaltyType === v} title={title} detail={detail} onPick={() => dispatch({ type: 'SET_PENALTY_TYPE', payload: v })} />
         ))}
       </div>
       {askOrigin && (
-        <div className="ch-rt-opts" role="radiogroup" aria-label="Which stroke went out">
+        <div className="ch-rt-opts" role="radiogroup" aria-label="Which stroke went out" {...roving}>
           <p className="ch-rt-opts__k">Which stroke</p>
           <Choice
             checked={penaltyOrigin === 'here' || !entered}
@@ -198,6 +199,11 @@ export function EditShotSheet({
   }
   const update = (u: Partial<EditFormData>) => dispatch({ type: 'SET_EDIT_FORM_DATA', payload: { ...form, ...u } });
   const save = () => {
+    // The shared rules read the boxes with parseFloat ("150y" is 150); a box that isn't a plain number is refused here,
+    // as Fairway's number inputs (which would hold nothing) are.
+    const notNumber = (v: string) => v.trim() !== '' && !isDistanceText(v);
+    const typo = !form.isPenalty && (notNumber(form.distanceToHoleBefore) || (form.result !== 'hole' && notNumber(form.distanceToHoleAfter)));
+    if (typo) return setIssue({ rule: 'distance_not_decreasing', severity: 'block', message: 'Enter each distance as a number, like 150.', holeNumber: hole.holeNumber, shotNumber: shot.shotNumber });
     const issues = editedShotIssues(form, shot, hole, shots);
     const block = issues.find((i) => i.severity === 'block');
     if (block) return setIssue(block);
@@ -270,7 +276,7 @@ export function EditShotSheet({
       {showDeleteConfirm ? (
         <p className="ch-rt-delq">Delete shot {shot.shotNumber}? The hole&rsquo;s score changes with it. This can&rsquo;t be undone.</p>
       ) : form.isPenalty ? (
-        <div className="ch-rt-opts" role="radiogroup" aria-label="Penalty">
+        <div className="ch-rt-opts" role="radiogroup" aria-label="Penalty" {...roving}>
           {PENALTY_OPTIONS.map(([v, title]) => (
             <Choice key={v} checked={form.penaltyType === v} title={title} onPick={() => update({ penaltyType: v })} />
           ))}
@@ -304,7 +310,7 @@ export function EditShotSheet({
           <div className="ch-rt-sub">
             <label htmlFor="ch-rt-edit-before">Distance before</label>
             <div className="ch-rt-dist">
-              <input id="ch-rt-edit-before" type="text" inputMode="numeric" autoComplete="off" value={form.distanceToHoleBefore} onChange={(e) => update({ distanceToHoleBefore: e.target.value })} />
+              <input id="ch-rt-edit-before" type="text" inputMode="numeric" autoComplete="off" value={form.distanceToHoleBefore} onChange={(e) => update({ distanceToHoleBefore: cleanDistance(e.target.value) })} />
               <em>{unit(form.distanceUnitBefore)}</em>
             </div>
           </div>
@@ -322,7 +328,7 @@ export function EditShotSheet({
             <div className="ch-rt-sub">
               <label htmlFor="ch-rt-edit-after">Distance after</label>
               <div className="ch-rt-dist">
-                <input id="ch-rt-edit-after" type="text" inputMode="numeric" autoComplete="off" value={form.distanceToHoleAfter} onChange={(e) => update({ distanceToHoleAfter: e.target.value })} />
+                <input id="ch-rt-edit-after" type="text" inputMode="numeric" autoComplete="off" value={form.distanceToHoleAfter} onChange={(e) => update({ distanceToHoleAfter: cleanDistance(e.target.value) })} />
                 <em>{unit(form.distanceUnitAfter)}</em>
               </div>
             </div>
@@ -344,7 +350,7 @@ export function EditShotSheet({
           {approach && form.result !== 'hole' && form.result !== 'green' && (
             <div className="ch-rt-sub">
               <em>Where it missed the green</em>
-              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green">
+              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green" {...roving}>
                 {APPROACH_GRID.map(([v, l]) =>
                   v === null ? (
                     <span key="green" className="ch-rt-amiss__g" aria-hidden="true">

@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronLeft, Flag, ListChecks, Lock, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
+import { Check, Flag, ListChecks, Lock, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQCandidate, ChQSelectionData } from '../../data/qualifiers';
@@ -10,6 +10,7 @@ import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
+import { BackLink } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
@@ -17,7 +18,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { plural } from './model';
+import { plural, stageNoteText } from './model';
 import { ToPar } from './parts';
 import { useStepBack } from './return-state';
 import { LIVE_SELECTION_WRITES, startSelecting, type ChQSelectionWrites } from './writes';
@@ -93,7 +94,8 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const [giving, setGiving] = useState<ReadonlySet<string>>(new Set());
 
   const [asking, setAsking] = useState<'start' | 'confirm' | null>(null);
-  const [choosing, setChoosing] = useState<{ playerId: string | null } | null>(null);
+  // `playerId` is a pick whose reason changes; `seed` is a player chosen from the field, preselected in the list.
+  const [choosing, setChoosing] = useState<{ playerId: string | null; seed?: string } | null>(null);
   const [removing, setRemoving] = useState<ChQCandidate | null>(null);
 
   const topN = Math.max(0, data.squad - data.picks);
@@ -114,6 +116,11 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   // (canConfirmSelection), so the empty places don't hold up the confirmation.
   const picksNeeded = Math.min(data.picks, eligible.length + picks.length);
   const picksReady = picks.length === picksNeeded && picks.every((p) => (p.pick?.reasoning ?? '').trim().length > 0);
+  // The note counts down: the picks still to make, and a pick made without a reason still to finish (wave-6 #11).
+  const picksLeft = Math.max(0, picksNeeded - picks.length);
+  const reasonsLeft = picks.filter((p) => !(p.pick?.reasoning ?? '').trim()).length;
+  // A player in the rest of the field can be picked from their row while a pick is open (wave-6 #10).
+  const canPick = stage === 1 && picks.length < data.picks;
   const nobody = onScore.length + picks.length === 0;
   const canConfirm = state === 'closed' && picksReady && tieReady && !nobody;
 
@@ -213,14 +220,12 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   }
 
   return (
-    <main className="ch-qf ch-qfs">
-      {phone && <PhoneTop title="Selections" back={{ label: 'Qualifier', onBack: back.onBack }} />}
+    <main className="ch-qf ch-qfs" data-canopy="">
+      {phone && <PhoneTop heading={false} title="Selections" back={{ label: 'Qualifier', onBack: back.onBack }} />}
       <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
-        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={detailHref}>
-          Qualifier
-        </Button>
+        <BackLink href={detailHref}>Qualifier</BackLink>
       </div>
-      <header className="ch-qf-head">
+      <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow">Manage selections</span>
           <h1>{data.name}</h1>
@@ -235,12 +240,21 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         {STAGES.map((label, i) => (
           <li key={label} className={i < stage ? 'is-done' : i === stage ? 'is-now' : undefined} aria-current={i === stage ? 'step' : undefined}>
             <span className="ch-qfs-steps__n ch-num">{i < stage || stage === 2 ? <Icon icon={Check} size={13} /> : i + 1}</span>
-            {label}
+            <span className="ch-qfs-steps__l">{label}</span>
           </li>
         ))}
       </ol>
 
-      <StageNote stage={stage} topN={topN} picks={picksNeeded} picksReady={picksReady} nobody={nobody} tie={tied.length && !tieReady ? tiePlaces - tieChosen : 0} />
+      <StageNote
+        stage={stage}
+        topN={topN}
+        picks={stage === 1 ? picksLeft : picksNeeded}
+        made={stage === 1 ? picks.length : 0}
+        reasons={stage === 1 ? reasonsLeft : 0}
+        picksReady={picksReady}
+        nobody={nobody}
+        tie={tied.length && !tieReady ? tiePlaces - tieChosen : 0}
+      />
 
       <SectionBoundary surface="qualifiers.selection" label="Selections" code="CH-09219">
         <div className="ch-qf-body">
@@ -265,7 +279,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                   compact
                   code="CH-09316"
                   icon={Flag}
-                  title={topN ? 'Nobody has a score in yet.' : 'Every place is a coach’s pick.'}
+                  title={topN ? 'Nobody has a score in yet' : 'Every place is a coach’s pick'}
                   body={topN ? 'Places on score fill from the standings as rounds are signed.' : 'This squad has no places decided on score.'}
                 />
               )}
@@ -299,7 +313,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                 </div>
                 <ol className="ch-qf-list">
                   {eligible.map((c) => (
-                    <Row key={c.playerId} c={c} />
+                    <Row key={c.playerId} c={c} onPick={canPick ? () => setChoosing({ playerId: null, seed: c.playerId }) : undefined} />
                   ))}
                   {unranked.map((c) => (
                     <li key={c.playerId} className="is-open">
@@ -403,7 +417,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
               disabled={start.pending}
               onClick={() => void start.run()}
             >
-              {start.pending ? <span data-ch-code="CH-09408">Starting</span> : 'Start selecting'}
+              {start.pending ? <span data-ch-code="CH-09408">Starting…</span> : 'Start selecting'}
             </Button>
           </>
         }
@@ -427,7 +441,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
               disabled={confirm.pending}
               onClick={() => void confirm.run()}
             >
-              {confirm.pending ? <span data-ch-code="CH-09408">Confirming</span> : 'Confirm squad'}
+              {confirm.pending ? <span data-ch-code="CH-09408">Confirming…</span> : 'Confirm squad'}
             </Button>
           </>
         }
@@ -453,7 +467,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                 if (removing) void remove.run(removing);
               }}
             >
-              {remove.pending ? <span data-ch-code="CH-09408">Removing</span> : 'Remove'}
+              {remove.pending ? <span data-ch-code="CH-09408">Removing…</span> : 'Remove'}
             </Button>
           </>
         }
@@ -461,6 +475,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
       <PickDialog
         open={!!choosing}
         fixed={choosing?.playerId ? (cands.find((c) => c.playerId === choosing.playerId) ?? null) : null}
+        seed={choosing?.seed ?? null}
         eligible={eligible}
         onClose={() => setChoosing(null)}
         save={(c, reasoning) => writes.setPick(data.id, c.playerId, reasoning)}
@@ -503,14 +518,14 @@ function TieRow({ c, stage, full, choose }: { c: ChQCandidate; stage: 0 | 1 | 2;
       <ToPar value={c.toPar} />
       {stage === 1 && (
         <Button size="sm" variant="ghost" disabled={act.pending || (!c.onScore && full)} onClick={() => void act.run(!c.onScore)}>
-          {act.pending ? <span data-ch-code="CH-09408">Saving</span> : c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
+          {act.pending ? <span data-ch-code="CH-09408">Saving…</span> : c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
         </Button>
       )}
     </li>
   );
 }
 
-function Row({ c }: { c: ChQCandidate }) {
+function Row({ c, onPick }: { c: ChQCandidate; onPick?: () => void }) {
   return (
     <li>
       <span className="ch-qf-list__n ch-num">{c.rank ?? '—'}</span>
@@ -519,23 +534,35 @@ function Row({ c }: { c: ChQCandidate }) {
       {c.pick && <Badge tone="accent">Pick</Badge>}
       <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
       <ToPar value={c.toPar} />
+      {onPick && (
+        <Button size="sm" variant="ghost" leftIcon={UserPlus} onClick={onPick}>
+          Pick <span className="ch-sr-only">{c.name}</span>
+        </Button>
+      )}
     </li>
   );
 }
 
-function StageNote({ stage, topN, picks, picksReady, nobody, tie = 0 }: { stage: 0 | 1 | 2; topN: number; picks: number; picksReady: boolean; nobody: boolean; tie?: number }) {
-  const text =
-    stage === 1 && tie > 0
-      ? `Players are level at the last place on score. Give ${plural(tie, 'more place', 'more places')} to confirm the squad.`
-      : stage === 0
-      ? `Start selecting when the standings are where you want them.${picks ? ` Then choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason.` : ''} The top ${topN} on score are set when you confirm.`
-      : stage === 1
-        ? nobody
-          ? 'Nobody has a score in and no pick is made yet, so there is no squad to confirm.'
-          : picksReady
-            ? 'Every pick is made. Confirm the squad to tell the players.'
-            : `Choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason, to confirm the squad.`
-        : 'The squad is confirmed, and every entrant has been told whether they made it.';
+function StageNote({
+  stage,
+  topN,
+  picks,
+  made = 0,
+  reasons = 0,
+  picksReady,
+  nobody,
+  tie = 0,
+}: {
+  stage: 0 | 1 | 2;
+  topN: number;
+  picks: number;
+  made?: number;
+  reasons?: number;
+  picksReady: boolean;
+  nobody: boolean;
+  tie?: number;
+}) {
+  const text = stageNoteText(stage, { topN, picks, made, reasons, picksReady, nobody, tie });
   return (
     <div className="ch-qf-note" data-ch-code={stage === 2 ? 'CH-09903' : undefined}>
       <Icon icon={stage === 2 ? Lock : Users} size={16} />
@@ -548,6 +575,7 @@ function StageNote({ stage, topN, picks, picksReady, nobody, tie = 0 }: { stage:
 function PickDialog({
   open,
   fixed,
+  seed,
   eligible,
   onClose,
   save,
@@ -555,6 +583,8 @@ function PickDialog({
 }: {
   open: boolean;
   fixed: ChQCandidate | null;
+  /** A player chosen from their row, already selected in the list. */
+  seed: string | null;
   eligible: ChQCandidate[];
   onClose: () => void;
   save: (c: ChQCandidate, reasoning: string) => ReturnType<ChQSelectionWrites['setPick']>;
@@ -565,10 +595,10 @@ function PickDialog({
   const [tried, setTried] = useState(false);
   useEffect(() => {
     if (!open) return;
-    setPicked(fixed?.playerId ?? null);
+    setPicked(fixed?.playerId ?? seed);
     setReason(fixed?.pick?.reasoning ?? '');
     setTried(false);
-  }, [open, fixed]);
+  }, [open, fixed, seed]);
   const who = fixed ?? eligible.find((c) => c.playerId === picked) ?? null;
   // The pick is recorded by the action, so the toast's Retry records it too.
   const act = useAction(
@@ -612,7 +642,7 @@ function PickDialog({
               void act.run(who, reason.trim());
             }}
           >
-            {act.pending ? <span data-ch-code="CH-09408">Saving</span> : 'Save pick'}
+            {act.pending ? <span data-ch-code="CH-09408">Saving…</span> : 'Save pick'}
           </Button>
         </>
       }
@@ -651,7 +681,7 @@ function PickDialog({
             compact
             code="CH-09315"
             icon={Users}
-            title="Nobody else can be picked yet."
+            title="Nobody else can be picked yet"
             body="A player needs a round in, outside the places on score, to be a coach’s pick."
           />
         ))}

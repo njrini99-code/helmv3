@@ -13,6 +13,13 @@ vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
+/** A face or name goes to the player's profile where that page is rebuilt (owner, 2026-10-08); most of this file drives the
+ *  peek, which a face opens where it isn't, so the profile route reads as not rebuilt unless a test turns it on. */
+const profile = vi.hoisted(() => ({ rebuilt: false }));
+vi.mock('../shell/nav', async (orig) => {
+  const nav = await orig<typeof import('../shell/nav')>();
+  return { ...nav, rebuiltHref: (href: string, role?: Parameters<typeof nav.rebuiltHref>[1]) => (href.startsWith('/golf/dashboard/stats?player=') && !profile.rebuilt ? null : nav.rebuiltHref(href, role)) };
+});
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
@@ -23,8 +30,10 @@ const actions = vi.hoisted(() => ({
   reject: vi.fn(),
   requests: vi.fn(),
   intent: vi.fn(),
+  status: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/roster', () => ({ removePlayerFromTeam: actions.remove }));
+vi.mock('@/app/golf/actions/team-management', () => ({ updatePlayerStatus: actions.status }));
 vi.mock('@/app/golf/actions/teams', () => ({ acceptJoinRequest: actions.accept, rejectJoinRequest: actions.reject, getTeamJoinRequests: actions.requests }));
 vi.mock('@/app/golf/actions/v3/intent', () => ({ setIntent: actions.intent }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
@@ -41,7 +50,7 @@ import { NOTE_MAX } from '../screens/roster/RosterPeek';
 import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { PREVIEW_ROSTER, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
+import { PREVIEW_ROSTER, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
 import './dialog-polyfill';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -88,6 +97,8 @@ beforeEach(() => {
   vi.mocked(chReport).mockClear();
   vi.mocked(chTrail).mockClear();
   tables.current = {};
+  profile.rebuilt = false;
+  router.push.mockClear();
   localStorage.clear();
 });
 
@@ -99,7 +110,7 @@ describe('Roster · saves that fail', () => {
     await openRemove(user);
     await expectCode('CH-3501', /Remove Theo Marchetti from Varsity\?/);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
-    await expectCode('CH-3001', /Couldn't remove Theo Marchetti/);
+    await expectCode('CH-3001', /Couldn’t remove Theo Marchetti/);
     expect(code('CH-3501')).not.toBeNull();
     expect(screen.getAllByText(theo.name).length).toBeGreaterThan(0);
   });
@@ -110,7 +121,7 @@ describe('Roster · saves that fail', () => {
     wrap(roster());
     const req = PREVIEW_ROSTER.requests[0]!;
     await user.click(within(screen.getByRole('region', { name: 'Join requests' })).getAllByRole('button', { name: 'Approve' })[0]!);
-    await expectCode('CH-3002', new RegExp(`Couldn't approve ${req.name}`));
+    await expectCode('CH-3002', new RegExp(`Couldn’t approve ${req.name}`));
     expect(screen.getByText(req.name)).toBeTruthy();
   });
 
@@ -122,7 +133,7 @@ describe('Roster · saves that fail', () => {
       wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,
     });
     await act(() => result.current.approveAll());
-    await expectCode('CH-3007', /Couldn't approve Owen Park and Sam Reyes/);
+    await expectCode('CH-3007', /Couldn’t approve Owen Park and Sam Reyes/);
     expect(code('CH-3007')!.textContent).toMatch(/1 of 3 added to Varsity/);
     expect(result.current.reqs.map((r) => r.id)).toEqual(['r2', 'r3']);
     expect(actions.accept.mock.calls.map((c) => c[0])).toEqual(['r1', 'r2', 'r3']);
@@ -155,7 +166,7 @@ describe('Roster · saves that fail', () => {
     wrap(roster());
     const req = PREVIEW_ROSTER.requests[0]!;
     await user.click(within(screen.getByRole('region', { name: 'Join requests' })).getAllByRole('button', { name: 'Decline' })[0]!);
-    await expectCode('CH-3003', new RegExp(`Couldn't decline ${req.name}`));
+    await expectCode('CH-3003', new RegExp(`Couldn’t decline ${req.name}`));
     expect(screen.getByText(req.name)).toBeTruthy();
   });
 
@@ -168,7 +179,7 @@ describe('Roster · saves that fail', () => {
     await user.clear(note);
     await user.type(note, 'Work on lag putting');
     await user.tab();
-    await expectCode('CH-3004', /Couldn't save your note about Theo/);
+    await expectCode('CH-3004', /Couldn’t save your note about Theo/);
     expect((note as HTMLTextAreaElement).value).toBe('Work on lag putting');
   });
 
@@ -181,18 +192,78 @@ describe('Roster · saves that fail', () => {
     };
     wrap(roster());
     await user.click(screen.getByRole('button', { name: 'Export' }));
-    await expectCode('CH-3005', /Couldn't export the roster/);
+    await expectCode('CH-3005', /Couldn’t export the roster/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     url.createObjectURL = prev;
   });
 
-  it('CH-3006 copying the join code fails: copy it by hand', async () => {
+  it('CH-3006 copying the team code fails: copy it by hand', async () => {
     const user = userEvent.setup();
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
     wrap(roster());
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
     await user.click((await screen.findAllByRole('button', { name: 'Copy' }))[0]!);
-    await expectCode('CH-3006', /Couldn't copy the join code/);
+    await expectCode('CH-3006', /Couldn’t copy the team code/);
+  });
+});
+
+describe('Roster · player status (Active / Inactive)', () => {
+  async function openStatus(user: ReturnType<typeof userEvent.setup>, name = theo.name, item = 'Mark inactive') {
+    await toList(user);
+    await user.click(screen.getByRole('button', { name: `Actions for ${name}` }));
+    await user.click(await screen.findByRole('menuitem', { name: item }));
+  }
+  afterEach(() => {
+    delete (window.navigator as unknown as Record<string, unknown>).onLine;
+  });
+
+  it('CH-3502 CH-3404 CH-3008 marking a player inactive asks first, waits while it saves, and a failure keeps the player active and the dialog open', async () => {
+    const user = userEvent.setup();
+    let settle!: (v: { success: boolean; error?: string }) => void;
+    actions.status.mockImplementation(() => new Promise((r) => (settle = r)));
+    wrap(roster());
+    await openStatus(user);
+    await expectCode('CH-3502', /Move Theo Marchetti to Inactive on Varsity\?/);
+    expect(code('CH-3502')!.textContent).toMatch(/stay on the team with their account and stats/);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    expect(actions.status).toHaveBeenCalledWith(theo.id, 'inactive');
+    await expectCode('CH-3404', /Saving…/);
+    expect((code('CH-3404')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => settle({ success: false, error: 'Failed to update player status' }));
+    await expectCode('CH-3008', /Couldn’t mark Theo Marchetti inactive/);
+    expect((code('CH-3502') as HTMLDialogElement).hasAttribute('open')).toBe(true);
+    // Not destructive: no warning haptic before the write (D-70), and the row still reads Active.
+    expect(hapticSpy).not.toHaveBeenCalledWith('warning');
+    const row = screen.getByRole('button', { name: `${theo.name}. Open profile` }).closest('[role="row"]') as HTMLElement;
+    expect(within(row).getByText('Active')).toBeTruthy();
+  });
+
+  it('CH-3502 a status change that lands says so, moves the player to Inactive, and the menu then offers Mark active', async () => {
+    const user = userEvent.setup();
+    actions.status.mockResolvedValue({ success: true });
+    wrap(roster());
+    await openStatus(user);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    await waitFor(() => expect(screen.getByText('Theo Marchetti marked inactive')).toBeTruthy());
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    // Under Active he is gone; under Inactive he is listed, and his menu turns him back.
+    expect(screen.queryByRole('button', { name: `${theo.name}. Open profile` })).toBeNull();
+    await user.click(screen.getByRole('button', { name: /^Inactive/ }));
+    await openStatus(user, theo.name, 'Mark active');
+    await expectCode('CH-3502', /Move Theo Marchetti back to the active roster of Varsity\?/);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark active' }));
+    expect(actions.status).toHaveBeenLastCalledWith(theo.id, 'active');
+    await waitFor(() => expect(screen.getByText('Theo Marchetti marked active')).toBeTruthy());
+  });
+
+  it('CH-3502 CH-1903 offline, nothing is sent and the coach is told', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false });
+    wrap(roster());
+    await openStatus(user);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    await expectCode('CH-1903', /Couldn’t mark Theo Marchetti inactive: you’re offline/);
+    expect(actions.status).not.toHaveBeenCalled();
   });
 });
 
@@ -212,7 +283,7 @@ describe('Roster · reads that fail', () => {
   it('CH-3201 the roster does not load: a notice, never "no players"', async () => {
     const user = userEvent.setup();
     wrap(roster({ playersError: true, players: [] }));
-    await expectCode('CH-3201', /The roster didn't load/);
+    await expectCode('CH-3201', /The roster didn’t load/);
     expect(code('CH-3301')).toBeNull();
     await user.click(within(code('CH-3201') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
@@ -220,16 +291,29 @@ describe('Roster · reads that fail', () => {
 
   it('CH-3202 season stats do not load: the roster stays, figures read as missing', async () => {
     wrap(PREVIEW_ROSTER_PARTIAL);
-    await expectCode('CH-3202', /Season stats didn't load/);
+    await expectCode('CH-3202', /Season stats didn’t load/);
     expect(screen.getAllByText(theo.name).length).toBeGreaterThan(0);
   });
 
   it('CH-3203 join requests do not load: Try again re-reads', async () => {
     const user = userEvent.setup();
     wrap(roster({ requestsError: true, requests: [] }));
-    await expectCode('CH-3203', /Join requests didn't load/);
+    await expectCode('CH-3203', /Join requests didn’t load/);
     await user.click(within(code('CH-3203') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('CH-1209 the roster and join requests both failing are told once under the head, with one Try again; each part keeps its title', async () => {
+    const user = userEvent.setup();
+    wrap(PREVIEW_ROSTER_FAILED);
+    await expectCode('CH-1209', /Some of this page didn’t load.*The roster and join requests didn’t load/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    for (const [c, title] of [['CH-3201', 'The roster didn’t load'], ['CH-3203', 'Join requests didn’t load']] as const) {
+      expect(code(c)!.textContent).toBe(title);
+    }
+    await user.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
   it('CH-3204 CH-3205 CH-3206 a crash stays inside its section', async () => {
@@ -241,7 +325,7 @@ describe('Roster · reads that fail', () => {
     wrap(roster({ requests: null as never, players: PREVIEW_ROSTER.players.map((p) => (p.id === 'jonah' ? broken : p)) }));
     expect(code('CH-3204')!.textContent).toMatch(/Join requests couldn’t be shown/);
     expect(code('CH-3205')!.textContent).toMatch(/The roster couldn’t be shown/);
-    expect(screen.getByRole('heading', { name: 'Your players.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Your players' })).toBeTruthy();
     await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
     await expectCode('CH-3206', /The player panel couldn’t be shown/);
     quiet.mockRestore();
@@ -255,7 +339,7 @@ describe('Roster · reads that fail', () => {
     const user = userEvent.setup();
     wrap(roster({ teamError: true, joinCode: null }));
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
-    await expectCode('CH-3207', /The join code didn't load/);
+    await expectCode('CH-3207', /The team code didn’t load/);
     expect(code('CH-3304')).toBeNull();
   });
 
@@ -288,12 +372,47 @@ describe('Roster · empty', () => {
   it('CH-3301 no players yet: the v2 page empty state, invite first and copy the team code second', () => {
     wrap(roster({ players: [], requests: [] }));
     const el = code('CH-3301') as HTMLElement;
-    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(el.classList.contains('ch-es--page')).toBe(true);
+    expect(el.getAttribute('data-ch-state')).toBe('first-run');
+    expect(el.querySelector('.ch-es-shape--people')).not.toBeNull();
     expect(within(el).getByRole('heading', { level: 2, name: 'No players yet' })).toBeTruthy();
     const buttons = within(el).getAllByRole('button').map((b) => b.textContent);
     expect(buttons).toEqual(['Invite players', 'Copy team code']);
     // One primary per screen: the header's Invite players steps aside.
     expect(screen.getAllByRole('button', { name: 'Invite players' })).toHaveLength(1);
+    // Wave 10 (A): a code or link join is instant, so the coach is not told they approve it.
+    expect(el.textContent).toMatch(/Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here\./);
+    expect(el.textContent).not.toMatch(/approve/);
+    // Wave 10 (B): with nobody on the roster the head drops its 0 counts; the team and season stay.
+    expect(document.querySelector('.ch-rs-head p')).toBeNull();
+    expect(document.querySelector('.ch-rs-team__name')!.textContent).toBeTruthy();
+  });
+
+  it('wave 10 the invite sheet names the team code and invite link, and says which joins are instant', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByText('Team code')).toBeTruthy();
+    expect(within(sheet).getByText(/open the invite link join .* right away\. Players already on GolfHelm who enter the code in Settings send a request you approve\./)).toBeTruthy();
+    expect(within(sheet).getByText('Players who open it join right away, after making an account if they need one.')).toBeTruthy();
+    expect(within(sheet).queryByText(/Join code|join request/)).toBeNull();
+  });
+
+  it('wave 10 the invite link field shows the link without its scheme, ending in the code; Copy sends the full URL', async () => {
+    const user = userEvent.setup();
+    delete (navigator as { share?: unknown }).share;
+    const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    wrap(roster());
+    await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
+    const field = (await screen.findByLabelText('Invite link')) as HTMLInputElement;
+    expect(field.value).toBe(`${window.location.host}/golf/join/FINLEY-26`);
+    expect(field.value).not.toMatch(/^https?:/);
+    const sheet = screen.getByRole('dialog');
+    const copies = within(sheet).getAllByRole('button', { name: 'Copy' });
+    await user.click(copies[copies.length - 1]!);
+    expect(write).toHaveBeenCalledWith(`${window.location.origin}/golf/join/FINLEY-26`);
+    expect(await screen.findByText('Invite link copied')).toBeTruthy();
   });
 
   it('CH-3302 a search with no match offers Show everyone', async () => {
@@ -312,11 +431,11 @@ describe('Roster · empty', () => {
     await expectCode('CH-3303', /No inactive players/);
   });
 
-  it('CH-3304 no join code yet: a way to make one', async () => {
+  it('CH-3304 no team code yet: a way to make one', async () => {
     const user = userEvent.setup();
     wrap(roster({ joinCode: null }));
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
-    await expectCode('CH-3304', /no join code yet/);
+    await expectCode('CH-3304', /no team code yet/);
     expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
   });
 
@@ -332,9 +451,10 @@ describe('Roster · empty', () => {
     vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
     render(<>{await ClubhouseRosterRoute()}</>);
     const el = code('CH-3306') as HTMLElement;
-    expect(el.classList.contains('ch-empty-page')).toBe(true);
-    expect(within(el).getByRole('heading', { level: 2, name: "You aren't on a team yet" })).toBeTruthy();
+    expect(el.classList.contains('ch-es--page')).toBe(true);
+    expect(within(el).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/Your players appear here once your team is set up/);
+    expect(within(el).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
     expect(el.textContent).not.toMatch(/Home/);
     expect(code('CH-2307')).toBeNull();
     // Not `.ch-rs`, which the stylesheet hides under 820px until the phone view takes over.
@@ -343,9 +463,33 @@ describe('Roster · empty', () => {
 });
 
 describe('Roster · loading, haptics, accessibility', () => {
+  it('a face (grid) or a name (list) goes to the player’s profile; only a Needs a look chip opens the peek', async () => {
+    const user = userEvent.setup();
+    profile.rebuilt = true;
+    wrap(roster());
+    await user.click(screen.getByRole('button', { name: new RegExp(`^${theo.name}.*Open profile`) }));
+    expect(router.push).toHaveBeenLastCalledWith(`/golf/dashboard/stats?player=${theo.id}`);
+    expect(screen.queryByRole('complementary', { name: theo.name })).toBeNull();
+    await toList(user);
+    await user.click(screen.getByRole('button', { name: `${theo.name}. Open profile` }));
+    expect(router.push).toHaveBeenCalledTimes(2);
+    expect(router.push).toHaveBeenLastCalledWith(`/golf/dashboard/stats?player=${theo.id}`);
+    expect(screen.queryByRole('complementary')).toBeNull();
+    await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
+    expect(await screen.findByRole('complementary', { name: 'Jonah Okafor' })).toBeTruthy();
+    expect(router.push).toHaveBeenCalledTimes(2);
+  });
+
   it('CH-3401 the route skeleton is busy', () => {
     render(<RosterSkeleton />);
     expect(code('CH-3401')!.getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('CH-3401 the desktop skeleton draws the head\'s two actions and where the team sits before the toolbar (2026-10-18)', () => {
+    render(<RosterSkeleton />);
+    const desk = code('CH-3401')!.querySelector('.ch-rs-skel-desk')!;
+    expect(desk.querySelector('.ch-rs-head .ch-rs-head__act')!.children).toHaveLength(2);
+    expect([...desk.children].map((c) => c.className.split(' ')[0])).toEqual(['ch-rs-head', 'ch-rs-sp', 'ch-rs-bar', 'ch-rs-faces']);
   });
 
   it('CH-3402 removing shows its progress and cannot be pressed twice', async () => {
@@ -354,7 +498,7 @@ describe('Roster · loading, haptics, accessibility', () => {
     wrap(roster());
     await openRemove(user);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
-    await expectCode('CH-3402', /Removing/);
+    await expectCode('CH-3402', /Removing…/);
     expect((code('CH-3402')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -381,11 +525,16 @@ describe('Roster · loading, haptics, accessibility', () => {
       for (const child of row.children) expect(['cell', 'columnheader']).toContain(child.getAttribute('role'));
   });
 
-  it('CH-3802 a player card reads its status as a word', () => {
+  it('CH-3802 a player card reads its status as a word; the dot is decoration, drawn only under All (P003-A3)', async () => {
+    const user = userEvent.setup();
     wrap(roster());
     const card = screen.getAllByRole('button', { name: new RegExp(theo.name) })[0]!;
     expect(card.textContent).toMatch(/Active/);
-    expect(card.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
+    // Under Active every dot is the same, so none is drawn.
+    expect(card.querySelector('.ch-rs-face__dot')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'All' }));
+    const all = screen.getAllByRole('button', { name: new RegExp(theo.name) })[0]!;
+    expect(all.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
   });
 
   it("View insights, the row menu's first item, opens CoachHelm on that player", async () => {
@@ -460,6 +609,8 @@ describe('Roster · loading, haptics, accessibility', () => {
 describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
   const realMatchMedia = window.matchMedia;
   beforeEach(() => {
+    // The phone's profile links are the production ones (the stats page is rebuilt).
+    profile.rebuilt = true;
     window.matchMedia = ((q: string) => ({
       matches: q === '(max-width: 820px)',
       media: q,
@@ -501,13 +652,12 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
       .map((b) => b.getAttribute('aria-label')!.split(',')[0]);
   const profileHeading = (name: string) => screen.queryByRole('heading', { level: 2, name });
 
-  it('the top bar reads "‹ More", Roster, and Invite players, which opens the invite sheet', async () => {
+  it('the top bar is the section title Roster (no "‹ More") and Invite players, which opens the invite sheet', async () => {
     const user = userEvent.setup();
     phone(roster());
     const top = screen.getByTestId('phone-top');
     expect(within(top).getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
-    await user.click(within(top).getByRole('button', { name: 'Back to More' }));
-    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBeGreaterThan(0);
+    expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     await user.click(within(top).getByRole('button', { name: 'Invite players' }));
     expect(await screen.findByText('FINLEY-26')).toBeTruthy();
     // An icon action that isn't a primary button is silent (D-70).
@@ -518,6 +668,15 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     phone(roster({ players: [], requests: [] }));
     const el = code('CH-3301') as HTMLElement;
     expect(within(el).getAllByRole('button').map((b) => b.textContent)).toEqual(['Invite players', 'Copy team code']);
+    // Wave 10 (C): the top bar's invite icon steps aside while the empty state carries the primary.
+    expect(screen.getAllByRole('button', { name: 'Invite players' })).toHaveLength(1);
+    // Wave 10 (B): the kicker drops "0 active".
+    expect(document.querySelector('.ch-rsm-kicker')!.textContent).not.toMatch(/active/);
+  });
+
+  it('wave 10 (C) the phone top bar keeps its invite icon when the roster failed to load', () => {
+    phone(roster({ players: [], playersError: true }));
+    expect(screen.getByRole('button', { name: 'Invite players' })).toBeTruthy();
   });
 
   it('30101 CH-3701 the phone opens on the list: active players by average, then Inactive; SG and Name (by last name, D-59) re-sort with a tick', async () => {
@@ -590,6 +749,22 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(screen.queryByRole('button', { name: /^Theo Marchetti/ })).toBeNull();
   });
 
+  it("CH-3502 the profile's ⋯ sheet marks a player inactive, asking first", async () => {
+    const user = userEvent.setup();
+    actions.status.mockResolvedValue({ success: true });
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+    phone(roster());
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
+    await user.click(within(sheet).getByRole('button', { name: 'Mark inactive' }));
+    await expectCode('CH-3502', /Move Theo Marchetti to Inactive on Varsity\?/);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    expect(actions.status).toHaveBeenCalledWith('theo', 'inactive');
+    // The open profile reads the new status in its identity line (D-58).
+    await waitFor(() => expect(screen.getByText(/· Inactive$/)).toBeTruthy());
+    expect(screen.getByRole('heading', { level: 2, name: 'Theo Marchetti' })).toBeTruthy();
+  });
+
   it('the join requests banner opens the sheet; approving one leaves the banner counting the rest', async () => {
     const user = userEvent.setup();
     actions.accept.mockResolvedValue({ success: true });
@@ -612,7 +787,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     await user.click(screen.getByRole('button', { name: /2 join requests/ }));
     const sheet = await screen.findByRole('dialog', { name: 'Join requests' });
     await user.click(within(sheet).getByRole('button', { name: 'Approve all 2' }));
-    await expectCode('CH-3403', /Approving/);
+    await expectCode('CH-3403', /Approving…/);
     expect((code('CH-3403')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
     act(() => finish());
     await waitFor(() => expect(actions.accept).toHaveBeenCalledTimes(2));
@@ -623,13 +798,20 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
 
   it('CH-3203 join requests that did not load say so in the banner slot', () => {
     phone(roster({ requestsError: true, requests: [] }));
-    expect(code('CH-3203')!.textContent).toMatch(/Join requests didn't load/);
+    expect(code('CH-3203')!.textContent).toMatch(/Join requests didn’t load/);
+  });
+
+  it('CH-1209 on the phone, the roster and join requests failing are one notice under the head with one Try again', () => {
+    phone(PREVIEW_ROSTER_FAILED);
+    expect(code('CH-1209')!.textContent).toMatch(/Some of this page didn’t load.*The roster and join requests didn’t load/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    expect([code('CH-3201')!.textContent, code('CH-3203')!.textContent]).toEqual(['The roster didn’t load', 'Join requests didn’t load']);
   });
 
   it('CH-3202 season stats that did not load: the profile says so instead of "no rounds"', () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
     phone(roster({ statsError: true, players: PREVIEW_ROSTER.players.map((p) => ({ ...p, avg: null, sgPerRound: null, trend: [], recent: [], rounds: 0, form: 'early', attention: null })) }));
-    expect(screen.getAllByText(/Season stats didn't load/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Season stats didn’t load/).length).toBeGreaterThan(0);
     expect(code('CH-3305')).toBeNull();
   });
 
@@ -667,8 +849,13 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
 
   it('30101 Roster opens on the active players by average, with the team line, Needs a look and the join requests', () => {
     wrap(roster());
-    expect(screen.getByRole('heading', { level: 1, name: 'Your players.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Your players' })).toBeTruthy();
     expect(document.querySelector('.ch-rs-team__name')!.textContent).toBe('Varsity · Fall 2026');
+    // The card's team strip has its own class: the header's avatar row (.ch-rs-team) never takes the strip's bar styles.
+    expect(document.querySelector('.ch-rs-head .ch-rs-strip')).toBeNull();
+    const rosterCss = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/roster.css'), 'utf8');
+    expect(rosterCss).not.toMatch(/\.ch-rs-team,\s*\.ch-rs-sgbar/);
+    expect(rosterCss).toMatch(/\.ch-rs-strip,\s*\.ch-rs-sgbar/);
     expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('8 players · 7 active. Team average 73.6 over the season.');
     expect(cardNames()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
     expect(screen.getByRole('button', { name: 'Active · 7' }).getAttribute('aria-pressed')).toBe('true');
@@ -692,7 +879,8 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
   it('30303 31402 Try again asks the server again, and what comes back replaces the first copy: an approved player appears, and a failed read never turns into "No players yet"', async () => {
     const user = userEvent.setup();
     const view = render(tree(roster({ playersError: true, players: [], requestsError: true, requests: [] })));
-    await user.click(within(code('CH-3201') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    // Two failed reads: the page's one notice carries the Try again (CH-1209).
+    await user.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
     // The server's answer arrives as new props.
     view.rerender(tree(roster()));
@@ -719,21 +907,21 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     url.revokeObjectURL = () => {};
     wrap(roster());
     await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
-    expect(await screen.findByText("Couldn't approve Grace Liu: you're offline")).toBeTruthy();
+    expect(await screen.findByText('Couldn’t approve Grace Liu: you’re offline')).toBeTruthy();
     await user.click(within(region()).getAllByRole('button', { name: 'Decline' })[1]!);
-    expect(await screen.findByText("Couldn't decline Owen Park's request: you're offline")).toBeTruthy();
+    expect(await screen.findByText('Couldn’t decline Owen Park’s request: you’re offline')).toBeTruthy();
     expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']);
     await openPeek(user);
     await user.type(noteField(), 'x');
     await user.tab();
-    expect(await screen.findByText("Couldn't save your note about Theo: you're offline")).toBeTruthy();
+    expect(await screen.findByText('Couldn’t save your note about Theo: you’re offline')).toBeTruthy();
     expect(noteField().value).toBe('x');
     await openRemove(user);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
-    expect(await screen.findByText("Couldn't remove Theo Marchetti: you're offline")).toBeTruthy();
+    expect(await screen.findByText('Couldn’t remove Theo Marchetti: you’re offline')).toBeTruthy();
     expect(screen.getByRole('button', { name: `Actions for ${theo.name}` })).toBeTruthy();
     expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(true);
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Keep Theo' }));
     // Approve all is refused the same way.
     const { result } = renderHook(() => useJoinRequests('Varsity', PREVIEW_ROSTER.requests), {
       wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,
@@ -925,6 +1113,21 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     window.removeEventListener('error', caught);
     // The refusal is handled inside Roster, not left to surface as an uncaught error.
     expect(errors).toEqual([]);
+  });
+
+  it('CH-3603 the kept layout comes back in place; only the coach’s own toggle swaps it, the old layout leaving the accessibility tree at once', async () => {
+    const user = userEvent.setup();
+    const leaving = () => document.querySelector('.ch-rs-body .ch-swap__body[aria-hidden]');
+    localStorage.setItem('ch-roster-view', 'list');
+    wrap(roster());
+    expect(await screen.findByRole('table', { name: 'Roster' })).toBeTruthy();
+    // Restoring the kept layout draws it in place: nothing is left fading behind it.
+    expect(leaving()).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Team view' }));
+    // The table fades out behind the cards (jsdom never finishes the fade), hidden from assistive tech while it does.
+    expect(leaving()?.querySelector('[role="table"]')).not.toBeNull();
+    expect(screen.queryByRole('table', { name: 'Roster' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: new RegExp(theo.name) }).length).toBeGreaterThan(0);
   });
 
   it('31203 a saved note reads back: close the player and open them again, and the new text is there', async () => {

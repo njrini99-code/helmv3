@@ -28,6 +28,8 @@ export interface ChRoundSession {
 
   holes: RoundHole[];
   currentHoleIndex: number;
+  /** Shotgun start: the hole position the round started on (lib/golf/round-session/play-order.ts). Omitted, hole 1. */
+  startHole?: number;
   setCurrentHoleIndex: (index: number) => void;
   completedHoleStats: ReadonlyArray<HoleStats | undefined | null>;
   activeHoleShots: ShotRecord[];
@@ -98,6 +100,12 @@ export function roundHeading(setup: { courseName: string; teesPlayed: string; ro
 /** The scorecard's holes: each hole's score once it is holed, and its putts from the saved stats. */
 export function cardHoles(holes: RoundHole[], stats: ReadonlyArray<HoleStats | undefined | null>): ChCardHole[] {
   return holes.map((h, i) => ({ number: h.number, par: h.par, score: h.score, putts: stats[i]?.putts ?? null }));
+}
+
+/** The posted round's strokes and score to par, once every hole on the card has a score; null before. */
+export function postedScore(card: ChCardHole[]): { strokes: number; toPar: number } | null {
+  if (!card.length || card.some((h) => h.score == null)) return null;
+  return card.reduce((a, h) => ({ strokes: a.strokes + (h.score ?? 0), toPar: a.toPar + (h.score ?? 0) - h.par }), { strokes: 0, toPar: 0 });
 }
 
 /** The finished round's holes, for the Round complete sheet. */

@@ -19,12 +19,13 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA),
 | Clubhouse candidate (#2102) | `c221d1ca2` | `agent/clubhouse` |
 | Release train | PR #2110, `agent/release-train` at `c0f1b17fe` (#2102, #2104 round engine, #2108 security, #2109 stats engine, plus the audit fixes) | local `next build` exit 0 at `24a4bbca2` (later commits: docs, lint layout, the Hub read fix, one test timeout); CI rerunning at `c0f1b17fe` |
 
-**Production flag state:** `golf_clubhouse_ui` and `golf_clubhouse_front_door`
-are off in production and on in preview and development
-(`config/feature-flags.yml`). Per Q-4, production stays off until the owner has
-done a live preview pass. A train deploy therefore ships the flag-off (Fairway)
-experience plus the shared fixes. Every finding below that says "flag on"
-affects no customer until the flag is flipped.
+**Production flag state (updated 2026-10-12):** `golf_clubhouse_ui` and
+`golf_clubhouse_front_door` are off in production and on in preview and
+development (`config/feature-flags.yml`). `golf_clubhouse_ui` was on in
+production from 2026-10-08 to 2026-10-11 through #2180 by mistake; #2188 turned
+it off. The baselines above are the 2026-09-30 audit's; current state, turn-on
+and rollback are in [STATUS.md](STATUS.md). Every finding below that says "flag
+on" affects no customer until the owner turns the flag on.
 
 ## 2. Scorecard (audit §20)
 
@@ -84,21 +85,30 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
   player see the team as a plain label. Catalog CH-1003, CH-1305, CH-1813,
   CH-1814; `team-switch.test.tsx`.
 
-### Not rebuilt with the flag on (owner decides after this audit)
+### Formerly not rebuilt: where each route goes now (updated 2026-10-17)
 
-| Route | Role | Today (flag on) | Suggested destination |
+Every row the audit left open is now an alias or built. Route files are under
+`src/app/golf/(dashboard)/dashboard/`. **RETIRED** means the owner decided on
+2026-10-12 not to build it; the redirect stays.
+
+| Route | Role | Today (flag on) | Evidence |
 | --- | --- | --- | --- |
-| `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | coach | NotRebuilt | Alias to `coachhelm` (`?player=` kept) |
-| `coachhelm?view=profile\|standing\|deep-dive`; `/my-game-profile`, `/my-standing` (and `/my-development`, which goes to `coachhelm?view=development`) | player | **Built** (F-04): Game profile `28f83d3a8`, Standing `a657a7d15`, Deep dive `438781162`; `?view=development` goes to Stats' Development | Nothing left on this row |
-| `/players/[id]`, `/players/[id]/game`, `/game/print`, `/genome`; `/coachhelm/genome/[id]` | coach | NotRebuilt | Alias to `stats?player=<id>` |
-| `/coachhelm/genome/compare` | coach | NotRebuilt | Owner: retire or build |
-| `/team` | both | NotRebuilt | Coach: `settings?section=team`; player: `settings?section=golf` |
-| `/rounds` | coach | NotRebuilt (v2 has no coach library, Q-79) | Alias to `stats/team` |
-| `/coachhelm/chat` | player | NotRebuilt | Alias to `coachhelm` |
-| `/courses` | coach | NotRebuilt | Owner: build or retire (course management) |
-| `/whats-new` | both | NotRebuilt | Retire, or alias to Home |
+| `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | coach | Alias to `coachhelm` (`?player=` kept, `view=chat` becomes `view=ask`) | `intelligence/layout.tsx` |
+| `coachhelm?view=profile\|standing\|deep-dive`; `/my-game-profile`, `/my-standing` (and `/my-development`, which goes to `coachhelm?view=development`) | player | **Built** (F-04): Game profile `28f83d3a8`, Standing `a657a7d15`, Deep dive `438781162`; `?view=development` goes to Stats' Development | — |
+| `/players/[id]`, `/players/[id]/game`, `/genome`; `/coachhelm/genome/[id]` | coach | Alias to `stats?player=<id>` | `players/[playerId]/layout.tsx`, `coachhelm/genome/[playerId]/layout.tsx` |
+| `/players/[id]/game/print` (printable scouting report) | coach | **RETIRED** (owner, 2026-10-12); covered by the `players/[id]` alias to `stats?player=<id>` | `players/[playerId]/layout.tsx` |
+| `/coachhelm/genome/compare` | coach | **RETIRED** (owner, 2026-10-12); alias to `stats/team` | `coachhelm/genome/compare/layout.tsx` |
+| `/team` | both | Alias: coach to `settings?section=team`, player to `settings?section=golf` | `team/layout.tsx` |
+| `/rounds` | coach | Alias to `stats/team` (v2 has no coach library, Q-79); on the frame's aliased list since 2026-10-17, when a plain `redirect()` left the coach on NotRebuilt | `rounds/page.tsx` |
+| `/my-qualifiers` | coach | Alias to `qualifiers` (a player's screen; since 2026-10-17) | `my-qualifiers/page.tsx` |
+| `/stats/team` | player | Alias to `stats` (coach-only; whoever the dashboard draws as a player; since 2026-10-17) | `stats/team/page.tsx` |
+| `/coachhelm/qualifying/[id]` | coach | Alias to `qualifiers/[id]/selection` | `coachhelm/qualifying/[id]/layout.tsx` |
+| `/coachhelm/chat` | both | Alias: coach to `coachhelm?view=ask`, player to `coachhelm` | `coachhelm/chat/layout.tsx` |
+| `/courses` | coach | **RETIRED** (course management; owner, 2026-10-12); alias to Home | `courses/layout.tsx` |
+| `/whats-new` | both | Alias to Home | `whats-new/layout.tsx` |
+| Settings display density, date format, score display | both | **RETIRED** (owner, 2026-10-12); not shown in Clubhouse Settings | `src/clubhouse/screens/settings/Preferences.tsx` |
 | `/hub`, `/my-insights` | both | redirect to rebuilt routes | none needed |
-| `/dev/haptics`, `[...missing]` | — | dev and catch-all | none needed |
+| `/dev/haptics`, `[...missing]` | — | dev and catch-all; any route `isRebuilt` does not list still draws the NotRebuilt fallback (CH-1301) | `src/clubhouse/shell/nav.ts` |
 
 ### Live notification destinations (production, read-only, last 180 days)
 
@@ -110,13 +120,12 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
 | `announcements` | 136 | aliased to Team Hub (announcements tab) |
 | `coachhelm` | 94 | rebuilt |
 | `roster` | 65 | rebuilt. `roster?tab=requests` (code source) is **ignored** by Clubhouse Roster; requests show in the Roster header instead (P2) |
-| `team` | 3 | **NotRebuilt** (see table) |
+| `team` | 3 | aliased: coach to `settings?section=team`, player to `settings?section=golf` |
 
 Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias
-drops `task`; P2. Source-confirmed against Next.js 16.2.9: a layout never
-receives `searchParams`, so no layout alias can carry a query string; it needs a
-page or Proxy redirect, and Clubhouse Team Hub has no single-task view to land
-on), `intelligence*`, `my-development`, `coachhelm?view=development`.
+keeps `task`: the proxy hands the query to the layout in `x-helm-search`, and
+Team Hub scrolls to the task, `tasks/layout.tsx`), `intelligence*`,
+`my-development`, `coachhelm?view=development`.
 
 ## 4. Findings
 
@@ -322,29 +331,29 @@ quiet rerun.
   renders the library fresh, as the continue engine already did); Save for
   later now reaches the library in about 1s instead of 10s on the dev stack.
   The e2e taps Continue at once and passes 3/3.
-- **§13 CoachHelm (run 2026-10-01, read-only, Demo team).** No P0. Stored
-  putt, approach and tee bands, and sand saves, match a non-test recompute
-  except where the cache counts test rounds (one 15-25 ft band reads 19.2%
-  stored vs 5.8%; a driver vs layback comparison flips): the fix is the held
-  cache migrations (Q-124) and a regeneration (Q-125), both owner decisions.
-  Fixed in code: stale warm-up cards are hidden (CH13-3), the open-signal
-  count matches what is drawn (CH13-4), focus areas carry their team (CH13-5),
-  development notifications open Stats (CH13-7), evidence nouns and freshness
-  (CH13-9), confidence words follow the shared labels (CH13-10), no-finding
-  cards are not assignable (CH13-11), card voice per role (CH13-13),
-  acknowledged cards are not "Priority" (CH13-16), and Ask and its stream
-  endpoint respect the CoachHelm gate (CH13-20). Fixed 2026-10-01: Undo after
-  Dismiss keeps an acknowledgement (CH13-14, `024a7669a`); Assign as focus
-  tells the player, and the link follows the player's team under the
-  allowlist (CH13-24, `f0c107d34`); Assign sends the player's value now as
-  the focus's starting point (CH13-22, `1435fc9dd`, `39270df3b`); a declined
-  focus says so and Assign reads Propose again (CH13-23, `22a26ff00`); only
-  the cards a Clubhouse page draws are recorded as shown (CH13-21,
-  `5107895ee`). CH13-8 (unlabelled round sets): every live card (599 of 599,
-  read-only) carries its window ("90 days", "All rounds") and sample since
-  CH13-9; the test rounds in the stored cache are Q-124's apply. CH13-27 (stored strokes impact not
-  reproducible) is gone after the Q-125 regeneration; the 10 team-level cards
-  (bubble player, pattern) were not regenerated.
+- **§13 CoachHelm (run 2026-10-01, read-only, Demo team).** No P0. Stored putt,
+  approach and tee bands, and sand saves, match a non-test recompute except
+  where the cache counts test rounds (one 15-25 ft band reads 19.2% stored vs
+  5.8%; a driver vs layback comparison flips): the fix is the held cache
+  migrations (Q-124) and a regeneration (Q-125), both owner decisions. Fixed in
+  code: stale warm-up cards are hidden (CH13-3), the open-signal count matches
+  what is drawn (CH13-4), focus areas carry their team (CH13-5), development
+  notifications open Stats (CH13-7), evidence nouns and freshness (CH13-9),
+  confidence words follow the shared labels (CH13-10), no-finding cards are not
+  assignable (CH13-11), card voice per role (CH13-13), acknowledged cards are
+  not "Priority" (CH13-16), and Ask and its stream endpoint respect the
+  CoachHelm gate (CH13-20). Fixed 2026-10-01: Undo after Dismiss keeps an
+  acknowledgement (CH13-14, `024a7669a`); Assign as focus tells the player, and
+  the link follows the player's team under the allowlist (CH13-24, `f0c107d34`);
+  Assign sends the player's value now as the focus's starting point (CH13-22,
+  `1435fc9dd`, `39270df3b`); a declined focus says so and Assign reads Propose
+  again (CH13-23, `22a26ff00`); only the cards a Clubhouse page draws are
+  recorded as shown (CH13-21, `5107895ee`). CH13-8 (unlabelled round sets):
+  every live card (599 of 599, read-only) carries its window ("90 days", "All
+  rounds") and sample since CH13-9; the test rounds in the stored cache are
+  Q-124's apply. CH13-27 (stored strokes impact not reproducible) is gone after
+  the Q-125 regeneration; the 10 team-level cards (bubble player, pattern) were
+  not regenerated.
 - **F-58 (P2 data, fixed `c7e24b4f9`).** CoachHelm's program pulse used the
   hole-by-hole rule, so a team posting qualifiers as totals read "no rounds
   in 60 days". It now uses the Q-123 score rule (shared in

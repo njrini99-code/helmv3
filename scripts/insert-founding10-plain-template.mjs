@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 /**
  * Upsert the "Founding 10 — First Touch (Text)" cold-outreach template into
  * crm_email_templates as a TRUE text/plain template (format='text'): no HTML,
@@ -9,7 +11,7 @@
  * Run: node scripts/insert-founding10-plain-template.mjs
  */
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
 
 const cli = cliGuard({
@@ -85,5 +87,6 @@ if (target) {
 
 // Local preview: exactly what the recipient sees (text, sample coach).
 const preview = body.replace(/\{last_name\}/g, 'Rini').replace(/\{school\}/g, 'Denison');
-writeFileSync('/tmp/founding10-text-preview.txt', `Subject: ${template.subject.replace(/\{school\}/g, 'Denison')}\n\n${preview}\n`);
-console.log('  preview -> /tmp/founding10-text-preview.txt');
+const previewFile = join(mkdtempSync(join(tmpdir(), 'founding10-')), 'text-preview.txt');
+writeFileSync(previewFile, `Subject: ${template.subject.replace(/\{school\}/g, 'Denison')}\n\n${preview}\n`, { mode: 0o600 });
+console.log(`  preview -> ${previewFile}`);

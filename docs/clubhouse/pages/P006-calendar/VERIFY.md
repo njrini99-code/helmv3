@@ -205,6 +205,10 @@ before, after, baseline or evidence.
 | `P006__premium-audit__coach__1280__case-048-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-048-chromium-normal; /clubhouse-preview/calendar; synthetic preview |
 | `P006__premium-audit__coach__390__case-005-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-005-webkit-reduce; /clubhouse-preview/calendar; synthetic preview |
 | `P006__premium-audit__coach__390__case-048-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-048-chromium-normal; /clubhouse-preview/calendar; synthetic preview |
+| `P006__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P006__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P006__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
+| `P006__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
 
 ## Historical verification gaps
 
@@ -222,10 +226,16 @@ before, after, baseline or evidence.
   not.
 - Not reproduced: the editor setting its fields again when the page re-reads
   while it is open (CONTRACT.md 12).
-- Not handled: a create whose answer is lost can be created twice by Retry
-  (CONTRACT.md 06).
-- v2 draws a whole-page first-run state for a team that has never scheduled
-  anything (D-71); it is not built.
+- Not run against a database or in a browser: Retry after a create's answer is
+  lost (CONTRACT.md 06). It no longer creates twice: events and series are
+  keyed by a request id since C-17 (`event-create-idempotency.test.ts`,
+  `calendar.test.tsx` C-17), and busy time since 2026-10-17
+  (`blocked-time-idempotency.test.ts`, `calendar.test.tsx` CH-6006). Attaching
+  a file, attendance and replies set one row per event and file or player, so
+  a repeat cannot add a second. Unit tests and source reading only.
+- Not captured in a browser in this pass: the D-71 first-run page (CH-6309,
+  `CalendarFirstRun.tsx`, built 2026-09-30; desktop and phone both draw it).
+  Proved in jsdom only (`calendar.test.tsx` CH-6309).
 
 ## Premium audit matrix — 2026-10-06
 

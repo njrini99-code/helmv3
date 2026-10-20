@@ -38,7 +38,8 @@ vi.mock('@/hooks/golf/use-connection-status', () => ({ useConnectionStatus: () =
 vi.mock('@/hooks/golf/use-round-status-sync', () => ({ useRoundStatusSync: vi.fn() }));
 vi.mock('@/stores/offline-sync-store', () => {
   const status = { isOnline: true, isSyncing: false, pendingCount: { total: 0 }, syncError: null };
-  return { useOfflineSyncStatus: () => status };
+  const state = { updatePendingCount: vi.fn(async () => {}) };
+  return { useOfflineSyncStatus: () => status, useOfflineSyncStore: { getState: () => state } };
 });
 vi.mock('@/lib/offline/indexed-db', () => ({ saveOfflineRound: vi.fn(async () => {}), deleteOfflineRound: vi.fn(async () => {}) }));
 vi.mock('@/lib/offline/partial-save-beacon', () => ({ beaconPartialSave: vi.fn(() => false) }));
@@ -67,6 +68,7 @@ vi.mock('../screens/rounds/track/RoundTracking', () => ({
 
 import { emergencySave, loadEmergencySave } from '@/lib/utils/emergency-save';
 import { ContinueRound, type ContinueRoundProps } from '../screens/rounds/entry/ContinueRound';
+import type { ChQualifierOption, ChRoundTypeOptions } from '../screens/rounds/entry/round-type';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 
@@ -234,10 +236,10 @@ describe('Continue round: submitting a saved qualifier round (CH-11518, CH-11519
   it('CH-11518 a legacy qualifier round with no number asks which round it is; Submit waits for a choice and posts that round', async () => {
     const user = renderContinue({ setupData: qualifierSetup, qualifierRoundNumberOptions: [2, 3] });
     await finishRound();
-    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Submit round/ }));
+    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Post round/ }));
     await waitFor(() => expect(code('CH-11518')).toHaveAttribute('open'));
     expect(mocks.submitGolfRoundComprehensive).not.toHaveBeenCalled();
-    const submit = within(code('CH-11518')!).getByRole('button', { name: 'Submit round' });
+    const submit = within(code('CH-11518')!).getByRole('button', { name: 'Post round' });
     expect(submit).toBeDisabled();
     await user.click(within(code('CH-11518')!).getByRole('button', { name: /Qualifier round 3/ }));
     expect(submit).toBeEnabled();
@@ -249,10 +251,10 @@ describe('Continue round: submitting a saved qualifier round (CH-11518, CH-11519
   it('CH-11519 with no round left to choose, the server’s reason takes the rows’ place and Back returns to the finish sheet', async () => {
     const user = renderContinue({ setupData: qualifierSetup, qualifierRoundNumberOptions: [], qualifierRoundNumberUnavailableReason: 'Every configured qualifier round is already saved for you.' });
     await finishRound();
-    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Submit round/ }));
+    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Post round/ }));
     await waitFor(() => expect(code('CH-11518')).toHaveAttribute('open'));
     expect(code('CH-11519')).toHaveTextContent('Every configured qualifier round is already saved for you.');
-    expect(within(code('CH-11518')!).queryByRole('button', { name: 'Submit round' })).toBeNull();
+    expect(within(code('CH-11518')!).queryByRole('button', { name: 'Post round' })).toBeNull();
     await user.click(within(code('CH-11518')!).getByRole('button', { name: 'Back' }));
     await waitFor(() => expect(code('CH-11508')).toHaveAttribute('open'));
   });
@@ -262,7 +264,7 @@ describe('Continue round: submitting a saved qualifier round (CH-11518, CH-11519
     const user = renderContinue();
     await finishRound();
     mocks.submitGolfRoundComprehensive.mockResolvedValue({ success: false, error: closed });
-    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Submit round/ }));
+    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Post round/ }));
     await waitFor(() => expect(code('CH-11516')).toHaveAttribute('open'));
     expect(code('CH-11005')).toBeNull();
     mocks.updateRoundType.mockResolvedValueOnce({ success: false, error: 'This round is locked.' });
@@ -270,5 +272,144 @@ describe('Continue round: submitting a saved qualifier round (CH-11518, CH-11519
     await waitFor(() => expect(code('CH-11012')).toHaveTextContent('This round is locked.'));
     expect(toasts().filter((t) => t.textContent?.includes('practice'))).toHaveLength(0);
     expect(mocks.updateRoundType).toHaveBeenCalledWith({ roundId: 'round-9', roundType: 'practice' });
+  });
+});
+
+describe('Continue round: changing the round type mid-round (CH-11521, CH-11411, CH-11020, CH-11218, CH-11316, CH-11110)', () => {
+  const q = (over: Partial<ChQualifierOption> = {}): ChQualifierOption => ({ id: 'q1', name: 'Fall Qualifier', numRounds: 3, takenRoundNumbers: [], isCompleted: false, ...over });
+  const options = (qualifiers: ChQualifierOption[], readFailed = false): ChRoundTypeOptions => ({ qualifiers, readFailed });
+
+  function mount(props: Partial<ContinueRoundProps> = {}) {
+    const user = userEvent.setup();
+    const tree = (over: Partial<ContinueRoundProps>) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <ContinueRound roundId="round-9" playerId="player-1" setupData={setupData} holes={holes} completedHoleStats={[]} startHoleIndex={0} serverDataTimestamp="2020-01-01T00:00:00.000Z" {...over} />
+        </ToastProvider>
+      </LazyMotion>
+    );
+    const view = render(tree(props));
+    return { user, rerender: (over: Partial<ContinueRoundProps>) => view.rerender(tree({ ...props, ...over })) };
+  }
+  async function openTypeSheet(user: ReturnType<typeof userEvent.setup>) {
+    await openExit(user);
+    expect(code('CH-11506')).toHaveTextContent('Practice now.');
+    await user.click(within(code('CH-11506')!).getByRole('button', { name: /Change round type/ }));
+    await waitFor(() => expect(code('CH-11521')).toHaveAttribute('open'));
+    expect(code('CH-11506')).not.toHaveAttribute('open');
+  }
+  const sheet = () => within(code('CH-11521')!);
+  const autoSaveDisabled = () => (mocks.tracking.current as unknown as { autoSaveDisabled: boolean }).autoSaveDisabled;
+
+  afterEach(() => {
+    delete (window.navigator as unknown as Record<string, unknown>).onLine;
+  });
+
+  it('CH-11521 CH-11411 Exit opens Change round type; Save waits for a change, reads Saving… while it saves, then says what the round counts as and refreshes the page', async () => {
+    let settle!: (v: { success: boolean }) => void;
+    mocks.updateRoundType.mockImplementation(() => new Promise((r) => (settle = r)));
+    const { user } = mount({ roundTypeOptions: options([q()]) });
+    await openTypeSheet(user);
+    const save = sheet().getByRole('button', { name: 'Save' });
+    expect(save).toBeDisabled();
+    await user.click(sheet().getByRole('radio', { name: 'Tournament' }));
+    expect(save).toBeEnabled();
+    await user.click(save);
+    expect(mocks.updateRoundType).toHaveBeenCalledWith({ roundId: 'round-9', roundType: 'tournament', qualifierId: null, qualifierRoundNumber: null });
+    await waitFor(() => expect(code('CH-11411')).toHaveTextContent('Saving…'));
+    expect(code('CH-11411')!.closest('button')).toBeDisabled();
+    await act(async () => settle({ success: true }));
+    await waitFor(() => expect(screen.getByText('This round now counts as a tournament round')).toBeTruthy());
+    expect(mocks.router.refresh).toHaveBeenCalled();
+    await waitFor(() => expect(code('CH-11521')).not.toHaveAttribute('open'));
+  });
+
+  it('CH-11521 a qualifier choice skips the slots the player’s other rounds hold and posts the qualifier and its open round', async () => {
+    const { user } = mount({ roundTypeOptions: options([q({ takenRoundNumbers: [1] })]) });
+    await openTypeSheet(user);
+    await user.click(sheet().getByRole('radio', { name: 'Qualifier' }));
+    // One entered qualifier is picked for the player; round 1 is held by another round, so round 2 is chosen.
+    expect(sheet().getByRole('button', { name: /Round 1/ })).toBeDisabled();
+    expect(sheet().getByRole('button', { name: /Round 1/ })).toHaveTextContent('Already recorded');
+    expect(sheet().getByRole('button', { name: /Round 2/ })).toHaveTextContent('Chosen');
+    await user.click(sheet().getByRole('button', { name: /Round 3/ }));
+    await user.click(sheet().getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(mocks.updateRoundType).toHaveBeenCalledWith({ roundId: 'round-9', roundType: 'qualifier', qualifierId: 'q1', qualifierRoundNumber: 3 }));
+    await waitFor(() => expect(screen.getByText('This round now counts as round 3 of Fall Qualifier')).toBeTruthy());
+  });
+
+  it('CH-11020 a refusal for a player who isn’t an active member is said in words they can act on; the sheet stays open', async () => {
+    mocks.updateRoundType.mockResolvedValueOnce({ success: false, error: "You don't have permission to change this round." });
+    const { user } = mount({ roundTypeOptions: options([q()]) });
+    await openTypeSheet(user);
+    await user.click(sheet().getByRole('radio', { name: 'Qualifier' }));
+    await user.click(sheet().getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(code('CH-11020')).toHaveTextContent('Couldn’t change the round type'));
+    expect(code('CH-11020')).toHaveTextContent('You need to be entered in it and an active member of the team. Ask your coach');
+    expect(code('CH-11521')).toHaveAttribute('open');
+    expect(mocks.router.refresh).not.toHaveBeenCalled();
+  });
+
+  it('CH-11020 a refusal the server words for a person passes through', async () => {
+    mocks.updateRoundType.mockResolvedValueOnce({ success: false, error: 'Round 2 of that qualifier is already taken by another round.' });
+    const { user } = mount({ roundTypeOptions: options([q()]) });
+    await openTypeSheet(user);
+    await user.click(sheet().getByRole('radio', { name: 'Qualifier' }));
+    await user.click(sheet().getByRole('button', { name: /Round 2/ }));
+    await user.click(sheet().getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(code('CH-11020')).toHaveTextContent('Round 2 of that qualifier is already taken by another round.'));
+  });
+
+  it('CH-11521 CH-1903 offline, nothing is sent and the player is told', async () => {
+    // The round screen's own reading of offline: the browser and the connection check both say so.
+    mocks.connection.isConnected = false;
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false });
+    const { user } = mount({ roundTypeOptions: options([q()]) });
+    await openTypeSheet(user);
+    await user.click(sheet().getByRole('radio', { name: 'Tournament' }));
+    await user.click(sheet().getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(code('CH-1903')).toHaveTextContent('Couldn’t change the round type: you’re offline'));
+    expect(mocks.updateRoundType).not.toHaveBeenCalled();
+  });
+
+  it('CH-11218 qualifiers that didn’t load are said as such, never as none; CH-11316 no entries says who can add them', async () => {
+    const first = mount({ roundTypeOptions: options([], true) });
+    await openTypeSheet(first.user);
+    await first.user.click(sheet().getByRole('radio', { name: 'Qualifier' }));
+    expect(code('CH-11218')).toHaveTextContent('Your qualifiers didn’t load');
+    expect(code('CH-11316')).toBeNull();
+    expect(sheet().getByRole('button', { name: 'Save' })).toBeDisabled();
+    first.rerender({ roundTypeOptions: options([]) });
+    expect(code('CH-11316')).toHaveTextContent('You aren’t in any qualifier yet');
+    expect(code('CH-11218')).toBeNull();
+    expect(sheet().getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('CH-11110 a qualifier with every round already held cannot be saved, and says why', async () => {
+    const { user } = mount({ roundTypeOptions: options([q({ numRounds: 2, takenRoundNumbers: [1, 2] })]) });
+    await openTypeSheet(user);
+    await user.click(sheet().getByRole('radio', { name: 'Qualifier' }));
+    expect(code('CH-11110')).toHaveTextContent('Every round of Fall Qualifier already has one of your rounds in it');
+    expect(sheet().getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('CH-11521 auto-save is held while the sheet is open; once the refreshed setup arrives it runs again and the next submit carries the new qualifier round', async () => {
+    const { user, rerender } = mount({ roundTypeOptions: options([q()]) });
+    expect(autoSaveDisabled()).toBe(false);
+    await openTypeSheet(user);
+    expect(autoSaveDisabled()).toBe(true);
+    await user.click(sheet().getByRole('radio', { name: 'Qualifier' }));
+    await user.click(sheet().getByRole('button', { name: /Round 2/ }));
+    await user.click(sheet().getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(mocks.router.refresh).toHaveBeenCalled());
+    await waitFor(() => expect(code('CH-11521')).not.toHaveAttribute('open'));
+    // In the app the refresh's transition stays pending until the refreshed setup commits, so the hold lasts until
+    // then; this router stub settles at once, so the hold is only asserted while the sheet is open (above).
+    rerender({ setupData: { ...setupData, roundType: 'qualifier', qualifierId: 'q1', qualifierRoundNumber: 2 } });
+    await waitFor(() => expect(autoSaveDisabled()).toBe(false));
+    await finishRound();
+    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Post round/ }));
+    await waitFor(() => expect(mocks.submitGolfRoundComprehensive).toHaveBeenCalled());
+    expect(mocks.submitGolfRoundComprehensive.mock.calls[0]![0]).toMatchObject({ qualifierId: 'q1', qualifierRoundNumber: 2 });
   });
 });

@@ -1,7 +1,9 @@
 'use client';
 
-import { distinctStaffTitle, pendingCoachName, staffInviteNote, staffRoleLabel, STAFF_ROLE_HELP, STAFF_ROLE_OPTIONS, type ChSettingsWrites } from '../model';
+import { useState } from 'react';
+import { DECLINE_NOTE, distinctStaffTitle, pendingCoachName, staffInviteNote, staffRoleLabel, STAFF_ROLE_HELP, STAFF_ROLE_OPTIONS, type ChPendingCoach, type ChSettingsWrites } from '../model';
 import { useCoachingStaff, useStaffInvite } from '../hooks';
+import { ActionSheet } from './sheets';
 import { ActionRow, Group, PickerRow } from './ui';
 
 /**
@@ -14,6 +16,8 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
   const invite = useStaffInvite(writes.staff);
   const { members, requests, requestsFailed } = staff;
   const deciding = staff.approve.pending || staff.decline.pending;
+  // Decline sits beside Approve, so it asks first (CH-8511); the action sheet warns as it opens.
+  const [declining, setDeclining] = useState<ChPendingCoach | null>(null);
   return (
     <>
       {members && members.length > 0 && (
@@ -32,7 +36,7 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
         </Group>
       )}
       {requestsFailed ? (
-        <Group title="Assistant coach requests" code="CH-8213" note="Requests didn't load. Nothing was changed; the error has been reported.">
+        <Group title="Assistant coach requests" code="CH-8213" note="Requests didn’t load. Nothing was changed; the error has been reported.">
           <ActionRow label="Try again" onClick={staff.retry} />
         </Group>
       ) : (
@@ -41,7 +45,7 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
             {requests.map((c) => (
               <div key={c.coachId} className={'ch-setm-row is-info' + (c.fullName?.trim() && c.email ? ' has-help' : '')}>
                 <span className="ch-setm-row__l">{pendingCoachName(c)}</span>
-                <button type="button" className="ch-setm-link is-quiet" disabled={deciding} onClick={() => void staff.decline.run(c)}>
+                <button type="button" className="ch-setm-link is-quiet" disabled={deciding} onClick={() => setDeclining(c)}>
                   {staff.decline.pending && staff.busyId === c.coachId ? 'Declining…' : 'Decline'}
                 </button>
                 <button type="button" className="ch-setm-pill" disabled={deciding} onClick={() => void staff.approve.run(c)}>
@@ -53,6 +57,24 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
           </Group>
         )
       )}
+      <ActionSheet
+        open={!!declining}
+        onClose={() => setDeclining(null)}
+        code="CH-8511"
+        title={declining ? `Decline ${pendingCoachName(declining)}?` : 'Decline this request?'}
+        message={DECLINE_NOTE}
+        cancelLabel="Keep request"
+        actions={[
+          {
+            label: 'Decline',
+            onClick: () => {
+              const c = declining;
+              setDeclining(null);
+              if (c) void staff.decline.run(c);
+            },
+          },
+        ]}
+      />
       {!staff.isAssistant && (
         <Group title="Staff invitations" note={invite.made ? staffInviteNote(invite.made) : STAFF_ROLE_HELP[invite.role]}>
           <PickerRow label="Staff role" value={invite.role} options={STAFF_ROLE_OPTIONS} onPick={invite.setRole} />

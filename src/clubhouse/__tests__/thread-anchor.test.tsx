@@ -8,9 +8,10 @@ import { NEAR_END_PX, useThreadAnchor } from '../screens/messages/use-thread-anc
 let el: HTMLDivElement;
 function Thread({ convId, count, lastMine = false, typing = false }: { convId: string; count: number; lastMine?: boolean; typing?: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const { unseen, toEnd } = useThreadAnchor(ref, { convId, count, lastMine, typing });
+  const { unseen, atEnd, toEnd } = useThreadAnchor(ref, { convId, count, lastMine, typing });
   return (
     <>
+      {!atEnd && <span>away from the end</span>}
       <div
         ref={(n) => {
           ref.current = n;
@@ -62,6 +63,26 @@ describe('useThreadAnchor', () => {
     expect(el.scrollTop).toBe(300);
     view.rerender(<Thread convId="a" count={11} lastMine typing />);
     expect(el.scrollTop).toBe(2000);
+  });
+
+  it('marks the thread scrolled off its top, so its top edge fades under the header (wave 7 premium #19)', () => {
+    render(<Thread convId="a" count={10} />);
+    geometry(2000, 0);
+    expect(el.classList.contains('is-scrolled')).toBe(false);
+    geometry(2000, 300);
+    expect(el.classList.contains('is-scrolled')).toBe(true);
+    geometry(2000, 0);
+    expect(el.classList.contains('is-scrolled')).toBe(false);
+  });
+
+  it('says when the reader is away from the end with nothing new, for Jump to latest (wave 5 #17)', () => {
+    render(<Thread convId="a" count={10} />);
+    expect(screen.queryByText('away from the end')).toBeNull();
+    geometry(2000, 300);
+    expect(screen.getByText('away from the end')).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
+    geometry(2000, 1600 - NEAR_END_PX + 1);
+    expect(screen.queryByText('away from the end')).toBeNull();
   });
 
   it('another conversation opens at its end, with nothing counted', () => {
@@ -121,5 +142,21 @@ describe('useThreadAnchor · layout changes', () => {
     resize();
     expect(el.scrollTop).toBe(300);
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('P007 D1: a thread whose scroll is reset while it settles (a push during hydration) goes back to its end, until the reader touches it', () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    try {
+      render(<Thread convId="a" count={10} />);
+      geometry(2000, 0);
+      act(() => void vi.advanceTimersByTime(50));
+      expect(el.scrollTop).toBe(2000);
+      act(() => void el.dispatchEvent(new Event('wheel')));
+      geometry(2000, 300);
+      act(() => void vi.advanceTimersByTime(50));
+      expect(el.scrollTop).toBe(300);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

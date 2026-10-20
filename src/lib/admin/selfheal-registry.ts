@@ -112,8 +112,11 @@ export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
     // paint Diagnose red. It has tagged itself `method = 'claude-code-cloud-
     // session'` (09-25..29), `runner = 'claude-code-cloud-session'` (09-30)
     // and `method = 'claude-code-scheduled-session'` (10-01), so match the
-    // family, not one spelling. No live Diagnose runner is a `claude-code-*`.
-    retiredMethods: ['claude-code-*'],
+    // family, not one spelling. On 2026-10-08 it wrote `method =
+    // 'claude-cloud-session'`, outside that family, and painted Diagnose red
+    // 09:22Z-15:17Z again, so both families are retired. No live Diagnose
+    // runner is a `claude-code-*` or `claude-cloud-*`.
+    retiredMethods: ['claude-code-*', 'claude-cloud-*'],
     what: 'Reads every unresolved fingerprint in the last 72h, groups them by root cause, and writes one rca_analysis row per fingerprint.',
     contract: 'docs/ai-system/selfheal/triage-contract.md',
   },

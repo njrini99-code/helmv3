@@ -30,6 +30,8 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { Spinner } from '../../ui/Spinner';
+import { Tooltip } from '../../ui/Tooltip';
 import { haptic } from '../../lib/haptics';
 import { AuthNotice } from '../auth/AuthNotice';
 import { greetingWord } from '../auth/scene-sky';
@@ -87,15 +89,16 @@ export interface StepProps {
 /** The pause after the eighth character before the code checks itself (design: 800ms). */
 const CODE_PAUSE_MS = 800;
 /** A choice advances after its tick has been seen (design: 260 to 280ms). */
-const CHOICE_MS = 270;
+export const CHOICE_MS = 270;
 
-function Q({
+export function Q({
   eyebrow,
   title,
   sub,
   children,
   onSubmit,
   back,
+  hold = false,
   dir,
 }: {
   eyebrow?: ReactNode;
@@ -104,6 +107,8 @@ function Q({
   children?: ReactNode;
   onSubmit?: () => void;
   back?: (() => void) | null;
+  /** A write is in flight: Back waits for its answer, so the account, the profile or the request it makes lands where it belongs. */
+  hold?: boolean;
   dir: 'fwd' | 'back';
 }) {
   const id = useId();
@@ -119,7 +124,7 @@ function Q({
       }}
     >
       {back && (
-        <button type="button" className="ch-ox-back" onClick={back}>
+        <button type="button" className="ch-ox-back" onClick={back} disabled={hold}>
           <Icon icon={ChevronLeft} size={16} />
           Back
         </button>
@@ -134,10 +139,10 @@ function Q({
   );
 }
 
-function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight, children, phone }: { label?: string; disabled?: boolean; busy?: boolean; busyLabel?: string; icon?: typeof ArrowRight; children?: ReactNode; phone: boolean }) {
+export function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight, children, phone }: { label?: string; disabled?: boolean; busy?: boolean; busyLabel?: string; icon?: typeof ArrowRight; children?: ReactNode; phone: boolean }) {
   return (
     <div className="ch-ox-act">
-      <Button type="submit" variant="primary" size="lg" rightIcon={busy ? undefined : icon} disabled={disabled || busy}>
+      <Button type="submit" variant="primary" size="lg" rightIcon={icon} busy={busy} disabled={disabled}>
         {busy ? busyLabel ?? label : label}
       </Button>
       {!disabled && !busy && !phone && (
@@ -149,6 +154,9 @@ function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight,
     </div>
   );
 }
+
+/** A refused answer puts the cursor in the field it names (CH-15624), as sign in does (CH-15802): after the render that marks it, so the field is read out with its error. */
+export const focusField = (id: string) => setTimeout(() => document.getElementById(id)?.focus(), 0);
 
 const Tick = () => (
   <span className="ch-ox-tick" aria-hidden="true">
@@ -180,7 +188,14 @@ function Who({ d, path }: { d: Draft; path: OnboardPath }) {
 
 // ── Intro ────────────────────────────────────────────────────────────────────
 
-export function Intro({ d, next, hour, dir }: StepProps) {
+/** The phone's way back to sign in (wave 10): the top bar's pill is hidden at phone widths (onboard.css), and a returning player can land here from an invite link. */
+const SignInLine = ({ href }: { href: string }) => (
+  <p className="ch-ox-signin-m">
+    Already a member? <Link href={href}>Sign in</Link>
+  </p>
+);
+
+export function Intro({ d, next, hour, dir, signInHref }: StepProps) {
   // Arrived from an invite link: the code is already here, so the first screen is the invitation.
   if (d.code && d.intent !== 'request') {
     return (
@@ -190,6 +205,7 @@ export function Intro({ d, next, hour, dir }: StepProps) {
             Accept invite
           </Button>
         </div>
+        <SignInLine href={signInHref} />
       </Q>
     );
   }
@@ -225,6 +241,7 @@ export function Intro({ d, next, hour, dir }: StepProps) {
           </button>
         </div>
       </div>
+      <SignInLine href={signInHref} />
     </Q>
   );
 }
@@ -337,7 +354,7 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
         <div className="ch-ox-code__foot" id="ch-ox-code-foot" aria-live="polite">
           {st === 'checking' ? (
             <span className="ch-ox-check">
-              <i className="ch-ox-spin" aria-hidden="true" />
+              <Spinner size="sm" />
               Checking your code…
             </span>
           ) : st === 'ok' ? (
@@ -407,7 +424,7 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
         <Act phone={phone} label={staff ? 'Join the staff' : 'Continue'} />
       ) : (
         <div className="ch-ox-act">
-          <Button type="submit" variant="primary" size="lg" rightIcon={ArrowRight} disabled={!codeCanSubmit(d.code) || st === 'checking'}>
+          <Button type="submit" variant="primary" size="lg" rightIcon={ArrowRight} busy={st === 'checking'} disabled={!codeCanSubmit(d.code)}>
             Continue
           </Button>
           <button type="button" className="ch-ox-link" onClick={() => next({ intent: 'request', code: '', kind: null, teamName: null }, 'rwho')}>
@@ -480,7 +497,7 @@ export function Name({ d, up, next, path, back, dir, phone }: StepProps) {
 
 // ── Graduation year ──────────────────────────────────────────────────────────
 
-export function Grad({ d, next, path, back, dir, now }: StepProps) {
+export function Grad({ d, up, next, path, back, dir, now }: StepProps) {
   const years = gradYears(now);
   return (
     <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title={`When do you graduate, ${d.first.trim() || 'there'}?`} sub="Sets your class on the roster. Coaches use it for eligibility.">
@@ -495,7 +512,9 @@ export function Grad({ d, next, path, back, dir, now }: StepProps) {
               className="ch-ox-tile"
               onClick={() => {
                 haptic('select');
-                setTimeout(() => next({ grad: y }), CHOICE_MS);
+                // The tick, and the class on the card, show at once; the question moves on once they have been seen.
+                up({ grad: y });
+                setTimeout(() => next(), CHOICE_MS);
               }}
             >
               <b>{y}</b>
@@ -526,12 +545,14 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
     if (!EMAIL_RE.test(email)) {
       setErr({ field: 'email', message: email ? 'Please enter a valid email address.' : 'Enter your email.' });
       haptic('warning');
+      focusField('ch-ox-email');
       return;
     }
     const p = passwordProblem(pw);
     if (p) {
       setErr({ field: 'pw', message: p });
       haptic('warning');
+      focusField('ch-ox-pw');
       return;
     }
     setErr(null);
@@ -540,8 +561,10 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
     const r = await createAccount({ kind: d.kind, email, password: pw, first: d.first, last: d.last });
     if (!r.ok) {
       setBusy(false);
-      setErr(accountErrorFor(r.error));
+      const e = accountErrorFor(r.error);
+      setErr(e);
       haptic('error');
+      if (e.field) focusField(e.field === 'email' ? 'ch-ox-email' : 'ch-ox-pw');
       return;
     }
     haptic('success');
@@ -562,7 +585,7 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
   const emailErr = err?.field === 'email' ? err.message : null;
   const pwErr = err?.field === 'pw' ? err.message : null;
   return (
-    <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title={`Create your account, ${d.first.trim() || 'there'}.`} sub="You’ll use this email and password to sign in." onSubmit={() => void submit()}>
+    <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title={`Create your account, ${d.first.trim() || 'there'}.`} sub="You’ll use this email and password to sign in." onSubmit={() => void submit()}>
       <div className="ch-ox-body">
         <div className="ch-ox-fields">
           <div className="ch-ox-field">
@@ -612,9 +635,11 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
                 aria-invalid={pwErr ? true : undefined}
                 aria-describedby={pwErr ? 'ch-ox-pw-e ch-ox-pw-r' : 'ch-ox-pw-r'}
               />
-              <button type="button" className="ch-ox-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} onClick={() => setShow(!show)}>
-                <Icon icon={show ? EyeOff : Eye} size={16} />
-              </button>
+              <Tooltip>
+                <button type="button" className="ch-ox-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} onClick={() => setShow(!show)}>
+                  <Icon icon={show ? EyeOff : Eye} size={16} />
+                </button>
+              </Tooltip>
             </div>
             {pwErr && (
               <span className="ch-ox-error" id="ch-ox-pw-e">
@@ -663,8 +688,8 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
       )}
       <Act phone={phone} label="Create account" busy={busy} busyLabel="Creating your account…" />
       <p className="ch-ox-legal">
-        By creating an account you agree to the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.
-        {player && d.grad != null && needsGuardianConsent(d.grad, now) ? ' If you’re under 18, a parent or guardian acknowledges and consents to the collection of information described in our Privacy Policy.' : ''}
+        By creating an account you agree to the <Link href="/terms">Terms of service</Link> and <Link href="/privacy">Privacy policy</Link>.
+        {player && d.grad != null && needsGuardianConsent(d.grad, now) ? ' If you’re under 18, a parent or guardian acknowledges and consents to the collection of information described in our privacy policy.' : ''}
       </p>
     </Q>
   );
@@ -691,6 +716,7 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
     if (p) {
       setStErr(p);
       haptic('warning');
+      focusField('ch-ox-state');
       return;
     }
     next();
@@ -714,12 +740,16 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
             <span className="ch-ox-hcp__desc">{hcpWords(none ? null : n)}</span>
             {!none && (
               <span className="ch-ox-steps">
-                <button type="button" className="ch-ox-step" aria-label="Lower" onClick={() => set(n - 0.1)}>
-                  <Icon icon={Minus} size={16} />
-                </button>
-                <button type="button" className="ch-ox-step" aria-label="Higher" onClick={() => set(n + 0.1)}>
-                  <Icon icon={Plus} size={16} />
-                </button>
+                <Tooltip>
+                  <button type="button" className="ch-ox-step" aria-label="Lower" onClick={() => set(n - 0.1)}>
+                    <Icon icon={Minus} size={16} />
+                  </button>
+                </Tooltip>
+                <Tooltip>
+                  <button type="button" className="ch-ox-step" aria-label="Higher" onClick={() => set(n + 0.1)}>
+                    <Icon icon={Plus} size={16} />
+                  </button>
+                </Tooltip>
               </span>
             )}
           </div>
@@ -841,7 +871,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
   const name = `${d.first} ${d.last}`.trim() || 'You';
   const meta = [d.grad ? classOf(d.grad, now) : null, d.hcp != null ? `${fmtHcp(d.hcp)} index` : null, [d.city.trim(), d.state].filter(Boolean).join(', ') || null].filter(Boolean).join(' · ') || 'Player';
   return (
-    <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title="Put a face to the name." sub="Teammates see this on the roster and in messages." onSubmit={() => void finish()}>
+    <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title="Put a face to the name." sub="Teammates see this on the roster and in messages." onSubmit={() => void finish()}>
       <div className="ch-ox-body">
         <div className="ch-ox-photo">
           <button
@@ -883,7 +913,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
               )}
               {uploading && (
                 <span className="ch-ox-drop__busy">
-                  <i className="ch-ox-spin" aria-hidden="true" />
+                  <Spinner size="sm" />
                   <span className="ch-au-sr">Uploading your photo</span>
                 </span>
               )}
@@ -931,9 +961,9 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
 // ── Finished ─────────────────────────────────────────────────────────────────
 
 const NEXT_STEPS: Array<[typeof Flag, string, string, string]> = [
-  [Flag, 'Post your first round', 'Scores feed your stats and CoachHelm', '/golf/dashboard/rounds/new'],
+  [Flag, 'Start your first round', 'Scores feed your stats and CoachHelm', '/golf/dashboard/rounds/new'],
   [BookOpen, 'Add your class schedule', 'Flags travel conflicts early', '/golf/dashboard/classes'],
-  [Bell, 'Turn on notifications', 'Pairings, tee times and team messages', '/golf/dashboard/settings'],
+  [Bell, 'Turn on notifications', 'Pairings, tee times and team messages', '/golf/dashboard/settings?section=notifications'],
 ];
 
 export function Done({ d, finish, dir }: StepProps) {
@@ -953,7 +983,7 @@ export function Done({ d, finish, dir }: StepProps) {
           </>
         }
         title={`Your profile is saved, ${first}.`}
-        sub="We couldn’t add you to your coach’s team with that code. Ask your coach to re-send it, or enter the team code again."
+        sub="We couldn’t add you to your coach’s team with that code. Ask your coach to resend it, or enter the team code again."
       >
         <div className="ch-ox-act">
           <Button variant="primary" size="lg" rightIcon={ArrowRight} href="/golf/join">
@@ -986,12 +1016,14 @@ export function Done({ d, finish, dir }: StepProps) {
       <ul className="ch-ox-list" aria-label="Next steps">
         {NEXT_STEPS.map(([ic, t, m, href]) => (
           <li key={t}>
-            <span className="ch-ox-list__ic">
-              <Icon icon={ic} size={15} />
-            </span>
             <button type="button" className="ch-ox-nextstep" onClick={() => finish(href)}>
-              <b>{t}</b>
-              <em>{m}</em>
+              <span className="ch-ox-list__ic">
+                <Icon icon={ic} size={15} />
+              </span>
+              <span className="ch-ox-nextstep__t">
+                <b>{t}</b>
+                <em>{m}</em>
+              </span>
               <Icon icon={ChevronRight} size={15} />
             </button>
           </li>
@@ -1021,7 +1053,7 @@ export function StaffDone({ d, finish, dir }: StepProps) {
     >
       <div className="ch-ox-act">
         <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="commit" onClick={() => finish('/golf/dashboard')}>
-          Go to the dashboard
+          Go to your dashboard
         </Button>
       </div>
     </Q>
@@ -1070,7 +1102,7 @@ export function RWho({ d, up, next, back, dir }: StepProps) {
   );
 }
 
-function Field({ id, label, optional, error, help, children }: { id: string; label: string; optional?: boolean; error?: string | null; help?: string; children: ReactNode }) {
+export function Field({ id, label, optional, error, help, children }: { id: string; label: string; optional?: boolean; error?: string | null; help?: string; children: ReactNode }) {
   return (
     <div className="ch-ox-field">
       <label htmlFor={id}>
@@ -1106,6 +1138,7 @@ export function RDetails({ d, up, next, back, dir, phone }: StepProps) {
     if (p) {
       setErr(p);
       haptic('warning');
+      focusField(`ch-ox-r${p.field}`);
       return;
     }
     setErr(null);
@@ -1129,6 +1162,7 @@ export function RDetails({ d, up, next, back, dir, phone }: StepProps) {
     <Q
       dir={dir}
       back={back}
+      hold={busy}
       eyebrow={
         <>
           <Icon icon={P ? Flag : A ? Landmark : ClipboardList} size={14} />
@@ -1230,7 +1264,8 @@ export function Sent({ d, dir }: StepProps) {
   );
 }
 
-export const STEPS: Record<OnboardStep, (p: StepProps) => ReactNode> = {
+/** Sign up's and the new player's questions; a new coach's are in CoachSteps, and `steps-map.ts` joins them. */
+export const PLAYER_STEPS: Record<Exclude<OnboardStep, 'cprogram' | 'cprofile' | 'cdone'>, (p: StepProps) => ReactNode> = {
   intro: Intro,
   code: Code,
   name: Name,

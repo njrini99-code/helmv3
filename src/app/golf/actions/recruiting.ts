@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Note: this file uses `as any` casts on the supabase client because
-// `golf_recruits` was added in 20260429010000_golf_recruits.sql and the
-// regenerated TS types don't include it yet. Once db:types is rerun, the
-// casts can come out.
-
 'use server';
 
 /**
@@ -20,8 +14,11 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { observeStorageResult } from '@/lib/observability/supabase/observe-storage';
+import type { Tables, TablesUpdate } from '@/lib/types/database';
 
 export type RecruitStatus = 'recruiting' | 'watched' | 'offered' | 'committed';
+
+const RECRUIT_STATUSES: ReadonlySet<string> = new Set<RecruitStatus>(['recruiting', 'watched', 'offered', 'committed']);
 
 export interface Recruit {
   id: string;
@@ -49,6 +46,13 @@ export interface RecruitInput {
   state?: string | null;
   notes?: string | null;
   status?: RecruitStatus;
+  /**
+   * The prospect's next step (Clubhouse P014-C1), in columns that exist only once
+   * 20261008120000_golf_recruits_next_step.sql is applied. Written only when the caller passes them; the
+   * Clubhouse sends them only after its column probe succeeds, so before the apply no write names them.
+   */
+  next_step_label?: string | null;
+  next_step_date?: string | null;
 }
 
 interface ActionResult<T = void> {
@@ -71,7 +75,25 @@ const FIELD_LIMITS = {
   hometown: 120,
   state: 2,
   notes: 5000,
+  next_step_label: 120,
 } as const;
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A real calendar day written as YYYY-MM-DD ("2026-02-30" is not one). */
+function isIsoDay(v: string): boolean {
+  if (!ISO_DAY.test(v)) return false;
+  const [y, m, d] = v.split('-').map(Number) as [number, number, number];
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+
+/** The next-step fields for an insert or a patch: only the ones the caller passed, trimmed, blank as null. */
+function nextStepFields(input: Partial<RecruitInput>): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  if (input.next_step_label !== undefined) out.next_step_label = input.next_step_label?.trim() || null;
+  if (input.next_step_date !== undefined) out.next_step_date = input.next_step_date?.trim() || null;
+  return out;
+}
 const MIN_HS_CLASS = 2020;
 const MAX_HS_CLASS = 2040;
 
@@ -104,6 +126,15 @@ function validateRecruitInput(input: Partial<RecruitInput>): string | null {
       return `Class year must be between ${MIN_HS_CLASS} and ${MAX_HS_CLASS}`;
     }
   }
+  if (input.next_step_label != null && typeof input.next_step_label !== 'string') return 'Next step must be text';
+  if (input.next_step_label && input.next_step_label.trim().length > FIELD_LIMITS.next_step_label) {
+    return 'Next step is too long';
+  }
+  if (input.next_step_date != null) {
+    if (typeof input.next_step_date !== 'string') return 'Next step date must be a date';
+    const day = input.next_step_date.trim();
+    if (day && !isIsoDay(day)) return 'Next step date must be a real date (YYYY-MM-DD)';
+  }
   return null;
 }
 
@@ -130,12 +161,20 @@ async function resolveCoachAndTeam(): Promise<
   return { ok: true, coachId: coach.id, teamId, supabase };
 }
 
+/**
+ * The column is plain text in the generated types. The table's CHECK holds it to the four statuses; a value outside
+ * them reads as the starting status rather than reaching the page as an unknown one.
+ */
+function toRecruit(row: Tables<'golf_recruits'>): Recruit {
+  return { ...row, status: RECRUIT_STATUSES.has(row.status) ? (row.status as RecruitStatus) : 'recruiting' };
+}
+
 async function getRecruitsImpl(): Promise<ActionResult<Recruit[]>> {
   try {
     const ctx = await resolveCoachAndTeam();
     if (!ctx.ok) return { success: false, error: ctx.error, errorCode: ctx.errorCode };
 
-    const { data, error } = await (ctx.supabase as any)
+    const { data, error } = await ctx.supabase
       .from('golf_recruits')
       .select('*')
       .eq('team_id', ctx.teamId)
@@ -150,7 +189,7 @@ async function getRecruitsImpl(): Promise<ActionResult<Recruit[]>> {
       return { success: false, error: 'Failed to load recruits' };
     }
 
-    return { success: true, data: (data ?? []) as Recruit[] };
+    return { success: true, data: (data ?? []).map(toRecruit) };
   } catch (err) {
     await logServerError(`getRecruits error: ${describeError(err)}`, {
       action: 'recruiting.getRecruits',
@@ -210,9 +249,10 @@ async function createRecruitImpl(
       state: input.state?.trim() || null,
       notes: input.notes?.trim() || null,
       status: input.status ?? 'recruiting',
+      ...nextStepFields(input),
     };
 
-    const { data, error } = await (ctx.supabase as any)
+    const { data, error } = await ctx.supabase
       .from('golf_recruits')
       .insert(row)
       .select('id')
@@ -223,7 +263,7 @@ async function createRecruitImpl(
       // other team's row from this read, so a colliding id from elsewhere comes back empty and is refused.
       // A failed read falls through to the insert's own error below: the retry is
       // refused rather than guessed to be a duplicate.
-      const { data: existing, error: existingError } = await (ctx.supabase as any)
+      const { data: existing, error: existingError } = await ctx.supabase
         .from('golf_recruits')
         .select('id, team_id, created_by, first_name, last_name')
         .eq('id', requestId)
@@ -286,7 +326,7 @@ async function updateRecruitImpl(
     const ctx = await resolveCoachAndTeam();
     if (!ctx.ok) return { success: false, error: ctx.error };
 
-    const patch: Record<string, unknown> = {
+    const patch: TablesUpdate<'golf_recruits'> = {
       updated_at: new Date().toISOString(),
     };
     if (updates.first_name !== undefined) patch.first_name = updates.first_name.trim();
@@ -298,11 +338,12 @@ async function updateRecruitImpl(
     if (updates.state !== undefined) patch.state = updates.state?.trim() || null;
     if (updates.notes !== undefined) patch.notes = updates.notes?.trim() || null;
     if (updates.status !== undefined) patch.status = updates.status;
+    Object.assign(patch, nextStepFields(updates));
 
     // `.select('id')`: an UPDATE that matches no row (a stale id, a recruit
     // already removed, another team's) is not an error, and used to be reported
     // as saved while nothing changed.
-    const { data: updated, error } = await (ctx.supabase as any)
+    const { data: updated, error } = await ctx.supabase
       .from('golf_recruits')
       .update(patch)
       .eq('id', id)
@@ -362,7 +403,7 @@ async function deleteRecruitImpl(id: string): Promise<ActionResult> {
     // recruit id alone, so the storage purge could be pointed at a recruit that
     // was not this team's. A failed read stops the delete: carrying on would
     // remove the rows that name the files and orphan the files.
-    const { data: docRows, error: docsError } = await (ctx.supabase as any)
+    const { data: docRows, error: docsError } = await ctx.supabase
       .from('golf_recruit_documents')
       .select('storage_path')
       .eq('recruit_id', id)
@@ -380,7 +421,7 @@ async function deleteRecruitImpl(id: string): Promise<ActionResult> {
     // `.select('id')`: a DELETE that matches no row is not an error. Without
     // this a miss (stale id, another team's recruit) went on to purge the
     // storage objects of a recruit that still existed, and said success.
-    const { data: deleted, error } = await (ctx.supabase as any)
+    const { data: deleted, error } = await ctx.supabase
       .from('golf_recruits')
       .delete()
       .eq('id', id)
@@ -402,7 +443,7 @@ async function deleteRecruitImpl(id: string): Promise<ActionResult> {
     }
 
     // Recruit (and its document rows) gone — now purge the storage objects.
-    const paths = ((docRows ?? []) as { storage_path: string | null }[])
+    const paths = (docRows ?? [])
       .map((d) => d.storage_path)
       .filter((p): p is string => Boolean(p));
     if (paths.length > 0) {

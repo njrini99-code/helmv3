@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
@@ -86,8 +86,8 @@ const baseReactions: Record<string, ChReaction[]> = {
 };
 
 const baseAnns: ChAnnouncement[] = [
-  { id: 'an1', title: 'Pinehurst travel: bus at 6:15', body: 'Bus leaves the field house at 6:15 Thursday. Breakfast on the bus. Bring your rain gear and two dozen balls.', urgent: true, publishedAt: at(14, 8, 5), requiresAck: true, ackCount: 5, total: 6, acknowledgedByMe: false, taskCount: 1, completedTaskCount: 4, docCount: 1 },
-  { id: 'an2', title: 'Qualifier pairings posted', body: 'Pairings for the Pinehurst qualifier are in Documents.', urgent: false, publishedAt: at(12, 17, 30), requiresAck: false, ackCount: 0, total: 6, acknowledgedByMe: false, taskCount: 0, completedTaskCount: 0, docCount: 0 },
+  { id: 'an1', title: 'Pinehurst travel: bus at 6:15', body: 'Bus leaves the field house at 6:15 Thursday. Breakfast on the bus. Bring your rain gear and two dozen balls.', urgent: true, publishedAt: at(14, 8, 5), requiresAck: true, ackCount: 5, total: 6, acknowledgedByMe: false, taskCount: 1, completedTaskCount: 4, docCount: 1, authorId: 'c-maya' },
+  { id: 'an2', title: 'Qualifier pairings posted', body: 'Pairings for the Pinehurst qualifier are in Documents.', urgent: false, publishedAt: at(12, 17, 30), requiresAck: false, ackCount: 0, total: 6, acknowledgedByMe: false, taskCount: 0, completedTaskCount: 0, docCount: 0, authorId: 'c-maya' },
 ];
 const annDetail = async (id: string) =>
   id === 'an1'
@@ -99,9 +99,9 @@ const annDetail = async (id: string) =>
         documents: [{ id: 'd1', title: 'Pinehurst itinerary', url: '#', size: 84000 }],
       }
     : { id, acknowledged: [], waiting: [], tasks: [], documents: [] };
-const previewSearch = async (q: string) =>
-  Object.entries(baseThreads)
-    .flatMap(([cid, list]) => list.filter((m) => m.text.toLowerCase().includes(q.toLowerCase())).map((m) => ({ messageId: m.id, conversationId: cid, conversationName: baseConvs.find((c) => c.id === cid)!.title, senderName: m.senderId === 'me' ? 'You' : (people.find((p) => p.userId === m.senderId)?.name ?? 'Member'), text: m.text, at: m.at })));
+const previewSearch = async (q: string, cast: { threads: Record<string, ChMsg[]>; convs: ChConv[]; people: ChPerson[] } = { threads: baseThreads, convs: baseConvs, people }) =>
+  Object.entries(cast.threads)
+    .flatMap(([cid, list]) => list.filter((m) => m.text.toLowerCase().includes(q.toLowerCase())).map((m) => ({ messageId: m.id, conversationId: cid, conversationName: cast.convs.find((c) => c.id === cid)!.title, senderName: m.senderId === 'me' ? 'You' : (cast.people.find((p) => p.userId === m.senderId)?.name ?? 'Member'), text: m.text, at: m.at })));
 
 const previewAttachments = async () => [{ id: 'a1', name: 'Room list · Pinehurst.pdf', size: 48 * 1024, mime: 'application/pdf', url: null }];
 const previewFiles: Record<string, ChFile[]> = {
@@ -110,12 +110,47 @@ const previewFiles: Record<string, ChFile[]> = {
 /** Coaches and players on the team who aren't in a group yet (the Add sheet). */
 const previewCandidates: ChMember[] = [{ userId: 'nora', name: 'Nora Castillo', subtitle: 'Freshman', role: 'player' }];
 
+/*
+ * The same team seen from Jonah's inbox (messages-player): he is "me", Maya is a coach in it, and his threads are the team's,
+ * the travel group, Maya's 1:1 about bay 4 and a note from Dan. Nothing of Maya's own inbox (her threads with other players).
+ */
+const playerPeople: ChPerson[] = [
+  { userId: 'maya', name: 'Maya Reyes', role: 'coach', subtitle: 'Head coach', playerId: null },
+  ...people.filter((p) => p.userId !== 'jonah'),
+];
+const playerAll = ['maya', ...all.filter((u) => u !== 'jonah')];
+const asJonah = (list: ChMsg[]) => list.map((m) => ({ ...m, senderId: m.senderId === 'me' ? 'maya' : m.senderId, mine: false, seen: false }));
+const playerConvs: ChConv[] = [
+  { ...baseConvs.find((c) => c.id === 'team')!, memberIds: playerAll, creatorId: 'maya' },
+  { id: 'maya', group: false, title: 'Maya Reyes', subtitle: 'Head coach', memberIds: ['maya'], memberCount: 2, unread: 0, lastAt: at(14, 13, 58), lastSenderId: 'me', lastText: 'Can we push to 5? I have ECON until 2:15 and then a TA meeting.', creatorId: 'maya' },
+  { ...baseConvs.find((c) => c.id === 'travel')!, memberIds: playerAll, lastSenderId: 'maya', creatorId: 'maya' },
+  { id: 'dan', group: false, title: 'Dan Whitfield', subtitle: 'Assistant coach', memberIds: ['dan'], memberCount: 2, unread: 1, lastAt: at(14, 9, 25), lastSenderId: 'dan', lastText: 'Bring your 56 and 60 to the short-game block.', creatorId: 'dan' },
+];
+const playerThreads: Record<string, ChMsg[]> = {
+  team: asJonah(baseThreads.team!),
+  maya: [msg('j1', 'maya', at(14, 12, 30), 'Let’s do a 1:1 at 4:45 in bay 4. We’ll work 125 to 150 with the launch monitor.'), msg('j2', 'me', at(14, 13, 58), 'Can we push to 5? I have ECON until 2:15 and then a TA meeting.')],
+  travel: asJonah(baseThreads.travel!),
+  dan: [msg('d1', 'dan', at(14, 9, 25), 'Bring your 56 and 60 to the short-game block.')],
+};
+const castOf = (role: 'coach' | 'player') =>
+  role === 'player'
+    ? { people: playerPeople, all: playerAll, convs: playerConvs, threads: playerThreads, me: { name: 'Jonah Okafor', subtitle: 'Sophomore', role: 'player' as const } }
+    : { people, all, convs: baseConvs, threads: baseThreads, me: { name: 'Maya Reyes', subtitle: 'Head coach', role: 'coach' as const } };
+
 export function PreviewMessages({ state, role = 'coach' }: { state?: string; role?: 'coach' | 'player' }) {
   const toast = useToast();
-  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : baseConvs);
-  const [threads, setThreads] = useState(baseThreads);
+  const cast = useMemo(() => castOf(role), [role]);
+  const { people, all } = cast;
+  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : cast.convs);
+  const [threads, setThreads] = useState(cast.threads);
   const [reactions, setReactions] = useState(baseReactions);
-  const [selectedId, setSelectedId] = useState<string | null>(state === 'empty' || state === 'rail' || state === 'announcement' ? null : 'team');
+  // P007 D4: as the live screen does, only desktop opens the team thread beside the rail, after hydration; the phone
+  // stays on the inbox instead of pushing the thread in over it.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (state === 'empty' || state === 'rail' || state === 'announcement') return;
+    if (window.matchMedia('(min-width: 821px)').matches) setSelectedId((id) => id ?? 'team');
+  }, [state]);
   const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });
@@ -125,12 +160,13 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
 
   const drafts = useRef(new Map<string, string>());
   const members: ChMember[] = useMemo(
-    () => [{ userId: 'me', name: 'Maya Reyes', subtitle: 'Head coach', role: 'coach' as const }, ...people.map((p) => ({ userId: p.userId, name: p.name, subtitle: p.subtitle, role: p.role }))],
-    [],
+    () => [{ userId: 'me', ...cast.me }, ...people.map((p) => ({ userId: p.userId, name: p.name, subtitle: p.subtitle, role: p.role }))],
+    [cast, people],
   );
 
   const api: ChMessagesApi = {
-    viewer: { userId: 'me', role, name: role === 'coach' ? 'Maya Reyes' : 'Jonah Okafor' },
+    viewer: { userId: 'me', role, name: cast.me.name },
+    signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },
     timeZone: TZ,
     now: NOW,
     teamName: 'Varsity',
@@ -194,6 +230,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     membersError: false,
     retryMembers: () => {},
     leave: async () => true,
+    deleteConversation: async () => true,
     addCandidates,
     addMember: async (_userId, name) => {
       toast({ title: `Added ${name.split(' ')[0]} to ${convs.find((c) => c.id === selectedId)?.title ?? 'the group'}` });
@@ -222,7 +259,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
       toast({ title: `Group created · ${c.title}` });
       return true;
     },
-    searchMessages: previewSearch,
+    searchMessages: (q) => previewSearch(q, cast),
     openHit: (h) => {
       setSelectedId(h.conversationId);
       setAnnId(null);

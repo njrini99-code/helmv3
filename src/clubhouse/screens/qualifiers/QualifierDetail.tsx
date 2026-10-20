@@ -1,11 +1,10 @@
 'use client';
 
-import { ChevronDown, ChevronLeft, ChevronUp, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ChevronDown, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, ViewTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
-import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -13,6 +12,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { ScrollRegion } from '../../ui/ScrollRegion';
+import { BackLink } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { normalise, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
@@ -20,10 +20,15 @@ import { useLastGood } from '../../lib/use-last-good';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
-import { dayLabel, plural, positionLabel, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { StateBadge, StatusPill, ToPar } from './parts';
-import { useLiveStandings } from './live';
-import { Courses, Selections, StaleStandings } from './QualifierSections';
+import { bubbleNote, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate } from './parts';
+import { PlayerPeek } from '../../ui/PlayerPeek';
+import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
+import { useRankSlide } from './rank-slide';
+import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
+import { PrintHead } from './PrintHead';
+import { StandingsSpread } from './StandingsSpread';
+import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
 import { LIST_HREF, noteIfSelectionLink, useStepBack } from './return-state';
 import { CardBodySkeleton, ParLineSkeleton, SecondaryProvider, Streamed, fulfilled, secondaryOf, settled, type ChQDetailView } from './streamed';
@@ -43,12 +48,15 @@ export function QualifierDetail({
   secondary,
   writes = LIVE_WRITES,
   live = true,
+  feed: forcedFeed,
 }: {
   data: ChQDetailView;
   /** The courses and the scorecards, streaming in behind the standings. A fixture or a test may give them inside `data` instead. */
   secondary?: PromiseLike<ChQDetailSecondary>;
   writes?: ChQWrites;
   live?: boolean;
+  /** The preview's stand-in for the realtime feed (it draws without one): the chip shows this state instead. */
+  feed?: { feed: ChLiveFeed; updatedAt: number };
 }) {
   const router = useRouter();
   // Back is a step back in history when the list opened this qualifier (the list returns with its filter, search and place), and the
@@ -62,10 +70,22 @@ export function QualifierDetail({
   const { value: shown, stale } = useLastGood(fresh.id, whole, (w) => w.data.board !== null);
   const data = shown.data;
   const coach = data.role === 'coach';
+  // The leaderboard row that is open (its scorecards), shared with the side column's rounds (owner, 2026-10-16). A small
+  // store rather than state here: opening a row re-renders the board and the side panel, not the page (whose streamed
+  // sections would otherwise start over).
+  const [openRow] = useState(createOpenRow);
   const [status, setStatus] = useState<ChQStatus>(data.status);
   const [confirmClose, setConfirmClose] = useState(false);
   useEffect(() => setStatus(data.status), [data.status]);
-  useLiveStandings(data.id, live && status === 'in_progress');
+  const liveFeed = useLiveStandings(data.id, live && status === 'in_progress', fresh);
+  const feed: LiveFeedView = {
+    feed: status !== 'in_progress' ? 'off' : (forcedFeed?.feed ?? liveFeed.feed),
+    version: fresh,
+    updatedAt: forcedFeed?.updatedAt,
+    refresh: liveFeed.refresh,
+    // P009-D3: still open after its last day reads "Ended · n rounds outstanding", never Live.
+    ended: endedLive({ status, endDate: data.endDate, today: data.today, entrants: data.entrants, numRounds: data.numRounds, submitted: data.board?.submitted ?? null }),
+  };
 
   // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
   // (which runs the action again) finishes the job too: the pill changes, the question closes, the page re-reads.
@@ -130,7 +150,7 @@ export function QualifierDetail({
             feel={null}
             onClick={() => void close.run()}
           >
-            {close.pending ? <span data-ch-code="CH-09405">Closing</span> : 'Close qualifier'}
+            {close.pending ? <span data-ch-code="CH-09405">Closing…</span> : 'Close qualifier'}
           </Button>
         </>
       }
@@ -146,6 +166,7 @@ export function QualifierDetail({
           onBack={back.onBack}
           onSelectionClick={selectionClick}
           status={status}
+          feed={feed}
           onAskClose={() => {
             chTrail('qualifiers close ask');
             setConfirmClose(true);
@@ -160,16 +181,15 @@ export function QualifierDetail({
 
   return (
     <SecondaryProvider value={shown.source}>
-      <main className="ch-qf ch-qf--detail">
+      <main className="ch-qf ch-qf--detail" data-canopy="">
+        <PrintHead data={data} />
         <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
-          <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={LIST_HREF}>
-            Qualifiers
-          </Button>
+          <BackLink href={LIST_HREF}>Qualifiers</BackLink>
         </div>
-        <header className="ch-qf-head">
+        <header className="ch-qf-head" data-canopy-head="">
           <div>
             <span className="ch-qf-eyebrow">
-              <StatusPill status={status} />
+              <StatusPill status={status} ended={feed.ended} />
               <span>Qualifier</span>
             </span>
             <h1>{data.name}</h1>
@@ -205,7 +225,7 @@ export function QualifierDetail({
                   disabled={reopen.pending}
                   onClick={() => void reopenNow()}
                 >
-                  {reopen.pending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
+                  {reopen.pending ? <span data-ch-code="CH-09406">Reopening…</span> : 'Reopen qualifier'}
                 </Button>
               )}
             </div>
@@ -229,7 +249,7 @@ export function QualifierDetail({
         <div className="ch-qf-body">
           <div className="ch-qf-col">
             <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
-              <Leaderboard data={data} status={status} stale={stale} />
+              <Leaderboard data={data} status={status} stale={stale} feed={feed} openRow={openRow} />
             </SectionBoundary>
             {coach && b && b.rows.length > 0 && (
               <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
@@ -243,6 +263,9 @@ export function QualifierDetail({
             </SectionBoundary>
             <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
               <Courses data={data} />
+            </SectionBoundary>
+            <SectionBoundary surface="qualifiers.player-rounds" label="A player’s rounds" code="CH-09223">
+              <PlayerRounds data={data} openRow={openRow} />
             </SectionBoundary>
             {data.rules && (
               <section className="ch-qf-side" aria-labelledby="ch-qf-rules">
@@ -272,34 +295,73 @@ function parLine(s: ChQDetailSecondary): string {
 }
 
 function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
-  const facts: Array<[string, string, ReactNode]> = [
+  const due = data.entrants * data.numRounds;
+  const facts: Array<[string, string, ReactNode, ReactNode?]> = [
     // A date never splits from its day; the range wraps at the dash (D-33: the fact wraps, never truncates).
     ['Dates', shortRange(data.startDate, data.endDate).replace(/ (?=\d)/g, '\u00a0'), `${yearOf(data.startDate)} · ${plural(data.numRounds, 'round')}`],
-    ['Entry deadline', data.deadline ? dayLabel(data.deadline) : '—', data.deadline ? yearOf(data.deadline) : 'Not set'],
+    // No entry deadline: qualifiers don't have one (owner, 2026-10-16).
     ['Entrants', data.entriesError ? '—' : String(data.entrants), 'players'],
-    ['Rounds submitted', data.board ? String(data.board.submitted) : '—', data.entriesError ? '' : `of ${data.entrants * data.numRounds}`],
+    [
+      'Rounds submitted',
+      data.board ? String(data.board.submitted) : '—',
+      data.entriesError ? '' : `of ${due}`,
+      data.board && due > 0 && !data.entriesError ? (
+        <span className="ch-qf-bar">
+          <i style={{ width: `${Math.min(100, (data.board.submitted / due) * 100)}%` }} />
+        </span>
+      ) : null,
+    ],
     // The par comes from the tees, which stream in behind the page: the line holds its place until they do.
     ['Course', data.course ?? '—', <Streamed key="par" fallback={<ParLineSkeleton />}>{(s) => parLine(s) || ' '}</Streamed>],
-    ['Spots', String(data.squad), `${topScore} on score · ${plural(data.picks, 'pick')}`],
+    [
+      'Spots',
+      String(data.squad),
+      `${topScore} on score · ${plural(data.picks, 'pick')}`,
+      data.squad > 0 && data.squad <= 12 ? (
+        <span className="ch-qf-seats">
+          {Array.from({ length: data.squad }, (_, i) => (
+            <i key={i} className={i < topScore || !data.picks ? 'is-score' : 'is-pick'} />
+          ))}
+        </span>
+      ) : null,
+    ],
   ];
   return (
     <dl className="ch-qf-facts">
-      {facts.map(([k, v, s]) => (
+      {facts.map(([k, v, s, viz]) => (
         <div key={k}>
           <dt>{k}</dt>
           <dd>{v}</dd>
           <dd className="ch-qf-facts__sub">{typeof s === 'string' ? s || ' ' : s}</dd>
+          {/* Every fact keeps the drawing's line, so the row shares one baseline (decorative). */}
+          <dd className="ch-qf-facts__viz" aria-hidden="true">
+            {viz}
+          </dd>
         </div>
       ))}
     </dl>
   );
 }
 
-const LB_COLS = '44px minmax(0, 1fr) 56px 56px 60px 104px 28px';
+/** Pos, Player, Thru, Avg, Total, To par (the plate), Status, the scorecards' chevron (P009-A1, C2). */
 
-function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQStatus; stale: boolean }) {
+function Leaderboard({
+  data,
+  status,
+  stale,
+  feed,
+  openRow,
+}: {
+  data: ChQDetailCore;
+  status: ChQStatus;
+  stale: boolean;
+  feed: LiveFeedView;
+  /** The row whose scorecards are open, shared with the side column so it can show that player's rounds. */
+  openRow: OpenRow;
+}) {
   const { refresh, refreshing } = useRefresh();
-  const [open, setOpen] = useState<string | null>(null);
+  const open = useSyncExternalStore(openRow.subscribe, openRow.get, openRow.get);
+  const setOpen = openRow.set;
   const [announce, setAnnounce] = useState('');
   const b = data.board;
   const coach = data.role === 'coach';
@@ -312,6 +374,9 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
     }
     if (submitted != null) setAnnounce(`Standings updated. ${plural(submitted, 'round')} submitted.`);
   }, [submitted]);
+  const order = useMemo(() => (b?.rows ?? []).map((r) => r.playerId), [b]);
+  // P009-B1: a refresh that changed the ranks slides the rows to their new places, unless a scorecard tray is open.
+  const slide = useRankSlide(order, open !== null);
 
   const head = (
     <div className="ch-qf-panel__head">
@@ -319,11 +384,7 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
         <h2 id="ch-qf-lb">Leaderboard</h2>
         {b && <p className="ch-num">Ranked by total to par · {plural(b.submitted, 'round')} submitted</p>}
       </div>
-      {status === 'in_progress' && b && (
-        <Badge tone="accent" dot>
-          Updates as rounds are signed
-        </Badge>
-      )}
+      {status === 'in_progress' && b && <LiveChip view={feed} />}
     </div>
   );
 
@@ -332,11 +393,11 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
       <section className="ch-qf-panel" aria-labelledby="ch-qf-lb">
         {head}
         {data.entriesError ? (
-          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09203" title="The field didn’t load" body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
           <InlineNotice
             code="CH-09204"
-            title="Scores didn’t load."
+            title="Scores didn’t load"
             body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported."
             onRetry={refresh}
             retrying={refreshing}
@@ -354,7 +415,7 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
         <EmptyState
           code="CH-09304"
           icon={Flag}
-          title="Awaiting first round."
+          title="Awaiting first round"
           body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`}
         />
       </section>
@@ -370,19 +431,23 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
   const canOpen = (row: ChQRow) => coach || row.playerId === data.viewerPlayerId;
 
   return (
-    <section className="ch-qf-panel" aria-labelledby="ch-qf-lb">
+    <section className="ch-qf-panel ch-qf-board" aria-labelledby="ch-qf-lb">
       {head}
       {stale && <StaleStandings />}
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>
+      <StandingsSpread rows={b.rows} topScore={b.topScore} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">
-          <div className="ch-qf-row ch-qf-row--head" role="row" style={{ gridTemplateColumns: LB_COLS }}>
+          <div className="ch-qf-row ch-qf-row--head ch-qf-lbrow" role="row">
             <span role="columnheader">Pos</span>
             <span role="columnheader">Player</span>
             <span role="columnheader" className="r">
-              Rounds
+              Thru
+            </span>
+            <span role="columnheader" className="r">
+              Avg
             </span>
             <span role="columnheader" className="r">
               Total
@@ -403,61 +468,87 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
             const isOpen = open === r.playerId;
             const me = r.playerId === data.viewerPlayerId;
             const openable = canOpen(r);
+            const note = sampleNote(r, b, data.numRounds);
             return (
               <div key={r.playerId}>
                 {i === b.topScore && b.topScore > 0 && <CutLine text={`Top-score line · ${b.topScore} qualify on score`} />}
                 {i === b.squad && b.squad !== b.topScore && <CutLine muted text={`Travel cut · top ${b.squad} make the trip`} />}
-                {/* The row is a mouse target too; the keyboard path is the scorecards button in its last cell. */}
-                {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
-                <div
-                  className={'ch-qf-row' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '')}
-                  role="row"
-                  style={{ gridTemplateColumns: LB_COLS }}
-                  onClick={openable ? () => toggle(r) : undefined}
-                >
-                  <span role="cell" className="ch-qf-pos">
-                    {positionLabel(r)}
-                  </span>
-                  <span role="rowheader" className="ch-qf-who">
-                    <Avatar name={r.name} size={32} />
-                    <span>
-                      <b>
-                        {r.name}
-                        {me && <span className="ch-qf-you">You</span>}
-                      </b>
-                      {r.classYear && <small>{r.classYear}</small>}
+                {/* P009-B1: the row slides to a new rank only when a refresh changed the order (`slide`); otherwise it never moves. */}
+                <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
+                  {/* The row is a mouse target too; the keyboard path is the scorecards button in its last cell (44pt on touch). */}
+                  {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
+                  <div
+                    className={'ch-qf-row ch-qf-lbrow' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
+                    data-state={r.state ?? undefined}
+                    role="row"
+                    onClick={openable ? () => toggle(r) : undefined}
+                  >
+                    <span role="cell">
+                      <Pos position={r.position} tied={r.tied} move={r.move} />
                     </span>
-                  </span>
-                  <span role="cell" className="r ch-qf-num">
-                    {r.played}/{data.numRounds}
-                  </span>
-                  <span role="cell" className="r ch-qf-num">
-                    {r.total ?? '—'}
-                  </span>
-                  <span role="cell" className="r">
-                    <ToPar value={r.toPar} big />
-                  </span>
-                  <span role="cell" className="r">
-                    <StateBadge state={r.state} />
-                  </span>
-                  <span role="cell">
-                    {openable && (
-                      <button
-                        type="button"
-                        className="ch-qf-open"
-                        aria-expanded={isOpen}
-                        aria-controls={`ch-qf-tray-${r.playerId}`}
-                        aria-label={`${isOpen ? 'Hide' : 'Show'} ${me ? 'your' : `${r.name}’s`} scorecards`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggle(r);
-                        }}
-                      >
-                        <Icon icon={isOpen ? ChevronUp : ChevronDown} size={15} />
-                      </button>
-                    )}
-                  </span>
-                </div>
+                    <span role="rowheader" className="ch-qf-who">
+                      <Avatar name={r.name} size={38} />
+                      <span>
+                        {coach ? (
+                          // P003-C1: resting on a name shows the player's card; the row still opens the scorecards.
+                          <PlayerPeek player={qualifierPeek(r, data.numRounds)}>
+                            <b>
+                              {r.name}
+                              {me && <span className="ch-qf-you">You</span>}
+                            </b>
+                          </PlayerPeek>
+                        ) : (
+                          <b>
+                            {r.name}
+                            {me && <span className="ch-qf-you">You</span>}
+                          </b>
+                        )}
+                        {(r.classYear || note) && (
+                          <small>
+                            {r.classYear}
+                            {r.classYear && note ? ' · ' : ''}
+                            {note && <span className="ch-qf-thin">{note}</span>}
+                          </small>
+                        )}
+                      </span>
+                    </span>
+                    <span role="cell" className="r ch-qf-num">
+                      <ThruDots played={r.played} total={data.numRounds} />
+                    </span>
+                    <span role="cell" className="r ch-qf-num">
+                      {r.avg != null ? formatFixed(r.avg) : '—'}
+                    </span>
+                    <span role="cell" className="r ch-qf-num">
+                      {r.total ?? '—'}
+                    </span>
+                    <span role="cell" className="r">
+                      <ToParPlate value={r.toPar} />
+                    </span>
+                    <span role="cell" className="r">
+                      <StateBadge state={r.state} />
+                    </span>
+                    <span role="cell">
+                      {openable && (
+                        <button
+                          type="button"
+                          className="ch-qf-open"
+                          aria-expanded={isOpen}
+                          aria-controls={`ch-qf-tray-${r.playerId}`}
+                          aria-label={`${isOpen ? 'Hide' : 'Show'} ${me ? 'your' : `${r.name}’s`} scorecards`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggle(r);
+                          }}
+                        >
+                          {/* One chevron that turns over base (CH-09602), not two that swap. */}
+                          <Icon icon={ChevronDown} size={15} />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                </ViewTransition>
+                {/* CH-09602: the row turns selected (quick) and its scorecards drop 6px into place as they fade in (base),
+                    at their final values; closing takes the tray away at once. */}
                 {isOpen && (
                   <div role="row" id={`ch-qf-tray-${r.playerId}`}>
                     <div role="cell" className="ch-qf-tray">
@@ -469,9 +560,9 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
             );
           })}
           {b.unscored.map((r) => (
-            <div key={r.playerId} className={'ch-qf-row is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')} role="row" style={{ gridTemplateColumns: LB_COLS }}>
-              <span role="cell" className="ch-qf-pos">
-                —
+            <div key={r.playerId} className={'ch-qf-row ch-qf-lbrow is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')} role="row">
+              <span role="cell">
+                <Pos position={null} tied={false} move={null} />
               </span>
               <span role="rowheader" className="ch-qf-who">
                 <Avatar name={r.name} size={32} />
@@ -492,6 +583,9 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
               <span role="cell" className="r ch-qf-dash">
                 —
               </span>
+              <span role="cell" className="r ch-qf-dash">
+                —
+              </span>
               <span role="cell" />
               <span role="cell" />
             </div>
@@ -500,7 +594,8 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
       </div>
       <p className="ch-qf-cap">
         Ranked by total to par, then total strokes, then more rounds played. Top {b.topScore} qualify on score
-        {data.picks ? `; ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}.{data.rules ? ` ${data.rules}` : ''}
+        {data.picks ? `; ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}.{bubbleNote(data.numRounds, status)}
+        {data.rules ? ` ${data.rules}` : ''}
       </p>
     </section>
   );
@@ -542,7 +637,7 @@ function TrayCards({ row, s }: { row: ChQRow; s: ChQDetailSecondary }) {
   return (
     <>
       {s.holesError && (
-        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-09205" title="Scorecards didn’t load" body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
       )}
       {row.rounds.map((rd) => (
         <Scorecard key={rd.id} round={rd} holes={s.holesError ? undefined : (s.holes[rd.id] ?? [])} />
@@ -668,7 +763,7 @@ function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number
           <p>Gross strokes · coach only</p>
         </div>
       </div>
-      <ScrollRegion label="Round-by-round scores" className="ch-qf-table">
+      <ScrollRegion label="Round-by-round scores, scrolls sideways" className="ch-qf-table">
         <div role="table" aria-labelledby="ch-qf-rbr" style={{ minWidth }}>
           <div role="rowgroup">
             <div className="ch-qf-row ch-qf-row--head" role="row" style={{ gridTemplateColumns: cols }}>

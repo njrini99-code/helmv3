@@ -193,6 +193,35 @@ describe('Settings · the server loader', () => {
     expect(logServer).not.toHaveBeenCalled();
   });
 
+  it('82101 a coach: the team row and the CoachHelm philosophy row are each read once (they were read twice)', async () => {
+    const base = coachTables();
+    const calls: Record<string, number> = { golf_teams: 0, golf_coach_philosophy: 0 };
+    const counted = (name: 'golf_teams' | 'golf_coach_philosophy') => (f: Array<[string, unknown[]]>) => {
+      calls[name] = (calls[name] ?? 0) + 1;
+      const v = base[name] as unknown;
+      return typeof v === 'function' ? (v as (f: Array<[string, unknown[]]>) => unknown)(f) : v;
+    };
+    tables.current = { ...base, golf_teams: counted('golf_teams'), golf_coach_philosophy: counted('golf_coach_philosophy') } as ChFakeTables;
+    const data = await loadSettings(coachSession, 't1');
+    expect(calls).toEqual({ golf_teams: 1, golf_coach_philosophy: 1 });
+    expect(data.teamName).toBe('Varsity');
+    expect(data.digest).toEqual({ value: true, error: false });
+  });
+
+  it('82101 CH-8901 the loader says email is paused unless the outbound gate is exactly on', async () => {
+    tables.current = coachTables();
+    try {
+      vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', '');
+      expect((await loadSettings(coachSession, 't1')).emailPaused).toBe(true);
+      vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', 'TRUE');
+      expect((await loadSettings(coachSession, 't1')).emailPaused).toBe(true);
+      vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', 'true');
+      expect((await loadSettings(coachSession, 't1')).emailPaused).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('82101 a coach with no team still loads: the team sections are null, not failed', async () => {
     tables.current = coachTables();
     const data = await loadSettings(coachSession, null);
@@ -206,13 +235,13 @@ describe('Settings · the server loader', () => {
     expect(actions.getTeamCoachHelmAccess).not.toHaveBeenCalled();
   });
 
-  const digestFails = (f: Array<[string, unknown[]]>) => (selects(f, 'email_digest_enabled') ? { error: { message: 'boom' } } : { data: null });
   const boom = { error: { message: 'boom' } };
 
   it.each([
     ['profile read fails', () => (tables.current = coachTables({ golf_coaches: boom })), 'profile', 'settings', (d: Loaded) => d.profile.error],
     ['profile row missing', () => (tables.current = coachTables({ golf_coaches: { data: null } })), 'profile', 'settings', (d: Loaded) => d.profile.error],
-    ['weekly email read fails', () => (tables.current = coachTables({ golf_coach_philosophy: digestFails })), 'digest', 'notifications', (d: Loaded) => d.digest!.error],
+    // One read of the philosophy row serves both the weekly email and CoachHelm (2026-10-17), so its failure flags both.
+    ['weekly email read fails', () => (tables.current = coachTables({ golf_coach_philosophy: boom })), 'digest', 'notifications', (d: Loaded) => d.digest!.error && d.coachhelm!.error],
     ['team settings read fails', () => (tables.current = coachTables({ golf_team_settings: boom })), 'teamSettings', 'teams', (d: Loaded) => d.scoring!.error && d.reminders!.error],
     [
       'team row read fails',
@@ -634,23 +663,29 @@ describe('Settings · the live writes', () => {
     expect(client.upload.mock.calls[0]![0]).toMatch(/^u-maya\/avatar-\d+\.png$/);
   });
 
-  it('80903 after a delete this device is cleaned up first (caches, active team, session) and then sent to the sign-in page in the app or the home page on the web', async () => {
+  it('80903 after a delete this device is cleaned up first (caches, then the session and active team in one request) and then sent to the sign-in page in the app or the home page on the web', async () => {
     const assign = vi.fn();
     const real = window.location;
+    let fetchSpy: { mockRestore: () => void } | undefined;
     Object.defineProperty(window, 'location', { configurable: true, value: { ...real, assign } });
     try {
       const order: string[] = [];
       actions.clearAllCachedResources.mockImplementation(() => order.push('caches'));
-      actions.clearActiveTeam.mockImplementation(async () => void order.push('team'));
-      client.signOut.mockImplementation(async () => void order.push('session'));
+      client.signOut.mockImplementation(async () => void order.push('browser session'));
+      fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+        order.push(`session ${String(url)}`);
+        return new Response('{"success":true}', { status: 200 });
+      });
       await coachWrites().cleanupAfterDelete();
-      expect(order).toEqual(['caches', 'team', 'session']);
+      // The session and the active team end in one request (the sign-out route), so nothing re-renders under the redirect.
+      expect(order).toEqual(['caches', 'session /api/golf/auth/sign-out']);
       expect(assign).toHaveBeenLastCalledWith('/');
       native.on = true;
       expect(afterDeleteHref()).toBe('/golf/login');
       await coachWrites().cleanupAfterDelete();
       expect(assign).toHaveBeenLastCalledWith('/golf/login');
     } finally {
+      fetchSpy?.mockRestore();
       Object.defineProperty(window, 'location', { configurable: true, value: real });
     }
   });

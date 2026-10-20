@@ -12,7 +12,9 @@ Physical Safari/iPhone acceptance and production-build profiling remain open.
 How a mobile design in `design/handoff/mobile/` becomes the phone version of
 a Clubhouse page, running in the iOS app. Desktop steps are in `README.md`,
 and the rules that hold throughout are in `.claude/rules/clubhouse.md`. The
-phone is **iPhone only, portrait, light theme** (D-22).
+phone is **iPhone only, portrait** (D-22). It follows the GolfHelm Appearance
+setting, light or dark: the dark theme ("Clubhouse at night", owner
+2026-10-08) supersedes D-22's light-only rule.
 
 ## How the app works (read this first)
 
@@ -41,7 +43,7 @@ phone is **iPhone only, portrait, light theme** (D-22).
 | Swipe-back guard: no edge swipe while a sheet or dialog is open | `NativeSwipeBackBridge` in `ClubhouseShell`; an overlay is `<dialog open>`, or `role="dialog"` with `data-state="open"` | done |
 | Sign-out stops this phone getting the old account's pushes | `teardownDeviceTokenOnSignOut()` first in `writes.signOut` | done |
 | Push permission prompt (soft ask before the iOS dialog) | Fairway's version can't be reused; needs a Clubhouse sheet | waits for the foundation design |
-| Pull to refresh (Home, Roster, Messages list, Calendar agenda) | `router.refresh()`, light haptic at the threshold | waits for the foundation design |
+| Pull to refresh (every phone page, at its top; the app only, Safari keeps its own) | `PullToRefresh` in the shell: `router.refresh()`, the medium haptic at the trigger (owner-approved 2026-10-08, CH-1909) | done |
 | Keyboard: anything pinned to the bottom (composer, sheet footer) lifts by `var(--keyboard-height)` and carries `data-fw-keyboard-aware` | the page | per page |
 
 A Clubhouse test (`src/clubhouse/__tests__/native.test.tsx`) pins the done
@@ -112,10 +114,11 @@ signed in.
   - keyboard never covers the field or the composer
   - edge swipe blocked while a sheet is open
   - haptics felt
-  - dark status-bar glyphs on the light theme
+  - dark status-bar glyphs on the light theme, light glyphs on the dark theme
 - [ ] Logged in `PROGRESS.md` with the device and iOS version
 
-Shipping follows the desktop rules. The flag stays off in production until
-turning it on is a flag change, and deploys follow AGENTS.md "Production". A native change (a
+Shipping follows the desktop rules. The flag is off in production until the
+owner turns it on; the canary steps and rollback are in [STATUS.md](STATUS.md),
+and deploys follow AGENTS.md "Production". A native change (a
 new plugin, anything in `ios/`) also needs a new App Store build, which is
 the owner's call too (`ios/appstore/`).

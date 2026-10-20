@@ -2,7 +2,7 @@
 
 import { Info, MessageSquare, Plus, Share } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChWindow } from '../../data/stats-common';
 import { basisWords, clearFilters, hasRange, isFiltered, per18, type ChFilter } from '../../data/stats-filter';
@@ -18,9 +18,9 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
-import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
-import { SgBars, SgChangeChip } from './charts';
+import { FigureGauge, SgBars, SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
@@ -30,6 +30,9 @@ import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
 import { devProgress, devTitle, goalLine } from './dev-format';
+import { chScrollIntoView } from '../../lib/smooth-scroll';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useArrivalPainted } from '../../lib/use-painted';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -69,8 +72,10 @@ export function StatsPlayerPhone({
   onRetry: () => void;
 }) {
   const coach = data.viewer === 'coach';
-  const backFromMore = useBackFromMore();
   const toast = useToast();
+  // Game detail and everything under it start below the first screen (game detail at 876px of 852), so a page reached
+  // by navigating renders them a frame after its first one is painted.
+  const below = useArrivalPainted();
   const w = data.win;
   const first = data.firstName;
   // Strokes gained needs three rounds WITH shots, so the banner keys on those, not on the round count alone.
@@ -108,7 +113,7 @@ export function StatsPlayerPhone({
       haptic('success');
       toast({
         title: 'Link copied',
-        body: `Coaches on your team can open ${first}'s stats from it.`,
+        body: `Coaches on your team can open ${first}’s stats from it.`,
       });
     } catch (e) {
       // Closing the share sheet is not a failure.
@@ -117,7 +122,7 @@ export function StatsPlayerPhone({
       haptic('error');
       toast({
         tone: 'error',
-        title: "Couldn't share the link",
+        title: 'Couldn’t share the link',
         body: 'Your browser blocked it. Try again, or copy the address from the browser.',
         code: 'CH-5002',
       });
@@ -127,9 +132,9 @@ export function StatsPlayerPhone({
   return (
     <div className="ch-stm">
       {coach ? (
-        <PhoneTop title="Player stats" back={{ label: 'Team', onBack: onBackToTeam }} action={<PhoneIconAction icon={Share} label={`Share ${first}'s stats`} onClick={() => void share()} />} />
+        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: onBackToTeam }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
       ) : (
-        <PhoneTop title="My stats" back={{ label: 'More', onBack: backFromMore }} />
+        <PhoneTop title="My stats" heading={false} start />
       )}
 
       <header className="ch-spm-head">
@@ -137,11 +142,24 @@ export function StatsPlayerPhone({
         <span className="ch-spm-head__id">
           <h1>{data.name}</h1>
           <p className="ch-num">
-            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'}`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`].filter(Boolean).join(' · ')}
+            {/* The season's count, said as such: under it the window (Last 10) counts its own rounds ("5 rounds" over "10 countable rounds", 2026-10-14). */}
+            {/* Each part keeps to one line with the dot after it (stats.css): the line breaks only between parts, never
+                "21 rounds this / season", and a wrapped line never starts with a dot. */}
+            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`]
+              .filter(Boolean)
+              .map((part, i, all) => (
+                <Fragment key={i}>
+                  {i > 0 && ' '}
+                  <span>
+                    {part}
+                    {i < all.length - 1 && ' ·'}
+                  </span>
+                </Fragment>
+              ))}
           </p>
         </span>
         {coach && messageHref && (
-          <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`}>
+          <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">
             <Icon icon={MessageSquare} size={18} />
           </Link>
         )}
@@ -153,7 +171,7 @@ export function StatsPlayerPhone({
       </div>
 
       {!filtered && w.rounds === 0 && !data.roundsError && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
-      {failed && <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={onRetry} />}
+      {failed && <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again; the error has been reported." onRetry={onRetry} />}
 
       {emptyFilter && <FilterEmpty code="CH-5320" onClear={() => onFilter(clearFilters(data.filter))} />}
 
@@ -168,9 +186,11 @@ export function StatsPlayerPhone({
         <StrokesGained data={data} />
       </SectionBoundary>
 
+      {below && (
+        <>
       <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
         {data.statsError ? (
-          <InlineNotice code="CH-5202" title="Shot-level detail didn't load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
+          <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
           <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} puttBands={data.puttBands} onRetry={onRetry} phone />
         ) : (
@@ -190,33 +210,42 @@ export function StatsPlayerPhone({
       </SectionBoundary>
 
       <SectionBoundary surface="stats.player.rounds" label="The rounds" code="CH-5206">
-        {data.rounds.length > 0 && <RoundsExtra x={data.extra} filter={data.filter} phone />}
+        {data.rounds.length > 0 && <RoundsExtra x={data.extra} filter={data.filter} phone share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />}
         <Rounds rounds={data.rounds} open={initialTab === 'rounds'} />
       </SectionBoundary>
         </>
       )}
+        </>
+      )}
 
+      {below && (
       <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
         <Development data={data} coach={coach} onAdd={onAddFocus} onRetry={onRetry} />
       </SectionBoundary>
+      )}
     </div>
   );
 }
 
 /**
  * The board's three figures (m-stats.jsx Player, m.css .m-figs): scoring average, strokes gained a round in green or
- * amber, and the trend in words ("down 1.4", lower scores are better). The shared metadata footer holds the sample caveat or comparison without moving the figures.
+ * amber, and the trend in words ("1.4 lower", lower scores are better). The shared metadata footer holds the sample caveat or comparison without moving the figures.
  */
 function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: ReactNode }) {
   const w = data.win;
   const sgTone = w.sgPerRound == null ? '' : w.sgPerRound >= 0 ? ' ch-gain' : ' ch-loss';
   const form = w.formChange;
   const flat = form != null && Math.abs(form) < 0.05;
+  // The rounds in each half of the trend the change compares (summarizeWindow's own split).
+  const half = Math.floor(w.trend.length / 2);
   const formTone = form == null || flat ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
   const d = data.sgChange.delta;
+  // The scoring average against par, per 18 holes over the window's rounds that carry a par (owner, 2026-10-07: no bare numbers).
+  const pars = data.rounds.filter((r) => r.toPar != null).map((r) => per18(r.toPar as number, r.holes));
+  const toPar = pars.length ? pars.reduce((a, b) => a + b, 0) / pars.length : null;
   return (
     <div className="ch-stm-overview">
-      <dl className="ch-stm-figs is-three">
+      <dl className="ch-stm-figs is-three is-line">
         <div>
           <dt>Scoring avg</dt>
           <dd className="ch-num">{formatFixed(w.avg)}</dd>
@@ -231,16 +260,27 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
           </dd>
         </div>
         <div>
-          <dt>Trend</dt>
-          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${form < 0 ? 'down' : 'up'} ${Math.abs(form).toFixed(1)}`}</dd>
-          <dd>{form == null ? 'After three rounds' : 'Newer rounds'}</dd>
+          <dt>Scoring trend</dt>
+          {/* Scores, so "higher" is worse (amber) and "lower" better; the sub-line names the halves compared (summarizeWindow). */}
+          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${Math.abs(form).toFixed(1)} ${form < 0 ? 'lower' : 'higher'}`}</dd>
+          <dd>{form == null ? 'After three rounds' : half === 1 ? 'Newest round vs first' : `Newest ${half} vs first ${half}`}</dd>
         </div>
       </dl>
+      {/* Each figure drawn against its reference (decorative; the figures say it): scoring from par, strokes gained from
+          the Tour's zero. The trend is already words. */}
+      <div className="ch-stm-gauges" aria-hidden="true">
+        <span>{w.avg != null && toPar != null && <FigureGauge gauge={{ kind: 'par', toPar }} n={w.avg} />}</span>
+        <span>{w.sgPerRound != null && <FigureGauge gauge={{ kind: 'sg' }} n={w.sgPerRound} />}</span>
+        <span />
+      </div>
       <div className="ch-stm-overview__meta">
         {readCaveat ?? (
           <>
             <span className="ch-num">{countWords(w.rounds, w.effRounds)} in this window.</span>
-            {w.sgPerRound != null && d != null && <SgChangeChip change={data.sgChange} code="CH-5310" />}
+            {/* P005-D6: the chip names what it measures, since it sits away from the SG figure. */}
+            {w.sgPerRound != null && d != null && (
+              <SgChangeChip change={{ ...data.sgChange, context: data.sgChange.context ? `SG a round ${data.sgChange.context}` : 'SG a round' }} code="CH-5310" />
+            )}
           </>
         )}
       </div>
@@ -289,8 +329,9 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
 }
 
 function Trend({ data }: { data: ChPlayerProfile }) {
-  // Oldest first, the last ten rounds, a score per 18 holes (a 9-hole score doubled).
-  const rounds = [...data.rounds].reverse().slice(-10).map((r) => ({ ...r, score: per18(r.score, r.holes) }));
+  // Oldest first, every round in the window, a score per 18 holes (a 9-hole score doubled). The phone's one scoring
+  // chart (P005-D1): Score by round is desktop only.
+  const rounds = [...data.rounds].reverse().map((r) => ({ ...r, score: per18(r.score, r.holes) }));
   if (rounds.length === 0) return null;
   const change = rounds[rounds.length - 1]!.score - rounds[0]!.score;
   return (
@@ -298,7 +339,7 @@ function Trend({ data }: { data: ChPlayerProfile }) {
       <div className="ch-stm-panel__h">
         <h2 id="ch-spm-trend">Scoring trend</h2>
         <span className="ch-num">
-          Last {rounds.length}
+          {rounds.length} {rounds.length === 1 ? 'round' : 'rounds'}
           {rounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}
         </span>
       </div>
@@ -325,9 +366,10 @@ function Trend({ data }: { data: ChPlayerProfile }) {
 function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boolean }) {
   const [all, setAll] = useState(open);
   const ref = useRef<HTMLElement>(null);
+  const reduced = useChReducedMotion();
   useEffect(() => {
-    if (open) ref.current?.scrollIntoView({ block: 'start' });
-  }, [open]);
+    if (open) chScrollIntoView(ref.current, reduced);
+  }, [open, reduced]);
   const shown = all ? rounds : rounds.slice(0, ROUNDS_SHOWN);
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-spm-rounds" ref={ref}>
@@ -358,6 +400,7 @@ function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boo
             <button
               type="button"
               className="ch-spm-more"
+              data-ch-press=""
               aria-expanded={all}
               onClick={() => {
                 haptic('select');
@@ -387,7 +430,7 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
           </Button>
         )}
       </div>
-      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn't load." body="Try again; the error has been reported." onRetry={onRetry} />}
+      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again; the error has been reported." onRetry={onRetry} />}
       <h3 className="ch-spm-sub">
         Focus areas{' '}
         <span className="ch-num">

@@ -34,6 +34,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import { isUuid } from '@/lib/utils/uuid';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 export type QualifierSetupResult<T = undefined> = { success: true; data: T } | { success: false; error: string };
 
@@ -47,8 +48,11 @@ const SQUAD_MAX = 12;
 
 async function coachOfQualifier(qualifierId: string, action: string): Promise<Gate> {
   if (!isUuid(qualifierId)) return { ok: false, error: 'That qualifier link isn’t valid.' };
-  // HELD gate (D-61): the coach check below still decides who may edit.
-  if (!(await isClubhouseFor('coach'))) return { ok: false, error: 'Editing a qualifier’s setup isn’t available yet.' };
+  // HELD gate (D-61): open only to a user the dashboard draws Clubhouse's coach shell for (getGolfDashboardRole, the
+  // layout's rule); the flag is checked first, so with it off this still refuses before any read. The coach check
+  // below still decides who may edit. A role read that fails refuses, as the gate itself does.
+  const clubhouseCoach = (await isClubhouseFor('coach')) && (await getGolfDashboardRole().catch(() => null)) === 'coach';
+  if (!clubhouseCoach) return { ok: false, error: 'Editing a qualifier’s setup isn’t available yet.' };
   const supabase = await createClient();
   const {
     data: { user },

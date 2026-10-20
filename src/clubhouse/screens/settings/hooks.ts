@@ -40,18 +40,18 @@ import { useInstantSave, useSaveAction } from './parts';
 
 /** The copy of each save toast (docs/clubhouse/catalog/settings.md, 80xx), shared by desktop and phone. */
 export const SAVE_COPY = {
-  profile: { done: 'Profile saved', failed: "Couldn't save your profile", code: 'CH-8001' },
-  email: (v: string) => ({ done: `Confirmation sent to ${v}`, failed: "Couldn't start the email change", code: 'CH-8003' }),
-  password: { done: 'Password updated', failed: "Couldn't update your password", code: 'CH-8004' },
-  team: { done: 'Team details saved', failed: "Couldn't save team details", code: 'CH-8011' },
-  regenerate: { done: 'New invite code ready', failed: "Couldn't make a new invite code", code: 'CH-8012' },
-  scoring: { done: 'Scoring settings saved', failed: "Couldn't save scoring settings", code: 'CH-8014' },
-  reminders: { done: 'Reminder schedule saved', failed: "Couldn't save the reminder schedule", code: 'CH-8015' },
-  golf: { done: 'Golf details saved', failed: "Couldn't save your golf details", code: 'CH-8016' },
-  leave: { done: 'You left the team', failed: "Couldn't leave the team", code: 'CH-8017' },
-  join: { done: 'Request sent to the coaches', failed: "Couldn't send your request", hint: 'Check the code with your coach.', code: 'CH-8018' },
-  cancel: { done: 'Request cancelled', failed: "Couldn't cancel the request", code: 'CH-8019' },
-  delete: { done: 'Your account was deleted', failed: "Couldn't delete your account", code: 'CH-8023' },
+  profile: { done: 'Profile saved', failed: "Couldn’t save your profile", code: 'CH-8001' },
+  email: (v: string) => ({ done: `Confirmation sent to ${v}`, failed: "Couldn’t start the email change", code: 'CH-8003' }),
+  password: { done: 'Password updated', failed: "Couldn’t update your password", code: 'CH-8004' },
+  team: { done: 'Team details saved', failed: "Couldn’t save team details", code: 'CH-8011' },
+  regenerate: { done: 'New team code ready', failed: "Couldn’t make a new team code", code: 'CH-8012' },
+  scoring: { done: 'Scoring settings saved', failed: "Couldn’t save scoring settings", code: 'CH-8014' },
+  reminders: { done: 'Reminder schedule saved', failed: "Couldn’t save the reminder schedule", code: 'CH-8015' },
+  golf: { done: 'Golf details saved', failed: "Couldn’t save your golf details", code: 'CH-8016' },
+  leave: { done: 'You left the team', failed: "Couldn’t leave the team", code: 'CH-8017' },
+  join: { done: 'Request sent to the coaches', failed: "Couldn’t send your request", hint: 'Check the code with your coach.', code: 'CH-8018' },
+  cancel: { done: 'Request cancelled', failed: "Couldn’t cancel the request", code: 'CH-8019' },
+  delete: { done: 'Your account was deleted', failed: "Couldn’t delete your account", code: 'CH-8023' },
 } as const;
 
 /** Email and push switches, quiet mode and the weekly team email: each flips at once and goes back if the save fails (CH-8005, CH-8006). */
@@ -65,12 +65,12 @@ export function useDelivery(prefs: Record<string, boolean>, digest: ChSettingsDa
       apply: () => setP((x) => ({ ...x, [key]: v })),
       rollback: () => setP((x) => ({ ...x, [key]: !v })),
       write: () => writes.setDelivery(key, v),
-      failed: `Couldn't change ${label}`,
+      failed: `Couldn’t change ${label}`,
       code: 'CH-8005',
     });
   const flipDigest = (v: boolean) =>
-    void save.run({ key: 'digest', apply: () => setDg(v), rollback: () => setDg(!v), write: () => writes.setDigest(v), failed: "Couldn't change the weekly email", code: 'CH-8006' });
-  return { p, dg, quiet: !!p.quiet_mode, pending: save.pending, flip, flipDigest };
+    void save.run({ key: 'digest', apply: () => setDg(v), rollback: () => setDg(!v), write: () => writes.setDigest(v), failed: "Couldn’t change the weekly email", code: 'CH-8006' });
+  return { p, dg, quiet: !!p.quiet_mode, pending: save.pending, saved: save.saved, flip, flipDigest };
 }
 
 /** Push on this device: subscribe or unsubscribe, and say why when it can't (CH-8007). */
@@ -84,14 +84,42 @@ export function usePushToggle(push: ChDevice['push']) {
       if (!r.ok) {
         haptic('error');
         if (r.error) chReport(new Error(r.error), { surface: 'settings.notifications', action: 'devicePush', severity: 'low' });
-        toast({ tone: 'error', title: v ? "Couldn't turn on push here" : "Couldn't turn off push here", body: r.error && r.error.length < 90 ? r.error : 'Try again in a moment.', code: 'CH-8007' });
+        toast({ tone: 'error', title: v ? "Couldn’t turn on push here" : "Couldn’t turn off push here", body: r.error && r.error.length < 90 ? r.error : 'Try again in a moment.', code: 'CH-8007' });
       }
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.notifications', action: 'devicePush' });
-      toast({ tone: 'error', title: "Couldn't change push on this device", body: 'Try again in a moment.', code: 'CH-8007' });
+      toast({ tone: 'error', title: "Couldn’t change push on this device", body: 'Try again in a moment.', code: 'CH-8007' });
     }
   };
+}
+
+/** P008-C3: Send a test (push to this person's own devices, D1-6). The result is a toast; a failure says why (CH-8029). */
+export function useTestPush(push: ChDevice['push']) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    if (!push.test || busy) return;
+    chTrail('settings test push');
+    setBusy(true);
+    try {
+      const r = await push.test();
+      if (r.ok) {
+        haptic('success');
+        toast({ title: 'Test sent', body: r.sent && r.sent > 1 ? `To your ${r.sent} devices with push on. It should arrive in a few seconds.` : 'It should arrive on this device in a few seconds.' });
+      } else {
+        haptic('error');
+        toast({ tone: 'error', title: 'Couldn’t send a test', body: r.error && r.error.length < 90 ? r.error : 'Try again in a moment.', code: 'CH-8029' });
+      }
+    } catch (err) {
+      haptic('error');
+      chReport(err, { surface: 'settings.notifications', action: 'testPush' });
+      toast({ tone: 'error', title: 'Couldn’t send a test', body: 'Check your connection and try again.', code: 'CH-8029' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return { run, busy };
 }
 
 /** The player's CoachHelm updates: cell switches, whole-list changes and quiet mode (CH-8008 to CH-8010). */
@@ -110,7 +138,7 @@ export function useRouting(initial: { prefs: PrefsByCategory; quiet: boolean }, 
       apply: () => setPrefs((x) => ({ ...x, [c]: { ...channelsFor(x, c), [ch]: v } })),
       rollback: () => setPrefs((x) => ({ ...x, [c]: { ...channelsFor(x, c), [ch]: !v } })),
       write: () => writes.setRoutingCell(c, ch, v),
-      failed: `Couldn't change ${ROUTING_LABEL[c].toLowerCase()}`,
+      failed: `Couldn’t change ${ROUTING_LABEL[c].toLowerCase()}`,
       code: 'CH-8008',
     });
 
@@ -137,9 +165,9 @@ export function useRouting(initial: { prefs: PrefsByCategory; quiet: boolean }, 
   };
 
   const flipQuiet = (v: boolean) =>
-    void save.run({ key: 'quiet', apply: () => setQuiet(v), rollback: () => setQuiet(!v), write: () => writes.setRoutingQuiet(v), failed: "Couldn't change quiet mode", code: 'CH-8010' });
+    void save.run({ key: 'quiet', apply: () => setQuiet(v), rollback: () => setQuiet(!v), write: () => writes.setRoutingQuiet(v), failed: "Couldn’t change quiet mode", code: 'CH-8010' });
 
-  return { prefs, quiet, pending: save.pending, bulkBusy, cellBusy, groupBusy, all, setCell, setGroup, bulk, flipQuiet };
+  return { prefs, quiet, pending: save.pending, saved: save.saved, bulkBusy, cellBusy, groupBusy, all, setCell, setGroup, bulk, flipQuiet };
 }
 
 /** Coach CoachHelm: the team switch (head coach), the dashboards switch and its three parts (CH-8020, CH-8021). */
@@ -158,18 +186,24 @@ export function useCoachHelmPower(initial: ChCoachHelmSettings, writes: ChSettin
       apply: () => setTeam((t) => (t ? { ...t, enabled: v } : t)),
       rollback: () => setTeam((t) => (t ? { ...t, enabled: !v } : t)),
       write: () => writes.setCoachHelmTeam(v),
-      failed: "Couldn't change CoachHelm for the team",
+      failed: "Couldn’t change CoachHelm for the team",
       code: 'CH-8021',
     });
-  return { coach, team, pending: save.pending, setC, setTeamOn };
+  return { coach, team, pending: save.pending, saved: save.saved, setC, setTeamOn };
 }
 
-/** The invite code: the code on screen, a new one (after the person confirms), copy and share (CH-8012, CH-8013). */
+/** The team code: the code on screen, a new one (after the person confirms), copy and share (CH-8012, CH-8013). */
 export function useInvite(initial: string, writes: ChSettingsWrites) {
   const [code, setCode] = useState(initial);
   // Read after mount: the server has no navigator, and a mismatch would break hydration.
   const [canShare, setCanShare] = useState(false);
   useEffect(() => setCanShare(typeof navigator.share === 'function'), []);
+  // What was just copied, for the button's own "Copied" (1.8s); the toast and the success tick say it too.
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null);
+  const copiedTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current);
+  }, []);
   const toast = useToast();
   const regen = useSaveAction('settings.regenerateCode', writes.regenerateCode, SAVE_COPY.regenerate, (r) => {
     if (r.data?.joinCode) setCode(r.data.joinCode);
@@ -179,13 +213,16 @@ export function useInvite(initial: string, writes: ChSettingsWrites) {
     chTrail(`settings copy invite ${what}`);
     try {
       await navigator.clipboard.writeText(what === 'code' ? code : link);
-      // CH-8705: copying the invite code or link lands with the success pattern.
+      // CH-8705: copying the team code or invite link lands with the success pattern.
       haptic('success');
-      toast({ title: what === 'code' ? 'Invite code copied' : 'Invite link copied' });
+      toast({ title: what === 'code' ? 'Team code copied' : 'Invite link copied' });
+      setCopied(what);
+      if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current);
+      copiedTimer.current = window.setTimeout(() => setCopied(null), 1800);
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.invite', action: 'copy', severity: 'low' });
-      toast({ tone: 'error', title: "Couldn't copy", body: 'Select the text and copy it yourself.', code: 'CH-8013' });
+      toast({ tone: 'error', title: "Couldn’t copy", body: 'Select the text and copy it yourself.', code: 'CH-8013' });
     }
   };
   const share = async () => {
@@ -200,7 +237,7 @@ export function useInvite(initial: string, writes: ChSettingsWrites) {
       }
     }
   };
-  return { code, canShare, link, regen, copy, share };
+  return { code, canShare, link, regen, copy, copied, share };
 }
 
 const landed = (r: ChResult<unknown>) => !!(r.success || r.ok);
@@ -269,12 +306,12 @@ export function useCoachingStaff(staff: ChStaffWrites, coachId: string | null) {
   };
   const approve = useAction('settings.approveAssistant', decide('approve'), (c: ChPendingCoach) => ({
     done: `${pendingCoachName(c)} is now an assistant coach`,
-    failed: `Couldn't approve ${pendingCoachName(c)}`,
+    failed: `Couldn’t approve ${pendingCoachName(c)}`,
     code: 'CH-8026',
   }));
   const decline = useAction('settings.declineAssistant', decide('decline'), (c: ChPendingCoach) => ({
     done: `Declined ${pendingCoachName(c)}`,
-    failed: `Couldn't decline ${pendingCoachName(c)}`,
+    failed: `Couldn’t decline ${pendingCoachName(c)}`,
     code: 'CH-8027',
   }));
   return {
@@ -307,7 +344,7 @@ export function useStaffInvite(staff: ChStaffWrites) {
       if (landed(res) && res.data) setMade({ ...res.data, link: `${window.location.origin}/golf/staff/join/${res.data.token}` });
       return res;
     },
-    (r: ChStaffRole) => ({ done: '', failed: `Couldn't make the ${r === 'admin' ? 'program admin' : 'assistant coach'} invite`, code: 'CH-8028' }),
+    (r: ChStaffRole) => ({ done: '', failed: `Couldn’t make the ${r === 'admin' ? 'program admin' : 'assistant coach'} invite`, code: 'CH-8028' }),
   );
   const copy = async (what: 'code' | 'link') => {
     const text = what === 'code' ? made?.code : made?.link;
@@ -320,7 +357,7 @@ export function useStaffInvite(staff: ChStaffWrites) {
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.staffInvite', action: 'copy', severity: 'low' });
-      toast({ tone: 'error', title: "Couldn't copy", body: 'Select the text and copy it yourself.', code: 'CH-8013' });
+      toast({ tone: 'error', title: "Couldn’t copy", body: 'Select the text and copy it yourself.', code: 'CH-8013' });
     }
   };
   const share = async () => {
@@ -342,6 +379,14 @@ export function useStaffInvite(staff: ChStaffWrites) {
 /** A player's team: leave it, ask to join another, cancel a request (CH-8017 to CH-8019). */
 export function useMembership(m: ChMembership, writes: ChSettingsWrites, done: { onLeft: () => void; onJoined: () => void }) {
   const [requests, setRequests] = useState(m.requests);
+  // A fresh server read (the refresh after Ask to join) brings the new request: the card follows it, so the waiting
+  // row replaces the form at once, as Fairway's re-read does, instead of offering the form again until the section is
+  // reopened. A cancel patches the page's copy (keepSaved), which arrives here the same way.
+  const [seen, setSeen] = useState(m.requests);
+  if (seen !== m.requests) {
+    setSeen(m.requests);
+    setRequests(m.requests);
+  }
   const leave = useSaveAction('settings.leaveTeam', writes.leaveTeam, SAVE_COPY.leave, () => {
     done.onLeft();
     writes.refresh();
@@ -369,12 +414,12 @@ export function useAvatarUpload(writes: ChSettingsWrites, onUploaded: (url: stri
       else {
         haptic('error');
         chReport(new Error(r.error || 'avatar upload failed'), { surface: 'settings.profile', action: 'uploadAvatar', severity: 'low' });
-        toast({ tone: 'error', title: "Couldn't upload that photo", body: r.error && r.error.length < 80 ? r.error : 'Check your connection and try again.', code: 'CH-8002' });
+        toast({ tone: 'error', title: "Couldn’t upload that photo", body: r.error && r.error.length < 80 ? r.error : 'Check your connection and try again.', code: 'CH-8002' });
       }
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.profile', action: 'uploadAvatar' });
-      toast({ tone: 'error', title: "Couldn't upload that photo", body: 'Check your connection and try again.', code: 'CH-8002' });
+      toast({ tone: 'error', title: "Couldn’t upload that photo", body: 'Check your connection and try again.', code: 'CH-8002' });
     } finally {
       setUploading(false);
     }
@@ -391,7 +436,7 @@ export function useReportProblem() {
     setOpening(true);
     chTrail('settings report a problem');
     const mail = () => {
-      toast({ title: 'Opening email', body: "The in-app report form isn't available right now.", code: 'CH-8025' });
+      toast({ title: 'Opening email', body: "The in-app report form isn’t available right now.", code: 'CH-8025' });
       window.location.href = 'mailto:admin@helmsportslabs.com?subject=Problem%20report';
     };
     try {
@@ -423,7 +468,7 @@ export function useSignOut(writes: ChSettingsWrites) {
     } catch (err) {
       chReport(err, { surface: 'settings.session', action: 'signOut' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't sign you out", body: 'Check your connection and try again.', code: 'CH-8024' });
+      toast({ tone: 'error', title: "Couldn’t sign you out", body: 'Check your connection and try again.', code: 'CH-8024' });
       setSigningOut(false);
     }
   };

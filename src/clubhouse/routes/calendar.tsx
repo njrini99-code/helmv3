@@ -44,5 +44,5 @@ export async function ClubhouseCalendarRoute({
     date,
     event,
   });
-  return <Calendar data={data} initialEvent={event} initialNew={isNew} initialWith={withPlayer} initialType={parseNewType(newType)} />;
+  return <Calendar data={data} initialEvent={event} initialNew={isNew} initialWith={withPlayer} initialType={parseNewType(newType)} live />;
 }

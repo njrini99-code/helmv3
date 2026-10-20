@@ -1,10 +1,11 @@
-import { CalendarDays, Flag } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ChAgendaRow, ChCoachHome } from '../../data/home';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { EmptyState } from '../../ui/States';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { TYPE_ICON } from '../calendar/type-icon';
 
 /** What the dots under a day say to a screen reader. */
 export function dayLabel(count: number, competition: boolean): string {
@@ -12,8 +13,11 @@ export function dayLabel(count: number, competition: boolean): string {
   return competition ? `competition, ${events}` : events;
 }
 
-/** `between`: what sits between the days and the agenda (the player's Up next, Player - Home.html). */
-export function Week({ week, between }: { week: ChCoachHome['week']; between?: ReactNode }) {
+/**
+ * `between`: what sits between the days and the agenda (the player's Up next, Player - Home.html). `covered`: the
+ * page's notice (CH-1209) carries the one Try again, so the failed week keeps only its notice's title.
+ */
+export function Week({ week, between, covered = false }: { week: ChCoachHome['week']; between?: ReactNode; covered?: boolean }) {
   const todayRows = week.agenda.filter((r) => r.when === 'today');
   const laterRows = week.agenda.filter((r) => r.when === 'later');
   return (
@@ -25,8 +29,9 @@ export function Week({ week, between }: { week: ChCoachHome['week']; between?: R
       {week.error ? (
         <RefreshNotice
           code="CH-2201"
-          title="This week's schedule didn't load."
+          title="This week’s schedule didn’t load"
           body="Your events are safe. This is a display problem, and trying again usually clears it."
+          covered={covered}
         />
       ) : (
         <>
@@ -41,7 +46,7 @@ export function Week({ week, between }: { week: ChCoachHome['week']; between?: R
                 <span className="ch-h-day__n ch-num">{d.dayOfMonth}</span>
                 <span className="ch-h-day__m" aria-hidden="true">
                   {d.hasCompetition ? (
-                    <Icon icon={Flag} size={11} />
+                    <Icon icon={TYPE_ICON[d.competitionType ?? 'tournament']} size={11} />
                   ) : (
                     Array.from({ length: Math.min(d.eventCount, 4) }, (_, i) => <i key={i} />)
                   )}

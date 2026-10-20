@@ -1,9 +1,10 @@
 'use client';
 
-import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserMinus, UserPlus, Users } from 'lucide-react';
+import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import NumberFlow from '@number-flow/react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState, ViewTransition, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
@@ -12,36 +13,34 @@ import { EmptyState } from '../../ui/States';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { Modal } from '../../ui/Modal';
 import { PhoneBar, PhoneIconAction } from '../../ui/PhoneBar';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { formatFixed } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
+import { CH_DUR, CH_EASE } from '../../lib/motion';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
-import { PhoneTop, useBackFromMore, usePhoneStackHistory } from '../../shell/phone-chrome';
+import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
 import type { NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
-import { formatHcp, rowNote } from './format';
+import { PlayerPeek } from '../../ui/PlayerPeek';
+import { figureParts, formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
+import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 
-type PhoneSort = 'avg' | 'sg' | 'name';
+export type { PhoneSort } from './sort';
 
-const lastName = (n: string) => n.split(' ').slice(-1)[0] ?? n;
-/** Ascending, with missing values last. */
-const nullsLast = (a: number | null, b: number | null) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a - b);
-
-function sortPlayers(list: ChRosterPlayer[], sort: PhoneSort): ChRosterPlayer[] {
-  return [...list].sort((a, b) =>
-    sort === 'name'
-      ? lastName(a.name).localeCompare(lastName(b.name))
-      : sort === 'sg'
-        ? nullsLast(a.sgPerRound == null ? null : -a.sgPerRound, b.sgPerRound == null ? null : -b.sgPerRound)
-        : nullsLast(a.avg, b.avg),
-  );
-}
+/** The trailing figure's roll: the base duration on the v2 ease-out (D-64), its fade on the quick one. */
+const ROLL = { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})` } as const;
+const ROLL_FADE = { duration: CH_DUR.quick * 1000, easing: 'ease-out' } as const;
+/** How long after a chosen sort the figures may roll: the roll, and a frame or so for it to end on its own (Number Flow
+ *  finishes a running roll at once when `animated` turns off). */
+const ROLL_HOLD_MS = CH_DUR.base * 1000 + 50;
 
 /**
  * The phone Roster (owner design, docs/clubhouse/phone/roster.md), inside the
@@ -50,6 +49,9 @@ function sortPlayers(list: ChRosterPlayer[], sort: PhoneSort): ChRosterPlayer[] 
  * and the player profile as a pushed screen with its ⋯ action sheet. Same
  * data, actions and catalog as desktop.
  */
+/** A `?tab=requests` arrival not yet shown (see RosterPhone). */
+let linkedRequests = false;
+
 export function RosterPhone({
   data,
   players,
@@ -59,6 +61,7 @@ export function RosterPhone({
   onClose,
   onInvite,
   onRemove,
+  onStatus,
   onNoteSaved,
   onRetry,
   children,
@@ -71,46 +74,105 @@ export function RosterPhone({
   onClose: () => void;
   onInvite: () => void;
   onRemove: (p: ChRosterPlayer) => void;
+  /** Mark the player active or inactive; it asks first (CH-3502). */
+  onStatus: (p: ChRosterPlayer) => void;
   onNoteSaved: NoteSaved;
   onRetry: () => void;
   /** The dialogs (invite, remove confirm), shared with desktop. */
   children?: ReactNode;
 }) {
-  const backFromMore = useBackFromMore();
   const copy = useCopyText();
   const [sort, setSort] = useChSessionState<PhoneSort>('phoneSort', 'avg');
   const [requestsOpen, setRequestsOpen] = useState(false);
+  // The bell's join-request notice links here with `?tab=requests` (createTeamJoinRequest): it opens the requests
+  // sheet once, and the param is dropped so a reload shows the list. The flag outlives a remount that dropping the
+  // param can cause (as the linked player does in Roster) and lapses when the sheet closes.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('tab') === 'requests') {
+      linkedRequests = true;
+      url.searchParams.delete('tab');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+    if (!linkedRequests) return;
+    if (jr.reqs.length) setRequestsOpen(true);
+    else linkedRequests = false;
+    // Once, on arrival: the list it reads is the one the page arrived with.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeRequests = useCallback(() => {
+    linkedRequests = false;
+    setRequestsOpen(false);
+  }, []);
   const [acting, setActing] = useState(false);
   const open = openId ? players.find((p) => p.id === openId) : undefined;
   const activeCount = players.filter((p) => p.status === 'active').length;
-  const active = useMemo(() => sortPlayers(players.filter((p) => p.status === 'active'), sort), [players, sort]);
-  const inactive = useMemo(() => sortPlayers(players.filter((p) => p.status === 'inactive'), sort), [players, sort]);
+  // Avg and SG order nothing while season stats are missing: the list falls back to Name (P003 #7).
+  const sortBy: PhoneSort = data.statsError ? 'name' : sort;
+  const { active, inactive } = useRosterSort(players, sortBy);
+  // CH-3604: a chosen sort reorders inside a transition, so each moved row slides to its place (RosterPhoneList).
+  // Only a chosen sort rolls the figures (a refresh that changes an average takes the new figure at once), so the
+  // permission is set with the sort and lapses once the roll is over.
+  const [rolling, setRolling] = useState(false);
+  // The figures are plain text until a finger or focus lands on the sort, the only control that rolls them (pointerdown
+  // comes before the click, so the numerals are mounted at their values when the sort rolls them). Mounting a list's
+  // worth of Number Flow elements was about 20ms of a switch to Roster's long frame (WebKit, phone, 57–67ms with them,
+  // 37–52ms without, 2026-10-16), and a frame after the paint it still landed inside the switch.
+  const [flowLive, setFlowLive] = useState(false);
+  const goLive = () => {
+    if (!flowLive) setFlowLive(true);
+  };
+  const chooseSort = useCallback(
+    (v: PhoneSort) =>
+      startTransition(() => {
+        setSort(v);
+        setRolling(true);
+      }),
+    [setSort],
+  );
+  useEffect(() => {
+    if (!rolling) return;
+    const t = window.setTimeout(() => setRolling(false), ROLL_HOLD_MS);
+    return () => window.clearTimeout(t);
+  }, [rolling, sortBy]);
 
   // The profile is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906).
   const popTo = useCallback((level: number) => level < 1 && onClose(), [onClose]);
   usePhoneStackHistory(open ? 1 : 0, popTo);
   useEffect(() => setActing(false), [openId]);
+  // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
+  const failed = rosterFailedParts(data);
+  const covered = failed.length > 1;
 
   return (
     <main className="ch-rsm" aria-label="Roster">
       <PhoneTop
         title="Roster"
-        back={{ label: 'More', onBack: backFromMore }}
+        start
         action={
-          <PhoneIconAction
-            icon={UserPlus}
-            label="Invite players"
-            onClick={() => {
-              onInvite();
-            }}
-          />
+          // One primary per screen: while nobody is on the roster the empty state (CH-3301) carries Invite players.
+          data.playersError || players.length > 0 ? (
+            <PhoneIconAction
+              icon={UserPlus}
+              label="Invite players"
+              onClick={() => {
+                onInvite();
+              }}
+            />
+          ) : undefined
         }
       />
       <div className="ch-rsm-page" inert={open ? true : undefined}>
         <header className="ch-rsm-head">
+          {/* With nobody on the roster the count is 0: the team's name says enough (wave 10). */}
           {!data.playersError && (
             <span className="ch-rsm-kicker">
-              {data.teamName} · <span className="ch-num">{activeCount}</span> active
+              {data.teamName}
+              {players.length > 0 && (
+                <>
+                  {' '}
+                  · <span className="ch-num">{activeCount}</span> active
+                </>
+              )}
             </span>
           )}
           {/* The top bar carries the page's heading; this is the design's large title. */}
@@ -119,10 +181,13 @@ export function RosterPhone({
           </p>
         </header>
 
+        <PageRefreshNotice parts={failed} />
+
         <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
           <RequestsBanner
             jr={jr}
             error={data.requestsError}
+            covered={covered}
             onRetry={onRetry}
             onOpen={() => {
               setRequestsOpen(true);
@@ -133,26 +198,28 @@ export function RosterPhone({
         {data.statsError && (
           <InlineNotice
             code="CH-3202"
-            title="Season stats didn't load."
+            title="Season stats didn’t load"
             body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
             onRetry={onRetry}
+            covered={covered}
           />
         )}
 
         {data.playersError ? (
           <InlineNotice
             code="CH-3201"
-            title="The roster didn't load."
-            body="Your players are safe. Try again, and if it keeps happening the error has already been reported."
+            title="The roster didn’t load"
+            body="Your players are safe. Try again; the error has been reported."
             onRetry={onRetry}
+            covered={covered}
           />
         ) : players.length === 0 ? (
           <EmptyState
             size="page"
             code="CH-3301"
-            icon={Users}
+            shape="people"
             title="No players yet"
-            body="Share your team code, then approve requests as they arrive. Players appear here as soon as they join."
+            body="Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here."
             action={
               <Button variant="primary" leftIcon={UserPlus} onClick={onInvite}>
                 Invite players
@@ -160,7 +227,7 @@ export function RosterPhone({
             }
             secondaryAction={
               data.joinCode ? (
-                <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+                <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                   Copy team code
                 </Button>
               ) : undefined
@@ -168,22 +235,26 @@ export function RosterPhone({
           />
         ) : (
           <>
-            <div className="ch-rsm-sort">
+            <div className="ch-rsm-sort" onPointerDownCapture={goLive} onFocusCapture={goLive}>
               <span>Sort by</span>
               <Segmented<PhoneSort>
                 size="sm"
                 label="Sort players"
-                value={sort}
-                onChange={setSort}
-                options={[
-                  { value: 'avg', label: 'Avg', aria: 'Avg, scoring average' },
-                  { value: 'sg', label: 'SG', aria: 'SG, strokes gained' },
-                  { value: 'name', label: 'Name' },
-                ]}
+                value={sortBy}
+                onChange={chooseSort}
+                options={
+                  data.statsError
+                    ? [{ value: 'name', label: 'Name' }]
+                    : [
+                        { value: 'avg', label: 'Avg', aria: 'Avg, scoring average' },
+                        { value: 'sg', label: 'SG', aria: 'SG, strokes gained' },
+                        { value: 'name', label: 'Name' },
+                      ]
+                }
               />
             </div>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} onOpen={onOpen} />
+              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} rolling={rolling} live={flowLive} onOpen={onOpen} />
             </SectionBoundary>
           </>
         )}
@@ -223,33 +294,60 @@ export function RosterPhone({
           setActing(false);
           onRemove(p);
         }}
+        onStatus={(p) => {
+          setActing(false);
+          onStatus(p);
+        }}
       />
-      <RequestsSheet open={requestsOpen} onClose={() => setRequestsOpen(false)} data={data} jr={jr} />
+      <RequestsSheet open={requestsOpen} onClose={closeRequests} data={data} jr={jr} />
       {children}
     </main>
   );
 }
 
+/**
+ * The active players, then Inactive. A chosen sort (and only that: never a refresh, which keeps the rows where they are
+ * under the finger) slides each moved row to its new place on the smooth spring inside React's `<ViewTransition>`
+ * (class `ch-rsm-reorder`, roster.css), while its trailing figure rolls to the new sort's figure. Reduced motion and
+ * Animations off reorder at once.
+ */
 function RosterPhoneList({
   active,
   inactive,
   statsError,
+  sort,
+  rolling,
+  live,
   onOpen,
 }: {
   active: ChRosterPlayer[];
   inactive: ChRosterPlayer[];
   statsError: boolean;
+  sort: PhoneSort;
+  /** A sort was just chosen: the figures roll to it (RosterPhone). */
+  rolling: boolean;
+  /** The figures are Number Flow (a hand is on the sort), not text (RosterPhone). */
+  live: boolean;
   onOpen: (id: string) => void;
 }) {
+  const reduced = useChReducedMotion();
+  // The sort last committed to the screen. A ref, not state: recording it must not draw the list again.
+  const drawn = useRef(sort);
+  useEffect(() => {
+    drawn.current = sort;
+  });
+  const slide = !reduced && drawn.current !== sort;
+  // The text is what Number Flow draws, so nothing moves when they swap.
+  const row = (p: ChRosterPlayer) => (
+    <li key={p.id}>
+      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} roll={rolling && !reduced} live={live} />
+    </li>
+  );
   return (
     <>
       {active.length > 0 && (
         <ul className="ch-rsm-panel ch-rsm-list" aria-label="Active players">
-          {active.map((p) => (
-            <li key={p.id}>
-              <RosterPhoneRow p={p} statsError={statsError} onOpen={onOpen} />
-            </li>
-          ))}
+          {active.map(row)}
         </ul>
       )}
       {inactive.length > 0 && (
@@ -258,11 +356,7 @@ function RosterPhoneList({
             Inactive
           </h2>
           <ul className="ch-rsm-panel ch-rsm-list" aria-labelledby="ch-rsm-inactive">
-            {inactive.map((p) => (
-              <li key={p.id}>
-                <RosterPhoneRow p={p} statsError={statsError} onOpen={onOpen} />
-              </li>
-            ))}
+            {inactive.map(row)}
           </ul>
         </>
       )}
@@ -270,64 +364,130 @@ function RosterPhoneList({
   );
 }
 
-/** One player: avatar, name, class and note, a form spark from three rounds (D-57), average and handicap. */
-export function RosterPhoneRow({ p, statsError, onOpen }: { p: ChRosterPlayer; statsError: boolean; onOpen: (id: string) => void }) {
+/**
+ * One player: avatar, name, class and note, a form spark from three rounds (D-57), and the figure the list is sorted by
+ * (native-feel audit 2026-10-08, P1-3): strokes gained per round under SG, gains green and losses amber; otherwise the
+ * scoring average with the handicap. Sorted by name, the name leads the row already, so the average and handicap stay.
+ * The figure is one numeral that stays put across sorts, so a new sort rolls it to the new figure (`roll`) instead of
+ * swapping it; it never counts up on first paint. `slide` lets the row travel to its new place (RosterPhoneList).
+ */
+export function RosterPhoneRow({
+  p,
+  statsError,
+  sort = 'avg',
+  onOpen,
+  slide = false,
+  roll = false,
+  live = true,
+}: {
+  p: ChRosterPlayer;
+  statsError: boolean;
+  sort?: PhoneSort;
+  onOpen: (id: string) => void;
+  slide?: boolean;
+  roll?: boolean;
+  /** Number Flow is mounted; false draws the figure as plain text (the page's first frame). */
+  live?: boolean;
+}) {
   const note = rowNote(p, statsError);
+  const bySg = sort === 'sg';
+  const sg = p.sgPerRound;
   const label = [
     p.name,
     p.classYear,
     p.status === 'inactive' ? 'inactive' : null,
     note?.text,
+    bySg ? (sg != null ? `strokes gained ${formatSigned(sg)} a round` : 'no strokes gained yet') : null,
     p.avg != null ? `average ${formatFixed(p.avg)}` : null,
-    p.handicap != null ? `handicap ${formatHcp(p.handicap)}` : null,
+    !bySg && p.handicap != null ? `handicap ${formatHcp(p.handicap)}` : null,
   ]
     .filter(Boolean)
     .join(', ');
+  // P003-C1: a hold peeks at the player (the shell's PlayerPeek); a tap still opens the profile. The transition sits
+  // inside the peek, so the slide names the row itself.
   return (
-    <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
-      <Avatar name={p.name} size={40} />
-      <span className="ch-rsm-row__b">
-        <b>{p.name}</b>
-        <span className={note?.tone ? `is-${note.tone}` : undefined}>{[p.classYear, note?.text].filter(Boolean).join(' · ') || ' '}</span>
-      </span>
-      {p.trend.length >= 3 && (
-        <span className="ch-rsm-row__spark" aria-hidden="true">
-          <FormLine data={p.trend} width={48} height={20} earlyBelow={3} bare label={`${p.name} form`} />
-        </span>
-      )}
-      <span className="ch-rsm-row__v">
-        <b className="ch-num">{formatFixed(p.avg)}</b>
-        <span className="ch-num">{formatHcp(p.handicap)} hcp</span>
-      </span>
-    </button>
+    <PlayerPeek player={rosterPeek(p)}>
+      <ViewTransition name={`ch-rsm-row-${p.id}`} update={slide ? 'ch-rsm-reorder' : 'none'} enter="none" exit="none" share="none" default="none">
+        <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
+          <Avatar name={p.name} size={40} />
+          <span className="ch-rsm-row__b">
+            <b>{p.name}</b>
+            {/* The class year stays plain; only the note takes its tone (amber for a slide, green for a gain). */}
+            <span>
+              {p.classYear}
+              {p.classYear && note?.text ? ' · ' : null}
+              {note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : null}
+              {!p.classYear && !note?.text ? ' ' : null}
+            </span>
+          </span>
+          {p.trend.length >= 3 && (
+            <span className="ch-rsm-row__spark" aria-hidden="true">
+              <FormLine data={p.trend} width={48} height={20} earlyBelow={3} bare label={`${p.name} form`} />
+            </span>
+          )}
+          <span className="ch-rsm-row__v" data-sort={bySg ? 'sg' : undefined}>
+            <b className={`ch-num ${bySg ? changeTone(sg, false) : ''}`.trim()}>
+              <RollFigure value={bySg ? sg : p.avg} signed={bySg} roll={roll} live={live} />
+            </b>
+            <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} hcp`}</span>
+          </span>
+        </button>
+      </ViewTransition>
+    </PlayerPeek>
   );
 }
 
-/** "2 join requests · Grace Liu, Owen Park": opens the requests sheet. A failed read says so in the same slot (CH-3203). */
-function RequestsBanner({ jr, error, onRetry, onOpen }: { jr: ChJoinRequestsState; error: boolean; onRetry: () => void; onOpen: () => void }) {
+/**
+ * A row's figure as a rolling numeral (Number Flow): the sign is text in front of it (`figureParts`), so a loss reads
+ * with a true minus, and its spoken value is the figure as written ("−0.9", "72.4"). No data is a dash, which does not
+ * roll. With reduced motion or Animations off it changes at once.
+ */
+export function RollFigure({ value, signed = false, roll, live = true }: { value: number | null; signed?: boolean; roll: boolean; live?: boolean }) {
+  const fig = figureParts(value, { signed });
+  if (!fig) return <>{NO_DATA}</>;
+  if (!live) return <span className="ch-rsm-flowtext">{fig.text}</span>;
+  return (
+    <NumberFlow
+      value={fig.size}
+      prefix={fig.prefix}
+      format={{ minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }}
+      animated={roll}
+      transformTiming={ROLL}
+      spinTiming={ROLL}
+      opacityTiming={ROLL_FADE}
+    />
+  );
+}
+
+/**
+ * "2 join requests · Grace Liu, Owen Park": one flat row at the top of the list (the count in a badge, the names under the
+ * title, a chevron), which opens the requests sheet. Its name says the count in words. A failed read says so in the same
+ * slot (CH-3203), as its title alone while the page's one notice covers it (CH-1209).
+ */
+function RequestsBanner({ jr, error, covered, onRetry, onOpen }: { jr: ChJoinRequestsState; error: boolean; covered: boolean; onRetry: () => void; onOpen: () => void }) {
   if (error) {
     return (
       <InlineNotice
         code="CH-3203"
-        title="Join requests didn't load."
-        body="Pending requests are safe. Try again, and if it keeps happening the error has already been reported."
+        title="Join requests didn’t load"
+        body="Pending requests are safe. Try again; the error has been reported."
         onRetry={onRetry}
+        covered={covered}
       />
     );
   }
   const n = jr.reqs.length;
   if (!n) return null;
   const names = jr.reqs.slice(0, 2).map((r) => r.name);
+  const who = n > 2 ? `${names.join(', ')} and ${n - 2} more` : nameList(names);
   return (
-    <button type="button" className="ch-rsm-banner" onClick={onOpen}>
-      <span className="ch-rsm-banner__ic" aria-hidden="true">
-        <Icon icon={UserPlus} size={16} />
+    <button type="button" className="ch-rsm-banner" aria-label={`${n} join ${n === 1 ? 'request' : 'requests'}, ${who}`} onClick={onOpen}>
+      <span className="ch-rsm-banner__n ch-num" aria-hidden="true">
+        {n}
       </span>
       <span className="ch-rsm-banner__b">
-        <b className="ch-num">
-          {n} join {n === 1 ? 'request' : 'requests'}
-        </b>
-        <span>{n > 2 ? `${names.join(', ')} and ${n - 2} more` : nameList(names)}</span>
+        <b>{n === 1 ? 'Join request' : 'Join requests'}</b>
+        <span>{who}</span>
       </span>
       <Icon icon={ChevronRight} size={16} />
     </button>
@@ -357,8 +517,8 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
       }
       footer={
         n > 0 || jr.approvingAll ? (
-          <Button variant="primary" size="lg" leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.approveAll()}>
-            {jr.approvingAll ? <span data-ch-code="CH-3403">Approving</span> : `Approve all ${n}`}
+          <Button variant="primary" size="lg" leftIcon={Check} busy={jr.approvingAll} disabled={jr.busy != null && !jr.approvingAll} feel={null} onClick={() => void jr.approveAll()}>
+            {jr.approvingAll ? <span data-ch-code="CH-3403">Approving…</span> : `Approve all ${n}`}
           </Button>
         ) : undefined
       }
@@ -372,7 +532,7 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
                 <b>{r.name}</b>
                 <span>{[r.classYear, r.gradYear ? `Class of ${r.gradYear}` : null].filter(Boolean).join(' · ')}</span>
               </span>
-              <span className="ch-rsm-rq__h ch-well-soft">
+              <span className="ch-rsm-rq__h">
                 <b className="ch-num">{formatHcp(r.handicap)}</b>
                 <span>hcp</span>
               </span>
@@ -385,7 +545,8 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
               <Button disabled={jr.busy != null} onClick={() => void jr.decide(r, false)}>
                 Decline
               </Button>
-              <Button variant="primary" leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.decide(r, true)}>
+              {/* Approve all is the sheet's one primary (P003 #5); each row's Approve is secondary. */}
+              <Button leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.decide(r, true)}>
                 Approve
               </Button>
             </div>
@@ -393,16 +554,16 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
         ))}
         {data.joinCode && (
           <>
-            <div className="ch-rsm-code ch-well-soft">
+            <div className="ch-rsm-code">
               <span>
                 <span>Team code</span>
                 <b className="ch-num">{data.joinCode}</b>
               </span>
-              <Button size="sm" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+              <Button size="sm" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                 Copy
               </Button>
             </div>
-            <p className="ch-rsm-reqs__note">Players join with this code. Approved players see the team calendar and messages.</p>
+            <p className="ch-rsm-reqs__note">Requests come from players already on GolfHelm who enter this code in Settings. Approved players see the team calendar and messages.</p>
           </>
         )}
       </div>
@@ -410,8 +571,21 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
   );
 }
 
-/** The profile's ⋯ (D-54): View stats, then Remove from team, which asks first (CH-3501). */
-function PlayerActions({ p, onClose, onRemove }: { p: ChRosterPlayer | undefined; onClose: () => void; onRemove: (p: ChRosterPlayer) => void }) {
+/**
+ * The profile's ⋯ (D-54): View stats, Mark inactive (or Mark active), then Remove from team. The status change asks
+ * first (CH-3502), as the removal does (CH-3501).
+ */
+function PlayerActions({
+  p,
+  onClose,
+  onRemove,
+  onStatus,
+}: {
+  p: ChRosterPlayer | undefined;
+  onClose: () => void;
+  onRemove: (p: ChRosterPlayer) => void;
+  onStatus: (p: ChRosterPlayer) => void;
+}) {
   const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}`) : null;
   return (
     <Modal open={!!p} onClose={onClose} title={p?.name ?? 'Player'}>
@@ -425,6 +599,12 @@ function PlayerActions({ p, onClose, onRemove }: { p: ChRosterPlayer | undefined
               <b>View stats</b>
             </Link>
           )}
+          <button type="button" className="ch-rsm-act" onClick={() => onStatus(p)}>
+            <span className="ch-rsm-act__ic" aria-hidden="true">
+              <Icon icon={p.status === 'active' ? UserX : UserCheck} size={16} />
+            </span>
+            <b>{p.status === 'active' ? 'Mark inactive' : 'Mark active'}</b>
+          </button>
           <button type="button" className="ch-rsm-act is-danger" onClick={() => onRemove(p)}>
             <span className="ch-rsm-act__ic" aria-hidden="true">
               <Icon icon={UserMinus} size={16} />

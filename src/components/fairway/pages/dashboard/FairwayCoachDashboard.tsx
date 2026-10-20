@@ -1351,7 +1351,8 @@ function TodayPanel({
                           <span className="truncate">{event.location}</span>
                         </span>
                       ) : null}
-                      {event.rsvp_total !== undefined ? (
+                      {/* Only an event that asks for replies carries counts (dashboard-data); none invited reads as nothing, never 0/0. */}
+                      {event.rsvp_total !== undefined && event.rsvp_total > 0 ? (
                         <span className="tabular-nums">
                           {event.rsvp_yes ?? 0}/{event.rsvp_total} confirmed
                         </span>

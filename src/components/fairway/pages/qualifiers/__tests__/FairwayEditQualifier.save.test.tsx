@@ -53,6 +53,36 @@ describe('FairwayEditQualifier save', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it('sends a cleared round as an empty row, so the stored course is cleared, not kept', async () => {
+    const stored = [
+      { roundNumber: 1, courseId: 'c1', courseName: 'North', teeId: 't1' },
+      { roundNumber: 2, courseId: 'c2', courseName: 'South', teeId: 't2' },
+    ];
+    render(<FairwayEditQualifier qualifierId="q1" initial={{ ...initial, numRounds: 3 }} roundCourses={stored} />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Clear' })[1]!);
+    submit();
+    await waitFor(() => expect(setQualifierRoundCourses).toHaveBeenCalledTimes(1));
+    // Round 3 never had a course, so nothing is sent for it.
+    expect(setQualifierRoundCourses).toHaveBeenCalledWith('q1', 3, [
+      { roundNumber: 1, courseId: 'c1', courseName: 'North', teeId: 't1' },
+      { roundNumber: 2, courseId: null, courseName: null, teeId: null },
+    ]);
+  });
+
+  it('reads a stored empty row as no course', () => {
+    render(
+      <FairwayEditQualifier
+        qualifierId="q1"
+        initial={{ ...initial, numRounds: 2 }}
+        roundCourses={[
+          { roundNumber: 1, courseId: 'c1', courseName: 'North', teeId: 't1' },
+          { roundNumber: 2, courseId: null, courseName: null, teeId: null },
+        ]}
+      />,
+    );
+    expect(screen.getAllByRole('button', { name: 'Clear' })).toHaveLength(1);
+  });
+
   it('blocks an empty Rounds field instead of saving 1 round', async () => {
     render(<FairwayEditQualifier qualifierId="q1" initial={initial} roundCourses={[]} />);
     const rounds = screen.getAllByRole('textbox').find((el) => (el as HTMLInputElement).value === '1') as HTMLInputElement;

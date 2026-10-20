@@ -13,6 +13,11 @@ const notifyDevPlanAssigned = vi.hoisted(() => vi.fn().mockResolvedValue(undefin
 vi.mock('@/lib/notifications', () => ({ notifyDevPlanAssigned }));
 const clubhouse = vi.hoisted(() => ({ on: false }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseForTeam: () => clubhouse.on }));
+const demo = vi.hoisted(() => ({ on: false }));
+vi.mock('@/lib/demo/golf-read-only', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/demo/golf-read-only')>();
+  return { ...real, assertGolfDemoWritable: async () => { if (demo.on) throw new real.GolfDemoReadOnlyError(); } };
+});
 vi.mock('@/lib/coachhelm/v3/effectiveness/event-ledger', () => ({ recordInsightAction: vi.fn().mockResolvedValue(undefined) }));
 
 const verifyPlayerAccessMock = vi.fn();
@@ -57,6 +62,8 @@ interface World {
   /** The team the player is active on, or how reading it goes wrong. */
   playerTeam?: string | null | 'error' | 'throws';
   insightTeam?: string | null;
+  /** The player a linked insight is about (defaults to the player the focus area is for). */
+  insightPlayer?: string | null;
   organizationId?: string | null;
 }
 
@@ -80,7 +87,7 @@ function client(w: World, which: 'scoped' | 'admin' = 'scoped') {
       }
       if (table === 'golf_coach_insights') {
         return {
-          select: () => chain(() => ({ data: { metadata: null, content: 'insight body', team_id: w.insightTeam ?? null }, error: null })),
+          select: () => chain(() => ({ data: { metadata: null, content: 'insight body', team_id: w.insightTeam ?? null, player_id: w.insightPlayer === undefined ? 'player-1' : w.insightPlayer }, error: null })),
           update: () => ({ eq: () => Object.assign(Promise.resolve({ error: null }), { eq: async () => ({ error: null }) }) }),
         };
       }
@@ -111,6 +118,7 @@ const lastInsert = () => inserted[inserted.length - 1]!;
 beforeEach(() => {
   inserted.length = 0;
   clubhouse.on = false;
+  demo.on = false;
   vi.clearAllMocks();
   verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
 });
@@ -122,34 +130,60 @@ describe('createFocusArea (the coach’s own, and Ask CoachHelm’s action card)
     expect(lastInsert().payload).toMatchObject({ player_id: 'player-1', status: 'proposed', team_id: 'team-coach' });
   });
 
-  it('with no team resolved for the coach, writes the team the player is active on', async () => {
-    world({ organizationId: null, playerTeam: 'team-player' });
-    expect(await createFocusArea({ ...base, status: 'proposed' })).toMatchObject({ success: true });
-    expect(lastInsert().payload.team_id).toBe('team-player');
+  it('the coach is the caller: a coach id sent by the browser is ignored', async () => {
+    world({ coachTeam: 'team-coach', onCoachTeam: true });
+    expect(await createFocusArea({ ...base, coach_id: 'coach-someone-else', status: 'proposed' })).toMatchObject({ success: true });
+    expect(lastInsert().payload.coach_id).toBe('coach-1');
+    const { coach_id: _c, ...noCoachId } = base;
+    expect(await createFocusArea({ ...noCoachId, status: 'proposed' })).toMatchObject({ success: true });
+    expect(lastInsert().payload.coach_id).toBe('coach-1');
+  });
+
+  it('a coach with no team is refused, and nothing is written (the roster check used to be skipped)', async () => {
+    world({ organizationId: null, coachTeam: null, playerTeam: 'team-player' });
+    expect(await createFocusArea({ ...base, status: 'proposed' })).toMatchObject({ success: false, error: "Couldn't confirm this player is on your team. Please try again." });
     world({ coachTeam: null, playerTeam: 'team-player' });
-    await createFocusArea({ ...base, status: 'proposed' });
-    expect(lastInsert().payload.team_id).toBe('team-player');
+    expect(await createFocusArea({ ...base, status: 'proposed' })).toMatchObject({ success: false });
+    expect(inserted).toEqual([]);
   });
 
-  it('a player who is on no team is written with none, as before', async () => {
-    world({ organizationId: null, playerTeam: null });
+  it('a coach with no organisation but a staffed team is still roster-checked', async () => {
+    world({ organizationId: null, coachTeam: 'team-coach', onCoachTeam: false });
+    expect(await createFocusArea({ ...base, status: 'proposed' })).toMatchObject({ success: false, error: 'Player is not an active member on your team' });
+    expect(resolveCoachTeamIdMock).toHaveBeenCalledWith(expect.anything(), null, 'coach-1');
+    expect(inserted).toEqual([]);
+    world({ organizationId: null, coachTeam: 'team-coach', onCoachTeam: true });
     expect(await createFocusArea({ ...base, status: 'proposed' })).toMatchObject({ success: true });
-    expect(lastInsert().payload.team_id).toBeNull();
-  });
-
-  it('a team read that fails or throws is logged and never fails the create', async () => {
-    world({ organizationId: null, playerTeam: 'error' });
-    expect(await createFocusArea({ ...base, status: 'proposed' })).toMatchObject({ success: true });
-    expect(lastInsert().payload.team_id).toBeNull();
-    world({ organizationId: null, playerTeam: 'throws' });
-    expect(await createFocusArea({ ...base, status: 'proposed' })).toMatchObject({ success: true });
-    expect(lastInsert().payload.team_id).toBeNull();
-    expect(logServerError).toHaveBeenCalledWith(expect.stringContaining('written without a team'), expect.objectContaining({ action: 'development.resolvePlayerTeamId' }));
+    expect(lastInsert().payload).toMatchObject({ coach_id: 'coach-1', team_id: 'team-coach' });
   });
 
   it('a player who is not on the coach’s team is still refused, and nothing is written', async () => {
     world({ coachTeam: 'team-coach', onCoachTeam: false });
     expect(await createFocusArea({ ...base, status: 'proposed' })).toMatchObject({ success: false, error: 'Player is not an active member on your team' });
+    expect(inserted).toEqual([]);
+  });
+});
+
+describe('createFocusArea refuses what the browser cannot vouch for', () => {
+  it('a linked insight must be this player’s, on the coach’s team or none', async () => {
+    world({ coachTeam: 'team-coach', onCoachTeam: true, insightTeam: 'team-coach' });
+    expect(await createFocusArea({ ...base, from_insight_id: 'insight-1' })).toMatchObject({ success: true });
+    expect(lastInsert().payload.from_insight_id).toBe('insight-1');
+    world({ coachTeam: 'team-coach', onCoachTeam: true, insightTeam: null });
+    expect(await createFocusArea({ ...base, from_insight_id: 'insight-1' })).toMatchObject({ success: true });
+    inserted.length = 0;
+
+    world({ coachTeam: 'team-coach', onCoachTeam: true, insightTeam: 'team-coach', insightPlayer: 'player-2' });
+    expect(await createFocusArea({ ...base, from_insight_id: 'insight-1' })).toMatchObject({ success: false, error: 'Not authorized to link this insight' });
+    world({ coachTeam: 'team-coach', onCoachTeam: true, insightTeam: 'team-other' });
+    expect(await createFocusArea({ ...base, from_insight_id: 'insight-1' })).toMatchObject({ success: false, error: 'Not authorized to link this insight' });
+    expect(inserted).toEqual([]);
+  });
+
+  it('the shared demo account cannot create one', async () => {
+    demo.on = true;
+    world({ coachTeam: 'team-coach', onCoachTeam: true });
+    await expect(createFocusArea({ ...base, status: 'proposed' })).rejects.toThrow();
     expect(inserted).toEqual([]);
   });
 });
@@ -167,6 +201,17 @@ describe('createPlayerFocusArea (the player’s own)', () => {
     const { coach_id: _c, ...own } = base;
     await createPlayerFocusArea(own);
     expect(lastInsert().payload.team_id).toBeNull();
+  });
+
+  it('a team read that fails or throws is logged and never fails the create', async () => {
+    const { coach_id: _c, ...own } = base;
+    world({ playerTeam: 'error' });
+    expect(await createPlayerFocusArea(own)).toMatchObject({ success: true });
+    expect(lastInsert().payload.team_id).toBeNull();
+    world({ playerTeam: 'throws' });
+    expect(await createPlayerFocusArea(own)).toMatchObject({ success: true });
+    expect(lastInsert().payload.team_id).toBeNull();
+    expect(logServerError).toHaveBeenCalledWith(expect.stringContaining('written without a team'), expect.objectContaining({ action: 'development.resolvePlayerTeamId' }));
   });
 });
 

@@ -1,10 +1,8 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const require = createRequire(resolve(ROOT, 'package.json'));
 
 /** Replace the two managed DevTools sections; retain unrelated settings. */
 export function mergeDevtools(source, section) {
@@ -40,7 +38,7 @@ export function configureDevtools(target, template) {
 function inspectTools() {
   const manifest = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
   let failures = 0;
-  for (const name of ['next-devtools-mcp', 'chrome-devtools-mcp', 'stylelint', 'react-devtools']) {
+  for (const name of ['next-devtools-mcp', 'chrome-devtools-mcp', 'stylelint']) {
     const file = resolve(ROOT, 'node_modules', name, 'package.json');
     const installed = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).version : null;
     const expected = manifest.devDependencies[name];
@@ -48,13 +46,9 @@ function inspectTools() {
     failures += ready ? 0 : 1;
     console.log(`${ready ? 'ready' : 'missing/mismatched'} ${name}: installed=${installed ?? 'none'}, pinned=${expected}`);
   }
-  try {
-    if (!existsSync(require('electron'))) throw new Error('missing runtime');
-    console.log('ready React DevTools desktop runtime');
-  } catch {
-    failures++;
-    console.log('missing React DevTools desktop runtime: npm rebuild electron');
-  }
+  // React DevTools (an Electron app) is on demand, not a dependency: `npm run clubhouse:profile`
+  // runs a pinned npx copy, so its Electron runtime is not in every install.
+  console.log('on demand React DevTools: npm run clubhouse:profile (npx react-devtools@8.0.0)');
   const config = resolve(ROOT, '.codex/config.toml');
   const configured = existsSync(config) && ['next-devtools', 'chrome-devtools'].every(name => readFileSync(config, 'utf8').includes(`[mcp_servers.${name}]`));
   console.log(`${configured ? 'configured' : 'not configured'} repository Codex MCP (reload the client to expose tools)`);

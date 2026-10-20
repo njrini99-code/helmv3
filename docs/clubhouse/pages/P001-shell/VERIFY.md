@@ -40,6 +40,43 @@ are historical observations; use the current audit for release scope.
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md` (row
 "Foundation"); the per-gate checklist is `docs/clubhouse/screens/foundation.md`.
 
+## 2026-10-19 — Phone shell gestures (lane L10)
+
+Observed in headless WebKit (Playwright), 390x844 at 2x, light and dark, on the dev server, with touch events scripted from the page
+(`touchstart` at x 8, then `touchmove`s, then `touchend`): `/clubhouse-preview/roster` (coach, profile pushed),
+`/clubhouse-preview/messages` (thread, then its details), `/clubhouse-preview/qualifier`. Screenshots are in the table below.
+
+- Edge swipe, roster profile. Mid drag the screen sat at the finger (offset 92px at x 100) and the page, bar included, was drawn
+  back and dimmed under it; past the mark (x 190) the same. Letting go at 52px after a pause sprang back: the screen's inline
+  `translate` was cleared and the page's parts returned to drawn back (-12.8vw at an offset of 182px, -24vw at rest). Letting go past the mark
+  popped it: per-frame samples of the screen's left edge, the bar's and the page's after release: 182, 257, 298, 327, 370, 385, 388,
+  390 px over about 430ms, with the bar and the page returning in step (-50 to 0 and -30 to 20 px, no gap opened between the edges),
+  then the screen was gone, `.ch-pscreen` count 0, the URL unchanged, no part left with a translate.
+- A thread under its details (Messages): the thread beneath moved with the drag (its own translate 46px at an offset of 192px over its
+  -24% transform); on release the thread's left edge went -47.5, -24.3, -14.3, -8.3, -4.8 ... 0 over about 420ms, and the sampler found no frame
+  where it moved left beyond one 0.1px step at rest, for a drag release and for a fast flick (the positions are from before the screen beneath
+  was given the plain smooth spring for its translate; the two runs after it found the same: no step back beyond that 0.1px).
+- Vertical-first travel, a start outside the left 20px, a start under an open dialog, on a round route and in the iOS app without the
+  native flag: covered by `shell/__tests__/edge-swipe.test.tsx` and `phone-shell-gestures.test.tsx` (jsdom), not by a capture.
+- Dock kept over a push: with `?round=1` the Resume round accessory is in the dock at the page and stays visible (dock not `hidden`,
+  its page slot `display: none`) while the profile is pushed, once `shell/Dock.tsx` reads `dockKept`; the screen stops at 73px of
+  padding above it, and after Back the dock is still shown. The screenshots marked `dock-forced-visible` were taken earlier with
+  `hidden` cleared by hand, before that edit; same layout. A fresh capture without forcing was read but not filed.
+- Stand-in action, `/clubhouse-preview/qualifier` (coach): the server's first paint has the Qualifier actions key at the same place
+  (x 338, 44px wide) as the page's own bar after hydration. The bar's centred title "Qualifier" is hidden (opacity 0) in the server's
+  first paint and visible after: the server draws the desktop markup, whose `.ch-qf-head h1` matches the large-title hide rule
+  (shell.css), and the phone markup that replaces it does not. Not changed here.
+- Messages' "New message": before hydration the shell's root bar draws the title and the bell at x 16 and x 338 (44px); after it the page's bar has
+  the title at x 16 and the New message key in the slot at x 338. The geometry holds; the glyph changes from the bell to the key. Not
+  changed here (TopBar, not this lane's file).
+- Not observed: a physical iPhone (Safari's own edge swipe against this one, haptics, VoiceOver after a swipe pop), the iOS app
+  (the native flag does not exist yet), the idle prefetch in a production build (Next prefetches only there; the ordering and the cap
+  are in `phone-prefetch-sweep.test.tsx` against a mocked router).
+- Targeted tests: `npx vitest run src/clubhouse/shell/__tests__/` 6 files, 75 tests pass (exit 0); the 37 test files that import
+  PhoneScreen, phone-chrome or the prefetch hook, 1,642 tests pass (exit 0); `npx eslint` on the changed files exit 0; `npm run typecheck`
+  reports one error, in `shell/command/__tests__/command-layer.test.tsx` (lane L1), none in this lane's files;
+  `npm run clubhouse:check` exit 0.
+
 ## 2026-10-02 — Request-lifetime slow feedback
 
 - Focused verification: 21 unique cases pass, exit 0. These are 11 cases in
@@ -168,6 +205,32 @@ before, after, baseline or evidence.
 | `P001__modal-stress__coach__320x568__popup-audit__before__43a146a.png` | before | 43a146a | modal-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a baseline |
 | `P001__premium-audit__coach__1280__case-001-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-001-chromium-normal; /clubhouse-preview/settings; synthetic preview |
 | `P001__premium-audit__coach__390__case-001-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-001-chromium-normal; /clubhouse-preview/settings; synthetic preview |
+| `P001__hero-bell__coach__390__home__after__d22efe2.png` | after | d22efe2 | hero-bell (coach), 390px, home |
+| `P001__hero-bell__coach__390__home__before__96dcb84.png` | before | 96dcb84 | hero-bell (coach), 390px, home |
+| `P001__pushed-bar__coach__390__roster-loading__after__d22efe2.png` | after | d22efe2 | pushed-bar (coach), 390px, roster-loading |
+| `P001__pushed-bar__coach__390__roster-loading__before__96dcb84.png` | before | 96dcb84 | pushed-bar (coach), 390px, roster-loading |
+| `P001__pushed-screen-bar__coach__390__recruiting-detail__after__d22efe2.png` | after | d22efe2 | pushed-screen-bar (coach), 390px, recruiting-detail |
+| `P001__pushed-screen-bar__coach__390__recruiting-detail__before__96dcb84.png` | before | 96dcb84 | pushed-screen-bar (coach), 390px, recruiting-detail |
+| `P001__segmented-press__coach__390__held__evidence__d22efe2.png` | evidence | d22efe2 | segmented-press (coach), 390px, held |
+| `P001__sheet-close__coach__390__title-only__after__d22efe2.png` | after | d22efe2 | sheet-close (coach), 390px, title-only |
+| `P001__sheet-close__coach__390__title-only__before__96dcb84.png` | before | 96dcb84 | sheet-close (coach), 390px, title-only |
+| `P001__form-bar__coach__390x844__qualifier-new-loading__after__834fa2c.png` | after | 834fa2c | form-bar (coach), 390x844px, qualifier-new-loading; clubhouse-preview |
+| `P001__form-bar__coach__390x844__qualifier-new-loading__before__4141d68.png` | before | 4141d68 | form-bar (coach), 390x844px, qualifier-new-loading; clubhouse-preview |
+| `P001__hero-bell__coach__390__keyboard-focus__evidence__c1af28d.png` | evidence | c1af28d | hero-bell (coach), 390px, keyboard-focus; clubhouse-preview |
+| `P001__pushed-profile__coach__390x844__at-rest__before__a438a92.png` | before | a438a92 | pushed-profile (coach), 390x844px, at-rest |
+| `P001__pushed-profile__coach__390x844__dock-kept-dock-forced-visible__evidence__a438a92.png` | evidence | a438a92 | pushed-profile (coach), 390x844px, dock-kept-dock-forced-visible |
+| `P001__pushed-profile__coach__390x844__dock-kept-dock-forced-visible-dark__evidence__a438a92.png` | evidence | a438a92 | pushed-profile (coach), 390x844px, dock-kept-dock-forced-visible-dark |
+| `P001__pushed-profile__coach__390x844__edge-swipe-commit-140ms__after__a438a92.png` | after | a438a92 | pushed-profile (coach), 390x844px, edge-swipe-commit-140ms |
+| `P001__pushed-profile__coach__390x844__edge-swipe-commit-140ms-dark__after__a438a92.png` | after | a438a92 | pushed-profile (coach), 390x844px, edge-swipe-commit-140ms-dark |
+| `P001__pushed-profile__coach__390x844__edge-swipe-mid-drag__after__a438a92.png` | after | a438a92 | pushed-profile (coach), 390x844px, edge-swipe-mid-drag |
+| `P001__pushed-profile__coach__390x844__edge-swipe-past-mark__after__a438a92.png` | after | a438a92 | pushed-profile (coach), 390x844px, edge-swipe-past-mark |
+| `P001__pushed-profile__coach__390x844__edge-swipe-past-mark-dark__after__a438a92.png` | after | a438a92 | pushed-profile (coach), 390x844px, edge-swipe-past-mark-dark |
+| `P001__pushed-profile__coach__390x844__edge-swipe-spring-back-80ms__after__a438a92.png` | after | a438a92 | pushed-profile (coach), 390x844px, edge-swipe-spring-back-80ms |
+| `P001__qualifier-bar__coach__390x844__page-own-bar__after__a438a92.png` | after | a438a92 | qualifier-bar (coach), 390x844px, page-own-bar |
+| `P001__qualifier-bar__coach__390x844__page-own-bar-dark__after__a438a92.png` | after | a438a92 | qualifier-bar (coach), 390x844px, page-own-bar-dark |
+| `P001__qualifier-bar__coach__390x844__stand-in-server-first-paint__evidence__a438a92.png` | evidence | a438a92 | qualifier-bar (coach), 390x844px, stand-in-server-first-paint |
+| `P001__qualifier-bar__coach__390x844__stand-in-server-first-paint-dark__evidence__a438a92.png` | evidence | a438a92 | qualifier-bar (coach), 390x844px, stand-in-server-first-paint-dark |
+| `P001__thread-details__coach__390x844__edge-swipe-nested-mid-drag__after__a438a92.png` | after | a438a92 | thread-details (coach), 390x844px, edge-swipe-nested-mid-drag |
 
 ## Historical verification gaps
 
@@ -279,3 +342,33 @@ keeps representative viewport/browser evidence; the complete state/opener
 ledger and review limitations are in the
 [premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
 Captured states are not all visually approved.
+
+## 2026-10-08 — The approved motion set (CH-1618 to CH-1622, CH-1709, CH-1909)
+
+Browser observations only: WebKit through Playwright at 390 by 844 with touch,
+and 1440 for the desktop canvas, sampled once a frame against the dev server.
+Nothing here was seen on an iPhone.
+
+- CH-1618: on Messages, Roster and Recruiting the bars, the tab bar and the
+  list draw back to −94px as the screen lands, within a pixel of 0.24 times its
+  travel on every frame, the scrim on the same curve. A pop at about 160ms
+  reverses both from there. A Back with `hasUAVisualTransition` (patched in)
+  clears the screen, the page and the scrim in one frame. Details over a thread
+  draws the thread back and veils it. A sheet opened from a pushed screen keeps
+  its place (left 0, no moved ancestor). Reduced motion and Animations off hold
+  the page still. Scrolled 300px, the top bar stays at the top (before: −300px).
+- CH-1619: a page replacing Roster's route skeleton after a navigation went
+  from opacity 0 to 1 in about 100ms; none on a first paint or with reduced
+  motion.
+- CH-1620: held, the thumb grew from 19 to 22.8px wide from its resting edge
+  (27 to 32.4px in Settings) and settled round on release; none with reduced
+  motion or Animations off.
+- CH-1621: synthetic fractional wheel steps eased; whole-pixel steps passed
+  through untouched, and stopped a glide where it was.
+- CH-1622, CH-1709, CH-1909: simulated touches with the app's body class: a
+  220px pull reached 108px, turned the spinner at 64px, sent one refresh, held
+  at 52px and sprang home once the read landed. Short, upward and Safari pulls
+  did nothing.
+
+Open on a device: the WebView's own bounce under a pull, the medium tap, the
+edge-swipe Back, a real trackpad and mouse, and a live route's `loading.tsx`.

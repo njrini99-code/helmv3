@@ -1,14 +1,16 @@
+import { SECTIONS as SETTINGS_SECTIONS } from '../screens/settings/model';
 import {
   BarChart3,
+  BrainCircuit,
   CalendarDays,
+  ClipboardList,
   Flag,
   GraduationCap,
   House,
-  Medal,
   MessageSquare,
-  Sparkles,
+  Settings,
+  Trophy,
   Users,
-  UsersRound,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -34,14 +36,15 @@ export interface ChNavItem {
  */
 export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
-  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
+  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: BrainCircuit },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
-  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  // Team Hub sits under Team, with the roster (owner, 2026-10-16).
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, section: 'Team' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
-  { id: 'recruiting', label: 'Recruiting', href: '/golf/dashboard/recruiting', icon: GraduationCap, section: 'Team' },
   { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
-  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'Team' },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Trophy, section: 'Team' },
+  { id: 'recruiting', label: 'Recruiting', href: '/golf/dashboard/recruiting', icon: GraduationCap, section: 'Team' },
 ];
 
 /**
@@ -54,23 +57,24 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
  */
 export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
-  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
+  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: BrainCircuit },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
-  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound, badge: 'hub' },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  // Team Hub sits under Team, with the roster (owner, 2026-10-16).
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, badge: 'hub', section: 'Team' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team' },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Trophy, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'My game' },
   { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'My game' },
-  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'My game' },
   { id: 'classes', label: 'Classes', href: '/golf/dashboard/classes', icon: GraduationCap, section: 'School' },
 ];
 
 export type ChRole = 'coach' | 'player';
 
 /**
- * Phone tabs, in order (D-66, v2 GH.tabs). Coach: Home, CoachHelm, Calendar,
- * Stats. Player: Home, CoachHelm, Rounds, Team Hub. Everything else opens
- * from the More sheet.
+ * The phone's first sections, in order (D-66, v2 GH.tabs; once the tab bar, now the head of the section strip, see
+ * docs/clubhouse/phone/section-strip.md). Coach: Home, CoachHelm, Calendar, Stats. Player: Home, CoachHelm, Rounds,
+ * Team Hub. They are fetched ahead of the first tap.
  */
 export const CH_PHONE_TABS: Record<ChRole, readonly string[]> = {
   coach: ['home', 'coachhelm', 'calendar', 'stats'],
@@ -85,6 +89,25 @@ export function phoneTabsFor(role: ChRole): { tabs: ChNavItem[]; more: ChNavItem
     tabs: ids.map((id) => nav.find((i) => i.id === id)).filter((i): i is ChNavItem => !!i),
     more: nav.filter((i) => !ids.includes(i.id)),
   };
+}
+
+/** Settings, the strip's last section (the sidebar keeps it in the top bar's gear). */
+export const CH_SETTINGS_ITEM: ChNavItem = { id: 'settings', label: 'Settings', href: '/golf/dashboard/settings', icon: Settings };
+
+/**
+ * The phone's section strip, in order: the first sections, then the rest in sidebar order, then Settings, each only
+ * once its screen is rebuilt for the role.
+ */
+export function phoneSectionsFor(role: ChRole): ChNavItem[] {
+  const { tabs, more } = phoneTabsFor(role);
+  return [...tabs, ...more, CH_SETTINGS_ITEM].filter((i) => isRebuilt(i.href, role));
+}
+
+/** The section a phone address belongs to, Settings included; undefined for a page outside every section. */
+export function phoneSectionFor(pathname: string, role: ChRole): ChNavItem | undefined {
+  const path = pathname.replace(/\/$/, '') || '/';
+  if (path === CH_SETTINGS_ITEM.href || path.startsWith(`${CH_SETTINGS_ITEM.href}/`)) return CH_SETTINGS_ITEM;
+  return activeNavItem(path, role);
 }
 
 export function navFor(role: ChRole): readonly ChNavItem[] {
@@ -162,6 +185,28 @@ const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i],
 };
 
+/**
+ * Old addresses whose screen Clubhouse moved: their route redirects from its layout or page (routes/alias.ts). Under
+ * the dashboard's loading boundary that redirect arrives in the stream and fires only when the segment renders, so the
+ * frame renders it (hidden) behind the not-rebuilt page instead of dropping it. A guard test keeps this list in step
+ * with every route that calls redirectToClubhouse.
+ */
+export const CH_ALIASED_ROUTES: readonly RegExp[] = [
+  /^\/golf\/dashboard\/(whats-new|tasks|intelligence|courses|announcements|team|documents|travel)$/,
+  /^\/golf\/dashboard\/roster\/[^/]+$/,
+  /^\/golf\/dashboard\/players\/[^/]+$/,
+  /^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+|genome\/compare|genome\/[^/]+)$/,
+  /^\/golf\/dashboard\/rounds\/[^/]+\/review$/,
+  // Rebuilt for one role and moved for the other (a coach's Rounds to Team stats and My qualifiers to Qualifiers, a
+  // player's Team stats to their Stats): the segment must render for its redirect to run.
+  /^\/golf\/dashboard\/(rounds|my-qualifiers|stats\/team)$/,
+];
+
+export function isAliased(pathname: string): boolean {
+  const path = pathname.replace(/\/$/, '');
+  return CH_ALIASED_ROUTES.some((re) => re.test(path));
+}
+
 export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {
   const path = pathname.replace(/\/$/, '') || '/';
   if (CH_REBUILT_ROUTES[role].includes(path)) return true;
@@ -172,4 +217,85 @@ export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {
 /** A link target only once its screen is rebuilt; until then the control isn't rendered. */
 export function rebuiltHref(href: string, role: ChRole = 'coach'): string | null {
   return isRebuilt(href.split('?')[0] ?? href, role) ? href : null;
+}
+
+/** The pushed top bar a phone page draws with its `PhoneTop`: a back link named for where it goes, and the title. */
+export interface ChPhonePushedTop {
+  back: string;
+  title: string;
+  /** The page draws its large title itself, so the bar's title is for VoiceOver only (Settings). */
+  quiet?: boolean;
+  /** Where Back goes from a page below another one; without it, Back steps back to wherever the user came from (D-41). */
+  parent?: string;
+  /** A full-page form: Back is its plain "Cancel", and its submit joins the bar with the form. */
+  form?: boolean;
+}
+
+const UUID = '[0-9a-f-]{36}';
+const QUALIFIER_NEW = /^\/golf\/dashboard\/qualifiers\/new$/;
+const QUALIFIER_EDIT = new RegExp(`^(/golf/dashboard/qualifiers/${UUID})/edit$`, 'i');
+/** Pages below another page that push in over it on the phone, as their `PhoneTop` draws them. The forms and Manage
+ * selections are the coach's: a player there gets the coach-only notice under the plain bar. */
+const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpExecArray) => ChPhonePushedTop | null }> = [
+  { path: QUALIFIER_NEW, top: (role) => (role === 'coach' ? { back: 'Cancel', title: 'New qualifier', parent: '/golf/dashboard/qualifiers', form: true } : null) },
+  { path: QUALIFIER_EDIT, top: (role, m) => (role === 'coach' ? { back: 'Cancel', title: 'Edit qualifier', parent: m[1], form: true } : null) },
+  { path: new RegExp(`^/golf/dashboard/qualifiers/${UUID}$`, 'i'), top: () => ({ back: 'Qualifiers', title: 'Qualifier', parent: '/golf/dashboard/qualifiers' }) },
+  {
+    path: new RegExp(`^(/golf/dashboard/qualifiers/${UUID})/selection$`, 'i'),
+    top: (role, m) => (role === 'coach' ? { back: 'Qualifier', title: 'Selections', parent: m[1] } : null),
+  },
+  {
+    path: new RegExp(`^/golf/dashboard/rounds/${UUID}$`, 'i'),
+    top: (role) => (role === 'coach' ? { back: 'Stats', title: 'Round', parent: '/golf/dashboard/stats' } : { back: 'Rounds', title: 'Round', parent: '/golf/dashboard/rounds' }),
+  },
+  { path: /^\/golf\/dashboard\/rounds\/recover$/, top: () => ({ back: 'Rounds', title: 'Recover', parent: '/golf/dashboard/rounds' }) },
+];
+
+const SETTINGS = '/golf/dashboard/settings';
+/** Settings' old addresses open a section of the one page, as their routes pass it (`initialSection`). */
+const SETTINGS_OLD: Readonly<Record<string, Record<ChRole, string>>> = {
+  '/golf/dashboard/settings/notifications': { coach: 'notifications', player: 'notifications' },
+  '/golf/dashboard/settings/coaching-intelligence': { coach: 'coachhelm', player: 'account' },
+};
+
+/**
+ * Settings on the phone (SettingsPhone): the list goes back to More; a section the address names (`?section=`, or an old
+ * address) opens pushed over it and goes back to the list. Its bar's title is for VoiceOver only, as the page draws it.
+ */
+function settingsTop(path: string, role: ChRole, search: URLSearchParams | null | undefined): ChPhonePushedTop | null {
+  const old = SETTINGS_OLD[path];
+  if (path !== SETTINGS && !old) return null;
+  const wanted = search?.get('section') ?? old?.[role] ?? null;
+  const section = SETTINGS_SECTIONS[role].find((s) => s.id === wanted);
+  return section ? { back: 'Settings', title: section.label, quiet: true, parent: SETTINGS } : null;
+}
+
+/**
+ * The pushed bar a phone address draws, so the shell can draw it before the page arrives (CH-1402): a page below
+ * another goes back to it, a full-page form has its Cancel. `search` is the address's query, for the bars it decides:
+ * a Settings section, a coach's player on Stats. Null for a section's own page (every section is a root on the strip,
+ * section-strip.md) and for anything that draws its own chrome (a new round, the round itself). Keep in step with the
+ * pages' `PhoneTop`s.
+ */
+export function phonePushedTop(pathname: string, role: ChRole, search?: URLSearchParams | null): ChPhonePushedTop | null {
+  const path = pathname.replace(/\/$/, '') || '/';
+  if (path.startsWith(SETTINGS)) return settingsTop(path, role, search);
+  // A coach's player, opened from the team, Home or a round (`?player=`): back to the team (StatsPlayerPhone).
+  if (role === 'coach' && path === '/golf/dashboard/stats' && search?.get('player')) return { back: 'Team', title: 'Player stats', parent: path };
+  for (const p of PUSHED_BELOW) {
+    const m = p.path.exec(path);
+    if (m) return p.top(role, m);
+  }
+  return null;
+}
+
+/**
+ * A full-screen flow on the phone hides the tab bar from its address's first frame, as its page does once it is up
+ * (`usePhoneTabsHidden`): the coach's qualifier forms, and a player's new round and the round itself (P011 111903), so
+ * the bar doesn't show while it loads and leave as it arrives (CH-1402).
+ */
+export function phoneFullScreen(pathname: string, role: ChRole): boolean {
+  const path = pathname.replace(/\/$/, '') || '/';
+  if (role === 'coach') return QUALIFIER_NEW.test(path) || QUALIFIER_EDIT.test(path);
+  return path === '/golf/dashboard/rounds/new' || new RegExp(`^/golf/dashboard/rounds/continue/${UUID}$`, 'i').test(path);
 }

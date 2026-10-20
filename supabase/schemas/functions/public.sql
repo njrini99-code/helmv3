@@ -5040,6 +5040,34 @@ ALTER FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uui
 
 COMMENT ON FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") IS 'D-35: a qualifier''s coach''s-pick reasons, for a coach of its team only (is_team_coach). Players get no rows. Signed-in users cannot select golf_qualifier_selections.coach_reasoning directly.';
 
+CREATE OR REPLACE FUNCTION "public"."golf_readable_round_ids"() RETURNS SETOF "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'pg_catalog', 'public', 'pg_temp'
+    AS $$
+  SELECT gr.id
+  FROM public.golf_rounds gr
+  WHERE gr.player_id IN (
+          SELECT gp.id
+          FROM public.golf_players gp
+          WHERE gp.user_id = (SELECT auth.uid())
+        )
+     OR gr.team_id IN (
+          SELECT gtcs.team_id
+          FROM public.golf_team_coach_staff gtcs
+          JOIN public.golf_coaches gc ON gc.id = gtcs.coach_id
+          WHERE gc.user_id = (SELECT auth.uid())
+        )
+     OR gr.team_id IN (
+          SELECT gtm.team_id
+          FROM public.golf_team_members gtm
+          JOIN public.golf_players gp ON gp.id = gtm.player_id
+          WHERE gp.user_id = (SELECT auth.uid())
+            AND gtm.status = 'active'::public.team_member_status
+        );
+$$;
+
+ALTER FUNCTION "public"."golf_readable_round_ids"() OWNER TO "postgres";
+
 CREATE OR REPLACE FUNCTION "public"."golf_recruit_documents_assert_same_team"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'

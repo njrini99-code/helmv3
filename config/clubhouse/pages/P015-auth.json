@@ -6,7 +6,13 @@
   "area": "auth",
   "routes": [
     "/golf/login",
-    "/golf/welcome"
+    "/golf/welcome",
+    "/golf/signup",
+    "/golf/player",
+    "/golf/reset-password",
+    "/golf/coach",
+    "/golf/coach/pending",
+    "/golf/demo"
   ],
   "roles": [],
   "semanticFeatures": [
@@ -39,11 +45,27 @@
     "loader": "src/clubhouse/data/welcome.ts",
     "route": "src/clubhouse/routes/auth.tsx",
     "styles": "src/clubhouse/styles/auth.css",
+    "also": [
+      "src/clubhouse/screens/onboard",
+      "src/clubhouse/data/onboard.ts",
+      "src/clubhouse/routes/onboard.tsx",
+      "src/clubhouse/routes/front-door.tsx",
+      "src/clubhouse/styles/onboard.css",
+      "src/clubhouse/styles/onboard-tokens.css"
+    ],
     "tests": [
       "src/clubhouse/__tests__/auth.test.tsx",
       "src/clubhouse/__tests__/auth-logic.test.ts",
       "src/clubhouse/__tests__/auth-server.test.tsx",
-      "src/clubhouse/__tests__/auth-scene.test.tsx"
+      "src/clubhouse/__tests__/auth-scene.test.tsx",
+      "src/clubhouse/__tests__/onboard.test.tsx",
+      "src/clubhouse/__tests__/onboard-logic.test.ts",
+      "src/clubhouse/__tests__/auth-reset.test.tsx",
+      "src/clubhouse/__tests__/auth-join.test.tsx",
+      "src/clubhouse/__tests__/auth-staff.test.tsx",
+      "src/clubhouse/__tests__/auth-demo-pending.test.tsx",
+      "src/clubhouse/__tests__/onboard-coach.test.tsx",
+      "src/clubhouse/__tests__/front-door-routes.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/auth.md",

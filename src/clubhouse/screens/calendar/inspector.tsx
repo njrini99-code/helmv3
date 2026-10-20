@@ -16,7 +16,9 @@ import {
   MapPin,
   Pencil,
   Repeat,
+  RotateCcw,
   Text,
+  Trash2,
   TriangleAlert,
   UserRound,
   Users,
@@ -28,14 +30,16 @@ import { getAttendanceReport, markAttendance, type AttendanceMark } from '@/app/
 import { respondToEvent } from '@/app/golf/actions/calendar-events';
 import { readRsvpLockCode, rsvpLockMessage } from '@/hooks/useRSVP';
 import { Avatar } from '../../ui/Avatar';
+import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Badge, type BadgeTone } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { InlineNotice } from '../../ui/Notices';
-import { PillGroup, Segmented } from '../../ui/Segmented';
+import { PillGroup, Segmented, type SegOption } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
+import { Tooltip } from '../../ui/Tooltip';
 import { normalise, useAction } from '../../lib/use-action';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
@@ -48,14 +52,18 @@ import {
   isMajor,
   openTimes,
   rangeLabel,
+  replyLock,
   rsvpCounts,
   type ChCalEvent,
   type ChCalOverlap,
   type ChCalPerson,
+  type ChCalType,
   type ChRsvp,
 } from './model';
 import type { ChNow } from './views';
-import { BusyDetail, EventFiles } from './extras';
+import { messageCoachHref } from '../home/player-links';
+import { BusyDetail, EventFiles, LinkedTrip } from './extras';
+import { courseParts } from './class-group';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -74,12 +82,17 @@ export interface InspCtx {
   events: ChCalEvent[];
   overlaps: ChCalOverlap[];
   rsvpError: boolean;
+  /** The page's notice carries the one Try again (CH-1209): a failed part keeps only its title here. */
+  covered?: boolean;
   /** Dev preview: no session, so attendance starts unmarked instead of calling the server. */
   preview?: boolean;
   teamId: string;
   go: (next: ChInsp) => void;
   onEdit: (e: ChCalEvent, proposal?: [number, number]) => void;
   onCancel: (e: ChCalEvent) => void;
+  /** A cancelled event, coach: Restore event (back to confirmed) and Delete permanently, as Fairway's event menu offers. */
+  onRestore?: (e: ChCalEvent) => void;
+  onDelete?: (e: ChCalEvent) => void;
   /** Duplicate: New event seeded from this one (coach). Absent where the editor isn't offered. */
   onDuplicate?: (e: ChCalEvent) => void;
   /** Compare schedules (a class, coach): New event on that day with the class's player invited, so Find a time shows them side by side. */
@@ -89,14 +102,17 @@ export interface InspCtx {
 
 const first = (name: string | undefined) => (name ?? '').split(' ')[0] ?? '';
 
-function Fact({ icon, children }: { icon: LucideIcon; children: ReactNode }) {
+function Fact({ icon, tone, children }: { icon: LucideIcon; tone?: 'team' | 'class' | 'own'; children: ReactNode }) {
   return (
-    <div className="ch-in__fact">
+    <div className={'ch-in__fact' + (tone ? ` is-${tone}` : '')}>
       <Icon icon={icon} size={15} />
       <div>{children}</div>
     </div>
   );
 }
+
+/** The panel plate's tone for an event type: the colour its block has on the grid, deepened for ivory ink. */
+const plateTone = (t: ChCalType) => (t === 'practice' ? 'green' : isMajor(t) ? 'forest' : t === 'travel' || t === 'class' ? 'slate' : t === 'busy' ? 'champagne' : 'ink');
 
 function Back({ label, onClick }: { label: string; onClick: () => void }) {
   return (
@@ -121,6 +137,13 @@ function Warn({ title, children, action }: { title: string; children: ReactNode;
 
 const find = (events: ChCalEvent[], id: string, date?: string) => events.find((e) => e.id === id && (!date || e.date === date)) ?? events.find((e) => e.id === id);
 
+/** A player's own clash, in their words: "Overlaps your ECON 101 class 3:00–4:00 PM" (or another event they're on). */
+function playerOverlapLine(events: ChCalEvent[], o: ChCalOverlap): string {
+  const w = find(events, o.withId);
+  const what = !w ? 'another of your events' : w.type === 'class' ? `your ${w.title} class` : w.title;
+  return `Overlaps ${what} ${fmtHour(o.from, false)}–${fmtHour(o.to)}`;
+}
+
 /* Nothing selected: today, what needs attention, where the data comes from. */
 export function Summary({ ctx }: { ctx: InspCtx }) {
   const { now, events, overlaps, people, role } = ctx;
@@ -133,8 +156,12 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
   const seen = new Set<string>();
   const pendingRows = upcoming
     .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
-    .map((e) => ({ e, pending: e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') }))
-    .filter((r) => (role === 'coach' ? r.pending.length > 0 : ctx.viewerPlayerId != null && r.pending.includes(ctx.viewerPlayerId)))
+    // Only events that ask for replies have replies waiting (owner, 2026-10-08).
+    .filter((e) => e.rsvpRequired)
+    // An event open to the team (the coach invited no one) waits on a player who hasn't replied yet, as one they are invited to does.
+    .map((e) => ({ e, pending: [...e.people, ...(role === 'player' && e.openReply && ctx.viewerPlayerId && !e.people.includes(ctx.viewerPlayerId) ? [ctx.viewerPlayerId] : [])].filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') }))
+    // A player is asked only for a reply the server would still take (`replyLock`, as on the event itself).
+    .filter((r) => (role === 'coach' ? r.pending.length > 0 : ctx.viewerPlayerId != null && r.pending.includes(ctx.viewerPlayerId) && !replyLock(r.e, now)))
     .sort((a, b) => (a.e.date + String(a.e.start ?? 0).padStart(5, '0')).localeCompare(b.e.date + String(b.e.start ?? 0).padStart(5, '0')));
   const weekOverlaps = overlaps.filter((o) => {
     const e = find(events, o.eventId);
@@ -144,13 +171,15 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
 
   return (
     <div className="ch-in">
-      <div className="ch-in__kick">
-        <span>
-          Today · {dowOf(now.date)} {dayNum(now.date)}
-        </span>
-        <span className="ch-num">{fmtHour(now.hour)}</span>
-      </div>
-      <h2 className="ch-in__title">
+      {/* Owner, 2026-10-08: the day is a lit green plate at the head of the panel, not ink on parchment. */}
+      <div className="ch-in__today">
+        <div className="ch-in__kick">
+          <span>
+            Today · {dowOf(now.date)} {dayNum(now.date)}
+          </span>
+          <span className="ch-num">{fmtHour(now.hour)}</span>
+        </div>
+        <h2 className="ch-in__title">
         {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${today.length === 1 ? 'event' : 'events'} today`}
       </h2>
       {next && (
@@ -173,14 +202,15 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           <Icon icon={ArrowRight} size={15} />
         </button>
       )}
+      </div>
 
       <div className="ch-in__sec">
         <div className="ch-in__sechead">
-          <b>{role === 'coach' ? 'Needs attention' : 'Needs your reply'}</b>
+          <b>{role === 'coach' ? 'Needs attention' : weekOverlaps.length ? 'Needs your attention' : 'Needs your reply'}</b>
           <span>Next 7 days</span>
         </div>
         {ctx.rsvpError && (
-          <InlineNotice code="CH-6204" title="Replies didn't load." body="Pending replies aren't counted until they do." onRetry={ctx.refresh} />
+          <InlineNotice code="CH-6204" title="Replies didn’t load." body="Pending replies aren’t counted until they do." onRetry={ctx.refresh} covered={ctx.covered} />
         )}
         {weekOverlaps.length + pendingRows.length === 0 && !ctx.rsvpError ? (
           <p className="ch-in__quiet" data-ch-code="CH-6306">
@@ -200,6 +230,25 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                       <b>{e.title}</b>
                       <span>
                         {first(people.get(o.who)?.name)} overlaps · {dowOf(e.date)} {fmtHour(o.from, false)}–{fmtHour(o.to)}
+                      </span>
+                    </span>
+                    <Icon icon={ChevronRight} size={14} />
+                  </button>
+                );
+              })}
+            {/* A player's own clash opens the event, where it says what to do (message the coach); it has no Overlap panel. */}
+            {role === 'player' &&
+              weekOverlaps.map((o) => {
+                const e = find(events, o.eventId)!;
+                return (
+                  <button key={o.id} type="button" className="ch-in__need" onClick={() => ctx.go({ kind: 'event', id: e.id, date: e.date })}>
+                    <span className="ch-in__ic">
+                      <Icon icon={TriangleAlert} size={14} />
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <b>{e.title}</b>
+                      <span>
+                        {playerOverlapLine(events, o)} · {dowOf(e.date)}
                       </span>
                     </span>
                     <Icon icon={ChevronRight} size={14} />
@@ -235,16 +284,16 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           <span className="ch-num">Checked {fmtHour(ctx.loadedHour)}</span>
         </div>
         <div className="ch-in__facts">
-          <Fact icon={CalendarCheck}>Team events from Helm</Fact>
+          <Fact icon={CalendarCheck} tone="team">Team events from Helm</Fact>
           {role === 'coach' ? (
             <>
-              <Fact icon={BookOpen}>
+              <Fact icon={BookOpen} tone="class">
                 Class schedules for {classOwners.size} {classOwners.size === 1 ? 'player' : 'players'}
               </Fact>
-              <Fact icon={Lock}>Your busy time · only you see it</Fact>
+              <Fact icon={Lock} tone="own">Your busy time · only you see it</Fact>
             </>
           ) : (
-            <Fact icon={Lock}>Your classes · only you and your coaches see them</Fact>
+            <Fact icon={Lock} tone="class">Your classes · only you and your coaches see them</Fact>
           )}
         </div>
       </div>
@@ -316,7 +365,7 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
     },
     (status) => ({
       done: status === 'accepted' ? `You’re going to ${e.title}` : status === 'tentative' ? `Marked maybe for ${e.title}` : `Coach knows you can’t make ${e.title}`,
-      failed: `Couldn't send your reply for ${e.title}`,
+      failed: `Couldn’t send your reply for ${e.title}`,
       hint: 'Replies lock at the deadline or once the event starts.',
       code: 'CH-6010',
     }),
@@ -325,16 +374,18 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
     if (v === 'pending' || v === value) return;
     void reply.run(v === 'accepted' ? 'accepted' : v === 'maybe' ? 'tentative' : 'declined');
   };
-  const started = e.date < now.date || (e.date === now.date && (e.allDay || (e.start ?? 0) <= now.hour));
+  // Locked when the server locks it (`replyLock`): at the start, a day after an all-day event's, or past the deadline.
+  const lock = replyLock(e, now);
+  const closed = lock === 'deadline';
   if (e.cancelled) return null;
-  if (started) {
+  if (lock) {
     return (
       <div className="ch-in__sec">
         <div className="ch-in__sechead">
           <b>Your reply</b>
           <span>{current === 'pending' ? 'No reply sent' : RSVP_LABEL[current][0]}</span>
         </div>
-        <p className="ch-in__quiet">Replies close once an event starts.</p>
+        <p className="ch-in__quiet">{closed ? 'Replies closed at the deadline the coach set.' : 'Replies close once an event starts.'}</p>
       </div>
     );
   }
@@ -342,7 +393,7 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
     <div className="ch-in__sec">
       <div className="ch-in__sechead">
         <b>Your reply</b>
-        <span>{current === 'pending' ? 'Coach is waiting on you' : 'You can change it'}</span>
+        <span>{current === 'pending' ? (e.openReply && !e.people.includes(playerId) ? 'Open to the whole team' : 'Coach is waiting on you') : 'You can change it'}</span>
       </div>
       <Segmented<ChRsvp>
         label="Your reply"
@@ -366,7 +417,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       <div className="ch-in">
         <Back label="Today" onClick={() => ctx.go(null)} />
         <p className="ch-in__quiet" data-ch-code="CH-6305">
-          This event isn&apos;t in the loaded range anymore. It may have moved or been cancelled.
+          This event isn’t in the loaded range anymore. It may have moved or been cancelled.
         </p>
       </div>
     );
@@ -384,14 +435,15 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
     } catch (err) {
       chReport(err, { surface: 'calendar.detail', severity: 'low' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't copy the link", body: 'Your browser blocked the clipboard.', code: 'CH-6012' });
+      toast({ tone: 'error', title: "Couldn’t copy the link", body: 'Your browser blocked the clipboard.', code: 'CH-6012' });
     }
   };
 
   return (
     <div className="ch-in">
       <Back label="Today" onClick={() => ctx.go(null)} />
-      <div className="ch-in__kick">
+      <div className="ch-in__plate" data-tone={plateTone(e.type)}>
+<div className="ch-in__kick">
         <Badge tone={isMajor(e.type) ? 'info' : 'accent'}>{TYPE_LABEL[e.type]}</Badge>
         {e.cancelled && <Badge tone="warning">Cancelled</Badge>}
         <Menu
@@ -402,25 +454,34 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
             ...(coach && e.canEdit && !e.cancelled
               ? ([{ kind: 'separator' }, { label: 'Cancel event', icon: CircleX, danger: true, onSelect: () => ctx.onCancel(e) }] as const)
               : []),
+            ...(coach && e.canEdit && e.cancelled && ctx.onRestore ? [{ label: 'Restore event', icon: RotateCcw, onSelect: () => ctx.onRestore!(e) }] : []),
+            ...(coach && e.canEdit && e.cancelled && ctx.onDelete
+              ? ([{ kind: 'separator' }, { label: 'Delete permanently', icon: Trash2, danger: true, onSelect: () => ctx.onDelete!(e) }] as const)
+              : []),
           ]}
           trigger={(p) => (
-            <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="More actions" {...p}>
-              <Icon icon={Ellipsis} size={15} />
-            </button>
+            <Tooltip>
+              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="More actions" {...p}>
+                <Icon icon={Ellipsis} size={15} />
+              </button>
+            </Tooltip>
           )}
         />
       </div>
-      <h2 className="ch-in__title" style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>
+      <h2 className="ch-in__title" tabIndex={-1} style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>
         {e.title}
       </h2>
+      </div>
       <div className="ch-in__facts">
         <Fact icon={Clock}>
           {e.span ? `${dowOf(e.span.from)} ${dayNum(e.span.from)} – ${dowOf(e.span.to)} ${dayNum(e.span.to)}` : dayLabel(e.date, ctx.now.date)}
           <br />
-          <span className="ch-num">{rangeLabel(e)}</span>
+          {/* A timed run over several days: when it starts on its first day and ends on its last, not this day's part of it. */}
+          <span className="ch-num">{!e.allDay && e.span?.start != null && e.span.end != null ? `Starts ${fmtHour(e.span.start)} · ends ${fmtHour(e.span.end)}` : rangeLabel(e)}</span>
           {!e.allDay && ` · ${ctx.zoneLabel}`}
         </Fact>
         {e.location && <Fact icon={MapPin}>{e.location}</Fact>}
+        <LinkedTrip eventId={e.id} preview={ctx.preview} />
         {e.recurring && <Fact icon={Repeat}>{e.recurring}</Fact>}
         {e.notes && <Fact icon={Text}>{e.notes}</Fact>}
       </div>
@@ -436,32 +497,64 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           {first(ctx.people.get(overlap.who)?.name)} is busy {fmtHour(overlap.from, false)}–{fmtHour(overlap.to)}.
         </Warn>
       )}
-      {!coach && ctx.viewerPlayerId && e.people.includes(ctx.viewerPlayerId) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} now={ctx.now} onDone={ctx.refresh} />}
+      {/* A player's own clash: told plainly, with the way to raise it. Moving or keeping the event is the coach's. */}
+      {!coach && overlap && (
+        <Warn
+          title="Schedule overlap"
+          action={
+            <Button size="sm" variant="ghost" href={messageCoachHref(null)}>
+              Message coach
+            </Button>
+          }
+        >
+          {playerOverlapLine(ctx.events, overlap)}.
+        </Warn>
+      )}
+      {/* Owner, 2026-10-08: a player answers only an event that asks for replies; any other shows no reply control. */}
+      {!coach && e.rsvpRequired && ctx.viewerPlayerId && (e.people.includes(ctx.viewerPlayerId) || e.openReply) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} now={ctx.now} onDone={ctx.refresh} />}
       {coach && e.people.length > 0 && (
         <div className="ch-in__sec">
           <div className="ch-in__sechead">
-            <b>Responses</b>
-            <span>{e.people.length} invited</span>
+            {/* Replies are counted only when the coach asked for them; otherwise this is the invite list (owner, 2026-10-08). */}
+            <b>{e.rsvpRequired ? 'Responses' : 'Invited'}</b>
+            <span>{e.rsvpRequired ? `${e.people.length} invited` : `${e.people.length} ${e.people.length === 1 ? 'player' : 'players'}`}</span>
           </div>
           {ctx.rsvpError ? (
-            <InlineNotice code="CH-6205" title="Replies didn't load." body="Try again to see who's going." onRetry={ctx.refresh} />
+            <InlineNotice
+              code="CH-6205"
+              title={e.rsvpRequired ? 'Replies didn’t load.' : 'The invite list didn’t load.'}
+              body={e.rsvpRequired ? 'Try again to see who’s going.' : 'Try again to see who’s invited.'}
+              onRetry={ctx.refresh}
+              covered={ctx.covered}
+            />
           ) : (
             <>
-              <Responses e={e} />
+              {e.rsvpRequired && <Responses e={e} />}
               <div>
                 {[...e.people]
                   .sort((a, b) => (ctx.people.get(a)?.name ?? '').localeCompare(ctx.people.get(b)?.name ?? ''))
                   .map((pid) => {
                     const [l, t] = RSVP_LABEL[e.rsvp[pid] ?? 'pending'];
-                    const name = ctx.people.get(pid)?.name ?? 'Former player';
-                    return (
+                    const person = ctx.people.get(pid);
+                    const name = person?.name ?? 'Former player';
+                    const row = (
                       <div key={pid} className="ch-in__person">
                         <Avatar name={name} size={26} />
                         <span>{name}</span>
-                        <Badge tone={t} dot>
-                          {l}
-                        </Badge>
+                        {e.rsvpRequired && (
+                          <Badge tone={t} dot>
+                            {l}
+                          </Badge>
+                        )}
                       </div>
+                    );
+                    // P003-C1: for the coach, a player on the roster peeks (a hold on the phone, a rest of the pointer on desktop).
+                    return coach && person ? (
+                      <PlayerPeek key={pid} player={{ id: pid, name, sub: person.year }}>
+                        {row}
+                      </PlayerPeek>
+                    ) : (
+                      row
                     );
                   })}
               </div>
@@ -473,9 +566,9 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       {coach && e.people.length === 0 && (
         <div className="ch-in__sec">
           {ctx.rsvpError ? (
-            <InlineNotice code="CH-6205" title="Replies didn't load." body="Try again to see who's going." onRetry={ctx.refresh} />
+            <InlineNotice code="CH-6205" title="The invite list didn’t load." body="Try again to see who’s invited." onRetry={ctx.refresh} covered={ctx.covered} />
           ) : (
-            <p className="ch-in__quiet">No players invited. Invite players to collect replies and take attendance.</p>
+            <p className="ch-in__quiet">{e.rsvpRequired ? 'No players invited. Invite players to collect replies and take attendance.' : 'No players invited. Invite players to take attendance.'}</p>
           )}
         </div>
       )}
@@ -499,52 +592,66 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
 function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
   const owner = e.owner ? ctx.people.get(e.owner) : undefined;
   const mine = ctx.role === 'player';
+  const [code, course] = courseParts(e.title);
   return (
     <div className="ch-in">
       <Back label="Today" onClick={() => ctx.go(null)} />
-      <div className="ch-in__kick">
-        <Badge tone="neutral">Class</Badge>
-        <span>{mine ? 'From your class list' : owner ? `From ${first(owner.name)}’s class list` : 'Owner unknown'}</span>
-      </div>
-      <div>
-        <h2 className="ch-in__title">{e.title}</h2>
-        {owner && !mine && (
-          <div className="ch-cal-sub">
-            {owner.name}
-            {owner.year ? ` · ${owner.year}` : ''}
-          </div>
-        )}
+      {/* Owner, 2026-10-08: a class is a slate plate (who, the course code, the course), not ink on parchment. */}
+      <div className="ch-in__plate ch-in__class" data-tone="slate">
+        <div className="ch-in__kick">
+          <span className="ch-in__chip">Class</span>
+          <span>{mine ? 'Your class list' : owner ? `${first(owner.name)}’s class list` : 'Owner unknown'}</span>
+        </div>
+        <h2 className="ch-in__title" tabIndex={-1}>{course}</h2>
+        <div className="ch-in__by">
+          {owner && !mine && <Avatar name={owner.name} size={26} />}
+          <span>
+            {owner && !mine ? owner.name : null}
+            {owner && !mine && owner.year ? ` · ${owner.year}` : ''}
+            {code && (owner && !mine ? ' · ' : '')}
+            {code && <b>{code}</b>}
+          </span>
+        </div>
       </div>
       <div className="ch-in__facts">
-        <Fact icon={Clock}>
+        <Fact icon={Clock} tone="class">
           {dayLabel(e.date, ctx.now.date)}
           <br />
           <span className="ch-num">{rangeLabel(e)}</span> · {ctx.zoneLabel}
         </Fact>
-        {e.location && <Fact icon={MapPin}>{e.location}</Fact>}
-        {e.instructor && <Fact icon={UserRound}>{e.instructor}</Fact>}
-        {e.pattern && <Fact icon={Repeat}>Meets {e.pattern}</Fact>}
+        {e.location && (
+          <Fact icon={MapPin} tone="team">
+            {e.location}
+          </Fact>
+        )}
+        {e.instructor && (
+          <Fact icon={UserRound} tone="own">
+            {e.instructor}
+          </Fact>
+        )}
+        {e.pattern && (
+          <Fact icon={Repeat} tone="class">
+            Meets {e.pattern}
+          </Fact>
+        )}
       </div>
-      <div className="ch-in__sec">
-        <p className="ch-in__quiet">
-          {mine ? 'Teammates never see your classes. Coaches see them so practice avoids them.' : 'Only coaches see class details. Teammates never see another player’s classes.'}
-        </p>
-      </div>
+      <p className="ch-in__note">
+        <Icon icon={Lock} size={14} />
+        <span>{mine ? 'Teammates never see your classes. Coaches see them so practice avoids them.' : 'Only coaches see class details. Teammates never see another player’s classes.'}</span>
+      </p>
       {!mine && owner && ctx.onFind && (
-        <div className="ch-in__sec">
-          <Button leftIcon={Users} onClick={() => ctx.onFind!(e.date, [owner.id])}>
-            Compare schedules
-          </Button>
-        </div>
+        <Button leftIcon={Users} onClick={() => ctx.onFind!(e.date, [owner.id])}>
+          Compare schedules
+        </Button>
       )}
     </div>
   );
 }
 
-const MARKS: Array<{ value: AttendanceMark | 'none'; label: string; cls?: string }> = [
+const MARKS: Array<SegOption<AttendanceMark | 'none'>> = [
   { value: 'present', label: 'Present' },
-  { value: 'late', label: 'Late', cls: 'is-late' },
-  { value: 'no_show', label: 'No-show', cls: 'is-absent' },
+  { value: 'late', label: 'Late', className: 'is-late' },
+  { value: 'no_show', label: 'No-show', className: 'is-absent' },
 ];
 
 export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: string }) {
@@ -602,7 +709,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
     },
     () => ({
       done: `${unsaved.current.length} attendance ${unsaved.current.length === 1 ? 'mark' : 'marks'} saved`,
-      failed: "Couldn't save attendance",
+      failed: "Couldn’t save attendance",
       hint: 'The marks that saved are kept. Try again for the rest.',
       code: 'CH-6011',
     }),
@@ -615,13 +722,13 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
     <div className="ch-in">
       <Back label={e.title} onClick={() => ctx.go({ kind: 'event', id, date })} />
       <div>
-        <h2 className="ch-in__title">Attendance</h2>
+        <h2 className="ch-in__title" tabIndex={-1}>Attendance</h2>
         <div className="ch-cal-sub">
           {dowOf(e.date)} {dayNum(e.date)} · {rangeLabel(e)}
         </div>
       </div>
       {loadError ? (
-        <InlineNotice code="CH-6209" title="Attendance didn't load." body="Marks already saved are safe. Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6209" title="Attendance didn’t load." body="Marks already saved are safe. Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !saved ? (
         <div className="ch-in__facts" aria-busy="true" data-ch-code="CH-6405">
           {e.people.slice(0, 5).map((p) => (
@@ -657,7 +764,8 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
                     <Avatar name={name} size={26} />
                     <span>
                       {first(name)}
-                      <small>{dirty ? 'Unsaved' : saved[pid] ? 'Saved' : RSVP_LABEL[e.rsvp[pid] ?? 'pending'][0]}</small>
+                      {/* Attendance stands on its own: the reply shows beside it only on an event that asked for replies. */}
+                      <small>{dirty ? 'Unsaved' : saved[pid] ? 'Saved' : e.rsvpRequired ? RSVP_LABEL[e.rsvp[pid] ?? 'pending'][0] : 'Not marked'}</small>
                     </span>
                   </span>
                   <AttendanceSeg name={name} value={v} onChange={(m) => setMarks((s) => ({ ...s, [pid]: m }))} />
@@ -668,7 +776,8 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
           <div className="ch-in__sec ch-in__foot">
             <Button
               variant="primary"
-              disabled={!changed.length || save.pending}
+              busy={save.pending}
+              disabled={!changed.length}
               onClick={() => {
                 chTrail('calendar attendance save');
                 void save.run();
@@ -684,29 +793,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
 }
 
 function AttendanceSeg({ name, value, onChange }: { name: string; value: AttendanceMark | null; onChange: (m: AttendanceMark) => void }) {
-  return (
-    <div className="ch-seg ch-well ch-seg--sm" role="radiogroup" aria-label={`Attendance for ${name}`}>
-      {MARKS.map((m) => {
-        const on = value === m.value;
-        return (
-          <button
-            key={m.value}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            className={'ch-seg__b' + (on ? ' is-on' : '') + (m.cls ? ` ${m.cls}` : '')}
-            onClick={() => {
-              if (!on) haptic('select');
-              onChange(m.value as AttendanceMark);
-            }}
-          >
-            {on && <span className="ch-seg__pill" aria-hidden="true" />}
-            <span className="ch-seg__l">{m.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <Segmented<AttendanceMark | 'none'> size="sm" label={`Attendance for ${name}`} value={value ?? 'none'} options={MARKS} onChange={(m) => onChange(m as AttendanceMark)} />;
 }
 
 export function Lanes({ rows, from, to, prop }: { rows: Array<{ who: string; blocks: Array<{ kind: string; s: number; e: number; label: string }> }>; from: number; to: number; prop?: [number, number] }) {
@@ -764,13 +851,13 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
   return (
     <div className="ch-in">
       <Back label="Today" onClick={() => ctx.go(null)} />
-      <div className="ch-in__kick">
-        <Badge tone="warning" dot>
-          Overlap
-        </Badge>
-      </div>
-      <div>
-        <h2 className="ch-in__title">{e.title}</h2>
+      <div className="ch-in__plate" data-tone="amber">
+        <div className="ch-in__kick">
+          <Badge tone="warning" dot>
+            Overlap
+          </Badge>
+        </div>
+        <h2 className="ch-in__title" tabIndex={-1}>{e.title}</h2>
         <div className="ch-cal-sub">
           {dowOf(e.date)} {dayNum(e.date)} · {rangeLabel(e)}
         </div>
@@ -781,7 +868,7 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
       </p>
       <div className="ch-in__sec">
         <div className="ch-in__sechead">
-          <b>{who}&apos;s day</b>
+          <b>{who}’s day</b>
           <span>Current time and proposal</span>
         </div>
         <Lanes

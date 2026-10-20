@@ -272,6 +272,8 @@ export function followUpsFor(envelopes: ToolEnvelope[]): string[] {
   return [...new Set(out)].slice(0, 3);
 }
 
+/** The server's own sentence for a rejected turn (`STREAM_INCOMPLETE_NOTE`, src/lib/coachhelm/v3/chat/verdict.ts), for a
+ * verdict that arrives without it: word for word, straight apostrophes included, as what the server sends is shown as sent. */
 export const REJECTED_TURN_NOTE = "This answer didn't finish coming through, so it isn't being shown. Please ask again.";
 
 /** Bold markers and list markers out, for Copy. */
@@ -568,20 +570,27 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
 function seriesTable(s: MeasurementSeries): AskTable {
   return {
     caption: `${s.metric_label} for ${s.entity.label}`,
-    columns: [s.points.some((p) => p.bucket) ? 'Range' : 'Round', s.metric_label, 'Sample'],
+    // The caption already names the metric; a rate's column says what its figures are rather than repeating it.
+    columns: [s.points.some((p) => p.bucket) ? 'Range' : 'Round', s.unit === 'percent' ? 'Rate' : s.metric_label, 'Sample'],
     rows: s.points.map((p) => [p.bucket ?? fmtDay(p.at) ?? p.at, formatValue(p.value, s.unit), p.sample_size > 0 ? String(p.sample_size) : NO_DATA]),
   };
 }
 
 function trendBlock(s: MeasurementSeries): AskEvidence {
   const values = s.points.map((p) => p.value);
-  const mean = values.reduce((a, b) => a + b, 0) / Math.max(1, values.length);
+  // A rate's average is its made count over its attempts (3 of 9 is 33%), so each round counts by its sample; without samples, plainly.
+  const weight = s.points.reduce((a, p) => a + p.sample_size, 0);
+  const mean =
+    s.unit === 'percent' && weight > 0
+      ? s.points.reduce((a, p) => a + p.value * p.sample_size, 0) / weight
+      : values.reduce((a, b) => a + b, 0) / Math.max(1, values.length);
   const bench = s.benchmark && !s.benchmark.omitted_for_cohort ? s.benchmark : null;
   const first = values[0] as number;
   const last = values[values.length - 1] as number;
   return {
     kind: 'trend',
-    title: s.metric_label,
+    // Whose numbers they are, as the strokes-gained chart names its player.
+    title: s.entity.kind === 'player' ? `${s.metric_label}, ${s.entity.label}` : s.metric_label,
     unit: s.unit,
     points: s.points.map((p) => ({ label: fmtDay(p.at) ?? p.at, value: p.value, n: p.sample_size })),
     // A real benchmark beats the series' own average: "vs the Tour" is a standard, "vs your own average" is a tautology.
@@ -658,10 +667,13 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
     if (isRanking) {
       const ranked = ms.filter((m) => m.value !== null);
       const missing = ms.length - ranked.length;
+      // The footer counts what the rows list: each player's sample is their own, so the rows add up (P013 D7). Mixed units keep the first's.
+      const oneUnit = ranked.every((m) => m.sample_unit === first.sample_unit);
       blocks.push({
         kind: 'ranking',
         title: first.metric_label,
         ...base,
+        source: oneUnit ? sourceLine({ ...first, sample_size: ranked.reduce((sum, m) => sum + m.sample_size, 0) }) : base.source,
         note: missing > 0 ? `${missing} player${missing === 1 ? ' has' : 's have'} no recorded data for this.` : base.note,
         rows: ranked.map((m, i) => ({ rank: i + 1, id: m.entity.id, label: m.entity.label, display: formatValue(m.value, m.unit), of: ofSample(m) })),
         table: { caption: first.metric_label, columns: ['Rank', 'Player', first.metric_label, 'Sample'], rows: ranked.map((m, i) => [String(i + 1), m.entity.label, formatValue(m.value, m.unit), m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : NO_DATA]) },

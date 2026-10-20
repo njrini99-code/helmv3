@@ -68,13 +68,18 @@ export const PREVIEW_ROSTER_PARTIAL: ChRoster = {
   players: PREVIEW_ROSTER.players.map((p) => ({ ...p, rounds: 0, avg: null, sgPerRound: null, trend: [], form: 'early' as const, recent: [], attention: null, focusAreas: null, goals: null })),
 };
 
-/** The player's Roster (Theo's): the active players only, as loadPlayerRoster returns them (name, class, handicap). */
+/** The player's Roster (Theo's): the coaches, then the active players only, as loadPlayerRoster returns them (name, class, handicap). */
 export const PREVIEW_PLAYER_ROSTER: ChPlayerRoster = {
   teamName: PREVIEW_ROSTER.teamName,
   season: PREVIEW_ROSTER.season,
   teamError: false,
   playersError: false,
   players: PREVIEW_ROSTER.players.filter((p) => p.status === 'active').map((p) => ({ id: p.id, name: p.name, classYear: p.classYear, gradYear: p.gradYear, handicap: p.handicap, isYou: p.id === 'theo' })),
+  // The staff over the players (wave 7), head coach first, as the loader orders them.
+  coaches: [
+    { id: 'c-maya', name: 'Maya Reyes', role: 'Head coach' },
+    { id: 'c-dan', name: 'Dan Whitfield', role: 'Assistant coach' },
+  ],
 };
 export const PREVIEW_PLAYER_ROSTER_EMPTY: ChPlayerRoster = { ...PREVIEW_PLAYER_ROSTER, players: [] };
 export const PREVIEW_PLAYER_ROSTER_FAILED: ChPlayerRoster = { ...PREVIEW_PLAYER_ROSTER, playersError: true, players: [] };

@@ -2,6 +2,7 @@ import 'server-only';
 import { Suspense, type ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { Users } from 'lucide-react';
+import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm, loadPlayerHelmGate } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
@@ -86,7 +87,10 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
   if (view === 'development') redirect(PLAYER_HELM_DEVELOPMENT_HREF);
   const session = await getGolfSessionProfile();
   if (!session) return null;
-  if (session.coach) {
+  // The view follows the dashboard role (the one resolveClubhouseTeam and the layout use), not "has a coach row": a user
+  // whose onboarded profile is the player one, with an unfinished coach profile beside it, is drawn as a player and gets
+  // their own CoachHelm, never the coach's no-team page (wiring audit, 2026-10-17; routes/roster.tsx has the same rule).
+  if (pickGolfDashboardRole(session) === 'coach' && session.coach) {
     const team = await resolveClubhouseTeam(session);
     if (!team || team.role !== 'coach') {
       return (
@@ -95,7 +99,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
             size="page"
             code="CH-13308"
             icon={Users}
-            title="You aren't on a team yet"
+            title="You aren’t on a team yet"
             body="Once your team is set up, CoachHelm reads the rounds your players post and shows their signals here."
           />
         </main>

@@ -158,6 +158,8 @@ for (const size of sizes) {
 test('keyboard alternatives reveal without covering their message or priority label', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/clubhouse-preview/messages');
+  // The phone board opens on the conversation list; open the first thread.
+  await page.locator('.ch-msp-list .ch-ms-sec.is-date button').first().click();
   const thread = page.locator('.ch-msp-thread');
   await expect(thread).toBeInViewport();
   await expect.poll(() => thread.evaluate(element => Math.round(element.getBoundingClientRect().left))).toBe(0);
@@ -166,14 +168,23 @@ test('keyboard alternatives reveal without covering their message or priority la
   await action.focus();
   await expect(action).toBeFocused();
   expect(await action.evaluate(element => ({ clip: getComputedStyle(element).clip, position: getComputedStyle(element).position }))).toEqual({ clip: 'auto', position: 'static' });
-  const message = action.locator('..').locator('.ch-ms-msg__stack');
-  const messageBox = await message.boundingBox();
-  const actionBox = await action.boundingBox();
-  expect(actionBox!.y).toBeGreaterThanOrEqual(messageBox!.y + messageBox!.height - 1);
+  // Read both boxes in one frame, and wait for the focus scroll to settle: two separate boundingBox() reads while the
+  // thread was still scrolling compared positions from different frames (flaked once in chromium-reduce, 2026-10-14).
+  await expect
+    .poll(() =>
+      action.evaluate(element => {
+        const message = element.parentElement!.querySelector('.ch-ms-msg__stack')!.getBoundingClientRect();
+        return Math.round(element.getBoundingClientRect().top - (message.top + message.height - 1));
+      }),
+    )
+    .toBeGreaterThanOrEqual(0);
 
-  await page.goto('/clubhouse-preview/settings?section=coachhelm');
-  const move = page.locator('.ch-setm-rank__i .ch-sr-only--focusable button:not(:disabled)').first();
-  await page.keyboard.press('Tab');
+  // Opening the thread updates the URL; a fresh page avoids that late navigation racing this one.
+  const settings = await page.context().newPage();
+  await settings.setViewportSize({ width: 390, height: 844 });
+  await settings.goto('/clubhouse-preview/settings?section=coachhelm');
+  const move = settings.locator('.ch-setm-rank__i .ch-sr-only--focusable button:not(:disabled)').first();
+  await settings.keyboard.press('Tab');
   await move.focus();
   await expect(move).toBeFocused();
   const wrapper = move.locator('..');

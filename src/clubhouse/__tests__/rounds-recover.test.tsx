@@ -234,7 +234,7 @@ describe('Round recovery: the rounds on the device', () => {
     expect(within(card).getByRole('button', { name: 'Retry sync' })).toBeTruthy();
   });
 
-  it('a finished round whose submit failed is Submit round, not Restore round', async () => {
+  it('a finished round whose submit failed is Post round, not Restore round', async () => {
     const terminal = { courseName: 'Finley GC', roundType: 'practice', roundDate: '2026-10-14', holes: [] } as never;
     const finished = roundOf({
       serverRoundId: ROUND_ID,
@@ -247,7 +247,7 @@ describe('Round recovery: the rounds on the device', () => {
     });
     expect(finished.finished).toBe(true);
     show(fakePorts([finished]));
-    expect(await screen.findByRole('button', { name: 'Submit round' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Post round' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Restore round' })).toBeNull();
   });
 

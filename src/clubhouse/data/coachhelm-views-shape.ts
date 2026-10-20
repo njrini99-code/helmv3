@@ -18,6 +18,7 @@ export const PLAYER_HELM_HREF: Record<PlayerHelmView, string> = {
   standing: '/golf/dashboard/coachhelm?view=standing',
   'deep-dive': '/golf/dashboard/coachhelm?view=deep-dive',
 };
+export const PLAYER_HELM_VIEWS = Object.keys(PLAYER_HELM_HREF) as PlayerHelmView[];
 
 /**
  * `?view=development` is where every stored dev-plan notification points (in-app rows, pushes and emails sent before CH13-7).

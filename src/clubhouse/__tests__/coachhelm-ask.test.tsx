@@ -2,7 +2,7 @@ import { LazyMotion, domAnimation } from 'motion/react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { UIMessage } from 'ai';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import './dialog-polyfill';
 
 /**
@@ -46,8 +46,8 @@ vi.mock('../screens/coachhelm/chat/Thread', () => ({
   },
 }));
 vi.mock('../screens/coachhelm/chat/EvidencePanel', () => ({
-  AskEvidencePanel: (p: { focus: { label: string }; phone: boolean; onClose: () => void }) => (
-    <div data-testid="evidence" data-phone={String(p.phone)}>
+  AskEvidencePanel: (p: { focus: { label: string }; phone: boolean; onClose: () => void; open?: boolean }) => (
+    <div data-testid="evidence" data-phone={String(p.phone)} data-open={String(p.open ?? true)}>
       {p.focus.label}
       <button type="button" onClick={p.onClose}>
         stub close evidence
@@ -123,6 +123,18 @@ function show(load: ChAskLoad = ready(), chat: Fake = fakeChat(), initial?: Para
   return { ...view, chat, rerenderWith: (l: ChAskLoad, c: Fake = chat) => view.rerender(tree(l, c, initial)) };
 }
 const box = () => screen.getByRole('textbox') as HTMLTextAreaElement;
+/** The mention picker (cmdk) and its rows' names (the coin beside a name is aria-hidden, so it is left out). */
+const picker = () => screen.getByRole('listbox', { name: 'Mention a player or stat' });
+const optionNames = (list: HTMLElement) => within(list).getAllByRole('option').map((o) => o.querySelector('.ch-ask-pick__name')?.textContent ?? o.textContent);
+const groupNames = (list: HTMLElement, group: string) => optionNames(within(list).getByRole('group', { name: group }));
+
+// jsdom has no scrollIntoView; cmdk brings its highlighted row into view with it.
+beforeAll(() => {
+  Object.defineProperty(Element.prototype, 'scrollIntoView', { value: vi.fn(), configurable: true, writable: true });
+});
+afterAll(() => {
+  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+});
 
 let fine = true;
 const setOnline = (on: boolean) => Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => on });
@@ -221,7 +233,7 @@ describe('the new chat page (desktop)', () => {
     expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
     expect(screen.getByText('Answers come from your recorded rounds, signals and schedule.')).toBeInTheDocument();
     const pills = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(pills.map((b) => b.textContent)).toEqual(['Brief me on Finley University', 'Where is the team losing the most strokes?', 'Who is trending up this month?', "What's on this week?"]);
+    expect(pills.map((b) => b.textContent)).toEqual(['Brief me on Finley University', 'Where is the team losing the most strokes?', 'Who is trending up this month?', "What’s on this week?"]);
     await userEvent.click(pills[1]!);
     expect(chat.calls.send).toHaveBeenCalledWith('Where is the team losing the most strokes?');
     expect(hapticSpy).toHaveBeenCalledWith('select');
@@ -248,7 +260,7 @@ describe('the new chat page (desktop)', () => {
     expect(code('CH-13322')?.textContent).toMatch(/Nothing to report yet.*No player has a recorded round yet\. Findings show up here after the first rounds come in\. You can still ask about your roster and schedule\./);
     expect(document.querySelector('.ch-ask-find__grid')).toBeNull();
     expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
-    expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What's on this week?"]);
+    expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What’s on this week?"]);
   });
 
   it('CH-13325 a pulse with no findings but rounds says nothing is flagged, not that nothing has been recorded', () => {
@@ -320,17 +332,18 @@ describe('the composer', () => {
   it('CH-13821 typing @ opens the roster; the arrow keys and Enter pick, and the mention is text in the box', async () => {
     const { chat } = show();
     await userEvent.type(box(), 'Compare @jo');
-    const list = screen.getByRole('listbox', { name: 'Players' });
-    expect(within(list).getAllByRole('option').map((o) => o.textContent)).toEqual(['Jonah Okafor']);
+    const list = picker();
+    expect(optionNames(list)).toEqual(['Jonah Okafor']);
     expect(within(list).getByRole('option')).toHaveAttribute('aria-selected', 'true');
     expect(within(list).queryByRole('button')).toBeNull();
     expect(box()).toHaveAttribute('aria-activedescendant', within(list).getByRole('option').id);
+    expect(box()).toHaveAttribute('aria-controls', list.id);
     await userEvent.keyboard('{Enter}');
     expect(box().value).toBe('Compare @Jonah Okafor ');
     expect(screen.queryByRole('listbox')).toBeNull();
     expect(chat.calls.send).not.toHaveBeenCalled();
     await userEvent.type(box(), 'and @');
-    expect(within(screen.getByRole('listbox', { name: 'Players' })).getAllByRole('option').map((o) => o.textContent)).not.toContain('Jonah Okafor');
+    expect(groupNames(picker(), 'Players')).not.toContain('Jonah Okafor');
     await userEvent.keyboard('{ArrowDown}{Enter}');
     // Jonah is already mentioned, so the list starts at Eli; one arrow down is Sofia.
     expect(box().value).toBe('Compare @Jonah Okafor and @Sofia Alvarez ');
@@ -341,17 +354,99 @@ describe('the composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add to your question' }));
     await userEvent.click(screen.getByRole('menuitem', { name: 'Add player' }));
     expect(box().value).toBe('@');
-    expect(screen.getByRole('listbox', { name: 'Players' })).toBeInTheDocument();
+    expect(picker()).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('listbox')).toBeNull();
     expect(box().value).toBe('@');
     expect(chat.calls.send).not.toHaveBeenCalled();
   });
 
+  it('Escape takes back the @ the Players chip put in the text, never one the coach typed', async () => {
+    show();
+    await userEvent.type(box(), 'Compare');
+    await userEvent.click(screen.getByRole('button', { name: /Players/ }));
+    expect(box().value).toBe('Compare @');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box().value).toBe('Compare');
+    await userEvent.type(box(), ' @');
+    expect(picker()).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box().value).toBe('Compare @');
+  });
+
   it('CH-13821 a roster with nobody says so instead of drawing an empty list', async () => {
     show(ready({ players: [] }));
     await userEvent.type(box(), '@');
     expect(screen.getByText('No active players')).toBeInTheDocument();
+    // The line is a dimmed row the arrow keys pass over; the stats are still there to pick.
+    expect(screen.getByRole('option', { name: 'No active players' })).toHaveAttribute('aria-disabled', 'true');
+    expect(groupNames(picker(), 'Stats')[0]).toBe('Scoring average');
+  });
+
+  it('CH-13821 the picker lists the roster and the stats CoachHelm can read, and narrows both as the coach types', async () => {
+    show();
+    await userEvent.type(box(), '@');
+    expect(groupNames(picker(), 'Players')).toEqual(['Jonah Okafor', 'Eli Brandt', 'Sofia Alvarez', 'Theo Marchetti', 'Priya Natarajan', 'Ava Lindqvist']);
+    expect(groupNames(picker(), 'Stats')).toContain('Greens in regulation');
+    // A fragment no player has leaves only the stats: no empty Players heading over nothing.
+    await userEvent.type(box(), 'putt');
+    expect(within(picker()).queryByRole('group', { name: 'Players' })).toBeNull();
+    expect(groupNames(picker(), 'Stats')).toEqual(['Strokes gained putting', 'Putts per round', 'Three-putt rate', 'One-putt rate']);
+    // The metric's own short name finds it too.
+    await userEvent.clear(box());
+    await userEvent.type(box(), '@gir');
+    expect(optionNames(picker())).toEqual(['Greens in regulation']);
+    // Nothing matches: one quiet line, and nothing to pick.
+    await userEvent.clear(box());
+    await userEvent.type(box(), '@zz');
+    expect(within(picker()).getByRole('option', { name: 'No player or stat by that name' })).toHaveAttribute('aria-disabled', 'true');
+    expect(box()).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('CH-13821 a stat is picked with the keys like a player: the arrows wrap, Tab picks, and the stat is words in the box', async () => {
+    const { chat } = show();
+    await userEvent.type(box(), 'Who is best at @putt');
+    expect(within(picker()).getByRole('option', { name: 'Strokes gained putting' })).toHaveAttribute('aria-selected', 'true');
+    // Up from the first row wraps to the last.
+    await userEvent.keyboard('{ArrowUp}');
+    const last = within(picker()).getByRole('option', { name: 'One-putt rate' });
+    expect(last).toHaveAttribute('aria-selected', 'true');
+    expect(box()).toHaveAttribute('aria-activedescendant', last.id);
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    expect(within(picker()).getByRole('option', { name: 'Putts per round' })).toHaveAttribute('aria-selected', 'true');
+    hapticSpy.mockClear();
+    await userEvent.keyboard('{Tab}');
+    expect(box().value).toBe('Who is best at @Putts per round ');
+    expect(box()).toHaveFocus();
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(hapticSpy).not.toHaveBeenCalledWith('press');
+    expect(chat.calls.send).not.toHaveBeenCalled();
+    // A stat already in the question is not offered again.
+    await userEvent.type(box(), 'and @putt');
+    expect(optionNames(picker())).not.toContain('Putts per round');
+  });
+
+  it('CH-13821 a click on a row picks it without taking the focus from the box', async () => {
+    show();
+    await userEvent.type(box(), 'Compare @');
+    await userEvent.click(within(picker()).getByRole('option', { name: 'Driving accuracy' }));
+    expect(box().value).toBe('Compare @Driving accuracy ');
+    expect(box()).toHaveFocus();
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+  });
+
+  it('CH-13821 the picker takes only its own keys: Shift+Enter is a new line, and with it closed the arrows and Enter are the box’s', async () => {
+    const { chat } = show();
+    await userEvent.type(box(), 'Line one @jo');
+    await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
+    expect(box().value).toBe('Line one @jo\n');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(fireEvent.keyDown(box(), { key: 'ArrowUp' })).toBe(true);
+    await userEvent.keyboard('{Enter}');
+    expect(chat.calls.send).toHaveBeenCalledWith('Line one @jo');
   });
 
   it('the date chip starts on Any dates; a chosen range adds its sentence to what is sent, visibly, once', async () => {
@@ -374,7 +469,7 @@ describe('the composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }));
     expect(chat.calls.send).not.toHaveBeenCalled();
     await waitFor(() => expect(code('CH-1903')).not.toBeNull());
-    expect(code('CH-1903')!.textContent).toMatch(/Couldn't send: you're offline.*Reconnect, then try again\. Nothing was sent\./);
+    expect(code('CH-1903')!.textContent).toMatch(/Couldn’t send: you’re offline.*Reconnect, then try again\. Nothing was sent\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(hapticSpy).not.toHaveBeenCalledWith('press');
     expect(box().value).toBe('Brief me');
@@ -446,23 +541,38 @@ describe('the composer on the phone', () => {
   it('is one row (plus, text, mention, Send) docked at the foot, with no chips and no disclaimer', () => {
     show();
     expect(screen.getByRole('button', { name: 'Add to your question' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Mention a player' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mention a player or stat' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Players/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Any dates/ })).toBeNull();
     expect(document.querySelector('.ch-ask-foot')).toBeNull();
     expect(document.querySelector('.ch-ask-dock')).not.toBeNull();
   });
 
-  it('CH-13821 the mention button opens a sheet of roster rows, a pick puts @Name in the text, and the filter narrows it', async () => {
+  it('CH-13821 the @ key opens the mention list docked above the box, not a sheet: typing narrows it and a tap puts @Name in the text', async () => {
     show();
-    await userEvent.click(screen.getByRole('button', { name: 'Mention a player' }));
-    const dialog = document.querySelector('dialog[open]') as HTMLElement;
-    expect(within(dialog).getByRole('heading', { name: 'Mention a player' })).toBeInTheDocument();
-    await userEvent.type(within(dialog).getByRole('searchbox', { name: 'Filter players' }), 'eli');
-    expect(within(dialog).getAllByRole('button', { name: /Eli Brandt|Jonah Okafor/ }).map((b) => b.textContent)).toEqual(['Eli Brandt']);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Eli Brandt' }));
-    expect(box().value).toBe('@Eli Brandt ');
+    await userEvent.click(box());
+    await userEvent.click(screen.getByRole('button', { name: 'Mention a player or stat' }));
+    expect(box().value).toBe('@');
+    // The box keeps the focus (and the phone its keyboard): no dialog, no second field to type into.
+    expect(box()).toHaveFocus();
     expect(document.querySelector('dialog[open]')).toBeNull();
+    expect(screen.queryByRole('searchbox')).toBeNull();
+    expect(picker().closest('.ch-ask-cmp.is-phone .ch-ask-pick')).not.toBeNull();
+    await userEvent.type(box(), 'eli');
+    expect(optionNames(picker())).toEqual(['Eli Brandt']);
+    await userEvent.click(within(picker()).getByRole('option', { name: 'Eli Brandt' }));
+    expect(box().value).toBe('@Eli Brandt ');
+    expect(box()).toHaveFocus();
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+  });
+
+  it('CH-13821 typing @ on the phone opens the same list; the return key picks the first row', async () => {
+    show();
+    await userEvent.type(box(), 'How is @so');
+    expect(optionNames(picker())).toEqual(['Sofia Alvarez']);
+    await userEvent.keyboard('{Enter}');
+    expect(box().value).toBe('How is @Sofia Alvarez ');
   });
 });
 
@@ -475,7 +585,7 @@ describe('the new chat page (phone)', () => {
     const { chat } = show();
     expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
     const cards = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(cards.map((c) => c.textContent)).toEqual(['Brief meon Finley University', 'Losing strokeswhere the team loses most', 'Trending upwho\'s improving this month']);
+    expect(cards.map((c) => c.textContent)).toEqual(['Brief meon Finley University', 'Losing strokeswhere the team loses most', 'Trending upwho’s improving this month']);
     expect(document.querySelector('.ch-ask-pills')).toBeNull();
     expect(screen.queryByRole('region', { name: 'Since you were last here' })).toBeNull();
     expect(screen.getByTestId('probe')).toHaveAttribute('data-notabs', 'false');
@@ -678,7 +788,7 @@ describe('the container', () => {
 
   it('hands the thread the failed answer as a sentence with what to offer, by the rule of the stream route', () => {
     const cases: Array<[unknown, { message: string; recovery: string }]> = [
-      [{ statusCode: 429, responseBody: JSON.stringify({ error: 'Too many requests. Please slow down.' }) }, { message: "You're asking quickly. Wait a moment, then try again.", recovery: 'retry' }],
+      [{ statusCode: 429, responseBody: JSON.stringify({ error: 'Too many requests. Please slow down.' }) }, { message: "Too many questions in a row. Give it a few seconds and try again.", recovery: 'retry' }],
       [{ statusCode: 429, responseBody: JSON.stringify({ error: 'You have reached today’s analysis limit for your program. It resets tomorrow.', reason: 'gated' }) }, { message: 'You have reached today’s analysis limit for your program. It resets tomorrow.', recovery: 'none' }],
       [{ statusCode: 404, responseBody: JSON.stringify({ error: 'Conversation not found' }) }, { message: "That conversation isn't available. Start a new chat.", recovery: 'new-chat' }],
       [new TypeError('Failed to fetch'), { message: 'Something went wrong while answering. Try again.', recovery: 'retry' }],
@@ -721,11 +831,15 @@ describe('the container', () => {
     phoneState.on = true;
     show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
     await userEvent.click(screen.getByRole('button', { name: 'stub evidence' }));
-    const sheet = document.querySelector('dialog[open]') as HTMLElement;
-    expect(within(sheet).getByTestId('evidence')).toHaveAttribute('data-phone', 'true');
-    expect(within(sheet).getByRole('region', { name: 'Evidence' })).toHaveAttribute('tabindex', '0');
-    await userEvent.click(within(sheet).getByRole('button', { name: 'stub close evidence' }));
+    // The panel owns its sheet on the phone (its dialog is tested in coachhelm-thread-ui › the evidence panel); Ask
+    // renders it once, with no Modal of its own around it, so only one Evidence sheet ever opens.
+    expect(screen.getAllByTestId('evidence')).toHaveLength(1);
+    expect(screen.getByTestId('evidence')).toHaveAttribute('data-phone', 'true');
     expect(document.querySelector('dialog[open]')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'stub close evidence' }));
+    // Closed, the sheet stays mounted with open={false} so it slides out (audit A-18), still showing what it showed.
+    expect(screen.getByTestId('evidence')).toHaveAttribute('data-open', 'false');
+    expect(screen.getByTestId('evidence')).toHaveTextContent('Jonah Okafor');
   });
 });
 
@@ -735,7 +849,7 @@ describe('CH-13225 a section that crashes leaves the rest of the page usable', (
     crash.on = true;
     show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
     const notice = code('CH-13225') as HTMLElement;
-    expect(notice.textContent).toMatch(/The conversation couldn’t be shown\..*The rest of the page is fine\. This has been reported automatically\./);
+    expect(notice.textContent).toMatch(/The conversation couldn’t be shown.*The rest of the page is fine\. This has been reported automatically\./);
     expect(within(screen.getByRole('complementary', { name: 'Chats' })).getAllByRole('link').length).toBeGreaterThan(0);
     expect(screen.getByRole('textbox', { name: 'Reply to CoachHelm' })).toBeInTheDocument();
     crash.on = false;
@@ -746,17 +860,19 @@ describe('CH-13225 a section that crashes leaves the rest of the page usable', (
 });
 
 describe('the states that stand in for the thread', () => {
-  it('CH-13321 an empty roster is the first-run page with Open roster, the sub-tab strip, and no composer', () => {
+  it('CH-13321 an empty roster is the first-run page with Invite players, the sub-tab strip, and no composer', () => {
     show({ status: 'noRoster', teamName: 'Finley University' });
     expect(code('CH-13321')?.textContent).toMatch(/Add players to ask CoachHelm.*CoachHelm answers from your players’ rounds, stats and schedule\. Once your roster is in, ask about anyone on it\./);
-    expect(screen.getByRole('link', { name: 'Open roster' })).toHaveAttribute('href', '/golf/dashboard/roster');
+    expect(screen.getByRole('link', { name: 'Invite players' })).toHaveAttribute('href', '/golf/dashboard/roster?invite=1');
     expect(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('CH-13221 a program that did not load is a notice with Try again and no composer, and Try again refreshes the page', async () => {
+  it('CH-13221 CH-1211 a program that did not load is the page failure (an alert in the danger tone) with Try again and no composer, and Try again refreshes the page', async () => {
     show({ status: 'failed' });
     expect(code('CH-13221')?.textContent).toMatch(/Ask CoachHelm couldn’t load your program/);
+    expect(code('CH-13221')).toHaveAttribute('role', 'alert');
+    expect(code('CH-13221')).toHaveClass('ch-empty-page--danger');
     expect(screen.queryByRole('textbox')).toBeNull();
     await userEvent.click(within(code('CH-13221') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();

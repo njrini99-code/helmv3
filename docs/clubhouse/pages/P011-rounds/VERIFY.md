@@ -356,6 +356,17 @@ before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P011__round__player__1280__eighteen-holes__before__b2e6dd9.png` | before | b2e6dd9 | The round review before the card (taken before the card was built), 1280px light; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__1280__eighteen-holes__after__b2e6dd9.png` | after | b2e6dd9 | The round card, one wide table, 1280px light; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__1280__eighteen-holes-dark__after__b2e6dd9.png` | after | b2e6dd9 | The round card, 1280px dark (html data-fw-theme); /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__390__eighteen-holes__after__b2e6dd9.png` | after | b2e6dd9 | The round card, two bands of nine, 390px light; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__390__eighteen-holes-dark__after__b2e6dd9.png` | after | b2e6dd9 | The round card, 390px dark; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
+| `P011__round-card__player__390__just-submitted__after__b2e6dd9.png` | after | b2e6dd9 | The card with its quiet line under it, opened from Post round, 390px, reduced motion; /clubhouse-preview/round?just=submitted, synthetic preview fixture, headless WebKit |
+| `P011__round-card-share__player__390__share-sheet-dark__after__b2e6dd9.png` | after | b2e6dd9 | The Share this card sheet with its preview and two switches, 390px dark; synthetic preview fixture, headless WebKit |
+| `P011__round-card-export__player__1200__exported-png__after__b2e6dd9.png` | after | b2e6dd9 | The exported PNG itself, first pass without the player's name or the foot (the file the Save image download produced), 1200px wide; synthetic preview fixture, headless WebKit |
+| `P011__round-card-export__player__1200__exported-png-named__after__e8e33db.png` | after | e8e33db | The exported PNG with the player's name and the GolfHelm and team foot, light, 1200px wide (the download file); synthetic preview fixture, headless WebKit. The preview has no signed-in user context, so the name and team were supplied by a temporary local edit during capture (reverted); unit tests cover the real path |
+| `P011__round-card-export__player__1200__exported-png-named-dark__after__e8e33db.png` | after | e8e33db | The same exported PNG in dark; same capture note |
+| `P011__round-card-print__player__1000__print-emulation__after__b2e6dd9.png` | after | b2e6dd9 | Print media emulation: the card alone, ink on white; /clubhouse-preview/round, synthetic preview fixture, headless WebKit |
 | `P011__track__player__1440__approach__after__cee8548.png` | after | cee8548 | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
 | `P011__track__player__1440__approach__baseline__ee5976d.png` | baseline | ee5976d | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
 | `P011__track__player__1440__approach__before__4e01c43.png` | before | 4e01c43 | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
@@ -409,6 +420,16 @@ before, after, baseline or evidence.
 | `P011__premium-audit__coach__1280__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
 | `P011__premium-audit__coach__390__case-017-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-017-webkit-reduce; /clubhouse-preview/rounds; synthetic preview |
 | `P011__premium-audit__coach__390__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
+| `P011__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
+| `P011__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P011__add-a-course__player__1440x900__step-one__after__0db5a9b.png` | after | 0db5a9b | add-a-course (player), 1440x900px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__add-a-course__player__1440x900__step-one__before__22e5426.png` | before | 22e5426 | add-a-course (player), 1440x900px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__add-a-course__player__390x844__step-one__after__0db5a9b.png` | after | 0db5a9b | add-a-course (player), 390x844px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__add-a-course__player__390x844__step-one__before__22e5426.png` | before | 22e5426 | add-a-course (player), 390x844px, step-one; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__1440x900__browse__after__0db5a9b.png` | after | 0db5a9b | course-picker (player), 1440x900px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__1440x900__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 1440x900px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__390x844__browse__after__0db5a9b.png` | after | 0db5a9b | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__course-picker__player__390x844__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 
@@ -465,16 +486,16 @@ Further browser checks paused when the shared dev server ran out of disk.
 - `/rounds/recover` had no Clubhouse screen when this page was verified; it has
   one now (swap audit F-02, no board;
   see the row above). It was not run on a phone or against a real failed submit.
-  The entry routes' `error.tsx` files
-  are still Fairway's.
+  The entry routes' `error.tsx` files use the shared boundary, which draws
+  Clubhouse's error view inside the shell (corrected 2026-10-17).
 - Offline (110702), Esc (112001), the read order (112101), a failed Start
-  keeping the setup (111201) and a failed hole save
-  keeping the shots (111202) have no test; the review's skeleton (110206) is not
-  built.
+  keeping the setup (111201) and a failed hole save keeping the shots (111202)
+  have no test. The review's skeleton (110206) is built (`RoundReviewSkeleton`;
+  corrected 2026-10-17).
 - Found and not fixed (see the report to the parent):
-  - `rounds/[id]/loading.tsx` is Fairway's, so a Clubhouse review loads under
-    the Fairway skeleton (110206); both
-    `error.tsx` files are the shared Fairway boundary.
+  - Fixed since (corrected 2026-10-17): `rounds/[id]/loading.tsx` draws
+    `RoundReviewSkeleton` through `ClubhouseSwitch` (110206), and both
+    `error.tsx` files draw Clubhouse's view inside the shell.
   - A failed team-membership read fails the whole library although only "today"
     depends on the team.
   - The checklist `screens/rounds.md` covers only the library, and its desktop,
@@ -493,3 +514,34 @@ keeps representative viewport/browser evidence; the complete state/opener
 ledger and review limitations are in the
 [premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
 Captured states are not all visually approved.
+
+## 2026-10-19 — Contract tests for nine reserved hand contracts
+
+Two new files close the gaps the sections above list: `src/clubhouse/__tests__/rounds-contracts.test.tsx` (31 cases) and
+`src/clubhouse/__tests__/rounds-actions-contracts.test.ts` (8 cases, the real `deleteInProgressRound` against a fake database). Each
+case names its Bridge ID in its title. No implementation file changed.
+
+| Contract | What the test forces | Result |
+| --- | --- | --- |
+| 110702 writes refuse offline | `navigator.onLine` false: the library's Discard, setup's Start (nothing sent, the setup untouched, Retry sends it once back online) and a hole's Try again (the warning haptic, nothing sent) | pass |
+| 110803 the library holds only the player's own rounds | the filters of both `golf_rounds` reads (`player_id`, `is_test` false) for two different players; the holes read for the returned rounds only; the route hands over the session's player, and a coach session reads nothing | pass |
+| 111201 a failed Start keeps the setup | course and tees, the back nine, an edited par, the date and a qualifier survive a failed Start; Start again and Retry send the same setup | pass |
+| 111202 shots stay when a hole does not save | both shots still listed, "Your shots are kept on this device", the round does not move, Try again sends the same hole | pass |
+| 111810 the scorecard region | role region, tabIndex 0, named Scorecard, on the Scorecard and Round complete sheets | pass |
+| 111901 phone layout | the library's and the review's top bars through the shell's slot (Rounds with no back link; Round with Rounds, or Stats for a coach); the 860px and 640px container rules in `rounds.css` | pass; the layout itself is read from the stylesheet, not rendered, and no iPhone pass |
+| 111903 full-screen flows | the tab bar's hidden flag is set while setup and the shot screen are open and cleared when they close; Start round in the dock, Back in the band, Exit and Scorecard in the shot screen's top bar | pass |
+| 112001 Esc and focus | all nine sheets: the dialog's `cancel` closes each, focus returns to the opener, and no side effect runs (nothing discarded, saved, posted or navigated). Add a course returns to the course picker it was opened from, and that picker returns focus to its opener | pass |
+| 112101 loaders read in rounds | read waves: the library is two (clock, posted rounds and in-progress rounds together, then one holes read for up to 20 rounds); posted rounds page by 1000; the review is the round, then (coach) the membership check, then holes, shots, tee, player and team together | pass |
+
+Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx eslint` on them, exit 0;
+`node scripts/clubhouse/registry.mjs check`, exit 0. The registry now shows 187 IDs, 185 on an element or in code, 2 reserved.
+
+**Still reserved, and why.** 111809 is a script (`clubhouse:a11y`) that needs the dev server and a browser, not a vitest case. 110804 has
+its test, but one of the refusals the contract lists does not happen: asked to discard another player's round in progress, the
+action deletes nothing (the delete is filtered by player) and then answers `{ success: true }`, because its "already removed" probe
+(`round-partial.ts`, after the delete) is also filtered by player and finds nothing. The data is safe; the answer is not the refusal
+the contract describes. It is reachable only with a forged id, since the library lists the player's own rounds.
+
+**Wording that predates the code.** 112101 describes the library's reads in sequence; the loader now starts the clock, the posted
+rounds and the in-progress rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and 111202's meanings said
+"no test covers this"; they now say where the test is.

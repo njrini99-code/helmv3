@@ -21,6 +21,7 @@ import {
   requestProblem,
   slotCount,
 } from '../screens/onboard/logic';
+import { EMPTY_DRAFT, reduceFlow, type FlowState } from '../screens/onboard/flow';
 
 const FALL_2026 = new Date(2026, 8, 30);
 const SPRING_2027 = new Date(2027, 2, 10);
@@ -40,7 +41,8 @@ describe('onboarding paths (Q-96)', () => {
   });
 
   it('the rail shows where a code path goes before the code is known', () => {
-    expect(railOf('pre', 'code')).toEqual({ sections: ['Team', 'You', 'Account'], current: 0 });
+    expect(railOf('pre', 'code')).toEqual({ sections: ['Team', 'You', 'Account', 'Your game', 'Photo'], current: 0 });
+    expect(railOf('staff', 'code').sections).toEqual(['Team', 'You', 'Account']);
     expect(railOf('player', 'game').sections).toEqual(['Team', 'You', 'Account', 'Your game', 'Photo']);
     expect(railOf('player', 'intro').current).toBe(-1);
   });
@@ -140,5 +142,20 @@ describe('request access', () => {
 
   it('carries who they are and their coach to the owner', () => {
     expect(requestMessage(base)).toBe('Requested access as: Player\nCoach: Coach Reyes');
+  });
+});
+
+describe('moving on (CH-15620)', () => {
+  const at: FlowState = { d: { ...EMPTY_DRAFT, intent: 'code', code: 'K7PQX4MN', kind: 'roster', teamName: 'Varsity Golf', grad: 2028 }, hist: ['intro', 'code', 'name', 'grad'], dir: 'fwd', n: 3 };
+
+  it('moves on from the question that asked', () => {
+    const s = reduceFlow(at, { t: 'next', from: 'grad' });
+    expect(s.hist[s.hist.length - 1]).toBe('account');
+    expect(s.n).toBe(4);
+  });
+
+  it('a move asked by a question that is no longer on screen changes nothing (a second tap, a timer after Back)', () => {
+    expect(reduceFlow(at, { t: 'next', from: 'name' })).toBe(at);
+    expect(reduceFlow(at, { t: 'next', from: 'code', patch: { first: 'X' } })).toBe(at);
   });
 });

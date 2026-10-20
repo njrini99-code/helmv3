@@ -11,6 +11,8 @@ import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { isClassEvent } from '@/lib/calendar/class-events';
+import { isMeetingEvent } from '@/lib/calendar/meeting-visibility';
+import { loadInvitedMeetingIds } from '@/lib/calendar/meeting-invites';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -478,7 +480,9 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
     const fanOutLocation = validatedData.location || '';
     // Q-108 (owner, 2026-10-01): only the invited players are told, as the editor promises ("Attendees will be notified");
     // an event with no invitees notifies nobody. It used to email and push every active player on the team.
-    const fanOutInvitees = new Set(validatedData.attendeeIds ?? []);
+    // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+    // that doesn't ask for replies.
+    const fanOutInvitees = new Set(validatedData.requiresRsvp ? (validatedData.attendeeIds ?? []) : []);
     after(async () => {
       if (fanOutInvitees.size === 0) return;
       try {
@@ -838,13 +842,24 @@ async function updateGolfEventImpl(
     // failure comes back beside `success` so the caller can say so.
     let invitationsError: string | undefined;
     if (inviteIds.length > 0) {
-      const { data: attendanceRows } = await supabase
+      const { data: attendanceRows, error: attendanceError } = await supabase
         .from('golf_event_attendance')
         .select('player_id')
         .eq('event_id', eventId);
 
+      // A failed read used to look like nobody was invited, so every invitee went back through the invitation upsert,
+      // which writes status 'pending': one transient error reset the whole roster's replies. Invite nobody instead.
+      if (attendanceError) {
+        invitationsError = "The changes were saved, but the new invitations didn't go out.";
+        await logServerError(
+          `[updateGolfEvent] attendance read failed for event ${eventId}; skipped inviting: ${describeError(attendanceError)}`,
+          { action: 'golf.updateGolfEvent.invitations', featureArea: 'calendar', extra: { eventId } },
+          'error',
+        );
+      }
+
       const existingIds = new Set((attendanceRows || []).map(row => row.player_id));
-      const toAdd = inviteIds.filter((id) => !existingIds.has(id));
+      const toAdd = attendanceError ? [] : inviteIds.filter((id) => !existingIds.has(id));
 
       if (toAdd.length > 0) {
         try {
@@ -989,7 +1004,7 @@ async function deleteGolfEventImpl(
     // Verify event belongs to coach's team
     const { data: existingEvent, error: existingEventError } = await supabase
       .from('golf_events')
-      .select('team_id, title, status, start_time, location')
+      .select('team_id, title, status, start_time, location, requires_rsvp')
       .eq('id', eventId)
       .single();
 
@@ -1091,7 +1106,11 @@ async function deleteGolfEventImpl(
       const cancelStart = existingEvent.start_time;
       const cancelLocation = existingEvent.location;
       const cancelReason = options?.reason ?? '';
+      const cancelNotifies = existingEvent.requires_rsvp === true;
       after(async () => {
+        // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+        // that doesn't ask for replies, including its cancellation.
+        if (!cancelNotifies) return;
         try {
           const adminClient = createAdminClient();
           const { data: attendances } = await adminClient
@@ -1363,6 +1382,20 @@ async function respondToEventImpl(
     // event_type is refused the same way every read path already treats it.
     if (isClassEvent(event)) {
       return { success: false, error: 'Class meetings don\'t take RSVPs.', code: 'class_meeting' };
+    }
+
+    // A meeting takes replies only from the players invited to it (their own
+    // attendance row; meeting-visibility.ts). Without this, a self-RSVP
+    // (golf_event_attendance_insert_self) would put a player on a 1:1 they
+    // were never invited to, and that row is what makes a meeting visible to
+    // them. Answered as "not found" so the reply does not confirm the meeting
+    // exists. The held migration 20261018120000 refuses the insert as well.
+    if (isMeetingEvent(event)) {
+      const invited = await loadInvitedMeetingIds(supabase, player.id, [event.id], {
+        action: 'golf.respondToEvent.meetingInvite',
+      });
+      if (!invited) return { success: false, error: UNREADABLE };
+      if (!invited.has(event.id)) return { success: false, error: 'Event not found' };
     }
 
     const { data: membership, error: membershipError } = await supabase
@@ -2161,9 +2194,34 @@ async function getEventRSVPImpl(eventId: string): Promise<ActionResult<RSVPStats
     const { getEventRSVPStats } = await import('@/lib/calendar/rsvp');
     const stats = await getEventRSVPStats(eventId, supabase);
 
+    // Once migration 20261017102000 limits a player to their own attendance row, the rows above are only theirs;
+    // the totals come from golf_event_attendance_counts, which returns numbers for the caller's own teams. Before the
+    // migration the function is missing (PGRST202 / 42883) and the row totals stand; for a coach both agree.
+    const row = await Promise.resolve()
+      .then(() => supabase.rpc('golf_event_attendance_counts', { p_event_ids: [eventId] }))
+      .then(({ data, error }) => (error ? undefined : data?.[0]))
+      .catch(() => undefined);
+    if (row && row.invited > stats.summary.total) {
+      const tentative = Math.max(0, row.invited - row.accepted - row.declined - row.pending);
+      const summary = { ...stats.summary, total: row.invited, accepted: row.accepted, declined: row.declined, pending: row.pending, tentative };
+      return {
+        success: true,
+        data: {
+          summary,
+          acceptanceRate: Math.round((row.accepted / row.invited) * 100),
+          responseRate: Math.round(((row.invited - row.pending) / row.invited) * 100),
+        },
+      };
+    }
+
     return { success: true, data: stats };
 
-  } catch {
+  } catch (err) {
+    await logServerError(`getEventRSVP failed for event ${eventId}: ${describeError(err)}`, {
+      action: 'golf.getEventRSVP',
+      featureArea: 'calendar',
+      extra: { eventId },
+    }, 'warning');
     return { success: false, error: 'Failed to fetch RSVP data' };
   }
 }

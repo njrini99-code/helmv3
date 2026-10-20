@@ -1,10 +1,15 @@
 import { ArrowDownRight, ArrowUpRight, Flag, Minus } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
 import type { ChSgChange } from '../../data/stats-common';
+import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
+import { withPointSpan } from '../../ui/point-span';
+import { SerifText } from '../../ui/SerifText';
 import { monotonePath } from '../../lib/chart';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgScale, sgShare } from '../../lib/sg';
+import { EmptyState } from '../../ui/States';
+import { Swap } from '../../ui/Swap';
 
 /**
  * The yardage book: charts drawn the way a caddie's book reads, numbers where
@@ -17,7 +22,10 @@ export function YardagePage({ title, meta, note, children }: { title: string; me
   return (
     <section className="ch-yb">
       <header className="ch-yb__head">
-        <h3>{title}</h3>
+        {/* A page section, so an h2 under the page's h1 (P005-D7: the h3 skipped a level). */}
+        <h2>
+          <SerifText text={title} />
+        </h2>
         {meta && <span className="ch-yb__meta">{meta}</span>}
       </header>
       {children}
@@ -26,56 +34,151 @@ export function YardagePage({ title, meta, note, children }: { title: string; me
   );
 }
 
+type FigureItem = {
+  label: string;
+  value: string;
+  unit?: string;
+  delta?: number | null;
+  deltaDigits?: number;
+  lowerIsBetter?: boolean;
+  context: string;
+  /** A second line under the context: what the figure is measured against. */
+  note?: string;
+  /** Green for a gain and amber for a loss (strokes gained), on the value itself. */
+  tone?: 'gain' | 'loss';
+  /** The catalog state this card is in, when it is one (found by `data-ch-code`). */
+  code?: string;
+  /** The figure drawn against its reference, from `n` (the number behind `value`). */
+  gauge?: ChGauge;
+  n?: number | null;
+};
+
 /** Figure cards with a change chip; the chip colour follows direction and whether lower is better. */
 export function FigureCards({
   items,
   hold = false,
+  lead = false,
+  profile = false,
 }: {
   /** Team stats: the cards keep the height of their fullest layout in every window (`.ch-fg--hold`), so a window change does not move the page below. */
   hold?: boolean;
-  items: Array<{
-    label: string;
-    value: string;
-    unit?: string;
-    delta?: number | null;
-    deltaDigits?: number;
-    lowerIsBetter?: boolean;
-    context: string;
-    /** A second line under the context: what the figure is measured against. */
-    note?: string;
-    /** Green for a gain and amber for a loss (strokes gained), on the value itself. */
-    tone?: 'gain' | 'loss';
-    /** The catalog state this card is in, when it is one (found by `data-ch-code`). */
-    code?: string;
-  }>;
+  /**
+   * Team stats: the first figure (strokes gained) is the page's first read, on its own card with a larger value; the rest
+   * are supporting figures on one shared surface divided by hairlines (owner decision 2026-10-06, premium audit P004 P1).
+   */
+  lead?: boolean;
+  /** A player's overview: the cards hold the measured row height (`.ch-fg--profile`), as its loading skeleton does. */
+  profile?: boolean;
+  items: FigureItem[];
 }) {
+  const [first, ...rest] = items;
+  if (lead && first && rest.length > 0) {
+    return (
+      <div className={'ch-fg ch-fg--lead' + (hold ? ' ch-fg--hold' : '')} style={{ ['--ch-fg-n' as string]: rest.length }}>
+        <FigureCard it={first} lead />
+        <div className="ch-fg__group">
+          {rest.map((it) => (
+            <FigureCard key={it.label} it={it} />
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className={'ch-fg' + (hold ? ' ch-fg--hold' : '')} style={{ ['--ch-fg-n' as string]: items.length }}>
-      {items.map((it) => {
-        const d = it.delta;
-        const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);
-        const good = d != null && !flat && (it.lowerIsBetter ? d < 0 : d > 0);
-        return (
-          <div key={it.label} className="ch-fg__c" data-ch-code={it.code}>
-            <span className="ch-fg__l">{it.label}</span>
-            <span className={'ch-fg__v ch-num' + (it.tone ? ` ch-${it.tone}` : '')}>
-              {it.value}
-              {it.unit && it.value !== NO_DATA && <small>{it.unit}</small>}
-            </span>
-            <span className="ch-fg__d">
-              {d != null && (
-                <span className={`ch-delta ch-num ${flat ? 'is-flat' : good ? 'is-good' : 'is-bad'}`}>
-                  <Icon icon={flat ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
-                  {formatSigned(d, it.deltaDigits ?? 0)}
-                </span>
-              )}
-              <span>{it.context}</span>
-            </span>
-            {it.note && <span className="ch-fg__n">{it.note}</span>}
-          </div>
-        );
-      })}
+    <div className={'ch-fg' + (hold ? ' ch-fg--hold' : '') + (profile ? ' ch-fg--profile' : '')} style={{ ['--ch-fg-n' as string]: items.length }}>
+      {items.map((it) => (
+        <FigureCard key={it.label} it={it} />
+      ))}
     </div>
+  );
+}
+
+function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
+  const d = it.delta;
+  const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);
+  const good = d != null && !flat && (it.lowerIsBetter ? d < 0 : d > 0);
+  return (
+    <div className={'ch-fg__c' + (lead ? ' ch-fg__c--lead' : '')} data-ch-code={it.code}>
+      <span className="ch-fg__l">{it.label}</span>
+      <span className={'ch-fg__v ch-num' + (it.tone ? ` ch-${it.tone}` : '')}>
+        {/* A new window's figure crossfades in where the old one was (CH-5604, CH-4604). */}
+        <Swap swapKey={`${it.value}${it.unit ?? ''}`} inline>
+          {lead ? withPointSpan(it.value) : it.value}
+          {it.unit && it.value !== NO_DATA && <small>{it.unit}</small>}
+        </Swap>
+      </span>
+      <span className="ch-fg__d">
+        {d != null && (
+          <span className={`ch-delta ch-num ${flat ? 'is-flat' : good ? 'is-good' : 'is-bad'}`}>
+            <Icon icon={flat ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
+            {formatSigned(d, it.deltaDigits ?? 0)}
+          </span>
+        )}
+        <span>{it.context}</span>
+      </span>
+      {/* The lead draws its gauge before its note, so its gauge sits on the same line as the supporting figures' gauges. */}
+      {!lead && it.note && <span className="ch-fg__n">{it.note}</span>}
+      {it.gauge && it.n != null && <FigureGauge gauge={it.gauge} n={it.n} />}
+      {lead && it.note && <span className="ch-fg__n">{it.note}</span>}
+    </div>
+  );
+}
+
+/**
+ * A figure drawn against the reference its data gives (owner, 2026-10-07: no bare numbers), on one 6px track so the row
+ * reads as a set: strokes gained from the Tour's zero (three strokes to an end), the scoring average from par (six), a
+ * rate along 0 to 100 with the Tour's mark when there is one, putts on a track to 40 marked at 36 (two on every green),
+ * birdies as holes out of 18. Decorative: the value and its words say it.
+ */
+export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
+  const pct = (v: number) => `${Math.max(0, Math.min(100, v))}%`;
+  if (gauge.kind === 'holes') {
+    return (
+      <span className="ch-fg__gauge ch-fg__gauge--holes" aria-hidden="true">
+        {Array.from({ length: 18 }, (_, i) => (
+          <i key={i} style={i < Math.floor(n) ? undefined : i === Math.floor(n) ? { ['--ch-fg-part' as string]: pct((n % 1) * 100) } : { ['--ch-fg-part' as string]: '0%' }} />
+        ))}
+        <em>of 18 holes</em>
+      </span>
+    );
+  }
+  if (gauge.kind === 'sg' || gauge.kind === 'par') {
+    const v = gauge.kind === 'sg' ? n : gauge.toPar;
+    if (v == null) return null;
+    const end = gauge.kind === 'sg' ? 3 : 6;
+    const w = pct((Math.abs(v) / end) * 50);
+    // Strokes gained above zero is good; a score above par is not.
+    const good = gauge.kind === 'sg' ? v >= 0 : v <= 0;
+    const right = gauge.kind === 'sg' ? v >= 0 : v > 0;
+    return (
+      <span className="ch-fg__gauge" aria-hidden="true">
+        <span className="ch-fg__track">
+          <i className={good ? 'is-gain' : 'is-loss'} style={right ? { left: '50%', width: w } : { right: '50%', width: w }} />
+          <b style={{ left: '50%' }} />
+        </span>
+        <em style={{ left: '50%' }}>{gauge.kind === 'sg' ? 'Tour' : 'Par'}</em>
+      </span>
+    );
+  }
+  if (gauge.kind === 'putts') {
+    return (
+      <span className="ch-fg__gauge" aria-hidden="true">
+        <span className="ch-fg__track">
+          <i className={n <= 36 ? 'is-gain' : 'is-loss'} style={{ left: 0, width: pct((n / 40) * 100) }} />
+          <b style={{ left: '90%' }} />
+        </span>
+        <em style={{ left: '90%' }}>36</em>
+      </span>
+    );
+  }
+  return (
+    <span className="ch-fg__gauge" aria-hidden="true">
+      <span className="ch-fg__track">
+        <i className="is-gain" style={{ left: 0, width: pct(n) }} />
+        {gauge.ref != null && <b style={{ left: pct(gauge.ref) }} />}
+      </span>
+      {gauge.ref != null && <em style={{ left: pct(gauge.ref) }}>{gauge.refLabel ?? 'Tour'}</em>}
+    </span>
   );
 }
 
@@ -101,7 +204,7 @@ export function SgChangeChip({ change, code }: { change: ChSgChange; code?: stri
 
 /** Scoring trend on a scoreboard: a smooth line (lower scores sit higher) over to-par tiles. */
 export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; score: number; toPar: number | null }> }) {
-  if (rounds.length === 0) return <p className="ch-gm-p__empty">No rounds in this window.</p>;
+  if (rounds.length === 0) return <EmptyState compact code="CH-5302" title="No rounds in this window." />;
   const w = 690;
   const h = 176;
   const padX = w / (rounds.length * 2);
@@ -114,22 +217,26 @@ export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; sco
   const ticks = [Math.ceil(lo), Math.round((lo + hi) / 2), Math.floor(hi)];
   return (
     <>
-      <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Scores: ${rounds.map((r) => r.score).join(', ')}`}>
+      <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Scores, lower is better: ${rounds.map((r) => r.score).join(', ')}`}>
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={0} x2={w} y1={y(t)} y2={y(t)} stroke="rgb(28 25 18 / .1)" />
+            <line x1={0} x2={w} y1={y(t)} y2={y(t)} stroke="var(--ch-border-subtle)" />
             <text x={4} y={y(t) - 4} className="ch-ax">
               {t}
             </text>
           </g>
         ))}
-        <line x1={0} x2={w} y1={y(avg)} y2={y(avg)} stroke="rgb(28 25 18 / .35)" strokeDasharray="2 3" />
+        <line x1={0} x2={w} y1={y(avg)} y2={y(avg)} stroke="var(--ch-st-mean-rule)" strokeDasharray="2 3" />
         <text x={padX} y={y(avg) + 14} className="ch-ax">
           avg {avg.toFixed(1)}
         </text>
-        {pts.length > 1 && <path d={monotonePath(pts)} fill="none" stroke="#1c1b18" strokeWidth={1.5} strokeLinecap="round" />}
+        {/* The one scoring-axis convention (P005-D1): lower scores sit higher, and the chart says so. */}
+        <text x={w - 4} y={14} textAnchor="end" className="ch-ax">
+          ↑ Lower is better
+        </text>
+        {pts.length > 1 && <path d={monotonePath(pts)} fill="none" stroke="var(--ch-ink-900)" strokeWidth={1.5} strokeLinecap="round" />}
         {pts.map(([px, py], i) => (
-          <circle key={i} cx={px} cy={py} r={i === pts.length - 1 ? 4.5 : 3.5} fill={i === pts.length - 1 ? '#1c1b18' : '#fbf8ef'} stroke="#1c1b18" strokeWidth={1.5} />
+          <circle key={i} cx={px} cy={py} r={i === pts.length - 1 ? 4.5 : 3.5} fill={i === pts.length - 1 ? 'var(--ch-ink-900)' : 'var(--ch-st-dot-paper)'} stroke="var(--ch-ink-900)" strokeWidth={1.5} />
         ))}
       </svg>
       <div className="ch-board" style={{ ['--ch-n' as string]: rounds.length }}>
@@ -246,6 +353,7 @@ export function FieldTable({
   const fmt = (v: number | null, r: (typeof rows)[number]) => (v == null ? NO_DATA : r.sg || r.signed ? `${formatSigned(v, r.digits)}${r.unit}` : `${v.toFixed(r.digits)}${r.unit}`);
   const signTone = (v: number | null, r: (typeof rows)[number]) => (r.sg && v != null ? (v >= 0 ? 'ch-gain' : 'ch-loss') : '');
   const hasBench = rows.some((r) => r.bench != null);
+  // A row's axis needs something to set the player against: the team's figure (a coach) or the Tour's.
   const cols = 2 + (showTeam ? 1 : 0) + (hasBench ? 1 : 0);
   return (
     <table className="ch-ft">
@@ -321,18 +429,22 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
       <path d={`M${cx} ${cy - 30} l14 5 -14 5z`} className="ch-pg-flag" />
       {shown.map((b, i) => {
         const pct = b.attempts ? Math.round((b.made / b.attempts) * 100) : null;
+        // Every dot sits on one ray to the right of the cup, nearest ring first, and the labels step down in the same order, so no two
+        // leaders cross and none runs through another label.
         const rm = i ? (radii[i]! + radii[i - 1]!) / 2 : radii[0]! / 2 + 3;
-        const px = cx + rm * Math.cos(-0.6);
-        const py = cy + rm * Math.sin(-0.6) - (4 - i) * 4;
+        const px = cx + rm;
+        const py = cy;
         const ly = 26 + i * 24;
         const below = pct != null && b.bench != null && b.attempts >= 10 && pct < b.bench;
         return (
           <g key={b.label}>
             <circle cx={px} cy={py} r={2.5} fill="var(--ch-ink-900)" />
             <polyline points={`${px},${py} ${W - 96},${ly} ${W - 90},${ly}`} className="ch-pg-leader" />
-            <text x={W - 86} y={ly} dy=".34em" className="ch-pg-lbl">
-              <tspan className="ch-pg-band">{b.label}</tspan>{' '}
-              <tspan className={`ch-pg-pct${below ? ' is-below' : ''}`}>{pct == null ? NO_DATA : `${pct}%`}</tspan>
+            <text x={W - 86} y={ly} dy=".34em" className="ch-pg-band">
+              {b.label}
+            </text>
+            <text x={W} y={ly} dy=".34em" textAnchor="end" className={`ch-pg-pct${below ? ' is-below' : ''}`}>
+              {pct == null ? NO_DATA : `${pct}%`}
             </text>
           </g>
         );
@@ -569,7 +681,7 @@ export function GreenMiss({ m }: { m: Record<'ll' | 'lg' | 'lr' | 'l' | 'r' | 's
             <em>Green</em>
           </span>
         ) : (
-          <span key={l} className="ch-gmiss__c" style={{ background: `rgb(154 101 18 / ${0.05 + ((v ?? 0) / max) * 0.32})` }}>
+          <span key={l} className="ch-gmiss__c" style={{ background: `color-mix(in srgb, var(--ch-st-miss-heat) ${(5 + ((v ?? 0) / max) * 32).toFixed(1)}%, transparent)` }}>
             <b className="ch-num">{v == null ? NO_DATA : `${Math.round(v)}%`}</b>
             <em>{l}</em>
           </span>

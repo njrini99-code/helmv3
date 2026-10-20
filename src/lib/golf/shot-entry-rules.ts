@@ -9,6 +9,7 @@ import {
   type ValidatableShot,
 } from '@/lib/golf/round-entry-validation';
 import type { ApproachMissDirection, PuttMissTag, RoundHole, ShotRecord } from '@/lib/types/golf';
+import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 
 /**
  * The shot entry's rules, as pure functions: which results a shot offers,
@@ -254,4 +255,122 @@ export function editedShotIssues(
     );
   }
   return issues;
+}
+
+// ── Tap in ──────────────────────────────────────────────────────────────────
+//
+// A tap in is a real stroke. In stroke play every ball is holed out (Rules of
+// Golf 3.3c) and a concession exists only in match play (3.2b), where the
+// conceded stroke still counts in the score. So a tap in is written exactly as
+// a holed putt: `result: 'hole'` on a putting shot, which the writers turn
+// into `putt_made = true` (derivePuttMade) and strokes gained reads in its
+// 0 to 3 ft bucket. Nothing marks it apart from that.
+
+/** The leave a tap in is written at when the putt on screen did not finish there (feet, the stored putting unit). */
+export const TAP_IN_LEAVE_FEET = 1;
+/** Within this the ball already is a tap in: one holed putt from where it lies. */
+export const TAP_IN_RANGE_FEET = 2;
+
+export interface TapInInput {
+  hole: RoundHole;
+  currentShot: number;
+  shotHistory: readonly ShotRecord[];
+  currentLie: ShotRecord['lieBefore'];
+  isPutting: boolean;
+  distanceToHole: number;
+  distanceUnit: 'yards' | 'feet';
+  /** The result picked on screen; a tap in is offered only before one is. */
+  resultOfShot: ShotRecord['result'] | null;
+  distanceAfterShot: string;
+  puttBreak: ShotRecord['puttBreak'] | null;
+  puttSlope: ShotRecord['puttSlope'] | null;
+  /** Miss tags picked on screen; a tap in is not offered over them, so a tag the player chose is never dropped. */
+  puttMissTags?: readonly string[];
+}
+
+export interface TapInPlan {
+  /** What one tap writes, in order: the holed putt, or the putt on screen left at TAP_IN_LEAVE_FEET and then the holed putt. */
+  rows: ShotRecord[];
+  /** Where the putt on screen starts, in feet. */
+  fromFeet: number;
+  /** The hole's score and putts once the rows are written. */
+  score: number;
+  putts: number;
+}
+
+/**
+ * What a tap in would write here, or null when it is not offered: not a putt,
+ * the hole is already holed, the player already picked a result or typed a
+ * leave (their input is never thrown away), or a shot rule blocks the rows
+ * (the hole's stroke limit). Every renderer reads this, so the Fairway and
+ * Clubhouse screens offer and write the same tap in.
+ */
+export function planTapIn(s: TapInInput): TapInPlan | null {
+  if (!s.isPutting || s.currentLie !== 'green') return null;
+  if (s.shotHistory.some((shot) => shot.result === 'hole')) return null;
+  if (s.resultOfShot !== null || s.distanceAfterShot.trim() !== '') return null;
+  if (s.puttMissTags && s.puttMissTags.length > 0) return null;
+  const fromFeet = s.distanceUnit === 'yards' ? s.distanceToHole * 3 : s.distanceToHole;
+  if (!Number.isFinite(fromFeet) || fromFeet <= 0) return null;
+
+  const putt = (shotNumber: number, before: number, unitBefore: 'yards' | 'feet', holed: boolean, read: boolean): ShotRecord => {
+    const beforeFeet = unitBefore === 'yards' ? before * 3 : before;
+    const afterFeet = holed ? 0 : TAP_IN_LEAVE_FEET;
+    return {
+      shotNumber,
+      shotType: 'putting',
+      clubType: 'putter',
+      lieBefore: 'green',
+      distanceToHoleBefore: before,
+      distanceUnitBefore: unitBefore,
+      result: holed ? 'hole' : 'green',
+      distanceToHoleAfter: afterFeet,
+      distanceUnitAfter: 'feet',
+      // As handleNextShot writes a putt: its length in yards, rounded.
+      shotDistance: Math.round(calculateShotDistanceWithDirection(beforeFeet / 3, afterFeet / 3, undefined)),
+      puttBreak: read ? (s.puttBreak ?? undefined) : undefined,
+      puttSlope: read ? (s.puttSlope ?? undefined) : undefined,
+      isPenalty: false,
+      puttDistanceFeet: beforeFeet,
+    };
+  };
+
+  const rows: ShotRecord[] =
+    fromFeet <= TAP_IN_RANGE_FEET
+      ? [putt(s.currentShot, s.distanceToHole, s.distanceUnit, true, true)]
+      : [putt(s.currentShot, s.distanceToHole, s.distanceUnit, false, true), putt(s.currentShot + 1, TAP_IN_LEAVE_FEET, 'feet', true, false)];
+
+  const hole = { holeNumber: s.hole.number, par: s.hole.par, yardage: s.hole.yardage };
+  const after = [...s.shotHistory, ...rows];
+  const { score, putts } = deriveScoreAndPutts(after);
+  const issues = [
+    ...rows.flatMap((row) => validateShot(row, hole)),
+    ...validateShotContinuity(after, hole),
+    ...validateHoleTotals({ holeNumber: s.hole.number, par: s.hole.par, score, putts }),
+  ];
+  if (issues.some((issue) => issue.severity === 'block')) return null;
+  return { rows, fromFeet, score, putts };
+}
+
+/** A putting length in the player's unit, short enough for a tap in: "2 ft", "0.3 m". Stored feet are never changed. */
+export function tapInDistance(feet: number, pref: 'yards' | 'meters'): string {
+  if (pref === 'meters') return `${Number((feet * 0.3048).toFixed(1))} m`;
+  return `${feet >= 1 ? Math.round(feet) : Number(feet.toFixed(1))} ft`;
+}
+
+/**
+ * The words beside the tap in, naming every stroke it writes and the score it
+ * leaves, so a putt that was actually holed is never tapped in without the
+ * score saying so. `caption` is shown; `label` is the button's accessible name.
+ */
+export function tapInWords(plan: TapInPlan, pref: 'yards' | 'meters'): { caption: string; label: string } {
+  const from = tapInDistance(plan.fromFeet, pref);
+  if (plan.rows.length === 1) {
+    return { caption: `Holed from ${from} · score ${plan.score}`, label: `Tap in: holed from ${from}, score ${plan.score}` };
+  }
+  const leave = tapInDistance(TAP_IN_LEAVE_FEET, pref);
+  return {
+    caption: `Two putts: leaves ${leave}, then holed · score ${plan.score}`,
+    label: `Tap in: the putt from ${from} leaves ${leave}, then holed. Two putts, score ${plan.score}`,
+  };
 }

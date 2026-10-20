@@ -25,10 +25,13 @@ import { StatsTeam } from '../screens/stats/StatsTeam';
 import { CrumbProvider } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
+import { formatDate, localToday } from '../ui/date-time';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_PLAYER_NOMATCH, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
+
+// A swap's leaving copy (ui/Swap.tsx) is hidden from assistive tech while it fades; read the live one.
+const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((e) => !e.closest('.ch-swap__body[aria-hidden]')) ?? null;
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -181,6 +184,8 @@ describe('Team stats · the filter bar', () => {
     const user = userEvent.setup();
     showTeam(team({ filter: filt({ window: 'season', types: ['qualifier'], courses: ['Pine Hollow'] }), window: 'season', roundCount: 0, grid: [], players: [], putting: null, bests: [] }));
     await expectCode('CH-4313', /No rounds match these filters/);
+    // The whole body is empty, so it is the page's empty state, as CH-4301 is (states audit, 2026-10-08).
+    expect(code('CH-4313')!.classList.contains('ch-empty-page')).toBe(true);
     expect(screen.queryByText(/No stats yet/)).toBeNull();
     expect(code('CH-4301')).toBeNull();
     expect(code('CH-4302')).toBeNull();
@@ -467,7 +472,7 @@ describe('Team stats · the filter sheet', () => {
     await user.click(screen.getByRole('button', { name: /^Filter/ }));
     const d = inDialog();
     expect(d.getByRole('button', { name: 'Practice' }).getAttribute('aria-pressed')).toBe('true');
-    expect((d.getByLabelText('From') as HTMLInputElement).value).toBe(RANGE.from);
+    expect((d.getByLabelText('From') as HTMLInputElement).value).toBe(formatDate(RANGE.from, { omitYear: RANGE.from.slice(0, 4) === localToday().slice(0, 4) }));
     expect((within(d.getByRole('group', { name: 'Course' })).getByRole('checkbox', { name: /Finley GC/ }) as HTMLInputElement).checked).toBe(true);
     await user.click(d.getByRole('button', { name: 'Done' }));
     expect(router.push).not.toHaveBeenCalled();
@@ -492,7 +497,7 @@ describe('the filter, for assistive technology', () => {
     expect(d.getByRole('button', { name: 'Practice' }).getAttribute('aria-pressed')).toBe('false');
     expect(d.getByRole('radiogroup', { name: 'Window' })).toBeTruthy();
     expect(within(d.getByRole('group', { name: 'Course' })).getAllByRole('checkbox').length).toBeGreaterThan(1);
-    expect(d.getByLabelText('From').getAttribute('type')).toBe('date');
+    expect(d.getByLabelText('From').getAttribute('aria-haspopup')).toBe('dialog');
     // A range error is the dates' description, not just text beside them.
     fireEvent.change(d.getByLabelText('From'), { target: { value: RANGE.to } });
     fireEvent.change(d.getByLabelText('To'), { target: { value: RANGE.from } });
@@ -509,7 +514,7 @@ describe('Team stats · network', () => {
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     const { unmount } = showTeam(team({ filter: filt({ types: ['tournament'] }), roundCount: 12 }));
     await user.click(screen.getByRole('button', { name: 'Remove filter: Tournament' }));
-    await expectCode('CH-4901', /Couldn't apply the filter: you're offline/);
+    await expectCode('CH-4901', /Couldn’t apply the filter: you’re offline/);
     expect(code('CH-4901')!.textContent).toMatch(/still the rounds you had/);
     expect(router.push).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -518,7 +523,7 @@ describe('Team stats · network', () => {
     showTeam(team({ filter: filt({ types: ['tournament'] }), roundCount: 12 }));
     await user.click(screen.getByRole('radio', { name: 'Season' }));
     await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-4901"]').length).toBeGreaterThan(0));
-    expect([...document.querySelectorAll('[data-ch-code="CH-4901"]')].some((n) => /Couldn't open the season: you're offline/.test(n.textContent ?? ''))).toBe(true);
+    expect([...document.querySelectorAll('[data-ch-code="CH-4901"]')].some((n) => /Couldn’t open the season: you’re offline/.test(n.textContent ?? ''))).toBe(true);
     online.mockRestore();
   });
 
@@ -582,6 +587,8 @@ describe('Stats player · the filter', () => {
     const user = userEvent.setup();
     showPlayer(PREVIEW_PLAYER_NOMATCH);
     await expectCode('CH-5320', /No rounds match these filters/);
+    // It stands in for a tab's content beside Development, so it stays a section's empty state, not the page's.
+    expect(code('CH-5320')!.classList.contains('ch-empty-page')).toBe(false);
     // Not an "early read" of nothing.
     expect(code('CH-5305')).toBeNull();
     expect(document.querySelector('.ch-st-panel .ch-fg, .ch-st-panel .ch-pf-figs')).toBeNull();
@@ -615,7 +622,7 @@ describe('Stats player · the filter', () => {
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     const { unmount } = showPlayer(player({ filter: filt({ types: ['qualifier'] }) }));
     await user.click(screen.getByRole('button', { name: 'Remove filter: Qualifying' }));
-    await expectCode('CH-5901', /Couldn't apply the filter: you're offline/);
+    await expectCode('CH-5901', /Couldn’t apply the filter: you’re offline/);
     expect(router.push).not.toHaveBeenCalled();
     online.mockRestore();
     unmount();
@@ -670,7 +677,7 @@ describe('Stats player · the Rounds tab says why there is no earlier window', (
     cleanup();
     expect(await why(filt({ types: ['tournament'] }))).toBe('Needs 3 earlier 18-hole rounds: fewer than 13 match these filters.');
     cleanup();
-    expect(await why(filt())).toMatch(/^Needs 3 earlier 18-hole rounds: this window has fewer than 13 in the last 12 months/);
+    expect(await why(filt())).toBe('Comparing starts at 13 rounds: the newest 10 against at least 3 before them.');
     cleanup();
     expect(await why(filterFor('season'))).toBe('The season has no earlier window to compare with.');
     cleanup();
@@ -1023,10 +1030,10 @@ describe('Stats · holes', () => {
     showPlayer(player({ filter: filt({ holes: 'all' }), rounds }));
     expect(document.body.textContent).toMatch(/9-hole scores doubled/);
     // The newest round, a 38 at +2 over nine holes, is drawn as a 76 at +4; the average is over the drawn scores.
-    const tiles = [...document.querySelectorAll('.ch-board__n')].map((el) => el.textContent);
+    const tiles = [...document.querySelectorAll('.ch-fm__tp')].map((el) => el.textContent);
     expect(tiles[tiles.length - 1]).toBe('+4');
     const drawn = PREVIEW_PLAYER.rounds.map((r, i) => (i === 0 ? 76 : r.score));
-    expect(document.querySelector('.ch-board')!.parentElement!.textContent).toContain(`avg ${(drawn.reduce((a, b) => a + b, 0) / drawn.length).toFixed(1)}`);
+    expect(document.querySelector('.ch-fm__facts dd')!.textContent).toBe((drawn.reduce((a, b) => a + b, 0) / drawn.length).toFixed(1));
     await user.click(screen.getByRole('tab', { name: /Rounds/ }));
     expect(document.querySelectorAll('.ch-gx-type').length).toBeGreaterThan(0);
     expect([...document.querySelectorAll('.ch-gx-type')].some((el) => el.textContent === '9 holes')).toBe(true);

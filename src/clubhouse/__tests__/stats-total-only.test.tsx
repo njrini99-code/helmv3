@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 /**
  * Two owner rules on the figures (docs/clubhouse/PROGRESS.md):
  *
- *   Q-122 "Last 10" is a player's ten newest countable rounds in any season (the legacy app's rule), and "vs. previous 10" the ten
+ *   Q-122 "Last 10" is a player's ten newest countable rounds in any season (the legacy app's rule), and "vs previous 10" the ten
  *         before them, read across seasons; Season and Qualifiers stay this season.
  *   Q-123 A round posted as a total only (18 holes, no nines, no holes) counts in the SCORE figures and in no HOLE-level one, and a
  *         card whose round count is fewer than the window's says how many rounds it covers.
@@ -253,7 +253,7 @@ describe('Q-122 Last 10 across seasons', () => {
     expect(last10.season.avg).toBeCloseTo(70.2, 10);
   });
 
-  it('"vs. previous 10" is the ten before them across seasons: his nine earlier 18-hole rounds (the 9-hole one is not one)', async () => {
+  it('"vs previous 10" is the ten before them across seasons: his nine earlier 18-hole rounds (the 9-hole one is not one)', async () => {
     tables.current = profileTables(COLE_ROUNDS);
     const d = (await profileLoad('last10'))!;
     expect(d.extra.compare).not.toBeNull();
@@ -274,7 +274,7 @@ describe('Q-122 Last 10 across seasons', () => {
     expect(d.roundCount).toBe(10);
     expect(figure(d, 'Scoring average').value).toBeCloseTo(LAST_10_MEAN, 10);
     expect(figure(d, 'Scoring average').delta).toBeCloseTo(LAST_10_MEAN - PREVIOUS_MEAN, 10);
-    expect(figure(d, 'Scoring average').context).toBe('vs. previous 10');
+    expect(figure(d, 'Scoring average').context).toBe('vs previous 10');
     expect(d.grid[0]!.rounds).toBe(10);
     expect(d.grid[0]!.avg).toBeCloseTo(LAST_10_MEAN, 10);
     // The sheet lists everything loaded, the earlier rounds included.
@@ -419,6 +419,12 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the team 
     expect(figure(d, 'Putts per round').note).toBe('Hole stats from 3 of 5 rounds');
     expect(figure(d, 'Greens in regulation').context).toBe('Tour averages 67%');
     expect(figure(d, 'Greens in regulation').note).toBe('Hole stats from 3 of 5 rounds');
+    // The gauges' references come from the data: par over the same five rounds as the scoring average, the Tour's greens mark.
+    const par = figure(d, 'Scoring average').gauge;
+    expect(par?.kind).toBe('par');
+    expect(par?.kind === 'par' ? par.toPar : null).toBeCloseTo(70.2 - 72, 10);
+    expect(figure(d, 'Greens in regulation').gauge).toEqual({ kind: 'rate', ref: 67 });
+    expect(figure(d, 'Scrambling').gauge).toEqual({ kind: 'rate', ref: null });
   });
 
   it('Qualifiers: two rounds and no hole stats; the scoring and the player row are the totals', async () => {

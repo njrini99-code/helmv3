@@ -1,8 +1,7 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { PLAYER_HELM_HREF, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { PLAYER_HELM_HREF, PLAYER_HELM_VIEWS, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { EmptyState } from '../../../ui/States';
@@ -23,15 +22,16 @@ import { PlayerHelmTabs } from './PlayerHelmTabs';
 export function PlayerHelmFrame({ view, line, off = false, covered = false, after, children }: { view: PlayerHelmView; line: ReactNode; off?: boolean; covered?: boolean; after?: ReactNode; children: ReactNode }) {
   const phone = useChPhone();
   // A switch of view moves the strip at once and dims the page (aria-busy) until the next view is ready.
-  const sw = useViewSwitch(view, (v) => PLAYER_HELM_HREF[v]);
+  const sw = useViewSwitch(view, (v) => PLAYER_HELM_HREF[v], PLAYER_HELM_VIEWS);
   const tabs = off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
     <>
-      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} aria-busy={sw.pending || undefined} inert={covered || undefined}>
+      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined} inert={covered || undefined}>
         {phone && <PhoneTop start title="CoachHelm" />}
         {phone && tabs}
-        <Head who="Player">{line}</Head>
-        {!phone && tabs}
+        <Head phone={phone} aside={!phone ? tabs : undefined}>
+          {line}
+        </Head>
         {children}
       </main>
       {after}
@@ -45,7 +45,7 @@ export function HelmOff({ reason }: { reason: string | null }) {
     <EmptyState
       size="page"
       code="CH-13304"
-      icon={Sparkles}
+      kind="restricted"
       title="CoachHelm is off for your team"
       body={reason ? `Your coach turned it off: “${reason}”. Ask your coach if you want it back on.` : 'CoachHelm is turned off, so no insights are being shown. Ask your coach if you want it back on.'}
     />

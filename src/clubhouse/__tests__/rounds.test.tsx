@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -97,6 +97,16 @@ describe('112401 Rounds library, on screen', () => {
     expect(screen.queryByRole('link', { name: /Sep 26, Finley GC/ })).toBeNull();
   });
 
+  it('CH-11304 one primary for one action: with no round in progress the idle card carries Start a round, so the head has no New round', () => {
+    show(PREVIEW_ROUNDS_IDLE);
+    expect(screen.queryByRole('link', { name: 'New round' })).toBeNull();
+    expect(screen.getByRole('link', { name: /Start a round/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    cleanup();
+    // The check for a round in progress failed: that card is a notice with no Start, so the head keeps New round.
+    show(PREVIEW_ROUNDS_UNFINISHED_FAILED);
+    expect(screen.getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+  });
+
   it('CH-11703 New round, and Continue at the next hole with the press haptic', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS);
@@ -111,10 +121,15 @@ describe('112401 Rounds library, on screen', () => {
     show(PREVIEW_ROUNDS);
     const strip = document.querySelector('.ch-rd-unf .ch-rd-strip')!;
     expect(strip.getAttribute('aria-hidden')).toBe('true');
-    const cells = strip.querySelectorAll('span');
+    const cells = strip.querySelectorAll(':scope > span');
     expect(cells).toHaveLength(18);
-    // 4 on a 4, 6 on a 5, 3 on a 3; the fourth is next.
-    expect([...cells].slice(0, 4).map((c) => `${c.className}:${c.textContent}`)).toEqual(['is-par:4', 'is-over:6', 'is-par:3', 'is-next:4']);
+    // 4 on a 4, 6 on a 5, 3 on a 3, each under its hole's number (P011-D15); the fourth is next.
+    expect([...cells].slice(0, 4).map((c) => `${c.className}:${c.querySelector('em')?.textContent ?? '-'}/${c.lastChild!.textContent}`)).toEqual([
+      'is-par is-played:1/4',
+      'is-over is-played:2/6',
+      'is-par is-played:3/3',
+      'is-next:-/4',
+    ]);
   });
 
   it('a hole under par is marked as under in the strip; over and par are not', () => {
@@ -128,31 +143,31 @@ describe('112401 Rounds library, on screen', () => {
       nextHole: 3,
     };
     show({ ...PREVIEW_ROUNDS, unfinished: { list: [birdie], error: false } });
-    const cells = [...document.querySelectorAll('.ch-rd-unf .ch-rd-strip span')].slice(0, 3);
-    expect(cells.map((c) => c.className)).toEqual(['is-under', 'is-par', 'is-next']);
+    const cells = [...document.querySelectorAll('.ch-rd-unf .ch-rd-strip > span')].slice(0, 3);
+    expect(cells.map((c) => c.className)).toEqual(['is-under is-played', 'is-par is-played', 'is-next']);
     expect(document.querySelector('.ch-rd-unf__f > span')!.textContent).toBe('−1 through 2');
   });
 
-  it('110106 a round with every hole scored reads Ready to submit, and its link says Submit round', () => {
+  it('110106 a round with every hole scored reads Ready to post, and its link says Post round', () => {
     const done = PREVIEW_ROUNDS_MANY.unfinished.list[2]!;
     show({ ...PREVIEW_ROUNDS_MANY, unfinished: { list: [done], error: false } });
-    expect(screen.getByText('Ready to submit')).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Submit round/ }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
+    expect(screen.getByText('Ready to post')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Post round/ }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
     expect(document.querySelector('.ch-rd-strip .is-next')).toBeNull();
   });
 
-  it('110106 more than one unfinished round: the newest in the card, the rest listed with Continue or Submit', () => {
+  it('110106 more than one unfinished round: the newest in the card, the rest listed with Continue or Post', () => {
     show(PREVIEW_ROUNDS_MANY);
     const more = screen.getByRole('region', { name: '2 more unfinished rounds' });
     expect(within(more).getByText('Oct 2 · not started')).toBeTruthy();
     expect(within(more).getByText('Sep 29 · through 18')).toBeTruthy();
-    expect(within(more).getByRole('link', { name: 'Submit' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
+    expect(within(more).getByRole('link', { name: 'Post' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
     expect(within(more).getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[1]!.id}`);
   });
 
   it('CH-11304 with no round in progress: the idle card and the last round', async () => {
     show(PREVIEW_ROUNDS_IDLE);
-    await expectCode('CH-11304', /No round in progress.*Ready when you are\..*Last round Sep 26 · Finley GC/);
+    await expectCode('CH-11304', /No round in progress.*Ready when you are(?!\.).*Last round Sep 26 · Finley GC/);
     expect(document.querySelectorAll('.ch-rd-strip.is-ghost span')).toHaveLength(18);
   });
 
@@ -167,7 +182,7 @@ describe('112401 Rounds library, on screen', () => {
   it('111402 CH-11201 the posted rounds fail to load: said so, Try again asks the server again, never "no rounds"', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_FAILED);
-    await expectCode('CH-11201', /Your rounds didn't load/);
+    await expectCode('CH-11201', /Your rounds didn’t load/);
     expect(screen.queryByText('No rounds yet')).toBeNull();
     expect(screen.queryByRole('searchbox')).toBeNull();
     // The round in progress still shows: it loaded.
@@ -178,14 +193,14 @@ describe('112401 Rounds library, on screen', () => {
 
   it('110413 CH-11201 a failed list with no round in progress is still the error, never the first-run page', async () => {
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [], error: false } });
-    await expectCode('CH-11201', /Your rounds didn't load/);
+    await expectCode('CH-11201', /Your rounds didn’t load/);
     expect(code('CH-11301')).toBeNull();
   });
 
   it('CH-11202 the round-in-progress check fails: said in place of the card, with Try again', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_UNFINISHED_FAILED);
-    await expectCode('CH-11202', /Couldn't check for a round in progress/);
+    await expectCode('CH-11202', /Couldn’t check for a round in progress/);
     expect(screen.queryByText('No round in progress')).toBeNull();
     await user.click(within(code('CH-11202') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalled();
@@ -195,7 +210,7 @@ describe('112401 Rounds library, on screen', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     // A season whose ribbon can't be read throws inside SeasonCard only.
     show({ ...PREVIEW_ROUNDS, season: { ...PREVIEW_ROUNDS.season, ribbon: null as never } });
-    await expectCode('CH-11203', /Season scoring couldn’t be shown\./);
+    await expectCode('CH-11203', /Season scoring couldn’t be shown/);
     expect(screen.getByText('In progress')).toBeTruthy();
     expect(screen.getByRole('searchbox')).toBeTruthy();
     quiet.mockRestore();
@@ -203,7 +218,8 @@ describe('112401 Rounds library, on screen', () => {
 
   it('110107 CH-11302 rounds posted but no countable 18-hole round this season: the season card says how it fills; the round still lists', async () => {
     show(PREVIEW_ROUNDS_NO_SEASON);
-    await expectCode('CH-11302', /Your season starts with your first 18-hole round/);
+    // A non-breaking hyphen (U+2011), so the headline never breaks "18- / hole".
+    await expectCode('CH-11302', /Your season starts with your first 18\u2011hole round/);
     const row = screen.getByRole('link', { name: 'Sep 9, Finley GC, 38 (+2)' });
     expect(within(row).getByText('Holes').nextSibling!.textContent).toBe('9');
     expect(screen.getByText('Since August 1')).toBeTruthy();
@@ -223,12 +239,15 @@ describe('112401 Rounds library, on screen', () => {
   it('110108 groups by month (newest first) or by course, each with its count and low', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_IDLE);
-    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['September 2026', 'August 2026']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['September 2026', 'August 2026']);
     await user.click(screen.getByRole('radio', { name: 'By course' }));
-    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Finley GC', 'Hope Valley CC', 'Old Chatham GC', 'Carolina GC']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Finley GC', 'Hope Valley CC', 'Old Chatham GC', 'Carolina GC']);
     const finley = screen.getByRole('region', { name: 'Finley GC' });
     expect(within(finley).getByText(/rounds$/).textContent).toBe('5 rounds');
-    expect(within(finley).getByText('low').textContent).toBe('low 38');
+    // P011-D2: the low is an 18-hole figure, like the average (Finley's nine-hole 38 is not its low).
+    const low = within(finley).getByText('low').textContent!;
+    expect(low).toMatch(/^low \d+$/);
+    expect(Number(low.slice(4))).toBeGreaterThan(60);
   });
 
   it('110107 a round under par is marked in red on its score only; a round that does not count says Not counted', () => {
@@ -271,10 +290,12 @@ describe('112401 Rounds library, on screen', () => {
   it('111811 the season figures: average, to par, best, putts and greens from countable 18-hole rounds', () => {
     show(PREVIEW_ROUNDS_IDLE);
     const season = screen.getByRole('region', { name: 'Season scoring' });
-    expect(within(season).getByText('73.4')).toBeTruthy();
+    // The figure's decimal point is its own span (withPointSpan), so the figure is read as one text.
+    expect(season.querySelector('.ch-rd-season__big b')!.textContent).toBe('73.4');
     expect(within(season).getByText('avg · +1.9 to par')).toBeTruthy();
     expect(within(season).getByText('Best').nextSibling!.textContent).toBe('69');
-    expect(within(season).getByText('Carolina · Aug 18')).toBeTruthy();
+    // P011-D16: the whole course name, not its first word.
+    expect(within(season).getByText('Carolina GC').parentElement!.textContent).toBe('Carolina GC\u00a0· Aug 18');
     expect(within(season).getByText('GIR').nextSibling!.textContent).toBe('62%');
   });
 });
@@ -295,7 +316,7 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
 
   it('CH-11201 a failed list with no round in progress: the idle card does not say "No rounds posted yet" or name a last round', async () => {
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [], error: false } });
-    await expectCode('CH-11201', /Your rounds didn't load/);
+    await expectCode('CH-11201', /Your rounds didn’t load/);
     // The card is the verified empty of the in-progress read (nothing in progress); what it says about posted rounds is nothing.
     expect(code('CH-11304')).not.toBeNull();
     expect(screen.queryByText('No rounds posted yet')).toBeNull();
@@ -307,7 +328,7 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
     const user = userEvent.setup();
     const unread = { ...PREVIEW_UNFINISHED, played: [], toParThru: null, readyToSubmit: false, holesError: true };
     show({ ...PREVIEW_ROUNDS, unfinished: { list: [unread], error: false } });
-    await expectCode('CH-11214', /This round's scores didn't load/);
+    await expectCode('CH-11214', /This round’s scores didn’t load/);
     expect(screen.queryByText('Set up, no holes scored yet')).toBeNull();
     // The strip draws numbers only: nothing is marked scored, and the next hole is not claimed.
     const strip = document.querySelector('.ch-rd-unf .ch-rd-strip')!;
@@ -327,23 +348,23 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
     expect(within(more).queryByText(/not started/)).toBeNull();
   });
 
-  it('CH-11215 a finished round whose "already posted" check could not run is not offered Submit', async () => {
+  it('CH-11215 a finished round whose "already posted" check could not run is not offered Post round', async () => {
     const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
     const finished = { ...PREVIEW_UNFINISHED, played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [finished], error: false } });
-    await expectCode('CH-11215', /Couldn't check whether this round was already posted/);
-    expect(screen.queryByRole('link', { name: /Submit/ })).toBeNull();
-    expect(screen.queryByText('Ready to submit')).toBeNull();
+    await expectCode('CH-11215', /Couldn’t check whether this round was already posted/);
+    expect(screen.queryByRole('link', { name: /Post/ })).toBeNull();
+    expect(screen.queryByText('Ready to post')).toBeNull();
     expect(screen.getByRole('link', { name: 'Continue' })).toBeTruthy();
   });
 
-  it('CH-11215 a finished round in the more-unfinished list says its posted check failed, and is Continue, never Submit', () => {
+  it('CH-11215 a finished round in the more-unfinished list says its posted check failed, and is Continue, never Post', () => {
     const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
     const finished = { ...PREVIEW_UNFINISHED, id: 'a0000000-0000-4000-8000-000000000043', course: 'Governors Club', played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [PREVIEW_UNFINISHED, finished], error: false } });
     const more = screen.getByRole('region', { name: '1 more unfinished round' });
     expect(within(more).getByText(/through 18 · couldn’t check if posted/)).toBeTruthy();
-    expect(within(more).queryByRole('link', { name: 'Submit' })).toBeNull();
+    expect(within(more).queryByRole('link', { name: 'Post' })).toBeNull();
     expect(within(more).getByRole('link', { name: 'Continue' })).toBeTruthy();
   });
 
@@ -404,7 +425,7 @@ describe('Discarding an unfinished round', () => {
     const w = show(PREVIEW_ROUNDS);
     await user.click(screen.getByRole('button', { name: 'Discard the round at Finley GC' }));
     expect(hapticSpy).toHaveBeenNthCalledWith(1, 'warning');
-    await expectCode('CH-11501', /Discard this round\?.*Every shot from Finley GC on Oct 14 is deleted\. This can't be undone\./);
+    await expectCode('CH-11501', /Discard this round\?.*Every shot from Finley GC on Oct 14 is deleted\. This can’t be undone\./);
     await user.click(screen.getByRole('button', { name: 'Discard round' }));
     expect(w.discard).toHaveBeenCalledWith(PREVIEW_UNFINISHED.id, 'p1');
     await waitFor(() => expect(screen.getByText('No round in progress')).toBeTruthy());
@@ -427,7 +448,7 @@ describe('Discarding an unfinished round', () => {
     show(PREVIEW_ROUNDS, { discard });
     await user.click(screen.getByRole('button', { name: 'Discard the round at Finley GC' }));
     await user.click(await screen.findByRole('button', { name: 'Discard round' }));
-    await expectCode('CH-11001', /Couldn't discard the round at Finley GC/);
+    await expectCode('CH-11001', /Couldn’t discard the round at Finley GC/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByText('In progress')).toBeTruthy();
     await user.click(within(code('CH-11001') as HTMLElement).getByRole('button', { name: 'Retry' }));
@@ -627,6 +648,13 @@ describe('Rounds route', () => {
     render(<RoundsSkeleton />);
     await expectCode('CH-11401');
     expect(screen.getByRole('main', { name: 'Loading your rounds' }).getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('CH-11401 the desktop skeleton draws the season pane with its vs-par stage, and the first month under its heading (2026-10-18)', () => {
+    render(<RoundsSkeleton />);
+    const desk = code('CH-11401')!.querySelector('.ch-rd-sk-desk')!;
+    expect(desk.querySelector('.ch-rd-hero > .ch-rd-sk-pane > .ch-rd-sk-stage')).not.toBeNull();
+    expect(desk.querySelector('.ch-rd-grp > .ch-rd-grp__h + .ch-rd-book')).not.toBeNull();
   });
 
   it('the fixture in progress is the board’s: Finley GC, Blue, holes 1 to 3', () => {

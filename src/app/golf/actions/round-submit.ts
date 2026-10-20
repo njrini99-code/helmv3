@@ -31,6 +31,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { updateQualifierEntryStats } from '@/lib/golf/qualifier-standings';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { expectRows } from '@/lib/supabase/expect-rows';
 import { deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Json } from '@/lib/types/database';
@@ -119,6 +120,25 @@ interface GolfRoundInputComprehensive {
   // Qualifier-specific fields
   qualifierId?: string;
   qualifierRoundNumber?: number;
+  /**
+   * Optimistic-lock token (Q-120 / swap audit C-6): the round row's
+   * `updated_at` this device last acknowledged. Sent to submit_round_atomic as
+   * `p_round_data.expected_updated_at` on the EXISTING-round path only; the
+   * RPC answers 'conflict' when the row is newer. Never sent on the new-round
+   * path — `writeRoundRecreatingIfMissing` retries with the same data and no
+   * id, and a just-created row has no prior token to compare against.
+   */
+  expectedUpdatedAt?: string;
+}
+/**
+ * Only a parseable timestamp reaches the RPC: the SQL casts the value with
+ * `::timestamptz`, so a malformed token would raise a transport error and send
+ * the submit down the direct fallback. An unusable token skips the check
+ * instead, exactly as a missing key does.
+ */
+function expectedUpdatedAtPayload(value: unknown): { expected_updated_at?: string } {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 64) return {};
+  return Number.isFinite(Date.parse(value)) ? { expected_updated_at: value } : {};
 }
 /**
  * Calculate GIR (Green in Regulation) from shot data
@@ -290,7 +310,9 @@ async function submitGolfRoundComprehensiveImpl(
     existingRoundId: existingRoundId ?? null,
     qualifierId: data?.qualifierId ?? null,
     // Which UI wrote the round, so a failure rate can be compared between Clubhouse and Fairway (swap audit §18).
-    metadata: { ui: (await isClubhouseFor('player')) ? 'clubhouse' : 'fairway' },
+    // Clubhouse when the dashboard layout draws the player's Clubhouse shell (getGolfDashboardRole, the layout's rule).
+    // The flag is read first, so with it off this costs no read; a role read that fails says Fairway, never throws here.
+    metadata: { ui: (await isClubhouseFor('player')) && (await getGolfDashboardRole().catch(() => null)) === 'player' ? 'clubhouse' : 'fairway' },
   });
   // Idempotent trace terminator — see savePartialRoundImpl's identical
   // helper for why. Submit finalizes from many branches (RPC success,
@@ -1060,7 +1082,11 @@ async function submitGolfRoundComprehensiveImpl(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase as any).rpc('submit_round_atomic', {
             p_round_id: existingRoundId,
-            p_round_data: { ...roundData, ...helmTracePayload(flightRecorder.traceId) },
+            p_round_data: {
+              ...roundData,
+              ...expectedUpdatedAtPayload(data.expectedUpdatedAt),
+              ...helmTracePayload(flightRecorder.traceId),
+            },
             p_holes: holesPayload,
             p_shots: shotsPayload,
             p_putt_details: puttDetailsPayload,

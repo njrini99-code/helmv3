@@ -457,6 +457,32 @@ describe('FairwayEventDetailDrawer — coach view', () => {
     expect(screen.queryByText('Going')).not.toBeInTheDocument();
   });
 
+  it('shows the reply summary only for an event that requires an RSVP, and lists people without reply pills otherwise (owner, 2026-10-08)', async () => {
+    const summary = { accepted: 3, declined: 1, tentative: 0, pending: 2, total: 6 };
+    getEventRSVP.mockResolvedValue({
+      success: true,
+      data: { summary: { total: 1, accepted: 0, declined: 0, tentative: 0, pending: 1, attendees: [{ playerId: 'p1', playerName: 'Ava Lin', status: 'pending' }] }, acceptanceRate: 0, responseRate: 0 },
+    } as never);
+    const on = renderDrawer({ isCoach: true, onRespond: undefined, rsvpSummary: summary });
+    expect(screen.getByText(/Responses · 6 invited/)).toBeInTheDocument();
+    expect(await screen.findByText('No response')).toBeInTheDocument();
+    on.unmount();
+    renderDrawer({ isCoach: true, onRespond: undefined, rsvpSummary: summary, event: makeEvent({ requires_rsvp: false, rsvp_deadline: null }) });
+    expect(screen.queryByText(/Responses ·/)).not.toBeInTheDocument();
+    expect(await screen.findByText('Ava Lin')).toBeInTheDocument();
+    expect(screen.queryByText('No response')).not.toBeInTheDocument();
+    getEventRSVP.mockResolvedValue({
+      success: true,
+      data: { summary: { total: 0, accepted: 0, declined: 0, tentative: 0, pending: 0, attendees: [] }, acceptanceRate: 0, responseRate: 0 },
+    });
+  });
+
+  it('a player sees no reply section and no "No response needed" filler on an event without RSVP', () => {
+    renderDrawer({ event: makeEvent({ requires_rsvp: null as never, rsvp_deadline: null }) });
+    expect(screen.queryByText('Going')).not.toBeInTheDocument();
+    expect(screen.queryByText(/No response needed/)).not.toBeInTheDocument();
+  });
+
   it('player view offers "View my attendance" instead', () => {
     renderDrawer({ isCoach: false });
     expect(screen.getByRole('button', { name: 'View my attendance' })).toBeInTheDocument();
@@ -637,6 +663,44 @@ describe('FairwayEventDetailDrawer — People section', () => {
     expect(await screen.findByText('Braeden Grant')).toBeInTheDocument();
     expect(screen.getByText('Sam Rivera')).toBeInTheDocument();
     expect(screen.getByText('People · 2')).toBeInTheDocument();
+  });
+
+  it('counts everyone invited when a player is sent only their own reply', async () => {
+    getEventRSVP.mockResolvedValueOnce({
+      success: true,
+      data: {
+        summary: {
+          total: 6,
+          accepted: 3,
+          declined: 1,
+          tentative: 1,
+          pending: 1,
+          attendees: [{ playerId: 'p1', playerName: 'Braeden Grant', avatarUrl: null, status: 'accepted', respondedAt: null }],
+        },
+        acceptanceRate: 50,
+        responseRate: 83,
+      },
+    });
+    renderDrawer({ isCoach: false });
+    expect(await screen.findByText('Braeden Grant')).toBeInTheDocument();
+    expect(screen.getByText('People · 6')).toBeInTheDocument();
+    expect(screen.getByText('6 invited · replies are visible to coaches')).toBeInTheDocument();
+    expect(screen.queryByText('No one invited yet.')).not.toBeInTheDocument();
+  });
+
+  it('says how many are invited, not "No one invited yet", to a player who is not on the event', async () => {
+    getEventRSVP.mockResolvedValueOnce({
+      success: true,
+      data: {
+        summary: { total: 6, accepted: 3, declined: 1, tentative: 1, pending: 1, attendees: [] },
+        acceptanceRate: 50,
+        responseRate: 83,
+      },
+    });
+    renderDrawer({ isCoach: false });
+    expect(await screen.findByText('6 invited')).toBeInTheDocument();
+    expect(screen.getByText('People · 6')).toBeInTheDocument();
+    expect(screen.queryByText('No one invited yet.')).not.toBeInTheDocument();
   });
 
   it('shows an empty message when no one is invited yet', async () => {

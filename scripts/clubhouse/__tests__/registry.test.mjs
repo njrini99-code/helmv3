@@ -105,6 +105,13 @@ test('an orphan HOLD-headed migration that no page claims fails', () => {
   assert.ok(v.some((x) => x.includes('no page\'s held plan names it')));
 });
 
+test('every path in implementation.also must exist, as the root, loader and styles must', () => {
+  const m = page({ implementation: { root: 'src/x', also: ['src/y', 'src/gone.css'] } });
+  const v = checkRegistry(ctx({ manifests: [m], exists: (p) => p !== 'src/gone.css' }));
+  assert.ok(v.some((x) => x.includes('implementation path src/gone.css does not exist')));
+  assert.ok(!v.some((x) => x.includes('src/y does not exist')));
+});
+
 test('names are readable constants', () => {
   assert.equal(nameFrom('A message’s send can’t be confirmed (phone)'), 'A_MESSAGES_SEND_CANT_BE_CONFIRMED');
 });

@@ -25,10 +25,12 @@ const mockOr = vi.fn(() => ({ order: mockOrder, limit: mockLimit, data: [], erro
 const mockLt = vi.fn(() => ({ order: mockOrder, or: mockOr, data: [], error: null }));
 const mockGte = vi.fn(() => ({ lt: mockLt, gte: vi.fn(), order: mockOrder, data: [], error: null, limit: mockLimit }));
 // Team-scoped event reads chain `.neq('event_type', 'class')` so a player's
-// synced class meetings don't count as the team's schedule.
-const mockNeq = vi.fn((_column?: string, _value?: unknown) => ({
+// synced class meetings don't count as the team's schedule, then
+// `.is('cancelled_at', null)` so a cancelled event isn't listed either.
+const afterNeq = () => ({
   eq: mockEq,
   neq: mockNeq,
+  is: mockIs,
   single: mockSingle,
   maybeSingle: mockMaybeSingle,
   in: mockIn,
@@ -41,7 +43,9 @@ const mockNeq = vi.fn((_column?: string, _value?: unknown) => ({
   data: [],
   error: null,
   count: 0,
-}));
+});
+const mockNeq = vi.fn((_column?: string, _value?: unknown) => afterNeq());
+const mockIs = vi.fn((_column?: string, _value?: unknown) => afterNeq());
 const mockEq = vi.fn(() => ({
   eq: mockEq,
   neq: mockNeq,
@@ -95,7 +99,7 @@ function createChainableMock({
     count: Array.isArray(data) ? data.length : 0,
   };
   // `or` is on the list because the Today query is an OVERLAP window (#1496).
-  for (const method of ['select', 'eq', 'neq', 'in', 'gte', 'lte', 'lt', 'or', 'not', 'order', 'limit']) {
+  for (const method of ['select', 'eq', 'neq', 'is', 'in', 'gte', 'lte', 'lt', 'or', 'not', 'order', 'limit']) {
     chain[method] = vi.fn(() => chain);
   }
   chain.range = vi.fn((from: number, to: number) => ({
@@ -190,6 +194,20 @@ describe('dashboard-data server actions', () => {
       );
       // Both the "Upcoming events" count and the next-20 calendar list.
       expect(classFilters.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('leaves cancelled events out of the Upcoming count and the calendar list', async () => {
+      // deleteGolfEvent soft-cancels: the row stays with cancelled_at set, so
+      // Home has to drop it or a coach sees a cancelled practice as upcoming.
+      mockSingle.mockResolvedValue({
+        data: { id: 'team-1', name: 'Test Team', season: '2026', join_code: 'ABC123', created_at: '2026-01-01' },
+        error: null,
+      });
+
+      await getCoachDashboardData('coach-1', 'user-1', 'team-1');
+
+      const cancelFilters = mockIs.mock.calls.filter((args) => args[0] === 'cancelled_at' && args[1] === null);
+      expect(cancelFilters).toHaveLength(2);
     });
 
     it('returns correct shape with empty roster', async () => {
@@ -487,6 +505,15 @@ describe('dashboard-data server actions', () => {
       expect(result.stats.scoringAverage).toBeNull();
       expect(result.stats.bestRound).toBeNull();
       expect(result.stats.handicap).toBeNull();
+    });
+
+    it('leaves cancelled events out of Today and Upcoming', async () => {
+      mockSingle.mockResolvedValue({ data: { handicap: null }, error: null });
+
+      await getPlayerDashboardData('player-1', 'user-1', 'team-1');
+
+      const cancelFilters = mockIs.mock.calls.filter((args) => args[0] === 'cancelled_at' && args[1] === null);
+      expect(cancelFilters).toHaveLength(2);
     });
 
     it('returns strokes gained as all nulls (stub)', async () => {

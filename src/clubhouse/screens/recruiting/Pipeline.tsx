@@ -7,22 +7,23 @@ import { Icon } from '../../ui/Icon';
 
 /**
  * The pipeline timeline (Main board; the phone's compact one is `compact`): the four stages left to right on one
- * line, each a button with its count, and on desktop its blurb and its share of the list. A stage is a filter: the
- * list shows only its prospects until it is pressed again. The counts are the whole list's, whatever the search says.
+ * line, each a button with its count, and on desktop its blurb. A stage is a filter: the list shows only its prospects
+ * until it is pressed again. The counts are the whole list's, whatever the search says. The share of the list is not
+ * drawn (P014 finding #4: it repeated four times and "Offered 0% of list" read oddly); the count says it.
  */
 export function Pipeline({
   counts,
-  shares,
   total,
+  summary = null,
   stage,
   onPick,
   onShowAll,
   compact = false,
 }: {
   counts: Record<ChStage, number>;
-  /** Whole-percent shares that add up to 100, or null while the list is empty. */
-  shares: Record<ChStage, number> | null;
   total: number;
+  /** C1: "2 visits this month · 1 decision due", only while next steps exist. */
+  summary?: string | null;
   stage: ChStage | null;
   onPick: (s: ChStage | null) => void;
   onShowAll?: () => void;
@@ -37,6 +38,7 @@ export function Pipeline({
             <b>Pipeline</b>
             <span className="ch-num">
               {empty ? 'Nobody yet. Stages fill as you add prospects.' : `${total} ${total === 1 ? 'prospect' : 'prospects'} · ${counts.committed} committed`}
+              {!empty && summary && <span className="ch-rec-pipe__next"> · {summary}</span>}
             </span>
           </span>
           {stage && onShowAll && (
@@ -72,7 +74,6 @@ export function Pipeline({
               <span className="ch-rec-pipe__txt">
                 <b>{s.label}</b>
                 {!compact && <span>{on ? 'Showing only these' : stageMeta(s.value).blurb}</span>}
-                {!compact && <span className="ch-rec-pipe__share ch-num">{shares ? `${shares[s.value]}% of list` : '—'}</span>}
               </span>
             </button>
           );
