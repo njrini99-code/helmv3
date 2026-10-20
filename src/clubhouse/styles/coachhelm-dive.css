@@ -1193,6 +1193,22 @@
     background: var(--ch-positive-100);
     color: var(--ch-positive-600);
   }
+  /* The four lines sit in the green head here, so they take its on-green inks and its hairline (not the card's). */
+  .ch-hd-dos__h .ch-hd-read > div {
+    border-top-color: rgb(255 255 255 / 0.1);
+  }
+  .ch-hd-dos__h .ch-hd-read dt,
+  .ch-hd-dos__h .ch-hd-read dd.is-none,
+  .ch-hd-dos__h .ch-hd-read__drill em,
+  .ch-hd-dos__h .ch-hd-read__stale {
+    color: var(--ch-on-green-ink-muted);
+  }
+  .ch-hd-dos__h .ch-hd-read dd {
+    color: var(--ch-on-green-ink-soft);
+  }
+  .ch-hd-dos__h .ch-hd-read__drill svg {
+    color: var(--ch-on-green-ink);
+  }
   .ch-hd-sec {
     gap: 12px;
     padding-top: 12px;
