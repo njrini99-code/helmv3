@@ -3725,6 +3725,10 @@
         "definedIn": "supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql"
       },
       {
+        "id": "golf_focus_area_prescription_guard",
+        "definedIn": "supabase/migrations/20261020120000_golf_focus_area_prescription.sql"
+      },
+      {
         "id": "golf_join_team_with_code",
         "definedIn": "supabase/migrations/20260807030600_golf_join_one_team_rule_ignores_status.sql"
       },
@@ -19284,6 +19288,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/standing/pga-standards.ts",
           "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
         }
       ]
     },
@@ -19533,6 +19542,26 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/standing/pga-standards.ts",
           "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/stamp-prescription.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/verdict-job.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/verdict-job.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/verdict-job.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         }
       ]
     },
@@ -19766,6 +19795,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/themes/assemble.ts",
           "anchor": "src/app/golf/actions/insight-delivery"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/verdict-job.ts",
+          "anchor": "src/lib/coachhelm/focus-areas/target-metric"
         }
       ]
     },

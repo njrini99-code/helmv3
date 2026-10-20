@@ -251,6 +251,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "No planned removal — this has been the live product-availability switch for CoachHelm V2 since its rollout; this registry entry documents it without wiring the call site, which lives outside this PR's scope. A future session may wire src/lib/coachhelm/v2/gate.ts through isFlagEnabled('coachhelm_v2_availability') as a small, independent follow-up.",
   },
   {
+    feature_id: "coachhelm_verdicts_v1",
+    owner: "golf/coachhelm",
+    purpose: "When a focus area is created from a CoachHelm read, stamps its prescription on golf_player_focus_areas (baseline_n, the shrunk baseline, a measurable criterion, the horizon in attempts, check_after_rounds 3, assigned_by) in a second, best-effort write; and adds a verdict step to the nightly insight-lifecycle cron that, once a focus area reaches its horizon, writes verdict (worked, moved, did not move, got worse) from a one-sided 90% bound against the shrunk baseline, and puts one in-app bell row in front of the area's coach on \"got worse\" (no push, nothing to the player). Turning it on changes no screen: no surface reads the new columns yet, and status and outcome_status are never written. Off: nothing is read or written by this code and the focus-area create inserts exactly as before.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Turn on only after the owner applies 20261020120000_golf_focus_area_prescription.sql (HELD.md row; the code treats the missing columns as not available, so the order is not a correctness issue) and runs npm run test:rls. Remove the flag and its checks once the Layout 5 verdict view ships and the verdict job has run stably for a month.",
+  },
+  {
     feature_id: "flight_recorder",
     owner: "platform (Bridge)",
     purpose: "Arms per-request golf round mutation tracing (client to server action to RPC to in-transaction checkpoints) so /admin/traces has data to show. An operability lever only — disabling it stops the mutation from being observed, never stops the mutation from running.",

@@ -55,6 +55,11 @@
  *      write carrying freshly recomputed evidence may (see
  *      v2/insights/lifecycle-policy.ts).
  *
+ * After the rollups, the Slice 4 verdict step (`runFocusAreaVerdicts`,
+ * src/lib/coachhelm/v3/verdicts/verdict-job.ts) judges focus areas that have
+ * reached their horizon. It is behind `coachhelm_verdicts_v1` (off) and
+ * returns without a query while the flag is off.
+ *
  * Schedule: `0 4 * * *` (see vercel.json).
  * Auth:     Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
@@ -69,6 +74,7 @@ import { notifyInsightResolved } from '@/lib/notifications/insight-notifier';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
 import { isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { runFocusAreaVerdicts } from '@/lib/coachhelm/v3/verdicts/verdict-job';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -378,6 +384,19 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // Slice 4 verdicts (coachhelm_verdicts_v1, off: returns without a query).
+  // A failure here, like the rollups', must not mask lifecycle progression.
+  let verdictResult: Awaited<ReturnType<typeof runFocusAreaVerdicts>> | null = null;
+  try {
+    verdictResult = await runFocusAreaVerdicts(supabase);
+  } catch (err) {
+    await logServerError(
+      `cron.insight_lifecycle.focus_area_verdicts failed: ${describeError(err)}`,
+      { action: 'cron.coachhelm.insight_lifecycle.focus_area_verdicts', featureArea: 'coachhelm' },
+      'error',
+    );
+  }
+
   return NextResponse.json({
     success: true,
     total: scannedCount,
@@ -393,6 +412,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     lost_cas_race: lostCasRaceCount,
     effectiveness_rollup: effectivenessResult,
     prediction_rollup: predictionResult,
+    focus_area_verdicts: verdictResult,
   });
 }
 
