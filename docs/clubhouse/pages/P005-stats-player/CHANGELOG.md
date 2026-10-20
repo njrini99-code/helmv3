@@ -1,5 +1,45 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-20 — The trend of rounds is a dot per round (visuals 3)
+
+```text
+Design package: none (stats visuals plan, decisions Q1 Q2 Q8 Q12 Q13)
+PR/commit:      uncommitted (local/stats-pr3-trend)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- The phone's Scoring trend, and a new Round by round chart in the desktop
+  Overview (under Scoring and under Strokes gained), draw every round as a dot,
+  a trailing five-round average through them from the third round (no line
+  before it, a gap rather than a bridge), and a par line for scores or a zero
+  line (the Tour) for strokes gained. Scores plot with the better ones higher;
+  the chart prints its real ticks and says "↑ Lower is better". A nine-hole
+  round is doubled, as everywhere on the page, and the readout says so.
+- A mouse over the plot, a finger dragged sideways (after about 8 px and mostly
+  sideways, so a vertical swipe still scrolls the page), or the arrow keys read
+  a round in the line above: "Sep 23 · Lonnie Poole GC · 73, +1 · 5-round
+  average 74.2". A tap, a key, or the end of a drag pins it, with a vertical
+  guide and a larger dot; a second tap on it, Esc, or a press outside lets go. A
+  pinned round offers "Open round" (44px) where the round review is rebuilt for
+  the viewer, and none where it is not; the line is announced only for a pin or
+  a key, never for a hover.
+- A thin sample is an early read, not a smaller chart: under five scores (eight
+  rounds of shots for strokes gained) the dots are hollow and the note says
+  "Early read · N rounds". Strokes gained by round needs three rounds with
+  shots; under that the panel says "Needs 3 rounds with shots. N so far." One
+  scored round says so and keeps the chart's frame.
+- The phone gains a Strokes gained by round panel under Scoring trend when the
+  window has rounds with shots. The old `ScoreLine` (still used only by tests)
+  and `ScoreBoardTrend` are no longer drawn by any screen.
+- `useChartPin` gains `area`, the pointer behavior for a chart drawn as one
+  surface, with an `inset` for the axis labels (shared piece, see the shared
+  changelog).
+
 ## 2026-10-20 — Honest deltas (stats visuals 2)
 
 ```text
