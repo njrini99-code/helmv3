@@ -117,6 +117,13 @@ CoachHelm generates insight/pattern/prediction
 - Coaching settings should make sensitivity, thresholds, weights, and alert toggles clear enough that coaches understand downstream impact.
 - Mobile views must stay dense and scannable; avoid stacked header controls.
 - Strokes figures stay visible wherever this page shows them (owner rule, 2026-09-27, after a coach reported strokes gained missing): each Home theme card's "Up to N strokes / round available" (engine-backed live counterfactual from `getTeamCategoryInsights` only, never estimated, and absent when the engine has no figure), SG on every theme card and player row, and the dossier's est. strokes (clamped at 8 per round for one signal, as `EvidencePanel` clamps; a roster roll-up is a sum and is not clamped).
+- The dossier's est. strokes stat, and a roll-up contributor row, are left out
+  when the figure prints as 0.00. Most generator families store
+  `strokes_impact = 0` for "not estimated" (`ranking/score.ts`), so a zero is
+  not a measured reading (2026-10-20). The player hub's "What it is worth", the
+  game fingerprint's claim line, its print report and the scouting report
+  already hide a figure that prints as 0.0, and add "(rough estimate)" after a
+  `rough_estimate` figure.
 - A deep link that implies The Lab without naming a view (`?signal=`, the legacy `?id=`, `?filter=`) stays in The Lab when that context is cleared (Back, Prescribe, a review, "All"): `hrefFor` pins the current view whenever an update does not name one.
 - Team intelligence reads only tracked data: approach misses use the 8 recorded directions and the measured leave (no lateral coordinates exist, so the plot places a miss by its tagged direction at its leave distance), a putt's leave is the next putt's length, and a tile below 5 shots says "low sample" instead of judging. The default theme is the team's worst SG; Season is the default window.
 - The route's `loading.tsx` paints Home's shape (toggle, greeting row, Team intelligence's filters, four theme cards, cause and spotlight cards, and the contributor list); `loading.tsx` gets no search params, so a Lab or Chat deep link paints that frame first.
