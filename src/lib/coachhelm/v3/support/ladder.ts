@@ -147,7 +147,7 @@ export function assignLadder(input: LadderInput): LadderResult {
   }
 
   // The read as worded, with its cause line.
-  let worded = what;
+  let worded: LadderRung = what;
   switch (input.why) {
     case 'candidate':
       worded = minRung(worded, 'working_hypothesis');

@@ -137,7 +137,7 @@ async function handleRosterSweep(): Promise<NextResponse> {
             return { playerId, ok: true as const, alreadyAnalyzed: true as const };
           }
 
-          const result = await triggerPlayerInsightsAfterRound(playerId);
+          const result = await triggerPlayerInsightsAfterRound(playerId, { runTrigger: 'sweep' });
           return { playerId, ok: true as const, alreadyAnalyzed: false as const, result };
         } catch (err) {
           return { playerId, ok: false as const, err };

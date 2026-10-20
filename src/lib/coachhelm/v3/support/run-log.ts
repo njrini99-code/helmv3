@@ -3,7 +3,7 @@
  * per player per engine run with how many candidates were tested, supported,
  * eligible, suppressed by which rule, and how they fell on the ladder.
  *
- * The table comes from migration 20261020120000_golf_coachhelm_run_log.sql,
+ * The table comes from migration 20261020114500_golf_coachhelm_run_log.sql,
  * which is HELD (supabase/migrations/HELD.md) until the owner applies it. Main
  * can be deployed before that, so a missing table (Postgres 42P01, PostgREST
  * PGRST205) means "run log not available": the writer returns
@@ -22,6 +22,12 @@ import type { RunSummary } from './evaluate';
 
 export const RUN_LOG_TABLE = 'golf_coachhelm_run_log';
 
+/**
+ * What started the engine run. 'round': a submitted round (round submit, the
+ * job queue). 'checkpoint': the safety-net cron re-running a round whose
+ * analysis did not finish. 'sweep': the roster sweep. 'manual': a coach
+ * refresh or an on-demand analysis. 'unspecified': a caller that named none.
+ */
 export type RunTrigger = 'round' | 'sweep' | 'manual' | 'checkpoint' | 'unspecified';
 
 export interface RunLogRow {

@@ -57,15 +57,16 @@ create table if not exists public.golf_coachhelm_run_log (
     check (
         trigger in ('round', 'sweep', 'manual', 'checkpoint', 'unspecified')
     ),
-    -- The player's newest completed, non-test round when the run finished.
+    -- The player's newest countable round (isCountableRound) when the run
+    -- finished.
     newest_round_id uuid references public.golf_rounds (id) on delete set null,
     -- Every candidate read the run evaluated (BH's m), untestable included.
-    candidates integer not null default 0 check (candidates >= 0),
-    testable integer not null default 0 check (testable >= 0),
+    candidates bigint not null default 0 check (candidates >= 0),
+    testable bigint not null default 0 check (testable >= 0),
     -- BH-adjusted q <= 0.10.
-    supported integer not null default 0 check (supported >= 0),
+    supported bigint not null default 0 check (supported >= 0),
     -- Working hypothesis or above: eligible for a surface before the 3 + 1 cap.
-    shown integer not null default 0 check (shown >= 0),
+    shown bigint not null default 0 check (shown >= 0),
     -- { rule: count } for candidates held at Not enough yet (first reason).
     suppressed jsonb not null default '{}'::jsonb,
     -- { rung: count } over all candidates.
@@ -75,7 +76,7 @@ create table if not exists public.golf_coachhelm_run_log (
     -- [{ family, unit, have_n, need_n, rounds_have, rounds_need }],
     -- capped at 50.
     watching jsonb not null default '[]'::jsonb,
-    tests_in_run integer not null default 0 check (tests_in_run >= 0),
+    tests_in_run bigint not null default 0 check (tests_in_run >= 0),
     engine_version text not null default 'v3',
     support_version text not null default 'support_v1',
     created_at timestamptz not null default now(),

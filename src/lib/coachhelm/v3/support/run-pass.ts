@@ -3,7 +3,10 @@
  * off). Runs after the Tier-1 generators and the composite synthesis have
  * written a player's rows for this run:
  *
- *   1. read the v3 rows this run wrote (updated at or after the run's start);
+ *   1. read the v3 rows this run wrote: exactly the ids `upsertInsightV3`
+ *      recorded inside the orchestrator's run collector (./run-collector.ts),
+ *      never a time window, so overlapping runs and this pass's own writes do
+ *      not leak into another run's BH population;
  *   2. `evaluatePlayerRun`: support per row, BH across all of them, shrinkage,
  *      stability where the evidence carries halves, the ladder;
  *   3. merge the fields into each row's `evidence` (compare-and-set on
@@ -24,6 +27,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError, toDbErrorMetadata } from '@/lib/utils/describe-error';
+import { isCountableRound } from '@/lib/golf/round-countable';
 import type { Database, Json } from '@/lib/types/database';
 import { evaluatePlayerRun, SUPPORT_VERSION, type RunSummary } from './evaluate';
 import { isSupportPassEnabled } from './flag';
@@ -40,41 +44,67 @@ export interface SupportPassResult {
 
 export interface SupportPassOptions {
   playerId: string;
-  /** ISO time captured before the generators started. */
-  runStartedAt: string;
+  /** The insight ids this run's generators and composites upserted
+   *  (`createRunInsightCollector().ids()`). BH runs over exactly these. */
+  insightIds: readonly string[];
   trigger?: RunTrigger;
   /** Test seams. */
   supabase?: SupabaseClient<Database>;
   enabled?: boolean;
 }
 
+/** Rounds scanned for the newest countable one; a run of more than this many
+ *  newest non-countable rounds in a row records null. */
+const NEWEST_ROUND_SCAN = 20;
+/** PostgREST `.in()` chunk: keeps the request URL well under its limit. */
+const ID_CHUNK = 100;
+
 async function newestCountableRoundId(supabase: SupabaseClient<Database>, playerId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from('golf_rounds')
-    .select('id')
+    .select('id, status, is_test, holes_played, total_score, front_nine, back_nine, total_putts')
     .eq('player_id', playerId)
     .eq('is_test', false)
     .eq('status', 'completed')
     .order('round_date', { ascending: false })
-    .limit(1);
-  if (error || !data || data.length === 0) return null;
-  return data[0]!.id;
+    .limit(NEWEST_ROUND_SCAN);
+  if (error || !data) return null;
+  // The one countable-round rule (src/lib/golf/round-countable.ts): complete,
+  // non-test, a supported length, fully recorded and plausible.
+  return data.find((r) => isCountableRound(r))?.id ?? null;
+}
+
+type InsightRow = { id: string; insight_type: string | null; evidence: Json | null; updated_at: string | null };
+
+async function loadRunRows(
+  supabase: SupabaseClient<Database>,
+  playerId: string,
+  insightIds: readonly string[],
+): Promise<{ rows: InsightRow[]; error: unknown }> {
+  const unique = [...new Set(insightIds)];
+  const rows: InsightRow[] = [];
+  for (let i = 0; i < unique.length; i += ID_CHUNK) {
+    const { data, error } = await supabase
+      .from('golf_coach_insights')
+      .select('id, insight_type, evidence, updated_at')
+      .in('id', unique.slice(i, i + ID_CHUNK))
+      .eq('player_id', playerId)
+      .eq('engine_version', 'v3')
+      .is('archived_at', null)
+      .neq('lifecycle_state', 'archived');
+    if (error) return { rows: [], error };
+    rows.push(...((data ?? []) as InsightRow[]));
+  }
+  return { rows, error: null };
 }
 
 export async function runSupportPass(opts: SupportPassOptions): Promise<SupportPassResult | null> {
   const enabled = opts.enabled ?? isSupportPassEnabled();
   if (!enabled) return null;
-  const { playerId, runStartedAt } = opts;
+  const { playerId, insightIds } = opts;
   try {
     const supabase = opts.supabase ?? createAdminClient();
-    const { data: rows, error } = await supabase
-      .from('golf_coach_insights')
-      .select('id, insight_type, evidence, updated_at')
-      .eq('player_id', playerId)
-      .eq('engine_version', 'v3')
-      .is('archived_at', null)
-      .neq('lifecycle_state', 'archived')
-      .gte('updated_at', runStartedAt);
+    const { rows, error } = await loadRunRows(supabase, playerId, insightIds);
     if (error) {
       await logServerError(
         `coachhelm support pass select failed for player=${playerId}`,
@@ -83,7 +113,7 @@ export async function runSupportPass(opts: SupportPassOptions): Promise<SupportP
       );
       return null;
     }
-    const list = rows ?? [];
+    const list = rows;
     const evaluation = evaluatePlayerRun(list);
 
     let rowsUpdated = 0;

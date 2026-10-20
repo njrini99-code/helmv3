@@ -105,7 +105,7 @@ describe('flag', () => {
 describe('runSupportPass', () => {
   it('does nothing at all with the flag off', async () => {
     const { client, calls } = fakeClient({});
-    const r = await runSupportPass({ playerId: 'p1', runStartedAt: '2026-10-20T09:59:00.000Z', supabase: client });
+    const r = await runSupportPass({ playerId: 'p1', insightIds: ['i1'], supabase: client });
     expect(r).toBeNull();
     expect(calls).toHaveLength(0);
   });
@@ -115,12 +115,20 @@ describe('runSupportPass', () => {
       select: (table) =>
         table === 'golf_coach_insights'
           ? { data: [ROW], error: null }
-          : { data: [{ id: 'r-newest' }], error: null },
+          : {
+              // Newest first: an implausible 37-stroke round (not countable,
+              // round-countable.ts) is skipped for the countable one behind it.
+              data: [
+                { id: 'r-implausible', status: 'completed', is_test: false, holes_played: 18, total_score: 37, front_nine: 18, back_nine: 19, total_putts: 18 },
+                { id: 'r-newest', status: 'completed', is_test: false, holes_played: 18, total_score: 78, front_nine: 39, back_nine: 39, total_putts: 31 },
+              ],
+              error: null,
+            },
       update: () => ({ data: [{ id: 'i1' }], error: null }),
     });
     const r = await runSupportPass({
       playerId: 'p1',
-      runStartedAt: '2026-10-20T09:59:00.000Z',
+      insightIds: ['i1'],
       trigger: 'round',
       supabase: client,
       enabled: true,
@@ -131,7 +139,9 @@ describe('runSupportPass', () => {
 
     const read = calls.find((c) => c.table === 'golf_coach_insights' && c.op === 'select')!;
     expect(read.filters).toContainEqual(['eq', ['player_id', 'p1']]);
-    expect(read.filters).toContainEqual(['gte', ['updated_at', '2026-10-20T09:59:00.000Z']]);
+    // Exactly this run's ids, never an updated_at window.
+    expect(read.filters).toContainEqual(['in', ['id', ['i1']]]);
+    expect(read.filters.some(([name]) => name === 'gte')).toBe(false);
 
     const write = calls.find((c) => c.op === 'update')!;
     const evidence = (write.values as { evidence: Record<string, unknown> }).evidence;
@@ -158,12 +168,29 @@ describe('runSupportPass', () => {
     });
   });
 
+  it('reads nothing for a run that wrote no rows, and still logs the run', async () => {
+    const { client, calls } = fakeClient({ select: () => ({ data: [], error: null }) });
+    const r = await runSupportPass({ playerId: 'p1', insightIds: [], supabase: client, enabled: true });
+    expect(r!.summary.candidates).toBe(0);
+    expect(calls.some((c) => c.table === 'golf_coach_insights')).toBe(false);
+    expect(calls.find((c) => c.op === 'insert')?.table).toBe(RUN_LOG_TABLE);
+  });
+
+  it('chunks a long id list and de-duplicates it', async () => {
+    const ids = Array.from({ length: 150 }, (_, i) => `i${i}`);
+    const { client, calls } = fakeClient({ select: () => ({ data: [], error: null }) });
+    await runSupportPass({ playerId: 'p1', insightIds: [...ids, 'i0'], supabase: client, enabled: true });
+    const reads = calls.filter((c) => c.table === 'golf_coach_insights' && c.op === 'select');
+    const chunks = reads.map((c) => (c.filters.find(([name]) => name === 'in')![1][1] as string[]).length);
+    expect(chunks).toEqual([100, 50]);
+  });
+
   it('counts a lost compare-and-set as skipped, not updated', async () => {
     const { client } = fakeClient({
       select: (table) => (table === 'golf_coach_insights' ? { data: [ROW], error: null } : { data: [], error: null }),
       update: () => ({ data: [], error: null }),
     });
-    const r = await runSupportPass({ playerId: 'p1', runStartedAt: 'x', supabase: client, enabled: true });
+    const r = await runSupportPass({ playerId: 'p1', insightIds: ['i1'], supabase: client, enabled: true });
     expect(r!.rowsUpdated).toBe(0);
     expect(r!.rowsSkipped).toBe(1);
   });
@@ -174,7 +201,7 @@ describe('runSupportPass', () => {
       update: () => ({ data: [{ id: 'i1' }], error: null }),
       insert: () => ({ data: null, error: { code: 'PGRST205', message: 'Could not find the table' } }),
     });
-    const r = await runSupportPass({ playerId: 'p1', runStartedAt: 'x', supabase: client, enabled: true });
+    const r = await runSupportPass({ playerId: 'p1', insightIds: ['i1'], supabase: client, enabled: true });
     expect(r!.runLog).toBe('unavailable');
     expect(r!.rowsUpdated).toBe(1);
     expect(logServerError).not.toHaveBeenCalled();
@@ -182,7 +209,7 @@ describe('runSupportPass', () => {
 
   it('never throws: a failed read is logged and returns null', async () => {
     const { client } = fakeClient({ select: () => ({ data: null, error: { code: '57014', message: 'timeout' } }) });
-    await expect(runSupportPass({ playerId: 'p1', runStartedAt: 'x', supabase: client, enabled: true })).resolves.toBeNull();
+    await expect(runSupportPass({ playerId: 'p1', insightIds: ['i1'], supabase: client, enabled: true })).resolves.toBeNull();
     expect(logServerError).toHaveBeenCalledTimes(1);
   });
 });

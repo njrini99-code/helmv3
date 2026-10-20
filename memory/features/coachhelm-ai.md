@@ -88,6 +88,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   lifecycle), and no surface reads the ladder yet. Contract and the back-test
   numbers: "Support and the claim ladder" in
   `docs/architecture/coachhelm-evidence-contract.md`.
+  <!-- schema-drift-absent: golf_coachhelm_run_log -->
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course

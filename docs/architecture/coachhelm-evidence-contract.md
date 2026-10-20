@@ -2131,9 +2131,12 @@ Flag `coachhelm_support_v1` (off). Spec: CoachHelm supercharge
 `evaluate.ts`; the server pass, `run-pass.ts`; the run log, `run-log.ts`).
 
 When the flag is on, `analyzePlayer` runs the pass after the Tier-1
-generators and the composite synthesis. It reads the v3 rows the run wrote
-(`updated_at` at or after the run start, minus 30 s for clock skew) and
-merges these keys into each row's `evidence` with a compare-and-set on
+generators and the composite synthesis. It reads exactly the v3 rows the run
+wrote: the orchestrator opens a run collector (`support/run-collector.ts`)
+around the generators and composites, and `upsertInsightV3` records each id
+it writes, so two runs of one player seconds apart, and the pass's own
+writes, never share a BH population. It merges these keys into each row's
+`evidence` with a compare-and-set on
 `updated_at`. Nothing else on the row changes: `confidence`, `title`,
 `content`, `priority` and the lifecycle are untouched, so the confidence
 word reads as before until a renderer reads `ladder`.
@@ -2182,6 +2185,10 @@ Rules the pass applies:
 applies it) gets one row per player per run: candidates, testable,
 supported, shown (Working hypothesis or above, before delivery caps),
 suppressed by first reason, rungs, per-family rungs and the Watching list.
+`trigger` is `round` (round submitted), `checkpoint` (the safety-net cron
+re-running a round whose analysis did not finish), `sweep` (roster sweep) or
+`manual` (a coach refresh or on-demand analysis); `newest_round_id` is the
+newest round that passes `isCountableRound` (`src/lib/golf/round-countable.ts`).
 `golf_insight_exposure.rank_factors` gets `{ version, score, S, R, ladder,
 q_adj, position, surface }` (S from `strokes_shrunk`, capped at 3; R the 03
 §2.2 rung weight); the surface's existing `rank_score` and ranking are

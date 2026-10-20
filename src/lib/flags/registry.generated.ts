@@ -214,7 +214,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
       development: false,
     },
     kill_switch_behavior: null,
-    cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020120000_golf_coachhelm_run_log.sql (HELD.md row; the writer treats the missing table as not available, so order is not a correctness issue) and the support back-test (scripts/coachhelm/support-backtest.ts) meets the 02 §8 acceptance bars. Remove the flag and the isSupportPassEnabled branches once the ladder renderers ship and the pass has run stably for a month.",
+    cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020114500_golf_coachhelm_run_log.sql (HELD.md row; the writer treats the missing table as not available, so order is not a correctness issue) and the support back-test (scripts/coachhelm/support-backtest.ts) meets the 02 §8 acceptance bars. Remove the flag and the isSupportPassEnabled branches once the ladder renderers ship and the pass has run stably for a month.",
   },
   {
     feature_id: "coachhelm_trust_status_exclude_unmeasured_outcomes",

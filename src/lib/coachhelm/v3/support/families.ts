@@ -87,7 +87,7 @@ const DEFS: ReadonlyArray<FamilyDef & { match: (insightType: string, metric: str
   },
   {
     family: 'penalty_rate',
-    match: (t, m) => m === 'penalty_rate_per_round',
+    match: (_t, m) => m === 'penalty_rate_per_round',
     shape: 'rate_per_round',
     nUnit: 'rounds',
     floor: 8,
@@ -101,7 +101,7 @@ const DEFS: ReadonlyArray<FamilyDef & { match: (insightType: string, metric: str
   },
   {
     family: 'big_number',
-    match: (t, m) => m === 'big_number_rate',
+    match: (_t, m) => m === 'big_number_rate',
     shape: 'untestable',
     untestableReason: 'no_hole_count',
     nUnit: 'rounds',
@@ -156,7 +156,7 @@ const DEFS: ReadonlyArray<FamilyDef & { match: (insightType: string, metric: str
   },
   {
     family: 'putt_slope',
-    match: (t, m) => m === 'putt_slope_downhill_penalty_pct',
+    match: (_t, m) => m === 'putt_slope_downhill_penalty_pct',
     shape: 'two_proportion',
     nUnit: 'attempts',
     // `stats/proportion-test.ts` default per side (02 §7 #7).
