@@ -70,6 +70,10 @@ select json_agg(jsonb_strip_nulls(jsonb_build_object(
   'lo', round((l.e->'detail'->>'delta_ci_low')::numeric, 4),
   'hi', round((l.e->'detail'->>'delta_ci_high')::numeric, 4),
   'ta', round((l.e->'standing'->>'team_avg')::numeric, 3),
+  -- Slice 1b: the player's own standing value (leave-one-out team mean)
+  -- and the putt-bias "balanced" marker (a row that claims nothing).
+  'pv', round((l.e->'standing'->>'player_value')::numeric, 3),
+  'tc', (l.e->'detail'->>'testable_cells')::numeric,
   'tn', (l.e->'standing'->>'team_n')::numeric,
   'la', round((l.e->'standing'->>'level_avg')::numeric, 3),
   'lc', (l.e->'standing'->>'level_n')::numeric,

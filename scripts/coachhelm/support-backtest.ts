@@ -67,6 +67,8 @@ const SHORT_KEYS: Record<string, string[]> = {
   lo: ['detail', 'delta_ci_low'],
   hi: ['detail', 'delta_ci_high'],
   ta: ['standing', 'team_avg'],
+  pv: ['standing', 'player_value'],
+  tc: ['detail', 'testable_cells'],
   tn: ['standing', 'team_n'],
   la: ['standing', 'level_avg'],
   lc: ['standing', 'level_n'],

@@ -23,8 +23,9 @@
 -- WHAT A ROW HOLDS: counts only (candidates, testable, supported, shown =
 -- eligible for a surface before delivery caps), jsonb tallies by rule
 -- (suppressed), by rung (rungs) and by family (families), and the Watching
--- list (family, unit, have/need counts). No names, no free text, no insight
--- content. player_id and newest_round_id are ids the engine already logs.
+-- list (family, unit, have/need counts), and how BH's m splits into rows
+-- written, rows the philosophy gate held back and rows refused (Slice 1b).
+-- No names, no free text, no insight content. player_id and newest_round_id are ids the engine already logs.
 --
 -- WHO READS IT: super admins only (the Bridge reads with service_role). A
 -- coach or player has no policy and reads nothing; anon has no grant.
@@ -55,7 +56,10 @@ create table if not exists public.golf_coachhelm_run_log (
     run_at timestamptz not null default now(),
     trigger text not null default 'unspecified'
     check (
-        trigger in ('round', 'sweep', 'manual', 'checkpoint', 'unspecified')
+        trigger in (
+            'round', 'sweep', 'manual', 'safety_net', 'checkpoint',
+            'unspecified'
+        )
     ),
     -- The player's newest countable round (isCountableRound) when the run
     -- finished.
@@ -77,6 +81,11 @@ create table if not exists public.golf_coachhelm_run_log (
     -- capped at 50.
     watching jsonb not null default '[]'::jsonb,
     tests_in_run bigint not null default 0 check (tests_in_run >= 0),
+    -- How BH's m splits: rows the run wrote, rows the philosophy gate held
+    -- back (evaluated, never written) and rows upsertInsight refused.
+    m_recorded bigint not null default 0 check (m_recorded >= 0),
+    m_gated bigint not null default 0 check (m_gated >= 0),
+    m_refused bigint not null default 0 check (m_refused >= 0),
     engine_version text not null default 'v3',
     support_version text not null default 'support_v1',
     created_at timestamptz not null default now(),
@@ -85,6 +94,7 @@ create table if not exists public.golf_coachhelm_run_log (
         testable <= candidates
         and supported <= testable
         and shown <= candidates
+        and m_recorded + m_gated + m_refused = candidates
     )
 );
 

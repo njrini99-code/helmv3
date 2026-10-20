@@ -8,12 +8,17 @@
  * `stability`), plus the run-log summary (candidates, supported, eligible,
  * suppressed by rule, rungs, per-family rungs, the Watching list).
  *
- * BH runs across ALL candidates of the run, untestable ones counted at p = 1
- * (see `benjaminiHochberg`).
+ * BH runs across ALL hypotheses the run formed, untestable ones counted at
+ * p = 1 (see `benjaminiHochberg`). The m basis is fixed (post-merge review,
+ * blocker 2): the rows the run wrote, plus the rows the philosophy gate
+ * held back (evaluated from their in-memory evidence, never written), plus
+ * the rows `upsertInsight` refused (sample_n below its floor, p = 1). So a
+ * gated caller and an ungated one get the same m and the same q for the
+ * same data. Each row's `support.m_basis` and the run log record the split.
  *
  * Pure: rows in, plain objects out. The server half is `run-pass.ts`.
  */
-import { buildCandidate, type BenchmarkSource, type SupportCandidate } from './candidate';
+import { buildCandidate, type BenchmarkBasis, type BenchmarkSource, type SupportCandidate } from './candidate';
 import { computeGap, rangeExcludesZero, type GapResult } from './gap';
 import { assignLadder, LADDER_RUNGS, type LadderRung } from './ladder';
 import { BH_Q, benjaminiHochberg } from './multiplicity';
@@ -38,18 +43,51 @@ export interface SupportField {
   range_lo?: number;
   range_hi?: number;
   p_one_sided?: number;
+  /** The p fed to BH: two-sided when the row's side was picked from the data. */
+  p_bh?: number;
   q_adj?: number;
   tests_in_run: number;
+  /** How `tests_in_run` (BH's m) splits: written + gated out + refused. */
+  m_basis: MBasis;
   method?: GapResult['method'];
   test?: GapResult['test'];
   direction?: GapResult['direction'];
+  direction_basis?: GapResult['direction_basis'];
+  /** Where the read's strokes come from: the row's own (Tour-cost) estimate, or the gap itself. */
+  strokes_basis?: 'row' | 'gap';
   n: number;
   n_unit: string;
   rounds_n: number | null;
   floor: number;
   round_floor: number;
   benchmark?: { source: BenchmarkSource; value: number } | null;
+  benchmark_basis?: BenchmarkBasis;
+  /** The benchmark's own variance is in the range and p (a leave-one-out team value). */
+  benchmark_variance?: boolean;
   clear?: boolean;
+  /** When the pass that wrote this ran; a row a later run did not rewrite keeps its older stamp. */
+  run_at?: string;
+  /** The run-log row id of that pass. */
+  run_id?: string;
+}
+
+export interface MBasis {
+  m: number;
+  m_recorded: number;
+  m_gated: number;
+  m_refused: number;
+}
+
+export interface EvaluateOptions {
+  /**
+   * Rows the philosophy gate held back this run: evaluated for BH from their
+   * in-memory evidence, counted in m, never written or returned.
+   */
+  gated?: readonly SupportRow[];
+  /** Rows `upsertInsight` refused this run: counted in m at p = 1. */
+  refused?: number;
+  runAt?: string;
+  runId?: string;
 }
 
 export interface SupportEvidencePatch {
@@ -83,6 +121,9 @@ export interface RunSummary {
   families: Record<string, Partial<Record<LadderRung, number>>>;
   watching: WatchingEntry[];
   tests_in_run: number;
+  m_recorded: number;
+  m_gated: number;
+  m_refused: number;
 }
 
 export interface EvaluatedRow {
@@ -130,27 +171,52 @@ function shrinkFor(c: SupportCandidate, g: GapResult): SupportEvidencePatch['shr
       return { kappa, kept_share: round(keptShare(c.n, kappa)), prior_source: c.prior.source, prior_value: c.prior.value, value: round(value), gap: round(gap) };
     }
     case 'two_proportion': {
-      // The contrast shrinks toward "no difference", by the smaller side's n.
-      const share = keptShare(c.n, kappa);
+      // The contrast shrinks toward "no difference" by the harmonic n of its
+      // two sides, 2·nA·nB / (nA + nB) (finding 6): the n of a difference of
+      // two proportions, where the smaller side alone undercounts it.
+      const share = keptShare(harmonicN(input.nA, input.nB), kappa);
       return { kappa, kept_share: round(share), prior_source: 'no_difference', prior_value: 0, value: round(g.gap * share), gap: round(g.gap * share) };
     }
   }
 }
 
-/** Raw strokes a round at stake in the read's direction; null when not estimable. */
-function strokesFor(c: SupportCandidate, g: GapResult): number | null {
-  if (c.strokesRaw !== null) return c.strokesRaw;
-  if (c.def.strokesPerGapUnit !== undefined) return round(Math.abs(g.gap) * c.def.strokesPerGapUnit, 3);
+/** Effective n of a two-sample contrast. */
+export function harmonicN(nA: number, nB: number): number {
+  return nA > 0 && nB > 0 ? (2 * nA * nB) / (nA + nB) : 0;
+}
+
+/** Raw strokes a round at stake in the read's direction, and where they come from; null when not estimable. */
+function strokesFor(c: SupportCandidate, g: GapResult): { value: number; basis: 'row' | 'gap' } | null {
+  if (c.strokesRaw !== null) return { value: c.strokesRaw, basis: 'row' };
+  if (c.def.strokesPerGapUnit !== undefined) return { value: round(Math.abs(g.gap) * c.def.strokesPerGapUnit, 3), basis: 'gap' };
   return null;
 }
 
-export function evaluatePlayerRun(rows: readonly SupportRow[]): PlayerRunEvaluation {
+function gapFor(c: SupportCandidate): GapResult | null {
+  if (!c.gapInput) return null;
+  return computeGap(c.gapInput, {
+    allowStrength: c.def.allowStrength,
+    ...(c.direction ? { direction: c.direction, basis: c.directionBasis ?? 'declared' } : {}),
+  });
+}
+
+export function evaluatePlayerRun(rows: readonly SupportRow[], opts: EvaluateOptions = {}): PlayerRunEvaluation {
   const candidates = rows.map(buildCandidate);
-  const gaps = candidates.map((c) =>
-    c.gapInput ? computeGap(c.gapInput, { allowStrength: c.def.allowStrength }) : null,
-  );
-  const bh = benjaminiHochberg(gaps.map((g) => (g ? g.p_one_sided : null)), BH_Q);
+  const gaps = candidates.map(gapFor);
+  const gatedGaps = (opts.gated ?? []).map((r) => gapFor(buildCandidate(r)));
+  const refused = Math.max(0, Math.floor(opts.refused ?? 0));
+  const pValues: Array<number | null> = [
+    ...gaps.map((g) => (g ? g.p_bh : null)),
+    ...gatedGaps.map((g) => (g ? g.p_bh : null)),
+    ...Array.from({ length: refused }, () => null),
+  ];
+  const bh = benjaminiHochberg(pValues, BH_Q);
   const m = bh.m;
+  const mBasis: MBasis = { m, m_recorded: candidates.length, m_gated: gatedGaps.length, m_refused: refused };
+  const stamp = {
+    ...(opts.runAt ? { run_at: opts.runAt } : {}),
+    ...(opts.runId ? { run_id: opts.runId } : {}),
+  };
 
   const summary: RunSummary = {
     candidates: m,
@@ -162,12 +228,16 @@ export function evaluatePlayerRun(rows: readonly SupportRow[]): PlayerRunEvaluat
     families: {},
     watching: [],
     tests_in_run: m,
+    m_recorded: mBasis.m_recorded,
+    m_gated: mBasis.m_gated,
+    m_refused: mBasis.m_refused,
   };
 
   const out: EvaluatedRow[] = candidates.map((c, i) => {
     const g = gaps[i] ?? null;
     const q = g ? bh.qAdj[i] ?? null : null;
-    const strokes = g ? strokesFor(c, g) : null;
+    const strokesAt = g ? strokesFor(c, g) : null;
+    const strokes = strokesAt?.value ?? null;
 
     let stability: SupportEvidencePatch['stability'];
     let stabilityAgrees: boolean | null = null;
@@ -191,6 +261,7 @@ export function evaluatePlayerRun(rows: readonly SupportRow[]): PlayerRunEvaluat
       floor: c.def.floor,
       roundsN: c.roundsN,
       roundFloor: c.def.roundFloor,
+      arms: c.arms,
       strokes,
       why: c.why,
       stabilityAgrees,
@@ -219,18 +290,25 @@ export function evaluatePlayerRun(rows: readonly SupportRow[]): PlayerRunEvaluat
           range_lo: g.range_lo,
           range_hi: g.range_hi,
           p_one_sided: round(g.p_one_sided, 6),
+          p_bh: round(g.p_bh, 6),
           q_adj: q === null ? undefined : round(q, 6),
           tests_in_run: m,
+          m_basis: mBasis,
           method: g.method,
           test: g.test,
           direction: g.direction,
+          direction_basis: g.direction_basis,
+          ...(strokesAt ? { strokes_basis: strokesAt.basis } : {}),
           n: c.n,
           n_unit: c.nUnit,
           rounds_n: c.roundsN,
           floor: c.def.floor,
           round_floor: c.def.roundFloor,
-          benchmark: c.benchmark,
+          benchmark: c.benchmark ? { source: c.benchmark.source, value: round(c.benchmark.value) } : null,
+          ...(c.benchmark ? { benchmark_basis: c.benchmark.basis } : {}),
+          benchmark_variance: g.benchmark_variance,
           clear: ladder.clear,
+          ...stamp,
         }
       : {
           version: SUPPORT_VERSION,
@@ -238,11 +316,13 @@ export function evaluatePlayerRun(rows: readonly SupportRow[]): PlayerRunEvaluat
           untestable_reason: c.untestableReason ?? 'untestable',
           family: c.family,
           tests_in_run: m,
+          m_basis: mBasis,
           n: c.n,
           n_unit: c.nUnit,
           rounds_n: c.roundsN,
           floor: c.def.floor,
           round_floor: c.def.roundFloor,
+          ...stamp,
         };
 
     // Summary.

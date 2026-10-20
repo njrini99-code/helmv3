@@ -58,6 +58,7 @@ import {
 } from '@/lib/coachhelm/v3/insight-visibility';
 import { recordInsightExposure } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { describeError } from '@/lib/utils/describe-error';
+import { projectInsightsForPlayer } from '@/lib/coachhelm/delivery/player-projection';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -780,7 +781,9 @@ async function getInsightsForPlayerImpl(
   } else {
     recordExposureForReturned(opts.drawn ? shown.filter(opts.drawn) : shown, 'player_feed', null, scores);
   }
-  return shown;
+  // Slice 1b: the support pass's coach-only evidence keys (ladder, q, shrink)
+  // never leave the server on the player feed. Exposure above keeps them.
+  return projectInsightsForPlayer(shown);
 }
 
 const observedGetInsightsForPlayer = withAdminObserved(
