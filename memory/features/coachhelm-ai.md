@@ -75,6 +75,40 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## Business Rules
 
+- Support and the claim ladder (Slice 1, 2026-10-20, flag
+  `coachhelm_support_v1`, off): after the generators and composites write a
+  player's rows for a run, `v3/support/run-pass.ts` adds `support` (gap to the
+  benchmark, 95% range, one-sided p, Benjamini-Hochberg q across every
+  candidate of the run at q <= 0.10), `ladder` / `what_ladder` (Seen
+  repeatedly / Observed / Likely / Working hypothesis / Not enough yet),
+  `ladder_reasons`, `strokes_shrunk` and `shrink` to `evidence`, writes one
+  `golf_coachhelm_run_log` row (held migration 20261020114500; a missing
+  table is "not available"), and records `rank_factors` on exposures. With the
+  flag on nothing else on the row changes (confidence, copy, priority,
+  lifecycle), and no surface reads the ladder yet. Contract and the back-test
+  numbers: "Support and the claim ladder" in
+  `docs/architecture/coachhelm-evidence-contract.md`.
+  <!-- schema-drift-absent: golf_coachhelm_run_log -->
+- Honest root cause (supercharge Slice 2, 2026-10-20), behind
+  `coachhelm_root_cause_diagnosis` (OFF; off writes the old template
+  unchanged):
+  - A leak read's cause is counted (a recorded path on ≥ 4 and ≥ 30% of ≥ 10
+    failing events over ≥ 3 rounds, seen in ≥ 2 rounds), likely from totals
+    (one par × length slice against the rest, both arms ≥ 10 and printed,
+    lift ≥ 1.25, interval above zero after Bonferroni widening over the
+    slices tried) or not traced (a count-down, or a data gap naming the one
+    missing shot field). Contract:
+    `docs/architecture/coachhelm-evidence-contract.md`.
+  - Paths with an unrecorded step, no costly shot, or the ordinary putt miss
+    are not patterns. Tee (`sg_ott`) and opening-hole reads stop at likely; a
+    repeated path there is `pattern_only`.
+  - Counted maps to diagnosis level "observed", likely to "hypothesis". A
+    not-traced read is never drawn as a cause (`reads/cause-state.ts`); the
+    coach `DiagnosisPanel` shows it with no chip and no "Likely because".
+  - No stamped window (or a zero-day one) means nothing is traced; there is
+    no one-year fallback. Rolling generators load their own N-day window.
+- `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
+  staff lookup keeps failing, instead of writing the row with no owner.
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course
@@ -229,6 +263,34 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `src/test/coachhelm/v3/cross-surface-topn-agreement.test.ts` for the test
   proving the feed, the Hub/PracticeRx pick, and the chat tool now agree on
   the same leading insight from one shared fixture.
+- Duplicates, folds and caps at delivery (CoachHelm Slice 0, 2026-10-20).
+  `dedupeBySubject` (`insight-delivery-ranking.ts`) keeps the NEWEST copy of
+  one read (same subject key, same `insight_type`): stored `updated_at`, then
+  `evidence.window_end`, then `created_at`, compared as instants, at the
+  survivor's own rank position (ported from PR #2073). A row another
+  generator wrote on the same subject still loses to the higher-ranked row,
+  as before. Unflagged: it only changes which of two copies is shown.
+  Behind `coachhelm_reads_v1_copy` (off everywhere), `deliverReads`
+  (`insight-delivery-reads.ts`, pure) runs after collapse, dedupe and the
+  player's dismissals on the player feed, the coach feed and team sweep,
+  the Hub pick, the round-review takeaway, the roster sweep and the coach
+  chat tool: overlapping reads fold into one (`FOLD_PAIRS`: driver with
+  penalties, penalties with big numbers, three-putts with 25+ ft putts, and
+  one metric across categories). The one that stays is the group's
+  highest-ranked finding, else strength, else note; it names the others in
+  `also` and in one added sentence. A read someone acted on (acknowledged,
+  addressed, rated by the player, or the source of a live focus area,
+  `src/lib/coachhelm/delivery/pinned-reads.ts`) never folds. Then each
+  player holds 3 open
+  reads and 1 strength (a note or a measured zero is never an open read;
+  same classification as the Clubhouse Board). `includeMore: true` on
+  `getInsightsForPlayer` or `getInsightsForCoachWithMeta` skips the cap: the
+  Clubhouse Board (caps itself), the Deep dive, the game Fingerprint and the
+  Scouting report pass it, and the chat tool never caps. This flag writes
+  no `rank_factors`; that column is Slice 1's (`coachhelm_support_v1`).
+  Paths that read insights without `deliverReads` are
+  unchanged: `insights-coachhelm.ts` `loadEvidenceBackedInsights`,
+  `signal-groups.ts`, `insights-feed.ts`, `intelligence-dashboard.ts`.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
 - The enable gate (`src/lib/coachhelm/v2/gate.ts`) fails closed: a failed read
   of the coach or player row (LIVE-17), the coach's settings, staffed teams, a

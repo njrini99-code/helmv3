@@ -17,6 +17,7 @@ import {
   buildScopeWaterfall,
   sgScopeOptions,
   shownStrokesImpact,
+  roughEstimateNote,
 } from '../fingerprint-model';
 import {
   computeFormFromCountableRounds,
@@ -178,6 +179,35 @@ describe('buildClaim', () => {
   it('reads a tentative insight as an early read regardless of confidence', () => {
     const c = buildClaim({ ...base, lifecycle_state: 'tentative', evidence: { sample_n: 100, confidence: 1 } as unknown as EvidenceInsight['evidence'] });
     expect(c.confidence).toBe('Early read');
+  });
+  describe('impact line (strokes_impact)', () => {
+    const impactFor = (evidence: Record<string, unknown>) =>
+      buildClaim({ ...base, evidence: { sample_n: 40, confidence: 0.9, ...evidence } as unknown as EvidenceInsight['evidence'] }).impact;
+    it('draws nothing for a stored zero, a value that rounds to 0.0, or a missing value', () => {
+      expect(impactFor({ strokes_impact: 0, strokes_impact_method: 'peer_delta' })).toBeNull();
+      expect(impactFor({ strokes_impact: 0.004 })).toBeNull();
+      expect(impactFor({})).toBeNull();
+    });
+    it('shows the magnitude of a negative value', () => {
+      expect(impactFor({ strokes_impact: -0.6 })).toBe('Worth about 0.6 strokes a round');
+    });
+    it('shows a real peer_delta figure with no estimate qualifier', () => {
+      expect(impactFor({ strokes_impact: 0.8, strokes_impact_method: 'peer_delta' })).toBe('Worth about 0.8 strokes a round');
+    });
+    it('labels a rough_estimate figure as one', () => {
+      expect(impactFor({ strokes_impact: 0.4, strokes_impact_method: 'rough_estimate' })).toBe(
+        'Worth about 0.4 strokes a round (rough estimate)',
+      );
+    });
+  });
+});
+
+describe('roughEstimateNote', () => {
+  it('qualifies only the rough_estimate method', () => {
+    expect(roughEstimateNote('rough_estimate')).toBe(' (rough estimate)');
+    expect(roughEstimateNote('peer_delta')).toBe('');
+    expect(roughEstimateNote('sg_baseline')).toBe('');
+    expect(roughEstimateNote(undefined)).toBe('');
   });
 });
 

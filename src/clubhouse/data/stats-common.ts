@@ -89,6 +89,11 @@ export interface ChSgChange {
   delta: number | null;
   /** "vs previous 10", "No earlier rounds", ...; empty when the window has no previous one by design (season, qualifiers). */
   context: string;
+  /**
+   * The standard error of the change (stats-signal `changeSe`, from both windows' per-18 round values): the chip is green or amber only
+   * when the change clears it (decision Q4). Absent or null: the change is drawn in neutral ink, "No clear change".
+   */
+  se?: number | null;
 }
 
 /**
@@ -96,8 +101,8 @@ export interface ChSgChange {
  * need three rounds with shots (MIN_SG_ROUNDS), so "no earlier rounds" is
  * said only when there are none, and a thin earlier stretch says so instead.
  */
-export function sgChange(current: number | null, previous: number | null, window: ChWindow, earlier: number): ChSgChange {
-  if (current != null && previous != null) return { delta: current - previous, context: 'vs previous 10' };
+export function sgChange(current: number | null, previous: number | null, window: ChWindow, earlier: number, se: number | null = null): ChSgChange {
+  if (current != null && previous != null) return { delta: current - previous, context: 'vs previous 10', se };
   if (window !== 'last10' || current == null) return { delta: null, context: '' };
   return { delta: null, context: earlier <= 0 ? 'No earlier rounds' : 'Too few earlier rounds with shots' };
 }

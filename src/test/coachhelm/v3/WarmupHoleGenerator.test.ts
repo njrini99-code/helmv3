@@ -156,6 +156,16 @@ describe('opening-hole tax: interval gate + measured impact (audit row 15, defec
     expect(c.evidence.strokes_impact).toBeCloseTo(0.75 - 0.1, 3);
   });
 
+  it('names the rounds behind its sample for the Slice 0b stamp (windowRoundIds)', async () => {
+    rounds(12, (i) => (i < 9 ? 5 : 4));
+    // A round with no hole 1 recorded contributes nothing and is not named.
+    roundRows.push({ id: 'r-no-opener' });
+    holeRows.push({ round_id: 'r-no-opener', hole_number: 2, par: 4, score: 4, putts: 2, penalty_strokes: 0 });
+    const agg = await new WarmupHoleGenerator(PLAYER_ID).aggregate();
+    expect([...(agg!.windowRoundIds ?? [])].sort()).toEqual(Array.from({ length: 12 }, (_, i) => `r${i}`).sort());
+    expect(agg!.windowRoundIds).toHaveLength(agg!.sampleN);
+  });
+
   it('retracts (no aggregate) when the window has no data', async () => {
     roundRows = [];
     holeRows = [];
