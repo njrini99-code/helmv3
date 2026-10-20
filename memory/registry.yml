@@ -2292,8 +2292,10 @@ features:
     code:
       components:
         - src/clubhouse/**
+        - src/app/clubhouse-preview/entry/**
       tests:
         - src/clubhouse/__tests__/**
+        - src/app/clubhouse-preview/entry/__tests__/**
     integrations:
       - vercel
     review:
