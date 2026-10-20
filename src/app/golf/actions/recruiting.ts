@@ -211,12 +211,17 @@ export async function getRecruits(): Promise<ActionResult<Recruit[]>> {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+/** One name, however it was spaced or capitalised; an empty last name is no last name. */
+const sameName = (a: string | null | undefined, b: string | null | undefined) =>
+  (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase();
+
 /**
- * `opts.requestId` makes the create safe to repeat. The Clubhouse page makes one id per Add and keeps it across a
- * Retry, and the row is inserted with that id as its primary key: a repeat after a lost reply hits the key instead
- * of adding the prospect twice, and the existing row is returned as the answer, but only once it is read back as
- * this coach's own, on this team, with this name. An id that belongs to anything else is refused, never reported as
- * saved. Without a requestId (the current page) the create behaves as it always has.
+ * `opts.requestId` makes the create safe to repeat. The Clubhouse page makes one id per prospect being added (the
+ * same name in the same Add) and keeps it across a Retry, and the row is inserted with that id as its primary key: a
+ * repeat after a lost reply hits the key instead of adding the prospect twice, and the existing row is returned as
+ * the answer, but only once it is read back as this coach's own, on this team, with this name. A repeat that
+ * corrected another field brings the row up to date while nobody has edited it since. An id that belongs to anything
+ * else is refused, never reported as saved. Without a requestId (the current page) the create behaves as it always has.
  */
 async function createRecruitImpl(
   input: RecruitInput,
@@ -265,7 +270,7 @@ async function createRecruitImpl(
       // refused rather than guessed to be a duplicate.
       const { data: existing, error: existingError } = await ctx.supabase
         .from('golf_recruits')
-        .select('id, team_id, created_by, first_name, last_name')
+        .select('id, team_id, created_by, first_name, last_name, created_at, updated_at')
         .eq('id', requestId)
         .maybeSingle();
       if (
@@ -273,9 +278,31 @@ async function createRecruitImpl(
         existing &&
         existing.team_id === ctx.teamId &&
         existing.created_by === ctx.coachId &&
-        existing.first_name === row.first_name &&
-        (existing.last_name ?? null) === row.last_name
+        sameName(existing.first_name, row.first_name) &&
+        sameName(existing.last_name, row.last_name)
       ) {
+        // The page keeps one id per prospect being added, so a field corrected after the lost reply (an email, a
+        // hometown, the name's capitals) comes back under the same id. Bring the stored row up to what was sent this
+        // time, but only while nobody has changed it since it was added (`updated_at` is still its `created_at`, and
+        // the update is conditional on it): an edit made in between, by this coach or another, stands.
+        if (existing.updated_at && existing.updated_at === existing.created_at) {
+          const { id: _id, team_id: _team, created_by: _by, ...fields } = row;
+          const { error: fixError } = await ctx.supabase
+            .from('golf_recruits')
+            .update(fields)
+            .eq('id', requestId)
+            .eq('team_id', ctx.teamId)
+            .eq('updated_at', existing.updated_at)
+            .select('id');
+          if (fixError) {
+            await logServerError(`createRecruit repeat failed: ${fixError.message}`, {
+              action: 'recruiting.createRecruit',
+              featureArea: 'recruiting',
+              extra: { code: fixError.code },
+            });
+            return { success: false, error: 'Failed to add recruit' };
+          }
+        }
         revalidatePath('/golf/dashboard/recruiting');
         return { success: true, data: { id: existing.id } };
       }

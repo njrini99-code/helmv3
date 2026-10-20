@@ -59,6 +59,7 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/shell.test.tsx` (the Team list now reads Roster, Recruiting, Stats, Qualifiers) | 10802 | pass |
 | `src/clubhouse/__tests__/recruiting-upload.test.tsx` (31 cases: the limits and the migration's numbers, the transfer and its progress, the file drop, Storage's refusals, an Add that cannot repeat, the phone) | CH-14105 to CH-14110, CH-14404, CH-14407, CH-14703, CH-14915 to CH-14917 | pass |
 | `src/test/golf/actions/recruit-document-upload.test.ts` (16) and `recruiting-create.test.ts` (9) | the server side of CH-14915 and CH-14916 | pass |
+| `src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts` (5) and `src/clubhouse/screens/recruiting/__tests__/add-request.test.ts` (6), 2026-10-20 | CH-14915: a repeat with a corrected field reaches the stored row | pass |
 
 Both files together: 110 passed (2026-09-30). All of `src/clubhouse`: 30 files,
 1531 tests, exit 0.
@@ -300,10 +301,12 @@ before, after, baseline or evidence.
 
 - See DESIGN.md "Not on the boards" for the eight questions (film, item 6, is
   decided and built; it waits for the migration).
-- After a lost reply, editing a field and pressing Add again is a different Add
-  and adds a second prospect; a Retry and a
-  repeated Save with the same contents cannot. An upload the coach abandons
-  after the file landed leaves an object with no row.
+- Fixed 2026-10-20: after a lost reply, editing a field and pressing Add again
+  was a different Add and added a second prospect. The request id now follows
+  the prospect's name, not the whole form, and the server writes the corrected
+  field to the row the first attempt stored (CH-14915). Changing the name is
+  still another prospect. An upload the coach abandons after the file landed
+  leaves an object with no row.
 
 ## 2026-10-02 — Custom native overlay lifetime
 
