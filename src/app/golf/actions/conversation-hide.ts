@@ -25,7 +25,21 @@ type HideResult = { success: true } | { success: false; error: string; unavailab
 
 const missingColumn = (error: { code?: string | null; message?: string | null }) => error.code === NO_COLUMN || /hidden_at/.test(error.message ?? '');
 
+/**
+ * While the migration is held, every Messages load ran the probe below and it failed (42703 in the database log;
+ * Sentry JAVASCRIPT-NEXTJS-1A0, ignored but still sent). A missing column is a fact about the database, not the caller,
+ * so this server instance remembers it for a few minutes and answers false without a read; the first probe after that
+ * picks the column up once the migration is applied. Only the missing-column answer is kept: any other failure, and
+ * every yes, is asked again.
+ */
+const MISSING_COLUMN_TTL_MS = 5 * 60_000;
+let columnMissingUntil = 0;
+const rememberColumnMissing = () => {
+  columnMissingUntil = Date.now() + MISSING_COLUMN_TTL_MS;
+};
+
 async function canHideGolfConversationsImpl(): Promise<boolean> {
+  if (Date.now() < columnMissingUntil) return false;
   const supabase = await createClient();
   const {
     data: { user },
@@ -37,6 +51,7 @@ async function canHideGolfConversationsImpl(): Promise<boolean> {
     .select('hidden_at' as '*')
     .eq('user_id', user.id)
     .limit(1);
+  if (error && missingColumn(error)) rememberColumnMissing();
   return !error;
 }
 
@@ -63,7 +78,10 @@ async function hideGolfConversationImpl(conversationId: string): Promise<HideRes
     .eq('user_id', user.id)
     .select('id');
   if (error) {
-    if (missingColumn(error)) return { success: false, error: 'Deleting a conversation isn’t available yet', unavailable: true };
+    if (missingColumn(error)) {
+      rememberColumnMissing();
+      return { success: false, error: 'Deleting a conversation isn’t available yet', unavailable: true };
+    }
     await logServerError(`[hideGolfConversation] update failed: ${describeError(error)}`, { action: 'golf.hideGolfConversation', featureArea: 'messaging' });
     return { success: false, error: 'Could not delete the conversation' };
   }

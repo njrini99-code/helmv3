@@ -1,5 +1,36 @@
 # P007 — Messages: changelog
 
+## 2026-10-20 — The held-column probe runs once per server instance, not on every load
+
+```text
+Design package: none
+PR/commit:      see git log (claude/clubhouse-readiness, replayed from draft PR #2207)
+Contract IDs:   none changed
+Actions:        canHideGolfConversations, hideGolfConversation (src/app/golf/actions/conversation-hide.ts)
+Data impact:    none (one fewer failing read per Messages load while the column is missing)
+Held items:     20261008160000_golf_conversation_hidden_at.sql (still held)
+```
+
+### Changed
+
+- No visible change (Q8). While migration 20261008160000 is held, every
+  Messages load ran `canHideGolfConversations`' read of the missing `hidden_at`
+  column, which failed each time (42703; Sentry JAVASCRIPT-NEXTJS-1A0, ignored
+  but still sent). A server instance now remembers the missing column for five
+  minutes and answers false without the read; a hide that meets the missing
+  column records it too. Only that answer is kept: any other failure, a
+  signed-out caller and every yes are asked again.
+
+### Why
+
+- After the migration is applied, Delete conversation appears within five
+  minutes, on the first probe past the expiry.
+
+### Verification
+
+- `src/test/actions/hide-golf-conversation.test.ts`: the new cases fail against
+  the uncached probe and pass with the cache.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text
@@ -387,7 +418,6 @@ checked at phone width.
 All, Unread and Groups take the lit green chip every switcher draws
 (`messages.css`); the page's own rule is removed. Shared detail:
 docs/clubhouse/CHANGELOG.md.
-
 ## 2026-10-16 — Failed server reads are logged; Delete is not lost to them
 
 From the code review of PR #2195. The route swallowed a failure of the
