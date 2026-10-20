@@ -47,10 +47,10 @@ const r2 = holes([0, 0, 0, -1, 1, 0, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, -1]);
 const r3 = holes([1, 0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, -1]);
 
 const LEADERS: ChCoachHome['leaderboard']['rows'] = [
-  { playerId: 'theo', name: 'Theo Marchetti', classYear: 'Senior', rounds: 11, avg: 70.9, toPar: -1.1, trend: [72, 71, 71, 70, 70, 71, 70], sgPerRound: 1.8, status: 'improving', quietDays: 2 },
+  { playerId: 'theo', name: 'Theo Marchetti', classYear: 'Senior', rounds: 11, avg: 70.9, toPar: -1.1, trend: [72, 71, 71, 70, 70, 71, 70], sgPerRound: 1.8, status: 'steady', quietDays: 2 },
   { playerId: 'sofia', name: 'Sofia Alvarez', classYear: 'Senior', rounds: 10, avg: 71.6, toPar: -0.4, trend: [72, 72, 71, 72, 71, 71, 71], sgPerRound: 1.1, status: 'steady', quietDays: 2 },
   { playerId: 'ava', name: 'Ava Lindqvist', classYear: 'Junior', rounds: 10, avg: 72.4, toPar: 0.4, trend: [73, 74, 72, 72, 72, 73, 72], sgPerRound: 0.6, status: 'steady', quietDays: 2 },
-  { playerId: 'jonah', name: 'Jonah Okafor', classYear: 'Sophomore', rounds: 9, avg: 74.1, toPar: 2.1, trend: [72, 72, 73, 74, 75, 74, 75], sgPerRound: -0.9, status: 'slipping', quietDays: 3 },
+  { playerId: 'jonah', name: 'Jonah Okafor', classYear: 'Sophomore', rounds: 9, avg: 74.1, toPar: 2.1, trend: [72, 72, 73, 74, 75, 74, 75], sgPerRound: -0.9, status: 'steady', quietDays: 3 },
   { playerId: 'eli', name: 'Eli Brandt', classYear: 'Junior', rounds: 8, avg: 74.8, toPar: 2.8, trend: [74, 75, 74, 75, 75, 74, 75], sgPerRound: -0.4, status: 'steady', quietDays: 9 },
   { playerId: 'priya', name: 'Priya Natarajan', classYear: 'Freshman', rounds: 2, avg: 75.2, toPar: 3.2, trend: [76, 75], sgPerRound: null, status: 'early', quietDays: 4 },
 ];
@@ -145,11 +145,12 @@ export const PREVIEW_HOME: ChCoachHome = {
     form: {
       avg: 73.4,
       delta: -0.9,
+      deltaSe: 1.0,
       line: [74.6, 74.4, 74.5, 74.1, 74.0, 73.9, 74.0, 73.7, 73.6, 73.5, 73.6, 73.4],
       roundsThisWeek: 11,
       basis: { rounds: 30, from: '2026-09-02', to: '2026-10-13', girRounds: 30, puttsRounds: 30 },
-      gir: { pct: 61, delta: 3 },
-      putts: { avg: 30.4, delta: 0.3 },
+      gir: { pct: 61, delta: 3, se: 3.9 },
+      putts: { avg: 30.4, delta: 0.3, se: 0.6 },
     },
     weekNote: { weekday: 'Friday', title: 'Qualifier · Pinehurst No. 2' },
   },

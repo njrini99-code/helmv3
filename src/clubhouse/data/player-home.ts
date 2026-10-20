@@ -4,7 +4,7 @@ import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
 import { isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
-import { holeRounds } from './round-scope';
+import { holeRounds, recordedPutts } from './round-scope';
 import { replyClosedAt } from '../screens/calendar/model';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
@@ -260,7 +260,8 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
   const tee = rateOf(fairways);
   const gir = rateOf(greens);
   const scr = rateOf(scrambles);
-  const putts = window.map((r) => r.total_putts).filter((v): v is number => v != null);
+  // Putts as Stats counts them: a round written 0 putts has none recorded (recordedPutts, the cache's `cachedPutts` rule).
+  const putts = window.map((r) => recordedPutts(r.total_putts)).filter((v): v is number => v != null);
   const threes = window.map((r) => cache.get(r.id)?.three_putts).filter((v): v is number => typeof v === 'number');
   const sand = window.reduce(
     (a, r) => {
@@ -306,7 +307,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
       sg.putting,
       bench?.get('putts_per_round') ?? null,
       window
-        .map((r) => r.total_putts)
+        .map((r) => recordedPutts(r.total_putts))
         .filter((v): v is number => v != null)
         .reverse()
         .slice(-LEG_TREND),

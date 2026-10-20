@@ -1,5 +1,88 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-20 — No visible change (stats visuals 6)
+
+```text
+Design package: none (stats visuals plan, piece 6; entry in P005)
+PR/commit:      uncommitted (local/stats-pr6-mix)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `stats.css` lost the old scoring mix rules
+  (`ch-mix`, `ch-zmix`) and gained `.ch-sv-mix-*`, and `charts.tsx` lost
+  `ScoreMix`; the team page used neither.
+
+## 2026-10-20 — No visible change (stats visuals 4)
+
+```text
+Design package: none (stats visuals piece 4; the page entry is in P005)
+PR/commit:      uncommitted (local/stats-pr4-putt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `MakeCurve` and `MakeRows` left `charts.tsx` for the
+  player profile's `PuttBands.tsx`, and `stats.css` gained the `.ch-sv-pb-*`
+  block and lost the unused `.ch-mk` rules, both files this page shares with the
+  player profile. Team putting (rings on desktop, bars on the phone) is its own
+  component and is unchanged.
+
+## 2026-10-20 — No visible change (stats visuals 3)
+
+```text
+Design package: none (stats visuals plan, piece 3; the page's own entry is in P005)
+PR/commit:      uncommitted (local/stats-pr3-trend)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `stats.css` gained the stats-owned `.ch-sv-rt` block
+  and `OverviewZones` and `StatsPlayerPhone` draw the new trend; the team page
+  keeps its own interactive `TeamTrendChart` and `ScoreLine` is not used by it.
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- Every change on the team page (the figure tape, the lead chip, the phone
+  hero and figure rows) is green or amber only when it is larger than one
+  standard error of the difference, and reads "Better than previous 10" or
+  "Worse than previous 10". Otherwise the signed number stays in neutral ink
+  with "No clear change vs previous 10". A change with no standard error gets
+  no colour.
+- The loader adds an `se` beside each figure's existing delta, from the
+  rounds it already reads (no new query): strokes gained and score use the
+  paired players' rounds with the pooled spread below five rounds, greens and
+  scrambling their per-round rates, putts and birdies only from five rounds.
+- A tape caption that is not "vs previous 10" ("Tour averages 66%", "Eagles
+  not counted") moves to the note line under the change's words.
+- On the preview team, scoring and greens read as clear changes; strokes
+  gained, putts, scrambling and birdies read "No clear change".
+- The leaderboard's form word (Improving, Steady, Slipping) follows the same
+  rule through `formStatus`, so it agrees with its form line.
+
 ## 2026-10-20 — No visible change (stats visuals 1)
 
 ```text
