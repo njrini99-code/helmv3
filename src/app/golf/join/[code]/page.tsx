@@ -1,3 +1,5 @@
+import { isClubhouseFrontDoor } from '@/clubhouse/gate';
+import { ClubhouseJoinInvalidRoute, ClubhouseJoinTeamRoute } from '@/clubhouse/routes/auth';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -106,6 +108,8 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   }
 
   if (teamError || !team) {
+    // golf_clubhouse_front_door chooses the page that is drawn; everything above, and what is decided, is the same.
+    if (isClubhouseFrontDoor()) return <ClubhouseJoinInvalidRoute />;
     return (
       <div className="min-h-dvh bg-auth-golf relative">
         {/* Floating Orbs */}
@@ -157,6 +161,26 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
         logo_url: team.organization_logo_url,
       }
     : undefined;
+
+  if (isClubhouseFrontDoor()) {
+    return (
+      <ClubhouseJoinTeamRoute
+        code={code}
+        playerId={player.id}
+        playerName={`${player.first_name} ${player.last_name}`}
+        playerYear={player.graduation_year ? String(player.graduation_year) : 'freshman'}
+        email={user.email ?? null}
+        team={{
+          id: team.id,
+          name: team.name,
+          season: team.season,
+          organization: organization
+            ? { name: organization.name, city: organization.location_city, state: organization.location_state, logoUrl: organization.logo_url }
+            : undefined,
+        }}
+      />
+    );
+  }
 
   return (
     <GolfJoinTeamClient

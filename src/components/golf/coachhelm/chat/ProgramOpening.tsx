@@ -21,8 +21,8 @@
  *
  * So the opening shows the finding, not just the question it implies:
  *
- *     ● 3 players have not responded for Wednesday Practice
- *       Wed 4:00 PM · 5 of 8 responded                          Calendar ↗
+ *     ● 3 players haven’t replied to Wednesday Practice
+ *       Wed 4:00 PM · 5 of 8 replied                            Calendar ↗
  *
  * Pressing the row asks CoachHelm about it. The row IS the suggestion, with its
  * reason attached — which is the difference between a prompt library and a

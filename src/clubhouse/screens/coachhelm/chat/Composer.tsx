@@ -20,6 +20,7 @@ import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
 import { Menu } from '../../../ui/Menu';
 import { useToast } from '../../../ui/Toast';
+import { Tooltip } from '../../../ui/Tooltip';
 import { useAskDraft } from './drafts';
 
 /** The text box grows with its text and stops here; past it the box scrolls (a taller one hides the answer it is about). */
@@ -167,14 +168,45 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   const cmdList = useRef<HTMLDivElement>(null);
   const listId = useId();
   const last = useRef<{ text: string; range: ChAskRange | null } | null>(null);
+  /** What a Players or `@` chip added to the text (`@` or ` @`) while that picker is still the one open; a starter seeds text to keep. */
+  const opened = useRef<string | null>(null);
 
   // Grows with the text, up to the cap.
-  useLayoutEffect(() => {
+  const fit = useCallback(() => {
     const el = box.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT)}px`;
-  }, [value]);
+  }, []);
+  useLayoutEffect(() => fit(), [value, fit]);
+
+  // ...and again when its text wraps differently with no new text: the box gets narrower or wider, or the iPhone's Text
+  // Size lands (--ch-type-scale on <html>, written by the shell's layout effect after this one ran on mount).
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return undefined;
+    const root = document.documentElement;
+    const scaleOf = () => root.style.getPropertyValue('--ch-type-scale');
+    let scale = scaleOf();
+    const type = new MutationObserver(() => {
+      if (scaleOf() === scale) return;
+      scale = scaleOf();
+      fit();
+    });
+    type.observe(root, { attributes: true, attributeFilter: ['style'] });
+    let width = el.offsetWidth;
+    const size = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
+      // Only a new width re-wraps the text; the height is the one this sets.
+      if (el.offsetWidth === width) return;
+      width = el.offsetWidth;
+      fit();
+    });
+    size?.observe(el);
+    return () => {
+      type.disconnect();
+      size?.disconnect();
+    };
+  }, [fit]);
 
   useEffect(() => {
     if (autoFocus && finePointer) box.current?.focus();
@@ -221,18 +253,22 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
     setValue('');
     setRange(null);
     setDismissed(false);
+    opened.current = null;
   };
 
   const pick = (name: string) => {
     haptic('select');
     setValue((v) => insertMention(v, name));
     setDismissed(false);
+    opened.current = null;
     focusEnd();
   };
 
   /** The Players chip, the `@` key and the Add player starter: an `@` at the end of the text opens the picker. */
-  const openPlayers = () => {
+  const openPlayers = (chip = false) => {
     setDismissed(false);
+    opened.current = null;
+    if (chip && mentionQuery(value) === null) opened.current = `${value && !/\s$/.test(value) ? ' ' : ''}@`;
     setValue((v) => (mentionQuery(v) !== null ? v : `${v}${v && !/\s$/.test(v) ? ' ' : ''}@`));
     focusEnd();
   };
@@ -250,6 +286,10 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
     if (pickerOpen && e.key === 'Escape') {
       e.preventDefault();
       setDismissed(true);
+      // An `@` the chip put there goes with the picker; one the person typed stays.
+      const added = opened.current;
+      if (added && value.endsWith(added)) setValue(value.slice(0, -added.length));
+      opened.current = null;
       return;
     }
     if (e.key === 'Enter' && !e.shiftKey && finePointer) {
@@ -278,21 +318,27 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
         },
       }))}
       trigger={(t) => (
-        <button type="button" className="ch-ask-cmp__round" aria-label="Add to your question" data-ch-press="" {...t}>
-          <Icon icon={Plus} size={18} />
-        </button>
+        <Tooltip>
+          <button type="button" className="ch-ask-cmp__round" aria-label="Add to your question" data-ch-press="" {...t}>
+            <Icon icon={Plus} size={18} />
+          </button>
+        </Tooltip>
       )}
     />
   );
 
   const send = busy ? (
-    <button type="button" className="ch-ask-cmp__send is-stop" aria-label="Stop generating" data-ch-code="CH-13421" onClick={onStop}>
-      <Icon icon={Square} size={14} />
-    </button>
+    <Tooltip>
+      <button type="button" className="ch-ask-cmp__send is-stop" aria-label="Stop generating" data-ch-code="CH-13421" onClick={onStop}>
+        <Icon icon={Square} size={14} />
+      </button>
+    </Tooltip>
   ) : (
-    <button type="button" className="ch-ask-cmp__send" aria-label="Send" disabled={!canSend} onClick={submit}>
-      <Icon icon={ArrowUp} size={18} />
-    </button>
+    <Tooltip>
+      <button type="button" className="ch-ask-cmp__send" aria-label="Send" disabled={!canSend} onClick={submit}>
+        <Icon icon={ArrowUp} size={18} />
+      </button>
+    </Tooltip>
   );
 
   // A fragment that matches nothing keeps one quiet line (in the Players group) rather than an empty panel. Without a
@@ -323,13 +369,14 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           onChange={(e) => {
             setValue(e.target.value);
             setDismissed(false);
+            opened.current = null;
           }}
           onKeyDown={onKeyDown}
         />
         <div className="ch-ask-cmp__bar" data-ch-code="CH-13821">
           {plus}
           {hero && !phone && (
-            <button type="button" className="ch-ask-cmp__chip" onClick={openPlayers}>
+            <button type="button" className="ch-ask-cmp__chip" onClick={() => openPlayers(true)}>
               <Icon icon={AtSign} size={15} />
               Players
             </button>
@@ -352,17 +399,19 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           )}
           <span className="ch-ask-cmp__grow" />
           {(!hero || phone) && (
-            <button
-              type="button"
-              className="ch-ask-cmp__round is-quiet"
-              aria-label="Mention a player or stat"
-              data-ch-press=""
-              // The text box keeps the focus, so a phone keyboard that is up stays up.
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={openPlayers}
-            >
-              <Icon icon={AtSign} size={18} />
-            </button>
+            <Tooltip>
+              <button
+                type="button"
+                className="ch-ask-cmp__round is-quiet"
+                aria-label="Mention a player or stat"
+                data-ch-press=""
+                // The text box keeps the focus, so a phone keyboard that is up stays up.
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => openPlayers(true)}
+              >
+                <Icon icon={AtSign} size={18} />
+              </button>
+            </Tooltip>
           )}
           {send}
         </div>

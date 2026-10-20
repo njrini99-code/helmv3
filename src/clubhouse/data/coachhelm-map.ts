@@ -67,6 +67,15 @@ export function splitContent(content: string | null | undefined): { lede: string
  * (a cold-start "top college teams stay under 0.5") are the shared generators' to reword, not this page's.
  */
 const COLLEGE_AVERAGE = /^College players in our data average\b/;
+
+/**
+ * The slope read's "(n=31 downhill / 44 level)" aside, in rows stored before putt-slope-bias.ts stopped writing it: the sample the
+ * evidence line already states. Only that read's: another generator's aside (putt-bias's per-side counts) says what nothing else does.
+ */
+export function withoutSampleAside(content: string | null | undefined, metric: string | null | undefined): string {
+  const text = content ?? '';
+  return metric === SLOPE_METRIC ? text.replace(/\s*\(n=[^)]*\)/g, '') : text;
+}
 export function withoutCollegeAverage(content: string | null | undefined): string {
   const text = (content ?? '').replace(/\s+/g, ' ').trim();
   return text
@@ -253,6 +262,22 @@ function weekFor(ins: EvidenceInsight, unit: ReturnType<typeof buildInsightUnit>
   return action && !GENERIC_ACTION.test(action) ? { title: null, text: say(action), meta: null } : null;
 }
 
+/** The no-break spaces `speak` sets, back to plain ones, for text that is saved rather than drawn. */
+const plain = (text: string) => text.replace(/\u00a0/g, ' ');
+
+/**
+ * What a list row's bare number counts, from the evidence's own unit and metric: a points gap ("23 pts") is a gap, a rate ("36%") a
+ * rate, and "1.1" alone is said to be a round's. A number that already carries its unit, or a metric this cannot name, adds nothing.
+ */
+export function valueUnitFor(ev: InsightEvidence): string | null {
+  const shown = ev.your_value_display?.trim() ?? '';
+  if (/\bpts?$/.test(shown)) return 'gap';
+  if (ev.unit === 'count' && /per_round$/.test(ev.metric ?? '')) return 'a round';
+  if (ev.unit === 'percent' && ev.metric === 'big_number_rate') return 'of holes';
+  if (ev.unit === 'percent' && /\bmake\b/i.test(ev.metric_label ?? '')) return 'made';
+  return null;
+}
+
 const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'resolved'];
 
 /**
@@ -278,7 +303,7 @@ export function toChInsight(
   const kind = kindOf(ins, tour);
   const staleDay = staleSince(ins, extra.newestRound ?? null);
   const stale: ChStale | null = staleDay ? { newestRound: fmtShortDate(staleDay) ?? staleDay } : null;
-  const { lede, why } = splitContent(withoutCollegeAverage(ins.content));
+  const { lede, why } = splitContent(withoutCollegeAverage(withoutSampleAside(ins.content, ev.metric)));
   const claim = lede || ev.diagnosis?.symptom?.trim() || '';
   return {
     id: ins.id,
@@ -290,11 +315,13 @@ export function toChInsight(
     stale,
     acknowledged: ins.status === 'acknowledged',
     title: say(ins.title),
-    assignAs: { title: ins.title, description: speak(claim, { role: 'player' }) || ins.title },
+    // Typeset as the player reads it, with ordinary spaces: the focus area is saved, and Fairway draws it too.
+    assignAs: { title: plain(speak(ins.title, { role: 'player' })), description: plain(speak(claim, { role: 'player' }) || ins.title) },
     lede: say(claim),
     why: why ? say(why) : null,
     // A note has no number of its own: the par card's value is one of three standings under a title for all of them.
     value: kind === 'note' ? '' : ev.your_value_display?.trim() || (you != null ? formatComparison(you, ev.unit) : ''),
+    valueUnit: kind === 'note' ? null : valueUnitFor(ev),
     evidence: evidenceFor(ins, kind, tour, say),
     week: kind === 'note' ? null : weekFor(ins, unit, extra.drillText, say),
     lifecycle: (LIFECYCLES.includes(ins.lifecycle_state) ? ins.lifecycle_state : 'detected') as ChHelmLifecycle,

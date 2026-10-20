@@ -208,6 +208,14 @@ export function fullName(p: { first_name: string | null; last_name: string | nul
   return [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unnamed player';
 }
 
+/**
+ * The one handicap a player shows, on every screen that names it: the handicap index when it is set, else the handicap
+ * they typed. Settings' identity line holds the same order on its strings (SettingsPhone).
+ */
+export function displayHandicap(p: { handicap_index: number | null; handicap: number | null } | null | undefined): number | null {
+  return p?.handicap_index ?? p?.handicap ?? null;
+}
+
 /** "Oct 12" for a round date (a calendar date, not an instant). */
 export function shortDate(roundDate: string): string {
   return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(

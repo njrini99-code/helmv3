@@ -1,5 +1,289 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-19 — Stats you can read like a scorecard (L6a)
+
+```text
+Design package: none (complete-and-elevate plan, lane L6a)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-19, L6a)
+
+- The Rounds table fits its canvas at 1024, 1100, 1280 and 1440 (it was 1040px wide and scrolled sideways at 1280). The columns size to the room, and where the canvas is under 820px GIR and putts, both on Game detail, step out before anything scrolls. A long course keeps one line with an ellipsis (the full name on hover) and its round type beside it; the figures stay right-aligned in tabular numerals, and a row lifts on hover where hover exists.
+- Putting rings: the five distance labels are upright, the band on the left and its make rate right-aligned, and every leader starts on one ray from the cup and steps down with its label, so no two cross and none runs through another label.
+- The Par swatch in the scoring key has a hairline ring, so parchment on parchment reads as a swatch.
+- Game detail opens with every More detail collapsed (it opened expanded on desktop). A figure with no data no longer carries its caption underneath ("Tour 62%", "18 approaches" under an em dash).
+- Empty panels are the shared compact empty state, not a bare sentence: the five Game detail panels with nothing logged (drives, missed greens, missed putts, long first putts, putts with a break), the scoring-trend scoreboard and the form chart with no rounds, and the proximity bands that need more shots (now a title, with the bands and their counts as its sentence). A title carries no full stop.
+- One number voice: percentages are whole numbers everywhere on the page (the Tour column of the putting table, Best GIR and the share of holes that are doubles or worse used to carry a decimal), through the new `formatPct`; the scoring average's to par is `formatToPar` (E for even, a true minus) and the chart ticks use `formatSigned`, not hand-built signs.
+- The scoring form ribbon reads like a scorecard: a finger or pointer dragged across it, or the arrow keys (Home, End and Escape too) once it has focus, snaps to the nearest round and reads that round's date, course and score with to par in the ribbon's own header line, in place of its note, with the round's column lifted; a polite live region says the same. A vertical swipe still scrolls the page. Nothing animates, so reduced motion needs no swap.
+- Print: a stats page prints as plain pages. The shell's chrome and the page's own controls (tabs, filter, window switch, back link, actions) are gone; the page is white and light even from dark mode; a head line gives GolfHelm, the subject (the player here; the team and season on the team page) and the day it was printed; rows, cards and sections are not cut across sheets; rules and fills keep their ink. The page keeps its desktop view on paper instead of flipping to the phone view at paper width, and the shell's skip link is not printed.
+
+## 2026-10-18 — Pickers and controls: filter date range, saving
+
+```text
+Design package: none (complete-and-elevate plan, lane L2)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, L2 pickers and controls)
+
+- The browser's own date and time inputs are gone. The filter's From and To (each with Clear; To opens on From) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+
+## 2026-10-18 — Wave 10: an early read in plain words
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-5309 CH-5313
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 early read)
+
+- Desktop: with no strokes gained yet, chapter 1 says it in one line
+  (CH-5309, the phone's line) instead of a big dash and four leg rows of
+  dashes under the early-read notice.
+- The Rounds tab's Last 10 reason (CH-5313) reads "Comparing starts at 13
+  rounds: the newest 10 against at least 3 before them."
+
+## 2026-10-18 — Wave 8: premium details, Filter on the column edge
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Desktop: Filter's icon starts on the column's edge
+  (`.ch-btn--flush-start`); the phone filter bar is unchanged.
+- Phone: the note under a panel ("2 legs are losing strokes…") is the
+  secondary ink, not green (green is gains only).
+- Phone header: each part of "Sophomore · 21 rounds this season · 3.9 hcp"
+  keeps to one line and the dot stays at a line's end.
+- Phone header: the ringed coin is inset by its 4px ring to the column edge.
+- Phone: the filter button matches the window switch's 40px track and radius.
+
+## 2026-10-18 — Wave 7: player stats trend
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, phone scoring trend)
+
+- The phone hero's Scoring trend reads "2.1 higher", "2.1 lower" or "level",
+  over "Newest 5 vs first 5" (the halves the change compares), in place of
+  "up 2.1 · Newer rounds".
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Adding…" (CH-5401) and "Accepting…" / "Declining…" (CH-5404)
+  while those writes run.
+
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `stats.css`: the player page's phone text (the profile head, the game
+  sections' heads, notes, labels and captions, the round list) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The game section's label and scope keep 13.5/19 and 13/18 at the
+  default size.
+- Left fixed on purpose: the figures (`28px/32px` value), the comparison
+  table, the chart text and the rank numerals.
+- At XXL (390 wide) the unscaled text drops from 177 to 103; the rest is
+  the shared shell and the figures. At the default size every value is the
+  same pixel.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): the scale 1 screenshot is
+  pixel-identical to before; at XXL no overflow and no visible overlap (the
+  detector's new pairs sit in panels that are not shown).
+- `npm run test:file` on `stats-parity.test.tsx` (the type contract now reads
+  the Dynamic Type steps).
+
+## 2026-10-18 — Wave 3 accessibility: tab targets, birdie digits
+
+```text
+Design package: none (wave-3 accessibility review, items 16, 18)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- The profile's tabs set `aria-controls` only on the tab whose panel is drawn;
+  the others pointed at panels that were not in the page.
+- Dark: the score mix's birdie segment and key print their figures in the
+  page's near-black, not white, on the salmon flag (2.53:1 to 7.27:1).
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `stats-player.test.tsx`.
+- WebKit (Playwright, dev preview, 1280 dark): `.ch-zmix .is-birdie` 7.27:1;
+  light unchanged at 6.02:1.
+
+## 2026-10-18 — Wave 3: the shared gutter
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- The profile takes the Stats main's shared gutter and head top (`stats.css`,
+  design #5): the back link and hero start 40px in from the frame, the name at x
+  384 beside the photo.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: the actions keep one row, ranges typeset
+
+```text
+Design package: none (wave-3 design review, items 4, 6, 7)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, hero actions and zone ranges)
+
+- At 1280 and wider the hero's three actions (Message, Schedule 1:1, Add
+  focus area) sit on one row: the hero's column gap is 16px (was 22px) and
+  the action buttons take 12px side padding (was 14px). Add focus area
+  wrapped to a row of its own at 1280 (`stats.css`).
+- Approach ranges read "50–125 yds", "125–175 yds" and "175+ yds" on screen
+  (en dash, yds); the bucket labels stay the lookup keys in
+  `leak-map-buckets.ts` (`OverviewZones.tsx`).
+- The strokes gained track's note gives its range with true signs ("−3 to
+  +1"), where the low end had a hyphen-minus (`OverviewZones.tsx`).
+
+### Verification (2026-10-18, hero actions and zone ranges)
+
+- WebKit, the three actions' tops: 280, 280, 280 at 1280 (the row ends 10px
+  inside its 384px column) and at 1440; the name stays one line.
+- `npm run test:file` on `stats-parity.test.tsx` and `stats-player.test.tsx`.
+
+## 2026-10-18 — Polish: the profile skeleton takes the wide layout
+
+```text
+Design package: none (wave-2 states review row 2)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- At 1280 and wider the profile's skeleton (CH-5403, aria-busy) takes the
+  loaded page's layout too, the four figures beside the name: the rules in
+  `stats.css` key on `.ch-st:is(.is-desk, [aria-busy='true'])`.
+- The strokes gained figure's change line keeps its loaded width (about
+  140px), so a coach's three actions wrap to two rows beside it as they do
+  when the page lands (`StatsSkeleton.tsx`).
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures), tabs top skeleton vs
+  loaded: 1280 422 vs 422 (was 568 vs 422); 1440 378 vs 378; 1100 568 vs
+  568.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-17 — Polish: the trend names scoring; vs previous 10
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone figures: the third figure's label is "Scoring trend", so an amber "up
+  2.1" reads as scores rising rather than as a gain. The review asked for the
+  value to read "Scoring up 2.1"; at 390px that cell measures roughly 106px on
+  the review's screenshot (an estimate) and "Scoring down 1.4" would likely
+  wrap, so the word went on the label
+  (`StatsPlayerPhone.tsx`).
+- "vs. previous 10" reads "vs previous 10", as Home says it (the shared
+  `data/stats-common.ts`).
+- Tabular figures restored (review row 18) in the shared `stats.css`, as the
+  P004 entry lists; the player's figures, ladders and round rows included.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Figures checked against production on the same rounds; putts with none recorded fixed
 
 The profile's figures were run beside production's on the same round ids:

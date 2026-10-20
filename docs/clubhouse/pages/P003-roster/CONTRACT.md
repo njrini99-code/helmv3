@@ -91,11 +91,12 @@ First-run (30401), filtered (30402, 30403) and per-player (30405) are distinct, 
 | 30401 | CH-3301 | `NO_PLAYERS_YET` | No players yet |
 | 30402 | CH-3302 | `A_SEARCH_MATCHES_NOBODY` | A search matches nobody |
 | 30403 | CH-3303 | `A_STATUS_FILTER_HAS_NOBODY` | A status filter has nobody |
-| 30404 | CH-3304 | `THE_TEAM_HAS_NO_JOIN_CODE` | The team has no join code |
+| 30404 | CH-3304 | `THE_TEAM_HAS_NO_JOIN_CODE` | The team has no team code |
 | 30405 | CH-3305 | `A_PLAYER_HAS_NO_18_HOLE_ROUNDS` | A player has no 18-hole rounds |
 | 30406 | CH-3306 | `A_COACH_SIGNED_IN_WITH_NO_ACTIVE` | A coach signed in with no active team |
 | 30407 | CH-3307 | `A_PLAYERS_TEAM_HAS_NOBODY_ON_IT` | A player's team has nobody on it |
 | 30408 | CH-3308 | `A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE` | A player signed in with no active team |
+| 30409 | CH-3309 | `A_PLAYER_ALONE_ON_THEIR_TEAMS_ROSTER` | A player alone on their team's roster (they are always on it once joined, so this is a new team's first run) |
 
 ## 05 — Validation
 
@@ -121,7 +122,7 @@ Every change has its own toast (30601 to 30607) naming what failed and what to d
 | 30603 | CH-3003 | `DECLINING_A_JOIN_REQUEST_FAILS` | Declining a join request fails |
 | 30604 | CH-3004 | `THE_COACHS_NOTE_DOESNT_SAVE` | The coach's note doesn't save (on leaving the field) |
 | 30605 | CH-3005 | `THE_BROWSER_BLOCKS_THE_CSV_DOWNLOAD` | The browser blocks the CSV download |
-| 30606 | CH-3006 | `COPYING_THE_JOIN_CODE_OR_LINK_FAILS` | Copying the join code or link fails |
+| 30606 | CH-3006 | `COPYING_THE_JOIN_CODE_OR_LINK_FAILS` | Copying the team code or invite link fails |
 | 30607 | CH-3007 | `APPROVE_ALL_LEAVES_SOME_REQUESTS_UNAPPROVED` | Approve all (phone requests sheet, D-55) leaves some requests unapproved |
 | 30608 | CH-3201 | `THE_ROSTER_DOESNT_LOAD` | The roster doesn't load |
 | 30609 | CH-3202 | `SEASON_ROUNDS_DONT_LOAD` | Season rounds don't load |
@@ -148,7 +149,7 @@ Roster's writes all go through useAction, so offline every one is refused before
 | --- | --- | --- | --- |
 | 30701 | — | `WRITES_REFUSED_OFFLINE` | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -306,8 +307,9 @@ CH-1842, 11825 CH-1816.
 | 31805 | CH-3805 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, both layouts, 1280px and 390px |
 | 31806 | CH-3806 | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
 | 31807 | CH-3807 | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
+| 31808 | CH-3808 | `THE_PLAYERS_ROSTER_NAMES_THE_COACHES` | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

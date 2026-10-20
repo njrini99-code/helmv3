@@ -48,7 +48,7 @@ action, so a toast's Retry that lands does it too.
 | CH-10005 | Posting an announcement fails | "Couldn’t post the announcement" + "Your text is still here. Try again in a moment." The sheet stays open with the text. Done: "Posted "Bus leaves at 6"" | `useAction('hub.postAnnouncement')` → `createEnrichedAnnouncement` | hub.test › CH-10005 |
 | CH-10006 | Saving a trip fails | "Couldn't save Seahawk" + "What you entered is still here." Done: "Seahawk is on Travel" | `useAction('hub.planTrip')` → `createGolfTravelItinerary` | hub.test › CH-10006 |
 | CH-10007 | Assigning a task fails | "Couldn't assign Book physicals" + "What you entered is still here." Done: "Book physicals assigned to the team" (or "to 3 players") | `useAction('hub.assignTask')` → `createTask` | hub.test › CH-10007 |
-| CH-10008 | Uploading a file fails | "Couldn't upload Local rules.pdf" + "Check the file is under 25 MB and try again." Each file says so on its own. A file of a type Fairway Documents doesn't take, or over 25 MB, is refused by name before sending ("setup.exe can’t be shared" / "Film.mov is too large"). Done: "Local rules.pdf shared with the team" | `useAction('hub.uploadDocument')` → `uploadGolfDocument`, `createGolfDocument`; `uploadRefusal` (`screens/hub/upload-rules.ts`) | hub.test › CH-10008, wiring-p010-hub.test |
+| CH-10008 | Uploading a file fails | "Couldn't upload Local rules.pdf" + "Check the file is under 25 MB and try again." Each file says so on its own, with Retry. A file of a type Fairway Documents doesn't take, or over 25 MB, is refused by name before sending ("setup.exe can’t be shared" / "Film.mov is too large"). Done: "Local rules.pdf shared with the team"; several dropped at once land with one toast that counts them ("3 files shared with the team") | `useAction('hub.uploadDocument')` → `uploadGolfDocument`, `createGolfDocument`; `uploadRefusal` (`screens/hub/upload-rules.ts`) | hub.test › CH-10008, wiring-p010-hub.test |
 | CH-10009 | Deleting a post, task, file or trip fails | "Couldn't delete NCAA hours log" + Retry; it stays. Done: "Deleted NCAA hours log" | `useAction('hub.delete')` → `deleteAnnouncement`, `deleteTask`, `deleteGolfDocument`, `deleteGolfTravelItinerary` | hub.test › CH-10009, hub-trip-manage.test › CH-10009 |
 | CH-10011 | Unticking a done task fails | "Couldn't reopen Sign travel waiver" + Retry; it stays done. Done: "Sign travel waiver is open again" | `useAction('hub.uncompleteTask')` → `uncompleteTask` | hub.test › CH-10011 |
 | CH-10010 | Saving an edit to an announcement fails | "Couldn’t save the announcement" + "Your changes are still here. Try again in a moment." (the server's reason when it gave one, for example "Message is required.") The sheet stays open with the words; the card is unchanged. Done: "Saved "Bus leaves at 6"" | `useAction('hub.editAnnouncement')` → `updateAnnouncement` | hub.test › CH-10010 |
@@ -56,6 +56,10 @@ action, so a toast's Retry that lands does it too.
 | CH-10013 | Saving an edit to a trip fails | "Couldn't update Seahawk" + the server's reason, or "What you entered is still here." Retry; the sheet stays open with what was typed. Done: "Seahawk updated", the sheet closes and the page reads again | `useAction('hub.editTrip')` (`TripEditSheet`) → `updateGolfTravelItinerary` | hub-trip-manage.test › CH-10013 |
 
 ## 101xx Validation
+
+A refused save says each problem beside its field, read out at once
+(`role="alert"`), and moves focus to the first one; Plan a trip goes back to
+Logistics first.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
@@ -99,11 +103,11 @@ action, so a toast's Retry that lands does it too.
 | CH-10306 | A player with nothing from their coaches (EMPTY.hub.player) | "No team updates yet" + "Announcements, trips and documents from your coaches will show up here." Only when every read answered and was empty, Updates included; a failed Updates read shows CH-10202 instead | `TeamHub` | hub.test › CH-10306 |
 | CH-10307 | No announcements | "No announcements yet", flush at the panel's edge under the composer line (no card) | `TeamHub` | hub.test › CH-10307 |
 | CH-10308 | No trips | "No trips planned" + who fills it, flush at the panel's edge under Plan a trip (no card) | `TeamHub` | hub.test › CH-10308 |
-| CH-10309 | No team | "You aren’t on a team yet" + the role's next step | `ClubhouseHubRoute` | hub.test › CH-10309 |
+| CH-10309 | No team | "You aren’t on a team yet" + the role's next step + Open team settings (a coach's Team, a player's Golf profile) | `ClubhouseHubRoute` | hub.test › CH-10309 |
 | CH-10310 | A team with nobody on the roster | In the sheets, where players are chosen: "No players on the roster yet. Add them in Roster, then choose them here." | `PlayerPicks` | hub.test › CH-10310 |
 | CH-10311 | A team with no documents | In New announcement, where files are attached: "No documents yet. Add files in the Documents tab, then attach them here." Nothing to attach; the post still goes | `DocumentPicks` | hub.test › CH-10311 |
 | CH-10312 | Plan a trip: no upcoming events in the next four months | "No upcoming events in the next four months. Add the tournament in Calendar to choose its travelers here." | `TripSheet` | hub.test › CH-10312 |
-| CH-10313 | Plan a trip: the Travelers step with no calendar event | "Travelers come from the trip’s calendar event. Without one, the whole team sees the trip. Go Back to choose an event." | `TripSheet` | hub.test › CH-10313 |
+| CH-10313 | Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step) | "Travelers come from the trip’s calendar event. Without one, the whole team sees the trip. Go Back to choose an event." | `TripSheet` | hub.test › CH-10313 |
 | CH-10314 | New announcement: files that players can't open are left out of the attach list | Only files players can open (`is_public`) are offered. With some left out, under the list: "1 coach-only file isn't offered: players couldn't open it." ("6 coach-only files aren't offered: … them."). With every file coach-only: "Your file is coach-only, so none can be attached: players couldn't open it." and no attach button; the post still goes with none. A file chosen and then made coach-only while the sheet is open comes off its chip and is not sent. The Documents tab still lists every file to a coach | `DocumentPicks` (`ChHubFile.isPublic` from `folders()`) | hub.test › CH-10314 |
 | CH-10315 | Plan a trip: nobody chosen has a class during the trip | "No class meets during the trip for the travelers chosen." Only when the check ran in full: a check that could not is CH-10212 | `ClassClashes` | hub.test › CH-10315 |
 
@@ -112,11 +116,11 @@ action, so a toast's Retry that lands does it too.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-10401 | Files are uploading | "Uploading…" on the drop zone; it can't be pressed again | `Documents` | hub.test › CH-10401 |
-| CH-10402 | A post is being sent | "Posting" on the button; it can't be pressed twice | `ComposeSheet` | hub.test › CH-10402 |
-| CH-10403 | A trip is being saved | "Saving" | `TripSheet` | hub.test › CH-10403 |
-| CH-10404 | A task is being assigned | "Assigning" | `AssignSheet` | hub.test › CH-10404 |
+| CH-10402 | A post is being sent | "Posting…" on the button; it can't be pressed twice | `ComposeSheet` | hub.test › CH-10402 |
+| CH-10403 | A trip is being saved | "Saving…" | `TripSheet` | hub.test › CH-10403 |
+| CH-10404 | A task is being assigned | "Assigning…" | `AssignSheet` | hub.test › CH-10404 |
 | CH-10405 | Team Hub is loading | The header, the tab strip and the two Home columns as grey blocks, in place (nothing for the first 150ms, then a fade); on the phone the opening on its double rule, the tabs on their hairline and two flush sections with rows on seams, in the loaded page's geometry and the signed-in role's opening and tab count from the shell (a coach's New announcement; five tabs or four), so either role's page lands with 0px shift at 390; read as "Loading Team Hub" | `HubSkeleton` from `team-hub/loading.tsx` through `ClubhouseSwitch` | hub.test › CH-10405 |
-| CH-10406 | An edit is being saved | "Saving" on the button of Edit announcement; it can't be pressed twice | `ComposeSheet` (edit) | hub.test › CH-10406 |
+| CH-10406 | An edit is being saved | "Saving…" on the button of Edit announcement; it can't be pressed twice | `ComposeSheet` (edit) | hub.test › CH-10406 |
 | CH-10407 | Plan a trip: the travelers' classes are being checked | "Checking their classes…" once the chosen travelers have settled (350ms; a run of taps on player chips is one question). Publish never waits for it, and an answer for travelers or days no longer on screen is not shown | `ClassClashes` (`useClassCheck`) | hub.test › CH-10407 |
 
 | CH-10408 | A player's event reply is being sent | "Sending reply for Team dinner…" beside that event's selected reply. Its three choices remain disabled across tab changes until the answer; another event can save independently. Refusal restores the last confirmed reply and offers Retry | `ReplyChoices` → `useAction('hub.reply')` + Hub-lifetime event gate | hub.test › CH-10408 |

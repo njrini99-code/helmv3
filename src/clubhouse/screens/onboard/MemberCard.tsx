@@ -39,6 +39,20 @@ export function cardOf(d: Draft, path: OnboardPath, step: OnboardStep, now: Date
   }
   const team = d.joinedTeam === false ? '' : d.teamName ?? '';
   const name = `${d.first} ${d.last}`.trim();
+  if (path === 'coach') {
+    const p = d.prog;
+    return {
+      name,
+      tag: d.title.trim() || 'Head coach',
+      fields: [
+        ['Program', p.org.trim()],
+        ['Division', [p.division, p.conference.trim()].filter(Boolean).join(' · ')],
+        ['Team', p.team.trim() || (p.org.trim() ? `${p.gender === 'mens' ? 'Men’s' : 'Women’s'} golf` : '')],
+      ],
+      band: p.org.trim() || 'GolfHelm Clubhouse',
+      photo: d.photoUrl,
+    };
+  }
   if (path === 'staff') {
     return {
       name,

@@ -48,8 +48,8 @@ keeps the Fairway page for them.
   progress across players. The newest fills the card. The rest are listed under
   it ("2 more unfinished rounds"), each with Continue (or Submit) and Discard,
   so an abandoned round can be cleared.
-- **Ready to submit.** A round whose every hole already has a score says "Ready
-  to submit" and "Submit round". This is legacy R8. It never says so when a
+- **Ready to post.** A round whose every hole already has a score says "Ready
+  to post" and "Post round". This is legacy R8. It never says so when a
   completed round already holds that course and day.
 - **Not counted.** A round that isn't countable (`isCountableRound`) still
   lists, with a "Not counted" pill. It sets no season figure.
@@ -266,7 +266,7 @@ device: the recovery journal and the failed-submit queue in IndexedDB, the old
 | --- | --- | --- |
 | A card per round: course, status, "Practice · Oct 14 · 9 of 18 holes · 36 strokes", "Saved 5 min ago" | The player's own copies only, deduplicated by server round id (else by course, day, type and what was played); a copy with no scored hole and no shot is not offered | none |
 | Status: "Only on this device", "Saved on this device", "Waiting to sync", "Didn't sync" (with the engine's reason) | The queue's own status: pending or failed. A copy in no queue has nothing to retry | none |
-| Restore round, or Submit round for a finished round whose submit failed | The newest copy | `savePartialRound` (the round opens to continue) or `submitGolfRoundComprehensive` (its review opens), through `writeRoundRecreatingIfMissing`; the device copies are cleared only after the server confirms, and only up to what it confirmed |
+| Restore round, or Post round for a finished round whose submit failed | The newest copy | `savePartialRound` (the round opens to continue) or `submitGolfRoundComprehensive` (its review opens), through `writeRoundRecreatingIfMissing`; the device copies are cleared only after the server confirms, and only up to what it confirmed |
 | Retry sync (queue rounds only) | The queue | `getSyncEngine().retryFailed()`, then the device is read again |
 | Discard, after a question | none | `deleteInProgressRound` when the server holds the round (the Library's discard), then every device copy, and the mark the round screens and the queue's drain honour |
 

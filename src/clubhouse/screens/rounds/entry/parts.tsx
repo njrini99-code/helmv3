@@ -152,7 +152,7 @@ export function DiscardConfirm({
       <Button
         variant="danger"
         size="sm"
-        disabled={busy}
+        busy={busy}
         feel={null}
         onClick={() => {
           // CH-11708: the warning comes before the discard runs.

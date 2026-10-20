@@ -1,5 +1,16 @@
 [
   {
+    "file": "COMPLETION_PLAN_2026-10-18.md",
+    "title": "Complete and elevate: the full-auto plan",
+    "kind": "plan",
+    "date": "2026-10-18",
+    "scope": "Phone and desktop: the signature layer (scorecard, waiting pages, desktop command layer, native-feeling controls, readable stats), front-door completion and the open audit backlog, built in lanes on one integration branch.",
+    "status": "in_progress",
+    "note": "owner delegated decisions on 2026-10-18; no deploy or production migration",
+    "allPages": true,
+    "pages": []
+  },
+  {
     "file": "PREMIUM_PASS_AUDIT.md",
     "title": "Premium pass: owner answers and backlog",
     "kind": "audit",

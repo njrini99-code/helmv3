@@ -46,6 +46,8 @@ const ownRowOnly = {
 vi.mock('@/lib/calendar/rsvp', () => ({ getEventRSVPStats: vi.fn(async () => ownRowOnly) }));
 
 import { getEventRSVP } from '../calendar-events';
+import { getEventRSVPStats } from '@/lib/calendar/rsvp';
+import { logServerError } from '@/lib/server-error-logger';
 
 beforeEach(() => {
   rpc = vi.fn(async (): Promise<RpcResult> => ({ data: null, error: null }));
@@ -83,5 +85,16 @@ describe('getEventRSVP totals once a player reads only their own row', () => {
     expect(res.success).toBe(true);
     if (!res.success) return;
     expect(res.data.summary.total).toBe(1);
+  });
+
+  it('fails the load, logged, when the attendance read fails, so People shows Retry and not "No one invited yet"', async () => {
+    vi.mocked(getEventRSVPStats).mockRejectedValueOnce(new Error("Could not load the event's attendance: denied"));
+    const res = await getEventRSVP('e1');
+    expect(res.success).toBe(false);
+    expect(vi.mocked(logServerError)).toHaveBeenCalledWith(
+      expect.stringContaining('getEventRSVP failed for event e1'),
+      expect.objectContaining({ action: 'golf.getEventRSVP' }),
+      'warning',
+    );
   });
 });

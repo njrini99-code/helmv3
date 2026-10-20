@@ -84,10 +84,16 @@ async function getEventRSVPSummary(
   eventId: string,
   supabase: SupabaseClient
 ): Promise<RSVPSummary> {
-  const { data: attendances } = await supabase
+  const { data: attendances, error } = await supabase
     .from('golf_event_attendance')
     .select('*')
     .eq('event_id', eventId);
+
+  // A failed read is not an empty roster: it used to come back as zero invitees, so the event's People section said
+  // "No one invited yet" instead of offering a retry.
+  if (error) {
+    throw new Error(`Could not load the event's attendance: ${error.message}`);
+  }
 
   // Names and avatars through golf_player_profiles: a player may no longer
   // read a teammate's golf_players row (security review S4). A failed read

@@ -3,7 +3,7 @@
 import { CalendarClock, ChevronDown, Mail, NotebookPen, Phone, UserRound, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { CH_DIVISIONS } from '../../data/recruiting-calendar';
-import { dateLabel, isNextStepDue, mailHref, nextStepLine, stageMeta, telHref, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
+import { dateLabel, isNextStepDue, isNextStepLate, mailHref, nextStepLine, stageMeta, telHref, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { initials } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -61,30 +61,53 @@ export function CommitRule({ p, beat, held = false, onEnd }: { p: ChProspect; be
   return <span ref={ref} className={'ch-rec-commit' + (mine ? (drawing ? ' is-drawing' : ' is-waiting') : '')} aria-hidden="true" data-ch-code="CH-14806" />;
 }
 
-/** C1: the next step as a small dated plate, for a row whose step is due (today, past, or within two weeks). */
-export function NextStepPlate({ p, now, tz }: { p: ChProspect; now: Date; tz?: string }) {
+/** "Overdue: " or "Next step: " before a step's words, for VoiceOver; the plate's colour says it to the eye. */
+export function NextStepSrPrefix({ late, label = 'Next step' }: { late: boolean; label?: string }) {
+  return <span className="ch-sr-only">{late ? 'Overdue: ' : `${label}: `}</span>;
+}
+
+/**
+ * C1: the next step as a small dated plate, for a row whose step is due (today, past, or within two weeks), or any
+ * step at all while the list is sorted by it (`always`). A step whose day has passed is late: warning ink and rule.
+ */
+export function NextStepPlate({ p, now, tz, always = false }: { p: ChProspect; now: Date; tz?: string; always?: boolean }) {
   const line = nextStepLine(p, now, tz);
-  if (!line || !isNextStepDue(p, now, tz)) return null;
+  if (!line || (!always && !isNextStepDue(p, now, tz))) return null;
+  const late = isNextStepLate(p, now, tz);
   return (
-    <span className="ch-rec-plate ch-num">
-      <span className="ch-sr-only">Next step: </span>
+    <span className={'ch-rec-plate ch-num' + (late ? ' is-late' : '')}>
+      <NextStepSrPrefix late={late} />
       {line}
     </span>
   );
 }
 
+/** A prospect section's heading level: h3 under the desktop panel's h2 name; h2 on the phone, whose screen title is the h1. */
+export type RecSecLevel = 2 | 3;
+
+export function SecHeading({ level = 3, children }: { level?: RecSecLevel; children: ReactNode }) {
+  return level === 2 ? <h2>{children}</h2> : <h3>{children}</h3>;
+}
+
 /** C1: the panel's and the detail's next-step field, with the way to set it (`onEdit`), or read-only without one. */
-export function NextStepSection({ p, now, tz, onEdit }: { p: ChProspect; now: Date; tz?: string; onEdit?: () => void }) {
+export function NextStepSection({ p, now, tz, onEdit, level }: { p: ChProspect; now: Date; tz?: string; onEdit?: () => void; level?: RecSecLevel }) {
   const line = nextStepLine(p, now, tz);
+  const late = isNextStepLate(p, now, tz);
+  const value = (
+    <span className="ch-rec-row__v ch-num">
+      {late && <NextStepSrPrefix late />}
+      {line}
+    </span>
+  );
   if (!onEdit) {
     if (!line) return null;
     return (
       <section className="ch-rec-sec" aria-label="Next step">
-        <h3>Next step</h3>
+        <SecHeading level={level}>Next step</SecHeading>
         <div className="ch-rec-rows">
-          <p className="ch-rec-next is-static">
+          <p className={'ch-rec-next is-static' + (late ? ' is-late' : '')}>
             <Icon icon={CalendarClock} size={17} />
-            <span className="ch-rec-row__v ch-num">{line}</span>
+            {value}
           </p>
         </div>
       </section>
@@ -92,12 +115,12 @@ export function NextStepSection({ p, now, tz, onEdit }: { p: ChProspect; now: Da
   }
   return (
     <section className="ch-rec-sec" aria-label="Next step">
-      <h3>Next step</h3>
+      <SecHeading level={level}>Next step</SecHeading>
       {line ? (
         <div className="ch-rec-rows">
-          <button type="button" className="ch-rec-row ch-rec-next" onClick={onEdit}>
+          <button type="button" className={'ch-rec-row ch-rec-next' + (late ? ' is-late' : '')} onClick={onEdit}>
             <Icon icon={CalendarClock} size={17} />
-            <span className="ch-rec-row__v ch-num">{line}</span>
+            {value}
             <span className="ch-rec-row__a">Change</span>
           </button>
         </div>
@@ -175,10 +198,10 @@ export function ContactHint({ hint }: { hint?: string | null }) {
   );
 }
 
-export function ContactSection({ p, onAdd, hint }: { p: ChProspect; onAdd: () => void; hint?: string | null }) {
+export function ContactSection({ p, onAdd, hint, level }: { p: ChProspect; onAdd: () => void; hint?: string | null; level?: RecSecLevel }) {
   return (
     <section className="ch-rec-sec" aria-label="Contact">
-      <h3>Contact</h3>
+      <SecHeading level={level}>Contact</SecHeading>
       {p.email || p.phone ? (
         <ContactRows p={p} hint={hint} />
       ) : (
@@ -188,10 +211,10 @@ export function ContactSection({ p, onAdd, hint }: { p: ChProspect; onAdd: () =>
   );
 }
 
-export function NotesSection({ p, onAdd }: { p: ChProspect; onAdd: () => void }) {
+export function NotesSection({ p, onAdd, level }: { p: ChProspect; onAdd: () => void; level?: RecSecLevel }) {
   return (
     <section className="ch-rec-sec" aria-label="Notes">
-      <h3>Notes</h3>
+      <SecHeading level={level}>Notes</SecHeading>
       {p.notes ? (
         <p className="ch-rec-notes">{p.notes}</p>
       ) : (
@@ -213,7 +236,7 @@ export function MetaLine({ p, now, tz }: { p: ChProspect; now: Date; tz?: string
 }
 
 /**
- * C2: the recruiting calendar's quiet line ("Contact period · in-person contact allowed from Aug 1 before junior year, through Nov 8"), from the governing
+ * C2: the recruiting calendar's quiet line ("Contact period through Nov 8 · in-person contact for prospects from Aug 1 before their junior year"), from the governing
  * bodies' own 2026-27 rule books (data/recruiting-calendar.ts). The division comes from the team's organization; when it
  * doesn't say, the coach picks one here and it is kept on this device. Nothing sourced to say: no line.
  */

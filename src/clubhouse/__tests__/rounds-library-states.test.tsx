@@ -112,7 +112,7 @@ describe('Rounds library: a refresh in flight (rule 2)', () => {
     rerender(lib(PREVIEW_ROUNDS_FAILED));
     refreshing.now = true;
     rerender(lib(PREVIEW_ROUNDS_FAILED));
-    const btn = within(code('CH-11213')!).getByRole('button', { name: 'Trying again' }) as HTMLButtonElement;
+    const btn = within(code('CH-11213')!).getByRole('button', { name: 'Trying again…' }) as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
     await user.click(btn);
     expect(refreshing.refresh).not.toHaveBeenCalled();

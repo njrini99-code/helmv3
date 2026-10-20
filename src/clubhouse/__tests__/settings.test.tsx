@@ -206,11 +206,11 @@ describe('Settings · 80xx error toasts', () => {
     await expectCode('CH-8011', /team details/);
   });
 
-  it('CH-8012 a new invite code fails and the old one stays', async () => {
+  it('CH-8012 a new team code fails and the old one stays', async () => {
     const { user } = setup({ section: 'team', writes: { regenerateCode: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) } });
     await user.click(within(card('Invite players')).getByRole('button', { name: 'Make a new code' }));
     await user.click(within(code('CH-8503') as HTMLElement).getByRole('button', { name: 'Make a new code' }));
-    await expectCode('CH-8012', /invite code/);
+    await expectCode('CH-8012', /team code/);
     expect(screen.getByText('K7M2Q9XA')).toBeTruthy();
   });
 
@@ -253,7 +253,7 @@ describe('Settings · 80xx error toasts', () => {
 
   it('CH-8018 a join request fails (player, no team)', async () => {
     const { user } = setup({ data: playerData(false, false), section: 'golf', writes: { requestJoin: vi.fn(() => fail('That code does not match a team.')) } });
-    await user.type(screen.getByLabelText('Invite code'), 'abc123');
+    await user.type(screen.getByLabelText('Team code'), 'abc123');
     await user.click(screen.getByRole('button', { name: 'Ask to join' }));
     await expectCode('CH-8018', /does not match a team/);
   });
@@ -284,7 +284,8 @@ describe('Settings · 80xx error toasts', () => {
     await user.click(sw);
     await expectCode('CH-8022', /CoachHelm setting/);
     expect(screen.getByRole('switch', { name: 'Performance plateau' })).not.toBeChecked();
-    expect(code('CH-8405')!.textContent).toMatch(/didn’t save/);
+    // The failed row never says Saved: it went back, and the toast said why.
+    expect(code('CH-8405')).toBeNull();
   });
 
   it('CH-8023 deleting the account fails', async () => {
@@ -349,6 +350,17 @@ describe('Settings · 81xx validation', () => {
     expect(hapticSpy).toHaveBeenCalledWith('warning');
   });
 
+  it('wave-6 Team on desktop opens on the team code, then Team details', () => {
+    setup({ section: 'team' });
+    const invite = screen.getByRole('region', { name: 'Invite players' });
+    const details = screen.getByRole('region', { name: 'Team details' });
+    expect(invite.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Wave 10 (A): a code or link join is instant, so the coach is not told they approve it.
+    expect(invite.textContent).toMatch(/Players who sign up with your team code or open your invite link join right away\. You can remove anyone from Roster\./);
+    expect(invite.textContent).not.toMatch(/approve/);
+    expect(within(invite).getByText('Team code')).toBeTruthy();
+  });
+
   it.each([
     ['CH-8108', 'Team name', '', /team needs a name/],
     ['CH-8109', 'Name', '', /school needs a name/],
@@ -359,6 +371,9 @@ describe('Settings · 81xx validation', () => {
     await user.clear(f);
     if (value) await user.type(f, value);
     await expectCode(c, text);
+    // The field says it too, beside the save bar's line: marked invalid, with the problem as its help.
+    expect(f.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(f.getAttribute('aria-describedby')!)?.textContent).toMatch(text);
   });
 
   it('CH-8111 the first reminder must come first', async () => {
@@ -391,7 +406,7 @@ describe('Settings · 82xx didn\'t load', () => {
     ['CH-8202', 'notifications', { delivery: failedRead }, /email and push settings didn’t load/],
     ['CH-8204', 'notifications', { digest: failedRead }, /didn’t load/],
     ['CH-8205', 'team', { team: failedRead }, /Team details didn’t load/],
-    ['CH-8206', 'team', { joinCode: failedRead }, /invite code didn’t load/],
+    ['CH-8206', 'team', { joinCode: failedRead }, /team code didn’t load/],
     ['CH-8207', 'team', { scoring: failedRead }, /Scoring settings didn’t load/],
     ['CH-8208', 'team', { reminders: failedRead }, /Event reminders didn’t load/],
     ['CH-8211', 'coachhelm', { coachhelm: failedRead }, /CoachHelm settings didn’t load/],
@@ -425,9 +440,12 @@ describe('Settings · 83xx empty', () => {
     await expectCode('CH-8301', /aren’t on a team yet/);
   });
   it('CH-8302 a player without a team can ask to join', async () => {
-    setup({ data: playerData(false, false), section: 'golf' });
+    const { user } = setup({ data: playerData(false, false), section: 'golf' });
     await expectCode('CH-8302', /Join a team/);
-    expect(screen.getByRole('button', { name: 'Ask to join' })).toBeTruthy();
+    // The send is there once there is a code to send, not before.
+    expect(screen.queryByRole('button', { name: 'Ask to join' })).toBeNull();
+    await user.type(screen.getByLabelText('Team code'), 'k7m2');
+    expect(screen.getByRole('button', { name: 'Ask to join' })).toBeEnabled();
   });
   it('CH-8303 a pending join request', async () => {
     setup({ data: playerData(false, true), section: 'golf' });
@@ -437,6 +455,16 @@ describe('Settings · 83xx empty', () => {
     setup();
     expect(screen.getByRole('button', { name: 'Add photo' })).toBeTruthy();
     expect(document.querySelector('.ch-set-photo .ch-avatar')?.textContent).toBe('MR');
+  });
+  it('a photo that does not load falls back to the monogram, and Replace still applies (wave 7 premium #12)', () => {
+    const data = coachData();
+    setup({ data: { ...data, profile: { value: { ...(data.profile.value as object), avatarUrl: 'https://x.test/gone.png' }, error: false } } as ChSettingsData });
+    const img = document.querySelector('.ch-set-photo img')!;
+    expect(img).toBeTruthy();
+    fireEvent.error(img);
+    expect(document.querySelector('.ch-set-photo img')).toBeNull();
+    expect(document.querySelector('.ch-set-photo .ch-avatar')?.textContent).toBe('MR');
+    expect(screen.getByRole('button', { name: 'Replace photo' })).toBeTruthy();
   });
 });
 
@@ -472,9 +500,12 @@ describe('Settings · 84xx loading', () => {
 
   it('CH-8405 CoachHelm autosave status', async () => {
     const { user } = setup({ section: 'coachhelm' });
-    expect(code('CH-8405')!.textContent).toMatch(/save as you make them/);
+    // No line over the title: a setting says Saved by its own row, once it has saved.
+    expect(document.querySelector('.ch-set-autosave')).toBeNull();
+    expect(code('CH-8405')).toBeNull();
     await user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
-    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/All changes saved/));
+    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/Saved/));
+    expect(code('CH-8405')!.closest('.ch-set-row')?.textContent).toMatch(/Performance plateau/);
   });
 });
 
@@ -502,7 +533,7 @@ describe('Settings · 85xx confirm', () => {
     expect(writes.leaveTeam).not.toHaveBeenCalled();
   });
 
-  it('CH-8503 a new invite code asks first', async () => {
+  it('CH-8503 a new team code asks first', async () => {
     const { user, writes } = setup({ section: 'team' });
     await user.click(within(card('Invite players')).getByRole('button', { name: 'Make a new code' }));
     await expectCode('CH-8503', /K7M2Q9XA stops working/);
@@ -739,7 +770,7 @@ describe('Settings · opening and permission', () => {
   it('80101 opens with the role, team and email, the rail and the first card, and needs no team', () => {
     setup({ data: { ...coachData(), teamId: null, teamName: null, team: null, joinCode: null, scoring: null, reminders: null } });
     expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeTruthy();
-    expect(document.querySelector('.ch-set-head p')?.textContent).toBe('Coach · maya.reyes@unc.edu');
+    expect(document.querySelector('.ch-set-head p')?.textContent).toBe('Head coach · maya.reyes@unc.edu');
     expect(within(nav()).getAllByRole('button')).toHaveLength(5);
     expect(card('Profile')).toBeTruthy();
   });
@@ -799,13 +830,14 @@ describe('Settings · saving', () => {
     expect(await screen.findByText('Profile saved')).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('success');
     expect(await within(card('Profile')).findByText('Saved')).toBeTruthy();
-    expect(within(card('Profile')).getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    // The bar holds only its Saved; the buttons have nothing left to do.
+    expect(within(card('Profile')).queryByRole('button', { name: 'Save changes' })).toBeNull();
   });
 
-  it('80902 a CoachHelm autosave that lands is silent too: no toast, no success haptic, and the status line says All changes saved', async () => {
+  it('80902 a CoachHelm autosave that lands is silent too: no toast, no success haptic, and its row says Saved', async () => {
     const { user } = setup({ section: 'coachhelm' });
     await user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
-    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/All changes saved/));
+    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/Saved/));
     expect(document.querySelector('.ch-toast')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(hapticSpy).not.toHaveBeenCalledWith('success');
@@ -868,7 +900,7 @@ describe('Settings · saving', () => {
     await expectCode('CH-8001');
     await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(within(card('Profile')).queryByText('Unsaved changes')).toBeNull());
-    expect(within(card('Profile')).getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(within(card('Profile')).queryByRole('button', { name: 'Save changes' })).toBeNull();
     expect(writes.refresh).toHaveBeenCalledTimes(1);
 
     await openSection(user, /^Team/);
@@ -933,7 +965,7 @@ describe('Settings · saving', () => {
     leave.unmount();
 
     const join = setup({ data: playerData(false, false), section: 'golf' });
-    await join.user.type(screen.getByLabelText('Invite code'), 'abc123');
+    await join.user.type(screen.getByLabelText('Team code'), 'abc123');
     await join.user.click(screen.getByRole('button', { name: 'Ask to join' }));
     await waitFor(() => expect(join.writes.refresh).toHaveBeenCalledTimes(1));
   });
@@ -966,7 +998,7 @@ describe('Settings · saving', () => {
     email.unmount();
 
     const join = setup({ data: playerData(false, false), section: 'golf' });
-    await join.user.type(screen.getByLabelText('Invite code'), 'abc123{Enter}');
+    await join.user.type(screen.getByLabelText('Team code'), 'abc123{Enter}');
     await waitFor(() => expect(join.writes.requestJoin).toHaveBeenCalledWith('ABC123', ''));
   });
 });
@@ -1103,6 +1135,7 @@ describe('Settings · Team · the coaching staff', () => {
     await expectCode('CH-8026', /Couldn’t approve Avery Lee/);
     expect(staff.approve).toHaveBeenCalledWith('avery');
     await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Decline Avery Lee?' })).getByRole('button', { name: 'Decline' }));
     await expectCode('CH-8027', /Couldn’t decline Avery Lee/);
     expect(staff.decline).toHaveBeenCalledWith('avery');
     await user.click(within(await screen.findByRole('region', { name: 'Staff invitations' })).getByRole('button', { name: 'Create invite' }));
@@ -1161,7 +1194,7 @@ describe('Settings · what a saved value does when the person leaves the section
     const setCoachHelmCoach = vi.fn(okw);
     const { user } = setup({ data, section: 'coachhelm', writes: { savePhilosophy, setCoachHelmCoach } });
     await user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
-    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/All changes saved/));
+    await waitFor(() => expect(code('CH-8405')!.textContent).toMatch(/Saved/));
     await user.click(screen.getByRole('switch', { name: 'Insights' }));
     await waitFor(() => expect(screen.getByRole('switch', { name: 'Insights' })).toBeEnabled());
     await openSection(user, /^Account/);
@@ -1353,7 +1386,7 @@ describe('Settings · a refused save says why; only a save that got no answer sa
 
   it('CH-8018 a refusal with no plain reason keeps the card’s own next step', async () => {
     const { user } = setup({ data: playerData(false, false), section: 'golf', writes: { requestJoin: vi.fn(() => fail('duplicate key value violates unique constraint "golf_team_join_requests_pkey"')) } });
-    await user.type(screen.getByLabelText('Invite code'), 'abc123');
+    await user.type(screen.getByLabelText('Team code'), 'abc123');
     await user.click(screen.getByRole('button', { name: 'Ask to join' }));
     await expectCode('CH-8018', /Check the code with your coach\./);
   });
@@ -1463,18 +1496,20 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('button', { name: 'Maya Reyes Head coach · Varsity' })).toBeTruthy();
     const rows = within(list()).getAllByRole('button');
     expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Notifications', 'Team', 'CoachHelm', 'Preferences']);
-    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Email, Push', 'Scoring, invites', 'Priorities, alerts', 'Motion, units']);
+    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Email, push', 'Scoring, invites', 'Priorities, alerts', 'Motion, units']);
     expect(screen.getByRole('button', { name: 'Report a problem' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe('/privacy');
     expect(screen.getByRole('link', { name: 'Terms of service' }).getAttribute('href')).toBe('/terms');
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
+    // Signing out is not destructive: the standard row ink, never the danger red.
+    expect(screen.getByRole('button', { name: 'Sign out' }).className).toBe('ch-setm-signout');
     // Not the desktop page reflowed: no section rail.
     expect(document.querySelector('.ch-set-rail')).toBeNull();
   });
 
   it('81901 the player root has Golf profile in place of Team and CoachHelm, and the handicap on the identity row', () => {
     phone({ data: playerData(true) });
-    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · HCP 2.4' })).toBeTruthy();
+    // The index (2.1) wins over the handicap (2.4), as on the roster (displayHandicap).
+    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · HCP 2.1' })).toBeTruthy();
     const rows = within(list()).getAllByRole('button');
     expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Golf profile', 'Notifications', 'Preferences']);
     expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Handicap, team', 'Push, CoachHelm', 'Motion, units']);
@@ -1533,7 +1568,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     const updates = await screen.findByRole('region', { name: 'CoachHelm updates' });
     const kinds = within(updates).getAllByRole('button');
     // Round reviews and goals your coach assigned are on for push; the rest of each kind isn't: "(some)".
-    expect(kinds.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['In app, Push (some)', 'In app, Push (some), Email (some)', 'In app']);
+    expect(kinds.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['In app, push (some)', 'In app, push (some), email (some)', 'In app']);
     await user.click(within(updates).getByRole('button', { name: /^Insights/ }));
     const sheet = dialog('Insights');
     expect(within(sheet).getByRole('switch', { name: 'In app' })).toBeChecked();
@@ -1548,7 +1583,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(sent.coach_assigned_goal).toEqual({ push: true, email: true, in_app: true });
     expect(within(dialog('Insights')).getByRole('switch', { name: 'Push' })).toBeChecked();
     await user.click(within(sheet).getByRole('button', { name: 'Done' }));
-    await waitFor(() => expect(within(updates).getByRole('button', { name: /^Insights/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('In app, Push'));
+    await waitFor(() => expect(within(updates).getByRole('button', { name: /^Insights/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('In app, push'));
   });
 
   it('81901 CH-8005 CH-8203 a switch in a kind sheet that fails flips back and says so; a failed read says so with Try again', async () => {
@@ -1556,7 +1591,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     const { user, writes } = phone({ writes: { setDelivery } });
     await openRow(user, /^Notifications/);
     const mail = await screen.findByRole('region', { name: 'Email and push' });
-    expect(within(mail).getByRole('button', { name: /^Messages/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('Email, Push');
+    expect(within(mail).getByRole('button', { name: /^Messages/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('Email, push');
     expect(within(mail).getByRole('button', { name: /^Events & reminders/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('Email');
     await user.click(within(mail).getByRole('button', { name: /^Messages/ }));
     const sheet = dialog('Messages');
@@ -1588,6 +1623,18 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(code('CH-1209')).toBeNull();
     await user.click(within(code('CH-8202') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(writes.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-8214 every read failing says so on the list, with one Try again; one failed read leaves the list to its section', async () => {
+    const all = { ...coachData(), profile: failedRead, delivery: failedRead, digest: failedRead, scoring: failedRead, reminders: failedRead, team: failedRead, joinCode: failedRead, coachhelm: failedRead };
+    const { user, writes, unmount } = phone({ data: all });
+    await expectCode('CH-8214', /Settings didn’t load/);
+    await user.click(within(code('CH-8214') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(writes.refresh).toHaveBeenCalledTimes(1);
+    unmount();
+    phone({ data: { ...coachData(), profile: failedRead } });
+    expect(screen.getByRole('button', { name: /^maya\.reyes@unc\.edu/ })).toBeTruthy();
+    expect(code('CH-8214')).toBeNull();
   });
 
   it('81901 CH-8201 a profile that did not load opens Account from the identity row, with the notice and no edit sheet', async () => {
@@ -2168,7 +2215,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const invite = await screen.findByRole('region', { name: 'Invite players' });
       await user.click(within(invite).getByRole('button', { name: 'New code' }));
       await user.click(within(await openSheet('CH-8503')).getByRole('button', { name: 'Replace code' }));
-      await expectCode('CH-8012', /invite code/);
+      await expectCode('CH-8012', /team code/);
       expect(within(invite).getByText('K7M2Q9XA')).toBeTruthy();
     });
 
@@ -2233,7 +2280,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     it('81901 CH-8509 the Profile sheet over Account asks too, and Account stays', async () => {
       const { user } = phone();
       await openRow(user, /^Account/);
-      await user.click(screen.getByRole('button', { name: 'Profile Maya Reyes' }));
+      await user.click(screen.getByRole('button', { name: 'Name and photo Maya Reyes' }));
       await user.type(within(dialog('Profile')).getByLabelText('Full name'), ' Jr');
       act(() => window.history.back());
       // Account's own sheets carry a CH-8509 question too (closed), so find the open one.
@@ -2346,6 +2393,14 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await waitFor(() => expect(within(scoring).getByRole('button', { name: /^Default tees Blue/ })).toBeTruthy());
     });
 
+    it('wave-6 the sentence about the timezone sits under Team details, where its row is, not under Scoring and format', async () => {
+      const { user } = phone();
+      await openRow(user, /^Team/);
+      const details = await screen.findByRole('region', { name: 'Team details' });
+      expect(details.textContent).toContain('The timezone sets when every event and reminder happens.');
+      expect(screen.getByRole('region', { name: 'Scoring and format' }).textContent).not.toMatch(/timezone/);
+    });
+
     it('81901 CH-8011 CH-8108 Team name opens the details sheet with the season and school; a cleared name keeps Save off', async () => {
       const { user, writes } = phone();
       await openRow(user, /^Team/);
@@ -2412,13 +2467,13 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const { user } = phone({ data: { ...coachData(), team: failedRead, scoring: failedRead, joinCode: failedRead, reminders: failedRead } });
       await openRow(user, /^Team/);
       await expectCode('CH-8205', /Team details didn’t load/);
-      await expectCode('CH-8206', /invite code didn’t load/);
+      await expectCode('CH-8206', /team code didn’t load/);
       await expectCode('CH-8207', /Scoring settings didn’t load/);
       await expectCode('CH-8208', /Event reminders didn’t load/);
       expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
     });
 
-    it('81901 CH-8013 CH-8705 Share opens the share sheet; without one it copies the join link, and says how to do it by hand when copying fails', async () => {
+    it('81901 CH-8013 CH-8705 Share opens the share sheet; without one it copies the invite link, and says how to do it by hand when copying fails', async () => {
       const share = vi.fn(() => Promise.resolve());
       Object.defineProperty(navigator, 'share', { configurable: true, value: share });
       const first = phone();
@@ -2498,10 +2553,10 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const { user, writes } = phone({ data: playerData(false, false), writes: { requestJoin: vi.fn(() => fail('That code does not match a team.')) } });
       await openRow(user, /^Golf profile/);
       await expectCode('CH-8302');
-      await user.click(await screen.findByRole('button', { name: /^Invite code/ }));
+      await user.click(await screen.findByRole('button', { name: /^Team code/ }));
       const sheet = dialog('Join a team');
       expect(within(sheet).getByRole('button', { name: 'Send' })).toBeDisabled();
-      await user.type(within(sheet).getByLabelText('Invite code'), 'abc123{Enter}');
+      await user.type(within(sheet).getByLabelText('Team code'), 'abc123{Enter}');
       await waitFor(() => expect(writes.requestJoin).toHaveBeenCalledWith('ABC123', ''));
       await expectCode('CH-8018', /does not match a team/);
     });
@@ -2511,7 +2566,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await openRow(user, /^Golf profile/);
       await expectCode('CH-8303', /Waiting on Wake Forest Golf/);
       expect(within(code('CH-8303') as HTMLElement).getByText(/^Sent /)).toBeTruthy();
-      expect(screen.queryByRole('button', { name: /^Invite code/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Team code/ })).toBeNull();
       await user.click(screen.getByRole('button', { name: 'Cancel' }));
       await waitFor(() => expect(writes.cancelRequest).toHaveBeenCalledWith('rq1'));
       await waitFor(() => expect(code('CH-8303')).toBeNull());
@@ -2592,7 +2647,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
 describe('Settings · this file', () => {
   it('82401 every catalog row of kinds 0 to 5 is named by a test here, and so is every Bridge ID this page proves', () => {
     const root = process.cwd();
-    const tests = ['settings.test.tsx', 'settings-server.test.tsx', 'course-location.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8'));
+    const tests = ['settings.test.tsx', 'settings-server.test.tsx', 'settings-staff.test.tsx', 'course-location.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8'));
     const all = tests.join('\n');
     const catalog = readFileSync(join(root, 'docs/clubhouse/catalog/settings.md'), 'utf8');
     const missing = [...catalog.matchAll(/^\|\s*CH-(80|81|82|83|84|85)(\d{2})\s*\|.*$/gm)]

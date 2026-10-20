@@ -63,7 +63,7 @@ export function LiveChip({ view }: { view: LiveFeedView }) {
           onClick={() => start(() => onRefresh())}
         >
           <Icon icon={RotateCw} size={13} />
-          {refreshing ? 'Refreshing' : 'Refresh'}
+          {refreshing ? 'Refreshing…' : 'Refresh'}
         </button>
       </span>
     );

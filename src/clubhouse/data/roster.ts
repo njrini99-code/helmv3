@@ -5,6 +5,7 @@ import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { chLogServer } from '../lib/track-server';
 import {
   classYearLabel,
+  displayHandicap,
   fullName,
   groupByPlayer,
   loadSeasonRounds,
@@ -168,7 +169,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       hometown: [p.hometown, p.state].filter(Boolean).join(', ') || null,
       highSchool: p.high_school_name,
       jersey: m.jersey_number != null && `${m.jersey_number}` !== '' ? `${m.jersey_number}` : null,
-      handicap: p.handicap_index ?? p.handicap,
+      handicap: displayHandicap(p),
       status,
       joined: m.joined_at
         ? `Joined ${new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(m.joined_at))}`

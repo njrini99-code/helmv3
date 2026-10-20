@@ -15,19 +15,31 @@ export function RoundsSkeleton() {
           </div>
           <Skeleton width={128} height={40} radius={11} />
         </header>
+        {/* The round card's content, and the season pane: its head, then the vs-par stage sized as the chart is (rounds.css). */}
         <div className="ch-rd-hero">
-          <Skeleton width="100%" height={236} radius={20} />
-          <Skeleton width="100%" height={236} radius={20} />
+          <Skeleton width="100%" height={300} radius={20} />
+          <div className="ch-rd-sk-pane">
+            <Skeleton width="100%" height={184} radius={20} />
+            <span className="ch-skel ch-skel--block ch-rd-sk-stage" aria-hidden="true">
+              <span />
+            </span>
+          </div>
         </div>
         <div className="ch-rd-tools">
           <Skeleton width={260} height={38} radius={10} />
           <Skeleton width={190} height={34} radius={11} />
         </div>
-        <div className="ch-rd-book">
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} width="100%" height={80} radius={16} />
-          ))}
-        </div>
+        {/* The first month under its heading, as the library draws it. */}
+        <section className="ch-rd-grp">
+          <div className="ch-rd-grp__h">
+            <SkelLine h={22.8} w={125} sh={17} />
+          </div>
+          <div className="ch-rd-book">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} width="100%" height={80} radius={16} />
+            ))}
+          </div>
+        </section>
       </div>
       <PhoneRoundsSkeleton />
     </main>
@@ -51,7 +63,7 @@ function PhoneRoundsSkeleton() {
           <SkelLine h={33.5} w={168} sh={28} r={8} />
         </span>
         <span className="ch-rd-sk-new">
-          <Skeleton width={117} height={36} radius={11} />
+          <Skeleton width={117} height={44} radius={11} />
         </span>
       </header>
       <div className="ch-rd-sk-hero">

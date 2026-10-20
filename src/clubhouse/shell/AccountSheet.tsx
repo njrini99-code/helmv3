@@ -33,7 +33,8 @@ export function AccountSheet({
 }: {
   pathname: string;
   role: ChRole;
-  user?: { name: string; teamName?: string | null };
+  /** headCoach: the coach is the team's head coach, so the line says "Head coach" (ChShellData.viewerIsHeadCoach). */
+  user?: { name: string; teamName?: string | null; headCoach?: boolean };
   /** The coach's teams when they can switch among them: the More sheet lists them under who they are. */
   teamSwitch?: ChTeamSwitch | null;
 }) {
@@ -192,7 +193,7 @@ export function AccountSheet({
                   <Avatar name={user.name} size={44} />
                   <span className="ch-more__me-t">
                     <b>{user.name}</b>{' '}
-                    <em>{[role === 'coach' ? 'Coach' : 'Player', user.teamName].filter(Boolean).join(' · ')}</em>
+                    <em>{[role === 'coach' ? (user.headCoach ? 'Head coach' : 'Coach') : 'Player', user.teamName].filter(Boolean).join(' · ')}</em>
                   </span>
                   <Icon icon={ChevronRight} size={16} />
                 </Link>

@@ -6,6 +6,7 @@ import { useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHoleScore } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
 import { rebuiltHref } from '../../shell/nav';
 import { firstName } from './model';
 import { MY_STATS, roundHref } from './player-links';
@@ -55,7 +56,7 @@ function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
 const statsHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
 
 /**
- * `mine`: the player's Home ("My latest round", Player - Home.html): a flag in
+ * `mine`: the player's Home ("Your latest round", Player - Home.html): a flag in
  * place of the avatar, and My stats in place of the player's stats.
  */
 /**
@@ -78,7 +79,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
     <section className="ch-h-pane" aria-labelledby="ch-round-title">
       {lead}
       <div className="ch-h-pane__head">
-        <h2 id="ch-round-title">{mine ? 'My latest round' : 'Latest round'}</h2>
+        <h2 id="ch-round-title">{mine ? 'Your latest round' : 'Latest round'}</h2>
         {rounds.length > 1 && (
           <div className="ch-h-pager ch-well-soft">
             <span className="ch-num" aria-live="polite">
@@ -94,13 +95,14 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
         <RefreshNotice
           code="CH-2202"
           title="Recent rounds didn’t load"
-          body="Posted rounds are safe. Try again, and if it keeps happening the error has already been reported."
+          body="Posted rounds are safe. Try again; the error has been reported."
           covered={covered}
         />
       ) : !r ? (
         <EmptyState
           code="CH-2302"
-          icon={Flag}
+          shape="rows"
+          shapeCount={2}
           title="No rounds posted yet this season."
           body={mine ? 'Your newest 18-hole round appears here, hole by hole, as soon as you post it.' : 'The newest 18-hole round appears here as soon as a player posts it.'}
         />
@@ -120,7 +122,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                 <div className="ch-h-round__who">
                   {mine ? (
                     <span className="ch-h-flag" aria-hidden="true">
-                      <Flag size={16} />
+                      <Icon icon={Flag} size={16} />
                     </span>
                   ) : (
                     <Avatar name={r.playerName} size={36} />
@@ -137,7 +139,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
               </div>
 
               {r.holes ? (
-                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}’s scorecard`} className="ch-h-card ch-scoreboard">
+                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}’s scorecard`} className="ch-h-card ch-scoreboard" fade={false}>
                   <Nine label="Out" holes={r.holes.slice(0, 9)} />
                   <Nine label="In" holes={r.holes.slice(9)} />
                 </ScrollRegion>

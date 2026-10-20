@@ -1,5 +1,253 @@
 # P015 — Auth: changelog
 
+## 2026-10-19 — The new-coach guard reads its errors
+
+```text
+Design package: none (CI ratchets)
+PR/commit:      #2210
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- screens/onboard/coach-guard.ts binds `error` on its coach and player row
+  reads. A failed read keeps the person on the new-coach page (an unread
+  coach row counts as present, an unread player row as absent), so a
+  failure never sends a coach to the player dashboard.
+- The join code slots and the team plate take their depth from
+  `--ch-elevation-control` (clubhouse:css shadow-token).
+
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (auth.css, onboard.css)
+
+- Titles, labels, buttons, the legal and fine print, and the sign-up headings, subtitles, tiles and handicap value follow the iPhone's text size. Form fields keep the iOS 16px floor and grow above it. The crest letter, member-card avatar and handicap scale marks keep their size.
+- Radii on the 5, 7, 10, 14, 20 scale.
+- The handicap slider's touch area is 44px tall; the layout below it does not move.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — Sign-in and onboarding use the shared spinner and tooltips
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The sign-in and gate keys' working ring, the gate's checking line and the onboarding code and photo rings are the shared `Spinner`; Continue and the code step's Continue are busy while they check instead of disabled. `.ch-au-spin`, `.ch-ox-spin` in `auth.css` and `onboard.css` are no longer used.
+- The show/hide password buttons and the handicap Lower / Higher steppers show their name on hover and focus.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — The welcome's name no longer shows as a dash under the greeting
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-15803
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- While the name rose out of its clipped line, the cap bar of the first letter crossed the clip first, so a still taken in that half second showed "Good morning," over a dash. The name now also fades in, a beat behind its rise (`welcomeName`). Timing of the rise is unchanged; reduced motion is unchanged.
+
+### Why
+
+- The greeting is the first thing the owner sees after signing in; a half-drawn name read as a missing one.
+
+### Verification
+
+- `auth.test.tsx`; frames captured at about 100 ms steps on `/clubhouse-preview/auth?screen=welcome&state=player` on the phone.
+
+## 2026-10-19 — The front door's other ways in
+
+```text
+Design package: none (no owner board; phone drafts in docs/clubhouse/phone/: reset-password, join-team, staff-invite, coach-onboarding, coach-pending, demo-entry)
+PR/commit:      667ce28 (agent/clubhouse-complete, lane L5)
+Contract IDs:   CH-15030 to CH-15036, CH-15130 to CH-15133, CH-15140 to CH-15143, CH-15430 to CH-15436, CH-15930 to CH-15972 (47 in all)
+Actions:        none new: requestPasswordResetAction, processGolfTeamInvitation, previewStaffInvite, redeemStaffInvite, signupWithStaffInviteAction, completeCoachOnboarding, getGolfCoachEntry and enterDemo, each called as today's page calls it; the Supabase verifyOtp, updateUser and signOut({ scope: 'others' }) of today's reset page
+Data impact:    none
+Held items:     the head coach's name on the join confirm (the team lookup returns none); Fairway's error.tsx boundaries on the join, coach and staff routes
+```
+
+### Changed
+
+- Every way into the app that was still drawn by Fairway has a Clubhouse screen behind `golf_clubhouse_front_door`
+  (off in production): the page the reset email opens (`/golf/reset-password`), a team code (`/golf/join`) and its
+  confirm (`/golf/join/[code]`), a staff invitation (`/golf/staff/join/[token]`), a new head coach's questions
+  (`/golf/coach`), waiting for approval (`/golf/coach/pending`) and the demo (`/golf/demo`). The flag chooses the page
+  that is drawn; every read, redirect and action sits above or behind both. Flag off, all seven render as before.
+- Reset, join, the staff invitation, waiting and the demo sit in sign in's own room (`GateFrame`: the same course, lockup, panel and
+  field anatomy), so moving from sign in to any of them is the same place. The coach's questions are a fourth path of
+  sign up's flow (`cprogram`, `cprofile`, `cdone`), so they have its rail, its pane and a member card that fills in with
+  the program.
+- Reset password: the link is verified once (a development double effect cannot spend it); the four rules and four bars
+  tick off as the password is typed; a spent link asks for a new one on the same page; if someone else was signed in on
+  the device the page says the link replaced them.
+- Team code: one box per character over one real input (paste fills all, upper case, the one-time-code suggestion, a
+  pasted invite link gives up its code), eight boxes and a dash, ten for an older team's longer code. The confirm shows
+  the team and who is joining before anything is joined, with "Not you?" for a link opened on the wrong browser.
+- Staff invitation: signed in is one button, signed out makes the account here; the wrong account (already in another
+  program) is a warning with "Switch account"; an account made whose staff row did not land goes to Accept with the reason.
+- Waiting for approval: says who approves, looks again by itself once a minute and when the tab comes back, and Sign out
+  really signs out (today's link only goes to sign in).
+- New coach: the questions are today's three screens (program, profile, code) with `completeCoachOnboarding`; the code
+  can be copied as a code or as an invite link (`/golf/join/<code>`); the draft is kept apart from sign up's.
+- Loading boundaries for join, the staff invitation, waiting and the coach's questions draw in the sign-in room when the
+  flag is on, so the step from the last page is never a Fairway skeleton.
+
+### Why
+
+- A person who followed any of those links with the flag on left Clubhouse for Fairway mid-journey, which is the
+  seam the front door exists to remove.
+
+### Verification
+
+- Targeted tests: auth-reset, auth-join, auth-staff, auth-demo-pending, onboard-coach and front-door-routes (see
+  VERIFY.md). WebKit captures at 390 and 1280, light and dark, of every state through `/clubhouse-preview/auth` and
+  `/clubhouse-preview/onboard` (VERIFY.md, Looked at). Not done: a physical iPhone, a real reset email, VoiceOver.
+
+## 2026-10-18 — Wave 10: a way to sign in on the phone, and first-run words
+
+```text
+Design package: none (wave-10 first-run review, rows 12, 13, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-15302
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- Sign up, phone: the top bar's sign-in pill is hidden at 820px and under,
+  so the intro (the invitation and the two choices) ends with "Already a
+  member? Sign in", which keeps the invite's return path. A returning player
+  who taps an invite link can sign in again.
+- Welcome on a first visit (CH-15302): "Messages, posted rounds and RSVPs
+  land here each time you sign in."
+- Done: "Start your first round", and Turn on notifications opens Settings on
+  Notifications. A failed join asks the coach to "resend" the code.
+
+## 2026-10-18 — Wave 5: onboarding count and staff finish
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, onboarding)
+
+- Before the team code is known the rail counts the player's path, so it
+  reads "1 of 5" then "2 of 5"; a staff code shortens it to three.
+- The staff finish says "Go to your dashboard", as the player's does.
+
+## 2026-10-18 — Wave 3: the sign-up legal line names both pages
+
+```text
+Design package: none (wave-3 design review, items 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, legal line)
+
+- Sign-up's legal line links "Terms of service" and "Privacy policy", the names
+  and case Settings uses, where it said "Terms" and "Privacy Policy"
+  (`onboard/Steps.tsx`).
+
+### Verification (2026-10-18, legal line)
+
+- `npm run test:file` on `onboard.test.tsx`.
+- `clubhouse:check`, `typecheck:fast` and eslint pass.
+
+## 2026-10-18 — Polish: Sign in pill hover
+
+```text
+Design package: none (wave-2 interaction review rows 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Onboarding: the Sign in pill steps to the primary key's hover face on
+  desktop hover.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-17 — Polish: Create an account reaches 44px
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- "Create an account" under the sign-in form was a 17px line of text to tap;
+  its hit area now reaches 44px tall without moving it. On the phone the legal
+  links under it keep their own 44px on top where the two meet (`auth.css`).
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Sign in drops its subtitle
 
 Owner: "get rid of the words under sign in". The heading now stands alone

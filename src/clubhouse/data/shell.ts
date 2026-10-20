@@ -2,7 +2,8 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
-import { loadAttendanceCounts } from './attendance-counts';
+import { loadAttendanceCounts, loadInvitedCounts, loadOwnRows } from './attendance-counts';
+import { playerMine, playerSeesMeeting, replyClosedAt } from '../screens/calendar/model';
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 
@@ -18,6 +19,11 @@ export interface ChNextEvent {
    * replies (owner, 2026-10-08: the card then shows when and where, never a confirmed count).
    */
   ready: { accepted: number; invited: number } | null;
+  /**
+   * A player's card only: `needed` when the event asks for replies, they are invited and haven't answered, and the server
+   * would still take one; `going` when they said yes. Null otherwise, and when their own reply didn't load.
+   */
+  mine?: 'going' | 'needed' | null;
 }
 
 export interface ChShellData {
@@ -32,6 +38,8 @@ export interface ChShellData {
   askAvailable?: boolean;
   /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
   roundInProgress?: ChRoundInProgress | null;
+  /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
+  viewerIsHeadCoach?: boolean;
 }
 
 export interface ChRoundInProgress {
@@ -52,10 +60,10 @@ export const ROUND_IN_PROGRESS_FRESH_MS = 12 * 60 * 60_000;
 export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
   if (!teamId) return { nextEvent: null, pendingJoinRequests: null };
   const supabase = await createClient();
-  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes] = await Promise.all([
+  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes, staffRes] = await Promise.all([
     supabase
       .from('golf_events')
-      .select('id, title, start_time, all_day, location, event_type, description, requires_rsvp')
+      .select('id, title, start_time, all_day, location, event_type, description, requires_rsvp, rsvp_deadline')
       .eq('team_id', teamId)
       // A player's synced class is never "the team's next event" (F-40): it would show one player's timetable to the
       // whole roster. Both class markers are checked, as every team-schedule read does (lib/calendar/class-events).
@@ -63,7 +71,8 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
       .gte('start_time', new Date().toISOString())
       .is('cancelled_at', null)
       .order('start_time', { ascending: true })
-      .limit(5),
+      // Room for the meetings a player isn't invited to, which are passed over (Decision B).
+      .limit(10),
     supabase
       .from('golf_team_join_requests')
       .select('id', { count: 'exact', head: true })
@@ -99,6 +108,10 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
       .select('course_latitude, course_longitude')
       .eq('team_id', teamId)
       .maybeSingle(),
+    // The coach's own staff row on this team (RLS: a coach on the team reads its staff rows), for the identity line.
+    coachId
+      ? supabase.from('golf_team_coach_staff').select('role').eq('team_id', teamId).eq('coach_id', coachId).limit(5)
+      : Promise.resolve(null),
   ]);
   // A failed timezone read falls back to the product default, same as dashboard-data.
   const timezone = (!tzRes.error && tzRes.data?.timezone) || 'America/New_York';
@@ -113,17 +126,27 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   if (roundRes?.error) {
     chLogServer('shell', 'roundInProgress', roundRes.error, 'rounds');
   }
+  // A failed read leaves the plain "Coach": the label only ever falls back to the lesser title.
+  if (staffRes?.error) {
+    chLogServer('shell', 'staffRole', staffRes.error, 'teams');
+  }
   const round = roundRes && !roundRes.error ? roundRes.data : null;
 
   const upcoming = eventRes.error ? [] : (eventRes.data ?? []).filter((row) => !isClassEvent(row));
   const forPlayer = !!playerId && !coachId;
-  // D2-8 (owner, 2026-10-08), as the player's Calendar has it: a meeting nobody is invited to is the coach's own, so it
-  // is never a player's next event (the card would open a calendar that doesn't show it). A failed invite read never
-  // hides one.
-  const meetingIds = forPlayer ? upcoming.filter((row) => row.event_type === 'meeting').map((row) => row.id) : [];
-  const invited = meetingIds.length ? await loadMeetingInvites(supabase, meetingIds) : null;
-  const e = upcoming.find((row) => !invited || invited.get(row.id) !== 0) ?? null;
+  // Decision B (owner, wave 7), as the player's Calendar has it: a player's next event is never a meeting they aren't
+  // invited to (their own attendance row, which they read before and after migration 20261017102000); the card would
+  // count down to it, by name, and open a calendar that doesn't show it. Only when that read failed does D2-8 decide (a
+  // meeting nobody is invited to is the coach's own); when that failed too, no meeting is a player's next event.
+  const ownRows = forPlayer && upcoming.length ? await loadOwnRows(supabase, upcoming.map((row) => row.id), playerId, (err) => chLogServer('shell', 'nextEventOwnReply', err, 'calendar')) : null;
+  const own = ownRows ? new Map([...ownRows].map(([id, status]) => [id, rsvpOf(status)])) : null;
+  const meetingIds = forPlayer && !own ? upcoming.filter((row) => row.event_type === 'meeting').map((row) => row.id) : [];
+  const invited = meetingIds.length ? await loadInvitedCounts(supabase, meetingIds, (err) => chLogServer('shell', 'nextEventInvites', err, 'calendar')) : null;
+  const e =
+    upcoming.find((row) => row.event_type !== 'meeting' || !forPlayer || playerSeesMeeting(own ? own.has(row.id) : null, invited ? (invited.get(row.id) ?? null) : null)) ?? null;
   let ready: ChNextEvent['ready'] = null;
+  /** Rows the coach's invitation wrote, for whether the whole team may reply; null when unread. */
+  let coachInvited: number | null = null;
   // Only an event that asks for replies has a confirmed count; null (older rows) reads as off.
   if (e && e.requires_rsvp === true) {
     // A player reads the counts, never teammates' rows (migration 20261017102000); until that function exists, and for
@@ -133,44 +156,30 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     else if (counts?.kind === 'ok') {
       const c = counts.byEvent.get(e.id);
       if (c && c.invited > 0) ready = { accepted: c.accepted, invited: c.invited };
+      coachInvited = c?.coachInvited ?? 0;
     } else {
       // One event's invitees: at most a roster, well under the row cap.
-      const { data, error } = await supabase.from('golf_event_attendance').select('status').eq('event_id', e.id).limit(1000);
+      const { data, error } = await supabase.from('golf_event_attendance').select('status, notified_at').eq('event_id', e.id).limit(1000);
       if (error) chLogServer('shell', 'nextEventAttendance', error, 'calendar');
-      else if (data.length > 0) ready = { accepted: data.filter((a) => rsvpOf(a.status) === 'accepted').length, invited: data.length };
+      else {
+        if (data.length > 0) ready = { accepted: data.filter((a) => rsvpOf(a.status) === 'accepted').length, invited: data.length };
+        coachInvited = data.filter((a) => a.notified_at).length;
+      }
     }
   }
+  // The player's own reply, by Home's rule (playerMine), so the card and Up next never disagree: an event open to the
+  // whole team (the coach invited no one) asks them too.
+  const mine: ChNextEvent['mine'] = e && own && e.requires_rsvp === true ? playerMine(own.get(e.id), replyClosedAt(e, Date.now()), coachInvited === null ? null : coachInvited === 0) : null;
   // CH-1304: nothing upcoming, so the sidebar shows no card.
   return {
-    nextEvent: e ? { ...describeEvent(e, timezone), ready } : null,
+    nextEvent: e ? { ...describeEvent(e, timezone), ready, ...(forPlayer ? { mine } : {}) } : null,
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),
     timezone,
     askAvailable: askOn,
     course: courseOf(courseRes),
     roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null } : null,
+    viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),
   };
-}
-
-/**
- * How many each meeting invites, for a player (D2-8): from the counts function, or, until migration 20261017102000 is
- * applied, from the invite rows themselves. Null when neither could be read, so no meeting is hidden.
- */
-async function loadMeetingInvites(supabase: Awaited<ReturnType<typeof createClient>>, ids: string[]): Promise<Map<string, number> | null> {
-  const counts = await loadAttendanceCounts(supabase, ids);
-  if (counts.kind === 'ok') return new Map(ids.map((id) => [id, counts.byEvent.get(id)?.invited ?? 0]));
-  if (counts.kind === 'error') {
-    chLogServer('shell', 'nextEventInvites', counts.error, 'calendar');
-    return null;
-  }
-  // At most five meetings' invitees: well under the row cap.
-  const { data, error } = await supabase.from('golf_event_attendance').select('event_id').in('event_id', ids).limit(1000);
-  if (error) {
-    chLogServer('shell', 'nextEventInvites', error, 'calendar');
-    return null;
-  }
-  const byEvent = new Map(ids.map((id) => [id, 0]));
-  for (const row of data ?? []) byEvent.set(row.event_id, (byEvent.get(row.event_id) ?? 0) + 1);
-  return byEvent;
 }
 
 function dayNumber(d: Date, timezone: string): number {

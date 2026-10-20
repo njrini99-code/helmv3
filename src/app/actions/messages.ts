@@ -725,23 +725,38 @@ export async function markGolfMessagesAsRead(conversationId: string) {
 // Team Broadcast / Group Chat (Golf)
 // ============================================================================
 
-interface CreateTeamBroadcastOptions {
+/**
+ * Who a broadcast reaches: the players chosen, or the whole team only when the
+ * caller says so. An empty or missing list used to mean the whole team, so a
+ * group whose player lookups all missed went to everyone.
+ */
+type CreateTeamBroadcastOptions = {
   teamId: string;
   title: string;
-  selectedPlayerIds?: string[]; // If empty/undefined, all team players are included
-}
+} & (
+  | { allPlayers: true; selectedPlayerIds?: never }
+  | { allPlayers?: false; selectedPlayerIds: string[] }
+);
 
 /**
  * Create a team broadcast conversation (coaches only)
  * @param teamId - The team ID
  * @param title - The conversation title (e.g., "Team Updates", "Practice Reminder")
- * @param selectedPlayerIds - Optional array of specific player IDs to include (if not provided, all team players are included)
+ * @param selectedPlayerIds - The player IDs to include; at least one unless allPlayers is set
+ * @param allPlayers - Include every player on the team (selectedPlayerIds is then left out)
  */
 async function createGolfTeamBroadcastImpl({
   teamId,
   title,
   selectedPlayerIds,
+  allPlayers,
 }: CreateTeamBroadcastOptions): Promise<{ conversationId: string; reused?: boolean } | { error: string }> {
+  // Checked at runtime too: this is a server action and its input is the caller's.
+  const everyone = allPlayers === true;
+  const chosen = Array.isArray(selectedPlayerIds) ? selectedPlayerIds.filter((id) => typeof id === 'string' && id) : [];
+  if (everyone ? chosen.length > 0 : chosen.length === 0) {
+    return { error: everyone ? 'Choose players or the whole team, not both.' : 'Choose at least one player.' };
+  }
   try {
     const supabase = await createClient();
 
@@ -773,14 +788,17 @@ async function createGolfTeamBroadcastImpl({
       throw new Error('Team not found or not authorized');
     }
 
-    // Get team players (all or selected)
+    // Get team players (all or selected): active members only, as the roster
+    // and the broadcast picker list them. A removed or inactive player is no
+    // longer on the team and must not be added to its chat.
     let playerQuery = supabase
       .from('golf_team_members')
       .select('player_id, player:golf_players(user_id)')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
-    if (selectedPlayerIds && selectedPlayerIds.length > 0) {
-      playerQuery = playerQuery.in('player_id', selectedPlayerIds);
+    if (!everyone) {
+      playerQuery = playerQuery.in('player_id', chosen);
     }
 
     const { data: teamMembers, error: membersError } = await playerQuery;

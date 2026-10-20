@@ -128,11 +128,16 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
       if (entrantProfiles.error) throw entrantProfiles.error;
       const entrantById = profilesById(entrantProfiles.data);
 
-      // Fetch all qualifier rounds to compute per-player aggregates
+      // The rounds that count, the rule the selection workspace confirms from
+      // and Clubhouse draws (docs/clubhouse/pages/P009-qualifiers/WIRING.md,
+      // "Standings parity"): linked by qualifier_id, completed, not a test.
       const { data: roundsData, error: roundsError } = await supabase
         .from('golf_rounds')
-        .select('player_id, total_score, score_to_par, status')
-        .eq('qualifier_id', qualifierId);
+        .select('id, player_id, qualifier_round_number, total_score, score_to_par, status, is_test')
+        .eq('qualifier_id', qualifierId)
+        .eq('status', 'completed')
+        .eq('is_test', false)
+        .order('id', { ascending: true });
 
       if (roundsError) throw roundsError;
 
@@ -142,10 +147,20 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
         totalScore: number;
         totalToPar: number;
       }>();
+      const seenSlots = new Set<string>();
 
       for (const round of roundsData || []) {
-        // Only count completed rounds for scoring aggregates
-        if (round.status !== 'completed') continue;
+        // Held here too, so the board's round set never depends on the query alone.
+        if (round.status !== 'completed' || round.is_test === true) continue;
+        // A round without a total or a to-par is unknown, not a free zero.
+        if (round.total_score == null || round.score_to_par == null) continue;
+        // A second round in one numbered slot counts once (the first by id); a
+        // round with no stored number is in no slot and always counts.
+        if (round.qualifier_round_number != null) {
+          const slot = `${round.player_id}:${round.qualifier_round_number}`;
+          if (seenSlots.has(slot)) continue;
+          seenSlots.add(slot);
+        }
 
         const existing = playerRoundAggregates.get(round.player_id) ?? {
           roundsCompleted: 0,
@@ -154,8 +169,8 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
         };
 
         existing.roundsCompleted += 1;
-        existing.totalScore += round.total_score ?? 0;
-        existing.totalToPar += round.score_to_par ?? 0;
+        existing.totalScore += round.total_score;
+        existing.totalToPar += round.score_to_par;
 
         playerRoundAggregates.set(round.player_id, existing);
       }
@@ -167,10 +182,12 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
         const player = entrantById.get(entry.player_id) ?? null;
         const roundAgg = playerRoundAggregates.get(entry.player_id);
 
-        // Prefer computed aggregates from rounds query (realtime), fall back to DB-persisted values
-        const roundsCompleted = roundAgg?.roundsCompleted ?? (raw.rounds_completed as number | null) ?? 0;
-        const totalScore = (roundAgg ? roundAgg.totalScore : null) ?? (raw.total_score as number | null);
-        const totalToPar = (roundAgg ? roundAgg.totalToPar : null) ?? (raw.total_to_par as number | null);
+        // The counted rounds only. The stored entry aggregate is never a
+        // fallback: it goes stale, and a player with no counted round is
+        // unscored, not ranked on old totals.
+        const roundsCompleted = roundAgg?.roundsCompleted ?? 0;
+        const totalScore = roundAgg ? roundAgg.totalScore : null;
+        const totalToPar = roundAgg ? roundAgg.totalToPar : null;
 
         return {
           id: entry.id,

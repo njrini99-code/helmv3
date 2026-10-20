@@ -6,8 +6,9 @@ import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 import { endedLabel, rangeLabel, shortRange, yearOf, STATE_LABEL, STATUS_LABEL, type ChQRow, type ChQRowState, type ChQStatus } from './model';
 
 /**
- * Live, Upcoming or Completed. Live is a static dot: no pulse (D-33). A live qualifier past its last day is "Ended · n
- * rounds outstanding", never Live (P009-D3): no dot, since nothing about it is live.
+ * Live, Upcoming or Concluded (the list's own word for a finished one). Live is a static dot: no pulse (D-33). A live
+ * qualifier past its last day is "Ended · n rounds outstanding", never Live (P009-D3): no dot, since nothing about it is
+ * live.
  */
 export function StatusPill({ status, ended = null }: { status: ChQStatus; ended?: { outstanding: number | null } | null }) {
   if (ended) {

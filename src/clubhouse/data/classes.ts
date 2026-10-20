@@ -1,7 +1,8 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
-import { loadAttendanceCounts } from './attendance-counts';
+import { loadInvitedCounts, loadOwnRows } from './attendance-counts';
+import { playerSeesMeeting } from '../screens/calendar/model';
 import { homeClock } from './home';
 import { addDays, termOn, toChClasses, toTeamEvent, weekDates, type ChClassesPage, type ChClassRow, type ChEventRow, type ChTeamEvent } from './classes-shape';
 
@@ -25,25 +26,18 @@ const EVENT_COLUMNS = 'id, title, event_type, start_time, end_time, all_day, sta
 const log = (what: string, err: unknown) => chLogServer('classes', what, err, 'calendar');
 
 /**
- * D2-8 (owner, 2026-10-08), as the Calendar applies it (data/calendar.ts): a meeting that invites no one is the coach's
- * own (a parent call, a staff meeting), and a player never sees it, so no class is said to meet over it here either.
- * The count comes from `golf_event_attendance_counts` (held migration 20261017102000); until that function exists, from
- * the attendance rows, as the Calendar does. A read that fails hides nothing.
+ * The meetings this player doesn't see, as their Calendar decides it (data/calendar.ts, playerSeesMeeting): Decision B
+ * (owner, wave 7), a meeting is theirs only when they are on its invite list (their own attendance row, read before and
+ * after migration 20261017102000), so no class is said to meet over a teammate's 1:1 and its title is never on this
+ * page. When their own rows didn't load, D2-8 decides (a meeting nobody is invited to is the coach's own); when that
+ * failed too, every meeting is left out (fail closed). Each failed read is logged.
  */
-async function coachOnlyMeetings(supabase: Awaited<ReturnType<typeof createClient>>, rows: ChEventRow[]): Promise<Set<string>> {
+async function hiddenMeetings(supabase: Awaited<ReturnType<typeof createClient>>, rows: ChEventRow[], playerId: string): Promise<Set<string>> {
   const ids = rows.filter((r) => r.event_type === 'meeting').map((r) => r.id);
   if (!ids.length) return new Set();
-  const counts = await loadAttendanceCounts(supabase, ids);
-  if (counts.kind === 'ok') return new Set(ids.filter((id) => !(counts.byEvent.get(id)?.invited ?? 0)));
-  if (counts.kind === 'error') {
-    log('meetingInvites', counts.error);
-    return new Set();
-  }
-  const { data, error } = await supabase.from('golf_event_attendance').select('event_id').in('event_id', ids).limit(1000);
-  if (error) log('meetingInvites', error);
-  // A failed read counts every meeting as invited, so none is hidden as the coach's own.
-  const invited = new Set(error ? ids : (data ?? []).map((a) => a.event_id));
-  return new Set(ids.filter((id) => !invited.has(id)));
+  const own = await loadOwnRows(supabase, ids, playerId, (err) => log('ownInvites', err));
+  const invited = own ? null : await loadInvitedCounts(supabase, ids, (err) => log('meetingInvites', err));
+  return new Set(ids.filter((id) => !playerSeesMeeting(own ? own.has(id) : null, invited?.get(id) ?? null)));
 }
 
 export async function loadClasses(input: { playerId: string; teamId: string }): Promise<ChClassesPage> {
@@ -72,7 +66,7 @@ export async function loadClasses(input: { playerId: string; teamId: string }): 
   if (eventsRes.error) log('events', eventsRes.error);
 
   const rows = eventsRes.error ? [] : ((eventsRes.data ?? []) as ChEventRow[]);
-  const hidden = await coachOnlyMeetings(supabase, rows);
+  const hidden = await hiddenMeetings(supabase, rows, input.playerId);
   const events = rows.filter((r) => !hidden.has(r.id)).map((r) => toTeamEvent(r, clock.tz)).filter((e): e is ChTeamEvent => e != null);
 
   const term = termOn(todayIso);

@@ -22,6 +22,7 @@ import {
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
+import { Tooltip } from '../../ui/Tooltip';
 import { AuthKeyLabel } from './AuthKey';
 import { AuthNotice, type AuthTone } from './AuthNotice';
 import { KB_LIFT_QUERY, OPENING_PUSH_MS } from './auth-motion';
@@ -345,10 +346,12 @@ export function SignInForm({
               onFocus={revealSubmit}
             />
             {/* CH-15805: a named, pressed-state button with a hit area past 44px. CH-15610: the eye turns, crossfading to its slashed state. */}
-            <button type="button" className="ch-au-eye" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} aria-controls="golf-signin-password" onClick={() => setShowPassword((v) => !v)}>
-              <Icon icon={Eye} size={16} className="ch-au-eye__show" />
-              <Icon icon={EyeOff} size={16} className="ch-au-eye__hide" />
-            </button>
+            <Tooltip>
+              <button type="button" className="ch-au-eye" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} aria-controls="golf-signin-password" onClick={() => setShowPassword((v) => !v)}>
+                <Icon icon={Eye} size={16} className="ch-au-eye__show" />
+                <Icon icon={EyeOff} size={16} className="ch-au-eye__hide" />
+              </button>
+            </Tooltip>
           </div>
         </div>
       </div>

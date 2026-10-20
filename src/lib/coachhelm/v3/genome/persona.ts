@@ -7,6 +7,7 @@
  *   - strengths: dims where the player ranks high on the radar good-axis
  *     (normalized ≥ 0.7) AND has confidence ≥ 0.5
  *   - watchouts: dims where the player ranks low (≤ 0.3) AND confidence ≥ 0.5
+ *     (neither list ranks the style dims, driver_usage and miss_side_bias)
  *   - course_profile: one or two-sentence summary keyed off driver_usage +
  *     par3_proficiency + miss_side_bias
  *
@@ -31,6 +32,15 @@ const WATCHOUT_THRESHOLD = 0.3;
 const MIN_CONFIDENCE = 0.5;
 const TOP_N = 3;
 
+/**
+ * Dimensions that describe how a player plays rather than how well: how often
+ * driver comes out, and which side the misses favour. Their radar normal peaks
+ * at a neutral point, so ranking them as a strength or a watch-out would grade
+ * a style ("Strong" beside copy that says it is "not a grade"). They still
+ * shape the course profile sentence.
+ */
+const PROFILE_ONLY_DIMS: ReadonlySet<string> = new Set(['driver_usage', 'miss_side_bias']);
+
 export interface Persona {
   strengths: PersonaEntry[];
   watchouts: PersonaEntry[];
@@ -54,7 +64,7 @@ export function derivePersona(vector: GenomeVector): Persona {
   }
 
   const confident = scored.filter(
-    (s) => s.norm !== null && (s.confidence ?? 0) >= MIN_CONFIDENCE,
+    (s) => s.norm !== null && (s.confidence ?? 0) >= MIN_CONFIDENCE && !PROFILE_ONLY_DIMS.has(s.dim_id),
   );
 
   const strengths = confident

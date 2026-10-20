@@ -1,9 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import { formatSigned, NO_DATA } from '../../lib/format';
+import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { holeCoverage } from '../../data/round-scope';
 import { Zone, ZoneBig as Big, ZoneBlock as Vis, ZoneNote as Missing, Zones } from '../../ui/Zone';
+import { EmptyState } from '../../ui/States';
 import { LegBars } from './LegBars';
 
 /**
@@ -98,6 +99,8 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
   const proxHi = Math.max(1, ...prox.flatMap((b) => [b.value ?? 0, b.bench ?? 0])) * 1.25;
   // A range under its sample floor says what it needs (CH-5318), as the standing table did.
   const floorOf = (label: string) => cmp(`Proximity ${label.replace('-', '–')}`)?.floor;
+  // The bucket's label is its lookup key (leak-map-buckets.ts); on screen a range takes an en dash and yards are "yds".
+  const rangeOf = (label: string) => label.replace('-', '–').replace(/ yd$/, ' yds');
 
   // 5 · short game
   const scrAtt = s?.scrambleAttempts ?? 0;
@@ -142,11 +145,16 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
           </>
         }
       >
-        <Vis title="Where the strokes go" note="The same number split by the shots it counts. Right of the line gains strokes, left loses them.">
-          <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} />
-        </Vis>
+        {/* No figure at all yet: one line, as the phone says it (CH-5309), not a chart of dashes that reads as broken. */}
+        {sg == null && legs.every((l) => l.value == null) ? (
+          <EmptyState compact code="CH-5309" title="No strokes gained in this window." body="Strokes gained by leg appears after three rounds with shots." />
+        ) : (
+          <Vis title="Where the strokes go" note="The same number split by the shots it counts. Right of the line gains strokes, left loses them.">
+            <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} />
+          </Vis>
+        )}
         {sg != null && (
-          <Vis title={coach ? 'Against the team and the Tour' : 'Against the Tour'} note={`Total strokes gained a round, ${sgLo} to +${sgHi}.`}>
+          <Vis title={coach ? 'Against the team and the Tour' : 'Against the Tour'} note={`Total strokes gained a round, ${formatSigned(sgLo, 0)} to ${formatSigned(sgHi, 0)}.`}>
             <div className="ch-zpin">
               <span style={{ left: `${pos(sg, sgLo, sgHi)}%` }}>You {formatSigned(sg)}</span>
             </div>
@@ -182,7 +190,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
             <div className="ch-znlines">
               {toParAvg != null && (
                 <span>
-                  <b>{toParAvg > 0.05 ? `+${toParAvg.toFixed(1)}` : toParAvg < -0.05 ? `−${Math.abs(toParAvg).toFixed(1)}` : 'E'}</b> to par a round
+                  <b>{formatToPar(toParAvg, 1)}</b> to par a round
                 </span>
               )}
               {coach && data.teamAvg != null && w.avg != null && (
@@ -351,7 +359,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                   return (
                     <div key={b.label} className="ch-zrow">
                       <span className="l">
-                        {b.label}
+                        {rangeOf(b.label)}
                         <small>{b.shots} shots</small>
                       </span>
                       <em className="ch-zfloor" data-ch-code="CH-5318">
@@ -364,7 +372,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                 return (
                   <div key={b.label} className="ch-zrow">
                     <span className="l">
-                      {b.label}
+                      {rangeOf(b.label)}
                       <small>{b.shots} shots</small>
                     </span>
                     <Track value={b.value} lo={0} hi={proxHi} bad={b.bench != null && b.value > b.bench} tour={b.bench} />

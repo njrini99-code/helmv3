@@ -12,8 +12,13 @@ import { ActionRow, Group, NavRow, SwitchRow } from './ui';
 
 /**
  * Notifications on the phone: the notification matrix becomes one row per kind of update, which opens a sheet with
- * its switches and shows what is on ("In app, Push") on the row. Same saves and catalog numbers as desktop.
+ * its switches and shows what is on ("In app, push") on the row. Same saves and catalog numbers as desktop.
  */
+/** What is on, as a row reads it in sentence case: "Email, push", "In app, push (some)"; "Off" when nothing is. */
+function onList(on: string[]): string {
+  return on.length ? on.map((l, i) => (i ? l.charAt(0).toLowerCase() + l.slice(1) : l)).join(', ') : 'Off';
+}
+
 export function NotificationsPhone({ data, writes, device }: { data: ChSettingsData; writes: ChSettingsWrites; device: ChDevice }) {
   const failed = notificationReadsFailed(data);
   const covered = failed.length > 1;
@@ -65,8 +70,8 @@ function DeliveryPhone({
   const silenced = (exempt: boolean) => quiet && !exempt;
   const summary = (g: (typeof DELIVERY_GROUPS)[number]) => {
     if (silenced(g.quietExempt)) return 'Paused';
-    const on = [p[g.emailKey] && 'Email', g.pushKey && p[g.pushKey] && 'Push'].filter(Boolean);
-    return on.length ? on.join(', ') : 'Off';
+    const on = [p[g.emailKey] && 'Email', g.pushKey && p[g.pushKey] && 'Push'].filter((l): l is string => !!l);
+    return onList(on);
   };
 
   return (
@@ -189,7 +194,7 @@ function RoutingPhone({ initial, writes, emailPaused }: { initial: { prefs: Pref
       const { state } = channelState(r.prefs, cats, c.key);
       return state === 'all' ? [c.label] : state === 'some' ? [`${c.label} (some)`] : [];
     });
-    return on.length ? on.join(', ') : 'Off';
+    return onList(on);
   };
 
   return (

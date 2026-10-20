@@ -12,6 +12,7 @@ import {
   buildBoard,
   countsOnBoard,
   endDayFor,
+  nextRoundNumber,
   parseSelectionState,
   parseStatus,
   roundOfRow,
@@ -75,11 +76,22 @@ export interface ChQListItem {
   picks: number;
   entrants: number;
   submitted: number;
-  /** The hero's leaders: the places on score plus the first one out. */
-  leaders: Array<{ playerId: string; name: string; position: string; played: number; toPar: number | null; move: number | null }>;
+  /** The hero's leaders: the places on score plus the first one out. `isYou`: the signed-in player's own row. */
+  leaders: Array<{ playerId: string; name: string; position: string; played: number; toPar: number | null; move: number | null; isYou?: boolean }>;
   topScore: number;
-  /** A player's own standing; null for a coach. */
-  mine: { entered: boolean; position: string | null; toPar: number | null; played: number } | null;
+  /**
+   * A player's own standing; null for a coach. `next`: the round they play next in a live qualifier (its number and course), else
+   * null. `squad`: once the coach has confirmed the squad, whether they are on it; null before that or when their selection
+   * didn't load (RLS shows a player the selections only once confirmed), so the line is the plain standing, never a guess.
+   */
+  mine: {
+    entered: boolean;
+    position: string | null;
+    toPar: number | null;
+    played: number;
+    next?: { round: number; course: string | null } | null;
+    squad?: boolean | null;
+  } | null;
 }
 
 export interface ChQList {
@@ -314,12 +326,14 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
   }
   const qs = (listRes.data ?? []) as QRow[];
   const ids = qs.map((q) => q.id);
-  const [entries, rounds] = ids.length
-    ? await Promise.all([readEntries(supabase, ids, input.teamId, 'qualifiers'), readRounds(supabase, ids, 'qualifiers')])
-    : [
-        { rows: [], error: false },
-        { rows: [], error: false },
-      ];
+  const playerId = input.role === 'player' ? input.playerId : null;
+  // A player's own squad results and the live qualifiers' round courses read beside the standings (wave 7).
+  const [entries, rounds, mySquad, nextCourses] = await Promise.all([
+    ids.length ? readEntries(supabase, ids, input.teamId, 'qualifiers') : { rows: [], error: false },
+    ids.length ? readRounds(supabase, ids, 'qualifiers') : { rows: [] as RoundRow[], error: false },
+    playerId ? readOwnSelections(supabase, qs, playerId) : null,
+    playerId ? readRoundCourses(supabase, qs.filter((q) => parseStatus(q.status) === 'in_progress').map((q) => q.id)) : null,
+  ]);
   const standingsError = entries.error || rounds.error;
 
   const items: ChQListItem[] = qs.map((q) => {
@@ -359,10 +373,18 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
             played: r.played,
             toPar: r.toPar,
             move: r.move,
+            ...(r.playerId === playerId ? { isYou: true } : {}),
           })),
       mine:
         input.role === 'player'
-          ? { entered: !!me, position: me?.position != null ? (me.tied ? 'T' : '') + me.position : null, toPar: me?.toPar ?? null, played: me?.played ?? 0 }
+          ? {
+              entered: !!me,
+              position: me?.position != null ? (me.tied ? 'T' : '') + me.position : null,
+              toPar: me?.toPar ?? null,
+              played: me?.played ?? 0,
+              next: me && status === 'in_progress' && !standingsError ? nextOf(me.rounds, q, nextCourses) : null,
+              squad: me && parseSelectionState(q.selection_state) === 'selected' && mySquad ? mySquad.has(q.id) : null,
+            }
           : null,
     };
   });
@@ -371,6 +393,46 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
   // A player's own qualifiers come first within the list order (D-30).
   const ordered = input.role === 'player' ? [...visible.filter((i) => i.mine?.entered), ...visible.filter((i) => !i.mine?.entered)] : visible;
   return { role: input.role, mode: input.mode, items: ordered, listError: false, standingsError, entriesError: entries.error, today: endDayFor(now) };
+}
+
+/** A player's next round in a live qualifier: its number, at the course set for it (else the qualifier's). Null with every round in. */
+function nextOf(rounds: ChQRound[], q: QRow, courses: Map<string, string | null> | null): { round: number; course: string | null } | null {
+  const round = nextRoundNumber(rounds, q.num_rounds);
+  if (round == null) return null;
+  const set = courses?.get(`${q.id}:${round}`);
+  return { round, course: set ?? q.course_name };
+}
+
+/**
+ * The qualifiers whose confirmed squad holds this player: their own selection rows, for the qualifiers whose squad is confirmed (RLS
+ * shows a player the selections only then). Null when the read failed, so no line says "not selected" on a guess.
+ */
+async function readOwnSelections(supabase: Supabase, qs: QRow[], playerId: string): Promise<Set<string> | null> {
+  const ids = qs.filter((q) => parseSelectionState(q.selection_state) === 'selected').map((q) => q.id);
+  const picked = new Set<string>();
+  for (const chunk of chunkIds(ids)) {
+    const { data, error } = await supabase.from('golf_qualifier_selections').select('qualifier_id').eq('player_id', playerId).in('qualifier_id', chunk);
+    if (error) {
+      chLogServer('qualifiers', 'ownSelections', error, 'qualifiers');
+      return null;
+    }
+    for (const r of data ?? []) picked.add(r.qualifier_id);
+  }
+  return picked;
+}
+
+/** The course set for each round of these qualifiers, keyed `qualifierId:round`. Null when the read failed (the qualifier's course stands in). */
+async function readRoundCourses(supabase: Supabase, qualifierIds: string[]): Promise<Map<string, string | null> | null> {
+  const byRound = new Map<string, string | null>();
+  for (const chunk of chunkIds(qualifierIds)) {
+    const { data, error } = await supabase.from('golf_qualifier_round_courses').select('qualifier_id, round_number, course_name').in('qualifier_id', chunk);
+    if (error) {
+      chLogServer('qualifiers', 'nextCourses', error, 'qualifiers');
+      return null;
+    }
+    for (const r of data ?? []) byRound.set(`${r.qualifier_id}:${r.round_number}`, r.course_name);
+  }
+  return byRound;
 }
 
 /**

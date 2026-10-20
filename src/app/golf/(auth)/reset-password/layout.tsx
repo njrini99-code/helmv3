@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
+import { isClubhouseFrontDoor } from '@/clubhouse/gate';
+import { ClubhouseResetPasswordRoute } from '@/clubhouse/routes/auth';
 
 export const metadata: Metadata = {
   title: 'Reset Password',
@@ -24,5 +26,8 @@ export default function ResetPasswordLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // golf_clubhouse_front_door chooses the page that is drawn: flag off renders today's page (`children`) untouched; flag
+  // on renders Clubhouse's, over the same token check, updateUser and request-a-new-link action.
+  if (isClubhouseFrontDoor()) return <ClubhouseResetPasswordRoute />;
   return <div className={poppins.variable}>{children}</div>;
 }

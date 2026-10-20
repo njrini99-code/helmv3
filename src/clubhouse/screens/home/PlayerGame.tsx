@@ -169,6 +169,8 @@ export function scoringNote(points: ChScoringPoint[]): string {
   const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
   const say = (x: number) => words[x] ?? String(x);
   const first = say(met);
+  // Every round shown meets it: "Ten of your last ten" reads as a count where it is a clean sweep.
+  if (met === points.length) return `Your last ${say(met)} rounds were all ${bar} or better.`;
   return `${first[0]!.toUpperCase()}${first.slice(1)} of your last ${say(points.length)} are ${bar} or better.`;
 }
 

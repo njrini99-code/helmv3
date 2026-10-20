@@ -45,8 +45,9 @@ const golfQualifierSchema = z
     endDate: dateString.optional(),
     playerIds: z.array(z.string().uuid()),
     // Travel-squad selection model (omit → DB defaults 5 total / 1 coach-pick).
-    selectionSlotsTotal: z.number().int().min(1).max(50).optional(),
-    selectionSlotsCoachPick: z.number().int().min(0).max(50).optional(),
+    // 12 is the database's cap (golf_qualifiers_selection_slots_total_check).
+    selectionSlotsTotal: z.number().int().min(1).max(12).optional(),
+    selectionSlotsCoachPick: z.number().int().min(0).max(12).optional(),
     // The round cap controls whether a player may enter another result; it
     // must be explicit so a caller can never silently create a one-round
     // qualifier by omitting it.

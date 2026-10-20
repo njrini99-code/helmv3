@@ -100,9 +100,9 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
       <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && <StripSkeleton coach={coach} phone />}
       {phone ? (
-        // The phone's intro at its loaded line heights: the eyebrow, the 31px title and the live line under the double rule.
+        // The phone's intro at its loaded line heights: the coach's eyebrow, the 31px title and the live line under the double rule.
         <header className="ch-hl-h" data-canopy-head="">
-          <Line h={14.4} w={56} sh={11} />
+          {coach && <Line h={14.4} w={56} sh={11} />}
           <Line h={33.5} w={176} sh={28} r={8} />
           {coach ? (
             <Line h={21.75} w="74%" sh={13} />
@@ -116,7 +116,8 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
         </header>
       ) : (
         <header className="ch-hl-h has-aside" data-canopy-head="">
-          <Skeleton width={62} height={24} radius={12} />
+          {/* The role line is the coach's only (Head). */}
+          {coach && <Skeleton width={62} height={24} radius={12} />}
           <Skeleton width={190} height={44} radius={10} />
           <Skeleton width={360} height={14} />
           <div className="ch-hl-h__aside">

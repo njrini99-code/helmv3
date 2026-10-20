@@ -285,7 +285,8 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
   animation-delay: calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out));
 }
 
-/* Animations off (Settings) and reduced motion: no skeleton fade. */
+/* Animations off (Settings; <html> carries it from the first frame, ThemeScript) and reduced motion: no skeleton fade. */
+[data-motion='off'] [data-ui='clubhouse'] main[aria-busy='true'],
 [data-ui='clubhouse'][data-motion='off'] main[aria-busy='true'] {
   animation: none;
 }

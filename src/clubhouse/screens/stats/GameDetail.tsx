@@ -11,14 +11,15 @@ import type { ChHoles } from '../../data/stats-filter';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
+import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
-import { NO_DATA } from '../../lib/format';
+import { formatPct, NO_DATA } from '../../lib/format';
 import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, MakeRows, ParTiles, ScoreMix } from './charts';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 
 type Tone = 'gain' | 'loss' | undefined;
-const pct = (v: number | null | undefined, d = 0) => (v == null ? NO_DATA : `${v.toFixed(d)}%`);
+const pct = formatPct;
 const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.toFixed(d));
 /** Green when on the right side of the benchmark, amber when not, no colour without one. */
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
@@ -106,7 +107,7 @@ function Sec({
               <div key={l}>
                 <dt>{l}</dt>
                 <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
-                {n && <dd className="ch-gm__sub">{n}</dd>}
+                {n && v !== NO_DATA && <dd className="ch-gm__sub">{n}</dd>}
               </div>
             );
           })}
@@ -298,7 +299,6 @@ export function GameDetail({
   const ruleOf = (tail: string) => (phone ? { rule: shortBasis, how: `${basisLine}. ${tail}` } : { rule: `${basisLine}. ${tail}` });
   /** A panel's note: the whole paragraph on a screen; on the phone one short line, and the paragraph behind "How this is measured". */
   const noteOf = (long: string, short: string) => (phone ? { note: short, how: long } : { note: long });
-  const open = !phone;
 
   return (
     <div className={'ch-gd' + (phone ? ' is-phone' : '')}>
@@ -337,12 +337,12 @@ export function GameDetail({
           [
             'Doubles or worse',
             num(s.doublePlusPerRound),
-            doublePct == null ? null : `${doublePct.toFixed(1)}% of holes${bench.big_number_rate != null ? ` · Tour ${bench.big_number_rate}%` : ''}`,
+            doublePct == null ? null : `${formatPct(doublePct)} of holes${bench.big_number_rate != null ? ` · Tour ${bench.big_number_rate}%` : ''}`,
             doublePct != null && bench.big_number_rate != null ? (doublePct <= bench.big_number_rate ? 'gain' : 'loss') : undefined,
           ],
         ]}
         more={
-          <More open={open}>
+          <More>
             <ScoringMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
@@ -376,7 +376,7 @@ export function GameDetail({
           ['Fairways par 5', pct(s.fairwayPctPar5), s.fairwayPctPar4 != null ? `Par 4s: ${Math.round(s.fairwayPctPar4)}%` : null, undefined],
         ]}
         more={
-          <More open={open}>
+          <More>
             <TeeMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
@@ -385,7 +385,7 @@ export function GameDetail({
           {s.fairwayOpportunities > 0 ? (
             <FairwayStrip opportunities={s.fairwayOpportunities} hit={s.fairwaysHit} left={s.missLeftCount} right={s.missRightCount} />
           ) : (
-            <p className="ch-gm-p__empty">No drive results logged.</p>
+            <EmptyState compact code="CH-5317" title="No drive results logged." />
           )}
         </Panel>
         <Panel title="Distance by club">
@@ -422,7 +422,7 @@ export function GameDetail({
           ['From the rough', pct(s.girPctFromRough), s.girPctFromFairway != null ? `GIR · fairway ${Math.round(s.girPctFromFairway)}%` : null, undefined],
         ]}
         more={
-          <More open={open}>
+          <More>
             <ApproachMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
@@ -445,12 +445,15 @@ export function GameDetail({
               <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit={'′'} label="Yards to the pin" invert phone={phone} code="CH-5316" />
               {/* On a phone each band's own row says it ("Needs 10", with its shots); a screen says it in a line under the chart. */}
               {!phone && tourProx.some((b) => b.value == null) && (
-                <p className="ch-gm-p__empty" data-ch-code="CH-5316">
-                  {tourProx
+                <EmptyState
+                  compact
+                  code="CH-5316"
+                  title="Some distances need more shots."
+                  body={tourProx
                     .filter((b) => b.value == null)
                     .map((b) => `${b.band} yards: ${b.n ? `${b.n} ${b.n === 1 ? 'shot' : 'shots'}, under ${b.floor}` : 'no shots'}`)
                     .join(' · ')}
-                </p>
+                />
               )}
             </>
           ) : (
@@ -479,7 +482,7 @@ export function GameDetail({
               }}
             />
           ) : (
-            <p className="ch-gm-p__empty">No missed-green directions logged.</p>
+            <EmptyState compact code="CH-5317" title="No missed-green directions logged." />
           )}
         </Panel>
         <Panel title="Greens hit by lie" note="Counts are approaches from each lie.">
@@ -516,7 +519,7 @@ export function GameDetail({
           ['From the rough', pct(s.scramblingPctRough), benchScrRough != null ? `Tour ${benchScrRough}%` : `${s.scrambleRoughAttempts} attempts`, tone(s.scramblingPctRough, benchScrRough)],
         ]}
         more={
-          <More open={open}>
+          <More>
             <ShortMore s={s} />
           </More>
         }
@@ -567,7 +570,7 @@ export function GameDetail({
           ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${s.firstPuttDistanceAvg.toFixed(1)} ft`, 'Average start', undefined],
         ]}
         more={
-          <More open={open}>
+          <More>
             <PuttingMore s={s} x={x} sixBands={shotBands} />
           </More>
         }
@@ -590,21 +593,21 @@ export function GameDetail({
               m={{ left: s.puttMissLeftPct, right: s.puttMissRightPct, short: s.puttMissShortPct, long: s.puttMissLongPct, low: s.puttMissLowPct, high: s.puttMissHighPct }}
             />
           ) : (
-            <p className="ch-gm-p__empty">No missed-putt directions logged.</p>
+            <EmptyState compact code="CH-5317" title="No missed-putt directions logged." />
           )}
         </Panel>
         <Panel title="Lag leave">
           {lag.length ? (
             <Compare unit=" ft" max={8} rows={lag.map(([b, v]) => ({ label: `From ${b.replace('_plus', '+').replace('_', '–')} ft`, value: v, sub: 'Left for the next putt' }))} />
           ) : (
-            <p className="ch-gm-p__empty">No long first putts logged.</p>
+            <EmptyState compact code="CH-5317" title="No long first putts logged." />
           )}
         </Panel>
         <Panel title="Make rate by break" note={brk.some((r) => r.value != null) ? 'Putts inside 10 feet.' : undefined}>
           {brk.some((r) => r.value != null) ? (
             <Compare unit="%" max={100} rows={brk} />
           ) : (
-            <p className="ch-gm-p__empty">No putts inside 10 feet have a break logged yet.</p>
+            <EmptyState compact code="CH-5317" title="No putts inside 10 feet have a break logged yet." />
           )}
         </Panel>
       </Sec>

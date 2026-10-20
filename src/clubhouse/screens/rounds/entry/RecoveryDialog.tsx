@@ -96,8 +96,8 @@ export function RecoveryDialog({
     <Modal
       open={open}
       onClose={restoring ? () => {} : onClose}
-      title="Recover unsaved progress"
-      description="Saved on this device. It may have been saved when the app was interrupted."
+      title="Pick up where you left off"
+      description="Your shots are on this device from when the app closed."
       icon={History}
       width={460}
       code="CH-11512"

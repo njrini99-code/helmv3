@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -14,6 +14,7 @@ import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Nine } from '../../ui/Nine';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { withPointSpan } from '../../ui/point-span';
 import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
@@ -26,6 +27,7 @@ import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
 import { roundHref } from './player-links';
 import { leaderPeek } from './Leaderboard';
+import { MineBadge } from './CoachAsks';
 import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
 import { useLightPlace } from '../../shell/light';
 
@@ -173,6 +175,8 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
           <Icon icon={ChevronRight} size={17} />
         </span>
       )}
+      {/* A player's own reply (their Home only; a coach's card never carries `mine`). */}
+      <MineBadge mine={e.mine} />
       {children}
       <LinkPending />
     </Link>
@@ -332,7 +336,7 @@ function Form({ form }: { form: ChTeamForm }) {
       <div className="ch-hm-form__top">
         <span>
           <em id="ch-hm-form">Team scoring average</em>
-          <b className="ch-num">{formatFixed(form.avg)}</b>
+          <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
         <span className={'ch-hm-delta ch-num ' + tone(form.delta, true, 1)}>
           {form.delta != null && formatSigned(form.delta)}
@@ -356,7 +360,7 @@ function Form({ form }: { form: ChTeamForm }) {
         <div>
           <dt>GIR</dt>
           <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.gir.delta, false, 0)}>{form.gir.delta != null ? formatSigned(form.gir.delta, 0) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + tone(form.gir.delta, false, 0)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
@@ -368,8 +372,8 @@ function Form({ form }: { form: ChTeamForm }) {
   );
 }
 
-/** `children`: what follows the week inside its section (the player's Today). `majorIcon`: the mark on a competition day (the coach's is the trophy; the player's board draws a flag). */
-export function WeekStrip({ days, note, children, majorIcon = TYPE_ICON.tournament }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode; majorIcon?: LucideIcon }) {
+/** `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the calendar draws. */
+export function WeekStrip({ days, note, children }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
@@ -383,7 +387,7 @@ export function WeekStrip({ days, note, children, majorIcon = TYPE_ICON.tourname
               <b className="ch-num" aria-hidden="true">
                 {d.dayOfMonth}
               </b>
-              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={majorIcon} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
+              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={TYPE_ICON[d.competitionType ?? 'tournament']} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
               <span className="ch-sr-only">
                 {d.weekday} {d.dayOfMonth}
                 {d.isToday ? ', today' : ''}
@@ -458,7 +462,7 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
                   <Avatar name={r.playerName} size={38} />
                   <span className="ch-hm-rd__b">
                     <b>{r.playerName}</b>
-                    <span>{r.meta.split(' · ').slice(0, 2).join(' · ')}</span>
+                    <RoundMeta meta={r.meta} />
                   </span>
                   {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
                     <span className="ch-hm-rd__spark" aria-hidden="true">
@@ -476,6 +480,20 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * A latest round's course and date: the course gives way (ellipsis) and the date keeps its place, so a long course name
+ * never pushes the date out of the row. The same words as one line ("Oakmont CC · Sun 12 Oct").
+ */
+function RoundMeta({ meta }: { meta: string }) {
+  const [lead, ...rest] = meta.split(' · ').slice(0, 2);
+  return (
+    <span className="ch-hm-rd__m">
+      <span>{lead}</span>
+      {rest.length > 0 && <span className="ch-hm-rd__when">{rest.join(' · ')}</span>}
+    </span>
   );
 }
 

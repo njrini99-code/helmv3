@@ -243,8 +243,11 @@ describe('useCalendarRangeEvents', () => {
     // Buffered window must cover the visible range.
     expect(new Date(String(gte?.args[1])).getTime()).toBeLessThanOrEqual(farFuture);
     expect(new Date(String(lte?.args[1])).getTime()).toBeGreaterThanOrEqual(farFuture + 6 * DAY_MS);
-    // Cancelled events are NOT excluded — they render distinctly instead.
-    expect(record.calls.some((c) => c.method === 'neq')).toBe(false);
+    // Cancelled events are NOT excluded — they render distinctly instead. (No
+    // viewer reads as a player invited to no meeting, so the one `neq` here is
+    // `event_type <> 'meeting'`; see use-calendar-range-events-meetings.test.)
+    expect(record.calls.some((c) => c.method === 'neq' && c.args[0] !== 'event_type')).toBe(false);
+    expect(record.calls.some((c) => c.method === 'or' && String(c.args[0]).includes('status'))).toBe(false);
 
     // Both the server payload and the fetched row are present, sorted.
     expect(result.current.events.map((e) => e.id)).toEqual(['a', 'remote-1']);
