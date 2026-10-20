@@ -280,6 +280,85 @@ export const PREVIEW_HELM_PLAYER_OFF: ChPlayerHelm = { off: { reason: null }, pr
 /** Only strengths: nothing needs work. */
 export const PREVIEW_HELM_PLAYER_WORKING: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [chTour(bigNumber(jonah), ME)], error: false }, rounds: null };
 
+/**
+ * A crowded player board (`?state=many`), for the Board caps, the Deep dive Read and their before/after screenshots. Eleven
+ * findings (ten current, one out of date), three strengths, two reads with the generators' placeholder cause and action, and two
+ * whose stored estimate is zero ("Projected impact: ~0.00 strokes per round", course-management.ts).
+ */
+type ManySeed = { id: string; category: NonNullable<EvidenceInsight['category']>; priority: EvidenceInsight['priority']; title: string; content: string; metric: string; label: string; unit: InsightEvidence['unit']; polarity: 'lower_better' | 'higher_better'; you: number; display: string; cmp: number; cmpLabel: string; n: number; confidence: number; placeholder?: boolean; refreshed?: string };
+const manyRead = (s: ManySeed): EvidenceInsight =>
+  insight(jonah, {
+    id: s.id,
+    category: s.category,
+    priority: s.priority,
+    title: s.title,
+    content: s.content,
+    metadata: s.refreshed ? { last_refreshed_at: s.refreshed } : null,
+    evidence: evidence({
+      metric: s.metric,
+      metric_label: s.label,
+      unit: s.unit,
+      polarity: s.polarity,
+      your_value: s.you,
+      your_value_display: s.display,
+      comparison_value: s.cmp,
+      comparison_label: s.cmpLabel,
+      comparison_source: 'absolute_target',
+      sample_n: s.n,
+      confidence: s.confidence,
+      ...(s.placeholder ? { diagnosis: diagnosis(s.label) } : {}),
+    }),
+  });
+const ZERO_LINE = ' Projected impact: ~0.00 strokes per round.';
+export const MANY_FINDINGS: EvidenceInsight[] = [
+  manyRead({ id: 'in-3putt', category: 'putting', priority: 'high', title: 'Three-putt rate: 14%', content: `You three-putted 14% of greens across 21 rounds, against 8% for the Tour. Most start from outside 30 ft, so lag distance is the lever.${ZERO_LINE}`, metric: 'three_putt_rate', label: 'Three-putt Rate', unit: 'percent', polarity: 'lower_better', you: 14, display: '14%', cmp: 8, cmpLabel: 'PGA Tour avg', n: 378, confidence: 0.82 }),
+  manyRead({ id: 'in-updown', category: 'short_game', priority: 'high', title: 'Up-and-down rate: 38%', content: `You got up and down 38% of the time after missing a green, against 58% for the Tour.${ZERO_LINE}`, metric: 'up_and_down_pct', label: 'Up-and-down Rate', unit: 'percent', polarity: 'higher_better', you: 38, display: '38%', cmp: 58, cmpLabel: 'PGA Tour avg', n: 96, confidence: 0.7, placeholder: true }),
+  manyRead({ id: 'in-prox', category: 'approach', priority: 'medium', title: 'Approach from 150-175 yds: 31 ft from the hole', content: 'From 150-175 yards your approaches finish a median 31 ft from the hole, against 26 ft for the Tour. Projected impact: ~0.21 strokes per round.', metric: 'approach_prox_150_175', label: 'Proximity, 150-175 yds', unit: 'feet', polarity: 'lower_better', you: 31, display: '31 ft', cmp: 26, cmpLabel: 'PGA Tour avg', n: 64, confidence: 0.66 }),
+  manyRead({ id: 'in-fw', category: 'tee', priority: 'medium', title: 'Fairways hit: 49%', content: 'You hit 49% of fairways over 21 rounds, against 62% for the Tour. Projected impact: ~0.34 strokes per round.', metric: 'fairway_pct', label: 'Fairways Hit', unit: 'percent', polarity: 'higher_better', you: 49, display: '49%', cmp: 62, cmpLabel: 'PGA Tour avg', n: 294, confidence: 0.78 }),
+  manyRead({ id: 'in-par5', category: 'scoring', priority: 'medium', title: 'Bogeys on par 5s: 38%', content: 'You bogeyed or worse on 38% of par 5s, against 24% for the Tour. Projected impact: ~0.18 strokes per round.', metric: 'par5_bogey_rate', label: 'Par 5 Bogey Rate', unit: 'percent', polarity: 'lower_better', you: 38, display: '38%', cmp: 24, cmpLabel: 'PGA Tour avg', n: 63, confidence: 0.6, placeholder: true }),
+  manyRead({ id: 'in-lag', category: 'putting', priority: 'medium', title: 'Lag putts from 30+ ft: 4.1 ft left', content: 'From 30 ft and out your first putt stops a median 4.1 ft from the hole, against 3.2 ft for the Tour. Projected impact: ~0.12 strokes per round.', metric: 'lag_leave_distance', label: 'First-putt Leave, 30+ ft', unit: 'feet', polarity: 'lower_better', you: 4.1, display: '4.1 ft', cmp: 3.2, cmpLabel: 'PGA Tour avg', n: 71, confidence: 0.58 }),
+  manyRead({ id: 'in-badtee', category: 'course_management', priority: 'low', title: 'Bogey or worse after a missed fairway: 71%', content: 'After a missed fairway you made bogey or worse on 71% of holes, against 55% for the Tour. Projected impact: ~0.09 strokes per round.', metric: 'bogey_after_miss_pct', label: 'Bogey or Worse After a Missed Fairway', unit: 'percent', polarity: 'lower_better', you: 71, display: '71%', cmp: 55, cmpLabel: 'PGA Tour avg', n: 107, confidence: 0.5 }),
+];
+/** Older than the player's newest round (Oct 14): drawn Out of date, not an open signal. */
+export const MANY_STALE: EvidenceInsight = manyRead({ id: 'in-gir', category: 'approach', priority: 'medium', title: 'Greens in regulation: 52%', content: 'You hit 52% of greens in regulation, against 65% for the Tour. Projected impact: ~0.28 strokes per round.', metric: 'gir_pct', label: 'Greens in Regulation', unit: 'percent', polarity: 'higher_better', you: 52, display: '52%', cmp: 65, cmpLabel: 'PGA Tour avg', n: 378, confidence: 0.74, refreshed: '2026-10-05T12:00:00Z' });
+export const MANY_NEWEST_ROUND = '2026-10-14';
+export const MANY_STRENGTHS: EvidenceInsight[] = [
+  manyRead({ id: 'in-scramble', category: 'short_game', priority: 'low', title: 'Scrambling from the rough: 64%', content: 'You saved par from the rough 64% of the time, against 50% for the Tour.', metric: 'scramble_rough_pct', label: 'Scrambling From the Rough', unit: 'percent', polarity: 'higher_better', you: 64, display: '64%', cmp: 50, cmpLabel: 'PGA Tour avg', n: 41, confidence: 0.7 }),
+  manyRead({ id: 'in-inside3', category: 'putting', priority: 'low', title: 'Putts inside 3 ft: 97%', content: 'You made 97% of putts inside 3 ft, against 94% for the Tour.', metric: 'make_pct_inside_3', label: 'Make Rate Inside 3 ft', unit: 'percent', polarity: 'higher_better', you: 97, display: '97%', cmp: 94, cmpLabel: 'PGA Tour avg', n: 212, confidence: 0.85 }),
+];
+export const PREVIEW_HELM_PLAYER_MANY: ChPlayerHelm = {
+  off: null,
+  proposals: NO_PROPOSALS,
+  insights: {
+    list: [
+      chSlope(jonah, ME),
+      chTour(penalties(jonah), ME),
+      ...MANY_FINDINGS.slice(0, 2).map((i) => chTour(i, ME)),
+      toChInsight(breakBias(jonah), { viewer: ME }),
+      ...MANY_FINDINGS.slice(2).map((i) => chTour(i, ME)),
+      toChInsight(MANY_STALE, { tour: PREVIEW_TOUR, viewer: ME, newestRound: MANY_NEWEST_ROUND }),
+      chTour(bigNumber(jonah), ME),
+      ...MANY_STRENGTHS.map((i) => chTour(i, ME)),
+    ],
+    error: false,
+  },
+  rounds: null,
+};
+
+/** `?state=zero`: the zero-estimate read leads (its "Projected impact: ~0.00 strokes per round" sits under Why we think this), then the placeholder-cause reads. */
+export const PREVIEW_HELM_PLAYER_ZERO: ChPlayerHelm = {
+  ...PREVIEW_HELM_PLAYER_MANY,
+  insights: { list: [chTour(MANY_FINDINGS[0]!, ME), chTour(MANY_FINDINGS[1]!, ME), chTour(penalties(jonah), ME), chSlope(jonah, ME), chTour(bigNumber(jonah), ME)], error: false },
+};
+/** `?state=stale`: current reads first, then the one older than the player's newest round (Out of date). */
+export const PREVIEW_HELM_PLAYER_STALE: ChPlayerHelm = {
+  ...PREVIEW_HELM_PLAYER_MANY,
+  insights: {
+    list: [chSlope(jonah, ME), chTour(penalties(jonah), ME), toChInsight(MANY_STALE, { tour: PREVIEW_TOUR, viewer: ME, newestRound: MANY_NEWEST_ROUND }), chTour(bigNumber(jonah), ME)],
+    error: false,
+  },
+};
+
 const PULSE_ITEMS: PulseItem[] = [
   { id: 'rsvp-e1', headline: '2 players haven’t replied to Team dinner', evidence: 'Thu, Oct 16, 6:30 PM · 4 of 6 replied', tone: 'attention', weight: 85 },
   { id: 'movement-decline', headline: '2 players are scoring worse over their last three rounds', evidence: 'Jonah Okafor +2.1 strokes · Eli Brandt +0.8 strokes', tone: 'attention', weight: 80 },
