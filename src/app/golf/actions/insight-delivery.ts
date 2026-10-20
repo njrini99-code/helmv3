@@ -52,7 +52,7 @@ import {
   rankEvidenceInsightsScored,
 } from './insight-delivery-ranking';
 import { deliverReads, READS_V1_FLAG, type FoldedRead, type ReadsDeliveryPlan } from './insight-delivery-reads';
-import { loadPinnedReadIds } from './insight-delivery-pinned';
+import { loadPinnedReadIds } from '@/lib/coachhelm/delivery/pinned-reads';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import {
   V3_ENGINE_FILTER,

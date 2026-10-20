@@ -267,7 +267,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   highest-ranked finding, else strength, else note; it names the others in
   `also` and in one added sentence. A read someone acted on (acknowledged,
   addressed, rated by the player, or the source of a live focus area,
-  `insight-delivery-pinned.ts`) never folds. Then each player holds 3 open
+  `src/lib/coachhelm/delivery/pinned-reads.ts`) never folds. Then each
+  player holds 3 open
   reads and 1 strength (a note or a measured zero is never an open read;
   same classification as the Clubhouse Board). `includeMore: true` on
   `getInsightsForPlayer` or `getInsightsForCoachWithMeta` skips the cap: the

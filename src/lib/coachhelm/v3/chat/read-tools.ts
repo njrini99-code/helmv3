@@ -28,7 +28,7 @@ import {
   type RawInsightRowForRanking,
 } from '@/app/golf/actions/insight-delivery-ranking';
 import { deliverReads, READS_V1_FLAG } from '@/app/golf/actions/insight-delivery-reads';
-import { loadPinnedReadIds } from '@/app/golf/actions/insight-delivery-pinned';
+import { loadPinnedReadIds } from '@/lib/coachhelm/delivery/pinned-reads';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
