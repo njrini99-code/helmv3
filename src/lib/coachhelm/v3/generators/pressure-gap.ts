@@ -234,6 +234,8 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
 
     return {
       sampleN: practiceN + competitiveN,
+      // Slice 0b: the practice and pressure rounds in the gap stamp the window.
+      windowRoundIds: rounds.filter((r) => bucketOf.has(r.id)).map((r) => r.id),
       playerValue: delta,
       practice_avg: practiceAvg,
       competitive_avg: competitiveAvg,

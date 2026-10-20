@@ -8,6 +8,7 @@
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { InsightCategory, InsightEvidence, InsightPriority } from '@/lib/coachhelm/v2/insights/types';
+import type { ReadFloorShortfall } from './read-floors';
 
 /**
  * Per-generator aggregate output. Subclasses extend with their own
@@ -23,6 +24,13 @@ export interface GeneratorAggregate {
    * v3 metric). Standing comparison + counterfactual both read this.
    */
   playerValue: number;
+  /**
+   * Slice 0b: the rounds that contributed observations to `sampleN`. When
+   * set, the base stamps the read's window from exactly these rounds
+   * (`engine/read-window.ts`); when absent it falls back to the composed
+   * window range.
+   */
+  windowRoundIds?: readonly string[];
 }
 
 /**
@@ -90,6 +98,11 @@ export interface RunResult {
    * rather than flattening it to text twice.
    */
   error?: unknown;
+  /**
+   * Slice 0b: set on a `no_data` exit when the read fell below its family
+   * floor (`engine/read-floors.ts`) — the Watching count-down for the run log.
+   */
+  watching?: ReadFloorShortfall;
 }
 
 /**

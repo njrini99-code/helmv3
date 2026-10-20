@@ -246,6 +246,7 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     const roundIds = rounds.map((r) => r.id);
 
     interface PuttShotRow {
+      round_id: string;
       putt_break: string | null;
       putt_made: boolean | null;
       putt_slope: string | null;
@@ -258,7 +259,7 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     // page boundaries stable (LOAD-BEARING — do not swap for created_at desc).
     const { data: putts, error: pErr } = await fetchAllRowsResult<PuttShotRow>((from, to) =>
       fromUntyped(supabase, 'golf_shots')
-        .select('putt_break, putt_made, putt_slope, distance_to_hole_before, distance_unit_before')
+        .select('round_id, putt_break, putt_made, putt_slope, distance_to_hole_before, distance_unit_before')
         .eq('shot_type', 'putting')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
@@ -267,12 +268,14 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     if (!putts) return null;
 
     const rows: PuttRow[] = [];
+    const usedRounds = new Set<string>();
     for (const p of putts) {
       if (p.putt_made === null || p.putt_made === undefined) continue;
       if (p.putt_break !== 'left_to_right' && p.putt_break !== 'right_to_left') continue;
       const raw = p.distance_to_hole_before;
       if (raw === null || raw === undefined) continue;
       const distFt = p.distance_unit_before === 'yards' ? raw * 3 : raw; // feet default
+      usedRounds.add(p.round_id);
       rows.push({
         putt_break: p.putt_break,
         putt_slope: p.putt_slope,
@@ -306,6 +309,8 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     // sampleN gates on ROUNDS so the base-class minSampleN(=5) still applies.
     const base: PuttBiasAggregate = {
       sampleN: roundIds.length,
+      // Slice 0b: the rounds whose break-tagged putts fed the test.
+      windowRoundIds: [...usedRounds],
       playerValue: cut ? cut.weak_pct : 0,
       rounds_played: roundIds.length,
       significant: cut !== null,

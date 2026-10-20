@@ -150,6 +150,8 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
 
     return {
       sampleN: hole1Rounds.size,
+      // Slice 0b: the rounds whose opening hole fed the read stamp its window.
+      windowRoundIds: [...hole1Rounds],
       last_round_date: lastRoundDate,
       playerValue: delta,
       hole1_avg: hole1Avg,

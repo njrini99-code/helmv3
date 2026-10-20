@@ -549,6 +549,39 @@ Player opens round review
 - Weekly coach recap (row 10): shows insights new this week (created) and updated this week (refreshed, created earlier) separately; rounds pass `isCountableRound`.
 - Qualifiers (rows 54, 55): confirmation refuses with zero eligible players and composes the travel brief from the re-read workspace (slots filled, unscored entrants stated). Player notices are `selected` / `not_selected` / `not_scored`, nobody is notified when nobody was selected, and each notice writes an in-app `notifications` row with the outcome. The workspace loader (`v3/qualifying/loader.ts`) fails closed (2026-10-01): a failed qualifier, picks, reasons or rounds read returns null, so `chooseTiePlace` and `confirmSelection` answer "workspace not loadable" and write nothing, instead of counting zero picks (a tie place given twice, a coach's pick rewritten as a top-score place).
 
+## Read freshness (CoachHelm supercharge Slice 0b, 2026-10-20)
+
+Every v3 read now says which rounds it read. The floors, revision key and
+sweep below are behind `coachhelm_reads_v1_copy` (off); stamping is not.
+
+- Stamped windows (always on): `v3/engine/read-window.ts` writes
+  `window_start`, `window_end`, `newest_round_id`, `rounds_n` (countable
+  rounds, `isCountableRound`) and `source_round_ids` into every generator
+  read (`BaseGenerator.run`) and every composite (`synthesizeForPlayer`).
+  A generator that names the rounds its observations came from
+  (`GeneratorAggregate.windowRoundIds`) is stamped from exactly those
+  rounds; the cache-backed ones (par scoring, course management, putt
+  distance) fill only empty bounds from their range. Composites take the
+  rounds of the context array they read, or the union of their sources'
+  `source_round_ids`. Test rounds never enter a stamp.
+- `sample_unit` (always on): what `sample_n` counts (`putts`, `approaches`,
+  `tee_shots`, `shots`, `rounds`, `holes`, `opportunities`), from
+  `FAMILY_FLOORS` in `v3/engine/read-floors.ts`.
+- Floors (flag): a read needs 3+ countable rounds (more for some families)
+  and its family's `say_n` (`FAMILY_FLOORS`; rates 20 to say, 40 to be
+  Clear). Below the floor nothing is written, the stale row in that scope
+  is retracted, and `RunResult.watching` carries the count-down
+  (`countdownText`: "2 more rounds, 9 more approaches") for the run log.
+  A composite below its floor is skipped and the stale sweep archives it.
+- Revision key (flag): `v2/insights/revision-key.ts` keys maturation on
+  `r:<newest_round_id>|<window_start>` instead of `sample_n|window_end`, so
+  re-reading the same rounds three times can no longer mature a read.
+  Unstamped rows keep the legacy key.
+- Sweep (flag): the roster sweep (`api/cron/coachhelm-roster-sweep`) also
+  refreshes a player whose newest countable round is newer than their
+  newest visible v3 read (`v3/engine/sweep-freshness.ts`), most out of date
+  first, at most 25 a night. The refresh path is deterministic (no LLM).
+
 ## §15.2 Regression Fixture Matrix (repair plan, 2026-09-23)
 
 Coverage audit of the repair plan's 43-row fixture matrix against `main`. Each

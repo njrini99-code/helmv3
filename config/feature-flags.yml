@@ -639,6 +639,39 @@ flags:
       been reviewed, or remove the section and its wiring if the review
       asks for a different surface/placement instead.
 
+  # CoachHelm supercharge Slice 0 / 0b (design:
+  # /mnt/project-files/coachhelm/supercharge/07-system-architecture.md §4).
+  # Owner: Nick. Created off by the Slice 0b freshness PR. Stamping each read's
+  # window, newest round and sample unit is NOT behind it (additive, honest).
+  - feature_id: coachhelm_reads_v1_copy
+    owner: golf/coachhelm
+    purpose: >-
+      Turns on the CoachHelm Reads v1 behavior. Slice 0b part: a read needs
+      at least 3 countable rounds and its family's attempt floor or it is
+      held back as Watching with a count-down; a new evidence revision is a
+      new newest round in the window (or a moved window), not a changed
+      sample count; and the nightly roster sweep re-analyzes any player whose
+      newest countable round is newer than their newest read (deterministic
+      generators only, no LLM). Off, the engine keeps the old 5-sample gate,
+      the sample_n|window_end key and the unanalyzed-latest-round sweep.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: "2027-01-31"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      The owner turns it on (development, preview, production) after
+      reviewing the Watching counts in the Slice 0b PR. Once on everywhere
+      for two weeks with no rollback, delete the flag and the legacy
+      branches it guards (revision-key.ts legacy key, the floor check in
+      read-window.ts stampAndCheckRead, the sweep's legacy-only path).
+      Turning it off rolls everything back to the old gates at once.
+
   # Clubhouse: the from-scratch GolfHelm UI (src/clubhouse/) for coaches and
   # players (isClubhouseFor). Parallel to Fairway, never layered on it.
   # Status, turn-on and rollback: docs/clubhouse/STATUS.md. Tracker:

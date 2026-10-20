@@ -21,6 +21,16 @@ export type InsightCategory =
 
 export type InsightUnit = 'percent' | 'strokes' | 'count' | 'yards' | 'feet';
 
+/** What `InsightEvidence.sample_n` counts (Slice 0b, `04` §1.1). */
+export type InsightSampleUnit =
+  | 'putts'
+  | 'approaches'
+  | 'tee_shots'
+  | 'shots'
+  | 'rounds'
+  | 'holes'
+  | 'opportunities';
+
 /**
  * Canonical set of comparison sources for evidence cards.
  *
@@ -186,6 +196,16 @@ export interface InsightEvidence {
   window_days: number;
   window_start: string; // ISO
   window_end: string;   // ISO
+  /**
+   * Slice 0b freshness stamps (additive). Written by the v3 engine from the
+   * rounds the read was computed over (`v3/engine/read-window.ts`):
+   * `sample_unit` names what `sample_n` counts, `rounds_n` is the countable
+   * rounds in the window, and `newest_round_id` is the newest round in it.
+   * Absent on v2 rows and on v3 rows written before the stamp existed.
+   */
+  sample_unit?: InsightSampleUnit;
+  rounds_n?: number;
+  newest_round_id?: string;
   /**
    * The completed, non-test rounds inside [window_start, window_end] that the
    * row was computed from (audit row 22), newest first, capped at 200. Lets

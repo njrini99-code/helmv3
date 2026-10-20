@@ -249,6 +249,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     const roundIds = rounds.map((r) => r.id);
 
     interface PuttShotRow {
+      round_id: string;
       putt_slope: string | null;
       putt_made: boolean | null;
       distance_to_hole_before: number | null;
@@ -261,7 +262,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     // not swap for created_at desc).
     const { data: putts, error: pErr } = await fetchAllRowsResult<PuttShotRow>((from, to) =>
       fromUntyped(supabase, 'golf_shots')
-        .select('putt_slope, putt_made, distance_to_hole_before, distance_unit_before')
+        .select('round_id, putt_slope, putt_made, distance_to_hole_before, distance_unit_before')
         .eq('shot_type', 'putting')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
@@ -270,6 +271,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     if (!putts) return null;
 
     const rows: PuttSlopeRow[] = [];
+    const usedRounds = new Set<string>();
     for (const p of putts) {
       if (p.putt_made === null || p.putt_made === undefined) continue;
       if (p.putt_slope !== 'downhill' && p.putt_slope !== 'level') continue;
@@ -278,6 +280,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
       // distance_unit_before is the correct unit column for putts ('feet' for
       // putts, 'yards' otherwise) — distance_unit is legacy and always 'yards'.
       const distFt = p.distance_unit_before === 'yards' ? raw * 3 : raw;
+      usedRounds.add(p.round_id);
       rows.push({ putt_slope: p.putt_slope, dist_ft: distFt, made: p.putt_made === true });
     }
 
@@ -305,6 +308,8 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     // sampleN gates on ROUNDS so the base-class minSampleN(=5) still applies.
     const base: PuttSlopeBiasAggregate = {
       sampleN: roundIds.length,
+      // Slice 0b: the rounds whose slope-tagged putts fed the test.
+      windowRoundIds: [...usedRounds],
       playerValue: cut.downhill_pct,
       rounds_played: roundIds.length,
       band: cut.band,

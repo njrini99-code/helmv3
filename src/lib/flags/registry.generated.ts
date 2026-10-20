@@ -149,6 +149,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on once golf_coachhelm_coach_weights has accumulated enough post-fix (corrected v2 causality attribution) samples to trust the persisted weights, or remove the coach-weight read entirely if that ranking signal is abandoned.",
   },
   {
+    feature_id: "coachhelm_reads_v1_copy",
+    owner: "golf/coachhelm",
+    purpose: "Turns on the CoachHelm Reads v1 behavior. Slice 0b part: a read needs at least 3 countable rounds and its family's attempt floor or it is held back as Watching with a count-down; a new evidence revision is a new newest round in the window (or a moved window), not a changed sample count; and the nightly roster sweep re-analyzes any player whose newest countable round is newer than their newest read (deterministic generators only, no LLM). Off, the engine keeps the old 5-sample gate, the sample_n|window_end key and the unanalyzed-latest-round sweep.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: "2027-01-31",
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "The owner turns it on (development, preview, production) after reviewing the Watching counts in the Slice 0b PR. Once on everywhere for two weeks with no rollback, delete the flag and the legacy branches it guards (revision-key.ts legacy key, the floor check in read-window.ts stampAndCheckRead, the sweep's legacy-only path). Turning it off rolls everything back to the old gates at once.",
+  },
+  {
     feature_id: "coachhelm_recap_claim_packet",
     owner: "golf/coachhelm",
     purpose: "Gates whether the round recap's compose() call also receives a typed EvidencePacket (Package 8), engaging claim-validator.ts's wrong-metric/wrong-player/wrong-window/unsupported-cause checks for this one LLM surface, on top of the existing flat numeric scan; default off pending real-world evidence this doesn't over-reject otherwise-good recaps into the deterministic fallback. A recap discarded to the fallback is cached forever (round-recap.ts only ever generates once per round; there is no regenerate path) — this flag must stay off in production until one exists, so a false-positive rejection isn't permanent for that round.",
