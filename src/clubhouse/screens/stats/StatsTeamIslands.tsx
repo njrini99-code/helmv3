@@ -34,6 +34,7 @@ import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
+import { TeamRank } from './TeamRank';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -198,6 +199,11 @@ export function TeamCharts({ data, tape }: { data: ChTeamCharts; tape?: ReactNod
 
       {/* The other figures sit under the trend as one open tape (server-rendered, passed in so the island keeps its focus state). */}
       {tape}
+
+      {/* Who gains and who loses (spec 4.5): after the figures and the trend, before the legs and the grid, its table view. */}
+      <SectionBoundary surface="stats.team.rank" label="Who gains and loses" code="CH-4206">
+        <TeamRank data={data} />
+      </SectionBoundary>
 
       <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
         <LegTrends legWeeks={data.legWeeks} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />

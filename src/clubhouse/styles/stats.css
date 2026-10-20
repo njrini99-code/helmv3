@@ -6961,3 +6961,278 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
     transition: none;
   }
 }
+
+/* P004: who gains and who loses (TeamRank, stats-visuals spec 4.5, decision Q10). A ranked dot plot: one row per player in
+   order of the dot, a rank ("T3" for a tie), the name, a track with the player's mean and a whisker of one standard error, and
+   the value. The team's mean is one dashed line through every row, the grid lines and zero sit behind. Better is right for
+   every figure. Each row is one hit target (44px on the phone); the row tint is the guide to the readout above. Prefix .ch-sv-tr. */
+.ch-sv-tr:not(.is-phone) {
+  padding: 6px 6px 14px;
+  border-radius: 16px;
+  background: var(--ch-ivory-25);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-sv-tr__menu {
+  flex: none;
+}
+.ch-sv-tr__menu .ch-select {
+  width: auto;
+}
+.ch-sv-tr__menu .ch-select select {
+  width: auto;
+  height: 34px;
+}
+.ch-sv-tr__plot {
+  --ch-tr-rank: 40px;
+  --ch-tr-who: 184px;
+  --ch-tr-v: 64px;
+  --ch-tr-row: 30px;
+  --ch-tr-cap: 22px;
+  --ch-tr-axis: 24px;
+  --ch-tr-none-gap: 0px;
+  padding: 0 16px;
+}
+.ch-sv-tr__plot:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-sv-tr__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+}
+.ch-sv-tr__top .ch-sv-read {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.ch-sv-tr__body {
+  position: relative;
+}
+.ch-sv-tr__field {
+  position: absolute;
+  top: var(--ch-tr-cap);
+  right: var(--ch-tr-v);
+  bottom: calc(var(--ch-tr-axis) + var(--ch-tr-none, 0) * var(--ch-tr-row) + var(--ch-tr-none-gap));
+  left: calc(var(--ch-tr-rank) + var(--ch-tr-who));
+  pointer-events: none;
+}
+.ch-sv-tr__grid,
+.ch-sv-tr__mean {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  text-decoration: none;
+}
+.ch-sv-tr__grid {
+  border-left: 1px solid var(--ch-border-hairline);
+}
+.ch-sv-tr__grid.is-zero {
+  border-left-color: var(--ch-border-strong);
+}
+.ch-sv-tr__mean {
+  top: -4px;
+  border-left: 1.5px dashed var(--ch-champagne-500);
+  margin-left: -0.75px;
+}
+.ch-sv-tr__r {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--ch-tr-rank) var(--ch-tr-who) minmax(0, 1fr) var(--ch-tr-v);
+  align-items: center;
+  min-height: var(--ch-tr-row);
+  border-radius: 8px;
+}
+.ch-sv-tr__r.is-cap {
+  min-height: var(--ch-tr-cap);
+}
+.ch-sv-tr__r.is-axis {
+  min-height: var(--ch-tr-axis);
+}
+.ch-sv-tr__body:has(.ch-sv-tr__r.is-none) {
+  --ch-tr-none-gap: 6px;
+}
+.ch-sv-tr__r.is-axis + .ch-sv-tr__r.is-none {
+  margin-top: var(--ch-tr-none-gap);
+}
+.ch-sv-tr__r.ch-sv-row {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-tr__r.ch-sv-row[data-active] {
+  background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);
+}
+.ch-sv-tr__r.ch-sv-row[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-tr__rank {
+  padding-left: 8px;
+  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__who {
+  overflow: hidden;
+  padding-right: 12px;
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ch-text-primary);
+}
+.ch-sv-tr__r.is-none .ch-sv-tr__who {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-tr__track {
+  position: relative;
+  align-self: stretch;
+  min-height: inherit;
+}
+.ch-sv-tr__dot {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+  transition: scale var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-tr__dot.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-sv-tr__dot.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-sv-tr__r[data-active] .ch-sv-tr__dot {
+  scale: 1.3;
+}
+/* An early read: hollow, no gain or loss color, a little quieter. */
+.ch-sv-tr__r.is-early .ch-sv-tr__dot {
+  background: var(--ch-ivory-25);
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+}
+.ch-sv-tr__r.is-early .ch-sv-whisk {
+  opacity: 0.7;
+}
+.ch-sv-tr__needs {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__v {
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--ch-text-primary);
+}
+.ch-sv-tr__r.is-early .ch-sv-tr__v,
+.ch-sv-tr__r.is-none .ch-sv-tr__v {
+  font-weight: 500;
+  color: var(--ch-text-secondary);
+}
+.ch-sv-tr__meanlab,
+.ch-sv-tr__tick {
+  position: absolute;
+  top: 50%;
+  left: var(--ch-tr-at);
+  translate: -50% -50%;
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__meanlab {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-tr__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 10px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-sv-tr__kdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+}
+.ch-sv-tr__kwhisk {
+  width: 14px;
+  height: 7px;
+  background: linear-gradient(var(--ch-text-tertiary), var(--ch-text-tertiary)) center / 100% 1px no-repeat;
+  box-shadow:
+    inset 1px 0 0 var(--ch-text-tertiary),
+    inset -1px 0 0 var(--ch-text-tertiary);
+}
+.ch-sv-tr__kmean {
+  width: 0;
+  height: 12px;
+  border-left: 1.5px dashed var(--ch-champagne-500);
+  text-decoration: none;
+}
+.ch-st[data-canopy] .ch-sv-tr:not(.is-phone) {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-sv-tr .ch-sgt__head {
+  margin-bottom: 10px;
+  padding: 0 0 12px;
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-sv-tr__plot {
+  padding: 0;
+}
+
+/* The phone: an inset panel; rows are 44px tap targets, names shortened ("Theo M."), the track takes what is left. */
+.ch-sv-tr.is-phone .ch-stm-panel__h {
+  align-items: center;
+  padding-right: 4px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__menu select {
+  /* Under 16px, iOS zooms the page when the picker takes focus. */
+  font-size: 16px;
+}
+.ch-sv-tr__inset {
+  padding: 10px 12px 12px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__plot {
+  --ch-tr-rank: 30px;
+  --ch-tr-who: 78px;
+  --ch-tr-v: 46px;
+  --ch-tr-row: 44px;
+  padding: 0;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__top {
+  /* The longest readout (an early read with its range and the team) is three lines at 390: held, so a pin never moves the rows. */
+  min-height: calc(3 * 1.45em + 4px);
+}
+.ch-sv-tr.is-phone .ch-sv-tr__rank {
+  padding-left: 6px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__who {
+  padding-right: 8px;
+  font-size: calc(14 * var(--ch-type-k));
+}
+.ch-sv-tr.is-phone .ch-sv-tr__dot {
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__v {
+  padding-right: 6px;
+}

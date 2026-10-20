@@ -4514,6 +4514,25 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/stats/TeamRank.tsx",
+      "group": "screens",
+      "exports": [
+        "TeamRank"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/stats/TeamTape.tsx",
       "group": "screens",
       "exports": [
@@ -5896,7 +5915,8 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/controls.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [
         "Select"
@@ -12595,6 +12615,7 @@
         "ch-route__v",
         "ch-seg",
         "ch-seg__b",
+        "ch-select",
         "ch-sf",
         "ch-sf-list",
         "ch-sf-range",
@@ -12765,6 +12786,28 @@
         "ch-sv-rt__ref",
         "ch-sv-rt__svg",
         "ch-sv-rt__t",
+        "ch-sv-tr",
+        "ch-sv-tr__body",
+        "ch-sv-tr__dot",
+        "ch-sv-tr__field",
+        "ch-sv-tr__grid",
+        "ch-sv-tr__inset",
+        "ch-sv-tr__kdot",
+        "ch-sv-tr__key",
+        "ch-sv-tr__kmean",
+        "ch-sv-tr__kwhisk",
+        "ch-sv-tr__mean",
+        "ch-sv-tr__meanlab",
+        "ch-sv-tr__menu",
+        "ch-sv-tr__needs",
+        "ch-sv-tr__plot",
+        "ch-sv-tr__r",
+        "ch-sv-tr__rank",
+        "ch-sv-tr__tick",
+        "ch-sv-tr__top",
+        "ch-sv-tr__track",
+        "ch-sv-tr__v",
+        "ch-sv-tr__who",
         "ch-sv-whisk",
         "ch-tab-t",
         "ch-tab-t__bar",
@@ -13258,6 +13301,78 @@
           "value": "var(--ch-bg-page)",
           "scope": "html[data-fw-theme='dark'] .ch-sv-mix .is-birdie,\nhtml[data-fw-theme='dark'] .ch-sv-mix .is-bogey,\nhtml[data-fw-theme='dark'] .ch-sv-mix .is-double",
           "line": 6789
+        },
+        {
+          "name": "--ch-tr-rank",
+          "value": "40px",
+          "scope": ".ch-sv-tr__plot",
+          "line": 6986
+        },
+        {
+          "name": "--ch-tr-who",
+          "value": "184px",
+          "scope": ".ch-sv-tr__plot",
+          "line": 6987
+        },
+        {
+          "name": "--ch-tr-v",
+          "value": "64px",
+          "scope": ".ch-sv-tr__plot",
+          "line": 6988
+        },
+        {
+          "name": "--ch-tr-row",
+          "value": "30px",
+          "scope": ".ch-sv-tr__plot",
+          "line": 6989
+        },
+        {
+          "name": "--ch-tr-cap",
+          "value": "22px",
+          "scope": ".ch-sv-tr__plot",
+          "line": 6990
+        },
+        {
+          "name": "--ch-tr-axis",
+          "value": "24px",
+          "scope": ".ch-sv-tr__plot",
+          "line": 6991
+        },
+        {
+          "name": "--ch-tr-none-gap",
+          "value": "0px",
+          "scope": ".ch-sv-tr__plot",
+          "line": 6992
+        },
+        {
+          "name": "--ch-tr-none-gap",
+          "value": "6px",
+          "scope": ".ch-sv-tr__body:has(.ch-sv-tr__r.is-none)",
+          "line": 7056
+        },
+        {
+          "name": "--ch-tr-rank",
+          "value": "30px",
+          "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
+          "line": 7214
+        },
+        {
+          "name": "--ch-tr-who",
+          "value": "78px",
+          "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
+          "line": 7215
+        },
+        {
+          "name": "--ch-tr-v",
+          "value": "46px",
+          "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
+          "line": 7216
+        },
+        {
+          "name": "--ch-tr-row",
+          "value": "44px",
+          "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
+          "line": 7217
         }
       ]
     },

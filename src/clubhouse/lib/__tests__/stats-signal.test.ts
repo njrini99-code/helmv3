@@ -180,6 +180,18 @@ describe('rankWithTies', () => {
     expect(ranked.map((r) => r.tied)).toEqual([true, true, false]);
   });
 
+  it('ties only players the head of the run cannot be told apart from, so a chain of neighbors does not stretch a tie', () => {
+    const ranked = rankWithTies([
+      { id: 'a', value: 5, se: 1 },
+      { id: 'b', value: 4, se: 1 },
+      { id: 'c', value: 3, se: 1 },
+      { id: 'd', value: 2, se: 1 },
+    ]);
+    // Each gap (1) is under the difference's standard error (1.41), but a and c (2 apart) are not.
+    expect(ranked.map((r) => r.rank)).toEqual([1, 1, 3, 3]);
+    expect(ranked.map((r) => r.tied)).toEqual([true, true, true, true]);
+  });
+
   it('never ties a player with no standard error, and ranks lower-is-better ascending', () => {
     const ranked = rankWithTies(
       [
