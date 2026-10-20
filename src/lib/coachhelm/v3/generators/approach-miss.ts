@@ -441,6 +441,8 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
 
     return {
       sampleN: inBucket.length,
+      // Slice 0b: the rounds behind this band's attempts stamp its window.
+      windowRoundIds: [...new Set(inBucket.map((s) => s.round_id))],
       last_round_date: lastRoundDate,
       // am-3 (armed-landmine guard): `playerValue` is contractually "the unit of
       // the v3 metric" — and `approach_proximity_*ft` is registered as FEET

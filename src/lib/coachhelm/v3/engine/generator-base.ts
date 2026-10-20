@@ -26,6 +26,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { upsertInsightV3, V3_SIGNATURE_PREFIX, GATED_OUT } from '@/lib/coachhelm/v3/insights/upsert-v3';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import { loadSourceRoundIds } from '@/lib/coachhelm/v3/engine/source-rounds';
+import { stampAndCheckRead } from '@/lib/coachhelm/v3/engine/read-window';
 import {
   computeCounterfactual,
   type ComputeCounterfactualInput,
@@ -671,6 +672,16 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
 
       const composed = this.composeContent(agg);
 
+      // Slice 0b: stamp the window this read used (always) and hold a read
+      // under its family floor back as Watching (flag-gated, read-floors.ts).
+      const read = await stampAndCheckRead(
+        createAdminClient(), this.playerId, this.insightType, composed.evidence, agg.windowRoundIds,
+      );
+      if (read.shortfall) {
+        const retracted = await this.retractStaleInScope(null);
+        return { id: null, gated: false, status: 'no_data', retracted, watching: read.shortfall };
+      }
+
       // Centralize the canonical confidence calc (design contract Rule 1).
       // Generators stamp `confidence: 0` + `confidence_factors`; compute the
       // real confidence here so EVERY v3 row ships a usable value. The flat
@@ -690,7 +701,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         ? { ...composed.evidence.confidence_factors, ...measured }
         : { ...composed.evidence.confidence_factors, factors_measured: false };
       let evidence = {
-        ...composed.evidence,
+        ...read.evidence,
         confidence_factors: confidenceFactors,
         confidence: calcConfidence({ confidence_factors: confidenceFactors }),
         // Coach voice rides in evidence; title/content stay the player's.
@@ -823,7 +834,8 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
 
       const supabase = createAdminClient();
       // Audit row 22: persist the rounds behind the claim (failure-silent).
-      const sourceRoundIds = await loadSourceRoundIds(
+      // The Slice 0b stamp already set them when the round index loaded.
+      const sourceRoundIds = evidence.source_round_ids ? null : await loadSourceRoundIds(
         supabase,
         this.playerId,
         evidence.window_start,
