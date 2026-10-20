@@ -1,5 +1,31 @@
 # P002 — Home: changelog
 
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (display basis only; no query or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- Team form (desktop and phone): the scoring, greens and putts changes are
+  green or amber only past one standard error of the difference, and read
+  "Better than previous 10" or "Worse than previous 10"; otherwise the signed
+  number stays in neutral ink with "No clear change". The loader adds the
+  standard errors from the rounds it already reads.
+- The leaderboard's form word follows the same rule (`formStatus`), so a
+  player whose form line is neutral reads Steady, not Improving.
+- Player home, your scoring: the caption reads "−1.4 · Better than previous
+  N" (or "No clear change vs previous N") in place of a bare change, N being
+  the rounds it is set against.
+- Putts use the cached basis: a round's putts count only when recorded (more
+  than zero), on the team form, the latest round and the player's own home.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text

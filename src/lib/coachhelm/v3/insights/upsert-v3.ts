@@ -24,6 +24,7 @@ import {
 import type { InsightInput } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { recordRunInsightId } from '@/lib/coachhelm/v3/support/run-collector';
 
 const V3_SIGNATURE_PREFIX = 'v3:';
 
@@ -48,6 +49,9 @@ export async function upsertInsightV3(
 
   const result = await v2UpsertInsight(supabase, input);
   if (result === GATED_OUT) return result;
+  // Slice 1: the support pass runs BH over exactly the rows this run wrote.
+  // No-op unless the orchestrator opened a collector (flag on).
+  recordRunInsightId(result);
 
   // Stamp engine_version. Best-effort — a stamp failure should NOT
   // throw away the insight write. Guarded to a no-op once already

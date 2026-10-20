@@ -54,7 +54,7 @@ counts half (production averages per round of either length).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 40101 | — | `TEAM_STATS_READY` | Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data. |
+| 40101 | — | `TEAM_STATS_READY` | Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the ranked dot plot of who gains and loses, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data. |
 | 40102 | — | `WINDOW_FROM_THE_ADDRESS` | ?window=season or ?window=qualifiers opens that window and anything else opens Last 10; changing the switch writes the window back to /golf/dashboard/stats (Last 10 is the bare address) without moving the scroll. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
@@ -302,11 +302,16 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-The window switch is a radio group that moves and chooses with the arrow keys, the leg cards and the trend's player list are buttons, and a grid row is a link that marks its player on the trend when it takes focus (42001). Export and Try again are buttons, in reading order. The shell's edge swipe and browser back are 12001.
+The window switch is a radio group that moves and chooses with the arrow keys,
+the leg cards and the trend's player list are buttons, the ranked dot plot is
+one focusable group (the arrow keys, Home and End read a player, Enter opens the
+pinned one, Esc lets go), and a grid row is a link that marks its player on the
+trend when it takes focus (42001). Export and Try again are buttons, in reading
+order. The shell's edge swipe and browser back are 12001.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 42001 | — | `KEYBOARD_PATH` | The window switch moves and chooses with the arrow keys, a leg card takes Enter, and a grid row is a link that marks its player on the trend when it takes focus. |
+| 42001 | — | `KEYBOARD_PATH` | The window switch moves and chooses with the arrow keys, a leg card takes Enter, the ranked dot plot reads a player with the arrow keys and opens them with Enter, and a grid row is a link that marks its player on the trend when it takes focus. |
 
 From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 

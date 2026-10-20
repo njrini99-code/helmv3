@@ -12,6 +12,7 @@ import type {
   InsightEvidence,
   InsightMovement,
 } from '@/lib/coachhelm/v2/insights/types';
+import type { FoldedRead } from './insight-delivery-reads';
 
 export interface RankableEvidenceInsight {
   id: string;
@@ -32,6 +33,14 @@ export interface RankableEvidenceInsight {
   outcome_measured_at?: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * The database `updated_at` as stored (null when the row has none). The
+   * mappers fill `updated_at` with "now" when the column is null, so recency
+   * comparisons read this field first (`dedupeBySubject`).
+   */
+  source_updated_at?: string | null;
+  /** Reads folded into this one at delivery (`foldOverlappingReads`, flag `coachhelm_reads_v1_copy`). */
+  also?: FoldedRead[];
 }
 
 /**
@@ -102,6 +111,7 @@ export function mapRowToRankable(row: RawInsightRowForRanking): RankableEvidence
     resolved_at: row.resolved_at ?? null,
     created_at: row.created_at ?? new Date().toISOString(),
     updated_at: row.updated_at ?? new Date().toISOString(),
+    source_updated_at: typeof row.updated_at === 'string' ? row.updated_at : null,
   };
 }
 
@@ -178,18 +188,92 @@ export async function rankEvidenceInsights<T extends RankableEvidenceInsight>(
   return scored.map((row) => row.insight);
 }
 
+/** The issue key one card per issue collapses on: `(player_id:category:metric-subject)`. */
+export function issueSubjectKey(insight: RankableEvidenceInsight): string {
+  const subject = canonicalMetricSubject(insight.evidence?.metric) || insight.title;
+  return `${insight.player_id}:${insight.category}:${subject}`;
+}
+
+/** The stored `updated_at`; a mapper's "now" stand-in for a missing one never counts as fresh. */
+function storedUpdatedAt(insight: RankableEvidenceInsight): string | null {
+  if (insight.source_updated_at !== undefined) return insight.source_updated_at;
+  return insight.updated_at ?? null;
+}
+
+/** A timestamp as epoch ms; missing or unparseable is older than any real one. */
+function instant(value: unknown): number {
+  if (typeof value !== 'string' || value === '') return Number.NEGATIVE_INFINITY;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? Number.NEGATIVE_INFINITY : ms;
+}
+
 /**
- * Cross-surface dedupe by `(player_id:category:metric-subject)`.
+ * Whether `a` is newer evidence than `b`: the later stored `updated_at`, then
+ * the later newest round in the window (`evidence.window_end`), then the later
+ * `created_at`. Compared as instants (`Date.parse`), so `+00:00` and `Z`, or a
+ * date and a timestamp, order by time and not by spelling. Equal on all three
+ * is not newer, so rank order decides.
+ */
+function isNewerEvidence(a: RankableEvidenceInsight, b: RankableEvidenceInsight): boolean {
+  const keys = (i: RankableEvidenceInsight): number[] => [
+    instant(storedUpdatedAt(i)),
+    instant(i.evidence?.window_end),
+    instant(i.created_at),
+  ];
+  const ka = keys(a);
+  const kb = keys(b);
+  for (let k = 0; k < ka.length; k += 1) {
+    const x = ka[k]!;
+    const y = kb[k]!;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+
+/** The generator that wrote the row: two rows of one generator on one subject are one read written twice. */
+function readFamily(insight: RankableEvidenceInsight): string {
+  return insight.insight_type ?? '';
+}
+
+/**
+ * Cross-surface collapse: one card per issue, keyed on
+ * `(player_id:category:metric-subject)` (`issueSubjectKey`). Shared by every
+ * Fairway feed, the Clubhouse loaders and the coach chat tool.
+ *
+ * The key deliberately ignores `coach_id`, `team_id` and the signature
+ * suffix. In production the duplicates are the same issue written twice:
+ * - once coach-scoped and once as a coach_id-NULL orphan, or
+ * - under two signatures for one metric (tee_strategy sharp vs
+ *   inconclusive, for example).
+ *
+ * Newest wins (PR #2073; CoachHelm Slice 0): among the rows that the group's
+ * highest-ranked row's own generator wrote, the one with the NEWEST evidence
+ * survives (`isNewerEvidence`: stored `updated_at`, then the newest round in
+ * the window, then `created_at`; a full tie keeps rank order), so a stale
+ * copy never stands in for the current reading. A row another generator
+ * wrote on the same subject (a composite on its base metric) is a different
+ * read, not a twin: as before, the highest-ranked row's generator holds the
+ * slot, so this only ever changes which of two copies of one read is shown.
+ *
+ * The survivor stays at ITS OWN position in the ranked input, so it is
+ * ranked by its own score and never inherits a stale sibling's higher one.
+ *
+ * Why not A6 `groupIssues`? It keys on shot-id overlap, and its contract
+ * forbids inferring overlap from metric or label. Insight rows carry no
+ * shot ids, so this row-level key is the honest grouping for the read path.
  */
 export function dedupeBySubject<T extends RankableEvidenceInsight>(insights: T[]): T[] {
-  const seenSignatures = new Set<string>();
-  return insights.filter((insight) => {
-    const subject = canonicalMetricSubject(insight.evidence?.metric) || insight.title;
-    const sig = `${insight.player_id}:${insight.category}:${subject}`;
-    if (seenSignatures.has(sig)) return false;
-    seenSignatures.add(sig);
-    return true;
-  });
+  const winner = new Map<string, T>();
+  for (const insight of insights) {
+    const key = issueSubjectKey(insight);
+    const current = winner.get(key);
+    if (!current) {
+      winner.set(key, insight);
+    } else if (readFamily(insight) === readFamily(current) && isNewerEvidence(insight, current)) {
+      winner.set(key, insight);
+    }
+  }
+  return insights.filter((insight) => winner.get(issueSubjectKey(insight)) === insight);
 }
 
 /**

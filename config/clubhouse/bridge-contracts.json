@@ -2788,7 +2788,7 @@
     "category": 1,
     "item": 1,
     "name": "TEAM_STATS_READY",
-    "meaning": "Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data.",
+    "meaning": "Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the ranked dot plot of who gains and loses, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data.",
     "status": "implemented",
     "where": "src/clubhouse/screens/stats/StatsTeam.tsx#StatsTeam; src/clubhouse/routes/stats.tsx#ClubhouseStatsRoute",
     "tests": [
@@ -3466,11 +3466,12 @@
     "category": 20,
     "item": 1,
     "name": "KEYBOARD_PATH",
-    "meaning": "The window switch moves and chooses with the arrow keys, a leg card takes Enter, and a grid row is a link that marks its player on the trend when it takes focus.",
+    "meaning": "The window switch moves and chooses with the arrow keys, a leg card takes Enter, the ranked dot plot reads a player with the arrow keys and opens them with Enter, and a grid row is a link that marks its player on the trend when it takes focus.",
     "status": "implemented",
-    "where": "src/clubhouse/ui/Segmented.tsx#Segmented; src/clubhouse/screens/stats/StatsTeamIslands.tsx#LegTrend, LegGrid",
+    "where": "src/clubhouse/ui/Segmented.tsx#Segmented; src/clubhouse/screens/stats/StatsTeamIslands.tsx#LegTrend, LegGrid; src/clubhouse/screens/stats/TeamRank.tsx#TeamRank",
     "tests": [
-      "src/clubhouse/__tests__/stats-team.test.tsx"
+      "src/clubhouse/__tests__/stats-team.test.tsx",
+      "src/clubhouse/screens/stats/__tests__/TeamRank.test.tsx"
     ]
   },
   {
@@ -14079,7 +14080,7 @@
     "category": 1,
     "item": 1,
     "name": "COACHHELM_OPENS_FOR_THE_ROLE",
-    "meaning": "One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (up to five), Working (up to five) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of players with an open signal), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint.",
+    "meaning": "One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (at most two findings, three with the focus), Working (at most one strength), a count of the reads left to the Deep dive (\"6 more reads in the Deep dive\", a tap that opens it; not drawn when the board shows every read) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of players with an open signal), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint.",
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
     "tests": [
@@ -14092,11 +14093,12 @@
     "category": 1,
     "item": 2,
     "name": "THE_FOCUS_IS_THE_TOP_INSIGHT_THAT_IS_NOT_WORKING",
-    "meaning": "The player's focus card is the insight the person picked or, without a pick, the top-ranked finding that is current (a read older than the newest round, and a card that states no finding, do not lead), in the delivery feed's own order. The picked insight leaves both lists and the one it replaced joins them; Also worth knowing keeps at most five findings and Working at most five strengths; with only strengths there is no focus and CH-13303 says nothing needs work. On the coach's board the focus is the chosen player's top insight.",
+    "meaning": "The player's focus card is the insight the person picked or, without a pick, the top-ranked finding that is current (a read older than the newest round, and a card that states no finding, do not lead), in the delivery feed's own order. The picked insight leaves both lists and the one it replaced joins them; the board holds at most three findings (the focus counted when it is one, so Also worth knowing has at most two) and one strength (a picked strength is that one), in the feed's own order, never re-ranked (NEEDS_MAX, WORKING_MAX). A measured zero (a strokes-gained baseline whose strokes_impact prints as 0.0, coachhelm-strokes.ts) is not one of the board's open reads; any other zero is no estimate and the read stays. Every read the board does not show (past the caps, or a measured zero) is counted in the line that opens the Deep dive, which lists them all, so the count and the lists add up to the Deep dive's reads (a note is in neither). No strokes-a-round figure is drawn from strokes_impact unless it is a real estimate (sg_baseline or peer_delta, non-zero at one decimal: strokesAtStake), and the miner's own \"Projected impact: ~0.00 strokes per round.\" sentence is not drawn when its figure is zero or the row has no estimate (withoutZeroImpact; the stored text is untouched). With only strengths there is no focus and CH-13303 says nothing needs work, and names What's working only when it is drawn. On the coach's board the focus is the chosen player's top insight.",
     "status": "implemented",
-    "where": "src/clubhouse/data/coachhelm-shape.ts#partitionInsights; src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard",
+    "where": "src/clubhouse/data/coachhelm-shape.ts#partitionInsights; src/clubhouse/data/coachhelm-strokes.ts#isMeasuredZero; src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm.test.tsx",
+      "src/clubhouse/data/__tests__/coachhelm-board-caps.test.ts"
     ]
   },
   {

@@ -1,11 +1,17 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
-import { sgBaseline } from '../../lib/sg';
+import { sgBaseline, sgScale } from '../../lib/sg';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { holeCoverage } from '../../data/round-scope';
+import { rebuiltHref } from '../../shell/nav';
 import { Zone, ZoneBig as Big, ZoneBlock as Vis, ZoneNote as Missing, Zones } from '../../ui/Zone';
 import { EmptyState } from '../../ui/States';
 import { LegBars } from './LegBars';
+import { RoundTrend } from './RoundTrend';
+import { trendRounds, withValue } from './round-trend';
+import { PuttBands } from './PuttBands';
+import { ScoreMixBar } from './ScoreMixBar';
 import { sgLegBars } from './leg-rows';
 
 /**
@@ -22,13 +28,16 @@ const fixed = (v: number | null | undefined, d = 1) => (v == null || Number.isNa
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const pos = (v: number, lo: number, hi: number) => clamp(((v - lo) / (hi - lo)) * 100);
 
-/** A single bar against the team and Tour marks: fill from the start, the team's tick (ink) and the Tour's (gold). */
-function Track({ value, lo = 0, hi = 100, team, tour, bad = false, from }: { value: number; lo?: number; hi?: number; team?: number | null; tour?: number | null; bad?: boolean; from?: number }) {
+/**
+ * A single bar against the team and Tour marks: fill from the start, the team's tick (ink) and the Tour's (gold). The fill is
+ * green, amber when `bad`, and neutral ink when `neutral`: a figure with nothing to judge it by is neither (stats visuals Q4).
+ */
+function Track({ value, lo = 0, hi = 100, team, tour, bad = false, neutral = false, from }: { value: number; lo?: number; hi?: number; team?: number | null; tour?: number | null; bad?: boolean; neutral?: boolean; from?: number }) {
   const a = pos(from ?? lo, lo, hi);
   const b = pos(value, lo, hi);
   return (
     <div className="ch-ztrack" aria-hidden="true">
-      <i className={'ch-ztrack__fill' + (bad ? ' is-bad' : '')} style={{ '--ch-z-a': Math.min(a, b) / 100, '--ch-z-w': Math.abs(b - a) / 100 } as CSSProperties} />
+      <i className={'ch-ztrack__fill' + (neutral ? ' is-neutral' : bad ? ' is-bad' : '')} style={{ '--ch-z-a': Math.min(a, b) / 100, '--ch-z-w': Math.abs(b - a) / 100 } as CSSProperties} />
       {team != null && <u className="ch-ztrack__tick is-team" style={{ '--ch-z-x': pos(team, lo, hi) } as CSSProperties} />}
       {tour != null && <u className="ch-ztrack__tick is-tour" style={{ '--ch-z-x': pos(tour, lo, hi) } as CSSProperties} />}
     </div>
@@ -47,21 +56,26 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
   // 1 · strokes gained
   const legs = sgLegBars(data, coach);
   const sg = w.sgPerRound;
+  const openHref = (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}`, coach ? 'coach' : 'player');
+  const scoreTrend = trendRounds(data.rounds, 'score');
+  const sgTrend = trendRounds(data.rounds, 'sg');
   const sgTeam = coach ? (cmp('SG total')?.team ?? null) : null;
-  const sgHi = 1;
-  const sgLo = Math.min(-3, Math.floor(Math.min(sg ?? 0, sgTeam ?? 0)) - 1);
+  // The track's ends come from the data (the player's and the team's figure, whole strokes either side of zero, never under one), so
+  // no value clamps against a fixed end.
+  const sgEnd = sgScale([sg, sgTeam]);
+  const sgHi = sgEnd;
+  const sgLo = -sgEnd;
+  const sgTone = deltaTone(data.sgChange.delta, data.sgChange.se, false);
+  // A rate's big reading is green or amber only against a reference (the team for a coach, the Tour for a player); none, no colour.
+  const against = (you: number | null | undefined, label: string): 'good' | 'bad' | undefined => {
+    const r = ref(label);
+    return you == null || r == null ? undefined : you >= r ? 'good' : 'bad';
+  };
 
   // 2 · scoring
   const holesScored = s ? s.totalEagles + s.totalBirdies + s.totalPars + s.totalBogeys + s.totalDoublePlus : 0;
-  const mix = s
-    ? ([
-        ['Eagle', s.totalEagles, s.eaglesPerRound, 'eagle'],
-        ['Birdie', s.totalBirdies, s.birdiesPerRound, 'birdie'],
-        ['Par', s.totalPars, s.parsPerRound, 'par'],
-        ['Bogey', s.totalBogeys, s.bogeysPerRound, 'bogey'],
-        ['Double or worse', s.totalDoublePlus, s.doublePlusPerRound, 'double'],
-      ] as const)
-    : [];
+  const mixCounts = s ? { eagle: s.totalEagles, birdie: s.totalBirdies, par: s.totalPars, bogey: s.totalBogeys, double: s.totalDoublePlus } : null;
+  const mixPer = s ? { eagle: s.eaglesPerRound, birdie: s.birdiesPerRound, par: s.parsPerRound, bogey: s.bogeysPerRound, double: s.doublePlusPerRound } : null;
   const parRows = s
     ? ([3, 4, 5] as const).map((p) => {
         const d = s.scoringByPar[`par${p}` as const];
@@ -106,7 +120,8 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
   const scrYou = cmp('Scrambling')?.you ?? null;
 
   // 6 · putting
-  const bands = (data.extra.puttBandsNine ?? data.puttBands ?? []).map((b) => ({ label: b.label.replace(' ft', ''), pct: b.attempts ? (b.made / b.attempts) * 100 : null, bench: b.bench, n: b.attempts }));
+  // The six bands the Tour grades (0–3 to 25+ ft), from the window's own putts.
+  const bands = (data.puttBands ?? []).map((b) => ({ label: b.label, made: b.made, attempts: b.attempts, bench: b.bench }));
   const puttsYou = cmp('Putts per round')?.you ?? null;
   const threePutts = cmp('3-putts per round')?.you ?? null;
 
@@ -136,7 +151,11 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                   <b>Team {formatSigned(sgTeam)}</b> · {Math.abs(sg - sgTeam).toFixed(1)} {sg >= sgTeam ? 'ahead of' : 'behind'} them
                 </span>
               )}
-              {data.sgChange.delta != null && <span>{data.sgChange.delta >= 0 ? 'Up' : 'Down'} {Math.abs(data.sgChange.delta).toFixed(1)} on the previous 10</span>}
+              {data.sgChange.delta != null && (
+                <span>
+                  <b className={sgTone === 'is-gain' ? 'ch-gain' : sgTone === 'is-loss' ? 'ch-loss' : undefined}>{formatSigned(data.sgChange.delta)}</b> · {deltaWords(data.sgChange.delta, sgTone, data.sgChange.context || 'vs previous 10')}
+                </span>
+              )}
             </div>
           </>
         }
@@ -169,6 +188,11 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
             </div>
           </Vis>
         )}
+        {withValue(sgTrend).length >= 3 && (
+          <Vis title="Round by round" note="Strokes gained in each round, per 18 holes. Zero is the Tour baseline; the line is the five-round average.">
+            <RoundTrend rounds={sgTrend} kind="sg" size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
+          </Vis>
+        )}
       </Zone>
 
       <Zone
@@ -198,27 +222,15 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
           </>
         }
       >
+        {scoreTrend.length > 1 && (
+          <Vis title="Round by round" note="Each round’s score per 18 holes; the line is the five-round average.">
+            <RoundTrend rounds={scoreTrend} kind="score" size="desktop" openHref={openHref} label={`Scores over the last ${scoreTrend.length} rounds.`} />
+          </Vis>
+        )}
         {s && holesScored > 0 ? (
           <>
             <Vis title="Every hole, by result" note={`${holesScored} holes over ${s.roundsPlayed} ${s.roundsPlayed === 1 ? 'round' : 'rounds'}.`}>
-              <div className="ch-zmix" role="img" aria-label={mix.map(([l, c]) => `${l} ${c}`).join(', ')}>
-                {mix.map(([l, c, , k]) => (
-                  <i key={l} className={`is-${k}`} style={{ '--ch-z-n': c } as CSSProperties} title={`${l} ${c}`}>
-                    {c / holesScored > 0.08 ? c : null}
-                  </i>
-                ))}
-              </div>
-              <div className="ch-zmixkey">
-                {mix.map(([l, , per, k]) => (
-                  <div key={l}>
-                    <span>
-                      <i className={`is-${k}`} />
-                      {l}
-                    </span>
-                    <b className="ch-num">{fixed(per)}</b>a round
-                  </div>
-                ))}
-              </div>
+              <ScoreMixBar counts={mixCounts!} perRound={mixPer} triple={data.extra.triplePlus} label="Every hole, by result" />
             </Vis>
             <Vis title="Each par against par" note="Average strokes over or under par a hole. The gold tick is the Tour.">
               <ParDots rows={parRows} />
@@ -239,7 +251,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         }
         read={
           <>
-            <Big value={fixed(cmp('Fairways hit')?.you, 0)} unit="%" tone="good" />
+            <Big value={fixed(cmp('Fairways hit')?.you, 0)} unit="%" tone={against(cmp('Fairways hit')?.you, 'Fairways hit')} />
             <div className="ch-znlines">
               <span>
                 fairways hit{ref('Fairways hit') != null && <> · <b>{refName} {Math.round(ref('Fairways hit')!)}%</b></>}
@@ -290,7 +302,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                     Penalty strokes<span>A round{penBench != null ? `. The Tour has ${penBench}.` : '.'}</span>
                   </div>
                   <b className="ch-num">{s.penaltiesPerRound.toFixed(1)}</b>
-                  <Track value={s.penaltiesPerRound} lo={0} hi={Math.max(1.2, (penBench ?? 0) * 2, s.penaltiesPerRound * 1.4)} bad tour={penBench} />
+                  <Track value={s.penaltiesPerRound} lo={0} hi={Math.max(1.2, (penBench ?? 0) * 2, s.penaltiesPerRound * 1.4)} bad={penBench != null && s.penaltiesPerRound > penBench} neutral={penBench == null} tour={penBench} />
                 </div>
               )}
               {s?.fairwayPctPar4 != null && s.fairwayPctPar5 != null && (
@@ -303,7 +315,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                     <small>% par 4</small> · {Math.round(s.fairwayPctPar5)}
                     <small>% par 5</small>
                   </b>
-                  <Track value={s.fairwayPctPar4} />
+                  <Track value={s.fairwayPctPar4} neutral />
                 </div>
               )}
             </div>
@@ -324,7 +336,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         }
         read={
           <>
-            <Big value={fixed(girYou, 0)} unit="%" tone={girYou != null && ref('Greens in regulation') != null && girYou < ref('Greens in regulation')! ? 'bad' : 'good'} />
+            <Big value={fixed(girYou, 0)} unit="%" tone={against(girYou, 'Greens in regulation')} />
             <div className="ch-znlines">
               <span>
                 greens in regulation
@@ -371,7 +383,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                       {rangeOf(b.label)}
                       <small>{b.shots} shots</small>
                     </span>
-                    <Track value={b.value} lo={0} hi={proxHi} bad={b.bench != null && b.value > b.bench} tour={b.bench} />
+                    <Track value={b.value} lo={0} hi={proxHi} bad={b.bench != null && b.value > b.bench} neutral={b.bench == null} tour={b.bench} />
                     <b className="ch-num">{Math.round(b.value)} ft</b>
                   </div>
                 );
@@ -391,7 +403,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         }
         read={
           <>
-            <Big value={fixed(scrYou, 0)} unit="%" tone="good" />
+            <Big value={fixed(scrYou, 0)} unit="%" tone={against(scrYou, 'Scrambling')} />
             <div className="ch-znlines">
               <span>
                 scrambling{ref('Scrambling') != null && <> · <b>{refName} {Math.round(ref('Scrambling')!)}%</b></>}
@@ -493,9 +505,9 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
           </>
         }
       >
-        {bands.filter((b) => b.pct != null).length >= 2 ? (
-          <Vis title="Make rate by distance" note="Share of putts holed from each distance. The gold line is the Tour; the shaded gap is strokes left on the green.">
-            <MakeCurve bands={bands} />
+        {bands.filter((b) => b.attempts > 0).length >= 2 ? (
+          <Vis title="Make rate by distance" note="Share of putts holed from each distance, against the Tour’s line. A dot shows from 10 putts in a band and grades from 30.">
+            <PuttBands bands={bands} />
             {data.extra.puttsError && <p className="ch-zmeta">The putt read failed, so the curve stops at 20 feet.</p>}
           </Vis>
         ) : (
@@ -582,53 +594,6 @@ function GreenDiagram({ short, long, left, right, gir }: { short: number; long: 
         <text x={150} y={24} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Long {long}%</text>
         <text x={62} y={119} textAnchor="end" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Left {left}%</text>
         <text x={238} y={119} fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Right {right}%</text>
-      </g>
-    </svg>
-  );
-}
-
-/** Make rate by distance as a line against the Tour's, the gap between them shaded; counts of putts under each distance. */
-function MakeCurve({ bands }: { bands: Array<{ label: string; pct: number | null; bench: number | null; n: number }> }) {
-  const W = 680;
-  const x = (i: number) => 80 + (i * (W - 110 - 50)) / Math.max(1, bands.length - 1);
-  const y = (p: number) => 220 - p * 2;
-  const you = bands.flatMap((b, i) => (b.pct == null ? [] : [{ i, p: b.pct }]));
-  const tour = bands.flatMap((b, i) => (b.bench == null ? [] : [{ i, p: b.bench }]));
-  const line = (pts: Array<{ i: number; p: number }>) => pts.map((q) => `${x(q.i)},${y(q.p)}`).join(' ');
-  const gap = tour.length > 1 ? [...tour.map((q) => `${x(q.i)},${y(q.p)}`), ...[...tour].reverse().map((q) => `${x(q.i)},${y(you.find((a) => a.i === q.i)?.p ?? q.p)}`)].join(' ') : null;
-  return (
-    <svg className="ch-zsvg" viewBox={`0 0 ${W} 300`} role="img" aria-label={bands.map((b) => `${b.label} ${b.pct == null ? 'no putts' : `${Math.round(b.pct)} percent`}`).join(', ')}>
-      <g stroke="var(--ch-ledger-rule)">{[20, 70, 120, 170, 220].map((v) => <line key={v} x1={50} y1={v} x2={W - 20} y2={v} />)}</g>
-      <g fontSize={12} fill="var(--ch-text-tertiary)" textAnchor="end">
-        {[100, 75, 50, 25, 0].map((p) => (
-          <text key={p} x={42} y={y(p) + 4}>{p === 0 ? '0' : `${p}%`}</text>
-        ))}
-      </g>
-      {gap && <polygon points={gap} fill="var(--ch-champagne-500)" fillOpacity={0.28} />}
-      {tour.length > 1 && <polyline points={line(tour)} fill="none" stroke="var(--ch-champagne-500)" strokeWidth={3} strokeDasharray="6 5" />}
-      {you.length > 1 && <polyline points={line(you)} fill="none" stroke="var(--ch-green-600)" strokeWidth={4} strokeLinejoin="round" />}
-      {you.map((q) => (
-        <g key={q.i}>
-          <circle cx={x(q.i)} cy={y(q.p)} r={7} fill="var(--ch-green-600)" stroke="var(--ch-ivory-25)" strokeWidth={3} />
-          <text x={x(q.i)} y={y(q.p) - 12} textAnchor="middle" fontSize={15} fontWeight={700} fill="var(--ch-green-900)">{Math.round(q.p)}%</text>
-        </g>
-      ))}
-      <g fontSize={12.5} fontWeight={600} fill="var(--ch-warning-600)" textAnchor="middle">
-        <text x={42} y={284} textAnchor="end" fontSize={12}>Tour</text>
-        {tour.map((q) => (
-          <text key={q.i} x={x(q.i)} y={284}>{Math.round(q.p)}%</text>
-        ))}
-      </g>
-      <g fontSize={13} fontWeight={600} fill="var(--ch-text-primary)" textAnchor="middle">
-        {bands.map((b, i) => (
-          <text key={b.label} x={x(i)} y={246}>{b.label} ft</text>
-        ))}
-      </g>
-      <g fontSize={12} fill="var(--ch-text-tertiary)" textAnchor="middle">
-        <text x={42} y={264} textAnchor="end">Putts</text>
-        {bands.map((b, i) => (
-          <text key={b.label} x={x(i)} y={264}>{b.n}</text>
-        ))}
       </g>
     </svg>
   );

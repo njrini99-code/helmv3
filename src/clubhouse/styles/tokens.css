@@ -96,6 +96,8 @@
   --ch-score-double: #1c1b18;
   /* A filled under-par mark under a light numeral; the same red in light. */
   --ch-score-under-fill: #b03a2e;
+  /* Eagle or better as a fill (the scoring mix): a deeper red than the birdie's, so the two under-par results read apart. */
+  --ch-score-eagle-fill: #7f2a21;
   /* A bare under-par numeral on the feature green (the shot screen's hole strip): lifted so it holds 4.5:1 on
      green-900 and on a played chip's faint ivory wash; and the same numeral on the ivory current-hole chip. Both are
      surfaces that do not change at night, so neither is redefined in the dark block. */
@@ -581,6 +583,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-frame: #08150e;
   /* A filled under-par mark (birdie, eagle) under an ivory numeral: 4.6:1. Text and strokes stay --ch-score-under. */
   --ch-score-under-fill: #c2473a;
+  /* At night birdie is the light salmon, so eagle steps darker than it: the mix keeps its order by lightness as well as hue. */
+  --ch-score-eagle-fill: #b0473a;
   --ch-workspace: #131814;
   --ch-champagne-100: #2b2619;
   --ch-champagne-300: #cdbb8e;
