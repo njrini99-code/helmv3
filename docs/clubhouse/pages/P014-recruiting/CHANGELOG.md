@@ -1,5 +1,45 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-20 — Film is hidden until its migration is applied
+
+```text
+Design package: none (owner default, release blocker 18)
+PR/commit:      see git log (claude/clubhouse-readiness, replayed from draft PR #2207)
+Contract IDs:   CH-14106, CH-14305 (copy while film is off)
+Actions:        none changed (the server actions are unchanged)
+Data impact:    none
+Held items:     20260930140000_recruit_documents_film.sql (still held)
+```
+
+### Changed
+
+- Recruit film uploads need
+  `supabase/migrations/20260930140000_recruit_documents_film.sql`, which is
+  held, so until then Storage refused every film after the coach had picked it,
+  titled it and waited for the transfer. Film is now hidden behind one constant,
+  `RECRUIT_FILM_ENABLED` in `src/clubhouse/data/recruiting-film.ts` (false).
+- The upload dialog offers Note, Schedule, Transcript and Other; no Film.
+- The file picker takes no video types, so an iPhone no longer offers the Photo
+  Library for it, and a video that is dropped or chosen anyway is refused in the
+  dialog before anything is sent (CH-14106, whose body no longer names film).
+- The desktop drop hint is "Drop a file here to add it." and the empty row reads
+  "Schedules, transcripts and notes, private to your staff." (CH-14305).
+- A document already filed as Film keeps its Film tag in the list. The preview's
+  sample film row shows only with film on (no video can be stored until then);
+  `?state=uploaddoc` opens the dialog on a PDF.
+
+### Why
+
+- A coach should not be offered an upload that Storage will refuse. Turning
+  film back on after the apply is that one constant; the film-on page is
+  unchanged and still tested.
+
+### Verification
+
+- `recruiting-upload.test.tsx` and `recruiting.test.tsx` run with film mocked
+  on; `recruiting-film-off.test.tsx` covers the default and fails 6 of 8 against
+  the page before this change. The held data plan names the constant.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text
@@ -365,7 +405,6 @@ Held items:     none
   the server answers. No realtime. Email and Call are `mailto:` / `tel:`; the
   no-team page's Open team settings opens Settings' Team section, which is
   rebuilt for a coach.
-
 ## 2026-10-15 — Ink that holds at night
 
 Dark mode: the offered chip and stage dot and the prospect avatar's initials now
