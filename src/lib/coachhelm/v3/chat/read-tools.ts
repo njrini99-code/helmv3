@@ -932,8 +932,13 @@ export async function getPlayerInsights(
   // the coach asked about this player, so the chat lists every read, the way
   // the feed's `includeMore` does.
   const readsV1 = isFlagEnabled(READS_V1_FLAG);
-  const pinned = readsV1 ? await loadPinnedReadIds(sb, [player.id]).catch(() => new Set<string>()) : undefined;
-  const deduped = deliverReads(dedupeBySubject(collapseParScoring(ranked)), { fold: readsV1, cap: false, pinned });
+  // null: the focus-area read failed (logged by the loader); fold without pins.
+  const pinned = readsV1 ? await loadPinnedReadIds(sb, [player.id]) : null;
+  const deduped = deliverReads(dedupeBySubject(collapseParScoring(ranked)), {
+    fold: readsV1,
+    cap: false,
+    pinned: pinned ?? undefined,
+  });
   const rows = deduped.slice(0, Math.min(Math.max(input.limit, 1), 10));
 
   return {

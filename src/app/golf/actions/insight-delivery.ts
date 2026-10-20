@@ -387,8 +387,11 @@ async function readsDeliveryPlan(
   includeMore = false,
 ): Promise<DeliveryPlan> {
   if (!isFlagEnabled(READS_V1_FLAG)) return { fold: false, cap: false, factors: false };
-  const pinned = await loadPinnedReadIds(supabase, playerIds).catch(() => new Set<string>());
-  return { fold: true, cap: !includeMore, pinned, factors: true };
+  // null: the focus-area read failed (logged by the loader). Fold without
+  // pins rather than not at all; a read behind a focus could then fold, as it
+  // did before the pin rule, and nothing else changes.
+  const pinned = await loadPinnedReadIds(supabase, playerIds);
+  return { fold: true, cap: !includeMore, pinned: pinned ?? undefined, factors: true };
 }
 
 /** Rank score per insight id and, with the flag on, the factors behind it. */

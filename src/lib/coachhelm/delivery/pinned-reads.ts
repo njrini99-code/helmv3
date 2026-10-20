@@ -15,32 +15,38 @@ import { chunkIds } from '@/lib/supabase/chunk-ids';
 export const LIVE_FOCUS_STATUSES = ['proposed', 'active', 'in_progress', 'paused'] as const;
 
 /**
- * The `from_insight_id` of every live focus area of these players. Best
- * effort: a failed read logs one warning and pins nothing, which only means a
- * pinned read could fold as it would have before this rule existed.
+ * The `from_insight_id` of every live focus area of these players, or `null`
+ * when the read failed (logged once as a best-effort miss). Never throws. A
+ * caller that gets `null` folds without pins, which only means a read behind
+ * a focus area could fold as it did before this rule existed.
  */
 export async function loadPinnedReadIds(
   supabase: SupabaseClient<Database> | SupabaseClient,
   playerIds: readonly string[],
-): Promise<Set<string>> {
+): Promise<Set<string> | null> {
   const out = new Set<string>();
   const ids = Array.from(new Set(playerIds.filter(Boolean)));
   const client = supabase as SupabaseClient<Database>;
-  for (const chunk of chunkIds(ids)) {
-    const { data, error } = await client
-      .from('golf_player_focus_areas')
-      .select('from_insight_id')
-      .in('player_id', chunk)
-      .in('status', [...LIVE_FOCUS_STATUSES])
-      .not('from_insight_id', 'is', null);
-    if (error) {
-      await logBestEffortMiss('loadPinnedReadIds failed (folding without pins)', error.message, {
-        action: 'coachhelm.delivery.loadPinnedReadIds',
-        featureArea: 'insights',
-      }).catch(() => undefined);
-      return new Set();
+  const miss = async (message: string): Promise<null> => {
+    await logBestEffortMiss('loadPinnedReadIds failed (folding without pins)', message, {
+      action: 'coachhelm.delivery.loadPinnedReadIds',
+      featureArea: 'insights',
+    }).catch(() => undefined);
+    return null;
+  };
+  try {
+    for (const chunk of chunkIds(ids)) {
+      const { data, error } = await client
+        .from('golf_player_focus_areas')
+        .select('from_insight_id')
+        .in('player_id', chunk)
+        .in('status', [...LIVE_FOCUS_STATUSES])
+        .not('from_insight_id', 'is', null);
+      if (error) return await miss(error.message);
+      for (const row of data ?? []) if (row.from_insight_id) out.add(row.from_insight_id);
     }
-    for (const row of data ?? []) if (row.from_insight_id) out.add(row.from_insight_id);
+  } catch (err) {
+    return await miss(err instanceof Error ? err.message : String(err));
   }
   return out;
 }

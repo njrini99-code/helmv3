@@ -45,7 +45,7 @@ describe('loadPinnedReadIds', () => {
       { data: [{ from_insight_id: 'i-1' }, { from_insight_id: null }, { from_insight_id: 'i-2' }], error: null },
     ]);
     const out = await loadPinnedReadIds(client, ['p-1', 'p-2', 'p-1']);
-    expect([...out].sort()).toEqual(['i-1', 'i-2']);
+    expect([...(out ?? [])].sort()).toEqual(['i-1', 'i-2']);
     expect(calls).toHaveLength(1);
     expect(calls[0]!.table).toBe('golf_player_focus_areas');
     expect(calls[0]!.filters).toContainEqual(['in', 'player_id', ['p-1', 'p-2']]);
@@ -61,19 +61,28 @@ describe('loadPinnedReadIds', () => {
     ]);
     const out = await loadPinnedReadIds(client, players);
     expect(calls).toHaveLength(2);
-    expect([...out].sort()).toEqual(['a', 'b']);
+    expect([...(out ?? [])].sort()).toEqual(['a', 'b']);
   });
 
   it('no players: no request', async () => {
     const { client, calls } = makeClient([]);
-    expect((await loadPinnedReadIds(client, [])).size).toBe(0);
+    expect((await loadPinnedReadIds(client, []))?.size).toBe(0);
     expect(calls).toHaveLength(0);
   });
 
-  it('a failed read logs one best-effort miss and pins nothing', async () => {
+  it('a failed read logs one best-effort miss and answers null, not an empty set', async () => {
     const { client } = makeClient([{ data: null, error: { message: 'boom' } }]);
-    const out = await loadPinnedReadIds(client, ['p-1']);
-    expect(out.size).toBe(0);
+    expect(await loadPinnedReadIds(client, ['p-1'])).toBeNull();
+    expect(vi.mocked(logBestEffortMiss)).toHaveBeenCalledTimes(1);
+  });
+
+  it('a thrown request is a miss too, never a throw', async () => {
+    const client = {
+      from: () => {
+        throw new Error('fetch failed');
+      },
+    } as unknown as SupabaseClient;
+    expect(await loadPinnedReadIds(client, ['p-1'])).toBeNull();
     expect(vi.mocked(logBestEffortMiss)).toHaveBeenCalledTimes(1);
   });
 });
