@@ -27,14 +27,6 @@ Held items:     none
 Design package: none (dev preview only; nothing a player sees changes)
 PR/commit:      see git log (claude/clubhouse-a11y-rounds, b8920a4)
 Contract IDs:   111809 (the axe scan)
-
-## 2026-10-20 — The number pad has a Done key in the app
-
-```text
-Design package: none (release blocker 19; no owner board; phone draft
-                docs/clubhouse/phone/rounds.md)
-PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
-Contract IDs:   112001 (wording; status unchanged)
 Actions:        none
 Data impact:    none
 Held items:     none
@@ -65,6 +57,20 @@ Held items:     none
   exit 1 with those two pages failing in light and in dark; after, exit 0,
   36 of 36 clean in each scheme. Measurements, screenshots and the new jsdom
   test (`preview-entry-layout.test.tsx`) are in VERIFY.md (2026-10-20).
+
+## 2026-10-20 — The number pad has a Done key in the app
+
+```text
+Design package: none (release blocker 19; no owner board; phone draft
+                docs/clubhouse/phone/rounds.md)
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
+Contract IDs:   112001 (wording; status unchanged)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
 
 - Round entry's number fields (the shot screen's distance, setup's yardages,
   Add a course's rating and slope, the edit-shot sheet's distances) open the iOS
