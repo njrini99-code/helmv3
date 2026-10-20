@@ -323,6 +323,12 @@ before, after, baseline or evidence.
 | `P005__strokes-gained-legs__coach__390__default__before__6f8be23.png` | before | 6f8be23 | strokes-gained-legs (coach), 390px, default, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
 | `P005__strokes-gained-legs__coach__390__default__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 390px, default, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
 | `P005__strokes-gained-legs__coach__390__leg-pinned__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 390px, Approach pinned, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__hero-figures__coach__1440__sg-chip__before__2b3c6f5.png` | before | 2b3c6f5 | hero-figures (coach), 1440px, sg-chip, before: hero figures and the strokes gained change chip; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__hero-figures__coach__1440__sg-chip__after__2b3c6f5.png` | after | 2b3c6f5 | hero-figures (coach), 1440px, sg-chip, after: hero figures and the strokes gained change chip; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-sg-zone__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | overview-sg-zone (coach), 1440px, default, before: Overview strokes gained zone: change line and the data-scaled track; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-sg-zone__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | overview-sg-zone (coach), 1440px, default, after: Overview strokes gained zone: change line and the data-scaled track; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-figures__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | overview-figures (coach), 390px, default, before: phone Overview figures, scoring trend and the SG chip; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-figures__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | overview-figures (coach), 390px, default, after: phone Overview figures, scoring trend and the SG chip; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

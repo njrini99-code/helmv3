@@ -174,6 +174,7 @@ function TeamFigures({ figures, cacheError, covered }: { figures: ChTeamStats['f
           value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),
           unit: x.unit,
           delta: x.delta,
+          se: x.se ?? null,
           deltaDigits: x.digits,
           lowerIsBetter: x.lowerIsBetter,
           context: x.context,

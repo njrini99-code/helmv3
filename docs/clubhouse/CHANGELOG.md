@@ -21,6 +21,24 @@ scope, which the server forks per request; a Sentry failure never changes the
 decision (`__tests__/gate-sentry-tag.test.ts`). The saved search, the alert
 steps and the baseline are in STATUS.md "Monitoring".
 
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+- `lib/stats-signal.ts`: `meanSe`, `changeSe` and `halvesChange`, the
+  standard error of a window and of a change, beside `deltaTone` and
+  `deltaWords`. `data/stats-weight.ts` gains `windowChangeSe` (per-18 values,
+  a nine-hole round as half) and `data/round-scope.ts` `recordedPutts`.
+- `ui/FormLine.tsx`: green or amber only past one standard error of the
+  halves' change, neutral otherwise; its comment now says lower scores sit
+  higher. Roster (P003) and the home leaderboard use it, so their form lines
+  turn neutral where the change is inside its error.
+- `data/season.ts` `formStatus`: Improving or Slipping only past one standard
+  error, Steady otherwise. It drives the roster's and leaderboard's form word.
+- `lib/sg.ts` `sgTint`: `color-mix` of `--ch-chart-gain` and
+  `--ch-chart-loss` in place of literal rgb values, so the tint follows dark
+  mode.
+- `styles/stats.css`: neutral fills for the gauge and the Overview tracks,
+  the phone "No clear change" line and the Overview change line's colours.
+
 ## 2026-10-20 — Stats visuals: the signal and pin helpers
 
 - `lib/stats-signal.ts` and `lib/use-chart-pin.ts` (shared, no page owns them):

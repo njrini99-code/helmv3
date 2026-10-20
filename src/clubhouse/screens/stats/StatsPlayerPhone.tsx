@@ -18,6 +18,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
+import { deltaTone, halvesChange } from '../../lib/stats-signal';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
 import { FigureGauge, SgChangeChip } from './charts';
@@ -208,7 +209,7 @@ export function StatsPlayerPhone({
         {data.statsError ? (
           <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
-          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} puttBands={data.puttBands} onRetry={onRetry} phone />
+          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={onRetry} phone />
         ) : (
           <section className="ch-stm-panel">
             <EmptyState
@@ -254,7 +255,10 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
   const flat = form != null && Math.abs(form) < 0.05;
   // The rounds in each half of the trend the change compares (summarizeWindow's own split).
   const half = Math.floor(w.trend.length / 2);
-  const formTone = form == null || flat ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
+  // Coloured only when the change clears its standard error (Q4): three scores a half rarely do, so it mostly reads as no clear change.
+  const formSignal = deltaTone(form, halvesChange(w.trend)?.se, true);
+  const formTone = formSignal === 'is-gain' ? ' ch-gain' : formSignal === 'is-loss' ? ' ch-loss' : '';
+  const halves = half === 1 ? 'Newest round vs first' : `Newest ${half} vs first ${half}`;
   const d = data.sgChange.delta;
   // The scoring average against par, per 18 holes over the window's rounds that carry a par (owner, 2026-10-07: no bare numbers).
   const pars = data.rounds.filter((r) => r.toPar != null).map((r) => per18(r.toPar as number, r.holes));
@@ -279,7 +283,10 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
           <dt>Scoring trend</dt>
           {/* Scores, so "higher" is worse (amber) and "lower" better; the sub-line names the halves compared (summarizeWindow). */}
           <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${Math.abs(form).toFixed(1)} ${form < 0 ? 'lower' : 'higher'}`}</dd>
-          <dd>{form == null ? 'After three rounds' : half === 1 ? 'Newest round vs first' : `Newest ${half} vs first ${half}`}</dd>
+          <dd>
+            {form != null && formSignal === '' && <span className="ch-stm-figs__clear">No clear change</span>}
+            {form == null ? 'After three rounds' : halves}
+          </dd>
         </div>
       </dl>
       {/* Each figure drawn against its reference (decorative; the figures say it): scoring from par, strokes gained from
@@ -295,7 +302,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
             <span className="ch-num">{countWords(w.rounds, w.effRounds)} in this window.</span>
             {/* P005-D6: the chip names what it measures, since it sits away from the SG figure. */}
             {w.sgPerRound != null && d != null && (
-              <SgChangeChip change={{ ...data.sgChange, context: data.sgChange.context ? `SG a round ${data.sgChange.context}` : 'SG a round' }} code="CH-5310" />
+              <SgChangeChip change={data.sgChange} subject="SG a round" code="CH-5310" />
             )}
           </>
         )}

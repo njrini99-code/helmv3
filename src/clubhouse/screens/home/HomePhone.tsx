@@ -15,7 +15,8 @@ import { Nine } from '../../ui/Nine';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { withPointSpan } from '../../ui/point-span';
-import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useNow } from '../../lib/use-now';
@@ -329,8 +330,9 @@ function Form({ form }: { form: ChTeamForm }) {
   const x = (i: number) => 4 + (pts.length > 1 ? (i * (W - 8)) / (pts.length - 1) : (W - 8) / 2);
   const y = (v: number) => 6 + ((v - lo) / (hi - lo || 1)) * (H - 12);
   const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  // Lower scores and fewer putts are better; more greens are better. A change that rounds to zero as shown ("0.0") is no change: plain, not amber (F-54).
-  const tone = (delta: number | null, lowerIsBetter: boolean, digits: number) => changeTone(delta, lowerIsBetter, digits);
+  // Lower scores and fewer putts are better; more greens are better. A change is green or amber only when it clears its standard
+  // error (stats visuals Q4); otherwise plain, and the average's says "No clear change" (F-54's zero is inside that).
+  const avgTone = deltaTone(form.delta, form.deltaSe, true);
   return (
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
       <div className="ch-hm-form__top">
@@ -338,9 +340,9 @@ function Form({ form }: { form: ChTeamForm }) {
           <em id="ch-hm-form">Team scoring average</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
-        <span className={'ch-hm-delta ch-num ' + tone(form.delta, true, 1)}>
+        <span className={'ch-hm-delta ch-num ' + avgTone}>
           {form.delta != null && formatSigned(form.delta)}
-          {form.delta != null && <em>vs previous 10</em>}
+          {form.delta != null && <em>{deltaWords(form.delta, avgTone, 'vs previous 10')}</em>}
           <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
         </span>
       </div>
@@ -360,12 +362,12 @@ function Form({ form }: { form: ChTeamForm }) {
         <div>
           <dt>GIR</dt>
           <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.gir.delta, false, 0)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.putts.delta, true, 1)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>

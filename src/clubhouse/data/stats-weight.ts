@@ -2,6 +2,7 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formStatus, MIN_SG_ROUNDS, TREND_LENGTH, type ChPlayerSeason, type ChRound } from './season';
 import { hasHoleScores, holeRounds } from './round-scope';
 import { per18, roundKind, type ChRoundKind } from './stats-filter';
+import { changeSe, type SpreadKind } from '../lib/stats-signal';
 
 export { per18, roundsWord } from './stats-filter';
 
@@ -49,6 +50,32 @@ export function weightedMean<T extends HoleCount>(rounds: T[], pick: (r: T) => n
     weight += roundWeight(r);
   }
   return weight > 0 ? sum / weight : null;
+}
+
+/** A figure's value on each round that has it, per 18 holes, and the whole rounds they make: what a window's standard error reads. */
+export function roundValues<T extends HoleCount>(rounds: T[], pick: (r: T) => number | null | undefined): { values: number[]; n: number } {
+  const values: number[] = [];
+  for (const r of rounds) {
+    const v = pick(r);
+    if (v != null && Number.isFinite(v)) values.push(per18(v, r.holes_played));
+  }
+  return { values, n: effectiveCount(rounds, pick) };
+}
+
+/**
+ * The standard error of a per-18 figure's change from `previous` to `current` (decision Q4): each window's spread over its whole
+ * rounds, combined. `kind` names the pooled spread to fall back on under five rounds (score, strokes gained); with none, a window
+ * under five rounds has no standard error and the change is not painted.
+ */
+export function windowChangeSe<T extends HoleCount>(
+  current: T[],
+  previous: T[],
+  pick: (r: T) => number | null | undefined,
+  kind: SpreadKind | null,
+): number | null {
+  const a = roundValues(current, pick);
+  const b = roundValues(previous, pick);
+  return changeSe(a.values, b.values, kind, a.n, b.n);
 }
 
 /** Doubles or worse as a share of holes (production's big-number rate), from the rounds' cached counts over their holes. */

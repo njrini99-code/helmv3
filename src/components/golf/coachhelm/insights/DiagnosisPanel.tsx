@@ -34,7 +34,7 @@
 
 import { cn } from '@/lib/utils';
 import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
-import type { Diagnosis, DiagnosisDriver } from '@/lib/coachhelm/v2/insights/types';
+import type { Diagnosis, DiagnosisDriver, InsightCauseState } from '@/lib/coachhelm/v2/insights/types';
 // Leaf import, not './EvidencePanel' — EvidencePanel.tsx itself imports
 // DiagnosisPanel (to render it), so importing formatValue back from
 // EvidencePanel.tsx created an import cycle (flagged by npm run
@@ -141,6 +141,12 @@ export interface DiagnosisPanelProps {
   trust?: DiagnosisTrust;
   /** Truncate to N drivers for the summary altitude. */
   maxDrivers?: number;
+  /**
+   * The row's `evidence.cause.state` (root-cause Slice 2; `causeStateOf`).
+   * `not_traced` means the root_cause line is a count-down or a data gap, not
+   * a cause, so it is never introduced as "Likely because".
+   */
+  causeState?: InsightCauseState | null;
   className?: string;
 }
 
@@ -151,8 +157,10 @@ export function DiagnosisPanel({
   strokesImpact,
   trust,
   maxDrivers,
+  causeState,
   className,
 }: DiagnosisPanelProps) {
+  const notTraced = causeState === 'not_traced';
   const drivers =
     typeof maxDrivers === 'number' ? diagnosis.drivers.slice(0, maxDrivers) : diagnosis.drivers;
   const hidden = diagnosis.drivers.length - drivers.length;
@@ -165,7 +173,8 @@ export function DiagnosisPanel({
         <p className="font-fw-sans text-caption text-text-tertiary">
           Root cause{category ? <> · {category}</> : null}
         </p>
-        <CausalityChip level={diagnosis.causality_level} />
+        {/* A not-traced read claims no cause, so it carries no causality chip. */}
+        {notTraced ? null : <CausalityChip level={diagnosis.causality_level} />}
       </div>
 
       {/* Lead with the MEASURED symptom (the fact), then the cause beneath it.
@@ -174,20 +183,26 @@ export function DiagnosisPanel({
         {diagnosis.symptom}
       </h4>
 
-      <p className="text-body text-text-secondary">
-        <span className="font-medium text-text-tertiary">
-          {/* repair-plan §14.12 (observed-outcome-language re-review, PR #2023):
-              was "Caused by" — an observed temporal sequence (root_cause
-              happening before symptom in the recorded shot data) is not a
-              controlled measurement, so it can't back a causal claim either,
-              even though it's a directly measured FACT (see CausalityChip
-              above). "Preceded by" states exactly what was observed —
-              root_cause came first in the sequence — without asserting it
-              caused the symptom. */}
-          {diagnosis.causality_level === 'observed_sequence' ? 'Preceded by' : 'Likely because'} —{' '}
-        </span>
-        {diagnosis.root_cause}
-      </p>
+      {notTraced || causeState === 'inferred_hypothesis' ? (
+        // These sentences carry their own lead ("Not traced yet: …" /
+        // "Likely from the totals: …"), so no "Likely because" prefix.
+        <p className="text-body text-text-secondary">{diagnosis.root_cause}</p>
+      ) : (
+        <p className="text-body text-text-secondary">
+          <span className="font-medium text-text-tertiary">
+            {/* repair-plan §14.12 (observed-outcome-language re-review, PR #2023):
+                was "Caused by" — an observed temporal sequence (root_cause
+                happening before symptom in the recorded shot data) is not a
+                controlled measurement, so it can't back a causal claim either,
+                even though it's a directly measured FACT (see CausalityChip
+                above). "Preceded by" states exactly what was observed —
+                root_cause came first in the sequence — without asserting it
+                caused the symptom. */}
+            {diagnosis.causality_level === 'observed_sequence' ? 'Preceded by' : 'Likely because'} —{' '}
+          </span>
+          {diagnosis.root_cause}
+        </p>
+      )}
 
       {drivers.length > 0 ? (
         <div className="space-y-2 rounded-fw-md bg-surface-sunken p-3">
@@ -203,7 +218,7 @@ export function DiagnosisPanel({
         </div>
       ) : null}
 
-      <InsightCallout label="Practice focus">
+      <InsightCallout label={notTraced ? 'Next step' : 'Practice focus'}>
         <p className="text-body-sm text-text-primary">{diagnosis.recommended_action}</p>
       </InsightCallout>
 
