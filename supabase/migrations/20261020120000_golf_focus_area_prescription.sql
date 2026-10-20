@@ -40,32 +40,49 @@
 SET lock_timeout = '5s';
 
 ALTER TABLE "public"."golf_player_focus_areas"
-ADD COLUMN IF NOT EXISTS "baseline_n" integer,
+ADD COLUMN IF NOT EXISTS "baseline_n" bigint,
 ADD COLUMN IF NOT EXISTS "baseline_shrunk" numeric,
 ADD COLUMN IF NOT EXISTS "criterion" jsonb,
 ADD COLUMN IF NOT EXISTS "horizon" jsonb,
-ADD COLUMN IF NOT EXISTS "check_after_rounds" integer,
+ADD COLUMN IF NOT EXISTS "check_after_rounds" bigint,
 ADD COLUMN IF NOT EXISTS "assigned_by" text,
 ADD COLUMN IF NOT EXISTS "verdict" jsonb,
 ADD COLUMN IF NOT EXISTS "drill_ids" uuid[];
 
+-- Plain (validated) CHECKs, not NOT VALID, as in
+-- 20260929120000_golf_team_members_availability.sql: every column they
+-- check is added above in this migration, so every row is NULL and the scan
+-- (27 rows in production, read-only count 2026-10-20) under the lock this
+-- transaction already holds rejects nothing.
 ALTER TABLE "public"."golf_player_focus_areas"
 DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_baseline_n_check",
+-- Validated: new all-NULL column, nothing for the scan to reject.
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT "golf_player_focus_areas_baseline_n_check"
 CHECK (baseline_n IS NULL OR baseline_n >= 0),
 DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_check_after_rounds_check",
+-- Validated: new all-NULL column, nothing for the scan to reject.
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT "golf_player_focus_areas_check_after_rounds_check"
 CHECK (check_after_rounds IS NULL OR check_after_rounds > 0),
 DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_assigned_by_check",
+-- Validated: new all-NULL column, nothing for the scan to reject.
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT "golf_player_focus_areas_assigned_by_check"
 CHECK (assigned_by IS NULL OR assigned_by IN ('coach', 'engine', 'player')),
 DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_criterion_object_check",
+-- Validated: new all-NULL column, nothing for the scan to reject.
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT "golf_player_focus_areas_criterion_object_check"
 CHECK (criterion IS NULL OR jsonb_typeof(criterion) = 'object'),
 DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_horizon_object_check",
+-- Validated: new all-NULL column, nothing for the scan to reject.
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT "golf_player_focus_areas_horizon_object_check"
 CHECK (horizon IS NULL OR jsonb_typeof(horizon) = 'object'),
 DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_verdict_object_check",
+-- Validated: new all-NULL column, nothing for the scan to reject.
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT "golf_player_focus_areas_verdict_object_check"
 CHECK (verdict IS NULL OR jsonb_typeof(verdict) = 'object');
 
