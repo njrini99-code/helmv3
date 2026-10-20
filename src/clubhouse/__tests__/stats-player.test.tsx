@@ -37,6 +37,7 @@ const emptySpray = () => ({ driving: emptyGroup('driving'), approach: emptyGroup
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { ChPlayerProfile } from '../data/stats-player';
+import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { loadPlayerProfile } from '../data/stats-player';
 import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
 import { loadTeamStats } from '../data/stats-team';
@@ -366,6 +367,18 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     );
   const top = () => screen.getByTestId('phone-top');
 
+  it('Game detail on the phone says the round lengths the filter chose, as the desktop does (stats visuals 7.5)', () => {
+    // The phone did not pass the filter's holes, so its "How this is measured" said "18 holes only" whatever the filter was.
+    phone(player({ filter: { ...PREVIEW_PLAYER.filter, holes: 'all' } }));
+    const how = [...document.querySelectorAll('.ch-gm-how p')].map((p) => p.textContent ?? '');
+    expect(how.length).toBeGreaterThan(0);
+    expect(how.some((t) => t.includes('18- and 9-hole rounds'))).toBe(true);
+    expect(how.some((t) => t.includes('18 holes only'))).toBe(false);
+    cleanup();
+    phone(player({ filter: { ...PREVIEW_PLAYER.filter, holes: '9' } }));
+    expect([...document.querySelectorAll('.ch-gm-how p')].some((p) => p.textContent!.includes('9-hole rounds; per-round figures are per 18 holes'))).toBe(true);
+  });
+
   it('51901 the phone view replaces desktop: who, three figures, one game section at a time', async () => {
     const user = userEvent.setup();
     phone(player());
@@ -378,10 +391,15 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Scoring trend']);
     const trend = figs.querySelector('dd.is-words')!;
     expect(trend.textContent).toMatch(/^\d+\.\d (lower|higher)$|^level$|^—$/);
-    if (trend.textContent!.endsWith('lower')) expect(trend.classList.contains('ch-gain')).toBe(true);
-    if (trend.textContent!.endsWith('higher')) expect(trend.classList.contains('ch-loss')).toBe(true);
-    // The sub-line names the halves it compares (wave 7, item 7).
-    if (trend.textContent !== '—') expect(trend.nextElementSibling!.textContent).toMatch(/^Newest (\d+ vs first \d+|round vs first)$/);
+    // Green or amber only when the change clears its standard error (stats visuals Q4): the fixture's halves do not, so neutral ink
+    // and "No clear change" ahead of the halves it compares (wave 7, item 7).
+    const signal = deltaTone(PREVIEW_PLAYER.win.formChange, halvesChange(PREVIEW_PLAYER.win.trend)?.se, true);
+    expect(signal).toBe('');
+    expect(trend.classList.contains('ch-gain') || trend.classList.contains('ch-loss')).toBe(false);
+    if (trend.textContent !== '—') {
+      expect(trend.nextElementSibling!.querySelector('.ch-stm-figs__clear')!.textContent).toBe('No clear change');
+      expect(trend.nextElementSibling!.textContent).toMatch(/^No clear changeNewest (\d+ vs first \d+|round vs first)$/);
+    }
     // Drawn against their references under the figures: scoring from par, strokes gained from the Tour's zero; the trend is words.
     const gauges = document.querySelector('.ch-stm-overview .ch-stm-gauges')!;
     expect(gauges.getAttribute('aria-hidden')).toBe('true');
@@ -421,11 +439,12 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     const trend = () => screen.queryByRole('heading', { level: 2, name: 'Scoring trend' });
     phone(player({ rounds: [first!, second!] }));
     expect(trend()).toBeTruthy();
-    expect(screen.getByRole('img', { name: /Scores over the last 2 rounds/ })).toBeTruthy();
+    // The trend is a focusable group now (the arrow keys read each round), no longer a flat image.
+    expect(screen.getByRole('group', { name: /Scores over the last 2 rounds/ })).toBeTruthy();
     cleanup();
     phone(player({ rounds: [first!] }));
     expect(trend()).toBeTruthy();
-    expect(screen.queryByRole('img', { name: /Scores over/ })).toBeNull();
+    expect(screen.queryByRole('group', { name: /Scores over/ })).toBeNull();
     expect(screen.getByText(/One round so far/).textContent).toBe(`One round so far: ${first!.score} on ${first!.date}. The trend draws from the second.`);
     cleanup();
     phone(player({ rounds: [] }));

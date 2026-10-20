@@ -116,7 +116,7 @@ describe('ScoutingReport', () => {
     getInsightsForCoachWithMeta.mockResolvedValue({ ok: true, data: [makeInsight({ title: 'Fetched' })], total: 1, capped: false });
     renderReport();
     expect(await screen.findByText('Fetched')).toBeTruthy();
-    expect(getInsightsForCoachWithMeta).toHaveBeenCalledWith('c-1', { player_id: 'p-1', limit: 6 });
+    expect(getInsightsForCoachWithMeta).toHaveBeenCalledWith('c-1', { player_id: 'p-1', limit: 6, includeMore: true });
   });
 
   it('badges a claim whose evidence moved since this device last viewed it', async () => {

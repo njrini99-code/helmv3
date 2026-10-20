@@ -119,9 +119,11 @@ describe('the scoring average change', () => {
   it('colours the figure, not its caption (the board: "−0.8 vs previous 10" stays grey)', () => {
     show();
     const avg = [...document.querySelectorAll('.ch-ph-figs dd')].find((d) => d.textContent === '70.1')!;
+    // The fixture's change (−1.9 on ten rounds against ten) clears its standard error (pooled 3.6 a round: about 1.6), so it is
+    // green and says so; a smaller one would read "No clear change" in plain ink (stats visuals Q4).
     expect(avg.className).toContain('is-gain');
     expect(avg.nextElementSibling!.className).not.toMatch(/is-gain|is-loss/);
-    expect(avg.nextElementSibling!.textContent).toMatch(/vs previous 10$/);
+    expect(avg.nextElementSibling!.textContent).toMatch(/^−\d\.\d · Better than previous 10$/);
   });
 });
 

@@ -169,7 +169,12 @@ export function ScoutingReport({ player, rounds, focusAreas, themes, evidenceIns
     }
     setLoadState('loading');
     try {
-      const res = await getInsightsForCoachWithMeta(coachId, { player_id: player.id, limit: FETCH_LIMIT });
+      // A scouting profile lists every read (folded), not the Slice 0 cap of 3 + 1.
+      const res = await getInsightsForCoachWithMeta(coachId, {
+        player_id: player.id,
+        limit: FETCH_LIMIT,
+        includeMore: true,
+      });
       if (res.ok) {
         setInsights(res.data);
         setLoadState('ready');
