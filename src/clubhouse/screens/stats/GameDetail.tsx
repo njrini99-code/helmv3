@@ -14,9 +14,10 @@ import { InlineNotice } from '../../ui/Notices';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { formatPct, NO_DATA } from '../../lib/format';
-import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles, ScoreMix } from './charts';
+import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
 import { PuttBands } from './PuttBands';
 import type { PuttBandInput } from './putt-bands';
+import { ScoreMixBar } from './ScoreMixBar';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 
@@ -351,8 +352,8 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="What an average round looks like" wide {...noteOf('Holes per round by result, then the holes they add up to. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
-          <ScoreMix d={dist} totals={totals} />
+        <Panel title="What an average round looks like" wide {...noteOf('Every scored hole by result, under par to the left and over par to the right, with each result a round. Select one for the holes behind it. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
+          <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
         </Panel>
         <Panel title="Scoring by par" wide>
           <ParTiles rows={pars} />
