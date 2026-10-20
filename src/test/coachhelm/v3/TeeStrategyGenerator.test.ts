@@ -5,6 +5,7 @@ import {
   laggyDiagnosticStrokesImpact,
 } from '@/lib/coachhelm/v3/generators/tee-strategy';
 import { resolveTeeFairway } from '@/lib/coachhelm/v3/engine/shot-source';
+import { resolveInsightFraming } from '@/lib/coachhelm/v3/engine/root-cause';
 
 const PLAYER_ID = 'p-1';
 
@@ -103,6 +104,19 @@ describe('TeeStrategyGenerator', () => {
     expect(c.title).toMatch(/no clear preference/i);
     expect(c.signature).toBe('tee_strategy:inconclusive');
     expect(c.content).toMatch(/neither the layback nor the driver-default/);
+  });
+
+  it('framing follows the verdict, not the two fairway rates (#2221 review)', () => {
+    const g = new TeeStrategyGenerator(PLAYER_ID);
+    // "Driver is performing" while driver fairway% trails the layback by 3pp:
+    // comparing the scalars would call it a leak.
+    const sharp = g.composeContent(makeAgg({ pattern: 'sharp', driverFw: 0.65, ndFw: 0.68 }));
+    expect(sharp.framing).toBe('strength');
+    expect(resolveInsightFraming(sharp.framing, sharp.evidence)).toBe('strength');
+    const unclear = g.composeContent(makeAgg({ pattern: 'inconclusive', driverFw: 0.55, ndFw: 0.62 }));
+    expect(resolveInsightFraming(unclear.framing, unclear.evidence)).toBe('neutral');
+    const laggy = g.composeContent(makeAgg({ pattern: 'laggy', driverFw: 0.45, ndFw: 0.7 }));
+    expect(resolveInsightFraming(laggy.framing, laggy.evidence)).toBe('leak');
   });
 
   it('evidence indexes against sg_ott + correct fields', () => {

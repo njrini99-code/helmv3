@@ -37,8 +37,17 @@ import { isFloorExemptMetric } from '@/lib/coachhelm/v3/ranking/score';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import {
+  diagnoseRootCause,
+  resolveInsightFraming,
+  sequenceTargetFor,
+  rollingWindowEvidence,
+  type RootCauseContext,
+} from './root-cause';
+import { loadRootCauseContext } from './root-cause-context';
 
-import type { Diagnosis, DiagnosisDriver, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { Diagnosis, DiagnosisDriver, InsightCause, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
 import type {
   ComposedContent,
@@ -322,6 +331,49 @@ export function buildDiagnosis(
   };
 }
 
+/**
+ * CoachHelm supercharge Slice 2 (PR #2073's root cause, ported with raised
+ * floors). Off → `run()` writes the {@link buildDiagnosis} template exactly as
+ * before. On → `root-cause.ts` decides the cause state and the template is
+ * never written.
+ */
+export const ROOT_CAUSE_DIAGNOSIS_FLAG = 'coachhelm_root_cause_diagnosis';
+
+/**
+ * Combine the base diagnosis, a generator-composed diagnosis (e.g.
+ * approach-miss's dominant-axis reading) and the root-cause diagnosis into the
+ * one the row ships when the root-cause flag is on. Pure + exported for tests.
+ *
+ * The root cause owns `root_cause` and `causality_level` (the cause state is
+ * the only thing that may say `observed_sequence`). A generator's composed
+ * symptom, drivers and data-grounded action are kept: its drivers are
+ * appended after the root cause's own (deduped by metric), and its action
+ * replaces the generic "Target … in the next practice block" one unless the
+ * cause state supplied a specific action (a counted path or a data gap).
+ * The confidence reason always reflects the row's FINAL factors.
+ */
+export function mergeRootCauseDiagnosis(
+  base: Diagnosis,
+  composed: Diagnosis | undefined,
+  rootCause: Omit<Diagnosis, 'confidence_reason'>,
+  cause: Pick<InsightCause, 'state' | 'not_traced_reason'>,
+): Diagnosis {
+  const drivers = [...rootCause.drivers];
+  for (const d of composed?.drivers ?? []) {
+    if (!drivers.some((x) => x.metric === d.metric)) drivers.push(d);
+  }
+  const causeOwnsAction = cause.state === 'observed_sequence' || cause.not_traced_reason === 'data_gap';
+  return {
+    ...rootCause,
+    symptom: composed?.symptom ?? rootCause.symptom,
+    drivers,
+    recommended_action: causeOwnsAction
+      ? rootCause.recommended_action
+      : (composed?.recommended_action ?? base.recommended_action),
+    confidence_reason: base.confidence_reason,
+  };
+}
+
 export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggregate> {
   // Generator identity — concrete classes override
   abstract readonly name: string;
@@ -378,6 +430,16 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
    * the 18 that do not.
    */
   protected readonly attachStandingWhenAvailable: boolean = false;
+
+  /**
+   * Set (in days) by a generator whose aggregate reads a ROLLING window
+   * ending today (`round_date >= now − N days`). Its evidence stamps
+   * `window_days: N` with `window_end` = the newest round, which is not the
+   * window's end, so the root-cause shot load (flag-on only) uses
+   * `rollingWindowEvidence(N)` instead of the stamped fields. Null = the
+   * stamped window is the metric's window. Changes nothing a row stores.
+   */
+  protected readonly rollingWindowDays: number | null = null;
 
   constructor(protected readonly playerId: string) {}
 
@@ -519,6 +581,48 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   }
 
   /**
+   * The root cause for this row with the flag on (`root-cause.ts`). Loads
+   * shot context only for a LEAK whose metric a shot sequence can speak to;
+   * a load error becomes the honest "could not be read" cause and is logged
+   * — it never fails the run. Returns null for a strength/neutral row (no
+   * cause, no diagnosis).
+   */
+  private async diagnoseRootCause(
+    composed: ComposedContent,
+    evidence: InsightEvidence,
+  ): Promise<{ diagnosis: Diagnosis; cause: InsightCause } | null> {
+    const framing = resolveInsightFraming(composed.framing, evidence);
+    if (framing !== 'leak') return null;
+
+    const metric = evidence.metric || this.metricId;
+    let ctx: RootCauseContext | null = null;
+    let loadFailed = false;
+    let noWindow = false;
+    if (sequenceTargetFor(metric)) {
+      try {
+        const windowSource =
+          this.rollingWindowDays !== null ? rollingWindowEvidence(this.rollingWindowDays) : evidence;
+        ctx = await loadRootCauseContext(this.playerId, windowSource);
+        noWindow = ctx === null;
+      } catch (err) {
+        loadFailed = true;
+        await logServerError(
+          `${this.name} root-cause shot context load failed for player=${this.playerId}: ${describeError(err)}`,
+          { action: `v3.generator.${this.name}.root_cause`, metadata: { dbError: toDbErrorMetadata(err) } },
+          'warning',
+        );
+      }
+    }
+    const outcome = diagnoseRootCause({ metricId: this.metricId, framing, evidence, ctx, loadFailed, noWindow });
+    if (outcome.kind !== 'diagnosis') return null;
+    const base = buildDiagnosis(this.metricId, evidence);
+    return {
+      diagnosis: mergeRootCauseDiagnosis(base, evidence.diagnosis, outcome.diagnosis, outcome.cause),
+      cause: outcome.cause,
+    };
+  }
+
+  /**
    * Full lifecycle entry point. Cron / orchestrator code calls this.
    */
   async run(): Promise<RunResult> {
@@ -589,6 +693,8 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         ...composed.evidence,
         confidence_factors: confidenceFactors,
         confidence: calcConfidence({ confidence_factors: confidenceFactors }),
+        // Coach voice rides in evidence; title/content stay the player's.
+        ...(composed.coach ? { coach_copy: composed.coach } : {}),
       };
 
       // A generator may pin priority:'low' for a descriptive standing row, but
@@ -676,25 +782,44 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         evidence.confidence,
       );
 
-      // P0-05: stamp a typed, machine-readable diagnosis on EVERY v3 row so the
-      // root cause is filterable/auditable instead of buried in prose. The base
-      // synthesizes an honest default from the cited metric; a generator that
-      // already composed a sharper, data-grounded diagnosis (its driver+action
-      // sentence promoted to a structure) is preserved verbatim. The confidence
-      // reason is always recomputed from the FINAL confidence factors so it can
-      // never disagree with the value the row ships. Never an observed sequence
-      // — a single-metric verdict is an inferred hypothesis, framed as such.
-      const baseDiagnosis = buildDiagnosis(this.metricId, evidence);
-      const diagnosis: Diagnosis = {
-        ...baseDiagnosis,
-        ...(evidence.diagnosis ?? {}),
-        // Single-metric generators never replay a measured sequence: pin the
-        // honesty level even if a generator forgot to.
-        causality_level: 'inferred_hypothesis',
-        // Always reflect the row's actual confidence factors.
-        confidence_reason: baseDiagnosis.confidence_reason,
-      };
-      evidence = { ...evidence, diagnosis } as typeof composed.evidence;
+      // Slice 2 root cause (flag on): the cause state decides the diagnosis;
+      // a strength/neutral row ships neither. Flag off: the P0-05 block below,
+      // unchanged.
+      if (isFlagEnabled(ROOT_CAUSE_DIAGNOSIS_FLAG)) {
+        const rooted = await this.diagnoseRootCause(composed, evidence);
+        const { diagnosis: _composedDiagnosis, ...rest } = evidence;
+        void _composedDiagnosis;
+        evidence = (
+          rooted
+            ? {
+                ...rest,
+                diagnosis: rooted.diagnosis,
+                cause: rooted.cause,
+                ...(rooted.cause.data_gap ? { data_gap: rooted.cause.data_gap } : {}),
+              }
+            : rest
+        ) as typeof composed.evidence;
+      } else {
+        // P0-05: stamp a typed, machine-readable diagnosis on EVERY v3 row so the
+        // root cause is filterable/auditable instead of buried in prose. The base
+        // synthesizes an honest default from the cited metric; a generator that
+        // already composed a sharper, data-grounded diagnosis (its driver+action
+        // sentence promoted to a structure) is preserved verbatim. The confidence
+        // reason is always recomputed from the FINAL confidence factors so it can
+        // never disagree with the value the row ships. Never an observed sequence
+        // — a single-metric verdict is an inferred hypothesis, framed as such.
+        const baseDiagnosis = buildDiagnosis(this.metricId, evidence);
+        const diagnosis: Diagnosis = {
+          ...baseDiagnosis,
+          ...(evidence.diagnosis ?? {}),
+          // Single-metric generators never replay a measured sequence: pin the
+          // honesty level even if a generator forgot to.
+          causality_level: 'inferred_hypothesis',
+          // Always reflect the row's actual confidence factors.
+          confidence_reason: baseDiagnosis.confidence_reason,
+        };
+        evidence = { ...evidence, diagnosis } as typeof composed.evidence;
+      }
 
       const supabase = createAdminClient();
       // Audit row 22: persist the rounds behind the claim (failure-silent). A

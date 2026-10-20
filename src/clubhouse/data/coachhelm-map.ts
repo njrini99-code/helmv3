@@ -4,6 +4,7 @@ import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coac
 import { buildInsightUnit, fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { MINUS } from '../lib/format';
 import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refreshedDay, staleSince } from './coachhelm-classify';
+import { isMeasuredZero, withoutZeroImpact } from './coachhelm-strokes';
 import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChKind, type ChStale, type ChTourBaseline } from './coachhelm-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
 
@@ -303,7 +304,8 @@ export function toChInsight(
   const kind = kindOf(ins, tour);
   const staleDay = staleSince(ins, extra.newestRound ?? null);
   const stale: ChStale | null = staleDay ? { newestRound: fmtShortDate(staleDay) ?? staleDay } : null;
-  const { lede, why } = splitContent(withoutCollegeAverage(withoutSampleAside(ins.content, ev.metric)));
+  // A "Projected impact: ~0.00 strokes per round." sentence says nothing, so it is not drawn (coachhelm-strokes.ts).
+  const { lede, why } = splitContent(withoutCollegeAverage(withoutSampleAside(withoutZeroImpact(ins.content, ev), ev.metric)));
   const claim = lede || ev.diagnosis?.symptom?.trim() || '';
   return {
     id: ins.id,
@@ -330,5 +332,7 @@ export function toChInsight(
     areaType: areaTypeFor(ins.category),
     assigned: extra.assigned ?? null,
     declined: !extra.assigned && (extra.declined ?? false),
+    // Set only when true, so every other card is the shape it was.
+    ...(isMeasuredZero(ev) ? { measuredZero: true } : {}),
   };
 }
