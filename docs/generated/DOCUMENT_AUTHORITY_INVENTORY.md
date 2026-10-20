@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 348 | 13 | 71 | 92 |
+| `UNKNOWN` | 349 | 13 | 71 | 92 |
 
 ## Files
 
@@ -819,6 +819,7 @@ them would bury everything above.
 | `docs/clubhouse/motion/2026-10-20-coachhelm.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/2026-10-20-home.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/2026-10-20-hub.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-ios-edge-swipe.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/2026-10-20-ios-launch-and-offline.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/2026-10-20-messages.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/2026-10-20-qualifiers.md` | current | - | - | - | - |
