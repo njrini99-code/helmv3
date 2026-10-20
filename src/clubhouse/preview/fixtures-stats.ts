@@ -66,6 +66,9 @@ const TEAM_PICK_ROUNDS: ChPickRound[] = P.flatMap(([id, name, scores], pi) =>
   })),
 ).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.id.localeCompare(b.id)));
 
+/** A grid row's leg samples for the ranked dot plot: `n` whole rounds with shots, each leg's own spread about 1.2 a round. */
+const rankLegs = (n: number) => [1.1, 1.3, 0.9, 1.2].map((sd) => ({ n, se: Number((sd / Math.sqrt(n)).toFixed(2)) }));
+
 export const PREVIEW_TEAM_STATS: ChTeamStats = {
   teamName: 'Varsity',
   season: 'Fall 2026',
@@ -94,13 +97,13 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     Putting: [0.1, 0.2, 0.1, 0.3, 0.2, 0.3, 0.3],
   },
   grid: [
-    { id: 'theo', name: 'Theo Marchetti', rounds: 10, legs: [0.4, 0.7, 0.2, 0.4], total: 1.7, change: 0.6, avg: 70.9 },
-    { id: 'sofia', name: 'Sofia Alvarez', rounds: 10, legs: [0.4, 0.5, 0.1, 0.4], total: 1.2, change: 0.3, avg: 71.6 },
-    { id: 'ava', name: 'Ava Lindqvist', rounds: 10, legs: [0.2, 0.3, 0.1, 0.3], total: 0.6, change: 0.2, avg: 72.4 },
-    { id: 'eli', name: 'Eli Brandt', rounds: 10, legs: [0.0, -0.4, 0.0, 0.0], total: -0.5, change: -0.3, avg: 74.8 },
-    { id: 'priya', name: 'Priya Natarajan', rounds: 10, legs: [-0.6, -0.8, -0.2, -0.3], total: -1.2, change: 1.7, avg: 75.2 },
-    { id: 'jonah', name: 'Jonah Okafor', rounds: 10, legs: [0.3, -1.2, -0.1, 0.2], total: -0.9, change: -1.7, avg: 73.6 },
-    { id: 'luca', name: 'Luca Ferraro', rounds: 2, legs: [null, null, null, null], total: null, change: null, avg: 76.5 },
+    { id: 'theo', name: 'Theo Marchetti', rounds: 10, legs: [0.4, 0.7, 0.2, 0.4], total: 1.7, change: 0.6, avg: 70.9, spread: { sg: { n: 10, se: 0.63 }, legs: rankLegs(10), score: { n: 10, se: 0.85 } } },
+    { id: 'sofia', name: 'Sofia Alvarez', rounds: 10, legs: [0.4, 0.5, 0.1, 0.4], total: 1.2, change: 0.3, avg: 71.6, spread: { sg: { n: 10, se: 0.66 }, legs: rankLegs(10), score: { n: 10, se: 0.8 } } },
+    { id: 'ava', name: 'Ava Lindqvist', rounds: 10, legs: [0.2, 0.3, 0.1, 0.3], total: 0.6, change: 0.2, avg: 72.4, spread: { sg: { n: 10, se: 0.6 }, legs: rankLegs(10), score: { n: 10, se: 0.9 } } },
+    { id: 'eli', name: 'Eli Brandt', rounds: 10, legs: [0.0, -0.4, 0.0, 0.0], total: -0.5, change: -0.3, avg: 74.8, spread: { sg: { n: 6, se: 0.82 }, legs: rankLegs(6), score: { n: 10, se: 1.0 } } },
+    { id: 'priya', name: 'Priya Natarajan', rounds: 10, legs: [-0.6, -0.8, -0.2, -0.3], total: -1.2, change: 1.7, avg: 75.2, spread: { sg: { n: 10, se: 0.7 }, legs: rankLegs(10), score: { n: 10, se: 0.95 } } },
+    { id: 'jonah', name: 'Jonah Okafor', rounds: 10, legs: [0.3, -1.2, -0.1, 0.2], total: -0.9, change: -1.7, avg: 73.6, spread: { sg: { n: 10, se: 0.68 }, legs: rankLegs(10), score: { n: 10, se: 0.88 } } },
+    { id: 'luca', name: 'Luca Ferraro', rounds: 2, legs: [null, null, null, null], total: null, change: null, avg: 76.5, spread: { sg: { n: 2, se: 2.69 }, legs: rankLegs(2), score: { n: 2, se: 2.55 } } },
   ],
   legTotals: [0.4, -0.7, 0.1, -0.3],
   putting: {
@@ -463,6 +466,8 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
       minPlays: 3,
     },
     holesError: false,
+    // Three of the twelve doubles or worse were triples or worse (the scoring mix says so on its double or worse).
+    triplePlus: 3,
     approach: [
       { label: '50-125 yd', value: 26, bench: 18, shots: 55, belowFloor: false, floor: 10, greenHitPct: 62 },
       { label: '125-175 yd', value: 40, bench: 30, shots: 72, belowFloor: false, floor: 10, greenHitPct: 41 },

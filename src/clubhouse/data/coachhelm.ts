@@ -382,7 +382,9 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
   let feed: EvidenceInsight[] = [];
   let threw = false;
   try {
-    feed = await getInsightsForPlayer(input.playerId, { limit: PLAYER_FEED_LIMIT, drawnLater: () => drawnIds });
+    // includeMore: the Board caps 3 + 1 itself and counts the rest into the Deep dive, so it reads every read
+    // (coachhelm_reads_v1_copy; no effect off).
+    feed = await getInsightsForPlayer(input.playerId, { limit: PLAYER_FEED_LIMIT, drawnLater: () => drawnIds, includeMore: true });
   } catch (err) {
     log('feed', err);
     threw = true;

@@ -32,6 +32,8 @@ export const FLOORS = {
   proximity: { show: 8, early: 25, unit: 'shot' },
   scramble: { show: 10, early: 30, unit: 'chance' },
   miss: { show: 20, early: 50, unit: 'shot' },
+  /** A share of holes (the scoring mix): any scored hole shows; under about 30 holes, under two rounds, it is an early read. */
+  holes: { show: 1, early: 30, unit: 'hole' },
 } as const;
 
 export type FloorKind = keyof typeof FLOORS;
@@ -47,9 +49,9 @@ export function sampleState(kind: FloorKind, n: number | null | undefined): Samp
 
 const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
 
-/** The tag on a muted value: "Early read · 6 rounds". */
-export function earlyTag(n: number): string {
-  return `Early read · ${plural(Math.round(n), 'round')}`;
+/** The tag on a muted value: "Early read · 6 rounds", or in the stat's own unit ("Early read · 24 holes"). */
+export function earlyTag(n: number, unit: string = 'round'): string {
+  return `Early read · ${plural(Math.round(n), unit)}`;
 }
 
 /** What a stat under its show floor needs: "Needs 5 rounds" (the unit follows the stat's own: rounds, putts, shots, chances). */
@@ -187,19 +189,22 @@ export interface Ranked extends RankInput {
 }
 
 /**
- * Rank by value, best first, and tie neighbors whose gap is under one standard error of their difference: a run of ties
- * shares the rank of its first member. Order is always by the point value; a tie never reorders anyone. Players with no
- * standard error never tie.
+ * Rank by value, best first. A player ties the head of the run above when the gap is under one standard error of their
+ * difference, so everyone sharing a rank is indistinguishable from the one who holds it (a chain of near neighbors never
+ * stretches a tie across players who plainly differ). Order is always by the point value; a tie never reorders anyone.
+ * Players with no standard error never tie.
  */
 export function rankWithTies(items: RankInput[], lowerIsBetter = false): Ranked[] {
   const sorted = [...items].sort((a, b) => (lowerIsBetter ? a.value - b.value : b.value - a.value) || a.id.localeCompare(b.id));
   const out: Ranked[] = [];
+  let head = -1;
   sorted.forEach((it, i) => {
-    const prev = out[i - 1];
-    const se = prev ? diffSe(prev.se, it.se) : null;
-    const tied = prev != null && se != null && Math.abs(prev.value - it.value) < se;
-    out.push({ ...it, rank: tied ? prev!.rank : i + 1, tied: tied || false });
-    if (tied && prev && !prev.tied) out[i - 1] = { ...prev, tied: true };
+    const lead = head >= 0 ? out[head] : null;
+    const se = lead ? diffSe(lead.se, it.se) : null;
+    const tied = lead != null && se != null && Math.abs(lead.value - it.value) < se;
+    if (!tied) head = i;
+    out.push({ ...it, rank: tied ? lead!.rank : i + 1, tied });
+    if (tied && lead && !lead.tied) out[head] = { ...lead, tied: true };
   });
   return out;
 }

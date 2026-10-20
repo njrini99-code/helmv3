@@ -1,5 +1,29 @@
 # Clubhouse changelog
 
+## 2026-10-20 — Stats visuals: ties by the head of the run
+
+- `lib/stats-signal.ts` `rankWithTies`: a tie run now holds only the players
+  within one standard error of its first player, not of the neighbor before
+  them. Chaining neighbors let a smooth spread join everyone into T1. First
+  used by the team ranked dot plot (P004).
+
+## 2026-10-20 — Stats visuals: a hole floor and an eagle fill token
+
+- `lib/stats-signal.ts`: a `holes` floor (shows from 1, early read under 30)
+  and `earlyTag(n, unit)` for a unit other than rounds ("Early read · 24
+  holes"). First used by the scoring mix (P005).
+- `styles/tokens.css`: `--ch-score-eagle-fill` in the light and dark blocks,
+  the deeper red of eagle or better as a fill.
+
+## 2026-10-20 — Stats visuals: area scrubbing in the pin hook
+
+- `lib/use-chart-pin.ts`: `useChartPin(count, axis, inset)` returns `area`, the
+  pointer handlers for a chart drawn as one surface: a mouse reads the nearest
+  column, a finger scrubs after about 8 px of mostly sideways travel
+  (`touch-action: pan-y` keeps a vertical swipe scrolling, and a cancel clears),
+  the end of a drag keeps the last column pinned, a tap or click toggles the
+  nearest. First used by the trend of rounds (P005).
+
 ## 2026-10-20 — Honest deltas (stats visuals 2)
 
 - `lib/stats-signal.ts`: `meanSe`, `changeSe` and `halvesChange`, the

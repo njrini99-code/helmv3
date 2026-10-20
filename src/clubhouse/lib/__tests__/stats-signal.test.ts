@@ -25,6 +25,8 @@ describe('floors', () => {
     expect([9, 10, 29, 30].map((n) => sampleState('make', n))).toEqual(['none', 'early', 'early', 'steady']);
     expect(sampleState('score', 1)).toBe('early');
     expect(sampleState('score', null)).toBe('none');
+    // A share of holes (the scoring mix): any hole shows, under 30 is an early read.
+    expect([0, 1, 29, 30].map((n) => sampleState('holes', n))).toEqual(['none', 'early', 'early', 'steady']);
   });
 
   it('say what is missing in the stat’s own unit, singular and plural', () => {
@@ -37,6 +39,10 @@ describe('floors', () => {
     expect(earlyTag(1)).toBe('Early read · 1 round');
     // A weighted count (a nine-hole round is half) rounds to whole rounds.
     expect(earlyTag(9.5)).toBe('Early read · 10 rounds');
+    // In the stat's own unit when it is not rounds.
+    expect(earlyTag(24, 'hole')).toBe('Early read · 24 holes');
+    expect(earlyTag(1, 'hole')).toBe('Early read · 1 hole');
+    expect(needsText('holes')).toBe('Needs 1 hole');
   });
 });
 
@@ -172,6 +178,18 @@ describe('rankWithTies', () => {
     expect(ranked.map((r) => r.id)).toEqual(['a', 'b', 'c']);
     expect(ranked.map((r) => r.rank)).toEqual([1, 1, 3]);
     expect(ranked.map((r) => r.tied)).toEqual([true, true, false]);
+  });
+
+  it('ties only players the head of the run cannot be told apart from, so a chain of neighbors does not stretch a tie', () => {
+    const ranked = rankWithTies([
+      { id: 'a', value: 5, se: 1 },
+      { id: 'b', value: 4, se: 1 },
+      { id: 'c', value: 3, se: 1 },
+      { id: 'd', value: 2, se: 1 },
+    ]);
+    // Each gap (1) is under the difference's standard error (1.41), but a and c (2 apart) are not.
+    expect(ranked.map((r) => r.rank)).toEqual([1, 1, 3, 3]);
+    expect(ranked.map((r) => r.tied)).toEqual([true, true, true, true]);
   });
 
   it('never ties a player with no standard error, and ranks lower-is-better ascending', () => {

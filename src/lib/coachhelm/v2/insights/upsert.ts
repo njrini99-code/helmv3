@@ -53,9 +53,12 @@ import {
   type LifecycleWriteDecision,
 } from './lifecycle-policy';
 import { getActiveGate, incrementGatedCount } from './gate-context';
+import { carryForwardStamp, evidenceRevisionKey as currentRevisionKey } from './revision-key';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isLifecycleRetired } from '@/lib/coachhelm/v3/lifecycle/archive-rules';
+import { isRecheckEnabled } from '@/lib/coachhelm/v3/lifecycle/flag';
 
 /**
  * Thrown by `upsertInsight` when the ownership lookup (team membership or
@@ -286,6 +289,8 @@ async function updateExisting(
   teamId: string | null,
   attempt = 0,
 ): Promise<string> {
+  // Slice 0b: an unstamped write (failed round load) keeps the row's stamp.
+  evidence = carryForwardStamp(existing.evidence, evidence);
   const nowIso = new Date().toISOString();
   const existingValue = existing.evidence?.your_value ?? 0;
   const newValue = evidence.your_value;
@@ -324,9 +329,10 @@ async function updateExisting(
   const priorMaturationKeys: readonly string[] = Array.isArray(priorMetadata.maturation_keys)
     ? (priorMetadata.maturation_keys as unknown[]).filter((k): k is string => typeof k === 'string')
     : [];
-  const evidenceRevisionKey = `${evidence.sample_n}|${evidence.window_end}`;
+  // Slice 0b: newest round + window start when the flag is on (revision-key.ts).
+  const evidenceRevisionKey = currentRevisionKey(evidence);
 
-  const decision: LifecycleWriteDecision = resolveLifecycleOnWrite({
+  const policyDecision: LifecycleWriteDecision = resolveLifecycleOnWrite({
     existing: existing.lifecycle_state,
     confidence: evidence.confidence,
     movedThisWrite,
@@ -334,6 +340,18 @@ async function updateExisting(
     priorMaturationKeys,
     promotionEnabled,
   });
+  // CoachHelm Slice 3 (`coachhelm_recheck_v1`, off): a read the nightly
+  // lifecycle step retired as Cleared or Contradicted is NOT resurrected by a
+  // re-emit (its lifetime number can still look like a leak); only that step
+  // restores it, when the recheck holds again or the winning read goes away.
+  // The evidence still refreshes on the archived row. Flag off: unchanged.
+  const keepRetired =
+    policyDecision.transition === 'resurrected' &&
+    isLifecycleRetired(existing.lifecycle_state, priorMetadata) &&
+    isRecheckEnabled();
+  const decision: LifecycleWriteDecision = keepRetired
+    ? { next: 'archived', transition: 'none', becomesVisible: false }
+    : policyDecision;
 
   const mergedMetadata: JsonRecord = {
     ...priorMetadata,

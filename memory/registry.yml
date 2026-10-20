@@ -298,6 +298,9 @@ features:
         # trigger, orchestrator, insight types/upsert) and is being retired. The
         # plan and every remaining v2 importer: src/lib/coachhelm/README.md.
         - src/lib/coachhelm/**
+        # Slice 1 back-test (read-only, offline): ladder distribution over a
+        # production export.
+        - scripts/coachhelm/support-backtest.*
       db:
         - supabase/migrations/*coachhelm*.sql
         - supabase/migrations/*insight*.sql
@@ -2287,8 +2290,10 @@ features:
     code:
       components:
         - src/clubhouse/**
+        - src/app/clubhouse-preview/entry/**
       tests:
         - src/clubhouse/__tests__/**
+        - src/app/clubhouse-preview/entry/__tests__/**
     integrations:
       - vercel
     review:

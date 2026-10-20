@@ -2777,7 +2777,7 @@
     "category": 1,
     "item": 1,
     "name": "TEAM_STATS_READY",
-    "meaning": "Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data.",
+    "meaning": "Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the ranked dot plot of who gains and loses, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data.",
     "status": "implemented",
     "where": "src/clubhouse/screens/stats/StatsTeam.tsx#StatsTeam; src/clubhouse/routes/stats.tsx#ClubhouseStatsRoute",
     "tests": [
@@ -3455,11 +3455,12 @@
     "category": 20,
     "item": 1,
     "name": "KEYBOARD_PATH",
-    "meaning": "The window switch moves and chooses with the arrow keys, a leg card takes Enter, and a grid row is a link that marks its player on the trend when it takes focus.",
+    "meaning": "The window switch moves and chooses with the arrow keys, a leg card takes Enter, the ranked dot plot reads a player with the arrow keys and opens them with Enter, and a grid row is a link that marks its player on the trend when it takes focus.",
     "status": "implemented",
-    "where": "src/clubhouse/ui/Segmented.tsx#Segmented; src/clubhouse/screens/stats/StatsTeamIslands.tsx#LegTrend, LegGrid",
+    "where": "src/clubhouse/ui/Segmented.tsx#Segmented; src/clubhouse/screens/stats/StatsTeamIslands.tsx#LegTrend, LegGrid; src/clubhouse/screens/stats/TeamRank.tsx#TeamRank",
     "tests": [
-      "src/clubhouse/__tests__/stats-team.test.tsx"
+      "src/clubhouse/__tests__/stats-team.test.tsx",
+      "src/clubhouse/screens/stats/__tests__/TeamRank.test.tsx"
     ]
   },
   {
