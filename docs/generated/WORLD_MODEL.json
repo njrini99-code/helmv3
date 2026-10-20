@@ -3138,6 +3138,12 @@
         ]
       },
       {
+        "id": "golf_coachhelm_corrections",
+        "definedIn": [
+          "supabase/migrations/20261020121000_golf_coachhelm_corrections.sql"
+        ]
+      },
+      {
         "id": "golf_course_edit_history",
         "definedIn": [
           "supabase/migrations/20260613160000_course_library_phase1.sql"
@@ -13892,6 +13898,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -14101,6 +14112,16 @@
       "target": "auth_onboarding_join",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
@@ -14533,6 +14554,17 @@
     },
     {
       "source": "coachhelm_ai",
+      "target": "golf_coachhelm_corrections",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261020121000_golf_coachhelm_corrections.sql"
+        }
+      ]
+    },
+    {
+      "source": "coachhelm_ai",
       "target": "golf_insight_action",
       "kind": "feature_table",
       "evidence": [
@@ -14692,6 +14724,21 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/coachhelm-ai.md",
           "anchor": "player_coachhelm_development"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/coachhelm/v3/corrections/flag"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/coachhelm/v3/corrections/input"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/coachhelm/v3/corrections/types"
         },
         {
           "kind": "import_graph",
@@ -19167,6 +19214,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/corrections/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/counterfactual/baseline-loader.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -19428,6 +19480,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/context/load-player-context.ts",
           "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/corrections/load-weights.ts",
+          "anchor": "src/lib/supabase/untyped"
         },
         {
           "kind": "import_graph",

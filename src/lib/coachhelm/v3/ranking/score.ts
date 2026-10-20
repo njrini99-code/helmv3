@@ -28,6 +28,9 @@ import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type { InsightPriority } from '@/lib/coachhelm/insight-types';
 import { getCounterfactualConfig } from '@/lib/coachhelm/v3/counterfactual/lookup-tables';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCorrectionsEnabled } from '@/lib/coachhelm/v3/corrections/flag';
+import { mergeCoachWeights } from '@/lib/coachhelm/v3/corrections/coach-weights';
+import { loadCorrectionWeightsForPlayer } from '@/lib/coachhelm/v3/corrections/load-weights';
 
 type Sb = SupabaseClient<Database>;
 
@@ -420,8 +423,29 @@ export function rankInsights<T extends RankableInsight>(
  * path is gated. Flag off returns `{}` before querying at all, which is
  * exactly equivalent to every insight_type getting its `?? 1.0` default in
  * scoreInsight.
+ *
+ * Corrections (Slice 6a, `coachhelm_corrections_v1`, default OFF): this is
+ * the ONE place the learned coach weight W enters ranking. Flag off returns
+ * the outcome weights exactly as before (no extra read, byte-identical
+ * ranks). Flag on adds W from the primary coach's corrections
+ * (v3/corrections/coach-weights.ts: -0.1 per "Not this", +0.05 per "Good
+ * read", bounds 0.5-1.5) for every insight_type that has no calibrated
+ * outcome weight; a calibrated outcome weight (sample_n >= 10, read only when
+ * `coachhelm_learned_personalization` is on) still wins, which is the 03 §2.2
+ * "corrections until >= 10 verdicts per family" hand-off.
  */
 export async function loadCoachWeightsForPlayer(
+  sb: Sb,
+  player_id: string,
+): Promise<CoachWeights> {
+  const outcomeWeights = await loadOutcomeCoachWeights(sb, player_id);
+  if (!isCorrectionsEnabled()) return outcomeWeights;
+  const correctionWeights = await loadCorrectionWeightsForPlayer(sb, player_id);
+  return mergeCoachWeights(correctionWeights, outcomeWeights);
+}
+
+/** The outcome-based weights (golf_coachhelm_coach_weights); see above. */
+async function loadOutcomeCoachWeights(
   sb: Sb,
   player_id: string,
 ): Promise<CoachWeights> {
