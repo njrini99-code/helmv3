@@ -10,8 +10,8 @@
 
 import { useRef, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
-import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
-import { useShotStateMachine } from '@/hooks/golf/use-shot-state-machine';
+import type { ShotRecord, HoleStats, RoundHole, PuttMissTag } from '@/lib/types/golf';
+import { useShotStateMachine, tagPuttMiss } from '@/hooks/golf/use-shot-state-machine';
 import { usePenaltyHandler } from '@/hooks/golf/use-penalty-handler';
 import { useUndoManager } from '@/hooks/golf/use-undo-manager';
 import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
@@ -554,6 +554,31 @@ export function useShotTracking(
     }
   }, [holeCheckpointStatus, shotHistory, completeHole, isProcessingShotRef]);
 
+  /**
+   * The one-tap data-gap prompt (CoachHelm Slice 8a): tag a putt already in
+   * this hole's history. It goes the way any change to a recorded shot goes
+   * (the edit path's tail): the reducer, then `onAutoSave` with the updated
+   * hole, whose synchronous device copy lands first and whose server save the
+   * state machine retries, holds offline and resends like every other save.
+   * No second queue, no point update. Not applied while an edit or undo is
+   * writing. Returns true when the tag was applied (synchronously, so the
+   * screen can show it at once; the save runs behind it).
+   */
+  const handleTagPuttMiss = useCallback((shotNumber: number, tag: PuttMissTag): boolean => {
+    if (shotMutationInFlightRef.current) return false;
+    const updated = tagPuttMiss(shotHistory, shotNumber, [tag]);
+    if (updated === shotHistory) return false;
+    dispatch({ type: 'TAG_PUTT_MISS', payload: { shotNumber, tags: [tag] } });
+    if (onAutoSave && !autoSaveDisabled) {
+      // Same as an edit (use-edit-shot-modal): a rejection here is the
+      // background save, which the state machine's own save of the changed
+      // history tracks and retries; the tag is already on screen and in the
+      // device copy.
+      onAutoSave(updated, currentHoleIndex).catch(() => undefined);
+    }
+    return true;
+  }, [shotHistory, dispatch, onAutoSave, autoSaveDisabled, currentHoleIndex]);
+
   const handleSelectShot = useCallback((shotNumber: number) => {
     dispatch({ type: 'SELECT_SHOT', payload: shotNumber });
     scrollElementIntoView(shotHistoryRefs.current[shotNumber] ?? null);
@@ -624,5 +649,7 @@ export function useShotTracking(
     handleTapIn,
     handleRetryHoleCheckpoint,
     handleSelectShot,
+    /** Tag a recorded putt's miss (the data-gap prompt); see its doc comment. */
+    handleTagPuttMiss,
   };
 }

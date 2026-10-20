@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/sonner';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { haptic } from '@/lib/haptics';
 import { useNewRoundSession, type NewRoundClientProps } from '@/lib/golf/round-session/use-new-round-session';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
 // The post-hole decision lives with the engine; its tests import it from here.
 export { decidePostHoleCompleteAction, type PostHoleCompleteAction } from '@/lib/golf/round-session/use-new-round-session';
 
@@ -66,7 +67,13 @@ const FairwayRoundSummarySheet = dynamic(
   { loading: () => <RoundCompletionChunkLoading /> },
 );
 
-export default function NewRoundClient({ playerId }: NewRoundClientProps) {
+export default function NewRoundClient({
+  playerId,
+  dataGapAsks,
+}: NewRoundClientProps & {
+  /** CoachHelm Slice 8a: open one-tap asks, only with coachhelm_data_gap_prompt_v1 on. */
+  dataGapAsks?: readonly DataGapAsk[];
+}) {
   const ExitRoundModal = FairwaySaveRoundModal;
   const SubmitOverlay = FairwayRoundSubmitOverlay;
   // The engine's ports: the same functions it used to get from these two hooks, every render (ROUNDS_PLAN step 4c).
@@ -466,6 +473,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           onAutoSave={handleAutoSave}
           autoSaveInterval={15000}
           autoSaveDisabled={step === 'submitting' || !!completedRoundId}
+          dataGapAsks={dataGapAsks}
         />
       </div>
 
