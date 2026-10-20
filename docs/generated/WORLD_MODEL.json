@@ -13649,6 +13649,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/orchestrator.ts",
+          "anchor": "src/lib/coachhelm/v3/generators/insight-angles"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/orchestrator.ts",
           "anchor": "src/lib/coachhelm/v3/composite"
         },
         {
@@ -19377,6 +19382,31 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/__tests__/design-layer.test.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/__tests__/design-layer.test.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/angle-generator.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/index.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/par-type.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -19661,6 +19691,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/pressure-gap.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -19867,12 +19902,22 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/source-rounds.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/types.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/approach-miss.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/angle-data.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
@@ -20260,6 +20305,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/pressure-gap.ts",
           "anchor": "src/lib/golf/round-countable"
         },
@@ -20487,6 +20537,11 @@
         {
           "kind": "rpc_call",
           "path": "src/components/golf/coachhelm/round-review/FilmstripReview.tsx",
+          "anchor": "sg_scale_for_player"
+        },
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
           "anchor": "sg_scale_for_player"
         }
       ]

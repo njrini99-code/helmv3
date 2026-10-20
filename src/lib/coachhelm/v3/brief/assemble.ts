@@ -125,7 +125,11 @@ export function assembleBriefEngineInsights(
 
     const ev = readEvidence(top);
     const cf = ev.counterfactual;
+    // A rough estimate (`evidence.estimated === true`) never reads as strokes
+    // on the table: its size rests on an assumption the record cannot check.
+    const estimated = (ev as { estimated?: unknown }).estimated === true;
     const strokesSaved =
+      !estimated &&
       cf && cf.suppressed !== true && Number.isFinite(cf.strokes_saved_per_round) && cf.strokes_saved_per_round > 0
         ? cf.strokes_saved_per_round
         : null;
