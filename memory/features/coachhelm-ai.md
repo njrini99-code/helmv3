@@ -460,22 +460,38 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   cost, approach-miss compass) join the tier-1 run at one call site,
   `insightAngleGenerators(playerId)` in `v2/orchestrator.ts`, which returns
   no entries while `coachhelm_insight_angles_v1` is off (default, every
-  environment). Contract per family lives in `ANGLE_FAMILIES`
-  (`angle-data.ts`): metric, sample unit, floor and per-side floor, round
-  floor, Slice 1 gap kind, impact kind, benchmark and ladder cap, each
-  citing `docs/v3-research-golf-domain.md`. Every row writes
-  `sample_unit`, `rounds_n`, `newest_round_id`, `comparison.primary` and
-  `detail.gap_input` (the Slice 1 `GapInput` shape) over the newest 40
-  countable rounds. Tee-miss cost and fairway exposure are
+  environment); each generator's `run()` (`angle-generator.ts`) also
+  returns before any read, write or sweep while it is off. With it on, the
+  five share one lazy set of reads per call (`createAngleLoaders`), never
+  cached across calls. Contract per family lives in `ANGLE_FAMILIES`
+  (`angle-data.ts`): metric (each its own id, never an existing one: the
+  three-putt angle writes `three_putts_per_18`, while `three_putt_chain`
+  stays composite C6's), insight type, sample unit, floor and per-side
+  floor, round floor, Slice 1 gap kind, impact kind, benchmark (and
+  fallbacks), κ in the gap input's unit, and ladder cap, each citing
+  `docs/v3-research-golf-domain.md`. Every row writes `sample_unit`,
+  `rounds_n`, `newest_round_id`, `source_round_ids` (the rounds counted,
+  so it matches `rounds_n`), `comparison.primary`, `detail.gap_input` (the
+  Slice 1 `GapInput` shape) and `detail.test` (its z gate) over the newest
+  40 countable rounds. Team benchmarks need 5+ teammates (the `07` §6
+  privacy floor); below that there is no comparison and no read. The
+  three-putt benchmark follows owner rule Q-88: the Tour figure from
+  `golf_pga_standards` (PGA or LPGA by the player's cohort) when one is
+  stored, else the teammates' median, else nothing; no GolfHelm-wide pool
+  number. Tee-miss cost, fairway exposure and the bad-day floor are
   `rough_estimate` (`estimated: true`, worded as a rough estimate, never as
-  a measured saving); the cause stays `inferred_hypothesis`, and counted
-  shot sequences go to `detail.sequence` until the Slice 2 root-cause
-  ladder can read them. No `coach_copy` is written (player voice only)
-  until Slice 2 lands. Turning the flag off stops new rows but does not
-  sweep rows written while it was on; the flag's `cleanup_plan` lists the
-  signature prefixes to archive. Tests:
-  `insight-angles/__tests__/` (`contract.ts` asserts the family contract
-  on every composed row).
+  a measured saving) and carry no counterfactual; the Team Brief and the
+  strokes-available roll-up also skip any `estimated` row. The bad-day row
+  always files under `scoring` (its SG area split stays in
+  `detail.driver_area`). Without the player's SG scale
+  (`sg_scale_for_player` error, logged) the SG-based angles say nothing.
+  The cause stays `inferred_hypothesis`, and counted shot sequences go to
+  `detail.sequence` until the Slice 2 root-cause ladder can read them. No
+  `coach_copy` is written (player voice only) until Slice 2 lands. Turning
+  the flag off stops new rows but does not sweep rows written while it was
+  on; the flag's `cleanup_plan` lists the signature prefixes to archive.
+  Tests: `insight-angles/__tests__/` (`contract.ts` asserts the family
+  contract on every composed row).
 - **v2 coach-alert family (bubble_player, pattern_detected, streak,
   surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
   recurring_weakness, team_trend, scoring_decline) is still live-written,

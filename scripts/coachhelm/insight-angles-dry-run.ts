@@ -9,10 +9,10 @@
  * preview it off).
  *
  * Output per angle: players evaluated, players qualifying, 3 example insight
- * sentences (no player ids or names), and sizing totals (sum and mean
- * strokes/round of the counterfactual). `--calibrate` also prints the
- * population distributions the gates were set from, and the measured
- * first-putt 3-putt rates behind `PEER_THREE_PUTT`.
+ * sentences (no player ids or names), and sizing totals (sum and mean of
+ * `strokes_impact` per round; a rough estimate carries no projection and is
+ * marked as one). `--calibrate` also prints the population distributions the
+ * gates were set from, and the measured first-putt 3-putt rates by band.
  *
  * Usage (the hook stubs `server-only` outside Next):
  *   node --import tsx/esm --import ./scripts/coachhelm/server-only-hook.mjs \
@@ -27,8 +27,8 @@ const CALIBRATE = process.argv.includes('--calibrate');
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import { loadAngleData, loadTeamPeerRounds } from '@/lib/coachhelm/v3/generators/insight-angles/load-angle-data';
-import { median, primaryTeamId, type AngleData } from '@/lib/coachhelm/v3/generators/insight-angles/angle-data';
+import { createAngleLoaders } from '@/lib/coachhelm/v3/generators/insight-angles/load-angle-data';
+import { median, primaryTeamId, type AngleData, type PeerRound } from '@/lib/coachhelm/v3/generators/insight-angles/angle-data';
 import {
   composeLieApproach,
   computeLieApproach,
@@ -43,6 +43,7 @@ import {
   PUTT_BANDS,
   composeThreePuttChain,
   computeThreePuttChain,
+  resolveThreePuttBenchmark,
   toThreePuttAggregate,
 } from '@/lib/coachhelm/v3/generators/insight-angles/three-putt-chain';
 import {
@@ -61,7 +62,9 @@ interface Example {
   title: string;
   sentence: string;
   strokes: number;
-  suppressed: boolean;
+  /** No live projection: suppressed, or a rough estimate (which never carries one). */
+  noProjection: boolean;
+  estimated: boolean;
 }
 
 interface AngleTally {
@@ -92,16 +95,20 @@ function record(
   if (receipts?.definition && Array.isArray(receipts.examples) && receipts.examples.length > 0 && receipts.examples.length <= 5) calib.receiptsOk += 1;
   t.qualifying += 1;
   t.byCategory[category] = (t.byCategory[category] ?? 0) + 1;
-  const cf = (composed.evidence as { counterfactual?: { strokes_saved_per_round: number; suppressed: boolean } })
-    .counterfactual;
-  const strokes = cf?.strokes_saved_per_round ?? 0;
+  const ev = composed.evidence as {
+    strokes_impact?: number;
+    estimated?: boolean;
+    counterfactual?: { suppressed: boolean };
+  };
+  const strokes = ev.strokes_impact ?? 0;
   t.strokes.push(strokes);
   t.examples.push({
     category,
     title: composed.title,
     sentence: composed.content.split(/(?<=\.)\s/).slice(0, 2).join(' '),
     strokes,
-    suppressed: cf?.suppressed ?? true,
+    noProjection: ev.counterfactual ? ev.counterfactual.suppressed : true,
+    estimated: ev.estimated === true,
   });
 }
 
@@ -116,6 +123,7 @@ const calib = {
   receiptsOk: 0,
   receiptsChecked: 0,
   chainExcess: [] as number[],
+  chainBenchmark: {} as Record<string, number>,
   chainZ: [] as number[],
   teeGap: [] as number[],
   teeZ: [] as number[],
@@ -145,17 +153,22 @@ async function main(): Promise<void> {
   const players = [...new Set((data ?? []).map((r) => r.player_id))];
   console.log(`players with completed rounds: ${players.length}`);
 
+  // One team read per team for the whole dry run (the generators read per call).
+  const teamCache = new Map<string, Promise<PeerRound[]>>();
   for (const playerId of players) {
+    const loaders = createAngleLoaders(playerId);
     let d: AngleData;
     try {
-      d = await loadAngleData(playerId);
+      d = await loaders.data();
     } catch (err) {
       console.log(`  a player's load failed (${(err as Error).message})`);
       continue;
     }
     if (d.rounds.length === 0) continue;
     const team = primaryTeamId(d.rounds);
-    const peers = team ? await loadTeamPeerRounds(team) : null;
+    if (team && !teamCache.has(team)) teamCache.set(team, loaders.teamRounds(team));
+    const peers = team ? await teamCache.get(team)! : null;
+    const tour = await loaders.tourThreePutt();
 
     // 1. Lie-adjusted approach
     const lie = computeLieApproach(d, peers);
@@ -190,15 +203,17 @@ async function main(): Promise<void> {
     }
 
     // 3. 3-putt chain
-    const chain = computeThreePuttChain(d);
+    const chainBenchmark = resolveThreePuttBenchmark(tour, peers, playerId);
+    calib.chainBenchmark[chainBenchmark?.source ?? 'none'] = (calib.chainBenchmark[chainBenchmark?.source ?? 'none'] ?? 0) + 1;
+    const chain = computeThreePuttChain(d, chainBenchmark);
     tally('3 three-putt chain').evaluated += 1;
     if (chain) {
       for (const b of chain.bands) {
         calib.bandHoles[b.band] += b.holes;
         calib.bandThree[b.band] += b.three_putts;
       }
-      if (chain.holes_putted >= 90) {
-        calib.chainExcess.push(chain.three_putts_per_18 - chain.expected_peer_per_18);
+      if (chain.holes_putted >= 90 && chain.benchmark_per_18 !== null) {
+        calib.chainExcess.push(chain.three_putts_per_18 - chain.benchmark_per_18);
         if (chain.z !== null) calib.chainZ.push(chain.z);
       }
       if (chain.slope.lag_first_putts > 0) calib.slopeFill.push(chain.slope.fill_pct);
@@ -256,7 +271,8 @@ async function main(): Promise<void> {
       `sizing: total ${sum.toFixed(2)} strokes/round across qualifying players, mean ${(t.qualifying ? sum / t.qualifying : 0).toFixed(2)}, max ${(t.strokes.length ? Math.max(...t.strokes) : 0).toFixed(2)}`,
     );
     for (const e of t.examples.sort((a, b) => b.strokes - a.strokes).slice(0, 3)) {
-      console.log(`  (${e.category}, ${e.strokes.toFixed(2)}/rd${e.suppressed ? ', projection suppressed' : ''}) ${e.title} — ${e.sentence}`);
+      const tag = e.estimated ? ', rough estimate, no projection' : e.noProjection ? ', projection suppressed' : '';
+      console.log(`  (${e.category}, ${e.strokes.toFixed(2)}/rd${tag}) ${e.title} — ${e.sentence}`);
     }
   }
 
@@ -275,7 +291,8 @@ async function main(): Promise<void> {
     console.log(`bad-day extra gap vs teammates' median: ${q(calib.floorExtra)}`);
     console.log(`rounds excluded for incomplete hole scores: ${calib.floorExcluded}`);
     console.log(`3-putt pathways (all players, newest 40 countable rounds): ${JSON.stringify(calib.pathways)}`);
-    console.log(`3-putt excess per 18 (≥90 holes): ${q(calib.chainExcess)}`);
+    console.log(`3-putt benchmark used (players): ${JSON.stringify(calib.chainBenchmark)}`);
+    console.log(`3-putt excess per 18 (≥90 holes, with a benchmark): ${q(calib.chainExcess)}`);
     console.log(`3-putt z: ${q(calib.chainZ)}`);
     console.log(`lag first-putt slope fill %: ${q(calib.slopeFill)}`);
     console.log(`tee side gap (strokes/miss, ≥12 each side): ${q(calib.teeGap)}`);

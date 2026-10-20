@@ -12,12 +12,14 @@ import {
 } from '../bad-day-floor';
 import type { AngleHole, AngleRound } from '../angle-data';
 import { expectFamilyContract } from './contract';
-import { PLAYER, mkData, mkHole, mkPeerRounds, mkRound } from './fixtures';
+import { PLAYER, mkData, mkHole, mkPeerRounds, mkRound, stubLoaders } from './fixtures';
 
 /**
- * `n` rounds of `holes` par-4 holes. Every 5th round is a "bad" round with
+ * `n` rounds of `holes` par-4 holes. Every 3rd round is a "bad" round with
  * `badDoubles` triple-bogeys (one of them with a penalty stroke when
- * `penalty`); other rounds have `bogeys` bogeys spread by round index.
+ * `penalty`); other rounds have `bogeys` bogeys spread by round index. One
+ * bad round in three puts the P80 squarely on bad rounds, so the floor gap's
+ * bootstrap SE is small enough for the z gate (one in five sits on the edge).
  */
 function build(opts: { n?: number; holes?: 9 | 18; badDoubles?: number; penalty?: boolean; badArea?: 'tee' | 'putting' }) {
   const n = opts.n ?? 15;
@@ -25,7 +27,7 @@ function build(opts: { n?: number; holes?: 9 | 18; badDoubles?: number; penalty?
   const rounds: AngleRound[] = [];
   const holes: AngleHole[] = [];
   for (let i = 0; i < n; i++) {
-    const bad = i % 5 === 0;
+    const bad = i % 3 === 0;
     const sg = { total: 0, tee: 0, approach: 0, short_game: 0, putting: 0 };
     if (bad) sg[opts.badArea ?? 'tee'] = -((opts.badDoubles ?? 3) * 2);
     const r = mkRound(i, { holes: nh, sg });
@@ -44,8 +46,8 @@ function build(opts: { n?: number; holes?: 9 | 18; badDoubles?: number; penalty?
   return mkData(rounds, holes, []);
 }
 
-/** Teammates whose per-18 score to par cycles 0..spread (tight floor). */
-function peers(players = 3, spread = 1) {
+/** Teammates whose per-18 score to par cycles 0..spread (tight floor); 5 by default (the 07 §6 floor). */
+function peers(players = 5, spread = 1) {
   return Array.from({ length: players }, (_, p) =>
     mkPeerRounds(`p${p}`, 12, (i) => ({ score_to_par: i % (spread + 1) })),
   ).flat();
@@ -70,8 +72,12 @@ describe('computeBadDayFloor', () => {
   it('finds the bad-day gap, splits it, and qualifies against a tighter team', () => {
     const r = computeBadDayFloor(build({ badDoubles: 3, penalty: true }), peers())!;
     expect(r.rounds).toHaveLength(15);
-    expect(r.peer_n).toBe(3);
+    expect(r.peer_n).toBe(5);
     expect(r.floor_gap).toBeGreaterThan(r.peer_gap!);
+    // z = (floor gap − teammates' gap) ÷ the floor gap's bootstrap SE clears 1.645.
+    expect(r.z).not.toBeNull();
+    expect(r.z!).toBeCloseTo((r.floor_gap - r.peer_gap!) / r.floor_gap_se!, 0);
+    expect(r.z!).toBeGreaterThanOrEqual(1.645);
     expect(r.qualifies).toBe(true);
     // The split adds up to bad − middle.
     const sum = r.split.penalties + r.split.double_or_worse + r.split.everything_else;
@@ -90,15 +96,31 @@ describe('computeBadDayFloor', () => {
     expect(toFloorAggregate(r, 74)).toBeNull();
   });
 
-  it('needs 3 teammates with 10+ rounds; the player is never their own peer', () => {
+  it('needs 5 teammates with 10+ rounds (07 §6 privacy floor); the player is never their own peer', () => {
     const own = mkPeerRounds(PLAYER, 12, () => ({ score_to_par: 0 }));
-    const r = computeBadDayFloor(build({}), [...peers(2), ...own])!;
-    expect(r.peer_n).toBe(2);
+    const r = computeBadDayFloor(build({}), [...peers(4), ...own])!;
+    expect(r.peer_n).toBe(4);
+    expect(r.peer_gap).toBeNull();
+    expect(r.qualifies).toBe(false);
+  });
+
+  it('does not qualify when the extra gap is inside the floor gap\'s noise (z < 1.645)', () => {
+    // Ten rounds: eight at even par and two at +10. Floor gap (P80 − median)
+    // = 2 vs teammates' 0, so the extra gap clears 1.5, but which rounds the
+    // P80 lands on swings from 0 to 10: the bootstrap SE is large.
+    const rounds = Array.from({ length: 10 }, (_, i) => mkRound(i));
+    const holes = rounds.flatMap((r, i) =>
+      Array.from({ length: 18 }, (_, h) => mkHole(r.id, h + 1, { score: i >= 8 && h < 10 ? 5 : 4 })),
+    );
+    const r = computeBadDayFloor(mkData(rounds, holes, []), peers(5, 0))!;
+    expect(r.extra_gap).toBeGreaterThanOrEqual(1.5);
+    expect(r.z).not.toBeNull();
+    expect(r.z!).toBeLessThan(1.645);
     expect(r.qualifies).toBe(false);
   });
 
   it('does not flag a floor no wider than teammates\'', () => {
-    const r = computeBadDayFloor(build({ badDoubles: 1 }), peers(3, 6))!;
+    const r = computeBadDayFloor(build({ badDoubles: 1 }), peers(5, 6))!;
     expect(r.qualifies).toBe(false);
   });
 
@@ -127,16 +149,25 @@ describe('computeBadDayFloor', () => {
 });
 
 describe('composeBadDayFloor', () => {
-  it('files under the area bad rounds lose most in, sizes one round in five', () => {
+  it('files under scoring with the area in detail, and sizes one round in five as a rough estimate', () => {
     const r = computeBadDayFloor(build({ badDoubles: 3, badArea: 'putting' }), peers())!;
     const c = composeBadDayFloor(toFloorAggregate(r, 74)!);
-    expectFamilyContract(c, 'bad_day_floor', { roundsN: 15, newestRoundId: 'r14' });
-    const ev = c.evidence as typeof c.evidence & { counterfactual: { strokes_saved_per_round: number; attempts_used: number } };
-    expect(c.category).toBe('putting');
+    const gen = new BadDayFloorGenerator(PLAYER, stubLoaders(mkData([], [], [])));
+    expectFamilyContract(c, 'bad_day_floor', { roundsN: 15, newestRoundId: 'r14', insightType: gen.insightType });
+    const ev = c.evidence as typeof c.evidence & { counterfactual?: unknown };
+    // The SG area split is descriptive: the row stays under scoring, so its
+    // strokes never land in an area total.
+    expect(r.driver).toBe('putting');
+    expect(c.category).toBe('scoring');
+    expect((ev.detail as { driver_area: string }).driver_area).toBe('putting');
     expect(ev.metric).toBe('round_bad_day_floor');
     expect(ev.comparison_source).toBe('team_avg');
-    expect(ev.counterfactual.attempts_used).toBe(0.2);
-    expect(ev.counterfactual.strokes_saved_per_round).toBeCloseTo(Math.min(2.5, r.extra_gap * 0.2), 1);
+    // Rough estimate: extra gap × 0.2, no projection attached.
+    expect(ev.strokes_impact_method).toBe('rough_estimate');
+    expect(ev.estimated).toBe(true);
+    expect(ev.counterfactual).toBeUndefined();
+    expect(ev.strokes_impact).toBeCloseTo(Math.min(2.5, r.extra_gap * 0.2), 1);
+    expect((ev.detail as { test: { z: number } }).test.z).toBe(r.z);
     expect(ev.diagnosis?.causality_level).toBe('inferred_hypothesis');
     const receipts = (ev.detail as { receipts: { samples: Record<string, number>; definition: string } }).receipts;
     expect(receipts.samples.rounds).toBe(15);
@@ -147,13 +178,15 @@ describe('composeBadDayFloor', () => {
     expect(agg.round_dates).toBeUndefined();
   });
 
-  it('falls back to scoring when SG is not stored on the rounds', () => {
+  it('stays under scoring with or without SG stored on the rounds', () => {
     const data = build({ badDoubles: 3 });
     data.rounds = data.rounds.map((r) => ({ ...r, sg: { total: null, tee: null, approach: null, short_game: null, putting: null } }));
     const r = computeBadDayFloor(data, peers())!;
     expect(r.driver).toBeNull();
-    const gen = new BadDayFloorGenerator(PLAYER);
+    const gen = new BadDayFloorGenerator(PLAYER, stubLoaders(mkData([], [], [])));
     gen.composeContent(toFloorAggregate(r, 74)!);
+    expect(gen.category).toBe('scoring');
+    gen.composeContent(toFloorAggregate(computeBadDayFloor(build({ badDoubles: 3, badArea: 'tee' }), peers())!, 74)!);
     expect(gen.category).toBe('scoring');
   });
 });

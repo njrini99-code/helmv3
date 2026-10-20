@@ -25,6 +25,19 @@ export function windowDateBounds(
   return { from: new Date(s).toISOString().slice(0, 10), to: new Date(e).toISOString().slice(0, 10) };
 }
 
+/**
+ * The round ids a generator composed itself, when it counted a narrower set
+ * than "every completed round in the window" (the insight angles read the
+ * newest countable rounds, so `rounds_n` must match the ids). Null when the
+ * evidence carries none, so the caller falls back to the window query.
+ */
+export function composedSourceRoundIds(evidence: unknown): string[] | null {
+  if (!evidence || typeof evidence !== 'object') return null;
+  const ids = (evidence as { source_round_ids?: unknown }).source_round_ids;
+  if (!Array.isArray(ids) || ids.length === 0 || !ids.every((x) => typeof x === 'string')) return null;
+  return ids.slice(0, SOURCE_ROUND_IDS_CAP);
+}
+
 export async function loadSourceRoundIds(
   supabase: SupabaseClient,
   playerId: string,

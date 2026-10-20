@@ -1,5 +1,6 @@
 /** Synthetic AngleData builders for the insight-angle tests (no DB). */
-import type { AngleData, AngleHole, AngleRound, AngleShot, PeerRound } from '../angle-data';
+import type { AngleData, AngleHole, AngleRound, AngleShot, PeerRound, TourThreePutt } from '../angle-data';
+import type { AngleLoaders } from '../angle-generator';
 
 export const PLAYER = '11111111-2222-3333-4444-555555555555';
 
@@ -72,6 +73,35 @@ export function mkPeerRounds(playerId: string, n: number, over: (i: number) => P
     score_to_par: 0,
     fairways_hit: 10,
     fairways_total: 14,
+    three_putts: null,
     ...over(i),
   }));
+}
+
+/** `count` teammates (peer-1 .. peer-n), `n` rounds each, built by `over(player index, round index)`. */
+export function mkTeam(count: number, n: number, over: (p: number, i: number) => Partial<PeerRound>): PeerRound[] {
+  return Array.from({ length: count }, (_, p) => mkPeerRounds(`peer-${p + 1}`, n, (i) => over(p, i))).flat();
+}
+
+/** Loaders for the generator tests: fixed data, team rounds and Tour figure; no DB. */
+export function stubLoaders(
+  data: AngleData,
+  opts: { team?: PeerRound[]; tour?: TourThreePutt | null } = {},
+): AngleLoaders & { calls: { data: number; teamRounds: number; tourThreePutt: number } } {
+  const calls = { data: 0, teamRounds: 0, tourThreePutt: 0 };
+  return {
+    calls,
+    async data() {
+      calls.data += 1;
+      return data;
+    },
+    async teamRounds() {
+      calls.teamRounds += 1;
+      return opts.team ?? [];
+    },
+    async tourThreePutt() {
+      calls.tourThreePutt += 1;
+      return opts.tour ?? null;
+    },
+  };
 }

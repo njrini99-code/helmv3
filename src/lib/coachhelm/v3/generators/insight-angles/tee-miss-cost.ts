@@ -53,15 +53,11 @@
  * number per tee shot, so nothing is summed across sequence events.
  */
 
-import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
 import {
   ANGLE_MIN_Z,
-  INSIGHT_ANGLES_FLAG,
   angleReadFields,
   angleTest,
-  attemptCounterfactual,
   familyDetail,
   newestFirstIds,
   meetsObservedFloors,
@@ -71,7 +67,7 @@ import {
   type AngleGapInput,
   type AngleSequence,
   holeKey,
-  impactOf,
+  roughEstimateStrokes,
   indexHoles,
   mean,
   round1,
@@ -89,7 +85,7 @@ import {
   type AngleWindow,
   type ReceiptExample,
 } from './angle-data';
-import { loadAngleData } from './load-angle-data';
+import { AngleGenerator } from './angle-generator';
 
 export const TEE_MIN_ROUNDS = 5;
 export const TEE_MIN_SHOTS = 40;
@@ -380,7 +376,8 @@ export function computeTeeMiss(data: AngleData): TeeMissResult | null {
     worse = l >= r ? 'left' : 'right';
     better = worse === 'left' ? 'right' : 'left';
   }
-  const gap = worse && better ? (sides[worse].cost_vs_fairway ?? 0) - (sides[better].cost_vs_fairway ?? 0) : null;
+  // Sized from the unrounded side means; cost_vs_fairway is rounded for display.
+  const gap = worse && better ? mean(costs[worse])! - mean(costs[better])! : null;
   const z = worse && better ? welchZ(costs[worse], costs[better]) : null;
   const gapSe = worse && better ? welchSe(costs[worse], costs[better]) : null;
   const gapDf = worse && better ? welchDf(costs[worse], costs[better]) : null;
@@ -530,12 +527,9 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
     },
     examples: r.examples,
   };
-  const cf = attemptCounterfactual({
-    strokesPerAttempt: r.gap_per_miss ?? 0,
-    attemptsPerRound: r.worse_per_18,
-    baseline: agg.baseline,
-    weeks: 16,
-  });
+  // Rough estimate: the size of the read only, with no projection attached
+  // (a rough estimate never carries projected_score_if_closed).
+  const roughStrokes = roughEstimateStrokes(r.cost_per_round, 1);
   const nextNotWorse = w.next_shot_sg !== null && b.next_shot_sg !== null && w.next_shot_sg >= b.next_shot_sg;
   const nextLine =
     `Strokes gained on the next shot: ${sgText(w.next_shot_sg, w.next_shot_sg_n)} after a ${r.worse} miss vs ${sgText(b.next_shot_sg, b.next_shot_sg_n)} after a ${r.better} miss` +
@@ -553,7 +547,7 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
     unit: 'strokes',
     polarity: 'lower_better',
     your_value: wCost,
-    your_value_display: `+${wCost.toFixed(2)} per miss`,
+    your_value_display: `${wCost > 0 ? '+' : ''}${wCost.toFixed(2)} per miss`,
     comparison_value: bCost,
     comparison_label: `Your ${r.better} misses (same comparison)`,
     comparison_source: 'your_baseline',
@@ -561,14 +555,13 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
     window_days: r.window.window_days,
     window_start: r.window.window_start,
     window_end: r.window.window_end,
-    strokes_impact: impactOf(cf),
+    strokes_impact: roughStrokes,
     // 02 §7 / Slice 5a: the holes after a left and a right miss differ, so
     // the saving is a rough estimate and must never print as measured.
     strokes_impact_method: 'rough_estimate',
     estimated: true,
     confidence: 0,
     confidence_factors: { sample_adequacy: Math.min((w.costed + b.costed) / 60, 1), recency: 1, variance: 0.5 },
-    counterfactual: cf,
     detail: {
       ...familyDetail('tee_miss_cost'),
       gap_input: teeMissGapInput(r),
@@ -624,7 +617,7 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
   };
 }
 
-export class TeeMissCostGenerator extends BaseGenerator<TeeMissAggregate> {
+export class TeeMissCostGenerator extends AngleGenerator<TeeMissAggregate> {
   readonly name = 'TeeMissCostGenerator';
   readonly metricId: MetricId = 'sg_ott';
   readonly insightType = 'tee';
@@ -632,16 +625,12 @@ export class TeeMissCostGenerator extends BaseGenerator<TeeMissAggregate> {
   readonly minSampleN = TEE_MIN_PER_SIDE * 2;
   protected override readonly requiresStanding = false;
 
-  protected override async isEnabled(): Promise<boolean> {
-    return isFlagEnabled(INSIGHT_ANGLES_FLAG);
-  }
-
   protected override signatureScope(): string {
     return 'tee_miss_cost:';
   }
 
   async aggregate(): Promise<TeeMissAggregate | null> {
-    const data = await loadAngleData(this.playerId);
+    const data = await this.loaders.data();
     return toTeeMissAggregate(computeTeeMiss(data), data.scoringBaseline);
   }
 

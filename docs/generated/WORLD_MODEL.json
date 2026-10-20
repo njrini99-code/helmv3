@@ -19217,18 +19217,8 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/generators/insight-angles/__tests__/lie-approach.test.ts",
-          "anchor": "src/lib/flags/is-enabled"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/generators/insight-angles/approach-miss-compass.ts",
-          "anchor": "src/lib/flags/is-enabled"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/generators/insight-angles/bad-day-floor.ts",
-          "anchor": "src/lib/flags/is-enabled"
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/__tests__/design-layer.test.ts",
+          "anchor": "src/lib/supabase/admin"
         },
         {
           "kind": "import_graph",
@@ -19237,23 +19227,8 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/generators/insight-angles/lie-approach.ts",
-          "anchor": "src/lib/flags/is-enabled"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
           "anchor": "src/lib/supabase/admin"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/generators/insight-angles/tee-miss-cost.ts",
-          "anchor": "src/lib/flags/is-enabled"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/generators/insight-angles/three-putt-chain.ts",
-          "anchor": "src/lib/flags/is-enabled"
         },
         {
           "kind": "import_graph",

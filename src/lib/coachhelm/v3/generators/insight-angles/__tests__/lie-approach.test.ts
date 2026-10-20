@@ -8,10 +8,12 @@ import {
   computeLieApproach,
   toLieAggregate,
 } from '../lie-approach';
-import { INSIGHT_ANGLES_FLAG } from '../angle-data';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { ANGLE_FAMILIES } from '../angle-data';
 import { expectFamilyContract } from './contract';
-import { PLAYER, mkData, mkHole, mkPeerRounds, mkRound, mkShot } from './fixtures';
+import { PLAYER, mkData, mkHole, mkPeerRounds, mkRound, mkShot, stubLoaders } from './fixtures';
+
+/** Five teammates (the 07 §6 floor), 8 rounds each, 12 of 14 fairways. */
+const FIVE_PEERS = [1, 2, 3, 4, 5].flatMap((p) => mkPeerRounds(`p${p}`, 8, () => ({ fairways_hit: 12, fairways_total: 14 })));
 
 /**
  * `rounds` rounds; on each, holes 1..9 play an approach from the fairway and
@@ -58,6 +60,11 @@ describe('computeLieApproach', () => {
     expect(computeLieApproach(mkData([], [], []), null)).toBeNull();
   });
 
+  it('says nothing without the player\'s SG scale (sg_scale_for_player failed)', () => {
+    const data = build({ roughFinish: 'short_rough' });
+    expect(computeLieApproach({ ...data, scale: null }, FIVE_PEERS)).toBeNull();
+  });
+
   it('flags rough execution when the rough costs more than the Tour lie penalty', () => {
     const r = computeLieApproach(build({ roughFinish: 'short_rough' }), null)!;
     expect(r.cause).toBe('rough_execution');
@@ -88,20 +95,25 @@ describe('computeLieApproach', () => {
       ...mkPeerRounds('p1', 8, () => ({ fairways_hit: 12, fairways_total: 14 })),
       ...mkPeerRounds('p2', 8, () => ({ fairways_hit: 11, fairways_total: 14 })),
       ...mkPeerRounds('p3', 8, () => ({ fairways_hit: 12, fairways_total: 14 })),
+      ...mkPeerRounds('p4', 8, () => ({ fairways_hit: 13, fairways_total: 14 })),
+      ...mkPeerRounds('p5', 8, () => ({ fairways_hit: 12, fairways_total: 14 })),
       // The player's own rounds on the team never count as a peer.
       ...mkPeerRounds(PLAYER, 8, () => ({ fairways_hit: 0, fairways_total: 14 })),
     ];
     const r = computeLieApproach(build({ roughFinish: 'green' }), peers)!;
-    expect(r.peer_n).toBe(3);
+    expect(r.peer_n).toBe(5);
     expect(r.fairway_pct).toBe(50);
     expect(r.peer_fairway_pct).toBeCloseTo(85.7, 1);
     expect(r.cause).toBe('fairway_exposure');
     expect(r.exposure_cost_per_round).toBeGreaterThan(0.3);
+    expect(r.exposure_qualifies).toBe(true);
+    expect(r.execution_qualifies).toBe(false);
   });
 
-  it('needs at least 3 peers for the fairway benchmark', () => {
-    const peers = mkPeerRounds('p1', 8, () => ({ fairways_hit: 13, fairways_total: 14 }));
-    const r = computeLieApproach(build({ roughFinish: 'green' }), peers)!;
+  it('needs at least 5 teammates for the fairway benchmark (07 §6 privacy floor)', () => {
+    const four = [1, 2, 3, 4].flatMap((p) => mkPeerRounds(`p${p}`, 8, () => ({ fairways_hit: 13, fairways_total: 14 })));
+    const r = computeLieApproach(build({ roughFinish: 'green' }), four)!;
+    expect(r.peer_n).toBe(4);
     expect(r.peer_fairway_pct).toBeNull();
     expect(r.cause).toBeNull();
   });
@@ -127,7 +139,9 @@ describe('composeLieApproach', () => {
     const r = computeLieApproach(build({ roughFinish: 'short_rough' }), null)!;
     const agg = toLieAggregate(r, 74)!;
     const c = composeLieApproach(agg);
-    expectFamilyContract(c, 'lie_rough_execution', { roundsN: 6, newestRoundId: 'r5' });
+    const gen = new LieApproachGenerator(PLAYER, stubLoaders(mkData([], [], [])));
+    gen.composeContent(agg);
+    expectFamilyContract(c, 'lie_rough_execution', { roundsN: 6, newestRoundId: 'r5', insightType: gen.insightType });
     const ev = c.evidence as typeof c.evidence & { counterfactual: { strokes_saved_per_round: number; attempts_used: number; clamped?: boolean } };
     expect(c.category).toBe('approach');
     expect(c.signature).toBe('lie_approach:rough_execution');
@@ -148,20 +162,25 @@ describe('composeLieApproach', () => {
     expect(receipts.exclusions).toHaveProperty('approaches_without_computable_sg');
   });
 
-  it('the tee-cause row goes under the tee area with a team_avg comparison', () => {
-    const peers = [1, 2, 3].flatMap((p) => mkPeerRounds(`p${p}`, 8, () => ({ fairways_hit: 12, fairways_total: 14 })));
-    const r = computeLieApproach(build({ roughFinish: 'green' }), peers)!;
-    const c = composeLieApproach(toLieAggregate(r, null)!);
-    expectFamilyContract(c, 'lie_fairway_exposure', { roundsN: 6, newestRoundId: 'r5' });
+  it('the tee-cause row goes under the tee area with a team_avg comparison and no projection', () => {
+    const r = computeLieApproach(build({ roughFinish: 'green' }), FIVE_PEERS)!;
+    const agg = toLieAggregate(r, 74)!;
+    const c = composeLieApproach(agg);
+    const gen = new LieApproachGenerator(PLAYER, stubLoaders(mkData([], [], [])));
+    gen.composeContent(agg);
+    expectFamilyContract(c, 'lie_fairway_exposure', { roundsN: 6, newestRoundId: 'r5', insightType: gen.insightType });
     expect(c.content).toContain('as a rough estimate');
     expect(c.category).toBe('tee');
     expect(c.signature).toBe('lie_approach:fairway_exposure');
     expect(c.evidence.comparison_source).toBe('team_avg');
     expect((c.evidence.detail as { linked_area: string }).linked_area).toBe('approach');
-    // No scoring baseline → projection is sized but not rendered as a score.
-    const cf = (c.evidence as unknown as { counterfactual: { suppressed: boolean; suppress_reason: string } }).counterfactual;
-    expect(cf.suppressed).toBe(true);
-    expect(cf.suppress_reason).toBe('no_baseline');
+    // A rough estimate: sized for the read, but no projection even with a baseline.
+    expect(c.evidence.estimated).toBe(true);
+    expect((c.evidence as { counterfactual?: unknown }).counterfactual).toBeUndefined();
+    expect(c.evidence.strokes_impact).toBe(Math.min(2.5, r.exposure_cost_per_round));
+    // Rough play does not qualify here, so the text never calls it a leak of its own.
+    expect(c.evidence.diagnosis!.root_cause).toContain('so the cost starts at the tee');
+    expect(c.evidence.diagnosis!.root_cause).not.toContain('a leak of its own');
   });
 
   it('toLieAggregate is null when no cause qualified', () => {
@@ -170,16 +189,20 @@ describe('composeLieApproach', () => {
 });
 
 describe('LieApproachGenerator', () => {
-  it('is gated by the insight-angles flag (default off)', async () => {
-    const gen = new LieApproachGenerator(PLAYER);
-    await expect((gen as unknown as { isEnabled(): Promise<boolean> }).isEnabled()).resolves.toBe(false);
-    expect(isFlagEnabled).toHaveBeenCalledWith(INSIGHT_ANGLES_FLAG);
+  it('takes its category and insight type from the composed cause', () => {
+    const gen = new LieApproachGenerator(PLAYER, stubLoaders(mkData([], [], [])));
+    gen.composeContent(toLieAggregate(computeLieApproach(build({ roughFinish: 'green' }), FIVE_PEERS), 74)!);
+    expect(gen.category).toBe('tee');
+    expect(gen.insightType).toBe(ANGLE_FAMILIES.lie_fairway_exposure.insight_type);
+    gen.composeContent(toLieAggregate(computeLieApproach(build({ roughFinish: 'short_rough' }), null), 74)!);
+    expect(gen.category).toBe('approach');
+    expect(gen.insightType).toBe(ANGLE_FAMILIES.lie_rough_execution.insight_type);
   });
 
-  it('takes its category from the composed cause', () => {
-    const gen = new LieApproachGenerator(PLAYER);
-    const peers = [1, 2, 3].flatMap((p) => mkPeerRounds(`p${p}`, 8, () => ({ fairways_hit: 12, fairways_total: 14 })));
-    gen.composeContent(toLieAggregate(computeLieApproach(build({ roughFinish: 'green' }), peers), 74)!);
-    expect(gen.category).toBe('tee');
+  it('reads the team through the injected loaders', async () => {
+    const loaders = stubLoaders(build({ roughFinish: 'green' }), { team: FIVE_PEERS });
+    const agg = await new LieApproachGenerator(PLAYER, loaders).aggregate();
+    expect(agg!.result.cause).toBe('fairway_exposure');
+    expect(loaders.calls).toEqual({ data: 1, teamRounds: 1, tourThreePutt: 0 });
   });
 });

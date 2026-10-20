@@ -41,12 +41,9 @@
  * recovery sequences, not one repeated recorded path.
  */
 
-import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
 import {
   ANGLE_MIN_Z,
-  INSIGHT_ANGLES_FLAG,
   angleReadFields,
   angleTest,
   attemptCounterfactual,
@@ -74,7 +71,7 @@ import {
   type AngleWindow,
   type ReceiptExample,
 } from './angle-data';
-import { loadAngleData } from './load-angle-data';
+import { AngleGenerator } from './angle-generator';
 
 export const COMPASS_MIN_ROUNDS = 5;
 export const COMPASS_MIN_PER_SIDE = 12;
@@ -176,6 +173,8 @@ interface MissObs {
 
 /** Pure compute. Null when the player has no approach shot. */
 export function computeApproachCompass(data: AngleData): CompassResult | null {
+  // Recovery cost is per-shot SG: without the player's SG scale, say nothing.
+  if (data.scale === null) return null;
   const dateOf = new Map(data.rounds.map((r) => [r.id, r.date]));
   const { byKey, byId } = indexHoles(data.holes);
   const sgById = shotSgById(data);
@@ -472,7 +471,7 @@ export function composeApproachCompass(agg: CompassAggregate): ComposedContent &
   };
 }
 
-export class ApproachMissCompassGenerator extends BaseGenerator<CompassAggregate> {
+export class ApproachMissCompassGenerator extends AngleGenerator<CompassAggregate> {
   readonly name = 'ApproachMissCompassGenerator';
   readonly metricId: MetricId = 'sg_around_green';
   readonly insightType = 'short_game';
@@ -480,16 +479,12 @@ export class ApproachMissCompassGenerator extends BaseGenerator<CompassAggregate
   readonly minSampleN = COMPASS_MIN_PER_SIDE * 2;
   protected override readonly requiresStanding = false;
 
-  protected override async isEnabled(): Promise<boolean> {
-    return isFlagEnabled(INSIGHT_ANGLES_FLAG);
-  }
-
   protected override signatureScope(): string {
     return 'approach_miss_compass:';
   }
 
   async aggregate(): Promise<CompassAggregate | null> {
-    const data = await loadAngleData(this.playerId);
+    const data = await this.loaders.data();
     return toCompassAggregate(computeApproachCompass(data), data.scoringBaseline);
   }
 

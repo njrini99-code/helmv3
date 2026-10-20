@@ -329,9 +329,11 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   recovery_proximity_rough_sand: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
 
   // CoachHelm v3 insight angles (Slice 5a, flag coachhelm_insight_angles_v1,
-  // `v3/generators/insight-angles/`). `three_putt_chain` above now has a
-  // producer (ThreePuttChainGenerator); its classification is unchanged — the
-  // per-round cache still has no first-putt-length sequencing.
+  // `v3/generators/insight-angles/`). `three_putt_chain` above stays the
+  // composite C6 percent metric (`composite/rules/lag-distance-3putt.ts`);
+  // the angle writes its own id, `three_putts_per_18`.
+  //  - three_putts_per_18: 3-putts per 18 holes, compared after mixing
+  //    first-putt lengths; the per-round cache has no first-putt length.
   //  - approach_rough_lie_penalty / tee_miss_next_shot_cost /
   //    approach_miss_recovery_cost: per-shot SG and tee-outcome costs exist
   //    only at shot level (same gap as approach_proximity_*).
@@ -339,6 +341,7 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   //    not a per-round value a window can average.
   //  - tee_fairway_rough_exposure: its value IS fairways hit %, so it reuses
   //    that per-round ratio source verbatim (same population, same numbers).
+  three_putts_per_18: { kind: 'intentional-null', reason: 'needs-first-putt-length' },
   approach_rough_lie_penalty: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
   tee_miss_next_shot_cost: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
   approach_miss_recovery_cost: { kind: 'intentional-null', reason: 'needs-shot-level-join' },

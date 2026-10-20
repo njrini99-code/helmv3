@@ -1,11 +1,16 @@
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const flag = vi.hoisted(() => ({ on: false }));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: vi.fn(() => flag.on) }));
-// The generators' loader is server-only; the call-site test never runs them.
-vi.mock('../load-angle-data', () => ({
-  loadAngleData: vi.fn(),
-  loadTeamPeerRounds: vi.fn(),
+// The generators' loader is server-only; these tests inject stub loaders.
+vi.mock('../load-angle-data', () => ({ createAngleLoaders: vi.fn() }));
+// Any database write or sweep would go through the admin client.
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => {
+    throw new Error('no database in this test');
+  }),
 }));
 
 import {
@@ -22,7 +27,38 @@ import {
   type AngleFamilyId,
 } from '../angle-data';
 import { insightAngleGenerators } from '../index';
+import { createAngleLoaders } from '../load-angle-data';
+import { ApproachMissCompassGenerator } from '../approach-miss-compass';
+import { BadDayFloorGenerator } from '../bad-day-floor';
+import { LieApproachGenerator } from '../lie-approach';
+import { TeeMissCostGenerator } from '../tee-miss-cost';
+import { ThreePuttChainGenerator } from '../three-putt-chain';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { METRIC_IDS, getMetricDirection } from '@/lib/coachhelm/v3/metrics/registry';
+import { lookupMetricSource } from '@/lib/coachhelm/v3/causality/metric-sources';
+import { PLAYER, mkData, stubLoaders } from './fixtures';
+
+/** Every `metric: '<id>'` literal a producer outside the angles writes (src/lib, tests excluded). */
+function producerMetricIds(): Set<string> {
+  const libRoot = join(process.cwd(), 'src', 'lib');
+  const anglesDir = join(libRoot, 'coachhelm', 'v3', 'generators', 'insight-angles');
+  const out = new Set<string>();
+  const walk = (dir: string): void => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (p === anglesDir || name === '__tests__' || name === 'node_modules') continue;
+      if (statSync(p).isDirectory()) {
+        walk(p);
+        continue;
+      }
+      if (!/\.tsx?$/.test(name) || /\.test\.tsx?$/.test(name)) continue;
+      for (const m of readFileSync(p, 'utf8').matchAll(/\bmetric:\s*'([A-Za-z0-9_<>+.-]+)'/g)) out.add(m[1]!);
+    }
+  };
+  walk(libRoot);
+  return out;
+}
 
 describe('ANGLE_FAMILIES (02 §7, 04 §2)', () => {
   const ids = Object.keys(ANGLE_FAMILIES) as AngleFamilyId[];
@@ -52,6 +88,40 @@ describe('ANGLE_FAMILIES (02 §7, 04 §2)', () => {
   it('every metric is distinct (one Slice 1 registry entry each)', () => {
     const metrics = ids.map((id) => ANGLE_FAMILIES[id].metric);
     expect(new Set(metrics).size).toBe(metrics.length);
+  });
+
+  it('no angle metric reuses a metric id that already exists (canonical, or written by another producer)', () => {
+    const existing = producerMetricIds();
+    // The scan does see real producers (composite C6 writes `three_putt_chain`).
+    expect(existing.has('three_putt_chain')).toBe(true);
+    for (const id of ids) {
+      const m = ANGLE_FAMILIES[id].metric;
+      expect((METRIC_IDS as readonly string[]).includes(m), `${m} is a canonical metric id`).toBe(false);
+      expect(existing.has(m), `${m} is already written by another producer`).toBe(false);
+    }
+  });
+
+  it('every angle metric has its own direction and source alias', () => {
+    for (const id of ids) {
+      const m = ANGLE_FAMILIES[id].metric;
+      expect(lookupMetricSource(m), m).not.toBeNull();
+    }
+    expect(getMetricDirection('three_putts_per_18')).toBe('lower_better');
+  });
+
+  it('three-putt κ is stated in holes, the unit of its gap input (about 5 rounds)', () => {
+    expect(ANGLE_FAMILIES.three_putt_chain.sample_unit).toBe('holes');
+    expect(ANGLE_FAMILIES.three_putt_chain.kappa).toEqual({ value: 90, unit: 'holes' });
+  });
+
+  it("each generator's insight type is its family's", () => {
+    const loaders = stubLoaders(mkData([], [], []));
+    expect(new ThreePuttChainGenerator(PLAYER, loaders).insightType).toBe(ANGLE_FAMILIES.three_putt_chain.insight_type);
+    expect(new BadDayFloorGenerator(PLAYER, loaders).insightType).toBe(ANGLE_FAMILIES.bad_day_floor.insight_type);
+    expect(new TeeMissCostGenerator(PLAYER, loaders).insightType).toBe(ANGLE_FAMILIES.tee_miss_cost.insight_type);
+    expect(new ApproachMissCompassGenerator(PLAYER, loaders).insightType).toBe(ANGLE_FAMILIES.approach_miss_compass.insight_type);
+    // Before any compose the lie generator reads as rough execution.
+    expect(new LieApproachGenerator(PLAYER, loaders).insightType).toBe(ANGLE_FAMILIES.lie_rough_execution.insight_type);
   });
 });
 
@@ -103,17 +173,24 @@ describe('statistics helpers', () => {
 });
 
 describe('insightAngleGenerators (the one orchestrator call site)', () => {
-  beforeEach(() => vi.mocked(isFlagEnabled).mockClear());
+  beforeEach(() => {
+    vi.mocked(isFlagEnabled).mockClear();
+    vi.mocked(createAngleLoaders).mockReset();
+    vi.mocked(createAngleLoaders).mockReturnValue(stubLoaders(mkData([], [], [])));
+  });
 
   it('returns no entries while the flag is off, so no angle generator runs', () => {
     flag.on = false;
     expect(insightAngleGenerators('p1')).toEqual([]);
     expect(isFlagEnabled).toHaveBeenCalledWith(INSIGHT_ANGLES_FLAG);
+    expect(createAngleLoaders).not.toHaveBeenCalled();
   });
 
-  it('returns the five angle generators when the flag is on', () => {
+  it('returns the five angle generators when the flag is on, sharing one set of loaders for the call', () => {
     flag.on = true;
     const entries = insightAngleGenerators('p1');
+    expect(createAngleLoaders).toHaveBeenCalledTimes(1);
+    expect(createAngleLoaders).toHaveBeenCalledWith('p1');
     expect(entries.map((e) => e.name)).toEqual([
       'v3.angles.lieApproach',
       'v3.angles.badDayFloor',
@@ -121,6 +198,37 @@ describe('insightAngleGenerators (the one orchestrator call site)', () => {
       'v3.angles.teeMissCost',
       'v3.angles.approachMissCompass',
     ]);
+    flag.on = false;
+  });
+});
+
+describe('AngleGenerator.run with the flag off (no read, no write, no sweep)', () => {
+  beforeEach(() => {
+    vi.mocked(createAdminClient).mockClear();
+  });
+
+  it('every angle generator returns gated, retracts nothing and touches neither loaders nor the database', async () => {
+    flag.on = false;
+    const loaders = stubLoaders(mkData([], [], []));
+    const gens = [
+      new LieApproachGenerator(PLAYER, loaders),
+      new BadDayFloorGenerator(PLAYER, loaders),
+      new ThreePuttChainGenerator(PLAYER, loaders),
+      new TeeMissCostGenerator(PLAYER, loaders),
+      new ApproachMissCompassGenerator(PLAYER, loaders),
+    ];
+    for (const g of gens) {
+      await expect(g.run()).resolves.toEqual({ id: null, gated: true, status: 'gated', retracted: 0 });
+    }
+    expect(loaders.calls).toEqual({ data: 0, teamRounds: 0, tourThreePutt: 0 });
+    expect(createAdminClient).not.toHaveBeenCalled();
+  });
+
+  it('with the flag on, run goes on to read (the gate is the only difference)', async () => {
+    flag.on = true;
+    const loaders = stubLoaders(mkData([], [], []));
+    await new TeeMissCostGenerator(PLAYER, loaders).run().catch(() => undefined);
+    expect(loaders.calls.data).toBe(1);
     flag.on = false;
   });
 });

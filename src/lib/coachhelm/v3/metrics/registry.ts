@@ -184,6 +184,7 @@ const METRIC_DIRECTION_ALIASES: Record<string, MetricDirection> = {
   compound_mistake_rate: 'lower_better',
   short_side_proximity: 'lower_better',
   // CoachHelm v3 insight angles (Slice 5a, `v3/generators/insight-angles/`).
+  three_putts_per_18: 'lower_better',
   approach_rough_lie_penalty: 'lower_better',
   tee_fairway_rough_exposure: 'higher_better',
   round_bad_day_floor: 'lower_better',

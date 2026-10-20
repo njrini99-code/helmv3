@@ -25,37 +25,40 @@
  *   The bad-day split compares the mean of the BAD rounds (per-18 score to
  *   par ≥ P80) with the mean of the MIDDLE rounds (P30–P70), component by
  *   component, so the three parts add up to the bad-vs-middle difference.
- * - Root area (category): the same bad-vs-middle difference in stored
- *   per-round SG (per 18) by area; the area that loses the most on bad days
- *   files the row. `scoring` when SG is not stored on enough rounds.
+ * - Area split (descriptive only): the same bad-vs-middle difference in
+ *   stored per-round SG (per 18) by area, from as few as 2 + 2 rounds. It is
+ *   kept in `detail` (`driver_area`) and never files the row: the category
+ *   is always `scoring`, so these strokes stay out of every area total.
  * - Benchmark: the MEDIAN floor gap of teammates (other players on the
  *   player's team, 10+ countable rounds each, newest 40, from
- *   `golf_rounds.score_to_par` per 18; ≥ 3 peers; the player never counts as
- *   their own peer). Production check 2026-09-25: hole sums equal
+ *   `golf_rounds.score_to_par` per 18; ≥ 5 teammates, the `07` §6 privacy
+ *   floor; the player never counts as their own peer). Below 5 there is no
+ *   comparison and no read. Production check 2026-09-25: hole sums equal
  *   `score_to_par` on 642 of 657 completed rounds.
- * - Gate: ≥ 10 rounds, ≥ 3 peers, extra gap (player − teammates) ≥ 1.5.
+ * - Gate: ≥ 10 rounds, ≥ 5 teammates, extra gap (player − teammates) ≥ 1.5,
+ *   and z = extra gap ÷ the floor gap's bootstrap SE ≥ 1.645.
  * - Sizing: a bad round (≥ P80) is one round in five, so strokes/round =
- *   extra gap × 0.2. Suppressed below 0.3 like every counterfactual, which
- *   the 1.5 gate already implies.
+ *   extra gap × 0.2. That share is an assumption, so the size is a ROUGH
+ *   ESTIMATE (`estimated: true`, no projection attached).
  *
  * Not reused: `metrics/sequence-attribution.ts` works per shot sequence
  * against the SG baseline; this angle splits recorded hole scores, which
  * need no shot data and cover every scored hole.
  */
 
-import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
 import {
-  INSIGHT_ANGLES_FLAG,
+  ANGLE_MIN_Z,
+  PEER_MIN_PLAYERS,
+  PEER_ROUND_LIMIT,
   angleReadFields,
-  attemptCounterfactual,
+  angleTest,
+  roughEstimateStrokes,
   familyDetail,
   newestFirstIds,
   floorGapBootstrapSe,
   type AngleEvidence,
   type AngleGapInput,
-  impactOf,
   mean,
   median,
   percentile,
@@ -71,8 +74,7 @@ import {
   type PeerRound,
   type ReceiptExample,
 } from './angle-data';
-import { loadAngleData, loadTeamPeerRounds } from './load-angle-data';
-import { PEER_MIN_PLAYERS, PEER_ROUND_LIMIT } from './lie-approach';
+import { AngleGenerator } from './angle-generator';
 
 export const FLOOR_MIN_ROUNDS = 10;
 export const FLOOR_MIN_EXTRA = 1.5;
@@ -142,6 +144,8 @@ export interface FloorResult {
   peer_gap: number | null;
   peer_n: number;
   extra_gap: number;
+  /** (floor gap − teammates' gap) ÷ the floor gap's bootstrap SE; null without both. */
+  z: number | null;
   excluded: { incomplete_hole_scores: number };
   examples: ReceiptExample[];
   qualifies: boolean;
@@ -263,8 +267,14 @@ export function computeBadDayFloor(data: AngleData, peers: readonly PeerRound[] 
       }),
   );
 
+  const se = floorGapBootstrapSe(vals);
+  const z = peerGap !== null && se !== null && se > 0 ? (floorGap - peerGap) / se : null;
   const qualifies =
-    rows.length >= FLOOR_MIN_ROUNDS && peerGap !== null && extra >= FLOOR_MIN_EXTRA;
+    rows.length >= FLOOR_MIN_ROUNDS &&
+    peerGap !== null &&
+    extra >= FLOOR_MIN_EXTRA &&
+    z !== null &&
+    z >= ANGLE_MIN_Z;
 
   return {
     window: windowOf(rows),
@@ -280,10 +290,7 @@ export function computeBadDayFloor(data: AngleData, peers: readonly PeerRound[] 
         ? { tee: round2(r.sg.tee), approach: round2(r.sg.approach), short_game: round2(r.sg.short_game), putting: round2(r.sg.putting) }
         : null,
     })),
-    floor_gap_se: (() => {
-      const se = floorGapBootstrapSe(vals);
-      return se === null ? null : round2(se);
-    })(),
+    floor_gap_se: se === null ? null : round2(se),
     nine_hole_rounds: rows.filter((r) => r.holes === 9).length,
     median: round2(med),
     p80: round2(p80),
@@ -299,6 +306,7 @@ export function computeBadDayFloor(data: AngleData, peers: readonly PeerRound[] 
     peer_gap: peerGap === null ? null : round2(peerGap),
     peer_n: gaps.length,
     extra_gap: round2(extra),
+    z: z === null ? null : round2(z),
     excluded: { incomplete_hole_scores: incomplete },
     examples,
     qualifies,
@@ -351,12 +359,8 @@ function fmtToPar(v: number): string {
 export function composeBadDayFloor(agg: FloorAggregate): ComposedContent & { category: InsightCategory } {
   const r = agg.result;
   const peerGap = r.peer_gap as number;
-  const cf = attemptCounterfactual({
-    strokesPerAttempt: r.extra_gap,
-    attemptsPerRound: BAD_DAY_SHARE,
-    baseline: agg.baseline,
-    weeks: 12,
-  });
+  // Rough estimate (the one-in-five share is assumed): no projection attached.
+  const roughStrokes = roughEstimateStrokes(r.extra_gap, BAD_DAY_SHARE);
   const diff = r.bad_mean - r.middle_mean;
   const lead = [...FLOOR_PARTS].sort((a, b) => r.split[b] - r.split[a])[0]!;
   const nineNote = r.nine_hole_rounds
@@ -403,14 +407,15 @@ export function composeBadDayFloor(agg: FloorAggregate): ComposedContent & { cat
     window_days: r.window.window_days,
     window_start: r.window.window_start,
     window_end: r.window.window_end,
-    strokes_impact: impactOf(cf),
-    strokes_impact_method: 'peer_delta',
+    strokes_impact: roughStrokes,
+    strokes_impact_method: 'rough_estimate',
+    estimated: true,
     confidence: 0,
     confidence_factors: { sample_adequacy: Math.min(r.rounds.length / 20, 1), recency: 1, variance: 0.5 },
-    counterfactual: cf,
     detail: {
       ...familyDetail('bad_day_floor'),
       gap_input: floorGapInput(r),
+      test: angleTest(r.z),
       floor_gap_se: r.floor_gap_se,
       angle: 'bad_day_floor',
       median: r.median,
@@ -427,7 +432,8 @@ export function composeBadDayFloor(agg: FloorAggregate): ComposedContent & { cat
       driver_area: r.driver,
       nine_hole_rounds: r.nine_hole_rounds,
       rounds: r.rounds,
-      sizing_note: 'Extra gap vs teammates × 0.2 (a P80 round is one round in five).',
+      sizing_note: 'Rough estimate: extra gap vs teammates × 0.2 (a P80 round is one round in five), not a measured saving.',
+      area_note: 'The area split is descriptive (as few as 2 bad and 2 middle rounds with SG stored); the row is filed under scoring and its strokes stay out of area totals.',
       receipts,
     },
     diagnosis: {
@@ -453,49 +459,40 @@ export function composeBadDayFloor(agg: FloorAggregate): ComposedContent & { cat
     },
   };
   return {
-    category: r.driver ?? 'scoring',
+    category: 'scoring',
     title: 'Your bad rounds sit further from your typical round than your teammates\'',
     content:
       `Over ${r.rounds.length} rounds your median is ${fmtToPar(r.median)} per 18 and your P80 round is ${fmtToPar(r.p80)}, a gap of ${r.floor_gap.toFixed(1)} strokes vs ${peerGap.toFixed(1)} for a typical teammate (${r.peer_n} teammates). ` +
       `On the ${r.bad_rounds} bad rounds vs the ${r.middle_rounds} middle rounds, the extra ${diff.toFixed(1)} strokes (bad-round average minus middle-round average) split into ${r.split.penalties.toFixed(1)} penalty strokes, ${r.split.double_or_worse.toFixed(1)} beyond bogey on double-or-worse holes and ${r.split.everything_else.toFixed(1)} everything else.` +
       `${areaLine}${nineNote}`,
-    priority: cf.strokes_saved_per_round >= 0.5 ? 'medium' : 'low',
+    priority: roughStrokes >= 0.5 ? 'medium' : 'low',
     signature: 'bad_day_floor:score_to_par',
     evidence,
   };
 }
 
-export class BadDayFloorGenerator extends BaseGenerator<FloorAggregate> {
+export class BadDayFloorGenerator extends AngleGenerator<FloorAggregate> {
   readonly name = 'BadDayFloorGenerator';
   readonly metricId: MetricId = 'sg_total';
   readonly insightType = 'scoring';
+  /** Always scoring: the area split is descriptive and never files the row. */
+  readonly category: InsightCategory = 'scoring';
   readonly minSampleN = FLOOR_MIN_ROUNDS;
   protected override readonly requiresStanding = false;
-
-  /** The area bad rounds lose most in, set by composeContent before the write. */
-  private composedCategory: InsightCategory = 'scoring';
-  get category(): InsightCategory {
-    return this.composedCategory;
-  }
-
-  protected override async isEnabled(): Promise<boolean> {
-    return isFlagEnabled(INSIGHT_ANGLES_FLAG);
-  }
 
   protected override signatureScope(): string {
     return 'bad_day_floor:';
   }
 
   async aggregate(): Promise<FloorAggregate | null> {
-    const data = await loadAngleData(this.playerId);
+    const data = await this.loaders.data();
     const team = primaryTeamId(data.rounds);
-    const peers = team ? await loadTeamPeerRounds(team) : null;
+    const peers = team ? await this.loaders.teamRounds(team) : null;
     return toFloorAggregate(computeBadDayFloor(data, peers), data.scoringBaseline);
   }
 
   composeContent(agg: FloorAggregate): ComposedContent {
-    const { category, ...composed } = composeBadDayFloor(agg);
-    this.composedCategory = category;
+    const { category: _category, ...composed } = composeBadDayFloor(agg);
     return composed;
   }
 }

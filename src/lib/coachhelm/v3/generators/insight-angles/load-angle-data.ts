@@ -1,21 +1,20 @@
 /**
  * DB side of the CoachHelm v3 insight angles (`angle-data.ts` is pure).
  *
- * One read per player, shared by the angle generators: the newest
- * {@link ANGLE_ROUND_LIMIT} COUNTABLE completed rounds (`isCountableRound` —
- * the same rule as the root map and every other player-facing number), their
- * holes and every recorded shot, plus `sg_scale_for_player` and the scoring
- * baseline. Rounds are over-fetched so non-countable ones do not shrink the
- * window; holes and shots are read in id chunks with pagination (PostgREST
- * 1000-row cap).
+ * {@link createAngleLoaders} returns the reads for ONE
+ * `insightAngleGenerators(playerId)` call: each read is lazy and runs at most
+ * once per call, shared by that call's five generators, and nothing is cached
+ * across calls (a later run always reads fresh rows).
  *
- * Memoized per player for a few minutes: one orchestrator pass runs all five
- * angles for the same player. Only the promise is cached, and a rejected load
- * is evicted so the next generator retries.
- *
- * Team peers (the volatility and fairway benchmarks) are one more read per
- * TEAM, memoized the same way: `golf_rounds` rows only (per-round score to par, SG and
- * fairways), never another player's shots.
+ * - The player: the newest {@link ANGLE_ROUND_LIMIT} COUNTABLE completed
+ *   rounds (`isCountableRound`, the same rule as the root map and every other
+ *   player-facing number), their holes and every recorded shot, plus
+ *   `sg_scale_for_player` and the scoring baseline. Rounds are over-fetched
+ *   so non-countable ones do not shrink the window; holes and shots are read
+ *   in id chunks with pagination (PostgREST 1,000-row cap).
+ * - A team: `golf_rounds` rows only (per-round score to par, SG, fairways and
+ *   the cached three-putt count), never another player's shots.
+ * - The Tour three-putt figure for the player's tour (`golf_pga_standards`).
  */
 import 'server-only';
 
@@ -23,6 +22,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
+import { logServerError } from '@/lib/server-error-logger';
 import {
   ANGLE_ROUND_LIMIT,
   type AngleData,
@@ -30,12 +31,14 @@ import {
   type AngleRound,
   type AngleShot,
   type PeerRound,
+  type TourThreePutt,
 } from './angle-data';
+import type { AngleLoaders } from './angle-generator';
 
-const MEMO_TTL_MS = 5 * 60_000;
 const IN_CHUNK = 60;
-const playerMemo = new Map<string, { at: number; value: Promise<AngleData> }>();
-const teamMemo = new Map<string, { at: number; value: Promise<PeerRound[]> }>();
+
+/** `golf_pga_standards.metric_id` of a Tour three-putts-per-18 figure (none stored as of 2026-10-20). */
+export const TOUR_THREE_PUTT_METRIC = 'three_putts_per_18';
 
 const ROUND_COLUMNS =
   'id, round_date, team_id, status, is_test, holes_played, total_score, front_nine, back_nine, total_putts, ' +
@@ -79,6 +82,8 @@ async function readAngleData(sb: Sb, playerId: string): Promise<AngleData> {
     // Test rounds (QA/demo data) never count (02 §7 recheck row; isCountableRound re-checks).
     .eq('is_test', false)
     .order('round_date', { ascending: false })
+    // Tiebreak so two rounds on one date always come back in the same order.
+    .order('id', { ascending: false })
     .limit(ANGLE_ROUND_LIMIT + 20);
   if (rErr) throw new Error(`insight-angles rounds query failed: ${rErr.message}`);
 
@@ -126,24 +131,20 @@ async function readAngleData(sb: Sb, playerId: string): Promise<AngleData> {
     shots.push(...(s ?? []));
   }
 
-  let scale = 1;
+  // No fallback to a scale of 1: without the player's own scale the SG-based
+  // families say nothing (`AngleData.scale` null).
+  let scale: number | null = null;
   const { data: sc, error: scErr } = await sb.rpc('sg_scale_for_player', { p_player_id: playerId });
-  if (!scErr && num(sc) !== null && (num(sc) as number) > 0) scale = num(sc) as number;
+  if (scErr) {
+    await logServerError(`insight-angles sg_scale_for_player failed for player=${playerId}: ${scErr.message}`, {
+      action: 'v3.angles.load.sg_scale',
+    });
+  } else if (num(sc) !== null && (num(sc) as number) > 0) {
+    scale = num(sc) as number;
+  }
 
   const scoringBaseline = await loadPlayerScoringBaseline(playerId);
   return { playerId, rounds, holes, shots, scale, scoringBaseline };
-}
-
-/** The player's angle data (memoized; throws on a read error). */
-export function loadAngleData(playerId: string): Promise<AngleData> {
-  const now = Date.now();
-  const hit = playerMemo.get(playerId);
-  if (hit && now - hit.at < MEMO_TTL_MS) return hit.value;
-  for (const [k, v] of playerMemo) if (now - v.at >= MEMO_TTL_MS) playerMemo.delete(k);
-  const value = readAngleData(createAdminClient(), playerId);
-  playerMemo.set(playerId, { at: now, value });
-  value.catch(() => playerMemo.delete(playerId));
-  return value;
 }
 
 type PeerRow = CountableRoundInput & {
@@ -152,14 +153,20 @@ type PeerRow = CountableRoundInput & {
   score_to_par: number | null;
   total_fairways_hit: number | null;
   total_fairways: number | null;
+  golf_round_stats_cache: { three_putts: number | null } | { three_putts: number | null }[] | null;
 };
+
+function cachedThreePutts(v: PeerRow['golf_round_stats_cache']): number | null {
+  const row = Array.isArray(v) ? v[0] : v;
+  return row ? num(row.three_putts) : null;
+}
 
 async function readTeamRounds(sb: Sb, teamId: string): Promise<PeerRound[]> {
   const { data, error } = await fetchAllRowsResult<PeerRow>((from, to) =>
     sb
       .from('golf_rounds')
       .select(
-        'player_id, round_date, status, is_test, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_total, score_to_par, total_fairways_hit, total_fairways',
+        'player_id, round_date, status, is_test, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_total, score_to_par, total_fairways_hit, total_fairways, golf_round_stats_cache(three_putts)',
       )
       .eq('team_id', teamId)
       .eq('status', 'completed')
@@ -179,25 +186,51 @@ async function readTeamRounds(sb: Sb, teamId: string): Promise<PeerRound[]> {
       score_to_par: num(r.score_to_par),
       fairways_hit: num(r.total_fairways_hit),
       fairways_total: num(r.total_fairways),
+      three_putts: cachedThreePutts(r.golf_round_stats_cache),
     });
   }
   return out;
 }
 
-/** Every countable round on the team (memoized per team; throws on error). */
-export function loadTeamPeerRounds(teamId: string): Promise<PeerRound[]> {
-  const now = Date.now();
-  const hit = teamMemo.get(teamId);
-  if (hit && now - hit.at < MEMO_TTL_MS) return hit.value;
-  for (const [k, v] of teamMemo) if (now - v.at >= MEMO_TTL_MS) teamMemo.delete(k);
-  const value = readTeamRounds(createAdminClient(), teamId);
-  teamMemo.set(teamId, { at: now, value });
-  value.catch(() => teamMemo.delete(teamId));
-  return value;
+async function readTourThreePutt(sb: Sb, playerId: string): Promise<TourThreePutt | null> {
+  const cohort = await loadPlayerCohort(playerId);
+  if (cohort.failed) return null;
+  const tour = cohort.gender === 'womens' ? 'lpga' : 'pga';
+  const { data, error } = await sb
+    .from('golf_pga_standards')
+    .select('pga_tour_value, season, source')
+    .eq('metric_id', TOUR_THREE_PUTT_METRIC)
+    .eq('tour', tour)
+    .order('season', { ascending: false })
+    .limit(1);
+  if (error) throw new Error(`insight-angles Tour three-putt query failed: ${error.message}`);
+  const row = (data ?? [])[0] as { pga_tour_value: unknown; season: string; source: string | null } | undefined;
+  const v = row ? num(row.pga_tour_value) : null;
+  if (!row || v === null || !(v > 0)) return null;
+  return { per_18: v, tour, season: row.season, source: row.source ?? `${tour.toUpperCase()} ${row.season}` };
 }
 
-/** Test seam. */
-export function clearAngleDataMemo(): void {
-  playerMemo.clear();
-  teamMemo.clear();
+/**
+ * The reads for one `insightAngleGenerators(playerId)` call: lazy, at most
+ * once each per call (per team for the team read), never cached across
+ * calls. A rejected read rejects every generator that asked for it.
+ */
+export function createAngleLoaders(playerId: string): AngleLoaders {
+  let sb: Sb | null = null;
+  const client = (): Sb => (sb ??= createAdminClient());
+  let data: Promise<AngleData> | null = null;
+  let tour: Promise<TourThreePutt | null> | null = null;
+  const teams = new Map<string, Promise<PeerRound[]>>();
+  return {
+    data: () => (data ??= readAngleData(client(), playerId)),
+    teamRounds: (teamId) => {
+      let p = teams.get(teamId);
+      if (!p) {
+        p = readTeamRounds(client(), teamId);
+        teams.set(teamId, p);
+      }
+      return p;
+    },
+    tourThreePutt: () => (tour ??= readTourThreePutt(client(), playerId)),
+  };
 }

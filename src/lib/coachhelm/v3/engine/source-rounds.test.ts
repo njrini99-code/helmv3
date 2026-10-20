@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { loadSourceRoundIds, windowDateBounds } from './source-rounds';
+import { composedSourceRoundIds, loadSourceRoundIds, windowDateBounds } from './source-rounds';
 
 function fakeClient(rows: Array<{ id: string }>, error: unknown = null) {
   const calls: Record<string, unknown[]> = {};
@@ -34,5 +34,13 @@ describe('source round provenance (audit row 22)', () => {
   it('returns null on a query error instead of throwing', async () => {
     const { client } = fakeClient([], { message: 'boom' });
     expect(await loadSourceRoundIds(client, 'p-2', '2026-04-01', '2026-04-30')).toBeNull();
+  });
+
+  it('keeps a generator-composed list (the rounds it counted) and ignores anything else', () => {
+    expect(composedSourceRoundIds({ source_round_ids: ['r3', 'r2'] })).toEqual(['r3', 'r2']);
+    expect(composedSourceRoundIds({ source_round_ids: [] })).toBeNull();
+    expect(composedSourceRoundIds({ source_round_ids: [1, 2] })).toBeNull();
+    expect(composedSourceRoundIds({})).toBeNull();
+    expect(composedSourceRoundIds(null)).toBeNull();
   });
 });

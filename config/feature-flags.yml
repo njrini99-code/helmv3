@@ -615,10 +615,10 @@ flags:
       remove the section and its wiring if the review asks for a
       different surface/placement instead.
 
-  # CoachHelm supercharge Slice 5a (design:
-  # /mnt/project-files/coachhelm/supercharge/07-system-architecture.md §4
-  # row 5): the PR #2073 insight angles, ported to main. Owner: Nick. Created
-  # off; turning it on is the owner's decision.
+  # CoachHelm supercharge Slice 5a (design: the CoachHelm supercharge
+  # design set, "07 System Architecture" §4 row 5; the contract as built is
+  # in memory/features/coachhelm-ai.md): the PR #2073 insight angles, ported
+  # to main. Owner: Nick. Created off; turning it on is the owner's decision.
   - feature_id: coachhelm_insight_angles_v1
     owner: golf/coachhelm
     purpose: >-
@@ -629,7 +629,8 @@ flags:
       golf_coach_insights row per player when its own floors and its
       one-sided z >= 1.645 gate pass, so coaches and players can see these
       new reads. Off: the orchestrator call site (insightAngleGenerators)
-      returns no entries, so no angle generator reads or writes anything.
+      returns no entries, and each angle generator's run() returns before
+      any read, write or sweep, so nothing is read, written or archived.
     type: release
     status: active
     created_at: "2026-10-20"
@@ -648,7 +649,7 @@ flags:
       v3:three_putt_chain:, v3:bad_day_floor:, v3:lie_approach:,
       v3:tee_miss_cost:, v3:approach_miss_compass: for an immediate
       rollback). If coaches keep the angles through one season, remove the
-      flag and the isEnabled() overrides; if rejected, delete the
+      flag and the run() flag check in angle-generator.ts; if rejected, delete the
       insight-angles directory, its orchestrator call site and its metric
       aliases, then archive this flag.
 

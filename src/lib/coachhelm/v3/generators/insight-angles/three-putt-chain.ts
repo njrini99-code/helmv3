@@ -1,8 +1,8 @@
 /**
  * Insight angle 3 — "Three-Putt Autopsy" + "Second-Putt Exposure"
- * (2026-09-25, flag `coachhelm_insight_angles_v1`). First producer of the
- * `three_putt_chain` metric alias (`metric-sources.ts`, intentional-null for
- * attribution).
+ * (2026-09-25, flag `coachhelm_insight_angles_v1`). Writes its own metric,
+ * `three_putts_per_18` (`metric-sources.ts`, intentional-null for
+ * attribution); `three_putt_chain` stays composite C6's percent metric.
  *
  * Population: every hole of the newest 40 COUNTABLE rounds with a recorded
  * first-putt distance (`putt_distance_feet`, else `distance_to_hole_before`
@@ -10,11 +10,19 @@
  * and counted. Putts on the hole = `golf_holes.putts` when recorded, else the
  * number of putting shots.
  *
- * Headline: 3-putts per 18 vs a MEASURED GolfHelm peer rate
- * ({@link PEER_THREE_PUTT}); gate ≥ 5 rounds, ≥ 90 putted holes, ≥ 6
- * three-putts, excess ≥ 0.3 per 18, one-sided binomial z ≥ 1.645. Sizing:
- * each 3-putt turned into a 2-putt is one stroke, so strokes/round =
- * (rate − peer-mix rate) × putted holes per 18.
+ * Headline: 3-putts per 18 vs ONE benchmark ({@link resolveThreePuttBenchmark},
+ * owner rule Q-88: the Tour is the only external benchmark): the Tour
+ * three-putt figure for the player's tour (`golf_pga_standards`) when one is
+ * stored, else the teammates' median rate (`golf_round_stats_cache.three_putts`,
+ * ≥ 5 teammates with 5+ rounds), else no comparison and NO read. No
+ * GolfHelm-wide pool number is ever printed. Gate ≥ 5 rounds, ≥ 90 putted
+ * holes, ≥ 6 three-putts, excess ≥ 0.3 per 18, one-sided binomial z ≥ 1.645.
+ * Sizing: each 3-putt turned into a 2-putt is one stroke, so strokes/round =
+ * (rate − benchmark rate) × putted holes per 18 (unrounded inputs).
+ *
+ * Known limit of the team fallback: the teammates' rate is 3-putts per hole
+ * PLAYED (the round cache), the player's is per hole with a recorded first
+ * putt; with first-putt distances on nearly every hole the two match.
  *
  * Autopsy: every 3-putt goes to exactly ONE pathway (non-overlapping):
  *   - `long_approach_leave`   first putt ≥ 35 ft (the 35+ band);
@@ -42,12 +50,15 @@
  * the column and may be a default.
  */
 
-import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
 import {
   ANGLE_MIN_Z,
-  INSIGHT_ANGLES_FLAG,
+  PEER_MIN_PLAYERS,
+  PEER_ROUND_LIMIT,
+  median,
+  primaryTeamId,
+  type PeerRound,
+  type TourThreePutt,
   angleReadFields,
   angleTest,
   attemptCounterfactual,
@@ -73,7 +84,7 @@ import {
   type AngleWindow,
   type ReceiptExample,
 } from './angle-data';
-import { loadAngleData } from './load-angle-data';
+import { AngleGenerator } from './angle-generator';
 
 export type PuttBand = 'lt10' | '10_20' | '20_35' | '35_plus';
 export const PUTT_BANDS: readonly PuttBand[] = ['lt10', '10_20', '20_35', '35_plus'];
@@ -85,25 +96,69 @@ export const PUTT_BAND_LABEL: Record<PuttBand, string> = {
 };
 
 /**
- * GolfHelm peer first-putt benchmark, MEASURED 2026-10-20 on production
- * (read-only SQL over this module's band rule; first measured 2026-09-25 on
- * 72 players / 11,414 holes, within 0.002 of today's rates): first putts of
- * every hole on the newest 40 countable rounds of every player (74 players,
- * 13,285 holes). `rate` =
- * share of holes with 3+ putts from that first-putt band; `share` = share of
- * first putts in the band. Provenance: measured in-app population (not Tour).
- * Re-measure with `scripts/coachhelm/insight-angles-dry-run.ts --calibrate`.
+ * The one comparison a three-putt read makes (Q-88). `rate` is 3-putts per
+ * hole (a fraction), the proportion test's benchmark.
  */
-export const PEER_THREE_PUTT: Record<PuttBand, { rate: number; share: number }> = {
-  lt10: { rate: 0.0077, share: 0.3217 },
-  '10_20': { rate: 0.0299, share: 0.305 },
-  '20_35': { rate: 0.1105, share: 0.2541 },
-  '35_plus': { rate: 0.2988, share: 0.1192 },
-};
-export const PEER_THREE_PUTT_SOURCE =
-  'GolfHelm players, first putts on countable rounds, measured 2026-10-20 (74 players, 13,285 holes)';
-/** Holes behind {@link PEER_THREE_PUTT} (the benchmark's own n). */
-export const PEER_THREE_PUTT_HOLES = 13_285;
+export interface ThreePuttBenchmark {
+  source: 'tour' | 'team_pool';
+  rate: number;
+  label: string;
+  /** Players behind a team median; null for the Tour figure. */
+  n: number | null;
+  citation: string;
+}
+
+/** Teammates' median 3-putts per hole (newest 40 countable rounds with a cached count, 5+ each), or null below 5 teammates. */
+export function teamThreePuttRate(peers: readonly PeerRound[], playerId: string): { rate: number; n: number } | null {
+  const byPlayer = new Map<string, PeerRound[]>();
+  for (const r of peers) {
+    if (r.player_id === playerId || r.three_putts === null) continue;
+    const arr = byPlayer.get(r.player_id) ?? [];
+    arr.push(r);
+    byPlayer.set(r.player_id, arr);
+  }
+  const rates: number[] = [];
+  for (const rows of byPlayer.values()) {
+    const recent = [...rows].sort((a, b) => b.date.localeCompare(a.date)).slice(0, PEER_ROUND_LIMIT);
+    if (recent.length < CHAIN_MIN_ROUNDS) continue;
+    const holes = recent.reduce((a, r) => a + r.holes, 0);
+    if (holes > 0) rates.push(recent.reduce((a, r) => a + (r.three_putts as number), 0) / holes);
+  }
+  if (rates.length < PEER_MIN_PLAYERS) return null;
+  return { rate: median(rates)!, n: rates.length };
+}
+
+/**
+ * Q-88: the Tour figure when one is stored for the player's tour, else the
+ * teammates' median at {@link PEER_MIN_PLAYERS}+ players, else null (no
+ * comparison, no read). Never a GolfHelm-wide pool number.
+ */
+export function resolveThreePuttBenchmark(
+  tour: TourThreePutt | null,
+  peers: readonly PeerRound[] | null,
+  playerId: string,
+): ThreePuttBenchmark | null {
+  if (tour && tour.per_18 > 0) {
+    return {
+      source: 'tour',
+      rate: tour.per_18 / 18,
+      label: `${tour.tour === 'lpga' ? 'LPGA' : 'PGA'} Tour average`,
+      n: null,
+      citation: `golf_pga_standards ${tour.tour} ${tour.season}: ${tour.source}`,
+    };
+  }
+  const team = peers ? teamThreePuttRate(peers, playerId) : null;
+  if (team) {
+    return {
+      source: 'team_pool',
+      rate: team.rate,
+      label: `your teammates' median (${team.n} players)`,
+      n: team.n,
+      citation: 'golf_round_stats_cache.three_putts: teammates with 5+ countable rounds, newest 40 each',
+    };
+  }
+  return null;
+}
 
 export const CHAIN_MIN_ROUNDS = 5;
 export const CHAIN_MIN_HOLES = 90;
@@ -153,7 +208,6 @@ export interface PuttBandRow {
   holes: number;
   three_putts: number;
   rate_pct: number | null;
-  peer_rate_pct: number;
 }
 
 /** Second-putt exposure for one first-putt band. */
@@ -192,15 +246,19 @@ export interface ThreePuttResult {
   rounds: number;
   /** The countable rounds read, newest first. */
   round_ids: string[];
-  /** Peer 3-putt rate at the GolfHelm first-putt mix (fraction): the test benchmark. */
-  peer_rate: number;
+  /** The one comparison (Q-88); null = no benchmark, so no read. */
+  benchmark: ThreePuttBenchmark | null;
   holes_putted: number;
   holes_per_18: number;
   three_putts: number;
   rate_pct: number;
+  /** Unrounded 3-putts per putted hole (sizing reads this, never the rounded pct). */
+  rate: number;
+  /** Unrounded putted holes per 18 played. */
+  holes_per_18_raw: number;
   three_putts_per_18: number;
-  expected_own_per_18: number;
-  expected_peer_per_18: number;
+  /** The benchmark rate at the player's putted holes per 18; null without a benchmark. */
+  benchmark_per_18: number | null;
   z: number | null;
   bands: PuttBandRow[];
   exposure: ExposureRow[];
@@ -208,7 +266,12 @@ export interface ThreePuttResult {
   /** 3-putts from < 35 ft with no recorded second-putt distance. */
   pathway_suppressed: number;
   classified: number;
-  /** Dominant pathway; null when fewer than {@link CHAIN_MIN_THREE_PUTTS} are classified. */
+  /** True when two pathways share the top count: no pathway leads. */
+  pathway_tie: boolean;
+  /**
+   * Leading pathway; null when fewer than {@link CHAIN_MIN_THREE_PUTTS} are
+   * classified or on a tie. Leading is not "most": see {@link leadShare}.
+   */
   cause: ThreePuttPathway | null;
   /** The dominant pathway as a recorded putt sequence (for an observed_sequence claim). */
   sequence: {
@@ -242,7 +305,7 @@ interface HoleObs {
 }
 
 /** Pure compute. Null when no hole has a first putt. */
-export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
+export function computeThreePuttChain(data: AngleData, benchmark: ThreePuttBenchmark | null): ThreePuttResult | null {
   const dateOf = new Map(data.rounds.map((r) => [r.id, r.date]));
   const { byKey } = indexHoles(data.holes);
   const byHole = shotsByHole(data.shots.filter((s) => dateOf.has(s.round_id) && s.shot_type === 'putting'));
@@ -297,7 +360,6 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
       holes: rows.length,
       three_putts: three,
       rate_pct: rows.length ? round1((100 * three) / rows.length) : null,
-      peer_rate_pct: round1(PEER_THREE_PUTT[band].rate * 100),
     };
   });
 
@@ -324,11 +386,10 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
   const threes = obs.filter((o) => o.putts >= 3);
   const three = threes.length;
   const rate = three / n;
-  const expOwn = bands.reduce((a, b) => a + b.holes * PEER_THREE_PUTT[b.band].rate, 0) / n;
-  const peerRate = PUTT_BANDS.reduce((a, b) => a + PEER_THREE_PUTT[b].share * PEER_THREE_PUTT[b].rate, 0);
-  const se = Math.sqrt((peerRate * (1 - peerRate)) / n);
-  const z = se > 0 ? (rate - peerRate) / se : null;
-  const excess = (rate - peerRate) * holesPer18;
+  const benchRate = benchmark ? benchmark.rate : null;
+  const se = benchRate !== null && benchRate > 0 && benchRate < 1 ? Math.sqrt((benchRate * (1 - benchRate)) / n) : null;
+  const z = se !== null && benchRate !== null ? (rate - benchRate) / se : null;
+  const excess = benchRate === null ? 0 : (rate - benchRate) * holesPer18;
 
   // Autopsy: one pathway per 3-putt, or suppressed.
   const counts: Record<ThreePuttPathway, number> = { long_approach_leave: 0, poor_first_putt_leave: 0, short_followup_miss: 0 };
@@ -352,8 +413,9 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
     per_18: n > 0 ? round2((counts[p] / n) * holesPer18) : 0,
     share_pct: classified > 0 ? round1((100 * counts[p]) / classified) : null,
   }));
-  const dominant = [...pathways].sort((a, b) => b.three_putts - a.three_putts)[0]!;
-  const cause = classified >= CHAIN_MIN_THREE_PUTTS ? dominant.pathway : null;
+  const ranked = [...pathways].sort((a, b) => b.three_putts - a.three_putts);
+  const tie = classified > 0 && ranked[1]!.three_putts === ranked[0]!.three_putts;
+  const cause = classified >= CHAIN_MIN_THREE_PUTTS && !tie ? ranked[0]!.pathway : null;
   const causeHoles = cause ? threes.filter((o) => pathwayOf.get(o) === cause) : [];
   const sequence = cause
     ? {
@@ -398,6 +460,7 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
     fill >= SLOPE_MIN_FILL && slopeRows.filter((r) => r.holes >= SLOPE_MIN_PER_SLOPE).length >= 2;
 
   const qualifies =
+    benchmark !== null &&
     data.rounds.length >= CHAIN_MIN_ROUNDS &&
     n >= CHAIN_MIN_HOLES &&
     three >= CHAIN_MIN_THREE_PUTTS &&
@@ -409,20 +472,22 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
     window: windowOf(data.rounds),
     rounds: data.rounds.length,
     round_ids: newestFirstIds(data.rounds),
-    peer_rate: peerRate,
+    benchmark,
     holes_putted: n,
     holes_per_18: round2(holesPer18),
     three_putts: three,
     rate_pct: round1(rate * 100),
+    rate,
+    holes_per_18_raw: holesPer18,
     three_putts_per_18: round2(rate * holesPer18),
-    expected_own_per_18: round2(expOwn * holesPer18),
-    expected_peer_per_18: round2(peerRate * holesPer18),
+    benchmark_per_18: benchRate === null ? null : round2(benchRate * holesPer18),
     z: z === null ? null : round2(z),
     bands,
     exposure,
     pathways,
     pathway_suppressed: suppressed,
     classified,
+    pathway_tie: tie,
     cause,
     sequence,
     gir_first_putt_ft: girObs.length ? round1(mean(girObs.map((o) => o.ft))!) : null,
@@ -492,22 +557,38 @@ export function threePuttSequence(r: ThreePuttResult): AngleSequence | null {
   };
 }
 
-/** The Slice 1 test input: 3-putt holes of putted holes against the GolfHelm peer rate. */
-export function threePuttGapInput(r: ThreePuttResult): AngleGapInput {
-  return { kind: 'proportion', k: r.three_putts, n: r.holes_putted, benchmark: r.peer_rate, polarity: 'lower_better' };
+/** The Slice 1 test input: 3-putt holes of putted holes against the one benchmark rate (null without one). */
+export function threePuttGapInput(r: ThreePuttResult): AngleGapInput | null {
+  if (!r.benchmark) return null;
+  return { kind: 'proportion', k: r.three_putts, n: r.holes_putted, benchmark: r.benchmark.rate, polarity: 'lower_better' };
+}
+
+/** The leading pathway's share of classified 3-putts (0–1); null without a lead. */
+export function leadShare(r: ThreePuttResult): number | null {
+  if (!r.cause || r.classified <= 0) return null;
+  return r.pathways.find((p) => p.pathway === r.cause)!.three_putts / r.classified;
 }
 
 export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent & { category: InsightCategory } {
   const r = agg.result;
+  // toThreePuttAggregate only passes a result that has a benchmark.
+  const bench = r.benchmark as ThreePuttBenchmark;
+  const benchPer18 = r.benchmark_per_18 as number;
   const sequence = threePuttSequence(r);
   const cf = attemptCounterfactual({
-    strokesPerAttempt: r.rate_pct / 100 - r.peer_rate,
-    attemptsPerRound: r.holes_per_18,
+    strokesPerAttempt: r.rate - bench.rate,
+    attemptsPerRound: r.holes_per_18_raw,
     baseline: agg.baseline,
     weeks: 6,
   });
   const lead = r.cause ? r.pathways.find((p) => p.pathway === r.cause)! : null;
+  const share = leadShare(r);
+  // "Most" only above half; a plurality is "the most common pattern".
+  const majority = share !== null && share > 0.5;
+  // A pathway-led title only when the counted path clears the Observed floors.
+  const pathwayLed = r.cause !== null && sequence?.meets_observed_floors === true;
   const lengthLed = r.cause === 'long_approach_leave';
+  const benchName = bench.source === 'tour' ? `the ${bench.label}` : bench.label;
   const worstExposure = [...r.exposure]
     .filter((e) => e.band !== '35_plus' && e.leave_recorded >= 10 && e.six_plus_pct !== null)
     .sort((a, b) => b.six_plus_pct! - a.six_plus_pct!)[0];
@@ -544,26 +625,25 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
     examples: r.examples,
   };
 
+  const comparisonLabel = bench.source === 'tour' ? bench.label : `Teammates' median (${bench.n} players)`;
   const evidence: AngleEvidence = {
     ...angleReadFields('three_putt_chain', r.round_ids, {
-      source: 'program_pool',
-      label: 'GolfHelm players (measured peer rate)',
-      value: r.expected_peer_per_18,
-      n: PEER_THREE_PUTT_HOLES,
-      citation: PEER_THREE_PUTT_SOURCE,
+      source: bench.source,
+      label: comparisonLabel,
+      value: benchPer18,
+      n: bench.n,
+      citation: bench.citation,
     }),
-    metric: 'three_putt_chain',
+    metric: 'three_putts_per_18',
     metric_label: '3-putts per 18 holes',
     unit: 'count',
     polarity: 'lower_better',
     your_value: r.three_putts_per_18,
     your_value_display: `${r.three_putts_per_18.toFixed(1)} per round`,
-    comparison_value: r.expected_peer_per_18,
-    comparison_label: 'GolfHelm players (measured peer rate)',
-    comparison_source: 'estimated_target',
-    secondary_value: r.expected_own_per_18,
-    secondary_label: 'Peer rate at your own first-putt lengths',
-    secondary_source: 'estimated_target',
+    comparison_value: benchPer18,
+    comparison_label: comparisonLabel,
+    // Measured sources tourOnlyEvidence keeps (Q-88): the Tour, or the team.
+    comparison_source: bench.source === 'tour' ? 'pga_baseline' : 'team_avg',
     sample_n: r.holes_putted,
     window_days: r.window.window_days,
     window_start: r.window.window_start,
@@ -585,65 +665,74 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
       pathways: r.pathways,
       pathway_suppressed: r.pathway_suppressed,
       classified: r.classified,
+      pathway_tie: r.pathway_tie,
+      lead_share: share === null ? null : round2(share),
       exposure: r.exposure,
       bands: r.bands,
       rate_pct: r.rate_pct,
       three_putts: r.three_putts,
       holes_putted: r.holes_putted,
-      expected_own_per_18: r.expected_own_per_18,
-      expected_peer_per_18: r.expected_peer_per_18,
+      benchmark_per_18: benchPer18,
       avg_first_putt_ft: r.avg_first_putt_ft,
       gir_first_putt_ft: r.gir_first_putt_ft,
       gir_holes: r.gir_holes,
       z: r.z,
       slope: r.slope,
-      benchmark_source: PEER_THREE_PUTT_SOURCE,
+      benchmark_source: bench.citation,
       rounds: r.rounds,
       receipts,
     },
     diagnosis: {
-      symptom: `${r.three_putts_per_18.toFixed(1)} three-putts per round vs ${r.expected_peer_per_18.toFixed(1)} for GolfHelm players`,
+      symptom: `${r.three_putts_per_18.toFixed(1)} three-putts per round vs ${benchPer18.toFixed(1)} for ${benchName}`,
       root_cause: lead
-        ? `Most classified 3-putts (${lead.three_putts} of ${r.classified}) follow one pattern: ${lead.label.toLowerCase()}.`
-        : `Too few 3-putts could be classified (${r.classified}) to say which pattern leads.`,
+        ? majority
+          ? `Most classified 3-putts (${lead.three_putts} of ${r.classified}) follow one pattern: ${lead.label.toLowerCase()}.`
+          : `The most common pattern (${lead.three_putts} of ${r.classified}): ${lead.label.toLowerCase()}.`
+        : r.pathway_tie && r.classified >= CHAIN_MIN_THREE_PUTTS
+          ? `No single pattern leads: ${r.pathways.map((p) => `${p.three_putts} ${p.label.toLowerCase()}`).join(', ')}.`
+          : `Too few 3-putts could be classified (${r.classified}) to say which pattern leads.`,
       causality_level: 'inferred_hypothesis',
       drivers: [
-        { metric: 'three_putt_chain', label: '3-putts per 18', value: r.three_putts_per_18, unit: 'count', sample_n: r.holes_putted, source: 'golf_holes.putts / golf_shots (putting)' },
+        { metric: 'three_putts_per_18', label: '3-putts per 18', value: r.three_putts_per_18, unit: 'count', sample_n: r.holes_putted, source: 'golf_holes.putts / golf_shots (putting)' },
         ...(r.avg_first_putt_ft !== null
           ? [{ metric: 'first_putt_length_ft', label: 'Average first-putt length', value: r.avg_first_putt_ft, unit: 'feet' as const, sample_n: r.holes_putted, source: 'golf_shots.putt_distance_feet' }]
           : []),
       ],
       recommended_action:
         r.cause === 'long_approach_leave'
-          ? `Most 3-putts start from ${LONG_LEAVE_FT}+ ft: work on approach proximity as well as lag speed.`
+          ? `${majority ? 'Most 3-putts start' : 'The most common 3-putt starts'} from ${LONG_LEAVE_FT}+ ft: work on approach proximity as well as lag speed.`
           : r.cause === 'poor_first_putt_leave'
             ? `Lag drill from ${worstExposure?.label ?? '20–35 ft'}: score each putt on whether the second putt is inside ${POOR_LEAVE_FT} ft.`
             : r.cause === 'short_followup_miss'
               ? `Short-putt reps from 3–${POOR_LEAVE_FT} ft: the second putt is where these holes slip.`
-              : 'Record both putt distances on each hole so the 3-putts can be classified.',
+              : r.pathway_tie && r.classified >= CHAIN_MIN_THREE_PUTTS
+                ? 'No single 3-putt pattern leads: work on lag speed and short putts together.'
+                : 'Record both putt distances on each hole so the 3-putts can be classified.',
       confidence_reason: '',
     },
   };
+  const neutralTitle = bench.source === 'tour' ? `3-putts above the ${bench.label}` : "3-putts above your teammates' rate";
   return {
     category: lengthLed ? 'approach' : 'putting',
-    title:
-      r.cause === 'long_approach_leave'
-        ? `Most 3-putts start from ${LONG_LEAVE_FT}+ ft`
+    title: !pathwayLed
+      ? neutralTitle
+      : r.cause === 'long_approach_leave'
+        ? majority
+          ? `Most 3-putts start from ${LONG_LEAVE_FT}+ ft`
+          : `3-putts from ${LONG_LEAVE_FT}+ ft lead the count`
         : r.cause === 'poor_first_putt_leave'
           ? `First putts are leaving ${POOR_LEAVE_FT}+ ft second putts`
-          : r.cause === 'short_followup_miss'
-            ? `Short second putts are turning into 3-putts`
-            : '3-putts above the GolfHelm rate',
+          : `Short second putts are turning into 3-putts`,
     content:
-      `You 3-putt ${r.three_putts_per_18.toFixed(1)} times a round (${r.three_putts} of ${r.holes_putted} holes) vs ${r.expected_peer_per_18.toFixed(1)} for GolfHelm players.` +
+      `You 3-putt ${r.three_putts_per_18.toFixed(1)} times a round (${r.three_putts} of ${r.holes_putted} holes) vs ${benchPer18.toFixed(1)} for ${benchName}.` +
       `${pathwayLine}${exposureLine}${slopeNote}`,
-    priority: r.three_putts_per_18 - r.expected_peer_per_18 >= 0.5 ? 'medium' : 'low',
+    priority: r.three_putts_per_18 - benchPer18 >= 0.5 ? 'medium' : 'low',
     signature: 'three_putt_chain:all',
     evidence,
   };
 }
 
-export class ThreePuttChainGenerator extends BaseGenerator<ThreePuttAggregate> {
+export class ThreePuttChainGenerator extends AngleGenerator<ThreePuttAggregate> {
   readonly name = 'ThreePuttChainGenerator';
   readonly metricId: MetricId = 'sg_putting';
   readonly insightType = 'putting';
@@ -655,17 +744,17 @@ export class ThreePuttChainGenerator extends BaseGenerator<ThreePuttAggregate> {
     return this.composedCategory;
   }
 
-  protected override async isEnabled(): Promise<boolean> {
-    return isFlagEnabled(INSIGHT_ANGLES_FLAG);
-  }
-
   protected override signatureScope(): string {
     return 'three_putt_chain:';
   }
 
   async aggregate(): Promise<ThreePuttAggregate | null> {
-    const data = await loadAngleData(this.playerId);
-    return toThreePuttAggregate(computeThreePuttChain(data), data.scoringBaseline);
+    const data = await this.loaders.data();
+    const tour = await this.loaders.tourThreePutt();
+    const team = tour ? null : primaryTeamId(data.rounds);
+    const peers = team ? await this.loaders.teamRounds(team) : null;
+    const benchmark = resolveThreePuttBenchmark(tour, peers, data.playerId);
+    return toThreePuttAggregate(computeThreePuttChain(data, benchmark), data.scoringBaseline);
   }
 
   composeContent(agg: ThreePuttAggregate): ComposedContent {

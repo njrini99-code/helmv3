@@ -82,8 +82,12 @@ export interface AngleData {
   rounds: AngleRound[];
   holes: AngleHole[];
   shots: AngleShot[];
-  /** `sg_scale_for_player` (1 when unreadable). */
-  scale: number;
+  /**
+   * `sg_scale_for_player`; null when the RPC failed or returned no usable
+   * value. Without it per-shot SG is not computed and the SG-based families
+   * (lie-adjusted approach, approach-miss compass) say nothing.
+   */
+  scale: number | null;
   /** Scoring baseline for the counterfactual line (null → projection suppressed). */
   scoringBaseline: number | null;
 }
@@ -98,7 +102,28 @@ export interface PeerRound {
   score_to_par: number | null;
   fairways_hit: number | null;
   fairways_total: number | null;
+  /** `golf_round_stats_cache.three_putts` for the round; null when not cached. */
+  three_putts: number | null;
 }
+
+/** A Tour three-putt figure from `golf_pga_standards` (PGA for men, LPGA for women). */
+export interface TourThreePutt {
+  /** Three-putts per 18 holes. */
+  per_18: number;
+  tour: 'pga' | 'lpga';
+  season: string;
+  /** The row's own source text. */
+  source: string;
+}
+
+/**
+ * Teammates needed before any team benchmark is shown (`07` §6 privacy rule):
+ * a median of fewer players can expose one teammate's own number. Below this
+ * the row carries no team comparison at all.
+ */
+export const PEER_MIN_PLAYERS = 5;
+/** Newest countable rounds read per teammate (the same window as the player's). */
+export const PEER_ROUND_LIMIT = 40;
 
 // ---------------------------------------------------------------------------
 // Units
@@ -226,6 +251,9 @@ export function shotsByHole(shots: readonly AngleShot[]): Map<string, AngleShot[
  * `sg_scale_for_player`.
  */
 export function shotSgById(data: Pick<AngleData, 'shots' | 'holes' | 'scale'>): Map<string, number> {
+  // No SG scale → no per-shot SG (never computed at a guessed scale of 1).
+  if (data.scale === null) return new Map();
+  const scale = data.scale;
   const parByHoleId = new Map<string, number>();
   for (const h of data.holes) parByHoleId.set(h.id, h.par);
   const byRound = new Map<string, AngleShot[]>();
@@ -236,7 +264,7 @@ export function shotSgById(data: Pick<AngleData, 'shots' | 'holes' | 'scale'>): 
   }
   const out = new Map<string, number>();
   for (const list of byRound.values()) {
-    for (const sg of shotSgForRound(list, parByHoleId, data.scale)) out.set(sg.shotId, sg.sg);
+    for (const sg of shotSgForRound(list, parByHoleId, scale)) out.set(sg.shotId, sg.sg);
   }
   return out;
 }
@@ -323,6 +351,20 @@ function bandFor(confidence: number | undefined): 'low' | 'medium' | 'high' {
   if (confidence < 0.4) return 'low';
   if (confidence < 0.7) return 'medium';
   return 'high';
+}
+
+/**
+ * strokes_impact for a ROUGH-ESTIMATE family: the size of the read
+ * (`strokesPerAttempt × attemptsPerRound`, clamped to the projection ceiling),
+ * with no counterfactual attached. A rough estimate never carries a live
+ * projection (`projected_score_if_closed`), so the Team Brief and the
+ * strokes-available roll-up cannot total it as measured (they also skip
+ * `estimated: true`).
+ */
+export function roughEstimateStrokes(strokesPerAttempt: number, attemptsPerRound: number): number {
+  const raw = strokesPerAttempt * attemptsPerRound;
+  if (!Number.isFinite(raw) || raw <= 0) return 0;
+  return round2(Math.min(raw, COUNTERFACTUAL_MAX_STROKES_PER_ROUND));
 }
 
 /** strokes_impact for the row: the projection's strokes when it renders. */
@@ -471,7 +513,10 @@ export interface AngleFamily {
   /** The `detail.gap_input` shape the Slice 1 support pass reads. */
   gap_kind: 'proportion' | 'mean';
   impact: AngleImpactKind;
+  /** The preferred comparison source. */
   benchmark: ComparisonLineSource;
+  /** Sources used, in order, when the preferred one is not available. */
+  benchmark_fallbacks?: readonly ComparisonLineSource[];
   cap: AngleLadderCap;
   /** Shrinkage κ default (`02` §4) and its unit. */
   kappa: { value: number; unit: AngleSampleUnit };
@@ -492,7 +537,9 @@ const SG_CITATION = `${RESEARCH_DOC} §Strokes Gained (Broadie, Every Shot Count
 export const ANGLE_FAMILIES: Readonly<Record<AngleFamilyId, AngleFamily>> = {
   three_putt_chain: {
     family: 'three_putt_chain',
-    metric: 'three_putt_chain',
+    // Its own id: `three_putt_chain` is composite C6's percent metric
+    // (`composite/rules/lag-distance-3putt.ts`).
+    metric: 'three_putts_per_18',
     insight_type: 'putting',
     sample_unit: 'holes',
     floor: 90,
@@ -500,10 +547,15 @@ export const ANGLE_FAMILIES: Readonly<Record<AngleFamilyId, AngleFamily>> = {
     round_floor: 5,
     gap_kind: 'proportion',
     impact: 'peer_delta',
-    benchmark: 'program_pool',
+    // Q-88: the Tour is the only external benchmark. A Tour three-putt figure
+    // (golf_pga_standards) when one exists, else the teammates' median at
+    // PEER_MIN_PLAYERS or more, else no comparison and no read.
+    benchmark: 'tour',
+    benchmark_fallbacks: ['team_pool'],
     // Replaces composite C6 (estimated 3-putt rate) later; counted, so Observed.
     cap: 'observed',
-    kappa: { value: 5, unit: 'rounds' },
+    // κ in the gap input's own unit (holes): about 5 rounds of putted holes.
+    kappa: { value: 90, unit: 'holes' },
     citations: [
       `${RESEARCH_DOC} §Putting: 3-putts are dominated by speed control; second-putt distance is the proxy`,
       `${RESEARCH_DOC} causal claims allowed: lag distance drives 3-putt rate`,
@@ -518,7 +570,9 @@ export const ANGLE_FAMILIES: Readonly<Record<AngleFamilyId, AngleFamily>> = {
     per_side_floor: null,
     round_floor: 10,
     gap_kind: 'mean',
-    impact: 'peer_delta',
+    // Sized as extra gap × 0.2 (a P80 round is one round in five): an
+    // assumption about how often bad rounds come, not a measured saving.
+    impact: 'rough_estimate',
     benchmark: 'team_pool',
     // 02 §7: the P80 of 40 rounds has SE ≈ 0.7 strokes; the weakest angle.
     cap: 'likely',
@@ -604,6 +658,8 @@ export interface AngleReadFields {
   sample_unit: AngleSampleUnit;
   rounds_n: number;
   newest_round_id?: string;
+  /** The rounds counted (newest first); the base keeps it, so it matches `rounds_n`. */
+  source_round_ids: string[];
   comparison: { primary: ComparisonLine; lines: ComparisonLine[] };
 }
 
@@ -614,8 +670,11 @@ export function newestFirstIds(rounds: readonly { id: string; date: string }[]):
     .map((r) => r.id);
 }
 
-/** The evidence an angle row writes: the base contract plus the read fields and its projection. */
-export type AngleEvidence = InsightEvidence & AngleReadFields & { counterfactual: CounterfactualProjection };
+/**
+ * The evidence an angle row writes: the base contract plus the read fields.
+ * A measured family carries its projection; a rough estimate carries none.
+ */
+export type AngleEvidence = InsightEvidence & AngleReadFields & { counterfactual?: CounterfactualProjection };
 
 /** The read fields for a family, from the rounds actually read (newest first). */
 export function angleReadFields(
@@ -629,6 +688,7 @@ export function angleReadFields(
     sample_unit: def.sample_unit,
     rounds_n: roundIds.length,
     ...(roundIds[0] ? { newest_round_id: roundIds[0] } : {}),
+    source_round_ids: [...roundIds],
     comparison: { primary, lines: [primary, ...extraLines] },
   };
 }

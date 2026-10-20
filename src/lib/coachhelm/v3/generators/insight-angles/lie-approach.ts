@@ -31,21 +31,24 @@
  *   - `rough_execution` (category `approach`): rough_excess ≥ 0.10 and
  *     one-sided z ≥ 1.645. Cost/round = rough approaches per 18 × excess.
  *   - `fairway_exposure` (category `tee`, links tee → approach): fairway %
- *     at least 8 points under the TEAMMATES' median (≥ 3 peers, source
- *     `team_avg`) with z ≥ 1.645. Cost/round = missed-fairway gap per 18 ×
- *     the Tour rough-vs-fairway penalty at the player's own rough-approach
- *     distances (estimated: a missed fairway is not always a rough lie).
- * Either cost must reach the 0.3 strokes/round projection floor.
+ *     at least 8 points under the TEAMMATES' median (≥ 5 teammates, the
+ *     `07` §6 privacy floor; source `team_avg`) with z ≥ 1.645. Cost/round =
+ *     missed-fairway gap per 18 × the Tour rough-vs-fairway penalty at the
+ *     player's own rough-approach distances. A ROUGH ESTIMATE (a missed
+ *     fairway is not always a rough lie): `estimated: true`, no projection.
+ * Either cost must reach the 0.3 strokes/round floor. Without the player's
+ * SG scale (`sg_scale_for_player` failed) the angle says nothing.
  */
 
-import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { bucketApproachDistance, type ApproachBucket } from '@/lib/coachhelm/v3/engine/shot-source';
 import { getExpectedStrokes } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
 import {
   ANGLE_MIN_Z,
-  INSIGHT_ANGLES_FLAG,
+  PEER_MIN_PLAYERS,
+  PEER_ROUND_LIMIT,
+  roughEstimateStrokes,
+  ANGLE_FAMILIES,
   angleReadFields,
   angleTest,
   attemptCounterfactual,
@@ -75,7 +78,7 @@ import {
   type PeerRound,
   type ReceiptExample,
 } from './angle-data';
-import { loadAngleData, loadTeamPeerRounds } from './load-angle-data';
+import { AngleGenerator } from './angle-generator';
 
 export const LIE_BANDS: readonly ApproachBucket[] = ['50_125ft', '125_175ft', '175_plus_ft'];
 /** Band labels (the same words PR #2073's context narrowing uses). */
@@ -96,9 +99,7 @@ export const LIE_MIN_EXCESS = 0.1;
 /** Fairway-% shortfall vs teammates' median to call exposure a leak (points). */
 export const FAIRWAY_MIN_GAP_PP = 8;
 export const FAIRWAY_MIN_HOLES = 40;
-export const PEER_MIN_PLAYERS = 3;
 export const PEER_MIN_ROUNDS = 5;
-export const PEER_ROUND_LIMIT = 40;
 /** Displayed only when sand has at least this many shots in a band. */
 export const SAND_MIN_SHOTS = 8;
 
@@ -151,6 +152,9 @@ export interface LieApproachResult {
   /** Tour rough-vs-fairway expected-strokes gap at the player's rough distances. */
   tour_rough_penalty: number | null;
   exposure_cost_per_round: number;
+  /** Each cause's own gate, so the text never calls a qualifying cause "not a leak". */
+  execution_qualifies: boolean;
+  exposure_qualifies: boolean;
   cause: LieCause | null;
   excluded: { par3_tee: number; other_lie: number; par5_long: number; no_band: number };
   /** Fairway/rough approaches in the bands whose per-shot SG could not be computed (left out of the SG test, not zeroed). */
@@ -237,6 +241,9 @@ export function peerFairwayMedian(
 /** Pure compute (see file header). Returns null when there is nothing to read. */
 export function computeLieApproach(data: AngleData, peers: readonly PeerRound[] | null): LieApproachResult | null {
   if (data.rounds.length === 0) return null;
+  // Per-shot SG and the Tour lie penalty both need the player's SG scale.
+  if (data.scale === null) return null;
+  const scale = data.scale;
   const roundIds = new Set(data.rounds.map((r) => r.id));
   const dateOf = new Map(data.rounds.map((r) => [r.id, r.date]));
   const { byKey, byId } = indexHoles(data.holes);
@@ -337,7 +344,7 @@ export function computeLieApproach(data: AngleData, peers: readonly PeerRound[] 
   const roughAll = LIE_BANDS.flatMap((b) => obs.get(`${b}|rough`) ?? []);
   const penalties = roughAll
     .filter((o) => o.yards > 0)
-    .map((o) => (getExpectedStrokes('rough', o.yards, undefined, data.scale) - getExpectedStrokes('fairway', o.yards, undefined, data.scale)));
+    .map((o) => (getExpectedStrokes('rough', o.yards, undefined, scale) - getExpectedStrokes('fairway', o.yards, undefined, scale)));
   const tourPenalty = penalties.length ? round2(mean(penalties)!) : null;
 
   let fairwayZ: number | null = null;
@@ -396,6 +403,8 @@ export function computeLieApproach(data: AngleData, peers: readonly PeerRound[] 
     fairway_z: fairwayZ === null ? null : round2(fairwayZ),
     tour_rough_penalty: tourPenalty,
     exposure_cost_per_round: round2(exposureCost),
+    execution_qualifies: executionQualifies,
+    exposure_qualifies: exposureQualifies,
     cause,
     excluded,
     sg_missing: LIE_BANDS.reduce(
@@ -487,7 +496,7 @@ export function composeLieApproach(agg: LieApproachAggregate): ComposedContent &
     definition:
       r.cause === 'rough_execution'
         ? 'Extra strokes per rough approach = rough-weighted, band-held mean per-shot SG from the fairway minus from the rough, in bands with 8+ fairway and 8+ rough approaches (50–125 / 125–175 / 175+ yd). SG already charges the Tour penalty for the lie; 0 = Tour-normal.'
-        : 'Fairways hit % = fairway hits ÷ par-4/5 holes with a recorded fairway result, compared with the median of teammates (5+ countable rounds, 3+ teammates). Cost = fairway gap × fairway holes per 18 × the Tour rough-vs-fairway penalty at your rough-approach distances (estimated).',
+        : 'Fairways hit % = fairway hits ÷ par-4/5 holes with a recorded fairway result, compared with the median of teammates (5+ countable rounds, 5+ teammates). Cost = fairway gap × fairway holes per 18 × the Tour rough-vs-fairway penalty at your rough-approach distances (a rough estimate).',
     samples: {
       rounds: r.rounds,
       rough_approaches_in_tested_bands: r.rough_shots,
@@ -545,7 +554,9 @@ export function composeLieApproach(agg: LieApproachAggregate): ComposedContent &
     });
     const fwLine =
       r.fairway_pct !== null && r.peer_fairway_pct !== null
-        ? ` You hit ${r.fairway_pct}% of fairways (teammates' median ${r.peer_fairway_pct}%), so the leak is the shot from the rough, not how often you get there.`
+        ? r.exposure_qualifies
+          ? ` You also hit fewer fairways than your teammates (${r.fairway_pct}% vs their median ${r.peer_fairway_pct}%), a smaller cost of its own; the larger one is the shot from the rough.`
+          : ` You hit ${r.fairway_pct}% of fairways (teammates' median ${r.peer_fairway_pct}%), so the leak is the shot from the rough, not how often you get there.`
         : '';
     const evidence: AngleEvidence = {
       ...angleReadFields('lie_rough_execution', r.round_ids, tourLine),
@@ -589,12 +600,14 @@ export function composeLieApproach(agg: LieApproachAggregate): ComposedContent &
     };
   }
 
-  const cf = attemptCounterfactual({
-    strokesPerAttempt: ((r.peer_fairway_pct ?? 0) - (r.fairway_pct ?? 0)) / 100 * (r.tour_rough_penalty ?? 0),
-    attemptsPerRound: r.fairway_holes_per_18,
-    baseline: agg.baseline,
-    weeks: 24,
-  });
+  // Rough estimate: the size of the read only, no projection attached.
+  const roughStrokes = roughEstimateStrokes(r.exposure_cost_per_round, 1);
+  const roughFromRough =
+    r.rough_excess === null
+      ? 'Too few rough and fairway approaches in the same band to test play from the rough itself.'
+      : r.execution_qualifies
+        ? `From the rough itself you also lose ${r.rough_excess.toFixed(2)} strokes per shot more than the lie explains, a leak of its own (about ${r.rough_cost_per_round.toFixed(1)} strokes a round); the larger cost starts at the tee.`
+        : `From the rough itself you are ${r.rough_excess > 0 ? `${r.rough_excess.toFixed(2)} strokes worse per shot than the lie explains, which is not a clear leak on its own` : 'no worse than the lie explains'}, so the cost starts at the tee.`;
   const evidence: AngleEvidence = {
     ...angleReadFields(
       'lie_fairway_exposure',
@@ -620,18 +633,15 @@ export function composeLieApproach(agg: LieApproachAggregate): ComposedContent &
     comparison_value: r.peer_fairway_pct ?? 0,
     comparison_label: `Teammates' median fairways hit % (${r.peer_n} players)`,
     comparison_source: 'team_avg',
-    strokes_impact: impactOf(cf),
+    strokes_impact: roughStrokes,
     estimated: true,
     confidence_factors: { sample_adequacy: Math.min(r.fairway_holes / 150, 1), recency: 1, variance: 0.5 },
-    counterfactual: cf,
     detail,
     diagnosis: {
       symptom: `${r.fairway_pct}% fairways hit vs a teammates' median of ${r.peer_fairway_pct}%`,
       root_cause:
         `Missed fairways put ${r.rough_all_per_18.toFixed(1)} approaches a round in the rough, where a Tour player expects to lose about ${(r.tour_rough_penalty ?? 0).toFixed(2)} strokes per shot at your distances. ` +
-        (r.rough_excess !== null
-          ? `From the rough itself you are ${r.rough_excess > 0 ? `${r.rough_excess.toFixed(2)} strokes worse per shot than the lie explains, which is not a clear leak on its own` : 'no worse than the lie explains'}, so the cost starts at the tee.`
-          : 'Too few rough and fairway approaches in the same band to test play from the rough itself.'),
+        roughFromRough,
       causality_level: 'inferred_hypothesis',
       drivers: [
         { metric: 'tee_fairway_rough_exposure', label: 'Fairways hit %', value: r.fairway_pct ?? 0, unit: 'percent', sample_n: r.fairway_holes, source: 'golf_holes.fairway_hit' },
@@ -653,23 +663,24 @@ export function composeLieApproach(agg: LieApproachAggregate): ComposedContent &
   };
 }
 
-export class LieApproachGenerator extends BaseGenerator<LieApproachAggregate> {
+export class LieApproachGenerator extends AngleGenerator<LieApproachAggregate> {
   readonly name = 'LieApproachGenerator';
   /** Closest canonical id; the row's own metric is an alias (no standing, no lookup). */
   readonly metricId: MetricId = 'sg_approach';
-  readonly insightType = 'approach';
   readonly minSampleN = LIE_MIN_PER_SIDE;
   protected override readonly requiresStanding = false;
 
   /** Set by composeContent (which runs before the write): `tee` for the
-   *  fairway-exposure cause, `approach` for rough execution. */
+   *  fairway-exposure cause, `approach` for rough execution. The insight
+   *  type follows the same cause (ANGLE_FAMILIES[family].insight_type). */
   private composedCategory: InsightCategory = 'approach';
   get category(): InsightCategory {
     return this.composedCategory;
   }
-
-  protected override async isEnabled(): Promise<boolean> {
-    return isFlagEnabled(INSIGHT_ANGLES_FLAG);
+  get insightType(): string {
+    return this.composedCategory === 'tee'
+      ? ANGLE_FAMILIES.lie_fairway_exposure.insight_type
+      : ANGLE_FAMILIES.lie_rough_execution.insight_type;
   }
 
   protected override signatureScope(): string {
@@ -677,9 +688,9 @@ export class LieApproachGenerator extends BaseGenerator<LieApproachAggregate> {
   }
 
   async aggregate(): Promise<LieApproachAggregate | null> {
-    const data = await loadAngleData(this.playerId);
+    const data = await this.loaders.data();
     const team = primaryTeamId(data.rounds);
-    const peers = team ? await loadTeamPeerRounds(team) : null;
+    const peers = team ? await this.loaders.teamRounds(team) : null;
     return toLieAggregate(computeLieApproach(data, peers), data.scoringBaseline);
   }
 

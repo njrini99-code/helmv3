@@ -11,7 +11,7 @@ import {
 } from '../approach-miss-compass';
 import type { AngleHole, AngleShot } from '../angle-data';
 import { expectFamilyContract } from './contract';
-import { PLAYER, mkData, mkHole, mkRound, mkShot } from './fixtures';
+import { PLAYER, mkData, mkHole, mkRound, mkShot, stubLoaders } from './fixtures';
 
 type Dir = 'short' | 'long' | 'left' | 'right' | 'short_left' | 'hit' | 'none';
 
@@ -177,7 +177,8 @@ describe('composeApproachCompass', () => {
       build({ rounds: 10, pattern: PATTERN, putts: (d, k) => (d === 'short' || d === 'short_left' ? 2 + (k % 2) : 1 + (k % 3 === 0 ? 1 : 0)) }),
     )!;
     const c = composeApproachCompass(toCompassAggregate(r, 74)!);
-    expectFamilyContract(c, 'approach_miss_compass', { roundsN: 10, newestRoundId: 'r9' });
+    const gen = new ApproachMissCompassGenerator(PLAYER, stubLoaders(mkData([], [], [])));
+    expectFamilyContract(c, 'approach_miss_compass', { roundsN: 10, newestRoundId: 'r9', insightType: gen.insightType });
     const ev = c.evidence as typeof c.evidence & { counterfactual: { strokes_saved_per_round: number; attempts_used: number } };
     expect(ev.metric).toBe('approach_miss_recovery_cost');
     expect(ev.metric_label).toBe('Extra strokes to finish a hole after missing the green short');
@@ -191,7 +192,12 @@ describe('composeApproachCompass', () => {
     expect(receipts.exclusions).toHaveProperty('misses_without_complete_recovery_record');
     expect(c.content).toContain('a diagonal miss counts on both axes');
     expect(c.content).not.toMatch(/iron|wedge|nerves|swing/i);
-    expect(new ApproachMissCompassGenerator(PLAYER).category).toBe('short_game');
+    expect(gen.category).toBe('short_game');
+  });
+
+  it('says nothing without the player\'s SG scale (sg_scale_for_player failed)', () => {
+    const data = build({ rounds: 10, pattern: PATTERN, putts: (d, k) => (d === 'short' || d === 'short_left' ? 2 + (k % 2) : 1 + (k % 3 === 0 ? 1 : 0)) });
+    expect(computeApproachCompass({ ...data, scale: null })).toBeNull();
   });
 
   it('toCompassAggregate is null when nothing qualifies', () => {

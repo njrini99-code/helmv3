@@ -5,7 +5,7 @@ vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: vi.fn(() => false) }))
 import { TeeMissCostGenerator, composeTeeMiss, computeTeeMiss, toTeeMissAggregate } from '../tee-miss-cost';
 import type { AngleHole, AngleSequence, AngleShot } from '../angle-data';
 import { expectFamilyContract } from './contract';
-import { PLAYER, mkData, mkHole, mkRound, mkShot } from './fixtures';
+import { PLAYER, mkData, mkHole, mkRound, mkShot, stubLoaders } from './fixtures';
 
 type Outcome = 'fairway' | 'left' | 'right' | 'unrecorded';
 
@@ -151,20 +151,25 @@ describe('compass and driver chain', () => {
 });
 
 describe('composeTeeMiss', () => {
-  it('states coverage, compares with the other side, sizes on own misses', () => {
+  it('states coverage, compares with the other side, sizes on own misses as a rough estimate', () => {
     const r = computeTeeMiss(build({ pattern: PATTERN, toPar: { fairway: 0, left: 1.5, right: 0.5 } }))!;
     const agg = toTeeMissAggregate(r, 74)!;
     const c = composeTeeMiss(agg);
-    const ev = c.evidence as typeof c.evidence & { counterfactual: { strokes_saved_per_round: number; attempts_used: number } };
+    const ev = c.evidence as typeof c.evidence & { counterfactual?: unknown };
+    const gen = new TeeMissCostGenerator(PLAYER, stubLoaders(mkData([], [], [])));
+    expectFamilyContract(c, 'tee_miss_cost', { roundsN: 6, newestRoundId: 'r5', insightType: gen.insightType });
     expect(ev.metric).toBe('tee_miss_next_shot_cost');
     expect(ev.comparison_source).toBe('your_baseline');
     expect(c.content).toContain('Miss side recorded on 54 of 54 missed fairways');
     expect(c.content).not.toMatch(/iron|wedge|hybrid|wood/i);
-    expect(ev.counterfactual.attempts_used).toBe(6);
-    expect(ev.counterfactual.strokes_saved_per_round).toBeCloseTo(Math.min(2.5, r.cost_per_round), 1);
+    // A rough estimate: sized on the player's own misses, no projection even with a baseline.
+    expect(ev.estimated).toBe(true);
+    expect(ev.counterfactual).toBeUndefined();
+    expect(ev.strokes_impact).toBeCloseTo(Math.min(2.5, r.cost_per_round), 2);
+    expect(ev.your_value_display).not.toContain('+-');
     expect(c.signature).toBe('tee_miss_cost:left');
     expect(ev.diagnosis?.causality_level).toBe('inferred_hypothesis');
-    expect(new TeeMissCostGenerator(PLAYER).category).toBe('tee');
+    expect(gen.category).toBe('tee');
   });
 
   it('toTeeMissAggregate is null when nothing qualifies', () => {
