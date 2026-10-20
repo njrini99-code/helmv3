@@ -2327,6 +2327,40 @@
     font-weight: 600;
     color: var(--ch-text-primary);
   }
+  /* Stats visuals: the phone's rows are a 44px tap target, a pinned row lifts, an early read is hollow. */
+  .ch-stm-legs:has(.ch-sv-row) {
+    gap: 2px;
+  }
+  .ch-stm-legs > .ch-sv-read {
+    min-height: 44px;
+    margin-bottom: 4px;
+  }
+  .ch-stm-leg.ch-sv-row {
+    min-height: 44px;
+    margin: 0 -6px;
+    padding: 0 6px;
+    border-radius: 10px;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-stm-leg.ch-sv-row[data-pinned] {
+    background: var(--ch-bg-inset);
+  }
+  .ch-stm-leg.is-total.ch-sv-row {
+    padding-top: 0;
+    border-top: 0;
+    box-shadow: 0 -1px 0 var(--ch-border-hairline);
+  }
+  .ch-stm-leg.is-early .ch-stm-leg__v {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  }
+  .ch-stm-leg.is-early b {
+    color: var(--ch-text-secondary);
+  }
+  .ch-stm-leg .ch-sv-needs {
+    left: calc(50% + 8px);
+    font: var(--ch-type-caption);
+  }
   .ch-stm-putt__bar i {
     position: absolute;
     inset: 0 auto 0 0;
@@ -5680,6 +5714,92 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   height: 14px;
   border-radius: 2px;
   background: var(--ch-ink-700);
+}
+
+/* Stats visuals (shared signal layer): how sure a stat is. A readout line above the marks, a whisker of one standard error, a
+   hollow muted mark for an early read, and what a stat needs while it has too few. Prefix .ch-sv-. */
+.ch-sv-read {
+  min-height: 22px;
+  margin: 0 0 8px;
+  font: var(--ch-type-body-s);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-read.is-on {
+  color: var(--ch-text-primary);
+}
+.ch-sv-whisk {
+  position: absolute;
+  top: 50%;
+  height: 1px;
+  margin-top: -0.5px;
+  background: var(--ch-text-tertiary);
+  pointer-events: none;
+}
+.ch-sv-whisk::before,
+.ch-sv-whisk::after {
+  position: absolute;
+  top: -3px;
+  width: 1px;
+  height: 7px;
+  background: inherit;
+  content: '';
+}
+.ch-sv-whisk::before {
+  left: 0;
+}
+.ch-sv-whisk::after {
+  right: 0;
+}
+/* A whisker the rail cuts off draws no cap at that end: the readout carries the number. */
+.ch-sv-whisk.is-clip-l::before,
+.ch-sv-whisk.is-clip-r::after {
+  display: none;
+}
+.ch-sv-needs {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 10px);
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-note {
+  margin: 10px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-row {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-lb:focus-visible,
+.ch-stm-legs:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-st[data-canopy] .ch-lb__r.ch-sv-row {
+  margin: 0 -12px;
+  padding: 10px 12px;
+}
+.ch-st[data-canopy] .ch-sv-row[data-active] {
+  background: rgb(176 149 96 / 0.1);
+}
+.ch-st[data-canopy] .ch-sv-row[data-pinned] {
+  box-shadow:
+    inset 0 0 0 1px var(--ch-border-strong),
+    inset 0 -1px 0 var(--ch-ledger-rule-soft);
+}
+/* An early read: hollow, no gain or loss color, a little quieter. */
+.ch-st[data-canopy] .ch-sv-row.is-early .ch-lb__bar {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  opacity: 0.85;
+}
+.ch-st[data-canopy] .ch-sv-row.is-early .ch-lb__v {
+  color: var(--ch-text-secondary);
 }
 
 /* P005: the player Overview as seven zones (OverviewZones). Each stat area is a band set off by a gold rule, an alternating tint

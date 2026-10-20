@@ -296,37 +296,6 @@ export function LegRoute({ rows }: { rows: Array<{ label: string; value: number 
 }
 
 /**
- * Strokes gained by leg on the phone: a bar either side of zero on a scale the
- * data sets (the largest value shown, rounded up, at least 1), so a bar's length
- * is its value. The total sits under the legs on the same scale.
- */
-export function SgBars({ rows }: { rows: Array<{ label: string; value: number | null; total?: boolean }> }) {
-  const scale = sgScale(rows.map((r) => r.value));
-  return (
-    <div className="ch-stm-legs">
-      {rows.map(({ label, value: v, total }) => (
-        <div key={label} className={'ch-stm-leg' + (total ? ' is-total' : '')}>
-          <span>{label}</span>
-          <span className="ch-stm-leg__bar" aria-hidden="true">
-            <i className="ch-stm-leg__z" />
-            {v != null && (
-              <i
-                className={'ch-stm-leg__v ' + (v >= 0 ? 'is-gain' : 'is-loss')}
-                style={{
-                  [v >= 0 ? 'left' : 'right']: '50%',
-                  width: `${sgShare(v, scale) * 50}%`,
-                }}
-              />
-            )}
-          </span>
-          <b className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</b>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/**
  * You against the team and the Tour, as a scorecard table. Rows may be grouped under headings (the standing board:
  * strokes gained, scoring, putting ...); a row under its sample floor says what it needs (CH-5318).
  */
