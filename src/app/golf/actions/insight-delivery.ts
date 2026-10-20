@@ -58,7 +58,7 @@ import {
 } from '@/lib/coachhelm/v3/insight-visibility';
 import { recordInsightExposure } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { describeError } from '@/lib/utils/describe-error';
-import { projectInsightsForPlayer } from '@/lib/coachhelm/delivery/player-projection';
+import { projectInsightForPlayer, projectInsightsForPlayer } from '@/lib/coachhelm/delivery/player-projection';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -517,7 +517,7 @@ async function getTopInsightForPlayerImpl(
     const overlaid = applyPlayerFeedbackOverlay(rankedUrgent, await getFeedback());
     if (overlaid.length > 0 && overlaid[0]) {
       recordExposureForReturned([overlaid[0]], 'hub_signal', null, scoreMap(urgentScored));
-      return overlaid[0];
+      return projectInsightForPlayer(overlaid[0]);
     }
   }
 
@@ -577,7 +577,8 @@ async function getTopInsightForPlayerImpl(
   const top = overlaid[0] ?? null;
   // Only the single insight the Hub signal card actually shows is recorded.
   if (top) recordExposureForReturned([top], 'hub_signal', null, scoreMap(rankedScored));
-  return top;
+  // Slice 1b: the Hub signal card reaches the player too.
+  return top ? projectInsightForPlayer(top) : null;
 }
 
 const observedGetTopInsightForPlayer = withAdminObserved(
@@ -1320,7 +1321,8 @@ async function getRoundTakeawayInsightImpl(
   const takeaway = overlaid[0] ?? null;
   // Only the single takeaway insight the round-review card shows is recorded.
   if (takeaway) recordExposureForReturned([takeaway], 'round_review', null, scoreMap(rankedScored));
-  return takeaway;
+  // Slice 1b: the round-review takeaway reaches the player too.
+  return takeaway ? projectInsightForPlayer(takeaway) : null;
 }
 
 const observedGetRoundTakeawayInsight = withAdminObserved(

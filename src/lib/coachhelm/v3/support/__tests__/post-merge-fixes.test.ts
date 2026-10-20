@@ -209,6 +209,23 @@ describe('finding 4: support floors come from the shared table', () => {
     expect(p.ladder).toBe('not_enough_yet');
     expect(p.ladder_reasons).toContain('below_arm_floor');
   });
+
+  it('puts a read held only by an arm on Watching, with the short arm', () => {
+    // 24 rounds clear the 12-round floor; 4 practice rounds miss the 6 per arm.
+    const run = evaluatePlayerRun([pressure({}, { practice_rounds: 4, competitive_rounds: 20 })]);
+    expect(run.rows[0]!.patch.ladder_reasons[0]).toBe('below_arm_floor');
+    expect(run.summary.watching).toEqual([
+      {
+        family: 'pressure_gap',
+        unit: 'rounds',
+        have_n: 24,
+        need_n: 12,
+        rounds_have: 24,
+        rounds_need: 12,
+        arms: [{ key: 'practice_rounds', have: 4, need: 6 }],
+      },
+    ]);
+  });
 });
 
 describe('finding 5: the team benchmark leaves the player out and carries its own variance', () => {

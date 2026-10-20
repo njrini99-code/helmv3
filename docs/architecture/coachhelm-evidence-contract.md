@@ -2317,10 +2317,13 @@ where they differ.
   from the gap (`support.strokes_basis: gap`) still rank.
 - Freshness. `support.run_at` and `support.run_id` (the run-log row id) say
   which pass stamped the row.
-- Player feed. `getInsightsForPlayer` strips `support`, `ladder`,
+- Player paths. `getInsightsForPlayer`, `getTopInsightForPlayer` (urgent
+  and normal picks) and `getRoundTakeawayInsight` strip `support`, `ladder`,
   `what_ladder`, `ladder_reasons`, `strokes_shrunk` and `shrink` from the
-  evidence it returns (`src/lib/coachhelm/delivery/player-projection.ts`);
+  evidence they return (`src/lib/coachhelm/delivery/player-projection.ts`);
   exposure rows still read them.
+- Watching also lists a read held only by an arm floor, with the short arms
+  (`watching[].arms`).
 
 Back-test on the 2026-10-20 export (715 live v3 reads, 70 players), main
 before these fixes vs after: testable 510 vs 468 (42 no-claim rows); BH

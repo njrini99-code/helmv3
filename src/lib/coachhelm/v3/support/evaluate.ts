@@ -107,6 +107,8 @@ export interface WatchingEntry {
   need_n: number;
   rounds_have: number | null;
   rounds_need: number;
+  /** Arms of a two-arm contrast still short of their floor (a missing count is null). */
+  arms?: Array<{ key: string; have: number | null; need: number }>;
 }
 
 export interface RunSummary {
@@ -337,7 +339,8 @@ export function evaluatePlayerRun(rows: readonly SupportRow[], opts: EvaluateOpt
       summary.suppressed[first] = (summary.suppressed[first] ?? 0) + 1;
       const shortN = c.n < c.def.floor;
       const shortRounds = c.roundsN !== null && c.roundsN < c.def.roundFloor;
-      if (g && (shortN || shortRounds)) {
+      const shortArms = c.arms.filter((a) => !(a.have !== null && a.have >= a.need));
+      if (g && (shortN || shortRounds || shortArms.length > 0)) {
         summary.watching.push({
           family: c.family,
           unit: c.nUnit,
@@ -345,6 +348,7 @@ export function evaluatePlayerRun(rows: readonly SupportRow[], opts: EvaluateOpt
           need_n: c.def.floor,
           rounds_have: c.roundsN,
           rounds_need: c.def.roundFloor,
+          ...(shortArms.length > 0 ? { arms: shortArms.map((a) => ({ key: a.key, have: a.have, need: a.need })) } : {}),
         });
       }
     }
