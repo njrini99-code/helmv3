@@ -1,5 +1,16 @@
 # Clubhouse changelog
 
+## 2026-10-20 — No serif face is loaded
+
+`lib/fonts.ts` still declared Instrument Serif (normal and italic), so every
+Clubhouse page preloaded two serif files that nothing drew: titles moved to the
+sans on 2026-10-07 and `--ch-font-serif` resolves to it (`tokens.css`), and no
+selector names `--ch-font-instrument-serif` (premium pass audit P011 D14). The
+face and its variable are gone; Instrument Sans, JetBrains Mono and Norican
+stay. Nothing on screen changes. The original change (draft PR #2207) counted
+four WebKit font preloads before and two after on the player home preview; that
+was before Norican joined, and the count was not re-taken in this replay.
+
 ## 2026-10-20 — Server errors carry ui=clubhouse too
 
 No visible change. Release review blocker 5: only the browser tagged a
