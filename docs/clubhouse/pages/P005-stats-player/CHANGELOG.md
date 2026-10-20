@@ -1,23 +1,46 @@
 # P005 — Stats (player): changelog
 
-## 2026-10-20 — Strokes gained by leg says how sure it is, and you can read it (stats visuals, piece 1)
+## 2026-10-20 — Strokes gained by leg says how sure it is (visuals 1)
 
 ```text
-Design package: none (stats visuals plan: project files stats-visuals/stats-display-spec.md, decisions Q2, Q3, Q7, Q12, Q13)
+Design package: none (stats visuals plan, decisions Q2 Q3 Q7 Q12 Q13)
 PR/commit:      uncommitted (claude/stats-visuals-ofvosr)
 Contract IDs:   none
 Actions:        none
-Data impact:    none (reads the profile as before; no query, table or migration changes)
+Data impact:    none (no query, table or migration changes)
 Held items:     none
 ```
 
 ### Changed (2026-10-20, stats visuals)
 
-- Strokes gained by leg is interactive on desktop (Overview, Where the strokes go) and on the phone (the Strokes gained panel). A pointer over a leg, a tap, or the arrow keys read it in a line above the bars: "Approach · −1.2 a round · 10 rounds · likely range −1.5 to −0.9 · Team −0.7" (the team only for a coach). A tap or a key pins the leg (a ring on desktop, a wash on the phone), a second tap, Esc or a press outside lets go. A screen reader hears a pinned leg or a key step, never a hover. The chart is now a focusable group, not a flat image.
-- Every bar carries a thin whisker of one standard error, the "likely range". It uses the player's own round-to-round spread once they have five rounds in the window, else the pooled spread of production players (3.8 strokes gained). The bars keep their scale (the widest value or team mark, rounded up); a whisker the rail cuts off draws no cap at that end and the readout carries the number.
-- A thin sample is muted, never hidden and never shrunk. Off the tee, approach and the total show from 3 rounds and are early reads until 8; around the green and putting show from 5 and are early reads until 15. An early read is a hollow bar with no gain or loss color, its figure in neutral ink, and a note under the bars names which legs are early. A leg under its show floor draws no bar and says "Needs 5 rounds" where the bar would be. On the 10-round preview player, around the green and putting read as early reads.
-- The phone's rows are 44px tap targets, and the panel's note counts only the legs it is showing.
-- New shared pieces: `lib/stats-signal.ts` (floors, standard error, the tone of a change, Wilson intervals, a trailing mean, ties in a ranking: the later pieces use them) and `lib/use-chart-pin.ts` (the hover, pin and key behavior every stats chart will share). `SgBars` moved from `charts.tsx` to its own client file, `SgBars.tsx`; `screens/stats/leg-rows.ts` builds the rows for both screens.
+- Strokes gained by leg is interactive on desktop (Overview, Where the strokes
+  go) and on the phone (the Strokes gained panel). A pointer over a leg, a tap,
+  or the arrow keys read it in a line above the bars: "Approach · −1.2 a round ·
+  10 rounds · likely range −1.5 to −0.9 · Team −0.7" (the team only for a
+  coach). A tap or a key pins the leg (a ring on desktop, a wash on the phone),
+  a second tap, Esc or a press outside lets go. A screen reader hears a pinned
+  leg or a key step, never a hover. The chart is now a focusable group, not a
+  flat image.
+- Every bar carries a thin whisker of one standard error, the "likely range". It
+  uses the player's own round-to-round spread once they have five rounds in the
+  window, else the pooled spread of production players (3.8 strokes gained). The
+  bars keep their scale (the widest value or team mark, rounded up); a whisker
+  the rail cuts off draws no cap at that end and the readout carries the number.
+- A thin sample is muted, never hidden and never shrunk. Off the tee, approach
+  and the total show from 3 rounds and are early reads until 8; around the green
+  and putting show from 5 and are early reads until 15. An early read is a
+  hollow bar with no gain or loss color, its figure in neutral ink, and a note
+  under the bars names which legs are early. A leg under its show floor draws no
+  bar and says "Needs 5 rounds" where the bar would be. On the 10-round preview
+  player, around the green and putting read as early reads.
+- The phone's rows are 44px tap targets, and the panel's note counts only the
+  legs it is showing.
+- New shared pieces: `lib/stats-signal.ts` (floors, standard error, the tone of
+  a change, Wilson intervals, a trailing mean, ties in a ranking: the later
+  pieces use them) and `lib/use-chart-pin.ts` (the hover, pin and key behavior
+  every stats chart will share). `SgBars` moved from `charts.tsx` to its own
+  client file, `SgBars.tsx`; `screens/stats/leg-rows.ts` builds the rows for
+  both screens.
 
 ## 2026-10-19 — Stats you can read like a scorecard (L6a)
 
