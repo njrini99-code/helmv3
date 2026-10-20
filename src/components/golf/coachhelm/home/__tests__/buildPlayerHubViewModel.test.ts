@@ -243,6 +243,32 @@ describe('buildInsightUnit', () => {
     expect(unit.chain.find((s) => s.key === 'cause')?.marker).toBe('Measured');
   });
 
+  it('a not-traced cause (Slice 2) reads unmarked, never as "Likely"; a likely-from-totals one keeps "Likely"', () => {
+    const notTraced = buildInsightUnit(
+      insight({}, {
+        cause: { state: 'not_traced' } as never,
+        diagnosis: {
+          symptom: 's',
+          root_cause: 'Not traced yet. Needs 10 missed greens from 125–175 yd over 3 rounds; 6 so far over 2 rounds.',
+          causality_level: 'inferred_hypothesis',
+          drivers: [],
+          recommended_action: '',
+          confidence_reason: '',
+        },
+      }),
+    );
+    const step = notTraced.chain.find((s) => s.key === 'cause');
+    expect(step?.text).toMatch(/^Not traced yet\./);
+    expect(step?.marker).toBeUndefined();
+    const likely = buildInsightUnit(
+      insight({}, {
+        cause: { state: 'inferred_hypothesis' } as never,
+        diagnosis: { symptom: 's', root_cause: 'Likely from the totals: …', causality_level: 'inferred_hypothesis', drivers: [], recommended_action: '', confidence_reason: '' },
+      }),
+    );
+    expect(likely.chain.find((s) => s.key === 'cause')?.marker).toBe('Likely');
+  });
+
   it('puts a percent rail on a 0-100 axis with fractions scaled, never "42% ... 104%" (NUM-38)', () => {
     const rail = buildInsightUnit(insight()).rail!;
     expect(rail.min).toBe(0);

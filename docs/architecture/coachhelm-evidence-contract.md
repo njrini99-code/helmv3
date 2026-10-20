@@ -2070,6 +2070,52 @@ Other contract changes in the same pass:
   persists it: the label came from headline keywords, not from the worst SG
   category. Per-category SG lives in the `sg_*` standings.
 
+## Honest root cause (supercharge Slice 2, 2026-10-20)
+
+Behind `coachhelm_root_cause_diagnosis` (OFF). With the flag off, the
+generator writes the P0-05 template diagnosis exactly as before, never loads
+shots, and writes none of the fields below. With it on, a leak read's
+`evidence.diagnosis` comes from `v3/engine/root-cause.ts`, and the row carries
+`evidence.cause` in one of three states:
+
+- `observed_sequence`, "counted": ≥ 10 failing events over ≥ 3 rounds, and
+  one recorded path on ≥ 4 of them and ≥ 30%. Reader level `observed`.
+- `inferred_hypothesis`, "likely from totals": no counted path, but the
+  narrowing's chosen par × length slice has ≥ 10 per arm, a slice rate ≥ 1.25
+  × the rest, and a Newcombe 95% lower bound above zero. Reader level
+  `hypothesis`.
+- `not_traced`: neither; `not_traced_reason` says why. Not a cause, so no
+  reader level.
+
+`diagnosis.causality_level` is `observed_sequence` only for a counted cause
+and `inferred_hypothesis` otherwise; readers must look at `cause.state` to
+tell a likely cause from a not-traced one.
+
+- **Likely prints both arms.** `cause.alternatives[0]` holds `arm_a` (the
+  slice) and `arm_b` (the rest) with n, failures and rate, the lift (null when
+  the rest never failed) and the interval. The sentence quotes all of them.
+- **Not traced says why.** `count_down` carries need and have for events and
+  rounds; `data_gap` names the one `golf_shots` field recorded on under 60%
+  of the failures (`miss_direction`, `distance_to_hole_after`) and the
+  `target_count` of tagged failures needed (at least 10). It is mirrored in
+  `evidence.data_gap`. `no_leading_path`, `no_shot_path`, `no_window` and
+  `load_failed` are the others. None of them is written as a cause, and the
+  "is off its benchmark. Likely cause inferred from the aggregate" placeholder
+  is never written.
+- **No window, no trace.** A read without a stamped window (`window_start`,
+  or `window_days` with an end) is `no_window`. The one-year fallback from
+  #2073 is gone.
+- **`diagnosis.basis`** records what the cause rests on (`shot_sequence`,
+  `hypothesis_policy`, `aggregate_only`), what was checked, and the context
+  narrowing. `basis.sequence.examples` lists up to five holes.
+- **Readers.** `src/lib/coachhelm/reads/cause-state.ts` is the one mapping.
+  Clubhouse's dive returns no diagnosis for a not-traced cause, so its Why
+  section reads "Not traced yet". Fairway's player hub draws a not-traced
+  cause step without a "Likely" marker.
+- **`evidence.coach_copy`** (title and content in a coach's third-person
+  voice) is typed and stamped from `ComposedContent.coach`; no generator sets
+  it yet.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
