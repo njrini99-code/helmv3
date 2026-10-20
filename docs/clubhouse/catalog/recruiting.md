@@ -22,7 +22,14 @@ Where things live:
 - Loader: `src/clubhouse/data/recruiting.ts` (`loadRecruiting`), with the pure rules in `recruiting-shape.ts` (stages, counts, shares, search, sort, dates, the form's checks, file screening)
 - Route: `src/clubhouse/routes/recruiting.tsx`; page: `src/app/golf/(dashboard)/dashboard/recruiting/page.tsx`
 - Tests: `src/clubhouse/__tests__/recruiting.test.tsx`, `recruiting-upload.test.tsx` (film, the file drop, the transfer, an Add that cannot repeat); the server side in `src/test/golf/actions/recruit-document-upload.test.ts` and `recruiting-create.test.ts`
-- Migration (written, not applied): `supabase/migrations/20260930140000_recruit_documents_film.sql` lets the bucket take MP4, MOV and M4V and raises its cap to 100 MB. Until it is applied film is hidden: `RECRUIT_FILM_ENABLED` (`src/clubhouse/data/recruiting-film.ts`) is false, so there is no Film category to pick, no video in the picker or the drop, and no film in the copy; set it to true after the apply. Tests with film off: `recruiting-film-off.test.tsx`
+- Migration (written, not applied):
+  `supabase/migrations/20260930140000_recruit_documents_film.sql` lets the
+  bucket take MP4, MOV and M4V and raises its cap to 100 MB. Until it is applied
+  film is hidden: `RECRUIT_FILM_ENABLED`
+  (`src/clubhouse/data/recruiting-film.ts`) is false, so there is no Film
+  category to pick, no video in the picker or the drop, and no film in the copy;
+  set it to true after the apply. Tests with film off:
+  `recruiting-film-off.test.tsx`
 - Preview: `/clubhouse-preview/recruiting` (`?state=empty|nomatch|failed|loading|sparse|noteam|detail|add|edit|delete|docsfailed|failwrites|failstage|slow|upload|toolarge|refusedtype|refusedsize`; the default is the board's eight prospects with Mason Reilly open)
 
 A stage is saved the moment it is picked. The prospect moves at once and goes back, with a Retry, if the save does not land (CH-14003); an add, an edit and a delete wait for the server. The pipeline's counts and shares are the whole list's, whatever the search says; a stage filter and the sort are remembered per browser (`localStorage`), not per account, as on the current page. A search looks at name, hometown, state, email and notes.

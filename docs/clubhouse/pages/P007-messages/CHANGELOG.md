@@ -393,9 +393,10 @@ No visible change (Q8). While migration 20261008160000 is held, every Messages
 load ran `canHideGolfConversations`' read of the missing `hidden_at` column,
 which failed each time (42703; Sentry JAVASCRIPT-NEXTJS-1A0, ignored but still
 sent). A server instance now remembers the missing column for five minutes and
-answers false without the read; only that answer is kept. After the migration
-is applied, Delete conversation appears within five minutes, on the first probe
-past the expiry (`conversation-hide.ts`, `src/test/actions/hide-golf-conversation.test.ts`).
+answers false without the read; only that answer is kept. After the migration is
+applied, Delete conversation appears within five minutes, on the first probe
+past the expiry (`conversation-hide.ts`,
+`src/test/actions/hide-golf-conversation.test.ts`).
 
 ## 2026-10-16 — Failed server reads are logged; Delete is not lost to them
 

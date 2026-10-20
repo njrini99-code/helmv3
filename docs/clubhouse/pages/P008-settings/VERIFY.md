@@ -226,16 +226,22 @@ Notes:             first-load JS and LCP are open (CH-1954)
 
 ## Push on this device in the app (2026-10-16, CH-8902, CH-8903, blocker 12)
 
-- Tests: `src/clubhouse/__tests__/settings.test.tsx` (phone: the switch before iOS has asked and while it is being read,
-  On and Off with Open iOS Settings, no Open iOS Settings where it can't open, no Send a test in the app; wide layout:
-  the same three states) and `src/clubhouse/screens/settings/__tests__/native-push.test.tsx` (`useNativePush`: nothing
-  on the web, the read, Turn on allowed and refused, one ask for two taps, the read on return from iOS Settings that
-  registers push turned on there, Open iOS Settings only on iOS).
-- Browser: the preview has the three app states (`/clubhouse-preview/settings?section=notifications&state=nativeprompt`,
-  `nativeon`, `nativeoff`). The before capture (the preview's web push row) is filed below; the after captures were not
-  taken (no headless browser would launch on this machine after about 18:30 on 2026-10-16).
-- Not verified: on a device, including that `app-settings:` opens GolfHelm's page in the Settings app (from Capacitor
-  8.5.2's navigation handler, which hands a top-level navigation to a non-app URL to `UIApplication.shared.open`).
+- Tests: `src/clubhouse/__tests__/settings.test.tsx` (phone: the switch before
+  iOS has asked and while it is being read, On and Off with Open iOS Settings,
+  no Open iOS Settings where it can't open, no Send a test in the app; wide
+  layout: the same three states) and
+  `src/clubhouse/screens/settings/__tests__/native-push.test.tsx`
+  (`useNativePush`: nothing on the web, the read, Turn on allowed and refused,
+  one ask for two taps, the read on return from iOS Settings that registers push
+  turned on there, Open iOS Settings only on iOS).
+- Browser: the preview has the three app states
+  (`/clubhouse-preview/settings?section=notifications&state=nativeprompt`,
+  `nativeon`, `nativeoff`). The before capture (the preview's web push row) is
+  filed below; the after captures were not taken (no headless browser would
+  launch on this machine after about 18:30 on 2026-10-16).
+- Not verified: on a device, including that `app-settings:` opens GolfHelm's
+  page in the Settings app (from Capacitor 8.5.2's navigation handler, which
+  hands a top-level navigation to a non-app URL to `UIApplication.shared.open`).
 
 ## Screenshots
 

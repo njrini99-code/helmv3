@@ -362,20 +362,26 @@ assertions).
 
 ## The number pad's Done key (2026-10-16, release blocker 19)
 
-Source and unit tests only; nothing changes in a browser, so there are no screenshots for it.
+Source and unit tests only; nothing changes in a browser, so there are no
+screenshots for it.
 
-- What: in the app, `NewRound` and `ContinueRound` call `useRoundDoneKey`, which pins the native keyboard accessory bar
-  (`pinKeyboardAccessoryBar` in `src/lib/utils/capacitor.ts`) from mount to unmount. The plugin call is
-  `Keyboard.setAccessoryBarVisible`, which the shipped binary already has (`@capacitor/keyboard` 8, in
-  `ios/App/CapApp-SPM/Package.swift`), so no new binary is needed.
-- Tests: `src/clubhouse/screens/rounds/entry/__tests__/use-done-key.test.tsx` (pins on mount, releases on unmount,
-  nothing on the web, both entry screens hold it) and `src/lib/utils/__tests__/capacitor-accessory-bar.test.ts` (a pin
-  survives text fields and blurs, the last release falls back to the focused field, a hand-over does not flicker, a pin
-  taken before the plugin loads shows the bar on install, a failing plugin call keeps the count).
-- Not verified: on a device or the Simulator (the Simulator's `simctl` did not answer on this machine). The device pass
-  should open a new round and a continued one, focus the distance box, a yardage, Add a course's rating and slope, and
-  the edit-shot sheet's distances, and see ‹ › Done over each keyboard, Done closing it. Pair it with the Fairway ledger's
-  RE-F3.
+- What: in the app, `NewRound` and `ContinueRound` call `useRoundDoneKey`, which
+  pins the native keyboard accessory bar (`pinKeyboardAccessoryBar` in
+  `src/lib/utils/capacitor.ts`) from mount to unmount. The plugin call is
+  `Keyboard.setAccessoryBarVisible`, which the shipped binary already has
+  (`@capacitor/keyboard` 8, in `ios/App/CapApp-SPM/Package.swift`), so no new
+  binary is needed.
+- Tests: `src/clubhouse/screens/rounds/entry/__tests__/use-done-key.test.tsx`
+  (pins on mount, releases on unmount, nothing on the web, both entry screens
+  hold it) and `src/lib/utils/__tests__/capacitor-accessory-bar.test.ts` (a pin
+  survives text fields and blurs, the last release falls back to the focused
+  field, a hand-over does not flicker, a pin taken before the plugin loads shows
+  the bar on install, a failing plugin call keeps the count).
+- Not verified: on a device or the Simulator (the Simulator's `simctl` did not
+  answer on this machine). The device pass should open a new round and a
+  continued one, focus the distance box, a yardage, Add a course's rating and
+  slope, and the edit-shot sheet's distances, and see ‹ › Done over each
+  keyboard, Done closing it. Pair it with the Fairway ledger's RE-F3.
 
 ## Screenshots
 

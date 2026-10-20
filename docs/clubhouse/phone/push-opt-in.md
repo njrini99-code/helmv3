@@ -40,12 +40,12 @@ APNs handshake the app already has (`src/lib/utils/push-registration.ts`:
     even with GolfHelm closed."
   - then "You can change this in Settings, under Notifications."
   Footer: "Not now" (ghost) and "Turn on" (primary).
-- **Turn on.** The light tap of a primary button, then iOS's own prompt. Allowed:
-  the success tap, the sheet closes and a toast says "Notifications are on";
-  the device registers with APNs and its token reaches the server through the
-  existing handshake. Don't Allow: the sheet closes quietly, with no toast and
-  no second ask (iOS will not show its prompt again; Settings says how to turn
-  it on).
+- **Turn on.** The light tap of a primary button, then iOS's own prompt.
+  Allowed: the success tap, the sheet closes and a toast says "Notifications are
+  on"; the device registers with APNs and its token reaches the server through
+  the existing handshake. Don't Allow: the sheet closes quietly, with no toast
+  and no second ask (iOS will not show its prompt again; Settings says how to
+  turn it on).
 - **Not now**, the close button, Esc or a drag down: the sheet closes, the
   answer is kept, and it never asks again (Fairway's rule: one ask, no nag).
   Silent, as every other tap (D-70).

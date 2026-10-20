@@ -206,13 +206,16 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 
 Status: DEFINED
 
-Discard and Start refuse while offline before anything is sent, with the shell's toast naming what did not happen, and
-Try again on a hole that did not save only warns while offline (110702: the library's Discard, round entry's Start, Save
-for later and Exit's Discard, and the hole's Try again are each forced offline in a test, `rounds-contracts.test.tsx`
-among them, and a discard whose request never lands keeps the device copy). The
-shot screen's background save says "Saving round", "Round saved" or "Not synced yet, retrying" in a quiet line beside the distance readout
-(CH-11901); the engine retries on its own. Setup's course, tee and scorecard reads that fail, offline or not, say they
-did not load, with Try again (CH-11208 to CH-11210).
+Discard and Start refuse while offline before anything is sent, with the shell's
+toast naming what did not happen, and Try again on a hole that did not save only
+warns while offline (110702: the library's Discard, round entry's Start, Save
+for later and Exit's Discard, and the hole's Try again are each forced offline
+in a test, `rounds-contracts.test.tsx` among them, and a discard whose request
+never lands keeps the device copy). The shot screen's background save says
+"Saving round", "Round saved" or "Not synced yet, retrying" in a quiet line
+beside the distance readout (CH-11901); the engine retries on its own. Setup's
+course, tee and scorecard reads that fail, offline or not, say they did not
+load, with Try again (CH-11208 to CH-11210).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -349,11 +352,14 @@ unchanged when the flag is off.
 
 Status: DEFINED
 
-The library keeps its search and grouping while the page is open, and the review keeps the picked hole; neither is in the
-address, so a reload starts again from By month with no search, and on the first hole over par. A Start that fails leaves
-the setup as it was and Start sends the same form again (111201), and a hole that does not save keeps its shots on the
-review and on the device with Try again, and the device copy is cleared only once the save lands (111202). Both are
-tested on the screen (`rounds-contracts.test.tsx` among them) and on the engine (`use-new-round-session.preservation.test`).
+The library keeps its search and grouping while the page is open, and the review
+keeps the picked hole; neither is in the address, so a reload starts again from
+By month with no search, and on the first hole over par. A Start that fails
+leaves the setup as it was and Start sends the same form again (111201), and a
+hole that does not save keeps its shots on the review and on the device with Try
+again, and the device copy is cleared only once the save lands (111202). Both
+are tested on the screen (`rounds-contracts.test.tsx` among them) and on the
+engine (`use-new-round-session.preservation.test`).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -508,10 +514,13 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-Every control on the page is a native button, link or input in the tab order, and every sheet closes on Esc with focus back on
-its opener (112001, tested in `rounds-contracts.test.tsx`). In the app every keyboard in round entry has a Done key: the round
-holds the native accessory bar up from setup to submit (`useRoundDoneKey`, blocker 19; Mobile Safari draws the bar itself).
-Not built: arrow keys inside the radio groups (each choice is a Tab stop). No shortcuts of its own.
+Every control on the page is a native button, link or input in the tab order,
+and every sheet closes on Esc with focus back on its opener (112001, tested in
+`rounds-contracts.test.tsx`). In the app every keyboard in round entry has a
+Done key: the round holds the native accessory bar up from setup to submit
+(`useRoundDoneKey`, blocker 19; Mobile Safari draws the bar itself). Not built:
+arrow keys inside the radio groups (each choice is a Tab stop). No shortcuts of
+its own.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

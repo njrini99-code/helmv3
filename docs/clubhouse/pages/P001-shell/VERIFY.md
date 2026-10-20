@@ -42,40 +42,64 @@ Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md` (row
 
 ## 2026-10-19 — Phone shell gestures (lane L10)
 
-Observed in headless WebKit (Playwright), 390x844 at 2x, light and dark, on the dev server, with touch events scripted from the page
-(`touchstart` at x 8, then `touchmove`s, then `touchend`): `/clubhouse-preview/roster` (coach, profile pushed),
-`/clubhouse-preview/messages` (thread, then its details), `/clubhouse-preview/qualifier`. Screenshots are in the table below.
+Observed in headless WebKit (Playwright), 390x844 at 2x, light and dark, on the
+dev server, with touch events scripted from the page (`touchstart` at x 8, then
+`touchmove`s, then `touchend`): `/clubhouse-preview/roster` (coach, profile
+pushed), `/clubhouse-preview/messages` (thread, then its details),
+`/clubhouse-preview/qualifier`. Screenshots are in the table below.
 
-- Edge swipe, roster profile. Mid drag the screen sat at the finger (offset 92px at x 100) and the page, bar included, was drawn
-  back and dimmed under it; past the mark (x 190) the same. Letting go at 52px after a pause sprang back: the screen's inline
-  `translate` was cleared and the page's parts returned to drawn back (-12.8vw at an offset of 182px, -24vw at rest). Letting go past the mark
-  popped it: per-frame samples of the screen's left edge, the bar's and the page's after release: 182, 257, 298, 327, 370, 385, 388,
-  390 px over about 430ms, with the bar and the page returning in step (-50 to 0 and -30 to 20 px, no gap opened between the edges),
-  then the screen was gone, `.ch-pscreen` count 0, the URL unchanged, no part left with a translate.
-- A thread under its details (Messages): the thread beneath moved with the drag (its own translate 46px at an offset of 192px over its
-  -24% transform); on release the thread's left edge went -47.5, -24.3, -14.3, -8.3, -4.8 ... 0 over about 420ms, and the sampler found no frame
-  where it moved left beyond one 0.1px step at rest, for a drag release and for a fast flick (the positions are from before the screen beneath
-  was given the plain smooth spring for its translate; the two runs after it found the same: no step back beyond that 0.1px).
-- Vertical-first travel, a start outside the left 20px, a start under an open dialog, on a round route and in the iOS app without the
-  native flag: covered by `shell/__tests__/edge-swipe.test.tsx` and `phone-shell-gestures.test.tsx` (jsdom), not by a capture.
-- Dock kept over a push: with `?round=1` the Resume round accessory is in the dock at the page and stays visible (dock not `hidden`,
-  its page slot `display: none`) while the profile is pushed, once `shell/Dock.tsx` reads `dockKept`; the screen stops at 73px of
-  padding above it, and after Back the dock is still shown. The screenshots marked `dock-forced-visible` were taken earlier with
-  `hidden` cleared by hand, before that edit; same layout. A fresh capture without forcing was read but not filed.
-- Stand-in action, `/clubhouse-preview/qualifier` (coach): the server's first paint has the Qualifier actions key at the same place
-  (x 338, 44px wide) as the page's own bar after hydration. The bar's centred title "Qualifier" is hidden (opacity 0) in the server's
-  first paint and visible after: the server draws the desktop markup, whose `.ch-qf-head h1` matches the large-title hide rule
-  (shell.css), and the phone markup that replaces it does not. Not changed here.
-- Messages' "New message": before hydration the shell's root bar draws the title and the bell at x 16 and x 338 (44px); after it the page's bar has
-  the title at x 16 and the New message key in the slot at x 338. The geometry holds; the glyph changes from the bell to the key. Not
-  changed here (TopBar, not this lane's file).
-- Not observed: a physical iPhone (Safari's own edge swipe against this one, haptics, VoiceOver after a swipe pop), the iOS app
-  (the native flag does not exist yet), the idle prefetch in a production build (Next prefetches only there; the ordering and the cap
-  are in `phone-prefetch-sweep.test.tsx` against a mocked router).
-- Targeted tests: `npx vitest run src/clubhouse/shell/__tests__/` 6 files, 75 tests pass (exit 0); the 37 test files that import
-  PhoneScreen, phone-chrome or the prefetch hook, 1,642 tests pass (exit 0); `npx eslint` on the changed files exit 0; `npm run typecheck`
-  reports one error, in `shell/command/__tests__/command-layer.test.tsx` (lane L1), none in this lane's files;
-  `npm run clubhouse:check` exit 0.
+- Edge swipe, roster profile. Mid drag the screen sat at the finger (offset 92px
+  at x 100) and the page, bar included, was drawn back and dimmed under it; past
+  the mark (x 190) the same. Letting go at 52px after a pause sprang back: the
+  screen's inline `translate` was cleared and the page's parts returned to drawn
+  back (-12.8vw at an offset of 182px, -24vw at rest). Letting go past the mark
+  popped it: per-frame samples of the screen's left edge, the bar's and the
+  page's after release: 182, 257, 298, 327, 370, 385, 388, 390 px over about
+  430ms, with the bar and the page returning in step (-50 to 0 and -30 to 20 px,
+  no gap opened between the edges), then the screen was gone, `.ch-pscreen`
+  count 0, the URL unchanged, no part left with a translate.
+- A thread under its details (Messages): the thread beneath moved with the drag
+  (its own translate 46px at an offset of 192px over its -24% transform); on
+  release the thread's left edge went -47.5, -24.3, -14.3, -8.3, -4.8 ... 0 over
+  about 420ms, and the sampler found no frame where it moved left beyond one
+  0.1px step at rest, for a drag release and for a fast flick (the positions are
+  from before the screen beneath was given the plain smooth spring for its
+  translate; the two runs after it found the same: no step back beyond that
+  0.1px).
+- Vertical-first travel, a start outside the left 20px, a start under an open
+  dialog, on a round route and in the iOS app without the native flag: covered
+  by `shell/__tests__/edge-swipe.test.tsx` and `phone-shell-gestures.test.tsx`
+  (jsdom), not by a capture.
+- Dock kept over a push: with `?round=1` the Resume round accessory is in the
+  dock at the page and stays visible (dock not `hidden`, its page slot `display:
+  none`) while the profile is pushed, once `shell/Dock.tsx` reads `dockKept`;
+  the screen stops at 73px of padding above it, and after Back the dock is still
+  shown. The screenshots marked `dock-forced-visible` were taken earlier with
+  `hidden` cleared by hand, before that edit; same layout. A fresh capture
+  without forcing was read but not filed.
+- Stand-in action, `/clubhouse-preview/qualifier` (coach): the server's first
+  paint has the Qualifier actions key at the same place (x 338, 44px wide) as
+  the page's own bar after hydration. The bar's centred title "Qualifier" is
+  hidden (opacity 0) in the server's first paint and visible after: the server
+  draws the desktop markup, whose `.ch-qf-head h1` matches the large-title hide
+  rule (shell.css), and the phone markup that replaces it does not. Not changed
+  here.
+- Messages' "New message": before hydration the shell's root bar draws the title
+  and the bell at x 16 and x 338 (44px); after it the page's bar has the title
+  at x 16 and the New message key in the slot at x 338. The geometry holds; the
+  glyph changes from the bell to the key. Not changed here (TopBar, not this
+  lane's file).
+- Not observed: a physical iPhone (Safari's own edge swipe against this one,
+  haptics, VoiceOver after a swipe pop), the iOS app (the native flag does not
+  exist yet), the idle prefetch in a production build (Next prefetches only
+  there; the ordering and the cap are in `phone-prefetch-sweep.test.tsx` against
+  a mocked router).
+- Targeted tests: `npx vitest run src/clubhouse/shell/__tests__/` 6 files, 75
+  tests pass (exit 0); the 37 test files that import PhoneScreen, phone-chrome
+  or the prefetch hook, 1,642 tests pass (exit 0); `npx eslint` on the changed
+  files exit 0; `npm run typecheck` reports one error, in
+  `shell/command/__tests__/command-layer.test.tsx` (lane L1), none in this
+  lane's files; `npm run clubhouse:check` exit 0.
 
 ## 2026-10-02 — Request-lifetime slow feedback
 
@@ -185,16 +209,23 @@ Notes:             LCP and INP come only from sampled Sentry tracing (12101)
 
 ## The push ask in the app (2026-10-16, CH-1911, blocker 12)
 
-- Tests: `src/clubhouse/shell/__tests__/push-ask.test.tsx` (12: the settle wait, the quiet routes and a navigation
-  restarting the wait, a sheet open or a field focused holding it, the role's copy, Turn on with iOS allowing and not
-  allowing, the sheet waiting while iOS's prompt is up, Not now and every other close kept and never asked again, once
-  a launch) and `src/lib/utils/__tests__/native-push-permission.test.ts` (the shared read never prompts).
-- Browser: the preview draws the sheet open with `&ask=push` (`/clubhouse-preview/home-player?ask=push`,
-  `/clubhouse-preview/home?ask=push`). The before capture is filed below; the after captures were not taken: from about
-  18:30 on 2026-10-16 no headless browser would launch on this machine (WebKit aborted at start, Chromium failed its
-  Mach bootstrap check-in), so the sheet has not been looked at in a browser.
-- Not verified: on a device. The device pass should start the app signed in on a fresh install, wait on Home, see the
-  ask once, answer Turn on and see iOS's prompt, then confirm a test push arrives; and on a second install answer Not
+- Tests: `src/clubhouse/shell/__tests__/push-ask.test.tsx` (12: the settle wait,
+  the quiet routes and a navigation restarting the wait, a sheet open or a field
+  focused holding it, the role's copy, Turn on with iOS allowing and not
+  allowing, the sheet waiting while iOS's prompt is up, Not now and every other
+  close kept and never asked again, once a launch) and
+  `src/lib/utils/__tests__/native-push-permission.test.ts` (the shared read
+  never prompts).
+- Browser: the preview draws the sheet open with `&ask=push`
+  (`/clubhouse-preview/home-player?ask=push`,
+  `/clubhouse-preview/home?ask=push`). The before capture is filed below; the
+  after captures were not taken: from about 18:30 on 2026-10-16 no headless
+  browser would launch on this machine (WebKit aborted at start, Chromium failed
+  its Mach bootstrap check-in), so the sheet has not been looked at in a
+  browser.
+- Not verified: on a device. The device pass should start the app signed in on a
+  fresh install, wait on Home, see the ask once, answer Turn on and see iOS's
+  prompt, then confirm a test push arrives; and on a second install answer Not
   now and confirm it never comes back.
 
 ## Screenshots
