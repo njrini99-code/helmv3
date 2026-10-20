@@ -19242,6 +19242,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/angle-generator.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/insight-angles/index.ts",
           "anchor": "src/lib/flags/is-enabled"
         },
