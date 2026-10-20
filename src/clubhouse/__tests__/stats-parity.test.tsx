@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
@@ -462,8 +462,14 @@ describe('Game detail · More detail', () => {
     expect(tile(numbers, 'Best round').textContent).toContain('72');
     expect(tile(numbers, 'Best round').textContent).toContain('Pinehurst No. 8 · Sep 9');
     expect(tile(numbers, 'Worst round').querySelector('dd')!.textContent).toBe('75');
-    // The mix carries the holes behind it.
-    expect(s.querySelector('.ch-mix__k')!.textContent).toContain('19 of 180 holes · 11%');
+    // The mix carries the holes behind it: each result's share in the key, and its holes on a tap (stats visuals, piece 6). The
+    // shares are whole percents that add up to 100 (largest remainder), so birdie's 10.6% prints as 10%.
+    const mix = s.querySelector('.ch-sv-mix')!;
+    expect([...mix.querySelectorAll('.ch-sv-mix-key li b')].map((b) => b.textContent)).toEqual(['<1%', '10%', '56%', '27%', '7%']);
+    fireEvent.click(mix.querySelector('.ch-sv-mix-seg.is-birdie')!);
+    expect(mix.querySelector('.ch-sv-read')!.textContent).toBe('Birdie · 19 of 180 holes · 10% · 1.9 a round');
+    fireEvent.click(mix.querySelectorAll('.ch-sv-mix-key li')[4]!);
+    expect(mix.querySelector('.ch-sv-read')!.textContent).toBe('Double or worse · 12 of 180 holes · 7% · 1.2 a round · 3 triple or worse');
     const pars = panel('Outcomes by par');
     expect(pars.textContent).toContain('+0.30 / hole · 40 holes');
     expect(pars.querySelectorAll('.ch-gx-pm')).toHaveLength(3);

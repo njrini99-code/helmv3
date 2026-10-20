@@ -434,42 +434,6 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
   );
 }
 
-type Mix = { eagle: number; birdie: number; par: number; bogey: number; double: number };
-
-/** The mix of holes: per round, and with `totals` the holes behind it and each result's share ("46 of 180 holes"). */
-export function ScoreMix({ d, totals }: { d: Mix; totals?: Mix }) {
-  const segs: Array<[string, number, string, number | null]> = [
-    ['Eagle+', d.eagle, 'is-eagle', totals?.eagle ?? null],
-    ['Birdie', d.birdie, 'is-birdie', totals?.birdie ?? null],
-    ['Par', d.par, 'is-par', totals?.par ?? null],
-    ['Bogey', d.bogey, 'is-bogey', totals?.bogey ?? null],
-    ['Double+', d.double, 'is-double', totals?.double ?? null],
-  ];
-  const tot = segs.reduce((a, s) => a + s[1], 0) || 1;
-  const holes = totals ? totals.eagle + totals.birdie + totals.par + totals.bogey + totals.double : 0;
-  return (
-    <div className="ch-mix">
-      <div className="ch-mix__bar" role="img" aria-label={segs.map(([l, v]) => `${l} ${v.toFixed(1)}`).join(', ')}>
-        {segs.map(([l, v, c]) => (v > 0 ? <span key={l} className={`ch-mix__s ${c}`} style={{ flex: v / tot }} /> : null))}
-      </div>
-      <div className="ch-mix__k">
-        {segs.map(([l, v, c, n]) => (
-          <span key={l}>
-            <i className={c} />
-            <b className="ch-num">{v < 0.1 && v > 0 ? v.toFixed(2) : v.toFixed(1)}</b>
-            {l}
-            {n != null && holes > 0 && (
-              <small className="ch-num">
-                {n} of {holes} holes · {Math.round((n / holes) * 100)}%
-              </small>
-            )}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | null; bench: number | null }> }) {
   return (
     <div className="ch-par3">

@@ -16,8 +16,11 @@ this work; the owner's "make it 9 or 18" supersedes Q-94).
 Production path key (all under `src/`):
 
 - `SS` = `components/golf/stats/spine-stage` (the drills, the bento, the spine)
-- `CALC` = `lib/utils/golf-stats-calculator-shots.ts` (`GolfStats`, the shot-level calculator)
-- `SD` = `app/golf/actions/stats-data.ts`, `LM` = `app/golf/actions/stats-leak-maps.ts`, `DB` = `app/golf/actions/stats-dashboard.ts`
+- `CALC` = `lib/utils/golf-stats-calculator-shots.ts` (`GolfStats`, the
+  shot-level calculator)
+- `SD` = `app/golf/actions/stats-data.ts`, `LM` =
+  `app/golf/actions/stats-leak-maps.ts`, `DB` =
+  `app/golf/actions/stats-dashboard.ts`
 - `LMB` = `lib/golf/leak-map-buckets.ts`
 
 Clubhouse location key (all under `src/clubhouse/screens/stats/`): **GD** = Game detail (`GameDetail.tsx`), its five
@@ -50,20 +53,28 @@ On the same rounds the figures are production's: the calculator (`calculateStats
 One filter for the whole page (and Team stats, which applies it to every player and the team's figures), kept in the
 address and stated under every figure ("Tournaments, Sep 1 to Sep 29 · 4 rounds, 18 holes only", or the lengths it reads):
 
-- **Order.** Type, course and time first, then "Exclude these", then the window's newest-ten cut. So "Last 10" with
-  Tournament chosen is the ten newest tournament rounds (per player on Team stats), and "vs. previous 10" is the ten
-  matching rounds before them. "Only these" is exactly the picked rounds among the matching ones, with no cut. A custom
-  date range replaces the window: every round in it counts, including rounds before this season (the read starts at
-  the range's start), while "Rounds this season", the season's bests and the pager's order stay the season's.
-- **Dimensions.** Round type (tournament, qualifying, practice; `golf_rounds.round_type` holds `tournament` 341,
-  `qualifier` 217, `practice` 136 of 694 countable rounds), **holes** (18 holes by default, 9 holes, or Both; 36 of the
-  694 rounds, 5%, across 21 players, are nine-hole rounds; see the next section), time, course (`course_name`, filled on
-  every round, matched by its exact name) and the picks. Left out, from the same read-only counts: **tees and rating**
-  (`tees_played` is free text that mixes tee colours with event names such as "Gate City Invite"; `tee_id` is filled on
-  37% and `course_rating` on 51%), **event** (no column; `qualifier_id` exists on qualifier rounds only) and
-  **home or away** (`golf_teams` has no home course or location).
-- **Who sees what.** A player's filter reads only their own rounds (Q-91: a teammate's round id in the address is not
-  loaded, so it cannot be picked); the address is parsed, every part checked, and round ids are matched against the
+- **Order.** Type, course and time first, then "Exclude these", then the
+  window's newest-ten cut. So "Last 10" with Tournament chosen is the ten newest
+  tournament rounds (per player on Team stats), and "vs. previous 10" is the ten
+  matching rounds before them. "Only these" is exactly the picked rounds among
+  the matching ones, with no cut. A custom date range replaces the window: every
+  round in it counts, including rounds before this season (the read starts at
+  the range's start), while "Rounds this season", the season's bests and the
+  pager's order stay the season's.
+- **Dimensions.** Round type (tournament, qualifying, practice;
+  `golf_rounds.round_type` holds `tournament` 341, `qualifier` 217, `practice`
+  136 of 694 countable rounds), **holes** (18 holes by default, 9 holes, or
+  Both; 36 of the 694 rounds, 5%, across 21 players, are nine-hole rounds; see
+  the next section), time, course (`course_name`, filled on every round, matched
+  by its exact name) and the picks. Left out, from the same read-only counts:
+  **tees and rating** (`tees_played` is free text that mixes tee colours with
+  event names such as "Gate City Invite"; `tee_id` is filled on 37% and
+  `course_rating` on 51%), **event** (no column; `qualifier_id` exists on
+  qualifier rounds only) and **home or away** (`golf_teams` has no home course
+  or location).
+- **Who sees what.** A player's filter reads only their own rounds (Q-91: a
+  teammate's round id in the address is not loaded, so it cannot be picked); the
+  address is parsed, every part checked, and round ids are matched against the
   rounds already read for that viewer before any figure is computed.
 
 ## Nine- and eighteen-hole rounds
@@ -136,7 +147,7 @@ untouched here). So:
 | SC2 | Average to par | `SS/ScoringDrill.tsx:235-237`, `SS/StatsBento.tsx:368-403` · `CALC:2619` | **Added.** GD › Scoring › More detail › Scoring numbers | the window's rounds, per 18 holes |
 | SC3 | Best round (with course and date) | `SS/ScoringDrill.tsx:238-247` · `CALC:2614`, `SD:1763` | **Shown.** OV "Best round"; **added** RT › Personal bests (course, date) | window's rounds, one length at a time |
 | SC4 | Worst round | `SS/ScoringDrill.tsx:248-250` · `CALC:2615` | **Added.** GD › Scoring › More detail › Scoring numbers | window's rounds, each length's worst on its own |
-| SC5 | Score mix bar with counts and shares (eagle+, birdie, par, bogey, double+) | `SS/ScoringDrill.tsx:138-142,166-172,205-211` · `CALC:1987-1991` | **Shown** per round (GD › Scoring "What an average round looks like"); **added** the holes and shares ("46 of 180 holes") under it | every scored hole of the window's rounds |
+| SC5 | Score mix bar with counts and shares (eagle+, birdie, par, bogey, double+) | `SS/ScoringDrill.tsx:138-142,166-172,205-211` · `CALC:1987-1991` | **Shown** per round (GD › Scoring "What an average round looks like"); **added** the holes and shares ("46 of 180 holes") under it. Since 2026-10-20 the bar is `ScoreMixBar`, one bar centered on par over every scored hole (eagle or better, birdie, par, bogey, double or worse), with triple or worse counted on tap; it shows from 1 hole and is an early read under 30 | every scored hole of the window's rounds |
 | SC6 | Per-round rates (eagles, birdies, pars, bogeys, double+) and season totals | `SS/ScoringDrill.tsx:144-159,173,212-216,253-274` · `CALC:2620-2624` | **Shown** (the mix's per-round legend); the totals are **added** with SC5 | per round played |
 | SC7 | Par 3, 4 and 5 scoring against the Tour | `SS/StatsBento.tsx:225-234` · `CALC:2673-2686`; Tour `scoring_par_N` | **Shown.** GD › Scoring "Scoring by par" | holes of the window's rounds |
 | SC8 | Par 3, 4 and 5 outcome mix (birdie+, par, bogey, double+ as a share of that par's holes, with "+0.31 / hole · 312 holes") | `SS/ScoringDrill.tsx:92-96,131-133,276-301` · `CALC:1994-2004` | **Added.** GD › Scoring › More detail › Outcomes by par | holes of the window's rounds; a par with no holes says so |

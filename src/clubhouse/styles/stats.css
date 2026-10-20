@@ -1537,58 +1537,6 @@
   color: var(--ch-text-tertiary);
 }
 
-.ch-mix {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.ch-mix__bar {
-  display: flex;
-  height: 34px;
-  overflow: hidden;
-  border-radius: var(--ch-radius-md);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
-}
-.ch-mix__s + .ch-mix__s {
-  box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.7);
-}
-.ch-mix .is-eagle {
-  background: #8e2a20;
-}
-.ch-mix .is-birdie {
-  background: var(--ch-score-under);
-}
-.ch-mix .is-par {
-  background: var(--ch-ivory-200);
-}
-.ch-mix .is-bogey {
-  background: #8f8b81;
-}
-.ch-mix .is-double {
-  background: var(--ch-ink-700);
-}
-.ch-mix__k {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  font: var(--ch-type-caption);
-  color: var(--ch-text-tertiary);
-}
-.ch-mix__k span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.ch-mix__k i {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-.ch-mix__k b {
-  font: 600 13px/1 var(--ch-font-sans);
-  font-variant-numeric: tabular-nums;
-  color: var(--ch-text-primary);
-}
 .ch-par3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2834,16 +2782,6 @@
 }
 .ch-gx-pm.is-empty > span {
   color: var(--ch-text-secondary);
-}
-.ch-gx-pm .ch-mix__k {
-  gap: 10px 14px;
-}
-.ch-mix__k small {
-  display: block;
-  margin-left: 4px;
-  font: var(--ch-type-caption);
-  font-variant-numeric: tabular-nums;
-  color: var(--ch-text-tertiary);
 }
 .ch-gx-rank {
   display: flex;
@@ -4134,7 +4072,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-gm__ic {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.16);
 }
-:where(html[data-fw-theme='dark']) .ch-mix__bar,
 :where(html[data-fw-theme='dark']) .ch-par3__t,
 :where(html[data-fw-theme='dark']) .ch-lad__col,
 :where(html[data-fw-theme='dark']) .ch-cup__split .is-high,
@@ -4142,20 +4079,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-gx-sec__c,
 :where(html[data-fw-theme='dark']) .ch-gx-pm {
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
-}
-/* The score mix keeps its order by lightness as well as hue: eagle the deep red, birdie the light one, then par, bogey
-   and double stepping up from the card. */
-:where(html[data-fw-theme='dark']) .ch-mix__s + .ch-mix__s {
-  box-shadow: inset 1px 0 0 rgb(17 21 18 / 0.9);
-}
-:where(html[data-fw-theme='dark']) .ch-mix .is-eagle {
-  background: #b0473a;
-}
-:where(html[data-fw-theme='dark']) .ch-mix .is-par {
-  background: var(--ch-ivory-300);
-}
-:where(html[data-fw-theme='dark']) .ch-mix .is-bogey {
-  background: #7a7569;
 }
 :where(html[data-fw-theme='dark']) .ch-fws__z.is-rough {
   background: repeating-linear-gradient(135deg, var(--ch-chart-rough) 0 6px, #2e3529 6px 7px);
@@ -5985,81 +5908,6 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   background: var(--ch-champagne-500);
 }
 
-/* every hole by result */
-.ch-st[data-canopy] .ch-zmix {
-  display: flex;
-  height: 44px;
-  overflow: hidden;
-  border-radius: 10px;
-  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
-}
-.ch-st[data-canopy] .ch-zmix i {
-  flex: var(--ch-z-n, 0) 1 0;
-  display: grid;
-  place-items: center;
-  min-width: 0;
-  font: 700 13px/1 var(--ch-font-sans, inherit);
-  font-style: normal;
-}
-.ch-st[data-canopy] .ch-zmix .is-eagle,
-.ch-st[data-canopy] .ch-zmixkey i.is-eagle {
-  background: #7f2a21;
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmix .is-birdie,
-.ch-st[data-canopy] .ch-zmixkey i.is-birdie {
-  background: var(--ch-chart-flag);
-  color: #fff;
-}
-/* At night the flag is a salmon that white reads 2.5:1 on; the page's near-black holds 7.3:1. */
-html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmixkey i.is-birdie) {
-  color: var(--ch-bg-page);
-}
-.ch-st[data-canopy] .ch-zmix .is-par,
-.ch-st[data-canopy] .ch-zmixkey i.is-par {
-  background: var(--ch-ivory-300);
-  color: var(--ch-ink-900);
-}
-/* The par swatch is parchment on parchment: a hairline ring keeps it a swatch, not a gap. */
-.ch-st[data-canopy] .ch-zmixkey i.is-par {
-  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
-}
-.ch-st[data-canopy] .ch-zmix .is-bogey,
-.ch-st[data-canopy] .ch-zmixkey i.is-bogey {
-  background: #6f6b62;
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmix .is-double,
-.ch-st[data-canopy] .ch-zmixkey i.is-double {
-  background: #1c1b18;
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmixkey {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-.ch-st[data-canopy] .ch-zmixkey div {
-  display: grid;
-  gap: 3px;
-  font: 500 12.5px/1.2 var(--ch-font-sans, inherit);
-  color: var(--ch-text-tertiary);
-}
-.ch-st[data-canopy] .ch-zmixkey b {
-  font: 700 18px/1 var(--ch-font-sans, inherit);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  color: var(--ch-text-primary);
-}
-.ch-st[data-canopy] .ch-zmixkey i {
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  margin-right: 6px;
-  border-radius: 2px;
-}
-
 /* the fairway strip */
 .ch-st[data-canopy] .ch-zfw {
   display: flex;
@@ -6520,7 +6368,6 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
 .ch-st[data-canopy] .ch-dv__dot {
   transition: translate var(--ch-dur-base) var(--ch-ease);
 }
-.ch-st[data-canopy] .ch-zmix i,
 .ch-st[data-canopy] .ch-zfw > div {
   transition:
     flex-grow var(--ch-dur-base) var(--ch-ease),
@@ -6535,9 +6382,6 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
   .ch-st[data-canopy] .ch-lb__r:hover,
   .ch-st[data-canopy] .ch-zrow:hover {
     background: rgb(176 149 96 / 0.1);
-  }
-  .ch-st[data-canopy] .ch-zmix i:hover {
-    filter: brightness(1.12);
   }
 }
 
@@ -6904,4 +6748,216 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
   box-shadow:
     inset 0 1px 0 var(--ch-text-tertiary),
     inset 0 -1px 0 var(--ch-text-tertiary);
+}
+/* Stats visuals, the scoring mix (ScoreMixBar; spec 4.4, decision Q11). One 100% bar of every scored hole by result, par in the
+   middle: going out from it, birdie then eagle or better to the left, bogey then double or worse to the right. Red is under par;
+   par, bogey and double are the scorecard's ivory, gray and ink, every fill a token. A segment prints its share only when it is
+   at least 30px wide (a container query on the segment itself); the key carries every share. Prefix .ch-sv-mix-. */
+.ch-sv-mix {
+  container: ch-sv-mix / inline-size;
+}
+.ch-sv-mix:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-sv-mix .is-eagle {
+  --ch-sv-mix-fill: var(--ch-score-eagle-fill);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+.ch-sv-mix .is-birdie {
+  --ch-sv-mix-fill: var(--ch-chart-flag);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+.ch-sv-mix .is-par {
+  --ch-sv-mix-fill: var(--ch-ivory-300);
+  --ch-sv-mix-ink: var(--ch-ink-900);
+}
+.ch-sv-mix .is-bogey {
+  --ch-sv-mix-fill: var(--ch-ink-500);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+.ch-sv-mix .is-double {
+  --ch-sv-mix-fill: var(--ch-score-double);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+/* At night birdie, bogey and double are the light fills (the salmon, the warm gray, the ivory ink): their numerals take the page's
+   near-black. Eagle stays the deeper red under an ivory numeral. */
+html[data-fw-theme='dark'] .ch-sv-mix .is-birdie,
+html[data-fw-theme='dark'] .ch-sv-mix .is-bogey,
+html[data-fw-theme='dark'] .ch-sv-mix .is-double {
+  --ch-sv-mix-ink: var(--ch-bg-page);
+}
+.ch-sv-mix-bar {
+  display: flex;
+  gap: 2px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.ch-sv-mix-seg {
+  container-type: inline-size;
+  display: grid;
+  flex: 0 1 0;
+  place-items: center;
+  min-width: 2px;
+  background: var(--ch-sv-mix-fill);
+  color: var(--ch-sv-mix-ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+/* Par is parchment on parchment: a hairline keeps its edge. */
+.ch-sv-mix-seg.is-par {
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-sv-mix-seg b {
+  font: 700 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@container (max-width: 29.98px) {
+  .ch-sv-mix-seg b {
+    visibility: hidden;
+  }
+}
+/* A result read under the pointer or pinned stands out; the others step back. */
+.ch-sv-mix[data-has-active] .ch-sv-mix-seg:not([data-active]) {
+  opacity: 0.5;
+}
+.ch-sv-mix-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-mix-key {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin: 8px -8px 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-sv-mix-key li {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-mix-key li[data-active] {
+  background: var(--ch-bg-hover);
+}
+.ch-sv-mix-key li[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-mix-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font: 500 12.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-mix-name i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--ch-sv-mix-fill);
+}
+.ch-sv-mix-key .is-par .ch-sv-mix-name i {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-mix-key b {
+  font: 700 18px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-sv-mix-key small {
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+/* Each par's mix (Game detail, More detail): a slimmer bar, the key as one wrapping line of name and share. */
+.ch-sv-mix.is-compact .ch-sv-read {
+  min-height: 18px;
+  margin-bottom: 6px;
+  font: var(--ch-type-caption);
+}
+.ch-sv-mix.is-compact .ch-sv-mix-bar {
+  height: 28px;
+  border-radius: 8px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-seg b {
+  font-size: 12px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin-top: 6px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-key b {
+  font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+/* An early read (under 30 holes): the bar a step quieter and the shares in secondary ink; the note says why. */
+.ch-sv-mix.is-early .ch-sv-mix-bar {
+  opacity: 0.72;
+}
+.ch-sv-mix.is-early .ch-sv-mix-key b {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-mix-none {
+  margin: 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-tertiary);
+}
+/* A narrow mix (the phone, a half-width panel): the key becomes a short table, one result a row (name, share, a round), and the
+   readout has room to wrap to two lines without moving the bar. */
+@container ch-sv-mix (max-width: 559px) {
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key li {
+    grid-template-columns: minmax(0, 1fr) auto 7.5em;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 36px;
+    align-content: center;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key b {
+    font-size: 15px;
+    text-align: right;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key small {
+    text-align: right;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-name {
+    font-size: 13.5px;
+  }
+  .ch-sv-mix:not(.is-compact) > .ch-sv-read {
+    min-height: calc(2 * 1.45em);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-sv-mix-seg,
+  .ch-sv-mix-key li {
+    transition: none;
+  }
 }
