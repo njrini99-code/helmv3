@@ -198,7 +198,7 @@ export function QualifierDetailSkeleton() {
         </div>
       </div>
       {/* The phone's qualifier (QualifierDetailPhone) on its own classes, each line at the loaded line's height: the
-          status and dates, the name, the entrants line, the coach's two actions, the three figures and the
+          status and dates, the name, the entrants line, the coach's two actions, the two figures and the
           leaderboard's rows. The desktop shape above is hidden on the phone (qualifiers.css). */}
       <div className="ch-qfm ch-qfm-skel" aria-hidden="true">
         <div className="ch-qfm-head">
@@ -215,7 +215,7 @@ export function QualifierDetailSkeleton() {
         </div>
         <SkeletonCoachActions phone />
         <div className="ch-qfm-facts">
-          {Array.from({ length: 3 }, (_, i) => (
+          {Array.from({ length: 2 }, (_, i) => (
             <div key={i}>
               <Held className="ch-qfm-held--dt">
                 <Skeleton width={58} height={12} />
@@ -433,7 +433,6 @@ export function QualifierFormSkeleton() {
                 <SkelField label={70} />
                 <SkelField label={76} help={FORM_HELP.endDate} />
               </div>
-              <SkelField label={104} help={FORM_HELP.entryDeadline} />
             </div>
             <div className="ch-qf-fs">
               <div className="ch-qf-fs__h">

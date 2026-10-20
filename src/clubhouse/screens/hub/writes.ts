@@ -1,7 +1,10 @@
 'use client';
 
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
-import { createEnrichedAnnouncement, deleteAnnouncement, updateAnnouncement } from '@/app/golf/actions/announcements';
+import { createEnrichedAnnouncement, deleteAnnouncement, getAnnouncementDetail, updateAnnouncement } from '@/app/golf/actions/announcements';
+import { markTravelSeen } from '@/app/golf/actions/player-notifications';
+import { markNotificationRead } from '@/app/golf/actions/unified-notifications';
+import { resolveMimeType } from '@/lib/storage/mime';
 import { createGolfDocument, deleteGolfDocument, getPreviewUrl, uploadGolfDocument } from '@/app/golf/actions/documents';
 import { respondToEvent, updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { completeTask, createTask, deleteTask, uncompleteTask } from '@/app/golf/actions/tasks';
@@ -48,6 +51,15 @@ export interface ChHubWrites {
   editTrip(input: ChTripEdit): Promise<ServerResult>;
   /** Deletes the itinerary (its expenses and budgets go with it; the calendar event stays). */
   deleteTrip(id: string): Promise<ServerResult>;
+  /**
+   * A read: the files attached to a post (getAnnouncementDetail, which holds a targeted post to its recipients), opened
+   * with `openDocument` as production's announcement card opens them. Optional so preview sets can leave it out.
+   */
+  announcementFiles?(announcementId: string): Promise<ServerResult<{ files: Array<{ id: string; title: string; type: string | null }> }>>;
+  /** A player's Travel tab clears the travel part of Team Hub's badge, as production's Travel page does on a visit. */
+  markTravelSeen?(): Promise<ServerResult>;
+  /** Opening an update marks that notification read, as the bell does. */
+  markUpdateRead?(id: string, source: 'notifications' | 'golf_calendar_notifications'): Promise<ServerResult>;
 }
 
 /** What Edit sends: every field the sheet shows, as typed. A blank string clears the field. */
@@ -120,12 +132,13 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
   async uploadDocument(i) {
     const up = await uploadGolfDocument(i.file, i.teamId);
     if (!up.success || !up.file_url) return { success: false, error: up.error };
-    const ext = i.file.name.split('.').pop()?.toLowerCase() ?? '';
     return createGolfDocument({
       team_id: i.teamId,
       title: i.file.name.replace(/\.[^.]+$/, ''),
       file_url: up.file_url,
-      file_type: ext,
+      // The MIME type, as Fairway's Documents stores it (and the version row's mime_type copies it); the extension was
+      // stored here, so a Clubhouse upload's version read `pdf` where every other row reads `application/pdf`.
+      file_type: resolveMimeType(i.file),
       file_size: i.file.size,
       player_visible: true,
       folder: i.folder ?? undefined,
@@ -148,4 +161,14 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
       notes: i.notes.trim(),
     }) as Promise<ServerResult>,
   deleteTrip: (id) => deleteGolfTravelItinerary(id),
+  async announcementFiles(id) {
+    const res = await getAnnouncementDetail(id);
+    if (!res.success || !res.data) return { success: false, error: res.error };
+    const files = [...(res.data.documents ?? [])]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((d) => ({ id: d.document_id, title: d.document?.title?.trim() || 'Attachment', type: d.document?.file_type ?? null }));
+    return { success: true, data: { files } };
+  },
+  markTravelSeen: () => markTravelSeen(),
+  markUpdateRead: (id, source) => markNotificationRead(id, source),
 };

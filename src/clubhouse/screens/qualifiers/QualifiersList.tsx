@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Flag, Medal, Plus, Search } from 'lucide-react';
+import { ArrowRight, Flag, Medal, Play, Plus, Search } from 'lucide-react';
 import { useMemo, type MouseEvent } from 'react';
 import type { ChQList, ChQListItem } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
@@ -14,11 +14,12 @@ import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
-import { formatToPar, NO_DATA } from '../../lib/format';
+import { formatToPar } from '../../lib/format';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { ctaLabel, endedLive, listLede } from './model';
 import { Meta, Pos, StatusPill, ToParPlate } from './parts';
 import { isPlainClick, noteOpenedFromList } from './return-state';
+import { playRoundHref } from './RoundsShowcase';
 import '../../styles/qualifiers.css';
 import { SerifText } from '../../ui/SerifText';
 
@@ -38,7 +39,6 @@ export function QualifiersList({ data }: { data: ChQList }) {
   const coach = data.role === 'coach';
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
   const mineUnknown = data.mode === 'mine' && !!data.entriesError;
-  const unread = data.listError || mineUnknown;
   // The filter and the search come back when the coach returns to the list (Back from a qualifier, the sidebar, a tab): the shell keeps
   // them for this tab under the page and the team (`useChSessionState`), and the list's place comes back through RouteFrame (owner rule 8).
   const [filter, setFilter] = useChSessionState<Filter>('filter', 'all');
@@ -73,11 +73,10 @@ export function QualifiersList({ data }: { data: ChQList }) {
       <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} start />
       <header className="ch-qf-head" data-canopy-head="">
         <div>
-          <span className="ch-qf-eyebrow ch-num">
-            {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). Counts that
-                didn't load are a dash, never 0 and never a blank line (states audit c14). */}
-            <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} · </span>
-            {unread ? `${NO_DATA} active · ${NO_DATA} concluded` : `${act.length} active · ${con.length} concluded`}
+          {/* The filter pills below carry the active and concluded counts, so the eyebrow is the page's name alone (no second copy
+              of the counts, and no dashes when they failed to load). The phone's top bar already names the page, so it has none. */}
+          <span className="ch-qf-eyebrow ch-num is-bare">
+            <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}</span>
           </span>
           <h1>{title}</h1>
           <p>{lede}</p>
@@ -96,7 +95,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
         <InlineNotice
           code="CH-09201"
           title="The qualifiers didn’t load"
-          body="Nothing has changed. Try again, and if it keeps happening the error has already been reported."
+          body="Nothing has changed. Try again; the error has been reported."
           onRetry={refresh}
           retrying={refreshing}
         />
@@ -191,11 +190,18 @@ export function QualifiersList({ data }: { data: ChQList }) {
               </div>
             ) : (
               <>
-                {hero && <Hero item={hero} standingsError={data.standingsError} today={data.today} />}
+                {/* The active qualifier is the page's focus (owner, 2026-10-16): its own raised sheet under its own head. */}
+                {hero && (
+                  <section className="ch-qf-sec is-focus" aria-labelledby="ch-qf-now">
+                    <h2 id="ch-qf-now">Active</h2>
+                    <Hero item={hero} standingsError={data.standingsError} today={data.today} />
+                    <PlayNext item={hero} standingsError={data.standingsError} today={data.today} />
+                  </section>
+                )}
                 {rest.length > 0 && (
                   <section className="ch-qf-sec" aria-labelledby="ch-qf-active">
-                    {/* P009-D14: the section holds upcoming qualifiers as well as live ones. */}
-                    <h2 id="ch-qf-active">Upcoming and live</h2>
+                    {/* P009-D14: the section holds upcoming qualifiers as well as live ones; under the Active hero, the rest. */}
+                    <h2 id="ch-qf-active">{hero ? 'Also active' : 'Upcoming and live'}</h2>
                     <div className="ch-qf-grid is-ledger">
                       {rest.map((i) => (
                         <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} />
@@ -204,7 +210,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                   </section>
                 )}
                 {filter !== 'active' && (
-                  <section className="ch-qf-sec" aria-labelledby="ch-qf-concluded">
+                  <section className="ch-qf-sec is-done" aria-labelledby="ch-qf-concluded">
                     <h2 id="ch-qf-concluded">Concluded</h2>
                     {concluded.length ? (
                       <div className="ch-qf-grid is-ledger">
@@ -228,14 +234,54 @@ export function QualifiersList({ data }: { data: ChQList }) {
   );
 }
 
+/** A standing as the Hub says it: "3" reads "3rd", a tie "T3" reads "tied 3rd". */
+const placeOf = (position: string | null) => {
+  const m = /^(T?)(\d+)$/.exec(position ?? '');
+  if (!m) return position;
+  const n = Number(m[2]);
+  return `${m[1] ? 'tied ' : ''}${n}${['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : n % 10] ?? 'th'}`;
+};
+
 function Mine({ item }: { item: ChQListItem }) {
   if (!item.mine) return null;
   if (!item.mine.entered) return <span className="ch-qf-mine is-out">You aren’t entered</span>;
   if (!item.mine.played) return <span className="ch-qf-mine">You’re entered · no rounds in yet</span>;
+  // Once the coach confirms the squad, the line says whether you made it (wave 7); before that, or with the read failed, the standing.
+  if (item.mine.squad === true) {
+    return (
+      <span className="ch-qf-mine">
+        You made the squad · {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)}
+      </span>
+    );
+  }
+  if (item.mine.squad === false) {
+    return (
+      <span className="ch-qf-mine">
+        You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · not selected
+      </span>
+    );
+  }
   return (
     <span className="ch-qf-mine">
-      You’re {item.mine.position} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {item.numRounds === 1 ? 'round' : 'rounds'}
+      You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {item.numRounds === 1 ? 'round' : 'rounds'}
     </span>
+  );
+}
+
+/**
+ * A live qualifier's next round for you, as its own link under the card (the card is one link already): round setup with this
+ * qualifier chosen. Not past the qualifier's last day, and not before round setup is rebuilt for players.
+ */
+function PlayNext({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
+  const next = item.mine?.next;
+  const href = playRoundHref(item.id);
+  if (!next || !href || standingsError || endedOf(item, standingsError, today)) return null;
+  return (
+    <div className="ch-qf-play" data-ch-code="CH-09906">
+      <Button size="sm" variant="secondary" leftIcon={Play} href={href}>
+        {[`Play round ${next.round}`, next.course].filter(Boolean).join(' · ')}
+      </Button>
+    </div>
   );
 }
 
@@ -264,7 +310,8 @@ function Hero({ item, standingsError, today }: { item: ChQListItem; standingsErr
       {live && (
         <div className="ch-qf-lead ch-scoreboard">
           <div className="ch-qf-lead__h ch-num">
-            <span>Leaders</span>
+            {/* This qualifier's standings, its top few (only the active qualifier shows a board). */}
+            <span>Standings · top {item.leaders.length}</span>
             <span>
               {item.submitted} of {item.entrants * item.numRounds} rounds in
             </span>
@@ -277,9 +324,12 @@ function Hero({ item, standingsError, today }: { item: ChQListItem; standingsErr
                 </div>
               )}
               {/* P009-A1: the leaders hang on plates, as on the board, with their movement since the previous round. */}
-              <div className="ch-qf-lead__r">
+              <div className={'ch-qf-lead__r' + (r.isYou ? ' is-me' : '')}>
                 <Pos position={r.position} tied={r.position.startsWith('T')} move={r.move} />
-                <span className="ch-qf-lead__n">{r.name}</span>
+                <span className="ch-qf-lead__n">
+                  {r.name}
+                  {r.isYou && <span className="ch-qf-you">You</span>}
+                </span>
                 <span className="ch-qf-lead__th">
                   {r.played}/{item.numRounds}
                 </span>

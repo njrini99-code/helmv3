@@ -1,12 +1,13 @@
 'use client';
 
-import { Check, MapPin, TriangleAlert, Users, X } from 'lucide-react';
+import { Check, MapPin, TriangleAlert, UserPlus, Users, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQFormData, ChQFormRoundCourse } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
+import { DateField } from '../../ui/DateField';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
@@ -20,13 +21,26 @@ import { useRefresh } from '../../lib/use-refresh';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop, usePhoneTabsHidden } from '../../shell/phone-chrome';
 import { PhoneTextAction } from '../../ui/PhoneBar';
-import { FIELD_ORDER, FORM_HELP, FORM_LEDE, plural, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
+import { rebuiltHref } from '../../shell/nav';
+import { FIELD_ORDER, FORM_HELP, FORM_LEDE, plural, SQUAD_MAX, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
 import { CoursePicker, type ChQPickedCourse } from './CoursePicker';
 import { isPlainClick } from './return-state';
 import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
 import '../../styles/qualifiers.css';
 
 const LIST = '/golf/dashboard/qualifiers';
+// The limit is said before a save refuses it (wave-6 #16).
+const SQUAD_HELP = `Players who make the trip, up to ${SQUAD_MAX}.`;
+
+/**
+ * The form has no entry deadline (owner, 2026-10-16: qualifiers don't have one), but an older qualifier can carry one,
+ * and both the form's check (CH-09104) and `updateGolfQualifierDetails` refuse a deadline after the start date. Moving
+ * the start before a stored deadline would then fail on a field the coach can't see or change. So a stored deadline
+ * rides along unchanged while it still fits, and is cleared once the new start date passes it.
+ */
+export function keptDeadline(v: Pick<ChQFormValues, 'entryDeadline' | 'startDate'>): string {
+  return v.entryDeadline && v.startDate && v.entryDeadline > v.startDate ? '' : v.entryDeadline;
+}
 const FIELD_ID: Record<ChQField, string> = {
   name: 'qf-name',
   startDate: 'qf-start',
@@ -56,7 +70,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
   // What a failed edit save did and didn't save. The toast is brief; this stays until the next save.
   const [saveNote, setSaveNote] = useState<string | null>(null);
 
-  const problems = useMemo(() => (tried ? validateForm(v, { minRounds: data.minRounds }) : []), [tried, v, data.minRounds]);
+  const checked = useMemo(() => ({ ...v, entryDeadline: keptDeadline(v) }), [v]);
+  const problems = useMemo(() => (tried ? validateForm(checked, { minRounds: data.minRounds }) : []), [tried, checked, data.minRounds]);
   const problemOf = (f: ChQField): ChQProblem | undefined => problems.find((p) => p.field === f);
   const set = <K extends keyof ChQFormValues>(k: K, value: ChQFormValues[K]) => setV((cur) => ({ ...cur, [k]: value }));
   const rounds = /^\d+$/.test(v.rounds) ? Math.min(Number(v.rounds), 50) : 0;
@@ -68,8 +83,13 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
     [v, courses, data.initial, data.roundCourses],
   );
   const doneHref = editing && data.id ? `${LIST}/${data.id}` : LIST;
+  // Opens Roster's invite sheet (Roster reads `?invite=1` once), as Home's Invite players.
+  const inviteHref = rebuiltHref('/golf/dashboard/roster?invite=1');
+  // Nobody on the roster: a qualifier needs an entrant, so Create waits, and the form says so first (CH-09305), not
+  // under Players after ten fields.
+  const noRoster = !data.playersError && data.players.length === 0;
   // Without the players, a save could enter or drop someone by mistake.
-  const blocked = data.playersError;
+  const blocked = data.playersError || noRoster;
 
   // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
   // (which runs the action again) finishes the job too: the new qualifier opens, and nobody is left to create it twice.
@@ -80,7 +100,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
         name: v.name.trim(),
         description: v.description.trim() || undefined,
         courseName: v.course.trim() || undefined,
-        entryDeadline: v.entryDeadline || undefined,
+        entryDeadline: keptDeadline(v) || undefined,
         rules: v.rules.trim() || undefined,
         startDate: v.startDate,
         endDate: v.endDate || undefined,
@@ -114,7 +134,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           description: v.description.trim() || null,
           courseName: v.course.trim() || null,
           rules: v.rules.trim() || null,
-          entryDeadline: v.entryDeadline || null,
+          entryDeadline: keptDeadline(v) || null,
           startDate: v.startDate,
           endDate: v.endDate || null,
         },
@@ -155,7 +175,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
   const submit = async () => {
     setTried(true);
     chTrail(editing ? 'qualifiers save' : 'qualifiers create');
-    const found = validateForm(v, { minRounds: data.minRounds });
+    const found = validateForm(checked, { minRounds: data.minRounds });
     if (found.length) {
       const first = FIELD_ORDER.find((f) => found.some((p) => p.field === f));
       if (first) document.getElementById(FIELD_ID[first])?.focus();
@@ -178,6 +198,11 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
   const cancel = () => (dirty ? setLeaving(true) : router.push(doneHref));
 
   const toggle = (id: string, on: boolean) => set('playerIds', on ? [...v.playerIds, id] : v.playerIds.filter((x) => x !== id));
+  // One tap for the whole roster: Select all enters every active player; Clear all keeps those with a round or a squad place.
+  const activeIds = data.players.filter((p) => !p.inactive).map((p) => p.id);
+  const allIn = activeIds.length > 0 && activeIds.every((id) => v.playerIds.includes(id));
+  const toggleAll = () =>
+    set('playerIds', allIn ? v.playerIds.filter((id) => data.players.some((p) => p.id === id && p.locked)) : [...new Set([...v.playerIds, ...activeIds])]);
   const pick = (round: number, p: ChQPickedCourse) => {
     setCourses((cur) => new Map(cur).set(round, { number: round, courseId: p.courseId, courseName: p.courseName, teeId: p.teeId, teeName: p.teeName, par: p.par }));
     setPicking(null);
@@ -214,7 +239,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           back={{ label: 'Cancel', chevron: false, onBack: cancel }}
           action={
             <PhoneTextAction onClick={() => void submit()} disabled={blocked} busy={pending}>
-              {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving' : 'Creating'}</span> : editing ? 'Save' : 'Create'}
+              {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving…' : 'Creating…'}</span> : editing ? 'Save' : 'Create'}
             </PhoneTextAction>
           }
         />
@@ -252,6 +277,23 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
         />
       )}
 
+      {noRoster && (
+        <EmptyState
+          compact
+          code="CH-09305"
+          icon={Users}
+          title="No active players on the roster"
+          body="A qualifier needs at least one entrant, so Create waits until players join."
+          action={
+            inviteHref ? (
+              <Button size="sm" variant="primary" leftIcon={UserPlus} href={inviteHref}>
+                Invite players
+              </Button>
+            ) : undefined
+          }
+        />
+      )}
+
       {problems.length > 0 && (
         <InlineNotice
           code="CH-09110"
@@ -282,12 +324,12 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 <label htmlFor="qf-name" className="ch-field__label">
                   Qualifier name
                 </label>
-                <input {...inputProps('name')} value={v.name} onChange={(e) => set('name', e.target.value)} placeholder="Pinehurst qualifier" maxLength={200} />
+                <input {...inputProps('name')} value={v.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Pinehurst qualifier" maxLength={200} />
                 {fieldHelp('name')}
               </div>
               <div className="ch-field">
-                <label htmlFor="qf-desc" className="ch-field__label ch-qf-label">
-                  Description <span className="ch-qf-optional">Optional</span>
+                <label htmlFor="qf-desc" className="ch-field__label">
+                  Description <span className="ch-field__opt">Optional</span>
                 </label>
                 <textarea
                   id="qf-desc"
@@ -316,24 +358,18 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   <label htmlFor="qf-start" className="ch-field__label">
                     Start date
                   </label>
-                  <input {...inputProps('startDate')} type="date" value={v.startDate} onChange={(e) => set('startDate', e.target.value)} />
+                  <DateField label="Start date" {...inputProps('startDate')} value={v.startDate} onChange={(d) => set('startDate', d)} />
                   {fieldHelp('startDate')}
                 </div>
                 <div className="ch-field">
-                  <label htmlFor="qf-end" className="ch-field__label ch-qf-label">
-                    End date <span className="ch-qf-optional">Optional</span>
+                  <label htmlFor="qf-end" className="ch-field__label">
+                    End date <span className="ch-field__opt">Optional</span>
                   </label>
-                  <input {...inputProps('endDate', FORM_HELP.endDate)} type="date" value={v.endDate} onChange={(e) => set('endDate', e.target.value)} />
+                  <DateField label="End date" {...inputProps('endDate', FORM_HELP.endDate)} min={v.startDate || undefined} anchor={v.startDate || undefined} clearable value={v.endDate} onChange={(d) => set('endDate', d)} />
                   {fieldHelp('endDate', FORM_HELP.endDate)}
                 </div>
               </div>
-              <div className="ch-field">
-                <label htmlFor="qf-deadline" className="ch-field__label ch-qf-label">
-                  Entry deadline <span className="ch-qf-optional">Optional</span>
-                </label>
-                <input {...inputProps('entryDeadline', FORM_HELP.entryDeadline)} type="date" value={v.entryDeadline} onChange={(e) => set('entryDeadline', e.target.value)} />
-                {fieldHelp('entryDeadline', FORM_HELP.entryDeadline)}
-              </div>
+              {/* No entry deadline field: qualifiers don't have one (owner, 2026-10-16). A stored deadline is kept as it is. */}
             </fieldset>
 
             <fieldset className="ch-qf-fs">
@@ -356,10 +392,10 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   {fieldHelp('rounds', FORM_HELP.rounds)}
                 </div>
                 <div className="ch-field">
-                  <label htmlFor="qf-course" className="ch-field__label ch-qf-label">
-                    Course <span className="ch-qf-optional">Optional</span>
+                  <label htmlFor="qf-course" className="ch-field__label">
+                    Course <span className="ch-field__opt">Optional</span>
                   </label>
-                  <input id="qf-course" className="ch-input" value={v.course} onChange={(e) => set('course', e.target.value)} placeholder="Finley GC" maxLength={200} />
+                  <input id="qf-course" className="ch-input" value={v.course} onChange={(e) => set('course', e.target.value)} placeholder="e.g. Finley GC" maxLength={200} />
                 </div>
               </div>
               {rounds === 1 && (
@@ -378,8 +414,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
               )}
               <RoundCourses rounds={rounds} courses={courses} fallback={v.course.trim() || null} failed={editing && data.coursesError} onPick={setPicking} onClear={clearCourse} />
               <div className="ch-field">
-                <label htmlFor="qf-rules" className="ch-field__label ch-qf-label">
-                  Scoring rules <span className="ch-qf-optional">Optional</span>
+                <label htmlFor="qf-rules" className="ch-field__label">
+                  Scoring rules <span className="ch-field__opt">Optional</span>
                 </label>
                 <textarea
                   id="qf-rules"
@@ -399,18 +435,23 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
 
             <fieldset className="ch-qf-fs" aria-describedby={problemOf('playerIds') ? 'qf-players-h' : undefined}>
               <legend className="ch-sr-only">Players</legend>
-              <div className="ch-qf-fs__h" aria-hidden="true">
-                <h2>Players</h2>
-                {/* No count while the roster failed: "0 of 0" would read as an empty roster. The line stays, so the head keeps its height. */}
-                <p className="ch-num">
-                  {data.playersError ? '\u00a0' : `${v.playerIds.filter((id) => data.players.some((p) => p.id === id && !p.inactive)).length} of ${activeCount} active players entered`}
-                </p>
+              <div className="ch-qf-fs__h has-act">
+                <div aria-hidden="true">
+                  <h2>Players</h2>
+                  {/* No count while the roster failed: "0 of 0" would read as an empty roster. The line stays, so the head keeps its height. */}
+                  <p className="ch-num">
+                    {data.playersError ? '\u00a0' : noRoster ? 'Nobody to enter yet' : `${v.playerIds.filter((id) => data.players.some((p) => p.id === id && !p.inactive)).length} of ${activeCount} active players entered`}
+                  </p>
+                </div>
+                {!data.playersError && activeIds.length > 0 && (
+                  <Button size="sm" variant="ghost" onClick={toggleAll}>
+                    {allIn ? 'Clear all' : 'Select all'}
+                  </Button>
+                )}
               </div>
               {data.playersError ? (
                 <InlineNotice title={editing ? 'The players didn’t load' : 'The roster didn’t load'} covered />
-              ) : data.players.length === 0 ? (
-                <EmptyState compact code="CH-09305" icon={Users} title="No active players on the roster" body="A qualifier needs at least one entrant. Add players to the roster first." />
-              ) : (
+              ) : noRoster ? null : (
                 <div className="ch-qf-players">
                   {data.players.map((p, i) => {
                     const on = v.playerIds.includes(p.id);
@@ -452,13 +493,13 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                     Squad size
                   </label>
                   <input
-                    {...inputProps('squad', 'Players who make the trip.')}
+                    {...inputProps('squad', SQUAD_HELP)}
                     inputMode="numeric"
                     value={v.squad}
                     readOnly={data.squadLocked}
                     onChange={(e) => set('squad', e.target.value.replace(/\D/g, '').slice(0, 2))}
                   />
-                  {fieldHelp('squad', 'Players who make the trip.')}
+                  {fieldHelp('squad', SQUAD_HELP)}
                 </div>
                 <div className="ch-field">
                   <label htmlFor="qf-picks" className="ch-field__label">
@@ -494,8 +535,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
               <Button variant="ghost" onClick={cancel}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" leftIcon={Check} disabled={pending || blocked}>
-                {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving' : 'Creating'}</span> : editing ? 'Save changes' : 'Create qualifier'}
+              <Button type="submit" variant="primary" leftIcon={Check} busy={pending} disabled={blocked}>
+                {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving…' : 'Creating…'}</span> : editing ? 'Save changes' : 'Create qualifier'}
               </Button>
             </div>
           </div>
@@ -559,7 +600,7 @@ function RoundCourses({
                 <span className="ch-qf-rn">{i + 1}</span>
                 <span>
                   <b>{c?.courseName ?? fallback ?? 'No course set'}</b>
-                  <small>{c ? [c.teeName, c.par != null ? `Par ${c.par}` : null].filter(Boolean).join(' · ') || 'Tees not set' : fallback ? 'The qualifier’s course' : 'Uses the qualifier’s course'}</small>
+                  <small>{c ? [c.teeName, c.par != null ? `Par ${c.par}` : null].filter(Boolean).join(' · ') || 'Tees not set' : fallback ? 'The qualifier’s course' : 'Choose one, or set the qualifier’s course above'}</small>
                 </span>
                 <span className="ch-qf-rc__act">
                   <Button size="sm" variant="ghost" leftIcon={MapPin} onClick={() => onPick(i + 1)}>

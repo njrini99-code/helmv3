@@ -33,7 +33,7 @@ A profile opens on Overview, or the tab the address names, for the window the ad
 Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
 
 - Last 10 is the player's ten newest countable rounds in any season, read
-  from a rolling 12 months back, with "vs. previous 10" the ten before them.
+  from a rolling 12 months back, with "vs previous 10" the ten before them.
   Season and Qualifiers are this season only.
 - A round posted as a total only (18 holes, no nines, no holes) counts in the
   scores (average, to par, trend, form, the Rounds table, the personal best
@@ -41,6 +41,17 @@ Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
   scrambling, scoring by par, putting). A card or section whose round count is
   fewer than the window's says "Hole stats from X of Y rounds". A window of
   totals only has no shot-by-shot rounds (CH-5301), never a failed read.
+
+Parity with production (2026-10-17, `stats-production-parity.test.ts`): on the
+same rounds, the comparison table's fairways, greens, putts, 3-putts,
+scrambling, sand saves, penalties and par 3/4/5 scoring, and Game detail's
+figures, are `getDetailedStats`' (the Fairway player page's calculator), and
+strokes gained is the stored per-round value production's Team stats page
+averages. Putts and 3-putts a round leave out a round with no putt recorded,
+as the calculator does. Per-round counts with nine-hole rounds in are per 18
+holes (production divides by rounds of either length). Production's Standing
+strip is its own basis (every completed round, test rounds in, a 90-day pressure
+gap and opening hole, a wider lay-up rule at 175+ yd), not this window.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -89,7 +100,7 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 50404 | CH-5304 | `NO_GOALS` | No goals |
 | 50405 | CH-5305 | `FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW` | Fewer than three whole rounds in the window (or under the round filter; a 9-hole round counts as half) |
 | 50406 | CH-5308 | `THREE_OR_MORE_ROUNDS_IN_THE_WINDOW` | Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots) |
-| 50407 | CH-5309 | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | Phone: no strokes gained in the window (no leg and no total) |
+| 50407 | CH-5309 | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | No strokes gained in the window (no leg and no total) |
 | 50408 | CH-5310 | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
 | 50409 | CH-5311 | `HOLES_WERE_SCORED_IN_THE_WINDOW_BUT` | Holes were scored in the window but none has been played three times |
 | 50410 | CH-5312 | `A_ROUND_TYPE_WITH_NO_ROUNDS_IN` | A round type with no rounds in the window (practice, qualifying, tournament) |
@@ -169,7 +180,7 @@ confirmations remain 4 seconds and errors 8 seconds. The offline banner
 | 50702 | CH-5902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
 | 50703 | CH-5903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -308,7 +319,7 @@ CH-1842, 11825 CH-1816.
 | 51809 | CH-5809 | `THE_ROUND_FILTER_AS_ON_TEAM_STATS` | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description |
 | 51810 | CH-5810 | `SHARE_BEST_SCORE_OPENS_A_LABELLED_DIALOG` | Share best score (P005-C2) opens a labelled dialog with the card as an image whose alt names the score, the player, the course and the date; Share is the one primary. The card shows no school or team name and, unless the player shares it, their first name and last initial |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

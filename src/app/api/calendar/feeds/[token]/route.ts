@@ -5,6 +5,8 @@ import { escapeICalText } from '@/lib/calendar/ical';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
+import { isMeetingEvent } from '@/lib/calendar/meeting-visibility';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 import { vercelWaitUntil } from '@/lib/observability/vercel-wait-until';
 
 /**
@@ -91,6 +93,48 @@ interface TeamAuthRpcClient {
     name: 'is_user_on_team',
     args: { p_user_id: string; p_team_id: string },
   ): Promise<{ data: boolean | null; error: { message: string } | null }>;
+}
+
+// ============================================================================
+// MEETINGS
+// ============================================================================
+
+/**
+ * A team feed is a coach's (createCalendarFeed refuses anyone else), but this
+ * route only checks that the owner is ON the team, and it reads with the admin
+ * client, so RLS never narrows it. An owner who does not coach the team gets
+ * a player's view: only the meetings they are invited to
+ * (meeting-visibility.ts). Fail closed: a failed coach check reads as "not a
+ * coach", and a failed player or invite read leaves no meeting in the feed.
+ */
+async function scopeMeetingsToFeedOwner(
+  supabase: ReturnType<typeof createAdminClient>,
+  feed: CalendarFeed,
+  teamId: string,
+  events: CalendarFeedEvent[],
+): Promise<CalendarFeedEvent[]> {
+  if (!events.some(isMeetingEvent)) return events;
+
+  const context = { action: 'calendarFeedApi.get.meetingInvites', route: '/api/calendar/feeds/[token]', featureArea: 'calendar' };
+  const { data: ownerCoaches, error: coachError } = await supabase.rpc('verify_coach_owns_team', {
+    p_team_id: teamId,
+    p_user_id: feed.user_id,
+  });
+  if (coachError) {
+    await logServerError(`Calendar feed coach check failed; meetings are left out: ${coachError.message}`, context, 'warning');
+  } else if (ownerCoaches === true) {
+    return events;
+  }
+
+  const { data: player, error: playerError } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', feed.user_id)
+    .maybeSingle();
+  if (playerError) {
+    await logServerError(`Calendar feed owner lookup failed; meetings are left out: ${playerError.message}`, context, 'warning');
+  }
+  return filterMeetingsForPlayer(supabase, events, player?.id, context);
 }
 
 // ============================================================================
@@ -398,7 +442,8 @@ export async function GET(
     feedTimezone = getValidTimezone(teamSettings?.timezone);
 
     const feedName = typedFeed.name || 'Helm Golf Calendar';
-    const icalContent = generateICal((events || []) as CalendarFeedEvent[], feedName, feedTimezone);
+    const feedEvents = await scopeMeetingsToFeedOwner(supabase, typedFeed, teamId, (events || []) as CalendarFeedEvent[]);
+    const icalContent = generateICal(feedEvents, feedName, feedTimezone);
 
     return new NextResponse(icalContent, {
       headers: {

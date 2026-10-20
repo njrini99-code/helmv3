@@ -75,6 +75,19 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## Business Rules
 
+- Wave 6 (2026-10-18):
+  - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
+    style dims, never strengths or watch-outs; they only feed the course
+    profile.
+  - Program pulse movement rows read "N players are scoring worse/better over
+    their last three rounds", each mover's change in strokes (±N.N strokes,
+    true minus).
+  - `putt-slope-bias` writes "Downhill putts from {band}", no "(n=…)" aside,
+    label "Make rate, downhill vs level, same distance"; signature unchanged.
+  - Standing projections use the player's real attempts per round from
+    `golf_player_stats_cache`; without attempts a component is capped at how
+    far its parent strokes-gained category trails the Tour, so a part can never
+    be worth more than its whole.
 - LLM work must never run client-side.
 - Player-facing confidence is shown as a word ("Solid read" / "Early read" /
   "Thin read, n=8") from `src/lib/coachhelm/confidence-label.ts`, never as a

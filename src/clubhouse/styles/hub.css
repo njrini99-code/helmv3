@@ -7,7 +7,7 @@
   gap: 26px;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 34px 40px 80px;
+  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
   color: var(--ch-text-primary);
 }
 .ch-hb-h {
@@ -27,23 +27,26 @@
   padding: 0 10px;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.3);
-  font: 600 11.5px/24px var(--ch-font-sans);
+  font: 600 calc(11.5 * var(--ch-type-k))/24px var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-hb-h h1 {
   margin: 10px 0 6px;
-  font: 400 54px/1 var(--ch-font-serif);
+  font: 400 calc(54 * var(--ch-type-k))/1 var(--ch-font-serif);
   letter-spacing: -0.01em;
 }
 .ch-hb-muted {
-  font: 400 13px/1.3 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-tabs {
   display: flex;
   gap: 22px;
-  max-width: 100%;
-  margin-top: -10px;
+  /* Room inside the scroller for the focus ring, taken back by the margins so the row doesn't move. */
+  max-width: calc(100% + 8px);
+  margin: -14px -4px -4px;
+  padding: 4px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -57,7 +60,7 @@
   padding: 0;
   border: 0;
   background: none;
-  font: 500 14px/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   white-space: nowrap;
   cursor: pointer;
@@ -78,13 +81,21 @@
 .ch-hb-tabs button {
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
+@media (hover: hover) {
+  .ch-hb-tabs button:not([aria-selected='true']):hover {
+    color: var(--ch-text-primary);
+  }
+}
+.ch-hb-tabs button:active {
+  color: var(--ch-text-primary);
+}
 .ch-hb-tabs button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: 4px;
 }
 .ch-hb-card {
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -120,7 +131,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: 600 12px/1 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
 .ch-hb-iconbtn {
@@ -130,7 +142,7 @@
   width: 32px;
   height: 32px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: none;
   color: var(--ch-text-tertiary);
   cursor: pointer;
@@ -162,7 +174,7 @@
   justify-content: center;
   gap: 3px;
   height: 46px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-50);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
 }
@@ -173,6 +185,7 @@
 }
 .ch-hb-rsvp__d b {
   font: 500 18px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-hb-rsvp__b {
@@ -188,17 +201,18 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  font: 600 14.5px/1.2 var(--ch-font-sans);
+  font: 600 calc(14.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-hb-rsvp__b > span {
-  font: 400 12.5px/1.2 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-req {
   padding: 2px 7px;
   border-radius: 999px;
   background: var(--ch-green-50);
-  font: 600 11px/1.3 var(--ch-font-sans);
+  font: 600 calc(11 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 /* Pending feedback stays attached to its object; another row remains interactive. */
@@ -229,9 +243,9 @@
   height: 30px;
   padding: 0 11px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: none;
-  font: 500 12.5px/30px var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/30px var(--ch-font-sans);
   color: var(--ch-text-secondary);
   cursor: pointer;
   touch-action: manipulation;
@@ -253,7 +267,8 @@
   gap: 6px;
 }
 .ch-hb-rsvp__c em {
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
   white-space: nowrap;
@@ -287,7 +302,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 26px 28px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -297,14 +312,14 @@
 .ch-hb-ann h3 {
   margin: 2px 0 0;
   font: var(--ch-type-serif-l);
-  font-size: 36px;
+  font-size: calc(36 * var(--ch-type-k));
   letter-spacing: -0.008em;
   text-wrap: balance;
 }
 .ch-hb-ann p {
   max-width: 60ch;
   margin: 0;
-  font: 400 15px/1.6 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.6 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
   white-space: pre-line;
@@ -323,15 +338,17 @@
   gap: 3px;
 }
 .ch-hb-ann__h b {
-  font: 600 13.5px/1 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 /* The byline's meta, not the avatar (a span too, whose colour this used to override). */
 .ch-hb-ann__h > div span {
-  font: 400 12px/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-ann__f {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -339,19 +356,131 @@
 .ch-hb-ann__f:empty {
   display: none;
 }
+/* A post's attachments: the count opens the list; each file opens like a Documents row. */
+.ch-hb-ann__files {
+  display: grid;
+  gap: 6px;
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-hb-ann__files-t,
+.ch-hb-ann__files-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-text-secondary);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.ch-hb-ann__files-retry {
+  display: inline;
+  min-height: 0;
+  color: var(--ch-text-primary);
+  text-decoration: underline;
+}
+.ch-hb-ann__files ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-hb-ann__file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-hover);
+  color: inherit;
+  font: 500 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-hb-ann__file span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-hb-ann__file em {
+  flex: none;
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-hb-ann__file[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+.ch-hb-ann__files-err {
+  color: var(--ch-text-secondary);
+}
+.ch-hb-ann__files-t:focus-visible,
+.ch-hb-ann__files-retry:focus-visible,
+.ch-hb-ann__file:focus-visible,
+.ch-hb-reads--open:focus-visible,
+.ch-hb-pickall:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-sm);
+}
 .ch-hb-acked {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-hb-reads {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
+}
+/* Coach: the count opens who hasn't acknowledged (.ch-hb-ann__wait). A press tints it inside its focus ring's
+   corners, a beat after the finger lands (CH-1606). */
+.ch-hb-reads--open {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: none;
+  cursor: pointer;
+  transition: background-color var(--ch-dur-press) var(--ch-ease);
+}
+.ch-hb-reads--open:active {
+  background-color: var(--ch-ledger-row-press);
+  transition-delay: var(--ch-dur-press-delay);
+}
+.ch-hb-reads--open[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.ch-hb-ann__wait {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  margin: 0;
+  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hb-ann__wait em {
+  font: 500 calc(12 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
 }
 .ch-hb-reads__t {
   width: 90px;
@@ -382,10 +511,10 @@
   gap: 12px;
   padding: 16px 18px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
-  font: 400 14.5px/1 var(--ch-font-sans);
+  font: 400 calc(14.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-align: left;
   cursor: pointer;
@@ -412,7 +541,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -438,11 +567,11 @@
 }
 .ch-hb-pass__main > b {
   margin-top: 4px;
-  font: 400 24px/1.15 var(--ch-font-serif);
+  font: 400 calc(24 * var(--ch-type-k))/1.15 var(--ch-font-serif);
   letter-spacing: -0.004em;
 }
 .ch-hb-pass.is-big .ch-hb-pass__main > b {
-  font-size: 32px;
+  font-size: calc(32 * var(--ch-type-k));
 }
 .ch-hb-pass__f {
   display: flex;
@@ -452,14 +581,18 @@
   padding-top: 12px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
 }
+.ch-hb-pass__f:empty {
+  display: none;
+}
 .ch-hb-pass__f dt {
   margin-bottom: 5px;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hb-pass__f dd {
   margin: 0;
-  font: 500 14px/1.2 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-hb-pass__stub {
   position: relative;
@@ -494,12 +627,12 @@
 }
 .ch-hb-plan li {
   display: grid;
-  grid-template-columns: 108px 1fr;
+  grid-template-columns: calc(108 * var(--ch-type-k)) 1fr;
   align-items: center;
   gap: 8px;
   min-height: 34px;
   border-top: 1px solid rgb(28 25 18 / 0.06);
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
 }
 .ch-hb-plan span {
   color: var(--ch-text-tertiary);
@@ -509,15 +642,15 @@
 }
 .ch-hb-pass__line {
   display: grid;
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: calc(72 * var(--ch-type-k)) 1fr;
   gap: 8px;
   margin: 0;
-  font: 400 13px/1.45 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   white-space: pre-line;
 }
 .ch-hb-pass__line em {
-  font: 500 12px/1.45 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -559,7 +692,7 @@
   min-width: 0;
 }
 .ch-hb-feed__b b {
-  font: 600 13px/1.2 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-hb-feed li:not(.is-new) .ch-hb-feed__b b {
   font-weight: 500;
@@ -567,13 +700,13 @@
 }
 .ch-hb-feed__b > span {
   overflow: hidden;
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ch-hb-feed em {
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -601,14 +734,15 @@
   min-width: 0;
 }
 .ch-hb-task b {
-  font: 600 14px/1.2 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-hb-task > div span {
-  font: 400 12px/1.2 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-task em {
-  font: 600 12px/1 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -622,11 +756,11 @@
 }
 /* A task a notification opened (`?task=`): a selected-row wash that fades once. Reduced motion keeps it still. */
 .ch-hb-task.is-focus {
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   animation: ch-hb-task-focus calc(var(--ch-dur-reveal) * 3) var(--ch-ease) both;
 }
 .ch-hb-task.is-focus-still {
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-selected);
   box-shadow: 0 0 0 6px var(--ch-bg-selected);
 }
@@ -648,7 +782,7 @@
   height: 24px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: none;
   box-shadow: inset 0 0 0 1.5px rgb(28 25 18 / 0.25);
   color: var(--ch-on-fill-0);
@@ -676,6 +810,7 @@
   border-radius: 50%;
   background: var(--ch-ivory-25);
   font: 700 8.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Documents */
@@ -695,7 +830,7 @@
   align-items: center;
   padding: 16px 18px;
   border: 2px dashed rgb(21 90 57 / 0.3);
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-green-25);
   text-align: left;
   cursor: pointer;
@@ -715,11 +850,11 @@
   color: var(--ch-on-fill-100);
 }
 .ch-hb-drop b {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-hb-drop em {
-  font: 400 12.5px/1 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -741,7 +876,7 @@
   min-width: 0;
   padding: 10px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: none;
   color: inherit;
   text-align: left;
@@ -766,7 +901,7 @@
   gap: 2px;
   width: 40px;
   height: 46px;
-  border-radius: 8px 14px 8px 8px;
+  border-radius: var(--ch-radius-sm) var(--ch-radius-lg) var(--ch-radius-sm) var(--ch-radius-sm);
   background: var(--ch-ivory-150);
   color: var(--ch-text-secondary);
 }
@@ -792,12 +927,13 @@
 }
 .ch-hb-file__b b {
   overflow: hidden;
-  font: 600 13.5px/1.2 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ch-hb-file__b span {
-  font: 400 12px/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 
@@ -819,7 +955,7 @@
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
-  font: 500 13px/34px var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/34px var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -835,6 +971,22 @@
   justify-content: space-between;
   gap: 8px;
   margin-top: 8px;
+}
+/* A list's label with its Clear all / Select all on the right. */
+.ch-hb-fhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ch-hb-pickall {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  cursor: pointer;
 }
 .ch-hb-picks {
   display: flex;
@@ -852,7 +1004,7 @@
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
-  font: 500 13px/1 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -888,7 +1040,7 @@
   border-radius: 999px;
   background: var(--ch-green-50);
   box-shadow: 0 0 0 1.5px var(--ch-green-600);
-  font: 500 13px/1 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-forest-800);
   cursor: pointer;
 }
@@ -903,13 +1055,13 @@
   align-self: stretch;
   gap: 2px;
   padding: 6px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-50);
 }
 .ch-hb-dp__f {
   display: block;
   padding: 8px 10px 4px;
-  font: 600 12px/1 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hb-dp__row {
@@ -920,7 +1072,7 @@
   min-height: 44px;
   padding: 6px 10px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: none;
   color: inherit;
   text-align: left;
@@ -943,12 +1095,13 @@
 }
 .ch-hb-dp__b b {
   overflow: hidden;
-  font: 600 13.5px/1.2 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ch-hb-dp__b span {
-  font: 400 12px/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-hb-dp__ck {
@@ -957,7 +1110,7 @@
   place-items: center;
   width: 20px;
   height: 20px;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
   box-shadow: 0 0 0 1.5px rgb(28 25 18 / 0.25);
   color: var(--ch-on-fill-100);
 }
@@ -967,7 +1120,7 @@
 }
 .ch-hb-opts {
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-50);
 }
 .ch-hb-2 {
@@ -1007,8 +1160,8 @@
   }
 }
 @container chhb (max-width: 640px) {
-  .ch-hb-docs,
-  .ch-hb-2 {
+  /* A form's paired short fields (date and time) stay side by side, as Add a class keeps them. */
+  .ch-hb-docs {
     grid-template-columns: minmax(0, 1fr);
   }
   .ch-hb-rsvp__list li {
@@ -1034,7 +1187,7 @@
     padding: 18px;
   }
   .ch-hb-ann h3 {
-    font-size: 27px;
+    font-size: calc(27 * var(--ch-type-k));
   }
 }
 
@@ -1066,9 +1219,11 @@
     white-space: nowrap;
     border: 0;
   }
+  /* The phone's full-width head action is 44px tall, as Create qualifier's (qualifiers.css). */
   .ch-hb-h > button,
   .ch-hb-h > a {
     width: 100%;
+    height: 44px;
   }
   /* The route skeleton on a phone: its own shape (HubSkeleton's .ch-hb-skelm), the desktop's bars out of the way. */
   .ch-hb--skel > :not(.ch-hb-skelm) {
@@ -1108,7 +1263,8 @@
     min-width: 0;
   }
   .ch-hb-h .ch-hb-muted {
-    font: 500 12px/1.3 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1116,7 +1272,8 @@
      edge: the strip bleeds past the page's gutters, so it drops the 100% cap that held it 40px short (and cut Tasks). */
   .ch-hb-tabs {
     justify-content: space-between;
-    gap: 4px;
+    /* 4px at the default text size; wider under Dynamic Type, when the row outgrows the screen and scrolls. */
+    gap: calc(4px + (var(--ch-type-k) - 1px) * 40);
     max-width: none;
     margin: -6px -20px 0;
     padding: 0 20px;
@@ -1124,7 +1281,7 @@
   }
   .ch-hb-tabs button {
     height: 44px;
-    font-size: 13.5px;
+    font-size: calc(13.5 * var(--ch-type-k));
   }
 
   /* Sections: no card, a double rule over the heading. */
@@ -1148,7 +1305,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hb-card__h h2 {
-    font: 600 19px/1.1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1158,6 +1315,7 @@
   }
   .ch-hb-card__h .ch-hb-muted {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
   }
   /* A failed part with no heading of its own (the latest post, the next trip) stands on its own double rule. */
   .ch-hb-part {
@@ -1183,13 +1341,17 @@
   .ch-hb-rsvp__list li + li {
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
+  /* Square rows, so a seam runs straight to both ends (the desktop's 12px hover radius bent it up). */
+  .ch-hb .ch-hb-rsvp__list li {
+    border-radius: 0;
+  }
   .ch-hb-rsvp__d {
-    border-radius: 10px;
+    border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
   }
   .ch-hb-rsvp__b {
-    border-radius: 6px;
+    border-radius: var(--ch-radius-sm);
     transition: background-color var(--ch-dur-press) var(--ch-ease), box-shadow var(--ch-dur-press) var(--ch-ease);
   }
   /* The event's line opens it in Calendar: a press tints it a little past its words, without moving them. */
@@ -1198,10 +1360,11 @@
     box-shadow: 0 0 0 6px var(--ch-ledger-row-press);
   }
   .ch-hb-rsvp__b b {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
   }
   .ch-hb-rsvp__b > span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
   }
 
   /* The latest announcement: the screen's one green feature card (ui.css .ch-feat, in the announcement's own markup so
@@ -1209,23 +1372,24 @@
   .ch-hb-ann.is-featured {
     gap: 10px;
     padding: 18px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
     color: var(--ch-on-green-ink);
   }
   .ch-hb-ann.is-featured .ch-hb-eyebrow {
-    font: 500 12.5px/1 var(--ch-font-sans);
+    font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink-muted);
   }
   .ch-hb-ann.is-featured h3 {
     margin: 2px 0 0;
-    font: 600 23px/1.15 var(--ch-font-sans);
+    font: 600 calc(23 * var(--ch-type-k))/1.15 var(--ch-font-sans);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
   }
   .ch-hb-ann.is-featured p {
-    font: 400 14px/1.5 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
     color: var(--ch-on-green-ink-soft);
   }
   .ch-hb-ann.is-featured .ch-hb-ann__h {
@@ -1242,11 +1406,21 @@
   .ch-hb-ann.is-featured .ch-hb-iconbtn {
     color: var(--ch-on-green-ink-soft);
   }
+  /* The card is green in both themes, so the author's coin keeps the day's neutral (tokens.css): the night coin
+     (#243a2c) sank into the night green. */
+  html[data-fw-theme='dark'] .ch-hb-ann.is-featured .ch-hb-ann__h .ch-avatar {
+    --ch-av-bg: #d9e4d8;
+    --ch-av-fg: #23402f;
+    --ch-av-ring: rgb(35 64 47 / 0.18);
+  }
   .ch-hb-ann.is-featured .ch-hb-iconbtn:active {
     background: rgb(255 255 255 / 0.08);
   }
   .ch-hb-ann.is-featured .ch-hb-reads {
     color: var(--ch-on-green-ink-soft);
+  }
+  .ch-hb-ann.is-featured .ch-hb-reads--open:active {
+    background-color: rgb(255 255 255 / 0.08);
   }
   .ch-hb-ann.is-featured .ch-hb-reads__t {
     background: rgb(255 255 255 / 0.14);
@@ -1288,7 +1462,7 @@
   .ch-hb-new {
     margin-bottom: 6px;
     padding: 14px 16px;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     background: var(--ch-sheet-bg);
     box-shadow: 0 0 0 1px var(--ch-ledger-rule);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
@@ -1304,12 +1478,12 @@
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
   .ch-hb-list > .ch-hb-ann h3 {
-    font: 600 22px/1.15 var(--ch-font-sans);
+    font: 600 calc(22 * var(--ch-type-k))/1.15 var(--ch-font-sans);
     letter-spacing: -0.028em;
     color: var(--ch-ledger-ink);
   }
   .ch-hb-list > .ch-hb-ann p {
-    font-size: 14.5px;
+    font-size: calc(14.5 * var(--ch-type-k));
     line-height: 1.55;
   }
   .ch-hb-ann__h {
@@ -1329,13 +1503,13 @@
   }
   .ch-hb-pass__main > b {
     margin-top: 2px;
-    font: 600 19px/1.15 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.15 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
   .ch-hb-pass.is-big .ch-hb-pass__main > b {
-    font-size: 23px;
+    font-size: calc(23 * var(--ch-type-k));
     letter-spacing: -0.03em;
   }
   .ch-hb-pass__f {
@@ -1387,7 +1561,7 @@
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
   .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__main > b {
-    font-size: 16px;
+    font-size: calc(16 * var(--ch-type-k));
   }
   .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__f {
     margin-top: 6px;
@@ -1424,7 +1598,7 @@
     top: 26px;
   }
   .ch-hb-feed__b b {
-    font-size: 14.5px;
+    font-size: calc(14.5 * var(--ch-type-k));
   }
   .ch-hb-feed__b > span {
     font: var(--ch-type-caption);
@@ -1443,8 +1617,9 @@
     border-top: 0;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
-  .ch-hb-task b {
-    font-size: 15px;
+  /* The title only: the completion ring's numeral is a <b> too. */
+  .ch-hb-task > div b {
+    font-size: calc(15 * var(--ch-type-k));
   }
 
   /* Documents: the drop zone keeps its material; a folder is a section, its files rows on seams that tint on the press. */
@@ -1469,10 +1644,11 @@
     background-color: var(--ch-ledger-row-press);
   }
   .ch-hb-file__b b {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
   }
   .ch-hb-file__b span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -1488,7 +1664,7 @@
   height: 24px;
   padding: 0 10px;
   border-radius: 999px;
-  font: 600 11px/24px var(--ch-font-sans);
+  font: 600 calc(11 * var(--ch-type-k))/24px var(--ch-font-sans);
   background: var(--ch-bg-inset);
   color: var(--ch-text-tertiary);
 }
@@ -1499,6 +1675,10 @@
 .ch-hb-steps li.is-on {
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
+}
+/* Travelers, with no calendar event to choose them from. */
+.ch-hb-steps li.is-skip {
+  text-decoration: line-through;
 }
 .ch-hb-evpick {
   display: flex;
@@ -1513,18 +1693,18 @@
   gap: 3px;
   padding: 11px 14px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
   text-align: left;
   cursor: pointer;
 }
 .ch-hb-evpick button b {
-  font: 600 14px/1.25 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-hb-evpick button span {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hb-evpick button[aria-checked='true'] {
@@ -1542,12 +1722,12 @@
   gap: 10px;
 }
 .ch-hb-tripsum dt {
-  font: 500 12.5px/1.4 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hb-tripsum dd {
   margin: 0;
-  font: 500 13.5px/1.4 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 /* Plan a trip: a traveler's class during the trip (CH-10110), and what else the check can say (CH-10407, CH-10212, CH-10315). */
@@ -1563,10 +1743,10 @@
   display: flex;
   gap: 10px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
-  font: 400 13px/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
 }
 .ch-hb-clash > svg {
   flex: none;
@@ -1595,18 +1775,24 @@
     min-width: 44px;
     height: 44px;
   }
+  /* The phone strip has no ring room above and below its full-height tabs: the ring is drawn inside. */
+  .ch-hb-tabs button:focus-visible {
+    outline-offset: -2px;
+  }
   .ch-hb-rsvp__b {
     min-height: 44px;
     justify-content: center;
   }
   .ch-hb-rsvp__a button,
   .ch-hb-iconbtn,
-  .ch-hb-check {
+  .ch-hb-check,
+  .ch-hb-reads--open {
     position: relative;
   }
   .ch-hb-rsvp__a button::after,
   .ch-hb-iconbtn::after,
-  .ch-hb-check::after {
+  .ch-hb-check::after,
+  .ch-hb-reads--open::after {
     content: '';
     position: absolute;
     inset: min(0px, calc(50% - 22px));
@@ -1617,14 +1803,22 @@
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
 @media (max-width: 820px) {
+  .ch-hb-rsvp__d em {
+    font-size: 12px;
+  }
+  /* The ring's numeral, fixed like the bell's count: "6/6" fits inside its 24px face. */
+  .ch-hb-ring b {
+    font-size: 10px;
+    letter-spacing: -0.02em;
+  }
+  /* Dynamic Type from the floor up; the date tile above keeps its fixed size. */
   .ch-hb-role,
-  .ch-hb-rsvp__d em,
   .ch-hb-req,
   .ch-hb-rsvp__c em,
   .ch-hb-pass__f dt,
   .ch-hb-feed em,
   .ch-hb-steps li {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 
@@ -1713,7 +1907,7 @@
     padding: 0;
   }
   .ch-hb[data-canopy] .ch-hb-ann h3 {
-    font-size: 26px;
+    font-size: calc(26 * var(--ch-type-k));
     color: var(--ch-ledger-ink);
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-featured {
@@ -1722,7 +1916,7 @@
     box-shadow: inset 2px 0 0 var(--ch-champagne-500);
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-featured h3 {
-    font-size: 30px;
+    font-size: calc(30 * var(--ch-type-k));
   }
   .ch-hb[data-canopy] .ch-hb-ann h3 > span,
   .ch-hb[data-canopy] .ch-hb-pass__main > b > span {
@@ -1761,7 +1955,7 @@
     padding-right: 32px;
   }
   .ch-hb[data-canopy] .ch-hb-pass.is-big .ch-hb-pass__main > b {
-    font-size: 30px;
+    font-size: calc(30 * var(--ch-type-k));
   }
   .ch-hb[data-canopy] .ch-hb-pass__f,
   .ch-hb[data-canopy] .ch-hb-plan li {
@@ -1828,7 +2022,8 @@
     padding: 0;
   }
   .ch-hb[aria-busy='true'][data-canopy] .ch-hb-tabs {
-    height: 34px;
+    /* The 34px tabs plus the strip's 4px ring room above and below. */
+    height: 42px;
     align-items: center;
   }
 
@@ -1958,7 +2153,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     padding: 0;
     overflow: hidden;
     margin-bottom: 28px;
-    border-radius: 16px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-light-paper), var(--ch-sheet-bg);
     box-shadow:
       inset 0 1px 0 var(--ch-light-rim),
@@ -2084,7 +2279,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     grid-column: 1;
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-lead h3 {
-    font-size: 36px;
+    font-size: calc(36 * var(--ch-type-k));
     line-height: 1.08;
     letter-spacing: -0.03em;
   }
@@ -2093,7 +2288,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     padding-left: 120px;
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-older h3 {
-    font-size: 22px;
+    font-size: calc(22 * var(--ch-type-k));
     line-height: 1.2;
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-older .ch-hb-ann__margin {
@@ -2103,6 +2298,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     display: block;
     width: 100px;
     font: 500 12.5px/1.35 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-older:first-of-type .ch-hb-ann__margin,
@@ -2131,12 +2327,13 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   }
   .ch-hb-margin__n {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
 }
 @media (max-width: 820px) {
   .ch-hb-list > .ch-hb-ann.is-older h3 {
-    font-size: 17px;
+    font-size: calc(17 * var(--ch-type-k));
   }
   .ch-hb-ann__fold {
     display: block;
@@ -2147,7 +2344,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     border: 0;
     background: none;
     color: var(--ch-text-secondary);
-    font: 400 14px/44px var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/44px var(--ch-font-sans);
     text-align: left;
     cursor: pointer;
   }
@@ -2189,11 +2386,45 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   box-shadow: inset 0 0 0 1px rgb(176 149 96 / 0.4), var(--ch-elevation-mark-ink);
 }
 .ch-hb-rsvp__list li {
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-hb-rsvp__list li:hover {
     background: var(--ch-ledger-row-hover);
+  }
+}
+
+/* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
+@media (max-width: 820px) {
+  .ch-hb-chip,
+  .ch-hb-aud button,
+  .ch-hb-picks button {
+    position: relative;
+  }
+  .ch-hb-chip::after,
+  .ch-hb-aud button::after,
+  .ch-hb-picks button::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}
+
+/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
+@media (hover: hover) {
+  .ch-hb-chip:hover {
+    background: var(--ch-green-100);
+  }
+  .ch-hb-reads--open:hover {
+    background: var(--ch-bg-hover);
+  }
+  .ch-hb-check:not([aria-pressed='true']):hover {
+    box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
+  }
+  .ch-hb-feed li > a:hover {
+    border-radius: var(--ch-radius-md);
+    background: var(--ch-bg-hover);
+    box-shadow: -8px 0 0 var(--ch-bg-hover), 8px 0 0 var(--ch-bg-hover);
   }
 }

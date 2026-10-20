@@ -102,6 +102,12 @@ export function cardHoles(holes: RoundHole[], stats: ReadonlyArray<HoleStats | u
   return holes.map((h, i) => ({ number: h.number, par: h.par, score: h.score, putts: stats[i]?.putts ?? null }));
 }
 
+/** The posted round's strokes and score to par, once every hole on the card has a score; null before. */
+export function postedScore(card: ChCardHole[]): { strokes: number; toPar: number } | null {
+  if (!card.length || card.some((h) => h.score == null)) return null;
+  return card.reduce((a, h) => ({ strokes: a.strokes + (h.score ?? 0), toPar: a.toPar + (h.score ?? 0) - h.par }), { strokes: 0, toPar: 0 });
+}
+
 /** The finished round's holes, for the Round complete sheet. */
 export function summaryHoles(holes: RoundHole[], finalStats: ReadonlyArray<HoleStats | undefined | null>): ChSummaryHole[] {
   return holes.map((h, i) => {

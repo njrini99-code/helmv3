@@ -15,7 +15,7 @@ vi.mock('@/app/golf/actions/player-notifications', () => ({ getPlayerHubAnnounce
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: vi.fn() }));
 vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
 
-import { attendanceFor, assignmentsFor } from '../data/hub';
+import { attendanceFor, assignmentsFor, taskOrder, type ChHubTask } from '../data/hub';
 
 /** A table of `total` rows that honours .range() the way PostgREST does (at most 1000 a page). */
 function pagedClient(make: (i: number) => Record<string, unknown>, total: number) {
@@ -42,5 +42,13 @@ describe('Team Hub reads page past 1000 rows', () => {
     const { byTask, error } = await assignmentsFor(client, ['t1']);
     expect(error).toBe(false);
     expect(byTask.get('t1')).toEqual({ done: 900, total: 1800 });
+  });
+});
+
+describe('Team Hub task order', () => {
+  const task = (id: string, status: ChHubTask['status'], dueDate: string | null): ChHubTask => ({ id, title: id, detail: null, dueDate, due: null, status, done: null });
+  it('lists the open tasks first, then by due date, the undated last', () => {
+    const rows = [task('done-early', 'completed', '2026-10-01'), task('undated', 'pending', null), task('late', 'pending', '2026-10-20'), task('overdue', 'overdue', '2026-10-10'), task('done-undated', 'completed', null)];
+    expect(taskOrder(rows).map((t) => t.id)).toEqual(['overdue', 'late', 'undated', 'done-early', 'done-undated']);
   });
 });

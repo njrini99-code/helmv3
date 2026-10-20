@@ -13,6 +13,7 @@ import {
   getGolfGroupAddCandidates,
   getGolfMessageAttachments,
   leaveGolfGroup,
+  removeGolfGroupMember,
   searchGolfMessages,
 } from '@/app/golf/actions/messages';
 import { getGolfConversationFiles } from '@/app/golf/actions/message-attachments';
@@ -20,6 +21,7 @@ import { canHideGolfConversations, hideGolfConversation } from '@/app/golf/actio
 import { getGolfConversationMute, setGolfConversationMute } from '@/app/golf/actions/message-mute';
 import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDetail, getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
+import { getPreviewUrl } from '@/app/golf/actions/documents';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
@@ -32,8 +34,9 @@ import { haptic } from '../../lib/haptics';
 import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
+import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, takePrefill } from './prefill';
-import { firstName, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { firstName, groupLacksPlayer, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
   const n = c.participant_count ?? c.participant_ids?.length ?? 0;
@@ -57,7 +60,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [autoOpened, setAutoOpened] = useState<string | null>(null);
-  const handledParams = useRef(false);
+  /**
+   * The deep link last taken (null before the first read). A new one arriving while Messages is already open (a bell
+   * notification tapped on this page, which keeps it mounted) is taken too; Fairway's one-shot flag dropped it.
+   */
+  const handledParams = useRef<string | null>(null);
   /** Unsent drafts by conversation, so switching threads (71202) or reloading (F-12) never loses what was written. */
   const [drafts] = useState<Map<string, string>>(() => new DraftStore(data.viewerUserId));
   const [attachmentRecovery] = useState(() => new Map<string, ChAttachmentRecovery>());
@@ -122,15 +129,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   // Deep links: ?conversation=<id>, or ?player=<golf_players.id> or ?user=<auth user id> (a player's
   // "Message coach" on Home) to open (or start) a direct thread.
+  const linkKey = ['conversation', 'player', 'user', 'prefill'].map((k) => params.get(k) ?? '').join('\u0000');
   useEffect(() => {
-    if (loading || handledParams.current) return;
+    if (loading || handledParams.current === linkKey) return;
+    const first = handledParams.current === null;
+    handledParams.current = linkKey;
     const conv = params.get('conversation');
     const player = params.get('player');
     const user = params.get('user');
     // Read once: the entry is deleted as it is taken, so Back or a reload never brings the draft back.
     const pre = takePrefill(params);
-    handledParams.current = true;
-    setParamsDone(!conv && !player && !user && !pre);
+    if (first) setParamsDone(!conv && !player && !user && !pre);
     if (params.get('prefill')) router.replace('/golf/dashboard/messages', { scroll: false });
     if (pre) {
       // Only people on this team, with an account, are written to; anyone else is left out and the coach is told.
@@ -160,8 +169,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
       pendingDraft.current = pre.draft || null;
       setPrefill({ to, draft: pre.draft, title: pre.title ?? '' });
     } else if (conv) {
-      setSelectedId(conv);
       router.replace('/golf/dashboard/messages', { scroll: false });
+      // A thread the list doesn't hold yet (one just started with the viewer) is looked for once more before it is
+      // opened; one that still isn't there says so (CH-7015, MessagesScreen) rather than opening nothing.
+      if (convs.length && !convs.some((c) => c.id === conv)) void refetch().catch(() => undefined).then(() => select(conv));
+      else select(conv);
     } else if (player || user) {
       const person = data.directory.find((p) => (player ? p.playerId === player : p.userId === user));
       router.replace('/golf/dashboard/messages', { scroll: false });
@@ -176,8 +188,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
       }
       void startDirect(person.userId);
     }
-    // startDirect is stable enough for a one-shot deep link.
-  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
+    // startDirect and select are stable enough for a deep link taken once per address.
+  }, [loading, linkKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const select = useCallback(
     (id: string | null) => {
@@ -186,10 +198,21 @@ export function Messages({ data }: { data: ChMessagesData }) {
         void msgs.markRead();
       } else setAutoOpened(null);
       if (id) setSelectedAnnId(null);
+      // A search hit sets its own target after this (openHit); any other pick leaves the last one behind.
+      setFocusMessageId(null);
+      setFoundMessageId(null);
       setSelectedId(id);
     },
     [autoOpened, selectedId, msgs],
   );
+  /** A search hit's message, gone to in the open thread (useFocusMessage), then marked for a moment. */
+  const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
+  const [foundMessageId, setFoundMessageId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!foundMessageId) return;
+    const t = window.setTimeout(() => setFoundMessageId(null), FOUND_FOR_MS);
+    return () => window.clearTimeout(t);
+  }, [foundMessageId]);
 
   const fail = useCallback(
     (surface: string, err: unknown, title: string, hint: string, code: string, withReason = true) => {
@@ -258,11 +281,20 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   const createGroup = useCallback(
     async (userIds: string[], title: string): Promise<boolean> => {
+      // A coach's group is a broadcast to the players chosen, so it needs at least one (createGolfTeamBroadcast refuses
+      // none). New message says so before it gets here (CH-7105); this holds the line for any other caller, and for a
+      // group whose chosen players have no player id here.
+      const playerIds = userIds.map((u) => people.get(u)?.playerId).filter((x): x is string => !!x);
+      if (groupLacksPlayer(data.role, userIds, data.directory) || (data.role === 'coach' && playerIds.length === 0)) {
+        haptic('warning');
+        toast({ tone: 'error', title: "Couldn’t create the group", body: 'Choose at least one player. Coaches join the group once it exists.', code: 'CH-7105' });
+        return false;
+      }
       return attempt('createGroup', { failed: "Couldn’t create the group", hint: 'Try again in a moment.', code: 'CH-7003' }, async () => {
         chTrail('messages create group');
         const res =
           data.role === 'coach'
-            ? await createGolfTeamBroadcast({ teamId: data.teamId, title, selectedPlayerIds: userIds.map((u) => people.get(u)?.playerId).filter((x): x is string => !!x) })
+            ? await createGolfTeamBroadcast({ teamId: data.teamId, title, selectedPlayerIds: playerIds })
             : await createGolfConversation(userIds, data.teamId);
         if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not create the group');
         // A coach's group can include other coaches (D-45): a broadcast adds players only, so they join right after.
@@ -289,15 +321,18 @@ export function Messages({ data }: { data: ChMessagesData }) {
         }
       });
     },
-    [data.role, data.teamId, people, refetch, toast, attempt, landDraft],
+    [data.role, data.teamId, data.directory, people, refetch, toast, attempt, landDraft],
   );
 
   const [members, setMembers] = useState<ChMember[] | null>(null);
   const [membersError, setMembersError] = useState(false);
   const [membersAttempt, setMembersAttempt] = useState(0);
+  /** The next members read keeps the list on screen (after a removal) instead of drawing the skeleton. */
+  const quietMembers = useRef(false);
   const selected = convs.find((c) => c.id === selectedId) ?? null;
   useEffect(() => {
-    setMembers(null);
+    if (!quietMembers.current) setMembers(null);
+    quietMembers.current = false;
     setMembersError(false);
     if (!selected?.group) return;
     let live = true;
@@ -420,7 +455,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
             done: t.assignments.filter((x) => x.status === 'completed').length,
             total: t.assignments.length,
           })),
-        documents: d.documents.filter((x) => x.document).map((x) => ({ id: x.document!.id, title: x.document!.title, url: x.document!.file_url, size: x.document!.file_size })),
+        // Opened through a signed link (openAnnouncementDocument), never the stored file_url (Fairway #1259).
+        documents: d.documents.filter((x) => x.document).map((x) => ({ id: x.document!.id, title: x.document!.title, size: x.document!.file_size })),
       };
     },
     [data.directory, data.viewerPlayerId],
@@ -665,7 +701,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     deleteConversation: canHide
       ? async () => {
           if (!selectedId) return false;
-          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
+          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7025' }, async () => {
             const res = await hideGolfConversation(selectedId);
             if (!res.success) throw new Error(res.error);
             haptic('success');
@@ -686,6 +722,25 @@ export function Messages({ data }: { data: ChMessagesData }) {
         setMembersAttempt((n) => n + 1);
         await refetch();
       }),
+    removeMember: async (userId, name) => {
+      if (!selectedId) return false;
+      // The row leaves at once; a refusal puts the list back as it was (removeGolfGroupMember: the creator only, never
+      // their own row, a team group only).
+      const before = members;
+      setMembers((list) => list?.filter((m) => m.userId !== userId) ?? list);
+      const ok = await attempt('removeMember', { failed: `Couldn’t remove ${firstName(name)}`, hint: 'They’re still in the group. Try again in a moment.', code: 'CH-7024' }, async () => {
+        const res = await removeGolfGroupMember(selectedId, userId);
+        if ('error' in res) throw new Error(res.error);
+        haptic('success');
+        toast({ title: `Removed ${firstName(name)} from ${selected?.title ?? 'the group'}` });
+        // As Fairway does after a removal: the list and the group's members are read again.
+        quietMembers.current = true;
+        setMembersAttempt((n) => n + 1);
+        await refetch();
+      });
+      if (!ok) setMembers(before);
+      return ok;
+    },
     files: loadFiles,
     directory: data.directory,
     directoryError: data.directoryError,
@@ -703,7 +758,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
     },
 
     searchMessages,
-    openHit: (h) => select(h.conversationId),
+    // As Fairway's search does: open the thread, then go to the matched message (useFocusMessage) and mark it.
+    openHit: (h) => {
+      select(h.conversationId);
+      setFocusMessageId(h.messageId);
+    },
+    focusMessageId,
+    foundMessageId,
+    messageFocused: (id) => {
+      setFocusMessageId(null);
+      setFoundMessageId(id);
+    },
 
     mute,
     muteError,
@@ -715,7 +780,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
         if (!r.success) throw new Error(r.error);
         setMuteState(r.data);
         haptic('success');
-        toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });
+        // One mute toast at a time: a quick mute, unmute, mute leaves only the last (CH-1910).
+        toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
       });
     },
 
@@ -732,6 +798,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
       }
     },
     announcementDetail,
+    // A short-lived signed link per tap, as Fairway's announcement card and the Team Hub open a document (#1259).
+    openAnnouncementDocument: async (documentId) => {
+      const res = await getPreviewUrl(documentId);
+      if (res.data?.url) return { url: res.data.url };
+      chReport(new Error(res.error || 'announcement document link failed'), { surface: 'messages.announcementDocument', severity: 'low' });
+      return { url: null, noContent: !!res.noContent };
+    },
     acknowledge: (id) =>
       attempt('acknowledge', { failed: "Couldn’t send your acknowledgement", hint: 'Try again in a moment.', code: 'CH-7012' }, async () => {
         const r = await acknowledgeAnnouncement(id);

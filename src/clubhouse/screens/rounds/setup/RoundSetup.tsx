@@ -5,14 +5,18 @@ import Link from 'next/link';
 import { ArrowRight, ChartColumn, ChevronLeft, MapPin, Medal, Search } from 'lucide-react';
 import type { ChRoundType } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
+import { roving } from '../../../ui/use-roving';
+import { Segmented } from '../../../ui/Segmented';
 import { useAction } from '../../../lib/use-action';
 import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
+import { DateField } from '../../../ui/DateField';
 import { InlineNotice } from '../../../ui/Notices';
 import { Select } from '../../../ui/Select';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { AddCourseSheet } from './AddCourseSheet';
 import { CoursePicker } from './CoursePicker';
+import { clearSetupDraft, readSetupDraft, restoreSetupDraft, useSetupDraftKey, writeSetupDraft } from './draft';
 import { HoleConfig } from './HoleConfig';
 import { holesForRound, parOf, setupBlocker, startPosition, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPick, type ChSetupPorts, type ChSetupQualifier, type ChStartFailure, type ChStartResult } from './shape';
 import '../../../styles/rounds-setup.css';
@@ -37,6 +41,8 @@ export interface RoundSetupProps {
    * as well (WKWebView reports false on reachable networks) and refuses an offline start itself, with its own words.
    */
   isOffline?: () => boolean;
+  /** The signed-in player: with the page's team, the key of the setup kept for this tab (draft.ts). None, nothing is kept. */
+  viewerId?: string | null;
 }
 
 type HolesLoad = { state: 'idle' } | { state: 'loading' } | { state: 'failed'; error: string };
@@ -50,7 +56,7 @@ function ScorecardHead() {
   return (
     <div className="ch-rsu-card__h ch-rsu-ph">
       <div>
-        <h3>Scorecard</h3>
+        <h2>Scorecard</h2>
       </div>
     </div>
   );
@@ -62,7 +68,7 @@ function ScorecardHead() {
  * screen draws; the round screen's ports read the course library and start
  * the round (docs/clubhouse/ROUNDS_PLAN.md).
  */
-export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, preselectQualifierId = null, isOffline }: RoundSetupProps) {
+export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, preselectQualifierId = null, isOffline, viewerId = null }: RoundSetupProps) {
   const [form, setForm] = useState<ChSetupForm>({
     pick: null,
     type: 'practice',
@@ -80,6 +86,25 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
   const [holesLoad, setHolesLoad] = useState<HolesLoad>({ state: 'idle' });
   const [lastTee, setLastTee] = useState<string | null>(null);
   const set = (patch: Partial<ChSetupForm>) => setForm((f) => ({ ...f, ...patch }));
+  // The setup kept for this tab comes back after mount (never during hydration), unless the page opened on a qualifier
+  // to play; from then on every change is kept, until the round starts.
+  const draftKey = useSetupDraftKey(viewerId);
+  const draftLoaded = useRef(false);
+  useEffect(() => {
+    if (!preselectQualifierId) {
+      const draft = readSetupDraft(draftKey);
+      if (draft) setForm(restoreSetupDraft(draft, qualifiers));
+    }
+    // Mount only.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // The first run is the default form, before the draft above has landed: it must not overwrite the draft.
+    if (!draftLoaded.current) {
+      draftLoaded.current = true;
+      return;
+    }
+    writeSetupDraft(draftKey, form);
+  }, [draftKey, form]);
   // A new round is a full-screen flow on the phone: the dock holds Start, and Back is in the band.
   usePhoneTabsHidden(true);
   // P011-D1: the band is the screen's own top bar (Back, the step), so the shell's top bar and bell go too.
@@ -104,12 +129,26 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
   );
 
   const pickTee = (
-    course: { id: string | null; name: string; place: string | null },
+    course: { id: string | null; name: string; place: string | null; city?: string | null; state?: string | null; saved?: ChSetupCourse['saved'] },
     tee: { id: string; name: string; color: ChSetupPick['teeColor']; rating: number | null; slope: number | null; yards: number | null },
   ) => {
     setPicker(null);
     set({
-      pick: { courseId: course.id, courseName: course.name, place: course.place, teeId: tee.id, teeName: tee.name, teeColor: tee.color, rating: tee.rating, slope: tee.slope, yards: tee.yards },
+      // A saved course ("Your courses") starts as Fairway's saved-course start does: its library link, if any, and no tee.
+      pick: {
+        courseId: course.saved ? course.saved.courseId : course.id,
+        courseName: course.name,
+        place: course.place,
+        city: course.city,
+        state: course.state,
+        savedId: course.saved?.id ?? null,
+        teeId: course.saved ? null : tee.id,
+        teeName: tee.name,
+        teeColor: tee.color,
+        rating: tee.rating,
+        slope: tee.slope,
+        yards: tee.yards,
+      },
       holes: [],
       baseline: null,
       saveCourse: false,
@@ -132,7 +171,10 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
     'rounds.start',
     async (f) => {
       const r = await ports.start(f);
-      if (r.ok) onStarted(r.data.roundId);
+      if (r.ok) {
+        clearSetupDraft(draftKey);
+        onStarted(r.data.roundId);
+      }
       return r.ok ? { success: true, data: r } : { success: false, error: r.error, data: r };
     },
     (f) => ({ done: '', failed: `Couldn’t start your round at ${f.pick?.courseName ?? 'the course'}`, hint: 'Nothing was saved yet. Try again in a moment.', code: 'CH-11007', offline: isOffline }),
@@ -170,7 +212,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
   const p = form.pick;
 
   return (
-    <div className="ch-rsu" data-ui="clubhouse">
+    <main className="ch-rsu" data-ui="clubhouse">
       <div className="ch-rsu-band">
         <Link className="ch-rsu-band__back" href={backHref}>
           <Icon icon={ChevronLeft} size={16} />
@@ -257,74 +299,67 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           <section className="ch-rsu-card" aria-label="Round details">
             <div className="ch-rsu-card__h">
               <div>
-                <h3>Round details</h3>
+                <h2>Round details</h2>
               </div>
             </div>
             <div className="ch-rsu-form">
               <div className="ch-rsu-field">
                 <span>Round type</span>
-                <div className="ch-rsu-seg" role="radiogroup" aria-label="Round type">
-                  {TYPES.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      role="radio"
-                      aria-checked={form.type === t}
-                      onClick={() => {
-                        haptic('select');
-                        set({ type: t, ...(t !== 'qualifier' ? { qualifierId: null, qualifierRound: null } : {}) });
-                      }}
-                    >
-                      {TYPE_LABEL[t]}
-                    </button>
-                  ))}
-                </div>
+                <Segmented<ChRoundType>
+                  block
+                  label="Round type"
+                  value={form.type}
+                  options={TYPES.map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
+                  onChange={(t) => set({ type: t, ...(t !== 'qualifier' ? { qualifierId: null, qualifierRound: null } : {}) })}
+                />
               </div>
               <div className="ch-rsu-2">
-                <label className="ch-rsu-field">
+                <div className="ch-rsu-field">
                   <span>Date</span>
-                  <input
-                    type="date"
+                  <DateField
+                    label="Date"
                     className="ch-rsu-in"
                     value={form.date}
                     max={today}
+                    today={today}
                     aria-invalid={form.date > today || undefined}
                     data-ch-code={form.date > today ? 'CH-11109' : undefined}
-                    onChange={(e) => set({ date: e.target.value })}
+                    onChange={(d) => set({ date: d })}
                   />
-                </label>
+                </div>
                 <div className="ch-rsu-field">
                   <span>Holes</span>
-                  <div className="ch-rsu-seg" role="radiogroup" aria-label="Holes">
-                    {([9, 18] as const).map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        role="radio"
-                        aria-checked={form.count === n}
-                        disabled={n === 18 && form.holes.length > 0 && form.holes.length < 18}
-                        onClick={() => {
-                          haptic('select');
-                          set({ count: n });
-                        }}
-                      >
-                        {n} holes
-                      </button>
-                    ))}
-                  </div>
+                  <Segmented<'9' | '18'>
+                    block
+                    label="Holes"
+                    value={`${form.count}` as '9' | '18'}
+                    options={[
+                      { value: '9', label: '9 holes' },
+                      { value: '18', label: '18 holes', disabled: form.holes.length > 0 && form.holes.length < 18 },
+                    ]}
+                    onChange={(n) => set({ count: Number(n) as 9 | 18 })}
+                  />
+                  {/* Why 18 is off: the card the tees came with has nine. */}
+                  {form.holes.length > 0 && form.holes.length < 18 && <span className="ch-rsu-field__hint">These tees have 9 holes</span>}
                 </div>
               </div>
-              {played.length > 0 && (
-                <div className="ch-rsu-field">
-                  <label htmlFor="ch-rsu-start">Starting hole</label>
+              {/* Always shown so a shotgun start is findable; it waits for the card's holes before it can be set. */}
+              <div className="ch-rsu-field">
+                <label htmlFor="ch-rsu-start">Starting hole</label>
+                {played.length > 0 ? (
                   <Select
                     id="ch-rsu-start"
                     value={String(startHole ?? played[0]!.n)}
                     options={played.map((h) => ({ value: String(h.n), label: `Hole ${h.n}` }))}
                     onChange={(v) => set({ start: Number(v) })}
                   />
-                </div>
-              )}
+                ) : (
+                  <>
+                    <Select id="ch-rsu-start" value="1" options={[{ value: '1', label: 'Hole 1' }]} onChange={() => {}} disabled />
+                    {!p && <span className="ch-rsu-field__hint">Shotgun start? Pick a course, then choose your first hole.</span>}
+                  </>
+                )}
+              </div>
               {form.type === 'qualifier' &&
                 (qualifiers === null ? (
                   <InlineNotice code="CH-11211" title="Your qualifiers didn’t load" body="Play it as a practice round, or come back in a moment." />
@@ -334,7 +369,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
                     No qualifier is open for you right now. Your coach opens one when it&rsquo;s time; until then, play a practice or tournament round.
                   </p>
                 ) : (
-                  <div className="ch-rsu-opts" role="radiogroup" aria-label="Qualifier">
+                  <div className="ch-rsu-opts" role="radiogroup" aria-label="Qualifier" {...roving}>
                     {qualifiers.map((q) => (
                       <button key={q.id} type="button" role="radio" aria-checked={form.qualifierId === q.id} disabled={q.nextRound == null} className="ch-rsu-opt" onClick={() => playQualifier(q)}>
                         <span className="ch-rsu-radio" aria-hidden="true" />
@@ -402,12 +437,11 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
             // CH-11309: before a course, the scorecard's place is held.
             <section className="ch-rsu-card ch-rsu-hc ch-rsu-hc--empty" data-ch-code="CH-11309">
               <ScorecardHead />
+              {/* The hole numbers alone: grey bars beside them read as loading (wave 10). */}
               <div className="ch-rsu-hc__ghost" aria-hidden="true">
                 {Array.from({ length: 9 }, (_, i) => (
                   <span key={i}>
                     <b>{i + 1}</b>
-                    <i />
-                    <i />
                   </span>
                 ))}
               </div>
@@ -421,8 +455,11 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
         <span className="ch-rsu-dock__s" id="ch-rsu-dock-s" role="status" aria-live="polite">
           {p && !blocker ? (
             <>
-              <b>{p.courseName}</b> · {p.teeName} · {played.length} holes · Par {parOf(played)}
-              {startAt > 1 && startHole != null ? ` · Starts on hole ${startHole}` : ''}
+              {/* No-break spaces keep "Par 72" and "18 holes" whole when the phone dock wraps, and bind each "·" to the
+                  segment after it, so a wrapped line starts "· Par 72" instead of ending on a dangling dot (wave 9). */}
+              {/* Nine of an 18-hole card says which nine. */}
+              <b>{p.courseName}</b> ·&nbsp;{p.teeName} ·&nbsp;{form.count === 9 && form.holes.length === 18 ? (form.nine === 'back' ? 'Back nine' : 'Front nine') : <>{played.length}&nbsp;holes</>} ·&nbsp;Par&nbsp;{parOf(played)}
+              {startAt > 1 && startHole != null ? ` ·\u00a0Starts on hole\u00a0${startHole}` : ''}
             </>
           ) : (
             blocker
@@ -461,14 +498,14 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           setAdding(false);
           setPicker({ course: null });
         }}
-        onDone={(pick, holes: ChSetupHole[], count, saveCourse) => {
+        onDone={(pick, holes: ChSetupHole[], count, saveCourse, coursePhoto) => {
           setAdding(false);
           // The course typed in by hand is the latest choice: a tee read still on its way no longer applies.
           holesSeq.current++;
           setHolesLoad({ state: 'idle' });
-          set({ pick, holes, baseline: null, count, nine: 'front', saveCourse });
+          set({ pick, holes, baseline: null, count, nine: 'front', saveCourse, coursePhoto });
         }}
       />
-    </div>
+    </main>
   );
 }

@@ -69,7 +69,7 @@ const NAIA = 'https://www.naia.org/student-athletes/prospective/high-school-stud
 const NJCAA = 'https://ardor-prod-media.s3.us-east-2.amazonaws.com/files/404933495157163011/6b815aea7cf842719e5deeefd7dc9310-NJCAA-Handbook---Bylaws---2026-27-9-9-26.pdf';
 
 /** Division I's age rule: off-campus in-person contact begins Aug 1 before the prospect's junior year (13.1.1.1). */
-const D1_AGE = 'from Aug 1 before junior year';
+const D1_AGE = 'from Aug 1 before their junior year';
 /** Division II's age rule: in-person contact begins June 15 before the prospect's junior year (13.1.1.1). */
 export const D2_AGE = 'from June 15 before junior year';
 const contact = (from: string, to: string, bylaw: string, caveat?: string): ChPeriod => ({
@@ -186,15 +186,17 @@ export interface ChCalendarLine {
   bylaw: string;
 }
 
-/** The sentence for a period: what it is, what it allows in person, and through when. */
+/**
+ * The sentence for a period: what it is, what it allows in person, and through when. A contact period puts its end
+ * (and caveat) beside its name, so the age rule's start ("from Aug 1") never reads as the start of the period.
+ */
 function periodLine(p: ChPeriod): string {
   const through = p.toTime ? `until ${timeLabel(p.toTime)} ${dayLabel(p.to)}` : `through ${dayLabel(p.to)}`;
-  const base =
-    p.kind === 'contact'
-      ? `Contact period · in-person contact allowed${p.ageRule ? ` ${p.ageRule},` : ''} ${through}`
-      : p.kind === 'quiet'
-        ? `Quiet period · in-person contact on campus only, ${through}`
-        : `Dead period · no in-person contact or visits ${through}`;
+  if (p.kind === 'contact') {
+    const head = `Contact period ${through}${p.caveat ? ` (${p.caveat})` : ''}`;
+    return `${head} · ${p.ageRule ? `in-person contact for prospects ${p.ageRule}` : 'in-person contact allowed'}`;
+  }
+  const base = p.kind === 'quiet' ? `Quiet period · in-person contact on campus only, ${through}` : `Dead period · no in-person contact or visits ${through}`;
   return p.caveat ? `${base} (${p.caveat})` : base;
 }
 

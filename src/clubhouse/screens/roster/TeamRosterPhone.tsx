@@ -1,6 +1,5 @@
 'use client';
 
-import { Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ChPlayerRoster, ChTeammate } from '../../data/roster-player';
 import { Avatar } from '../../ui/Avatar';
@@ -20,6 +19,8 @@ import { sortTeammates, teammateLine, type TeamSort } from './team';
 export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRetry: () => void }) {
   const [sort, setSort] = useState<TeamSort>('name');
   const rows = useMemo(() => sortTeammates(data.players, sort), [data.players, sort]);
+  // A roster of one (CH-3309): the player themselves, on a new team. Nothing to sort.
+  const solo = data.players.length === 1 && data.players[0]!.isYou;
 
   return (
     <main className="ch-rsm" aria-label="Roster">
@@ -28,7 +29,14 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
         <header className="ch-rsm-head">
           {!data.playersError && (
             <span className="ch-rsm-kicker">
-              {data.teamName} · <span className="ch-num">{data.players.length}</span> {data.players.length === 1 ? 'player' : 'players'}
+              {data.teamName}
+              {/* With nobody on the roster the count is 0: the team's name says enough (wave 10). */}
+              {data.players.length > 0 && (
+                <>
+                  {' '}
+                  · <span className="ch-num">{data.players.length}</span> {data.players.length === 1 ? 'player' : 'players'}
+                </>
+              )}
             </span>
           )}
           {/* The top bar carries the page's heading; this is the design's large title. */}
@@ -37,31 +45,35 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
           </p>
         </header>
 
+        <TeamCoachesPhone coaches={data.coaches} />
+
         {data.playersError ? (
           <InlineNotice
             code="CH-3210"
             title="The roster didn’t load"
-            body="Your team is safe. Try again, and if it keeps happening the error has already been reported."
+            body="Your team is safe. Try again; the error has been reported."
             onRetry={onRetry}
           />
         ) : data.players.length === 0 ? (
-          <EmptyState size="page" code="CH-3307" icon={Users} title="No one on the roster yet" body="Your teammates appear here once your coach adds them." />
+          <EmptyState size="page" code="CH-3307" shape="people" title="No one on the roster yet" body="Teammates show up here as they join with the team code." />
         ) : (
           <>
-            <div className="ch-rsm-sort">
-              <span>Sort by</span>
-              <Segmented<TeamSort> redraws
-                size="sm"
-                label="Sort players"
-                value={sort}
-                onChange={setSort}
-                options={[
-                  { value: 'name', label: 'Name' },
-                  { value: 'class', label: 'Class' },
-                  { value: 'hcp', label: 'HCP', aria: 'HCP, handicap' },
-                ]}
-              />
-            </div>
+            {!solo && (
+              <div className="ch-rsm-sort">
+                <span>Sort by</span>
+                <Segmented<TeamSort> redraws
+                  size="sm"
+                  label="Sort players"
+                  value={sort}
+                  onChange={setSort}
+                  options={[
+                    { value: 'name', label: 'Name' },
+                    { value: 'class', label: 'Class' },
+                    { value: 'hcp', label: 'HCP', aria: 'HCP, handicap' },
+                  ]}
+                />
+              </div>
+            )}
             <SectionBoundary surface="roster.team" label="The roster" code="CH-3211">
               <ul className="ch-rsm-panel ch-rsm-list" aria-label="Players" data-ch-code="CH-3807">
                 {rows.map((p) => (
@@ -71,10 +83,43 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
                 ))}
               </ul>
             </SectionBoundary>
+            {solo && (
+              <p className="ch-rs-solo" data-ch-code="CH-3309">
+                You’re the first one here. Teammates show up as they join.
+              </p>
+            )}
           </>
         )}
       </div>
     </main>
+  );
+}
+
+/** The team's coaches above the players (wave 7): name and role, plain rows. Left out when the staff didn't load or there is none. */
+function TeamCoachesPhone({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
+  if (!coaches?.length) return null;
+  return (
+    <>
+      <h2 className="ch-rsm-sec is-first" id="ch-rsm-coaches">
+        Coaches
+      </h2>
+      <ul className="ch-rsm-panel ch-rsm-list" aria-labelledby="ch-rsm-coaches" data-ch-code="CH-3808">
+        {coaches.map((c) => (
+          <li key={c.id}>
+            <div className="ch-rsm-row ch-rsm-row--static">
+              <Avatar name={c.name} size={40} />
+              <span className="ch-rsm-row__b">
+                <b>{c.name}</b>
+                <span>{c.role}</span>
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <h2 className="ch-rsm-sec" id="ch-rsm-players">
+        Players
+      </h2>
+    </>
   );
 }
 

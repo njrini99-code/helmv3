@@ -5,7 +5,7 @@ import { Skeleton } from '../../ui/States';
 
 /**
  * Home's phone hero in waiting, in the reader's own shape (the shell's role, as the Qualifiers skeleton's parts): the
- * coach's has the brief's lines above Up next; the player's has none, and its two keys under the card. So when the page
+ * coach's has the brief's lines above Up next, and the card's invitees and action; the player's has none, and its two keys under the card. So when the page
  * lands, Up next and the keys are where their bars were. Without a role (a test, a coach) it draws the coach's.
  */
 export function SkeletonPhoneHero() {
@@ -35,6 +35,13 @@ export function SkeletonPhoneHero() {
         <span className="ch-hm-skel__bar" style={{ width: 120, height: 12 }} />
         <span className="ch-hm-skel__bar" style={{ width: 210, height: 23 }} />
         <span className="ch-hm-skel__bar" style={{ width: 170, height: 14 }} />
+        {/* The coach's card (DayCard) goes on to who is invited and the card's action under them. */}
+        {!player && (
+          <>
+            <span className="ch-hm-skel__bar ch-hm-skel__people" style={{ width: 200, height: 28 }} />
+            <span className="ch-hm-skel__bar ch-hm-skel__act" style={{ width: '100%', height: 48 }} />
+          </>
+        )}
       </span>
       {player && (
         <span className="ch-hm-skel__keys">

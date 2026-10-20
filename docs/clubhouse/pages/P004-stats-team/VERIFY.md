@@ -1,5 +1,13 @@
 # P004 — Stats (team): verification
 
+## 2026-10-19 — Scorecard pass (lane L6a)
+
+Putting rings, par swatch, scrambling dial reference, no captions under an em dash, print.
+
+Vitest `stats-tape` (the tick, the empty caption) and the stats suites pass (20 files, 432 tests, exit 0). Print was checked as a Letter PDF
+from headless Chromium, light and dark: head line (GolfHelm, team and season, day), no controls, trend card, tape, leg grid, putting and
+season bests each whole on a sheet. Not checked: the scrambling tick on screen (the preview fixture gives the dial no reference), a real Safari print.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 
@@ -325,7 +333,8 @@ before, after, baseline or evidence.
   written as text now (40501), and the test fails with the fix taken out
   (checked).
 - v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet"
-  (D-71); not built, owner decision.
+  (D-71): built for Team stats (`StatsTeamFirstRun.tsx`; corrected
+  2026-10-17).
 
 ## 2026-10-02 — Settled WebKit filter-sheet targets
 

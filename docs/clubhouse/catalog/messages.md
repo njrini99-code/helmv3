@@ -14,17 +14,14 @@ assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
 Route `/golf/dashboard/messages` (coach and player) · code
-`src/clubhouse/screens/messages/`, loader
-`src/clubhouse/data/messages.ts` · tests
-`src/clubhouse/__tests__/messages.test.tsx` · preview
+`src/clubhouse/screens/messages/`, loader `src/clubhouse/data/messages.ts` ·
+tests `src/clubhouse/__tests__/messages.test.tsx` · preview
 `/clubhouse-preview/messages`
 (`?state=empty|rail|failed|thread-failed|loading|loading-route|announcement|ann-failed|files-failed|add-failed`)
-and
-`/clubhouse-preview/messages-player`. Below 820px the same numbers hold on the
-phone
-design (`MessagesPhone`, `docs/clubhouse/phone/messages.md`); CH-7018 to
-CH-7021,
-7214, 7215, 7306, 7307, 7409, 7410, 7604, 7704 and 7804 were added with it.
+and `/clubhouse-preview/messages-player`. Below 820px the same numbers hold on
+the phone design (`MessagesPhone`, `docs/clubhouse/phone/messages.md`); CH-7018
+to CH-7021, 7214, 7215, 7306, 7307, 7409, 7410, 7604, 7704 and 7804 were added
+with it.
 
 Messages keeps the live realtime hooks (D-13). Every change runs through one
 helper (`attempt` in `Messages.tsx`) with the same rules as `useAction`:
@@ -56,9 +53,11 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7018 | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) | "Couldn't add Nora" + "Try again in a moment." Done: "Added Nora to Varsity team" | `attempt('addMember')` | messages.test › CH-7018 |
 | CH-7019 | A coach's new group is created, but a coach picked for it couldn't be added (D-45) | "Group created, but Dan wasn't added" + "Add them from Details." (warning haptic) | `createGroup` | messages.test › CH-7019 |
 | CH-7020 | Copying a message fails (phone, from the long-press sheet) | "Couldn't copy the message" + "Try again in a moment." Done: "Copied" | `PhoneThread` | messages.test › CH-7020 |
-| CH-7021 | A shared file won't open (Details › Files) | "Couldn't open Room list · Pinehurst.pdf" + "Try again in a moment." | `FilesPanel`, `FilesSection` | messages.test › CH-7021 |
+| CH-7021 | A shared file won't open (Details › Files, or an announcement's Files) | "Couldn't open Room list · Pinehurst.pdf" + "Try again in a moment."; an announcement file with no stored copy: "That file has no stored copy to open." | `FilesPanel`, `FilesSection`, announcements `openDoc` | messages.test › CH-7021, wiring-p007-messages.test |
 | CH-7022 | Text delivered, attachment metadata refused | "Message sent; attachments not saved". Only unsaved files and the original reply remain; retry sends no copy of delivered text | `sendFiles`, `Composer` | messages.test › CH-7022 |
 | CH-7023 | Attachment send cannot be confirmed | Frozen original text/files/reply, "Couldn’t confirm this send", Retry send; reload restores stored filenames/request identity; queued later draft survives pending Retry and resumes after confirmation | `sendFiles`, `Composer` | messages.test › CH-7023 |
+| CH-7024 | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) | "Couldn’t remove Eli" + the server's reason, or "They’re still in the group. Try again in a moment." The row comes back. Done: "Removed Eli from Varsity team" | `attempt('removeMember')` | wiring-p007-messages.test › a refusal puts the row back |
+| CH-7025 | Deleting a conversation from your inbox fails | "Couldn’t delete the conversation" + "Try again in a moment." Done: "Conversation deleted" (it had shared mute's CH-7011) | `attempt('deleteConversation')` | messages.test › CH-7025 |
 
 ## 71xx Validation
 
@@ -68,14 +67,15 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7102 | An announcement with no title | "Give the announcement a title." | `NewMessage` | messages.test › CH-7102 |
 | CH-7103 | An announcement with no body | "Write what the team needs to know." | `NewMessage` | messages.test › CH-7103 |
 | CH-7104 | A group with no name | "Name the group so players know what it's for." | `NewMessage` | messages.test › CH-7104 |
-| CH-7105 | Nobody chosen | "Choose who to message." / "Choose at least one person." | `NewMessage` | messages.test › CH-7105 |
+| CH-7105 | Nobody chosen, or a coach's group with no player | "Choose who to message." / "Choose at least one person." / "Choose at least one player. Coaches join the group once it exists." (a coach group of coaches only) | `NewMessage` | messages.test › CH-7105, wiring-p007-messages.test |
+| CH-7106 | More than ten files picked for one message (desktop or phone composer, phone New message) | Ten are kept, and a toast: "Up to 10 files per message" + "1 file wasn’t added. Send these, then attach the rest." (warning haptic) | `useAddAttachments` | messages.test › #6 CH-7106 |
 
 ## 72xx Didn't load
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-7201 | Conversations don't load | "Conversations didn’t load" + "Your messages are safe…" Try again | `Rail` | messages.test › CH-7201 |
-| CH-7202 | A conversation's messages don't load | "This conversation didn’t load" + "Nothing was lost…" Try again | `Thread` | messages.test › CH-7202 |
+| CH-7202 | A conversation's messages don't load | "This conversation didn’t load" + "Nothing was lost…" Try again; the composer is off (read-only box, "Replies are off until this loads", Send and Attach disabled, one line under it) | `Thread`, `Composer` | messages.test › CH-7202 |
 | CH-7203 | Message search doesn't load | "Message search didn’t load" + "Conversations above still match by name." Try again | `MessageHits` | messages.test › CH-7203 |
 | CH-7204 | Group members don't load | "Members didn’t load" Try again | `Details` | messages.test › CH-7204 |
 | CH-7205 | The team list doesn't load (New message) | "Your team list didn’t load" Try again | `NewMessage` | messages.test › CH-7205 |
@@ -87,7 +87,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7211 | An announcement crashes | "This announcement couldn't be shown." … | `SectionBoundary messages.announcement` | messages.test › CH-7211 |
 | CH-7212 | The thread crashes | "This conversation couldn't be shown." …; the rail stays | `SectionBoundary messages.thread` | messages.test › CH-7212 |
 | CH-7213 | Details crash | "Details couldn't be shown." … | `SectionBoundary messages.details` | messages.test › CH-7213 |
-| CH-7214 | The shared files don't load (Details) | "Files didn’t load" + "Your messages are fine…" Try again | `FilesPanel`, `FilesSection` | messages.test › CH-7214 |
+| CH-7214 | The shared files don't load (Details) | "Files didn’t load" + "Your messages are safe…" Try again | `FilesPanel`, `FilesSection` | messages.test › CH-7214 |
 | CH-7215 | The Add sheet's team list doesn't load | "The team list didn’t load" Try again | `AddMembersModal` | messages.test › CH-7215 |
 | CH-7216 | A conversation's messages don't refresh while an earlier copy is shown | The messages stay; above them "This conversation may be out of date" + "It didn’t refresh…" Try again | `Thread`, `PhoneThread` | messages.test › CH-7216 |
 | CH-7217 | Pending attachment recovery cannot be checked | "Couldn’t check a pending send" + "Try again before sending another message." Try again; ordinary Send stays locked | `Composer` | messages.test › CH-7217 |
@@ -97,13 +97,13 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-7301 | No conversations yet | "No conversations yet" + (coach) "Start one with a player, or create a team group." | `Rail` | messages.test › CH-7301 |
-| CH-7302 | A rail search or the Unread filter has nothing | "No conversation matches "zzz"." / "Nothing unread. You're caught up." | `Rail` | messages.test › CH-7302 |
-| CH-7303 | No message mentions the search | "No messages mention "bus"." | `MessageHits` | messages.test › CH-7303 |
-| CH-7304 | A thread with no messages | "No messages yet. Say hello to the group." (or the person's first name) | `Thread` | messages.test › CH-7304 |
+| CH-7302 | A rail search or a filter has nothing | Search: "No conversation names match" + Clear search (message hits may follow below); Groups: "No group conversations yet"; Unread: "Nothing unread" + "You’re caught up." + Show all | `Rail`, `PhoneInbox` (`RailEmpty`) | messages.test › CH-7302, #12 |
+| CH-7303 | No message mentions the search | "No messages mention “bus”" (the shared filtered state) | `MessageHits` | messages.test › CH-7303 |
+| CH-7304 | A thread with no messages | "No messages yet" + "Say hello to the group." (or the person’s first name) | `Thread` | messages.test › CH-7304 |
 | CH-7305 | Nothing open | "Start your first conversation" / "Pick a conversation" | `MessagesView` | messages.test › CH-7305 |
 | CH-7306 | Nothing has been shared in the conversation (Details) | "No files shared yet." | `FilesPanel`, `FilesSection` | messages.test › CH-7306 |
 | CH-7307 | Everyone on the team is already in the group (Add) | "Everyone on the team is already in this group." | `AddMembersModal` | messages.test › CH-7307 |
-| CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren’t on a team yet" + "Messages open once you’re on a team roster, with your coaches and teammates." | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
+| CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren’t on a team yet" + "Messages open once you’re on a team roster, with your coaches and teammates." + Open team settings (a coach's Team, a player's Golf profile; the route passes the role) | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
 | CH-7309 | Nothing at all yet: no conversation and no announcement (D-71) | The page empty state: "No conversations yet" + (coach) "Start a thread with the whole team or message a player directly." / (player) "Message a coach or a teammate. Team announcements show up here too." + New message; the rail and thread empties (CH-7301, CH-7305) show only once something is listed | `MessagesFirstRun` (desktop and phone) | messages.test › CH-7309 |
 
 ## 74xx Loading
@@ -125,20 +125,21 @@ the thread with Retry (CH-7016), and the draft is never lost.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-7501 | Delete a message | "Delete this message?" + "It's removed for everyone in the conversation. This can't be undone." | `Modal` | messages.test › CH-7501 |
+| CH-7501 | Delete a message | "Delete this message?" + "It's removed for everyone in the conversation. This can't be undone." + the message quoted, clamped to three lines ("Attachment" for a file alone). Keep it / Delete message | `Modal` | messages.test › CH-7501, #14 |
 | CH-7502 | Leave a group | "Leave Varsity team?" + "You stop getting its messages. Someone in the group can add you back." | `Modal` | messages.test › CH-7502 |
-| CH-7503 | Delete a conversation | "Delete 26-27 Group Chat?" + "It leaves your inbox. The other people keep their copy, and it comes back if someone sends a new message." | `Modal` | messages.test › CH-7503; hide-golf-conversation.test |
+| CH-7503 | Delete a conversation | "Delete 26-27 Group Chat?" + "It leaves your inbox. The other people keep their copy, and it comes back if someone sends a new message." Keep conversation / Delete conversation | `Modal` | messages.test › CH-7503, #19; hide-golf-conversation.test |
+| CH-7504 | Remove a member (the group's creator, never their own row) | "Remove Eli from Varsity team?" + "Eli stops getting its messages. You can add them back from Add." Keep Eli / Remove (warning haptic) | `Modal` (`RemoveMemberModal`) | wiring-p007-messages.test › asks first |
 
 ## 76xx Motion
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-7601 | A message arrives or is sent | It appears in place, no count-up or stagger; the thread keeps its scroll unless you're at the bottom | `Thread` | preview |
+| CH-7601 | A message arrives or is sent | It appears in place, no count-up or stagger; the thread keeps its scroll unless you're at the bottom. Scrolled up, "N new messages" (or, with nothing new, "Jump to latest") takes you down; a thread opened with something unread marks its first unread message with a "New" divider that stays put | `Thread`, `PhoneThread` (`ThreadBelow`, `useNewDivider`) | messages.test › #17; thread-anchor.test; preview |
 | CH-7602 | Someone is typing | Three dots pulse under the last message | `.ch-ms-typing` | preview |
 | CH-7603 | Opening details or a reaction bar | It opens from its button (180ms); the reaction bar rises from the bubble's edge and leaves the same way. A fade alone with reduced motion | `CH_POP`; `Bubble` reaction bar (`AnimatePresence`, `chTween('quick')`) | preview |
-| CH-7604 | A long press on a message (phone) | The message sheet rises (260ms), retaining selected text and its actual timestamp: six reactions, Reply, Copy, and Edit and Delete on your own. Screens push and pop as the shell's CH-1610 | `PhoneThread`, `Modal` | messages.test › CH-7804 (the sheet and its actions); preview (the rise) |
+| CH-7604 | A long press on a message (phone) | The message sheet rises (260ms), retaining selected text, whose it is and its actual timestamp ("Jonah · 2:05 PM", "You · …"): six reactions, Reply, Copy, and Edit and Delete on your own. Screens push and pop as the shell's CH-1610 | `PhoneThread`, `Modal` | messages.test › CH-7804 (the sheet and its actions); preview (the rise) |
 | CH-7605 | Opening another conversation or announcement (desktop) | The new one settles in with a 6px rise (260ms) while the last fades out (180ms), hidden from assistive tech; each keeps its own scroll and a thread opens at its end. The first one a visit opens (the newest thread, or a link's) appears at once. Instant with reduced motion | `Swap` keyed on the pane's turn in `MessagesDesktop` | messages.test › CH-7605; preview (the timing) |
-| CH-7606 | Changing the inbox filter on the phone (All, Unread, Groups) | The chosen chip takes the green tint and ink over the quick beat while the last one lets go; the list under it settles in with a 6px rise (260ms) as the last fades out (180ms), hidden from assistive tech. Typing in Search filters in place. Instant with reduced motion | `.ch-msp-chip` transitions; `Swap` keyed on the filter in `PhoneInbox` | preview (the timing, WebKit 390) |
+| CH-7606 | Changing the inbox filter on the phone (All, Unread, Groups) | The chosen chip takes the green fill and ink (a layer that fades in over the quick beat) while the last one lets go; the list under it settles in with a 6px rise (260ms) as the last fades out (180ms), hidden from assistive tech. Typing in Search filters in place. Instant with reduced motion | `.ch-msp-chip` transitions; `Swap` keyed on the filter in `PhoneInbox` | preview (the timing, WebKit 390) |
 
 ## 77xx Haptics
 

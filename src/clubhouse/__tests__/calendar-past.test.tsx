@@ -1,6 +1,6 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Calendar keyboard and focus (runtime audit 2026-10-14, WebKit): A-09 the View radios' arrows, A-14 the new event's
@@ -34,6 +34,8 @@ vi.mock('@/app/golf/actions/calendar-feeds', () => ({ getCalendarFeeds: a.getCal
 vi.mock('@/app/golf/actions/event-documents', () => ({ getEventDocuments: a.getEventDocuments, attachDocumentToEvent: a.ok, detachDocumentFromEvent: a.ok }));
 vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: a.getDocuments }));
 vi.mock('@/app/golf/actions/attendance', () => ({ getAttendanceReport: a.getAttendanceReport, markAttendance: a.ok }));
+// The linked trip on an open event (LinkedTrip): none, unless a case says otherwise.
+vi.mock('@/app/golf/actions/travel', () => ({ getItineraryForEvent: () => Promise.resolve({ success: true, data: null }) }));
 
 import type { ChCalendarData } from '../data/calendar';
 import { Calendar } from '../screens/calendar/Calendar';
@@ -75,6 +77,16 @@ describe.each([
   ['coach', PREVIEW_CALENDAR],
   ['player', PREVIEW_CALENDAR_PLAYER],
 ] as const)('the %s week', (_role, data) => {
+  // The sample's own day (Wed 14 October 2026, 2:40 PM in New York), never the real clock's: late in the real week
+  // every sample event has ended and none is ahead.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('steps ended events back, names them ended, and washes the past', () => {
     const { container } = wrap(data);
     const past = [...container.querySelectorAll('.ch-ev.is-past')];

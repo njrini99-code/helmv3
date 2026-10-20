@@ -14,12 +14,14 @@ import type { RoundNotices } from './ports';
 import { RecoveryDialog } from './RecoveryDialog';
 import { ReloadBanner, RoundErrorBanner } from './ReloadBanner';
 import { QUALIFIER_CLOSED_REASON, SaveAsPracticeSheet } from './SaveAsPracticeSheet';
-import { cardHoles, outcomeOf, recoveryFacts, summaryHoles, type ChRecovery, type ChRoundSession } from './session';
+import { cardHoles, outcomeOf, postedScore, recoveryFacts, summaryHoles, type ChRecovery, type ChRoundSession } from './session';
 import { useEntryFailureToast } from './failures';
 import '../../../styles/rounds-track.css';
 
 /** After a round posts, its review opens once the check has had a moment (the legacy overlay counted three seconds). */
 export const POSTED_OPEN_MS = 2500;
+/** The review a posted round opens carries this, so the review knows it was just posted and lets its card settle in once (card/just-submitted.ts). */
+const JUST_SUBMITTED = '?just=submitted';
 /** Submitting for this long says it is slow and names a way out (the legacy overlay's 15 second escape). CH-11909. */
 export const SUBMIT_SLOW_MS = 15_000;
 
@@ -234,7 +236,7 @@ export function RoundRuntime({
       ticked.current = id;
       haptic('success');
     }
-    const t = window.setTimeout(() => routerRef.current.push(routesRef.current.review(id)), POSTED_OPEN_MS);
+    const t = window.setTimeout(() => routerRef.current.push(`${routesRef.current.review(id)}${JUST_SUBMITTED}`), POSTED_OPEN_MS);
     return () => window.clearTimeout(t);
   }, [session.completedRoundId]);
 
@@ -265,10 +267,10 @@ export function RoundRuntime({
       <div className="ch-rt-note" data-ch-code="CH-11910">
         <Icon icon={Send} size={15} />
         <span>
-          <b>All holes are in.</b> Review the round, then submit it.
+          <b>All holes are in.</b> Review the round, then post it.
         </span>
-        <Button variant="primary" size="sm" onClick={() => s.current.setShowFinishConfirm(true)}>
-          Review and submit
+        <Button variant="secondary" size="sm" onClick={() => s.current.setShowFinishConfirm(true)}>
+          Review and post
         </Button>
       </div>
     ) : null;
@@ -294,6 +296,7 @@ export function RoundRuntime({
         onNavigateToHole={session.setCurrentHoleIndex}
         onOpenScorecard={() => setSheet('card')}
         holeShots={(i) => session.completedHoleStats[i]?.shots ?? null}
+        onReviewRound={session.pendingFinalStats && !session.submitting ? () => s.current.setShowFinishConfirm(true) : undefined}
         onAutoSave={session.onAutoSave}
         autoSaveInterval={15000}
         autoSaveDisabled={session.autoSaveDisabled}
@@ -348,7 +351,8 @@ export function RoundRuntime({
           course={course}
           shots={shots}
           coach={null}
-          reviewHref={session.completedRoundId ? routes.review(session.completedRoundId) : null}
+          score={postedScore(card)}
+          reviewHref={session.completedRoundId ? `${routes.review(session.completedRoundId)}${JUST_SUBMITTED}` : null}
           error={session.error || null}
           onRetry={() => s.current.submitRetry()}
           onGoBack={() => s.current.submitGoBack()}

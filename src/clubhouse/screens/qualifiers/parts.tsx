@@ -6,8 +6,9 @@ import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 import { endedLabel, rangeLabel, shortRange, yearOf, STATE_LABEL, STATUS_LABEL, type ChQRow, type ChQRowState, type ChQStatus } from './model';
 
 /**
- * Live, Upcoming or Completed. Live is a static dot: no pulse (D-33). A live qualifier past its last day is "Ended · n
- * rounds outstanding", never Live (P009-D3): no dot, since nothing about it is live.
+ * Live, Upcoming or Concluded (the list's own word for a finished one). Live is a static dot: no pulse (D-33). A live
+ * qualifier past its last day is "Ended · n rounds outstanding", never Live (P009-D3): no dot, since nothing about it is
+ * live.
  */
 export function StatusPill({ status, ended = null }: { status: ChQStatus; ended?: { outstanding: number | null } | null }) {
   if (ended) {
@@ -126,4 +127,26 @@ export function qualifierPeek(r: ChQRow, numRounds: number): ChPlayerPeek {
     sub: [r.classYear, `${r.played} of ${numRounds} ${numRounds === 1 ? 'round' : 'rounds'} in`].filter(Boolean).join(' \u00b7 '),
     avg: r.avg,
   };
+}
+
+/**
+ * Thru as dots (owner, 2026-10-16): one per scheduled round, green for each one played. A long qualifier (more than
+ * eight rounds) keeps the figure, since a row of dots that long stops being countable at a glance.
+ */
+export function ThruDots({ played, total }: { played: number; total: number }) {
+  const label = `${played} of ${total} ${total === 1 ? 'round' : 'rounds'}`;
+  if (total > 8) {
+    return (
+      <span className="ch-num" aria-label={label}>
+        {played}/{total}
+      </span>
+    );
+  }
+  return (
+    <span className="ch-qf-dots" role="img" aria-label={label}>
+      {Array.from({ length: total }, (_, i) => (
+        <i key={i} className={i < played ? 'is-on' : undefined} />
+      ))}
+    </span>
+  );
 }

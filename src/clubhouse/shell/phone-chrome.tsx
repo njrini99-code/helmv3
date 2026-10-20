@@ -4,12 +4,15 @@ import { m } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { Ellipsis, Share, type LucideIcon } from 'lucide-react';
 import { CH_DUR, CH_EASE, chSpring, chSpringCurve } from '../lib/motion';
 import { chSupportsLinear } from '../lib/sheet-drag';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { poppedByUA } from '../lib/ua-pop';
+import { Icon } from '../ui/Icon';
 import { PhoneBarParts, type ChPhoneBarParts } from '../ui/PhoneBar';
 import type { ChPhonePushedTop } from './nav';
+import { useClubhouseRole } from './context';
 import { SectionTrigger } from './section-switch';
 
 /**
@@ -17,8 +20,11 @@ import { SectionTrigger } from './section-switch';
  *
  *   <PhoneTop back title action />  the top bar's pushed variant (a back link, a centred title
  *                            and one action) in place of the tab root's title and bell
- *   usePhoneImmersive(open)  a pushed screen (a thread, details) covers the page, so the
- *                            shell's top bar and tab bar go inert
+ *   usePhoneImmersive(open)  a pushed screen with a composer, or the round itself, covers the page
+ *                            and everything on it: the shell's top bar and the dock go
+ *   usePhoneCover(open)      any other pushed screen (a profile, details): the top bar is
+ *                            inert under it as well, but the dock keeps its Resume round
+ *                            accessory, as iOS keeps its tab bar for a push (`dockKept`)
  *   usePhoneHero(on)         a tab root drawn on the green hero (Home): the top bar turns
  *                            green and shows the team in place of the page title
  *   usePhoneTabsHidden(on)   a full-page form (a create form) hides the tab bar, so its
@@ -50,6 +56,9 @@ interface Ctx {
   setHero: (fn: (n: number) => number) => void;
   pushed: number;
   setPushed: (fn: (n: number) => number) => void;
+  /** Pushed screens that cover the page but leave the dock's Resume round accessory (see `usePhoneCover`). */
+  covering: number;
+  setCovering: (fn: (n: number) => number) => void;
 }
 
 const PhoneChromeCtx = createContext<Ctx>({
@@ -67,6 +76,8 @@ const PhoneChromeCtx = createContext<Ctx>({
   setHero: () => {},
   pushed: 0,
   setPushed: () => {},
+  covering: 0,
+  setCovering: () => {},
 });
 
 export function PhoneChromeProvider({ children }: { children: ReactNode }) {
@@ -77,17 +88,41 @@ export function PhoneChromeProvider({ children }: { children: ReactNode }) {
   const [noTabs, setNoTabs] = useState(0);
   const [hero, setHero] = useState(0);
   const [pushed, setPushed] = useState(0);
+  const [covering, setCovering] = useState(0);
   const value = useMemo(
-    () => ({ slot, setSlot, pageTop, setPageTop, rootTop, setRootTop, immersive, setImmersive, noTabs, setNoTabs, hero, setHero, pushed, setPushed }),
-    [slot, pageTop, rootTop, immersive, noTabs, hero, pushed],
+    () => ({ slot, setSlot, pageTop, setPageTop, rootTop, setRootTop, immersive, setImmersive, noTabs, setNoTabs, hero, setHero, pushed, setPushed, covering, setCovering }),
+    [slot, pageTop, rootTop, immersive, noTabs, hero, pushed, covering],
   );
   return <PhoneChromeCtx.Provider value={value}>{children}</PhoneChromeCtx.Provider>;
 }
 
-/** For the shell: whether a page supplies the top bar, whether a pushed screen covers the page, and where the page's top bar goes. */
-export function usePhoneChromeState(): { pageTop: boolean; rootTitle: boolean; immersive: boolean; noTabs: boolean; hero: boolean; pushed: boolean; setSlot: (el: HTMLElement | null) => void } {
-  const { pageTop, rootTop, immersive, noTabs, hero, pushed, setSlot } = useContext(PhoneChromeCtx);
-  return { pageTop: pageTop > 0, rootTitle: pageTop > 0 && rootTop >= pageTop, immersive: immersive > 0, noTabs: noTabs > 0, hero: hero > 0, pushed: pushed > 0, setSlot };
+/**
+ * For the shell: whether a page supplies the top bar, whether a pushed screen covers the page (`immersive`: the top bar,
+ * the section strip and pull to refresh stand down), and where the page's top bar goes. `dockKept` is true while every
+ * covering screen is a plain push (a profile, details): the dock's Resume round accessory stays up over it, as iOS keeps
+ * its tab bar for a push that is not immersive. A composer or the round itself hides the dock whole, as before.
+ */
+export function usePhoneChromeState(): {
+  pageTop: boolean;
+  rootTitle: boolean;
+  immersive: boolean;
+  dockKept: boolean;
+  noTabs: boolean;
+  hero: boolean;
+  pushed: boolean;
+  setSlot: (el: HTMLElement | null) => void;
+} {
+  const { pageTop, rootTop, immersive, covering, noTabs, hero, pushed, setSlot } = useContext(PhoneChromeCtx);
+  return {
+    pageTop: pageTop > 0,
+    rootTitle: pageTop > 0 && rootTop >= pageTop,
+    immersive: immersive > 0 || covering > 0,
+    dockKept: covering > 0 && immersive === 0,
+    noTabs: noTabs > 0,
+    hero: hero > 0,
+    pushed: pushed > 0,
+    setSlot,
+  };
 }
 
 /** While `on`, the phone top bar is the green hero's bar (the v2 phone Home): the team and the bell, on green. */
@@ -110,7 +145,7 @@ export function usePhoneTabsHidden(on: boolean): void {
   }, [on, setNoTabs]);
 }
 
-/** While `open`, a pushed screen covers the page, so the shell's top bar and tab bar go inert. */
+/** While `open`, a pushed screen with a composer (or the round itself) covers the page and its dock: the top bar and the dock go. */
 export function usePhoneImmersive(open: boolean): void {
   const { setImmersive } = useContext(PhoneChromeCtx);
   useLayoutEffect(() => {
@@ -118,6 +153,20 @@ export function usePhoneImmersive(open: boolean): void {
     setImmersive((n) => n + 1);
     return () => setImmersive((n) => n - 1);
   }, [open, setImmersive]);
+}
+
+/**
+ * While `open`, a pushed screen covers the page but is not immersive (a profile, details): the shell's top bar and strip
+ * are inert under it like any pushed screen, and the dock keeps its Resume round accessory (`dockKept`). A screen that
+ * is also immersive wins: the dock goes.
+ */
+export function usePhoneCover(open: boolean): void {
+  const { setCovering } = useContext(PhoneChromeCtx);
+  useLayoutEffect(() => {
+    if (!open) return;
+    setCovering((n) => n + 1);
+    return () => setCovering((n) => n - 1);
+  }, [open, setCovering]);
 }
 
 /** While `present` (a pushed screen is up and not on its way out), the page beneath it draws back and dims (CH-1618). */
@@ -162,13 +211,38 @@ export function placeUnderlay(parts: HTMLElement[], progress: number): void {
   }
 }
 
+/** The spring a hand-thrown pop hands on to the page beneath: the throw's speed and rest, in progress of the distance left. */
+export interface ChUnderlaySpring {
+  /** Progress per second toward the mark at the moment the finger let go. */
+  velocity?: number;
+  rest?: number;
+  hold?: boolean;
+}
+
+/**
+ * What a swipe-back leaves for the page beneath it: the screen leaves on a spring that starts at the finger's speed, and
+ * the page, whose own slide begins a frame later with the screen's exit, takes the same one so the two edges stay
+ * together (use-edge-swipe.ts). Taken once, and only if it is fresh.
+ */
+let releaseSpring: { spring: ChUnderlaySpring; at: number } | null = null;
+const RELEASE_TTL_MS = 1000;
+export function handUnderlaySpring(spring: ChUnderlaySpring): void {
+  releaseSpring = { spring, at: performance.now() };
+}
+function takeUnderlaySpring(): ChUnderlaySpring | undefined {
+  const held = releaseSpring;
+  releaseSpring = null;
+  return held && performance.now() - held.at < RELEASE_TTL_MS ? held.spring : undefined;
+}
+
 /**
  * Slides `parts` to drawn back (1) or rest (0) on the compositor, on the smooth spring the pushed screen rides, from
  * wherever each one is now (mid slide included), so a pop that cuts a push short reverses from there. Returns the
- * running animations; at the end each part is placed for good and its animation let go.
+ * running animations; at the end each part is placed for good and its animation let go. `spring` carries a finger's
+ * speed into it (a swipe back that was thrown).
  */
-export function slideUnderlay(parts: HTMLElement[], to: 0 | 1, running: Animation[] = []): Animation[] {
-  const curve = chSupportsLinear() ? chSpringCurve('smooth') : null;
+export function slideUnderlay(parts: HTMLElement[], to: 0 | 1, running: Animation[] = [], spring?: ChUnderlaySpring): Animation[] {
+  const curve = chSupportsLinear() ? chSpringCurve('smooth', spring) : null;
   const timing: KeyframeAnimationOptions = curve
     ? { duration: curve.ms, easing: curve.linear, fill: 'forwards' }
     : { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})`, fill: 'forwards' };
@@ -256,7 +330,7 @@ export function PhoneUnderlay() {
         const next = underlayParts();
         placeUnderlay(parts.current.filter((el) => !next.includes(el)), 0);
         parts.current = next;
-        running.current = slideUnderlay(next, on ? 1 : 0, running.current);
+        running.current = slideUnderlay(next, on ? 1 : 0, running.current, on ? undefined : takeUnderlaySpring());
       }}
     />
   );
@@ -299,21 +373,45 @@ export function useBackFromMore(): () => void {
 }
 
 /**
+ * The icon action a pushed page's own bar ends with, known from the address alone, so the stand-in can draw it before
+ * the page arrives (the bar then changes only in that the key comes alive, nothing appears late). Only an action that is
+ * always there is drawn: a form's submit joins the bar with the form (it cannot be pressed before the form exists), and
+ * an action that depends on the data (Roster's Invite players) is left to the page. Keep in step with the pages'
+ * `PhoneTop`s: StatsPlayerPhone's Share, QualifierDetailPhone's coach-only actions.
+ */
+export function standInAction(top: ChPhonePushedTop, role: 'coach' | 'player' | null): { icon: LucideIcon; label: string } | null {
+  if (top.form) return null;
+  if (top.title === 'Player stats') return { icon: Share, label: 'Share' };
+  if (top.title === 'Qualifier' && role === 'coach') return { icon: Ellipsis, label: 'Qualifier actions' };
+  return null;
+}
+
+/**
  * The shell's stand-in for a pushed page's own top (CH-1402), drawn from the address (`phonePushedTop`) while the page
- * loads and in the server's first paint: the same back link and title in the same places, so the page's bar replaces
- * it without a jump. The title is plain text, not a heading: the page brings its own. Back works while it loads: to
- * wherever the user came from for a page opened from More, to the page above for one below it; a form's is its plain
- * Cancel, which has nothing to lose yet.
+ * loads and in the server's first paint: the same back link, title and action in the same places, so the page's bar
+ * replaces it without a jump or anything arriving late. The title is plain text, not a heading: the page brings its own,
+ * and the action is a picture of the key (hidden from assistive tech and not pressable: the page's is the real one).
+ * Back works while it loads: to wherever the user came from for a page opened from More, to the page above for one below
+ * it; a form's is its plain Cancel, which has nothing to lose yet.
  */
 export function PushedTopStandIn({ top }: { top: ChPhonePushedTop }) {
   const router = useRouter();
   const backFromMore = useBackFromMore();
+  const role = useClubhouseRole();
   const { parent } = top;
+  const action = standInAction(top, role);
   return (
     <PhoneBarParts
       back={{ label: top.back, chevron: !top.form, onBack: parent ? () => router.push(parent) : backFromMore }}
       title={top.quiet ? <span className="ch-sr-only">{top.title}</span> : top.title}
       heading={false}
+      action={
+        action ? (
+          <span className="ch-pbar__icon" data-ch-standin="" aria-hidden="true">
+            <Icon icon={action.icon} size={20} />
+          </span>
+        ) : undefined
+      }
     />
   );
 }

@@ -42,7 +42,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 43 | 5 | 17 | 63 |
+| `PLAN` | 44 | 5 | 17 | 63 |
 | `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 35 |
 | `STATE_SNAPSHOT` | 8 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 325 | 13 | 71 | 92 |
+| `UNKNOWN` | 333 | 13 | 71 | 92 |
 
 ## Files
 
@@ -393,6 +393,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 4 |
 | `docs/clubhouse/AUDIT_PLAN.md` | current | - | - | - | - |
+| `docs/clubhouse/COMPLETION_PLAN_2026-10-18.md` | current | - | - | - | - |
 | `docs/clubhouse/ROUNDS_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
@@ -892,17 +893,25 @@ them would bury everything above.
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/classes.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/coach-onboarding.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/coach-pending.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/coachhelm.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/demo-entry.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home-player.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/join-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/messages.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/recruiting.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/reset-password.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/roster.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/round-card.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/rounds.md` | current | - | - | yes | - |
 | `docs/clubhouse/phone/section-strip.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/settings.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/shell-gestures.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/staff-invite.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/team-hub.md` | current | - | - | - | - |

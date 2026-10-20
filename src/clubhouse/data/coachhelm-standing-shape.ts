@@ -1,6 +1,7 @@
 import { TEAM_MARKER_MIN_N } from '@/components/golf/coachhelm/v3/StandingBar/types';
 import { fitScale, formatValue, pgaOmissionNote, teamCohortText, toScalePct, valuesDisplayEqual } from '@/components/golf/coachhelm/v3/StandingBar/utils';
 import { computeCounterfactual } from '@/lib/coachhelm/v3/counterfactual/compute';
+import { capByParentSg, parentSgMetric, sgBehindTour } from '@/lib/coachhelm/v3/counterfactual/parent-cap';
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -102,8 +103,14 @@ export interface ChStanding {
   gaps: ChStandGap[];
 }
 
-/** The scoring-average read the screen needs (`golf_player_stats_cache`). */
-export type ChStandBaselineRead = { status: 'ok'; roundsPlayed: number | null; scoringAverage: number | null } | { status: 'failed' };
+/**
+ * The scoring-average read the screen needs (`golf_player_stats_cache`). `attemptsPerRound`: the player's own attempts a round for a
+ * metric the counterfactual sizes by them (putts in each band, sand shots), from the same cache row the generators read them from,
+ * so a row's projection is the one its insight card states.
+ */
+export type ChStandBaselineRead =
+  | { status: 'ok'; roundsPlayed: number | null; scoringAverage: number | null; attemptsPerRound?: Partial<Record<MetricId, number>> }
+  | { status: 'failed' };
 
 /** Rounds a projection needs before it starts from the scoring average: the Fairway loader's own rule (`loadPlayerScoringBaseline`). */
 export const MIN_PROJECTION_ROUNDS = 5;
@@ -213,7 +220,21 @@ export function versus(you: number, other: number, direction: 'higher_better' | 
 
 const oneDecimal = (v: number) => v.toFixed(1);
 
-function toRow(s: PlayerStanding, id: MetricId, baseline: number | null): ChStandRow {
+/**
+ * What closing the gap is worth, when it is worth drawing. Sized by the player's own attempts a round where the cache has them; without
+ * them the counterfactual falls back to a fixed rate (a 17-point 3–5 ft gap read as 1.7 strokes while all of putting was 0.63 behind),
+ * so it is capped at what its strokes-gained category is behind the Tour, and a cap below the noise floor draws nothing.
+ */
+function projectionOf(s: PlayerStanding, id: MetricId, baseline: number, attempts: number | null, cap: number | null) {
+  const cfg = METRIC_RENDER_CONFIG[id];
+  const p = capByParentSg(
+    computeCounterfactual({ metric_id: id, direction: cfg.direction, player_value: s.player_value, pga_value: s.pga_value, player_30d_scoring_avg: baseline, player_attempts_per_round: attempts }),
+    cap,
+  );
+  return p.suppressed || p.current_baseline_score == null || p.projected_score_if_closed == null ? null : p;
+}
+
+function toRow(s: PlayerStanding, id: MetricId, baseline: number | null, attempts: number | null = null, cap: number | null = null): ChStandRow {
   const cfg = METRIC_RENDER_CONFIG[id];
   const womens = s.is_womens === true;
   const tourShown = !s.pga_omitted && Number.isFinite(s.pga_value);
@@ -222,11 +243,7 @@ function toRow(s: PlayerStanding, id: MetricId, baseline: number | null): ChStan
   // The Tour's name on the row: the team's own Tour, strokes gained included, as Stats says "vs Tour" (Q-88, P013 D4).
   const tourLabel = womens ? 'LPGA Tour' : 'Tour';
   const tourRef = womens ? 'the LPGA Tour' : 'the Tour';
-  const projection =
-    tourShown && baseline != null
-      ? computeCounterfactual({ metric_id: id, direction: cfg.direction, player_value: s.player_value, pga_value: s.pga_value, player_30d_scoring_avg: baseline })
-      : null;
-  const worth = projection && !projection.suppressed && projection.current_baseline_score != null && projection.projected_score_if_closed != null ? projection : null;
+  const worth = tourShown && baseline != null ? projectionOf(s, id, baseline, attempts, cap) : null;
   return {
     id,
     label: LABEL[id],
@@ -260,16 +277,18 @@ export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandB
   const roundsPlayed = baseline.status === 'ok' ? baseline.roundsPlayed : null;
   const average = baseline.status === 'ok' && roundsPlayed != null && roundsPlayed >= MIN_PROJECTION_ROUNDS ? baseline.scoringAverage : null;
   const byId = new Map(rows.map((r) => [r.metric_id as string, r]));
+  const attempts = baseline.status === 'ok' ? (baseline.attemptsPerRound ?? {}) : {};
   const drawn: Array<{ id: MetricId; row: ChStandRow }> = [];
   for (const id of METRIC_IDS) {
     const s = byId.get(id);
-    if (s && Number.isFinite(s.player_value)) drawn.push({ id, row: toRow(s, id, average) });
+    if (s && Number.isFinite(s.player_value)) drawn.push({ id, row: toRow(s, id, average, attempts[id] ?? null, sgBehindTour(byId.get(parentSgMetric(id) ?? ''))) });
   }
   const groups: ChStandGroup[] = GROUPS.map((g) => ({ ...g, rows: drawn.filter((d) => groupOf(d.id) === g.id).map((d) => d.row) })).filter((g) => g.rows.length > 0);
   const all = drawn.map((d) => d.row);
   const newest = rows.map((r) => r.computed_at).filter((d): d is string => typeof d === 'string').sort().pop() ?? null;
+  // Strokes gained: total is the sum of the rows, not a part of the game to work on, so it never leads what is most to gain.
   const gaps = all
-    .filter((r): r is ChStandRow & { projection: ChStandProjection } => r.projection != null)
+    .filter((r): r is ChStandRow & { projection: ChStandProjection } => r.projection != null && r.id !== 'sg_total')
     .sort((a, b) => Number(b.projection.strokes) - Number(a.projection.strokes))
     .slice(0, 3)
     .map((r) => ({ id: r.id, label: r.label, strokes: r.projection.strokes }));

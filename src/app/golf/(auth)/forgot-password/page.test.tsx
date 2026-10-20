@@ -60,6 +60,9 @@ describe('golf ForgotPasswordPage', () => {
 
     expect(await screen.findByText(/check your email/i)).toBeInTheDocument();
     expect(screen.getByText('coach@example.com')).toBeInTheDocument();
+    // Resend stays locked for a short cooldown so a double tap can't send twice.
+    expect(screen.getByText(/resend in/i)).toHaveTextContent('Resend in 0:30');
+    expect(screen.queryByRole('button', { name: /resend the email/i })).not.toBeInTheDocument();
   });
 
   it('clears a validation error once the user edits the field again', async () => {

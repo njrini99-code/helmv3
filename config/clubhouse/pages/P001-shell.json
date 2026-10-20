@@ -124,7 +124,7 @@
     {
       "id": "ACT-P001-SWITCH-TEAM",
       "label": "Switch the active team (a head coach on more than one team)",
-      "component": "src/clubhouse/shell/TeamSwitch.tsx#BrandTeamSwitch",
+      "component": "src/clubhouse/shell/TeamSwitch.tsx#TeamSwitch",
       "handler": "useTeamSwitch.pick (useAction shell.switchTeam)",
       "service": "src/app/golf/actions/team-switcher.ts#setActiveTeam",
       "data": [

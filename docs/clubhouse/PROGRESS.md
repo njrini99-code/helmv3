@@ -152,10 +152,10 @@ and CI evidence is attached to the PR.
 
 ## October 2 installed-plugin repair pass
 
-Frontend Design Premium, Shiro, Intuitive Software Design, Codebase Design
-and Supabase were applied to the current owner feedback. The existing page designs remain
-the reference; root DESIGN.md and UI_OWNERSHIP.md index the runtime owners.
-The secondary flow evidence is registered in AUDITS.md.
+Frontend Design Premium, Shiro, Intuitive Software Design, Codebase Design and
+Supabase were applied to the current owner feedback. The existing page designs
+remain the reference; root DESIGN.md and UI_OWNERSHIP.md index the runtime
+owners. The secondary flow evidence is registered in AUDITS.md.
 
 The owner requested Apple Messages display and behavior with the existing
 green/ivory palette. Phone threads group bubbles with terminal tails, keep
@@ -722,8 +722,9 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
   every other route shows the not-rebuilt notice with a link back.
 - D-2 (2026-09-29): Light theme only. The handoff's chart colours are tuned for
   light paper, and dark mode is not designed. Superseded (owner, 2026-10-08):
-  Clubhouse has a dark theme, "Clubhouse at night" (`src/clubhouse/styles/tokens.css`,
-  the dark block), driven by GolfHelm's own Appearance setting.
+  Clubhouse has a dark theme, "Clubhouse at night"
+  (`src/clubhouse/styles/tokens.css`, the dark block), driven by GolfHelm's own
+  Appearance setting.
 - D-3 (2026-09-29): Phone navigation is a bottom tab bar in the ivory-pass
   style, with a selection haptic on tab change. Superseded by D-40 (2026-09-29):
   the tab bar is now the owner's ivory glass design, with role-specific tabs.
@@ -1119,6 +1120,42 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
   Home, Team Hub (coach and player), CoachHelm (coach and player), Classes, then
   Rounds (list, course picker, add a course, setup and scorecard, shot tracking,
   hole complete, review).
+
+- Decisions of 2026-10-19 (lead, under the owner's brief of 2026-10-18: "be
+  creative, exceed expectations, take command, go full auto, complete every
+  aspect of Clubhouse"). Each is cheap to reverse; production deploys,
+  production migrations and the production flag stay with the owner. Plan:
+  [COMPLETION_PLAN_2026-10-18.md](COMPLETION_PLAN_2026-10-18.md).
+  - D-72: Empty sections draw the shape of what will fill them
+    (`ui/EmptyShape.tsx`): the real layout's rules and alignment, no invented
+    content, one sentence and one action. Supersedes D-71's medallion for page
+    empties; first run, filtered empty, no permission and failure stay distinct
+    states.
+  - D-73: The live motion durations are the set (the 2026-10-12 "two duration
+    sets" question): D-64's five steps, the fade-through 120/120/220 ms with a
+    300 ms skeleton hold, the 462 ms smooth spring, loops 1.9 s/2.8 s/900 ms.
+    The rules and the checklist say so and `motion-durations-pinned.test.ts`
+    pins them.
+  - D-74: The folding sidebar keeps its width spring (STATUS decision 6): it is
+    the owner's 2026-10-16 design and how macOS sidebars move; `clubhouse:css`
+    is clean against main. Frame cost is measured on a production build before
+    turn-on.
+  - D-75: Desktop is a keyboard tool: ⌘K palette (sections, people the role
+    already sees, actions the role can take), G then a letter, `?` for the
+    sheet, tooltips that carry shortcuts, right-click menus that mirror each
+    row's own actions. Nothing fires while typing; nothing on the phone.
+  - D-76: Clubhouse date and time fields replace browser inputs everywhere
+    (values unchanged); times are 12-hour until Settings offers a 24-hour
+    choice.
+  - D-77: Every way in has a Clubhouse screen (reset password, join by code,
+    staff invitation, new coach, waiting for approval, demo), calling the same
+    actions; the front-door flag stays off in production.
+  - D-78: The native launch colour stays Fairway's canvas while the app serves
+    Fairway (Q-140); it changes in the native build that ships with Clubhouse
+    on.
+  - D-79: A finished round is a scorecard to keep: it settles in once after a
+    submit, prints on one page and exports an image drawn on the device (player,
+    course, Golfhelm foot). No share endpoint or public URL.
 
 ## Open owner questions
 
@@ -1709,8 +1746,8 @@ decision named.
 - Q-120 (open, 2026-09-30; held) Submit has no server-side version check, so a
   stale device can overwrite newer holes. Draft migration
   `20261001000000_submit_round_expected_updated_at.sql` is HELD for review.
-  The app sends `expected_updated_at` on `agent/clubhouse-release`, not in the
-  build production serves; the migration is not applied to production.
+  The app sends `expected_updated_at` since #2189, which production serves
+  (re-checked 2026-10-17); the migration is not applied to production.
 - Q-121 (open, 2026-09-30; deferred) The Demo write journeys (Calendar
   create/edit/cancel, round submit) push to the whole Demo roster, and the one
   device token on it is the owner's test player phone. Emails can be stopped
@@ -1791,14 +1828,15 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
-- Q-152 (answered 2026-10-02, owner: keep the built version, b359c0414) Past events fade to 0.45 to 0.55 opacity
-  (the board: `m.css` `.m-ev.is-past` 0.55, `.m-ag.is-past` 0.5, `m-home.css`
-  `.mh-tl__r.is-past` 0.45), so their text measures 2.3:1 to 3.6:1 on the phone
-  Calendar (title 3.6, times and place 2.3). The recession is deliberate and the
-  row stays readable at a glance; the failure is the text. Recommended: keep the
-  fade on the row's surface and rule, hold the text at 4.5:1 (secondary ink for
-  the title, tertiary for the rest), and let the "now" line carry the split.
-  Calendar, Home's timeline and the agenda share it.
+- Q-152 (answered 2026-10-02, owner: keep the built version, b359c0414) Past
+  events fade to 0.45 to 0.55 opacity (the board: `m.css` `.m-ev.is-past` 0.55,
+  `.m-ag.is-past` 0.5, `m-home.css` `.mh-tl__r.is-past` 0.45), so their text
+  measures 2.3:1 to 3.6:1 on the phone Calendar (title 3.6, times and place
+  2.3). The recession is deliberate and the row stays readable at a glance; the
+  failure is the text. Recommended: keep the fade on the row's surface and rule,
+  hold the text at 4.5:1 (secondary ink for the title, tertiary for the rest),
+  and let the "now" line carry the split. Calendar, Home's timeline and the
+  agenda share it.
 - Q-151 (open, 2026-10-01; not built) The shot screen's hole strip draws 34px
   chips (the board, `rounds-track.css`), and the 96px phone map's shot numbers
   draw at 7.5px (an SVG scaled down). `MOBILE.md` asks for 44px targets and the
@@ -3261,8 +3299,8 @@ shows the options as they were put.
   written with updateGolfEvent (explicit adds and removes, never the whole
   team). Publish saves the trip once (kept by id, so a Retry after a failed
   travelers write writes only the travelers) then who travels. New announcement
-  offers the next trip's travelers as an audience ("`<trip>` travelers · N"). New
-  states CH-10210, CH-10211, CH-10312, CH-10313. Not built: the board's
+  offers the next trip's travelers as an audience ("`<trip>` travelers · N").
+  New states CH-10210, CH-10211, CH-10312, CH-10313. Not built: the board's
   class-clash line on the Travelers step (Team Hub doesn't read class schedules;
   Q-84). hub 101/101, 6 of 6 mutations caught.
 - 2026-09-30 · Rounds entry states (Q-81) · the four states the live round flow
@@ -3344,11 +3382,12 @@ captures were inspected for layout, spacing and clipping. The Roster capture
 is the base roster, despite the helper's player-peek label; it does not prove
 an open peek. Phone Notifications captures add section-state evidence below.
 
-An overloaded overlapping typecheck/build/browser run was interrupted to
-reduce memory pressure. An early raw-click probe did not switch sections in that run and is excluded
-from acceptance. The final probe waits for a known hydrated section before
-measuring. A transient outgoing desktop node exists until its zero-duration
-exit is cleaned up; subsequent settled/rapid checks confirm only one section.
+An overloaded overlapping typecheck/build/browser run was interrupted to reduce
+memory pressure. An early raw-click probe did not switch sections in that run
+and is excluded from acceptance. The final probe waits for a known hydrated
+section before measuring. A transient outgoing desktop node exists until its
+zero-duration exit is cleaned up; subsequent settled/rapid checks confirm only
+one section.
 
 ## Post-repair browser matrix — 2026-10-06
 

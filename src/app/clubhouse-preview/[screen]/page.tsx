@@ -20,7 +20,7 @@ import { ClassesSkeleton } from '@/clubhouse/screens/classes/ClassesSkeleton';
 import { PREVIEW_CLASSES, PREVIEW_CLASSES_CLEAR, PREVIEW_CLASSES_EMPTY, PREVIEW_CLASSES_FAILED, PREVIEW_CLASSES_MIXED, PREVIEW_CLASSES_PARTIAL } from '@/clubhouse/preview/fixtures-classes';
 import '@/clubhouse/styles/classes.css';
 import { PREVIEW_HUB_COACH, PREVIEW_HUB_COACH_EMPTY, PREVIEW_HUB_COACH_FAILED, PREVIEW_HUB_PLAYER, PREVIEW_HUB_PLAYER_EMPTY, PREVIEW_HUB_PLAYER_FAILED } from '@/clubhouse/preview/fixtures-hub';
-import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_EVENTS } from '@/clubhouse/preview/fixtures-player-home';
+import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_EVENTS, PREVIEW_PLAYER_HOME_NO_ROUNDS } from '@/clubhouse/preview/fixtures-player-home';
 import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
 import { PreviewError } from '@/clubhouse/preview/PreviewError';
 import { Roster } from '@/clubhouse/screens/roster/Roster';
@@ -72,6 +72,8 @@ import {
   PREVIEW_HOME_EMPTY,
   PREVIEW_HOME_FAILED,
   PREVIEW_HOME_NO_EVENTS,
+  PREVIEW_HOME_EVENTS_ONLY,
+  PREVIEW_HOME_NO_ROUNDS,
   PREVIEW_HOME_NOW,
   PREVIEW_PLAYER as PREVIEW_PLAYER_USER,
   PREVIEW_SHELL,
@@ -119,9 +121,9 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  * handoff's sample data, with no auth and no database, for comparison with
  * design/handoff/screenshots. 404 in production.
  *
- *   /clubhouse-preview/home   ?state=empty | noevents | failed | loading | error   (empty is the first-run page)
+ *   /clubhouse-preview/home   ?state=empty | eventsonly | norounds | noevents | failed | loading | error   (empty and eventsonly are the first-run page)
  *   any screen &at=HH:MM holds the global light; &round=1 adds a round in progress (the Resume accessory)
- *   /clubhouse-preview/home-player ?state=empty | noevents | failed | loading   (Theo; empty is the first-run page)
+ *   /clubhouse-preview/home-player ?state=empty | norounds | noevents | failed | loading   (Theo; empty is the first-run page)
  *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
  *   /clubhouse-preview/rounds ?state=idle | many | empty | noseason | failed | unfinished-failed | failwrites   (Jonah)
  *   /clubhouse-preview/round ?state=coach | noshots | noholes | total | holebyhole | nosg   (a round's review)
@@ -195,7 +197,7 @@ export default async function ClubhousePreview({
           <PreviewError kind="unknown" />
         ) : (
           <CoachHome
-            data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : PREVIEW_HOME}
+            data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : state === 'eventsonly' ? PREVIEW_HOME_EVENTS_ONLY : state === 'norounds' ? PREVIEW_HOME_NO_ROUNDS : PREVIEW_HOME}
             now={PREVIEW_HOME_NOW}
           />
         ),
@@ -207,7 +209,7 @@ export default async function ClubhousePreview({
           <HomeSkeleton />
         ) : (
           <PlayerHome
-            data={state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : PREVIEW_PLAYER_HOME}
+            data={state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : state === 'norounds' ? PREVIEW_PLAYER_HOME_NO_ROUNDS : PREVIEW_PLAYER_HOME}
             now={PREVIEW_HOME_NOW}
           />
         ),

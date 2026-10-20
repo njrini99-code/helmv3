@@ -49,6 +49,13 @@ const blockedTimeSchema = z.object({
   allDay: z.boolean().optional(),
   recurrenceRule: z.string().optional(),
   description: z.string().max(1000).optional(),
+  /**
+   * Makes the add safe to repeat. The caller makes one id per attempt and keeps it across a Retry; it becomes the
+   * block's primary key, so a repeat after a lost reply hits the key instead of adding the block twice, and the
+   * existing row is returned as the answer (only once it is read back as this coach's own block with the same
+   * title and start). Without it the add behaves as it always has.
+   */
+  requestId: z.string().uuid().optional(),
 });
 /**
  * Add coach blocked time
@@ -78,10 +85,12 @@ async function addCoachBlockedTimeImpl(
     // Validate input
     const validatedData = blockedTimeSchema.parse(data);
 
-    // Insert blocked time
+    // Insert blocked time. The request id IS the row id, so a repeat of the same add collides on the primary key
+    // instead of inserting a second block.
     const { data: blockedTime, error } = await supabase
       .from('golf_coach_blocked_time')
       .insert({
+        ...(validatedData.requestId ? { id: validatedData.requestId } : {}),
         coach_id: coach.id,
         title: validatedData.title,
         start_date: validatedData.startDate,
@@ -95,6 +104,31 @@ async function addCoachBlockedTimeImpl(
       })
       .select('id')
       .single();
+
+    if (error && validatedData.requestId && (error as { code?: string }).code === '23505') {
+      // The id is taken. This is a repeat of an add that already landed (the reply was lost) only if the row is
+      // read back as this coach's own block with the same title and start. Anything else, or a failed read, falls
+      // through to the insert's own error: the repeat is refused rather than guessed.
+      const { data: existing, error: existingError } = await supabase
+        .from('golf_coach_blocked_time')
+        .select('id, coach_id, title, start_date, start_time')
+        .eq('id', validatedData.requestId)
+        .eq('coach_id', coach.id)
+        .maybeSingle();
+      const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : null);
+      if (
+        !existingError &&
+        existing &&
+        existing.coach_id === coach.id &&
+        existing.title === validatedData.title &&
+        existing.start_date === validatedData.startDate &&
+        hhmm(existing.start_time) === hhmm(validatedData.startTime)
+      ) {
+        revalidatePath('/golf/dashboard/calendar');
+        updateTag(CACHE_TAGS.CALENDAR);
+        return { success: true, data: { id: existing.id } };
+      }
+    }
 
     if (error) {
       return { success: false, error: 'Failed to add blocked time' };

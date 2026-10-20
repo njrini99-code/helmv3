@@ -7,6 +7,7 @@ import { useDialogLifetime } from '../lib/dialog-lifetime';
 import { useSheetDrag } from '../lib/sheet-drag';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from './Icon';
+import { Tooltip } from './Tooltip';
 
 /**
  * Dialog on the native <dialog> top layer: focus is trapped and Esc closes
@@ -23,10 +24,13 @@ export function Modal({
   icon,
   width = 520,
   footer,
+  action,
   children,
   code,
   initialFocus,
 }: {
+  /** A control in the head beside Close (the course picker's Add a course). */
+  action?: ReactNode;
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
   /** A selector inside the sheet that takes focus as it opens instead of the heading (a new item's first field). */
@@ -72,7 +76,8 @@ export function Modal({
       {retainContent(open && (
         <div className="ch-modal__panel">
           <div className="ch-modal__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
-          <header className="ch-modal__head" onPointerDown={drag.onPointerDown}>
+          {/* A header, so the phone's chrome rules (no text selection under a drag) apply, but no second banner landmark. */}
+          <header className="ch-modal__head" role="none" onPointerDown={drag.onPointerDown}>
             {icon && (
               <span className="ch-modal__icon ch-well-soft">
                 <Icon icon={icon} size={17} />
@@ -84,9 +89,12 @@ export function Modal({
               </h2>
               {description && <p id={descriptionId}>{description}</p>}
             </div>
-            <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={onClose}>
-              <Icon icon={X} size={15} />
-            </button>
+            {action && <div className="ch-modal__action">{action}</div>}
+            <Tooltip label="Close" shortcut={['Esc']}>
+              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={onClose}>
+                <Icon icon={X} size={15} />
+              </button>
+            </Tooltip>
           </header>
           {children && <div className="ch-modal__body">{children}</div>}
           {footer && <footer className="ch-modal__foot">{footer}</footer>}

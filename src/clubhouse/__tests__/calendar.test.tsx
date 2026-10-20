@@ -35,6 +35,7 @@ const a = vi.hoisted(() => ({
   createGolfEvent: vi.fn(),
   updateGolfEvent: vi.fn(),
   deleteGolfEvent: vi.fn(),
+  deleteGolfEventPermanently: vi.fn(),
   respondToEvent: vi.fn(),
   addCoachBlockedTime: vi.fn(),
   deleteCoachBlockedTime: vi.fn(),
@@ -56,6 +57,7 @@ vi.mock('@/app/golf/actions/calendar-events', () => ({
   createGolfEvent: a.createGolfEvent,
   updateGolfEvent: a.updateGolfEvent,
   deleteGolfEvent: a.deleteGolfEvent,
+  deleteGolfEventPermanently: a.deleteGolfEventPermanently,
   respondToEvent: a.respondToEvent,
 }));
 vi.mock('@/app/golf/actions/calendar-blocked-time', () => ({
@@ -67,6 +69,8 @@ vi.mock('@/app/golf/actions/calendar-feeds', () => ({ getCalendarFeeds: a.getCal
 vi.mock('@/app/golf/actions/event-documents', () => ({ getEventDocuments: a.getEventDocuments, attachDocumentToEvent: a.attachDocumentToEvent, detachDocumentFromEvent: a.detachDocumentFromEvent }));
 vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: a.getDocuments }));
 vi.mock('@/app/golf/actions/attendance', () => ({ getAttendanceReport: a.getAttendanceReport, markAttendance: a.markAttendance }));
+// The linked trip on an open event (LinkedTrip): none, unless a case says otherwise.
+vi.mock('@/app/golf/actions/travel', () => ({ getItineraryForEvent: () => Promise.resolve({ success: true, data: null }) }));
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import GolfCalendarPage from '@/app/golf/(dashboard)/dashboard/calendar/page';
@@ -172,6 +176,102 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
   });
 
+  const moveToast = () => screen.getByText('Moved to 1:45 PM').closest('.ch-toast') as HTMLElement;
+
+  it('the write waits with the toast: a mouse over it pauses both, and it is written once, as the toast closes', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    a.updateGolfEvent.mockResolvedValue({ success: true });
+    const view = wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    fireEvent.pointerOver(moveToast(), { pointerType: 'mouse' });
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+    });
+    // Undo is still on screen, so nothing is written.
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeTruthy();
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    fireEvent.pointerOut(moveToast(), { pointerType: 'mouse', relatedTarget: document.body });
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
+    // Leaving afterwards writes nothing more.
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    view.unmount();
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('Undo after the hover outlasts 4 seconds still puts it back, and nothing is ever written', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const view = wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    fireEvent.pointerOver(moveToast(), { pointerType: 'mouse' });
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+    });
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    view.unmount();
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+  });
+
+  it('Undo pressed twice undoes once and never claims the move was saved; the leaving toast takes no input', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const view = wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    const undo = screen.getByRole('button', { name: 'Undo' });
+    fireEvent.click(undo);
+    fireEvent.click(undo);
+    expect(screen.queryByText('Already saved. Drag it back to undo.')).toBeNull();
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    // Still fading out, the card is inert: the second press reached a toast that takes no input.
+    expect(undo.closest('.ch-toast')!.hasAttribute('inert')).toBe(true);
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+    });
+    view.unmount();
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+  });
+
+  it('an Undo pressed after the move was written (the page was left, or the next move) says it already stands', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    a.updateGolfEvent.mockResolvedValue({ success: true });
+    wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByText('Already saved. Drag it back to undo.')).toBeTruthy();
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:45 – 2:30 PM/);
+    // The next move of the same event writes the first at once; the first toast's Undo and clock leave the second alone.
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(2);
+    expect(a.updateGolfEvent).toHaveBeenLastCalledWith('e9', expect.objectContaining({ startTime: '14:00' }));
+    fireEvent.click(within(screen.getByText('Moved to 2:00 PM').closest('.ch-toast') as HTMLElement).getByRole('button', { name: 'Undo' }));
+    expect(screen.getAllByText('Already saved. Drag it back to undo.').length).toBeGreaterThan(0);
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      vi.advanceTimersByTime(4000);
+    });
+    expect(a.updateGolfEvent).toHaveBeenCalledTimes(3);
+    expect(a.updateGolfEvent).toHaveBeenLastCalledWith('e9', expect.objectContaining({ startTime: '14:15' }));
+  });
+
   it('a series, a class and a player’s view never drag', () => {
     const { unmount } = wrap(cal());
     expect(block(/^Short-game block/).classList.contains('is-draggable')).toBe(false);
@@ -203,6 +303,8 @@ describe('Calendar · new event deep link', () => {
 });
 
 describe('Calendar · saves that fail', () => {
+  // Two replies below freeze the clock to the sample's day; nothing after them runs on it.
+  afterEach(() => vi.useRealTimers());
   it('CH-6101 CH-6001 61202 a new event needs a title; a failed publish keeps the editor with everything as typed', async () => {
     const user = userEvent.setup();
     a.createGolfEvent.mockImplementation(fail);
@@ -526,6 +628,52 @@ describe('Calendar · saves that fail', () => {
     expect(dialog.hasAttribute('open')).toBe(true);
   });
 
+  it('CH-6006 a busy-time add sends a request id and keeps it across a Retry and a reopened sheet, so a lost reply cannot add it twice', async () => {
+    const user = userEvent.setup();
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    a.addCoachBlockedTime.mockImplementation(fail);
+    wrap(cal());
+    const open = async () => {
+      await user.click(screen.getByRole('button', { name: /More/ }));
+      await user.click(await screen.findByRole('menuitem', { name: /Add busy time/ }));
+      return within((await screen.findByRole('heading', { name: 'Add busy time' })).closest('dialog') as HTMLElement);
+    };
+    let d = await open();
+    await user.type(d.getByPlaceholderText('Recruiting call'), 'Film');
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await expectCode('CH-6006', /Couldn’t add your busy time/);
+    const retries = await screen.findAllByRole('button', { name: 'Retry' });
+    await user.click(retries[retries.length - 1]!);
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(2));
+    const ids = () => a.addCoachBlockedTime.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
+    expect(ids()[0]).toMatch(UUID);
+    expect(ids()[1]).toBe(ids()[0]);
+    // Closing and opening the sheet again, then adding the same block: still the same block, so the same id.
+    await user.click(d.getByRole('button', { name: 'Cancel' }));
+    d = await open();
+    await user.type(d.getByPlaceholderText('Recruiting call'), 'Film');
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(3));
+    expect(ids()[2]).toBe(ids()[0]);
+    // Different contents are a different block.
+    await user.type(d.getByPlaceholderText('Recruiting call'), ' review');
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(4));
+    expect(ids()[3]).toMatch(UUID);
+    expect(ids()[3]).not.toBe(ids()[0]);
+    // Once an add lands, the next one with the same contents is a new block with a new id.
+    a.addCoachBlockedTime.mockResolvedValue({ success: true, data: { id: 'b-new' } });
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(5));
+    expect(ids()[4]).toBe(ids()[3]);
+    d = await open();
+    await user.type(d.getByPlaceholderText('Recruiting call'), 'Film review');
+    await user.click(d.getByRole('button', { name: 'Add busy time' }));
+    await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(6));
+    expect(ids()[5]).toMatch(UUID);
+    expect(ids()[5]).not.toBe(ids()[3]);
+  });
+
   it('CH-6008 CH-6207 CH-6403 CH-6303 files: loading, failing, empty, and a failed remove', async () => {
     const user = userEvent.setup();
     a.getEventDocuments.mockImplementationOnce(never);
@@ -584,6 +732,8 @@ describe('Calendar · saves that fail', () => {
   });
 
   it('CH-6010 a player reply that fails goes back to what it was', async () => {
+    // The reply is offered only before the meeting (Sat 17, 1 PM): on the sample's own day, never the real clock's.
+    freezeClock();
     const user = userEvent.setup();
     a.respondToEvent.mockImplementation(fail);
     wrap(PREVIEW_CALENDAR_PLAYER, { initialEvent: 'e13' });
@@ -593,6 +743,8 @@ describe('Calendar · saves that fail', () => {
   });
 
   it('CH-6010 a player reply lost on the network (the send throws) goes back too, never left showing as sent', async () => {
+    // The reply is offered only before the meeting (Sat 17, 1 PM): on the sample's own day, never the real clock's.
+    freezeClock();
     const user = userEvent.setup();
     a.respondToEvent.mockRejectedValueOnce(new Error('Failed to fetch'));
     wrap(PREVIEW_CALENDAR_PLAYER, { initialEvent: 'e13' });
@@ -748,13 +900,15 @@ describe('Calendar · empty and loading', () => {
     expect(code('CH-6301')!.textContent).toMatch(/Nothing on the calendar in this range/);
   });
 
-  it('CH-6309 a team that has never scheduled anything: the page is the first-run empty; Create event opens the editor', async () => {
+  it('CH-6309 a team that has never scheduled anything: the page is the first-run empty; its one New event opens the editor', async () => {
     const user = userEvent.setup();
     wrap(cal({ events: [], firstRun: true }));
     expect(code('CH-6309')!.textContent).toMatch(/Nothing on the calendar/);
     expect(code('CH-6301')).toBeNull();
-    expect(screen.queryByRole('button', { name: /New event/ })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Create event' }));
+    // The head's New event steps aside: the empty state's is the one action, under the verb used everywhere else.
+    expect(screen.getAllByRole('button', { name: /New event/ })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Create event' })).toBeNull();
+    await user.click(within(code('CH-6309') as HTMLElement).getByRole('button', { name: 'New event' }));
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 
@@ -810,9 +964,12 @@ describe('Calendar · no team', () => {
     expect(el.classList.contains('ch-empty-page')).toBe(true);
     expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/once your team is set up/);
+    expect(within(el as HTMLElement).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
     unmount();
     render(<CalendarNoTeam coach={false} />);
     expect(code('CH-6307')!.textContent).toMatch(/once a coach adds you/);
+    // A player joins a team from Golf profile (CH-8302).
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
   });
 });
 
@@ -1027,12 +1184,24 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     wrap(cal());
     await user.click(within(screen.getByRole('list', { name: 'This week' })).getByRole('button', { name: /^Sun 11/ }));
     await expectCode('CH-6308', /Nothing on this day/);
+    // The coach's empty day has its own New event (the neighbouring days drawn for the swipe have none), and no
+    // "0 events" over the empty state.
+    expect(within(live('[data-ch-code="CH-6308"]') as HTMLElement).getByRole('button', { name: 'New event' })).toBeTruthy();
+    expect(screen.queryByText(/^0 events/)).toBeNull();
   });
 
   it('CH-6201 the calendar didn’t load: the notice, never an empty day', () => {
     wrap(cal({ eventsError: true, events: [] }));
     expect(code('CH-6201')).not.toBeNull();
     expect(code('CH-6308')).toBeNull();
+    // The strip and the week arrows need no events, so they stay to move the page; the notice stands where the day's
+    // list goes, and nothing claims a day has no events.
+    const strip = screen.getByRole('list', { name: 'This week' });
+    expect(within(strip).getAllByRole('button')).toHaveLength(7);
+    expect(within(strip).queryByRole('button', { name: /events?$/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Previous week' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Next week' })).toBeTruthy();
+    expect(strip.compareDocumentPosition(code('CH-6201')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('61901 60802 a player sees their team events and only their own class', () => {
@@ -1361,7 +1530,7 @@ describe('Calendar · the loader', () => {
   beforeEach(freezeClock);
   afterEach(() => vi.useRealTimers());
 
-  it('D2-8 a meeting with no invitees is the coach’s own: players never get it, unless the invite list failed to load', async () => {
+  it('D2-8 a meeting with no invitees is the coach’s own: players never get it; when the invite list failed to load, no meeting at all (fail closed)', async () => {
     const rows = { data: [eventRow('e1'), eventRow('m-private', { event_type: 'meeting', title: 'Parent call' }), eventRow('m-team', { event_type: 'meeting' })] };
     const replies = { data: [replyRow('e1', 'p2', 'accepted'), replyRow('m-team', 'p2', null)] };
     serve({ ...healthy(), golf_events: rows, golf_event_attendance: replies });
@@ -1370,8 +1539,9 @@ describe('Calendar · the loader', () => {
     const ids = (await load(asPlayer('p2'))).events.map((e) => e.id);
     expect(ids).toContain('m-team');
     expect(ids).not.toContain('m-private');
+    // Their own rows failed, and there is no count function to fall back on (before migration 20261017102000).
     serve({ ...healthy(), golf_events: rows, golf_event_attendance: { error: { message: 'boom' } } });
-    expect((await load(asPlayer('p2'))).events.map((e) => e.id)).toContain('m-private');
+    expect((await load(asPlayer('p2'))).events.map((e) => e.id)).toEqual(['e1']);
   });
 
   it('CH-6309 the loader counts the team’s events for a coach: none ever is the first run; any, a failed count, or a player is not', async () => {
@@ -1402,8 +1572,12 @@ describe('Calendar · the loader', () => {
     const at = (id: string) => d.events.filter((e) => e.id === id).map((e) => [e.date, e.start, e.end, e.allDay]);
     // 10:00 to 11:30 PM on the 14th in New York is the 15th in UTC: it is filed under the 14th.
     expect(at('late')).toEqual([['2026-10-14', 22, 23.5, false]]);
-    // A run that crosses midnight ends at 24 on its own day.
-    expect(at('cross')).toEqual([['2026-10-14', 22.5, 24, false]]);
+    // A run that crosses midnight is on both days, as production's calendar places it: its start to midnight, then
+    // midnight to its end.
+    expect(at('cross')).toEqual([
+      ['2026-10-14', 22.5, 24, false],
+      ['2026-10-15', 0, 1, false],
+    ]);
     // An all-day row keeps its stored dates, one entry per day, each naming the whole span.
     expect(at('span')).toEqual([
       ['2026-10-16', null, null, true],
@@ -1613,12 +1787,14 @@ describe('Calendar · what each role is given', () => {
     coach.unmount();
     wrap(PREVIEW_CALENDAR_PLAYER);
     expect(title()).toBe('Oct 11 – 17');
-    expect(document.querySelector('.ch-cal-sub')!.textContent).toBe('14 team events this week · Eastern time');
-    expect(screen.getByText('Needs your reply')).toBeTruthy();
+    // Not the coach's Parent call, which invites no one (D2-8; Decision B: a player sees only meetings they're on).
+    expect(document.querySelector('.ch-cal-sub')!.textContent).toBe('13 team events this week · Eastern time');
+    // Jonah's 1:1 overlaps the short-game block, so his panel names his attention, not only his replies (wave 7).
+    expect(screen.getByText('Needs your attention')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /New event/ })).toBeNull();
   });
 
-  it('60801 a player has no planning tools: no New event or N key, no editor from ?new=1, no busy time, people filter, overlaps, responses, attendance, edit or cancel; a coach has them', async () => {
+  it('60801 a player has no planning tools: no New event or N key, no editor from ?new=1, no busy time, people filter, overlap panel, responses, attendance, edit or cancel; a coach has them', async () => {
     const user = userEvent.setup();
     const seeded = { initialNew: true, initialWith: 'jonah', initialEvent: 'e9' };
     const player = wrap(PREVIEW_CALENDAR_PLAYER, seeded);
@@ -1627,7 +1803,10 @@ describe('Calendar · what each role is given', () => {
     await user.keyboard('n');
     expect(dialogOpen()).toBe(false);
     expect(screen.queryByRole('button', { name: /^People:/ })).toBeNull();
-    expect(screen.queryAllByRole('button', { name: /schedule overlap/ })).toHaveLength(0);
+    // Wave 7: a player sees their own clashes flagged (Jonah's 1:1 and the short-game block), but has no Overlap panel
+    // to move or keep them: no Review here, and no Overlaps item under More (below).
+    expect(screen.queryAllByRole('button', { name: /schedule overlap/ }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
     // The panel: a reply, but no responses, attendance, edit, attach or remove.
     expect(screen.getByRole('radiogroup', { name: 'Your reply' })).toBeTruthy();
     expect(screen.queryByText('Responses')).toBeNull();
@@ -1943,6 +2122,55 @@ describe('Calendar · changes that show at once, and changes that are kept', () 
   });
 });
 
+describe('Calendar · a cancelled event can be restored or deleted, as in production (Fairway EventActionsMenu)', () => {
+  const cancelled = () => cal({ events: PREVIEW_CALENDAR.events.map((e) => (e.id === 'e9' ? { ...e, cancelled: true } : e)) });
+
+  it('CH-6016 Restore event sends the event back to confirmed (updateGolfEvent, status only) and re-reads; a failed restore says so', async () => {
+    const user = userEvent.setup();
+    a.updateGolfEvent.mockResolvedValueOnce({ success: true });
+    wrap(cancelled(), { initialEvent: 'e9' });
+    await eventMenu(user, 'Restore event');
+    await waitFor(() => expect(a.updateGolfEvent).toHaveBeenCalledWith('e9', { status: 'confirmed' }));
+    await screen.findByText('Restored · Travel briefing');
+    expect(router.refresh).toHaveBeenCalled();
+    a.updateGolfEvent.mockImplementation(fail);
+    await eventMenu(user, 'Restore event');
+    await expectCode('CH-6016', /Couldn’t restore Travel briefing/);
+  });
+
+  it('CH-6506 CH-6017 Delete permanently asks first, with the warning haptic on the red button; it deletes, closes the panel and re-reads; a failed delete says so', async () => {
+    const user = userEvent.setup();
+    a.deleteGolfEventPermanently.mockImplementationOnce(fail);
+    wrap(cancelled(), { initialEvent: 'e9' });
+    await eventMenu(user, 'Delete permanently');
+    await expectCode('CH-6506', /Delete Travel briefing permanently\?.*Every reply and attendance record for it is erased\. This can’t be undone\./);
+    expect(a.deleteGolfEventPermanently).not.toHaveBeenCalled();
+    hapticSpy.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    await expectCode('CH-6017', /Couldn’t delete Travel briefing/);
+    expect(a.deleteGolfEventPermanently).toHaveBeenCalledWith('e9');
+    a.deleteGolfEventPermanently.mockResolvedValue({ success: true });
+    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    await screen.findByText('Deleted · Travel briefing');
+    expect(router.refresh).toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Travel briefing' })).toBeNull());
+  });
+
+  it('a live event offers neither, and a player never gets them (the server refuses a player too)', async () => {
+    const user = userEvent.setup();
+    wrap(cal(), { initialEvent: 'e9' });
+    await user.click(await screen.findByRole('button', { name: 'More actions' }));
+    expect(screen.queryByRole('menuitem', { name: 'Restore event' })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: 'Delete permanently' })).toBeNull();
+    cleanup();
+    wrap(cal({ ...cancelled(), role: 'player', viewerPlayerId: PREVIEW_CALENDAR.people[0]!.id }), { initialEvent: 'e9' });
+    await user.click(await screen.findByRole('button', { name: 'More actions' }));
+    expect(screen.queryByRole('menuitem', { name: 'Restore event' })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: 'Delete permanently' })).toBeNull();
+  });
+});
+
 describe('Calendar · this file', () => {
   it('62401 every catalog row of kinds 0 to 5 that is not marked preview is named by a test here, and so is every Bridge ID this page proves', () => {
     const root = process.cwd();
@@ -1968,5 +2196,79 @@ describe('Calendar · attendees peek (P003-C1)', () => {
     await waitFor(() => expect(document.querySelectorAll('.ch-in__person').length).toBeGreaterThan(0));
     const rows = [...document.querySelectorAll('.ch-in__person')];
     expect(rows.every((r) => r.parentElement?.classList.contains('ch-peek-target'))).toBe(true);
+  });
+});
+
+describe('Calendar · a player’s own week (wave 7)', () => {
+  // The preview's day: Wednesday 14 October, 2:40 PM Eastern.
+  beforeEach(freezeClock);
+  afterEach(() => vi.useRealTimers());
+
+  it('Decision B, the preview as the loader builds it: no meeting the player isn’t on, and no teammate’s reply or place', () => {
+    const payload = JSON.stringify(PREVIEW_CALENDAR_PLAYER);
+    expect(payload).not.toMatch(/Parent call|Natarajan family/);
+    for (const e of PREVIEW_CALENDAR_PLAYER.events) {
+      expect(e.people.every((p) => p === 'jonah'), e.id).toBe(true);
+      expect(Object.keys(e.rsvp).every((p) => p === 'jonah'), e.id).toBe(true);
+    }
+    expect(PREVIEW_CALENDAR_PLAYER.events.some((e) => e.id === 'e5')).toBe(true);
+  });
+
+  it('item 15: the player’s own class is titled without their own name; a coach still sees whose it is', () => {
+    const player = wrap(PREVIEW_CALENDAR_PLAYER);
+    expect(screen.getAllByText('ECON 101').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Jonah · ECON 101/)).toBeNull();
+    player.unmount();
+    wrap(cal());
+    expect(screen.getAllByText(/Jonah · ECON 101/).length).toBeGreaterThan(0);
+  });
+
+  it('item 4: a player is told their own clash, with Message coach, and is never offered the coach’s move or keep', async () => {
+    const user = userEvent.setup();
+    wrap(PREVIEW_CALENDAR_PLAYER);
+    // The day's panel lists it under their attention, and opens the event, not an Overlap panel.
+    const sec = screen.getByText('Needs your attention').closest('.ch-in__sec') as HTMLElement;
+    const row = within(sec).getByRole('button', { name: /^1:1 with Jonah.*Overlaps Short-game block 4:45–5:00 PM · Wed/ });
+    await user.click(row);
+    await screen.findByRole('heading', { name: '1:1 with Jonah' });
+    const warn = document.querySelector('.ch-cal-warn') as HTMLElement | null;
+    expect(warn!.textContent).toMatch(/Schedule overlap.*Overlaps Short-game block 4:45–5:00 PM\./);
+    expect(within(warn!).getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages');
+    expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
+  });
+
+  describe('on the phone', () => {
+    const real = window.matchMedia;
+    beforeEach(() => {
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    });
+    afterEach(() => {
+      window.matchMedia = real;
+    });
+
+    it('item 2: the reply still owed is marked: a Reply badge, “needs your reply” in its label, and an amber dot on its day', async () => {
+      const user = userEvent.setup();
+      wrap(PREVIEW_CALENDAR_PLAYER);
+      const strip = screen.getByRole('list', { name: 'This week' });
+      const sat = within(strip).getByRole('button', { name: /^Sat 17/ });
+      expect(sat.getAttribute('aria-label')).toMatch(/, needs your reply$/);
+      expect(sat.querySelector('.is-reply')).not.toBeNull();
+      const wed = within(strip).getByRole('button', { name: /^Wed 14/ });
+      expect(wed.getAttribute('aria-label')).not.toMatch(/reply/);
+      expect(wed.querySelector('.is-reply')).toBeNull();
+      // The player's own class, on the phone, without their own name.
+      expect(screen.getByRole('button', { name: /^ECON 101, / })).toBeTruthy();
+      await user.click(sat);
+      const row = screen.getByRole('button', { name: /^Round review, .*needs your reply/ });
+      expect(within(row).getByText('Reply')).toBeTruthy();
+      // A reply already given (a maybe, here) is not asked for again.
+      expect(within(screen.getByRole('button', { name: /^Recovery nine/ })).queryByText('Reply')).toBeNull();
+    });
+
+    it('a coach’s strip and rows never carry a player’s reply mark', () => {
+      wrap(cal());
+      expect(document.querySelector('.ch-calm-week .is-reply')).toBeNull();
+      expect(screen.queryByText('Reply')).toBeNull();
+    });
   });
 });

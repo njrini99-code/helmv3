@@ -35,6 +35,7 @@ import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CLASS_EVENT_TYPE, classTag } from '@/lib/calendar/class-events';
+import { MEETING_EVENT_TYPE } from '@/lib/calendar/meeting-visibility';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 /** Columns fetched for calendar rendering — keep in sync with the page select. */
@@ -378,6 +379,32 @@ export function useCalendarRangeEvents({
           ownClassIds = (ownClasses ?? []).map((row) => row.id).filter(Boolean);
         }
 
+        // Meetings the player is not invited to stay OFF THE WIRE as well
+        // (meeting-visibility.ts). golf_events_select_team hands a player every
+        // team meeting until the held migration 20261018120000 lands, so the
+        // query below asks only for the meetings this player has their own
+        // attendance row on in the window. A failed invite read is a failed
+        // range read (retryable), never a calendar with teammates' 1:1s on it.
+        let ownMeetingIds: string[] = [];
+        if (!viewer?.isCoach && viewer?.playerId) {
+          const { data: invites, error: invitesError } = await supabase
+            .from('golf_event_attendance')
+            .select('event_id, event:golf_events!inner(id)')
+            .abortSignal(abortController.signal)
+            .eq('player_id', viewer.playerId)
+            .eq('event.team_id', teamId)
+            .eq('event.event_type', MEETING_EVENT_TYPE)
+            .gte('event.start_time', fetchStart.toISOString())
+            .lte('event.start_time', fetchEnd.toISOString())
+            .limit(1000);
+          if (isStale()) return;
+          if (invitesError) {
+            setRangeError('Could not load events for this date range.');
+            return;
+          }
+          ownMeetingIds = [...new Set((invites ?? []).map((row) => row.event_id).filter(Boolean))];
+        }
+
         // Paginate past the PostgREST 1000-row server cap (audit F102): a busy
         // team's ±1-month buffered window can exceed a single page, and a bare
         // `.limit(500)` silently dropped the overflow. A secondary `.order('id')`
@@ -396,6 +423,11 @@ export function useCalendarRangeEvents({
             // that would break PostgREST's `or` parsing.
             const mine = ownClassIds.map((id) => `description.like.*${classTag(id)}*`);
             query = query.or([`event_type.neq.${CLASS_EVENT_TYPE}`, ...mine].join(','));
+            // A second logic tree, ANDed with the class one above. Event ids are
+            // UUIDs too, so the `in` list is safe to inline.
+            query = ownMeetingIds.length
+              ? query.or(`event_type.neq.${MEETING_EVENT_TYPE},id.in.(${ownMeetingIds.join(',')})`)
+              : query.neq('event_type', MEETING_EVENT_TYPE);
           }
 
           return query

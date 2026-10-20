@@ -1,6 +1,8 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
+import { loadInvitedCounts, loadOwnRows } from './attendance-counts';
+import { playerSeesMeeting } from '../screens/calendar/model';
 import { homeClock } from './home';
 import { addDays, termOn, toChClasses, toTeamEvent, weekDates, type ChClassesPage, type ChClassRow, type ChEventRow, type ChTeamEvent } from './classes-shape';
 
@@ -22,6 +24,21 @@ const CLASS_COLUMNS = 'id, class_name, instructor, days, start_time, end_time, b
 const EVENT_COLUMNS = 'id, title, event_type, start_time, end_time, all_day, status, location, description';
 
 const log = (what: string, err: unknown) => chLogServer('classes', what, err, 'calendar');
+
+/**
+ * The meetings this player doesn't see, as their Calendar decides it (data/calendar.ts, playerSeesMeeting): Decision B
+ * (owner, wave 7), a meeting is theirs only when they are on its invite list (their own attendance row, read before and
+ * after migration 20261017102000), so no class is said to meet over a teammate's 1:1 and its title is never on this
+ * page. When their own rows didn't load, D2-8 decides (a meeting nobody is invited to is the coach's own); when that
+ * failed too, every meeting is left out (fail closed). Each failed read is logged.
+ */
+async function hiddenMeetings(supabase: Awaited<ReturnType<typeof createClient>>, rows: ChEventRow[], playerId: string): Promise<Set<string>> {
+  const ids = rows.filter((r) => r.event_type === 'meeting').map((r) => r.id);
+  if (!ids.length) return new Set();
+  const own = await loadOwnRows(supabase, ids, playerId, (err) => log('ownInvites', err));
+  const invited = own ? null : await loadInvitedCounts(supabase, ids, (err) => log('meetingInvites', err));
+  return new Set(ids.filter((id) => !playerSeesMeeting(own ? own.has(id) : null, invited?.get(id) ?? null)));
+}
 
 export async function loadClasses(input: { playerId: string; teamId: string }): Promise<ChClassesPage> {
   const supabase = await createClient();
@@ -48,7 +65,9 @@ export async function loadClasses(input: { playerId: string; teamId: string }): 
   if (classesRes.error) log('classes', classesRes.error);
   if (eventsRes.error) log('events', eventsRes.error);
 
-  const events = eventsRes.error ? [] : ((eventsRes.data ?? []) as ChEventRow[]).map((r) => toTeamEvent(r, clock.tz)).filter((e): e is ChTeamEvent => e != null);
+  const rows = eventsRes.error ? [] : ((eventsRes.data ?? []) as ChEventRow[]);
+  const hidden = await hiddenMeetings(supabase, rows, input.playerId);
+  const events = rows.filter((r) => !hidden.has(r.id)).map((r) => toTeamEvent(r, clock.tz)).filter((e): e is ChTeamEvent => e != null);
 
   const term = termOn(todayIso);
   if (!term) throw new Error('Clubhouse: no academic term for ' + todayIso);

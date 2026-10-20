@@ -52,7 +52,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   color: var(--ch-forest-800);
-  font: 500 13.5px/1 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   text-decoration: none;
   box-shadow: var(--ch-shadow-md);
   transform: translateY(-160%);
@@ -79,63 +79,66 @@
 .ch-brand {
   display: flex;
   align-items: center;
-  gap: 11px;
   min-width: 0;
-  margin: 0 -2px 14px;
-  padding: 10px 10px 12px;
+  /* Its own frosted panel (owner, 2026-10-16: "put those in a frost bar like it was before"), as wide as the nav's
+     rows, with the word and wheel centred in it ("fix the layout so its even"). */
+  justify-content: center;
+  margin: 0 0 14px;
+  padding: 12px;
   border-radius: var(--ch-radius-lg);
-  background: rgb(250 248 241 / 0.06);
-  box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.16);
+  background: rgb(250 248 241 / 0.14);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    inset 0 0 0 1px rgb(220 205 166 / 0.26);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
 }
 .ch-brand img {
   flex: none;
   width: 32px;
   height: 32px;
 }
-.ch-brand__txt {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-.ch-brand__word {
-  font: 600 18px/1 var(--ch-font-sans);
-  letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 92;
-  color: var(--ch-on-green-bright);
-}
-.ch-brand__team {
+/* The Team group's heading is the team (owner, 2026-10-16: the name left the brand). A head coach on more than one
+   team gets it as a menu button, with the boards' up-down chevrons. */
+.ch-nav__team {
   overflow: hidden;
-  font: 500 12.5px/1.2 var(--ch-font-sans);
-  color: var(--ch-on-green-glyph);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* Team switcher (a head coach on more than one team): the brand block is the button, as the boards' team chip is. */
-.ch-brand--switch {
-  width: calc(100% + 4px);
+.ch-nav__team--switch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
   border: 0;
-  color: inherit;
-  font: inherit;
+  border-radius: var(--ch-radius-sm);
+  background: none;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-brand--switch[aria-expanded='true'] {
+.ch-nav__team--switch > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ch-nav__team--switch svg {
+  flex: none;
+  color: var(--ch-on-green-glyph);
+}
+.ch-nav__team--switch[aria-expanded='true'] {
   background: rgb(250 248 241 / 0.1);
-  box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.28);
 }
 @media (hover: hover) {
-  .ch-brand--switch:hover {
+  .ch-nav__team--switch:hover {
     background: rgb(250 248 241 / 0.1);
-    box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.28);
   }
 }
-.ch-brand--switch:focus-visible {
+.ch-nav__team--switch:focus-visible {
   outline: 2px solid var(--ch-champagne-300);
   outline-offset: 1px;
 }
-.ch-brand--switch[aria-busy='true'] {
+.ch-nav__team--switch[aria-busy='true'] {
   cursor: progress;
 }
 /* A team switch in flight: the old team's page fades out and takes no taps until the new team's page commits
@@ -153,21 +156,7 @@
     transition: none;
   }
 }
-.ch-brand__team--switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.ch-brand__team--switch > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ch-brand__team--switch svg {
-  flex: none;
-  color: var(--ch-on-green-glyph);
-}
-/* The coach's teams, under the brand block: a popover panel (.ch-popover) of two or three rows. */
+/* The coach's teams, under the Team heading: a popover panel (.ch-popover) of two or three rows. */
 .ch-tsw {
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -188,7 +177,7 @@
   border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-text-primary);
-  font: 500 13.5px/1.25 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   text-align: left;
   cursor: pointer;
 }
@@ -298,6 +287,7 @@
 .ch-navitem__count {
   margin-left: auto;
   font: 500 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-champagne-300);
 }
 .ch-sidebar__foot {
@@ -344,6 +334,7 @@
 }
 .ch-next__m {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-next__bar {
@@ -453,7 +444,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
-  font: 400 11.5px/1.5 var(--ch-font-mono);
+  font: 400 calc(11.5 * var(--ch-type-k))/1.5 var(--ch-font-mono);
   color: var(--ch-text-secondary);
   white-space: pre-wrap;
 }
@@ -537,7 +528,7 @@
    confirm). */
 .ch-empty-page__title {
   margin: 0;
-  font: 600 26px/1.15 var(--ch-font-sans);
+  font: 600 calc(26 * var(--ch-type-k))/1.15 var(--ch-font-sans);
   font-variation-settings: 'wdth' 96;
   letter-spacing: -0.028em;
   color: var(--ch-ledger-ink);
@@ -546,7 +537,7 @@
 .ch-empty-page__body {
   max-width: 42ch;
   margin: 0;
-  font: 400 15px/1.55 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -571,7 +562,7 @@
   background: var(--ch-green-fill-600);
 }
 .ch-empty-page__prog-t {
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-empty-page__a {
@@ -637,10 +628,10 @@
     height: 120px;
   }
   .ch-empty-page__title {
-    font-size: 21px;
+    font-size: calc(21 * var(--ch-type-k));
   }
   .ch-empty-page__body {
-    font-size: 14.5px;
+    font-size: calc(14.5 * var(--ch-type-k));
   }
   .ch-empty-page__a {
     flex-direction: column;
@@ -729,7 +720,7 @@
 }
 .ch-notice .ch-notice__title {
   margin: 0;
-  font: 600 14px/1.35 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   letter-spacing: -0.01em;
   color: var(--ch-notice-ink);
   text-wrap: pretty;
@@ -766,7 +757,7 @@
     margin-top: 3px;
   }
   .ch-notice .ch-notice__title {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
   }
 }
 /* On the one green feature card (ui/Ledger.tsx) the notice takes the on-green inks. */
@@ -859,11 +850,15 @@
   gap: 8px;
   min-width: 0;
 }
-/* Animations off in Settings: skeletons hold still (a Ledger block's lines too). */
+/* Animations off in Settings: skeletons hold still (a Ledger block's lines too), from the first frame (ThemeScript
+   marks <html> before hydration). */
+[data-motion='off'] .ch-root .ch-skel::before,
 .ch-root[data-motion='off'] .ch-skel::before {
   animation: none;
   display: none;
 }
+[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::before,
+[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::after,
 .ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::before,
 .ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::after {
   display: block;
@@ -897,7 +892,7 @@
   min-width: 0;
 }
 .ch-toast__body {
-  font: 400 12.5px/1.4 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: #c9c5bb;
 }
 .ch-toast--error .ch-toast__icon {
@@ -946,7 +941,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 8px 0 12px;
-  font: 600 18px/1.2 var(--ch-font-sans);
+  font: 600 calc(18 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   letter-spacing: -0.015em;
   color: var(--ch-text-primary);
 }
@@ -987,7 +982,7 @@
   padding: 8px 16px;
   border-top: 1px solid var(--ch-border-hairline);
   color: var(--ch-text-primary);
-  font: 500 14.5px/1.25 var(--ch-font-sans);
+  font: 500 calc(14.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
@@ -1022,7 +1017,7 @@
   border-radius: 10px;
   background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
-  font: 600 11.5px/20px var(--ch-font-sans);
+  font: 600 calc(11.5 * var(--ch-type-k))/20px var(--ch-font-sans);
   text-align: center;
 }
 .ch-more__row[aria-current='page'] {
@@ -1056,7 +1051,7 @@ button.ch-more__row[disabled] {
   display: block;
   overflow: hidden;
   margin-top: 2px;
-  font: 400 12.5px/1.25 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1081,11 +1076,11 @@ button.ch-more__row[disabled] {
   min-width: 0;
 }
 .ch-more__me-t b {
-  font: 600 16px/1.2 var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-more__me-t em {
-  font: 400 13px/1.2 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -1095,7 +1090,7 @@ button.ch-more__row[disabled] {
 }
 .ch-more__cap {
   padding: 0 4px 6px;
-  font: 500 12.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-more__row[aria-current='true'] {
@@ -1146,7 +1141,7 @@ button.ch-more__row[disabled] {
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font: 600 17px/1.1 var(--ch-font-sans);
+    font: 600 calc(17 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.01em;
     color: var(--ch-text-primary);
     text-overflow: ellipsis;
@@ -1235,7 +1230,7 @@ button.ch-more__row[disabled] {
     align-items: center;
     gap: 8px;
     min-width: 0;
-    font: 600 16px/1.2 var(--ch-font-sans);
+    font: 600 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-on-fill-100);
   }
   /* Home's bar puts the team's mark (32px and the bar's 8px gap) before the section's name, so the name sits 40px
@@ -1329,9 +1324,10 @@ button.ch-more__row[disabled] {
   .ch-root[data-phone-notabs] .ch-toasts {
     bottom: calc(12px + env(safe-area-inset-bottom) + var(--keyboard-height, 0px));
   }
-  /* A pushed screen hides the tab bar: toasts sit above its composer instead (and above the keyboard). */
+  /* A pushed screen hides the tab bar: toasts sit above its composer instead (and above the keyboard). A Messages
+     composer gives its measured height, safe area included (composer-inset.ts), so a grown one isn't covered. */
   .ch-root[data-phone-immersive] .ch-toasts {
-    bottom: calc(72px + env(safe-area-inset-bottom) + var(--keyboard-height, 0px));
+    bottom: calc(var(--ch-ms-comp-h, calc(60px + env(safe-area-inset-bottom))) + 12px + var(--keyboard-height, 0px));
   }
   .ch-toast {
     min-width: 0;
@@ -1365,10 +1361,10 @@ button.ch-more__row[disabled] {
     padding: 0 4px;
     border: 0;
     background: none;
-    font: 500 16px/1 var(--ch-font-sans);
+    font: 500 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-700);
     cursor: pointer;
-    transition: transform var(--ch-dur-quick) var(--ch-ease);
+    transition: transform var(--ch-dur-quick) var(--ch-ease), opacity var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-pbar__back.is-text {
     margin-left: -4px;
@@ -1390,7 +1386,7 @@ button.ch-more__row[disabled] {
     margin: 0;
     overflow: hidden;
     transform: translateX(-50%);
-    font: 600 16px/1 var(--ch-font-sans);
+    font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
     /* Its own tracking, not the app's global h1 rule: the shell's stand-in draws the title as plain text (CH-1402), and
        the two must match to the pixel. */
     letter-spacing: -0.025em;
@@ -1406,7 +1402,7 @@ button.ch-more__row[disabled] {
     flex: 1;
     max-width: none;
     transform: none;
-    font-size: 17px;
+    font-size: calc(17 * var(--ch-type-k));
     letter-spacing: -0.01em;
   }
   .ch-pbar__lead {
@@ -1443,10 +1439,11 @@ button.ch-more__row[disabled] {
     padding: 0 10px;
     border: 0;
     background: none;
-    font: 600 16px/44px var(--ch-font-sans);
+    font: 600 calc(16 * var(--ch-type-k))/44px var(--ch-font-sans);
     color: var(--ch-green-700);
     cursor: pointer;
-    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
+      opacity var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-pbar__text[aria-disabled='true'] {
     color: var(--ch-text-tertiary);
@@ -1524,6 +1521,7 @@ button.ch-more__row[disabled] {
   background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-bg-page);
   font: 600 10px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
 }
 .ch-bellp {
@@ -1555,7 +1553,7 @@ button.ch-more__row[disabled] {
   gap: 3px;
 }
 .ch-bellp__stitle b {
-  font: 600 18px/1.2 var(--ch-font-sans);
+  font: 600 calc(18 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   letter-spacing: -0.015em;
   color: var(--ch-text-primary);
 }
@@ -1584,7 +1582,7 @@ button.ch-more__row[disabled] {
 }
 .ch-bellp__head b {
   flex: 1;
-  font: 600 13.5px/1 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-bellp__head b span {
@@ -1608,7 +1606,7 @@ button.ch-more__row[disabled] {
 .ch-bellp__day {
   /* .ch-popover__label */
   padding: 8px 10px 6px;
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-bellp__body > section + section {
@@ -1670,7 +1668,7 @@ button.ch-more__row[disabled] {
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  font: 500 13.5px/1.3 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1680,7 +1678,7 @@ button.ch-more__row[disabled] {
 }
 .ch-bellp__top time {
   flex: none;
-  font: 400 12px/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-bellp__txt {
@@ -1688,7 +1686,7 @@ button.ch-more__row[disabled] {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font: 400 13px/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-bellp__dot {
@@ -1736,7 +1734,7 @@ button.ch-more__row[disabled] {
   padding: 9px 16px;
   border-bottom: 1px solid rgb(148 96 14 / 0.18);
   background: var(--ch-warning-100);
-  font: 500 13px/1.35 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-warning-600);
   text-align: center;
 }
@@ -1994,7 +1992,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 @media (max-width: 820px) {
   .ch-notyet__dev,
   .ch-more__count {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 
@@ -2047,16 +2045,22 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     font: 400 16px/1.55 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
-  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn {
-    border-radius: 8px;
+  /* The head's buttons take the body's button radius; a small one keeps its own 8px (ui.css). */
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn:not(.ch-btn--sm) {
+    border-radius: var(--ch-radius-md);
   }
+  /* The hairline steps aside for the focus ring, which this selector would otherwise outrank (ui.css). */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
     background: rgb(255 254 250 / 0.45);
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:not(:focus-visible) {
     box-shadow: 0 0 0 1px rgb(110 98 62 / 0.2);
   }
   @media (hover: hover) {
     [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
       background: rgb(255 254 250 / 0.8);
+    }
+    [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled):not(:focus-visible) {
       box-shadow: 0 0 0 1px rgb(110 98 62 / 0.32);
     }
   }
@@ -2094,12 +2098,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 /* The Frame (owner, 2026-10-07, matching the Coach Home handoff): the sidebar is the frame's green with the brand in
    its own panel (the base .ch-brand), ivory type on the green, and an ivory plate for the selected row; the
    next-event card stays a light sheet. */
-.ch-brand__team,
-.ch-brand__team--switch svg {
-  color: var(--ch-on-green-ink-muted);
-}
-.ch-brand--switch:focus-visible,
-.ch-navitem:focus-visible {
+.ch-navitem:focus-visible,
+.ch-root .ch-next:focus-visible {
   outline-color: var(--ch-champagne-300);
 }
 .ch-nav__section {
@@ -2209,18 +2209,18 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   grid-column: 1;
 }
 .ch-hero__eyebrow {
-  font: 600 13.5px/1 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hero__title {
   margin: 2px 0;
-  font: 400 52px/1.02 var(--ch-font-serif);
+  font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
   letter-spacing: -0.01em;
   color: var(--ch-text-primary);
 }
 .ch-hero__line {
   max-width: 720px;
-  font: 400 16px/1.5 var(--ch-font-sans);
+  font: 400 calc(16 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -2242,7 +2242,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     flex-wrap: wrap;
   }
   .ch-hero__title {
-    font-size: 34px;
+    font-size: calc(34 * var(--ch-type-k));
   }
 }
 
@@ -2343,8 +2343,16 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   [data-ui='clubhouse'] .ch-pbar__icon:active {
     background: rgb(255 255 255 / 0.08);
   }
+  /* Back and the text action are words on the green, with no key to tint: a press dims them, as iOS bar buttons do. */
+  [data-ui='clubhouse'] :is(.ch-pbar__back, .ch-pbar__text:not([aria-disabled='true'])):active {
+    opacity: 0.5;
+  }
   [data-ui='clubhouse'] .ch-pbar__text[aria-disabled='true'] {
     color: var(--ch-on-green-ink-muted);
+  }
+  /* Keyboard focus on the green bar: the global green ring would vanish into it (1.7:1), so champagne, as the bell's. */
+  [data-ui='clubhouse'] .ch-pbar :is(.ch-pbar__back, .ch-pbar__icon, .ch-pbar__text):focus-visible {
+    outline-color: var(--ch-champagne-300);
   }
 }
 
@@ -2511,11 +2519,15 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
     background: rgb(237 231 216 / 0.05);
+  }
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:not(:focus-visible) {
     box-shadow: 0 0 0 1px var(--ch-border-control);
   }
   @media (hover: hover) {
     html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
       background: rgb(237 231 216 / 0.09);
+    }
+    html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled):not(:focus-visible) {
       box-shadow: 0 0 0 1px var(--ch-border-strong);
     }
   }
@@ -2933,7 +2945,7 @@ html[data-fw-theme='dark'] .ch-offline {
     gap: 14px;
     min-height: 50px;
     border-top: 0;
-    font-size: 16px;
+    font-size: calc(16 * var(--ch-type-k));
     font-weight: 450;
     letter-spacing: -0.01em;
   }
@@ -2999,9 +3011,10 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-sw:active {
     opacity: 0.62;
   }
+  /* Inset: the title row clips anything drawn outside it. */
   .ch-sw:focus-visible {
     outline: 2px solid var(--ch-champagne-300);
-    outline-offset: 2px;
+    outline-offset: -2px;
     border-radius: 8px;
   }
   .ch-sw__track {
@@ -3012,6 +3025,10 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-sw__label {
     display: block;
     min-width: 0;
+    /* Room for the descenders under Dynamic Type, taken back by the margins so the row doesn't move: the title sits
+       on a line-height of 1 and this box clips (0 at the default size, about 3px at XXL). */
+    margin-block: calc((var(--ch-type-k) - 1px) * -9);
+    padding-block: calc((var(--ch-type-k) - 1px) * 9);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3107,7 +3124,7 @@ html[data-fw-theme='dark'] .ch-offline {
     background: rgb(255 255 255 / 0.08);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
     color: var(--ch-on-green-ink-soft);
-    font: 600 14px/1 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     text-decoration: none;
     white-space: nowrap;
     scroll-snap-align: center;
@@ -3148,7 +3165,8 @@ html[data-fw-theme='dark'] .ch-offline {
     border-radius: 9px;
     background: var(--ch-champagne-300);
     color: var(--ch-frame);
-    font: 650 12px/14px var(--ch-font-sans);
+    font: 650 calc(12 * var(--ch-type-k))/calc(14 * var(--ch-type-k)) var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     text-align: center;
   }
   .ch-strip__sep {
@@ -3250,7 +3268,7 @@ html[data-fw-theme='dark'] .ch-offline {
     touch-action: none;
   }
   .ch-bst__head b {
-    font: 650 24px/1.1 var(--ch-font-sans);
+    font: 650 calc(24 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.02em;
   }
   .ch-bst__all {
@@ -3260,7 +3278,7 @@ html[data-fw-theme='dark'] .ch-offline {
     border: 0;
     background: none;
     color: var(--ch-champagne-300);
-    font: 600 14px var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k)) var(--ch-font-sans);
     cursor: pointer;
   }
   .ch-bst__all:disabled {
@@ -3332,7 +3350,7 @@ html[data-fw-theme='dark'] .ch-offline {
     min-height: 30px;
     padding: 0 6px 6px 10px;
     color: var(--ch-on-green-ink-soft);
-    font: 600 13px var(--ch-font-sans);
+    font: 600 calc(13 * var(--ch-type-k)) var(--ch-font-sans);
   }
   .ch-bst-stack__head[data-quiet] {
     display: none;
@@ -3352,7 +3370,7 @@ html[data-fw-theme='dark'] .ch-offline {
     border-radius: 14px;
     background: rgb(255 255 255 / 0.13);
     color: var(--ch-on-green-ink);
-    font: 600 12.5px var(--ch-font-sans);
+    font: 600 calc(12.5 * var(--ch-type-k)) var(--ch-font-sans);
     cursor: pointer;
   }
   .ch-bst-pill::before {
@@ -3430,7 +3448,7 @@ html[data-fw-theme='dark'] .ch-offline {
     gap: 7px;
     margin-bottom: 3px;
     color: var(--ch-text-tertiary);
-    font: 600 12px var(--ch-font-sans);
+    font: 600 calc(12 * var(--ch-type-k)) var(--ch-font-sans);
   }
   .ch-bst-card__ic {
     display: grid;
@@ -3457,7 +3475,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst-card__t {
     display: -webkit-box;
     overflow: hidden;
-    font: 600 15px/1.3 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     letter-spacing: -0.005em;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -3466,14 +3484,14 @@ html[data-fw-theme='dark'] .ch-offline {
     display: -webkit-box;
     overflow: hidden;
     color: var(--ch-text-secondary);
-    font: 400 14px/1.38 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.38 var(--ch-font-sans);
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
   .ch-bst-card__more {
     margin-top: 4px;
     color: var(--ch-text-tertiary);
-    font: 500 12.5px var(--ch-font-sans);
+    font: 500 calc(12.5 * var(--ch-type-k)) var(--ch-font-sans);
   }
   /* What a swipe uncovers behind the card. */
   .ch-bst-clear {
@@ -3485,7 +3503,7 @@ html[data-fw-theme='dark'] .ch-offline {
     padding-right: 22px;
     border-radius: 22px;
     color: var(--ch-champagne-300);
-    font: 600 13.5px var(--ch-font-sans);
+    font: 600 calc(13.5 * var(--ch-type-k)) var(--ch-font-sans);
     pointer-events: none;
   }
   /* A folded card's edge under the top card. */
@@ -3515,12 +3533,12 @@ html[data-fw-theme='dark'] .ch-offline {
     gap: 6px;
     padding: 56px 28px 28px;
     color: var(--ch-on-green-ink-soft);
-    font: 400 14px/1.45 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
     text-align: center;
   }
   .ch-bst-empty b {
     color: var(--ch-on-green-ink);
-    font: 600 17px var(--ch-font-sans);
+    font: 600 calc(17 * var(--ch-type-k)) var(--ch-font-sans);
   }
   .ch-bst-empty__ic {
     display: grid;
@@ -3547,5 +3565,479 @@ html[data-fw-theme='dark'] .ch-offline {
     margin: 4px 0;
     border-radius: 6px;
     background: color-mix(in oklab, var(--ch-text-primary) 9%, transparent);
+  }
+}
+
+/* The sidebar, sorted and clearer (owner, 2026-10-16: "sort the side bar and make it look better", then no shade over
+   the groups): each group's name in mint over its rows, the rows a touch taller with brighter ink. Desktop only; the
+   phone's strip is its own. */
+@media (min-width: 821px) {
+  .ch-sidebar .ch-nav {
+    gap: 10px;
+  }
+  .ch-sidebar .ch-nav__group {
+    gap: 2px;
+  }
+  .ch-sidebar .ch-nav__section {
+    padding: 10px 10px 6px;
+    font: 600 11.5px/1 var(--ch-font-sans);
+    letter-spacing: 0.01em;
+    color: var(--ch-hero-mint);
+    opacity: 0.9;
+  }
+  .ch-sidebar .ch-navitem {
+    height: 36px;
+    gap: 11px;
+    font-size: 14px;
+  }
+  /* Brighter ink on the rows that are not chosen; the chosen row keeps the plate's own green ink. */
+  .ch-sidebar .ch-navitem:not([aria-current='page']):not(:has(.ch-lp)) {
+    color: var(--ch-on-green-ink);
+  }
+  .ch-sidebar .ch-navitem:not([aria-current='page']):not(:has(.ch-lp)) svg {
+    color: var(--ch-on-green-ink-soft);
+  }
+}
+
+/* The script wordmark (owner, 2026-10-16): "Golfhelm" in Norican, helm in the mint the green boards use. Opening from
+   the welcome, the dashboard draws first, then the word writes itself in left to right, then the wheel turns into place. */
+.ch-brand__line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.ch-brand .ch-brand__mark {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+/* The logo's colours on the green: the helm and the ball's shade in the mint "helm" is set in, the face and its
+   highlights ivory, the dimples green. Flat fills, no outline or glow. */
+.ch-brand__mark-helm {
+  stroke: var(--ch-hero-mint-strong);
+}
+.ch-brand__mark-ball {
+  fill: var(--ch-hero-mint-strong);
+}
+.ch-brand__mark-face {
+  fill: var(--ch-brand-ivory);
+}
+.ch-brand__mark-dimples {
+  fill: var(--ch-green-500);
+}
+.ch-brand__word.is-script {
+  display: inline-block;
+  /* Room for the script's swashes, which overhang the box the write mask clips to. */
+  margin: 0 -6px -4px -2px;
+  padding: 2px 6px 4px 2px;
+  /* The script's ink sits low in its box (long descenders): lift it so word, wheel and panel share one centre. */
+  position: relative;
+  top: -3px;
+  font: 400 34px/1 var(--ch-font-script);
+  letter-spacing: 0.005em;
+  /* Ivory, the same as the logo's ball face (owner, 2026-10-16: "golf should be ivory", "darker ivory"). */
+  color: var(--ch-brand-ivory);
+}
+.ch-brand__word.is-script b {
+  font-weight: 400;
+  color: var(--ch-hero-mint);
+}
+/* The entrance after sign in (owner, 2026-10-16: "more premium. i do like the wheel turning"), about 3.5s in all:
+   the dashboard settles for about 0.55s; the word writes in left to right behind a wide feathered edge while it comes
+   into focus (blur and a 3px rise settling out), over about 1.5s; the wheel spins in three quarters of a turn from
+   small and slows to a stop with a slight settle, overlapping the last of the word; then one glint of light crosses
+   the frosted panel. */
+.ch-brand__word.is-write {
+  -webkit-mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
+  mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
+  -webkit-mask-size: 260% 100%;
+  mask-size: 260% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation:
+    ch-brand-write calc(var(--ch-dur-reveal) * 2.9) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both,
+    ch-brand-focus calc(var(--ch-dur-reveal) * 3.1) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both;
+}
+.ch-brand__mark.is-write {
+  animation: ch-brand-wheel calc(var(--ch-dur-reveal) * 2.5) var(--ch-ease-spring-smooth) calc(var(--ch-dur-reveal) * 3) both;
+}
+.ch-brand:has(.ch-brand__line.is-write) {
+  position: relative;
+  overflow: hidden;
+}
+.ch-brand:has(.ch-brand__line.is-write)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 250 235 / 0.28) 50%, transparent 65%) no-repeat;
+  background-size: 250% 100%;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  animation: ch-brand-glint calc(var(--ch-dur-reveal) * 2.2) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 4.6) both;
+}
+/* Arriving from the welcome, the entrance holds on its first frame while the hand-off's curtain is up (lib/handoff.ts),
+   so the dashboard is seen first and the word starts writing after it. */
+html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand__word.is-write,
+html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand__mark.is-write,
+html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-write)::after {
+  animation-play-state: paused;
+}
+@keyframes ch-brand-write {
+  from {
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+  }
+}
+@keyframes ch-brand-focus {
+  from {
+    filter: blur(3px);
+    transform: translateY(3px);
+  }
+  to {
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes ch-brand-wheel {
+  0% {
+    opacity: 0;
+    transform: rotate(-270deg) scale(0.55);
+  }
+  30% {
+    opacity: 1;
+  }
+  82% {
+    transform: rotate(5deg) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ch-brand-glint {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -30% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-brand__word.is-write,
+  .ch-brand__mark.is-write,
+  .ch-brand:has(.ch-brand__line.is-write)::after {
+    animation: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .ch-brand:has(.ch-brand__line.is-write)::after {
+    content: none;
+  }
+}
+
+/* -- The folding sidebar (owner, 2026-10-17: "a little circle that collapses the sidebar and just shows the golfhelm
+   logo and all the icons") --------------------------------------------------------------------------------------------
+   The rail is the sidebar at --ch-rail-w; the canvas is the rest of the row, so the page simply gains the width. One
+   motion carries it: the sidebar's edge, the circle riding it, the word's track and the brand panel all move on the
+   smooth spring, so the edge slides and the wheel glides to the rail's centre as one object. The icons never move: the
+   rail is exactly as wide as the icons' column. The words leave first and arrive last: folding, they fade out quickly
+   before the edge reaches them; opening, they fade in once the edge has passed, drifting the last 4px into place, so
+   no label is ever seen squeezed. Reduced motion and Animations off swap at once (the tokens go to 0). Desktop only. */
+@media (min-width: 821px) {
+  .ch-app {
+    position: relative;
+  }
+  .ch-app[data-ch-rail='folded'] {
+    --ch-sidebar-w: var(--ch-rail-w);
+  }
+  .ch-sidebar {
+    overflow-x: hidden;
+    transition: width var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+
+  /* The circle on the seam, level with the brand panel's centre. */
+  .ch-railtoggle {
+    position: absolute;
+    top: 33px;
+    left: calc(env(safe-area-inset-left, 0px) + var(--ch-rail-w) - 11px);
+    z-index: var(--ch-z-sticky);
+    translate: calc(var(--ch-sidebar-w) - var(--ch-rail-w)) 0;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--ch-nav-well-bg);
+    color: var(--ch-green-700);
+    box-shadow:
+      inset 0 1px 0 #fff,
+      var(--ch-elevation-on-frame);
+    cursor: pointer;
+    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+      transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-railtoggle svg {
+    transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  .ch-app[data-ch-rail='folded'] .ch-railtoggle svg {
+    transform: rotate(180deg);
+  }
+  @media (hover: hover) {
+    .ch-railtoggle:hover {
+      transform: scale(1.08);
+      box-shadow: var(--ch-elevation-on-frame-card-hover);
+    }
+  }
+  .ch-railtoggle:active {
+    transform: scale(0.94);
+    transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
+  }
+  .ch-railtoggle:focus-visible {
+    outline: 2px solid var(--ch-champagne-300);
+    outline-offset: 2px;
+  }
+
+  /* The brand: the word's track closes to nothing (a grid column from 1fr to 0fr), the gap with it, and the panel
+     tightens to the wheel, so the wheel ends at the rail's centre. */
+  .ch-brand {
+    transition: margin var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+      padding var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  .ch-brand__line {
+    transition: gap var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  .ch-brand__fold {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-width: 0;
+    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+      opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+  }
+  .ch-brand__fold > .ch-brand__word {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-brand {
+    margin-right: -6px;
+    margin-left: -6px;
+    padding-right: 7px;
+    padding-left: 7px;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-brand__line {
+    gap: 0;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-brand__fold {
+    grid-template-columns: 0fr;
+    opacity: 0;
+    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+      opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+  }
+
+  /* The words: out first, in last. The icon keeps its size while the row narrows; the label gives way. */
+  .ch-navitem {
+    white-space: nowrap;
+  }
+  .ch-navitem > svg {
+    flex: none;
+  }
+  .ch-navitem__label {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .ch-navitem__label,
+  .ch-nav__head > *,
+  .ch-identity__txt,
+  .ch-sidebar__card {
+    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
+      transform var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
+      visibility 0s linear 0s;
+  }
+  .ch-app[data-ch-rail='folded'] :is(.ch-navitem__label, .ch-nav__head > *, .ch-identity__txt, .ch-sidebar__card) {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
+      transform calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
+      visibility 0s linear calc(var(--ch-dur-quick) * 0.7);
+  }
+  /* The card is wide and fixed, so it never reflows while the edge passes over it; on the rail it is hidden. */
+  .ch-sidebar__card {
+    width: 212px;
+  }
+  .ch-sidebar__card:empty {
+    display: none;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-sidebar__card {
+    visibility: hidden;
+  }
+
+  /* A group's heading becomes a short rule centred on the icons' column. */
+  .ch-nav__head {
+    position: relative;
+  }
+  .ch-nav__head::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    width: 16px;
+    height: 1px;
+    background: rgb(220 205 166 / 0.4);
+    opacity: 0;
+    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+  }
+  .ch-app[data-ch-rail='folded'] .ch-nav__head::before {
+    opacity: 1;
+    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+  }
+
+  /* A count rides the icon's corner on the rail. */
+  .ch-app[data-ch-rail='folded'] .ch-navitem__count {
+    position: absolute;
+    top: 3px;
+    right: 1px;
+    display: grid;
+    place-items: center;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--ch-hero-mint);
+    color: var(--ch-green-800);
+    font: 600 9.5px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 0 0 1.5px var(--ch-shell);
+    animation: ch-rail-count var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8) both;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-navitem {
+    position: relative;
+  }
+
+  /* The avatar centres on the rail; the foot's rule goes with the card. */
+  .ch-identity .ch-avatar {
+    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  .ch-app[data-ch-rail='folded'] .ch-identity .ch-avatar {
+    translate: -5px 0;
+  }
+  .ch-sidebar__foot {
+    transition: border-color var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-app[data-ch-rail='folded'] .ch-sidebar__foot {
+    border-top-color: transparent;
+  }
+
+  /* The name tip beside a row on the rail. Fixed, so the sidebar's own scroll box does not clip it. */
+  .ch-railtip {
+    position: fixed;
+    left: calc(env(safe-area-inset-left, 0px) + var(--ch-rail-w) + 8px);
+    z-index: var(--ch-z-overlay);
+    padding: 6px 10px;
+    border-radius: var(--ch-radius-md);
+    background: var(--ch-nav-well-bg);
+    color: var(--ch-green-800);
+    font: 600 13px/1 var(--ch-font-sans);
+    white-space: nowrap;
+    top: 0;
+    box-shadow: var(--ch-elevation-on-frame-card-hover);
+    pointer-events: none;
+    opacity: 0;
+    translate: 0 var(--ch-railtip-y, 0);
+    transform: translate(-4px, -50%);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-railtip[data-shown] {
+    opacity: 1;
+    transform: translate(0, -50%);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
+      translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+}
+@keyframes ch-rail-count {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 820px) {
+  .ch-railtoggle,
+  .ch-railtip {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-sidebar,
+  .ch-railtoggle,
+  .ch-railtoggle svg,
+  .ch-brand,
+  .ch-brand__line,
+  .ch-brand__fold,
+  .ch-navitem__label,
+  .ch-nav__head > *,
+  .ch-nav__head::before,
+  .ch-identity__txt,
+  .ch-identity .ch-avatar,
+  .ch-sidebar__card,
+  .ch-railtip {
+    transition: none !important;
+  }
+  .ch-app[data-ch-rail='folded'] .ch-navitem__count {
+    animation: none;
+  }
+}
+
+/* Wave 7: a player's reply still owed on the sidebar's next event (NextEventCard), held to its own width. */
+.ch-next > .ch-badge {
+  align-self: flex-start;
+}
+
+/* L10 phone shell — the phone's native-feel pieces (docs/clubhouse/phone/shell-gestures.md). */
+@media (max-width: 820px) {
+  /* A pushed screen that is not immersive (PhoneScreen `data-ch-keeps-dock`) leaves the dock's Resume round accessory up
+     over it, as iOS keeps its tab bar for a push. The accessory floats above the screen, the page's own thumb controls
+     stand down (they belong to the page under it), and the screen stops short of the accessory by what it covers. */
+  .ch-root:has(.ch-pscreen[data-ch-keeps-dock]) .ch-dock {
+    z-index: calc(var(--ch-z-sticky) + 11);
+  }
+  .ch-root:has(.ch-pscreen[data-ch-keeps-dock]) .ch-dock__slot {
+    display: none;
+  }
+  .ch-pscreen[data-ch-keeps-dock] {
+    padding-bottom: var(--ch-pscreen-dock, 0px);
+  }
+  /* The stand-in bar's picture of a page's action (shell/phone-chrome.tsx standInAction): the key's place, not a key. */
+  .ch-pbar__icon[data-ch-standin] {
+    pointer-events: none;
+  }
+}
+
+/* -- W4c tablet tier (821px to 1180px): the desktop shell on an iPad -------------------------------------------------
+   The desktop pages were tuned for a canvas of 1000px and more. An iPad portrait (834) with the 240px sidebar open
+   leaves a canvas of 586px, a Pro portrait (1024) one of 776px. The sidebar gives back 32px of that, and the page
+   gutter (each main's side padding, tokens.css --ch-page-gutter) goes from 40px to 28px, which is another 24px for the
+   page itself. The folded rail (56px) is untouched. 1181px and wider is byte-identical to before. The auth hand-off
+   curtain reads the same sidebar token, so it still lands on the canvas's edge. `html` in front outranks the token's
+   own rule whatever order the sheets load in. */
+@media (min-width: 821px) and (max-width: 1180px) {
+  html [data-ui='clubhouse'] {
+    --ch-sidebar-w: 208px;
+    --ch-page-gutter: 28px;
+  }
+  /* The next-event card is fixed at the full sidebar's inner width (so it never reflows while the edge passes over it);
+     at 208px that is 28px less: the sidebar's 10px padding and 4px either side. */
+  .ch-sidebar__card {
+    width: 180px;
   }
 }

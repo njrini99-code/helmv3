@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type Dispatch, type RefObject } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type RefObject } from 'react';
 import { ArrowRight, Check, FlagTriangleRight, TriangleAlert, Undo2 } from 'lucide-react';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 import { displayToFeet, displayToYards, yardsToDisplay, type DistancePreference } from '@/lib/golf/distance-units';
@@ -19,8 +19,10 @@ import {
 import type { ApproachMissDirection, PuttMissTag, RoundHole, ShotRecord } from '@/lib/types/golf';
 import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
+import { roving } from '../../../ui/use-roving';
+import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
-import { APPROACH_GRID, BREAK_OPTIONS, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
+import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, isDistanceText, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
 import { Sec, Seg } from './parts';
 
 export interface ShotEntryProps {
@@ -93,15 +95,17 @@ export function ShotEntry(p: ShotEntryProps) {
   };
   const issue = shotPlausibility(input, p.ready);
   const key = plausibilityKey(p.currentHole.number, p.currentShot, issue, p.resultOfShot, p.distanceAfterShot);
-  const blocker = nextShotBlocker(input, p.ready, issue, key !== null && key === confirmedKey);
+  const parsed = parseFloat(p.distanceAfterShot);
+  const holed = result === 'hole';
+  // A box that isn't a plain number blocks Next shot, as Fairway's number input (which would hold nothing) does;
+  // the shared gate alone would record "150y" as 150.
+  const distanceInvalid = !holed && !!p.distanceAfterShot && !isDistanceText(p.distanceAfterShot);
+  const blocker = distanceInvalid ? 'Enter a valid distance' : nextShotBlocker(input, p.ready, issue, key !== null && key === confirmedKey);
   const canRecord = blocker === null;
 
   const afterUnit = lockedAfterUnit(p.isPutting, result);
   const unitWord = meters ? 'm' : afterUnit === 'feet' ? 'ft' : 'yds';
   const distLabel = p.isPutting ? `Leave distance (${unitWord})` : result === 'green' ? `Proximity to hole (${unitWord})` : `Distance remaining (${unitWord})`;
-  const parsed = parseFloat(p.distanceAfterShot);
-  const distanceInvalid = !!p.distanceAfterShot && (!Number.isFinite(parsed) || parsed < 0);
-  const holed = result === 'hole';
   const teeMiss = p.isTeeShot && !!result && ['rough', 'sand', 'other'].includes(result);
   const approachMiss = p.isApproachOrAroundGreen && !!result && !['green', 'hole'].includes(result);
   const puttMissed = p.isPutting && !!result && result !== 'hole';
@@ -209,7 +213,7 @@ export function ShotEntry(p: ShotEntryProps) {
           <Sec label="Miss direction">
             <div className="ch-rt-amissw">
               <span className="ch-rt-amiss__k">Behind the green</span>
-              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green">
+              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green" {...roving}>
                 {APPROACH_GRID.map(([v, l]) =>
                   v === null ? (
                     <span key="green" className="ch-rt-amiss__g" aria-hidden="true">
@@ -270,11 +274,11 @@ export function ShotEntry(p: ShotEntryProps) {
                 aria-invalid={distanceInvalid || undefined}
                 aria-describedby={distanceInvalid ? 'ch-rt-dist-err' : undefined}
                 value={p.distanceAfterShot}
-                onChange={(e) => p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: e.target.value })}
+                onChange={(e) => p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: cleanDistance(e.target.value) })}
               />
               <em>{unitWord}</em>
               <div className="ch-rt-quick" role="group" aria-label="Quick distances">
-                {quickPicks(afterUnit === 'feet' ? 'feet' : p.isTeeShot ? 'tee' : 'approach', p.pref).map((q) => (
+                {quickPicks(afterUnit === 'feet' ? (p.isPutting ? 'putt' : 'feet') : p.isTeeShot ? 'tee' : 'approach', p.pref).map((q) => (
                   <button
                     key={q}
                     type="button"
@@ -318,8 +322,9 @@ export function ShotEntry(p: ShotEntryProps) {
 
       <div className="ch-rt-bar">
         {blocker && (
-          // CH-11101: the one thing still missing, named above the disabled button.
-          <p className="ch-rt-blocker" id={BLOCKER_ID} role="status" aria-live="polite" data-ch-code="CH-11101">
+          // CH-11101: the one thing still missing. The disabled button shows it in place of its label; this line keeps the
+          // live announcement for screen readers.
+          <p className="ch-rt-blocker ch-sr-only" id={BLOCKER_ID} role="status" aria-live="polite" data-ch-code="CH-11101">
             {blocker}
           </p>
         )}
@@ -334,7 +339,7 @@ export function ShotEntry(p: ShotEntryProps) {
           </button>
           <button
             type="button"
-            className="ch-btn ch-btn--primary ch-btn--lg ch-rt-bar__go"
+            className={'ch-btn ch-btn--primary ch-btn--lg ch-rt-bar__go' + (blocker ? ' is-blocked' : '')}
             disabled={!canRecord}
             aria-describedby={blocker ? BLOCKER_ID : undefined}
             aria-label={holed ? `Complete hole with score ${p.currentShot}` : 'Record next shot'}
@@ -344,8 +349,8 @@ export function ShotEntry(p: ShotEntryProps) {
               p.onNextShot();
             }}
           >
-            <span>{holed ? `Hole out · ${p.currentShot}` : 'Next shot'}</span>
-            <Icon icon={holed ? Check : ArrowRight} size={16} />
+            <span aria-hidden={blocker ? true : undefined}>{blocker ?? (holed ? `Hole out · ${p.currentShot}` : 'Next shot')}</span>
+            {!blocker && <Icon icon={holed ? Check : ArrowRight} size={16} />}
           </button>
         </div>
       </div>
@@ -382,12 +387,24 @@ function TapIn({ plan, pref, onTapIn }: { plan: TapInPlan; pref: DistancePrefere
   );
 }
 
-/** CH-11502: undo asks first, naming the shot; a failed undo says so and keeps the shot (CH-11002). */
+/**
+ * CH-11502: undo asks first, naming the shot; a failed undo says so and keeps the shot (CH-11002). It opens at the
+ * foot of the card, which on a phone can be under the action bar or below the screen, so it brings itself into view
+ * clear of the bar (`scroll-margin-bottom`), at once with reduced motion.
+ */
 export function UndoConfirm({ shots, saving, error, dispatch, onUndo }: { shots: ShotRecord[]; saving: boolean; error: string | null; dispatch: Dispatch<ShotAction>; onUndo: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useChReducedMotion();
   const last = shots[shots.length - 1];
+  const shown = !!last;
+  useEffect(() => {
+    const el = ref.current;
+    if (shown && typeof el?.scrollIntoView === 'function') el.scrollIntoView({ block: 'nearest', behavior: reduced ? 'instant' : 'smooth' });
+    // Once, as it opens.
+  }, [shown]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!last) return null;
   return (
-    <div className="ch-rt-confirm" role="group" aria-label={`Undo shot ${shots.length}`} data-ch-code="CH-11502">
+    <div ref={ref} className="ch-rt-confirm" role="group" aria-label={`Undo shot ${shots.length}`} data-ch-code="CH-11502">
       <div>
         <b>Undo shot {shots.length}?</b>
         <span>{last.isPenalty ? shotTitle(last) : `${shotTitle(last)} → ${RESULT_LABEL[last.result].toLowerCase()}`}</span>
@@ -397,12 +414,12 @@ export function UndoConfirm({ shots, saving, error, dispatch, onUndo }: { shots:
           </span>
         )}
       </div>
-      <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>
+      <button type="button" className="ch-btn ch-btn--ghost" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>
         <span>Keep it</span>
       </button>
       <button
         type="button"
-        className="ch-btn ch-btn--danger ch-btn--sm"
+        className="ch-btn ch-btn--danger"
         disabled={saving}
         onClick={() => {
           // CH-11707: removing a shot is a warning.

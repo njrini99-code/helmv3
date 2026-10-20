@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
+import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import NumberFlow from '@number-flow/react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -32,7 +32,6 @@ import { figureParts, formatHcp, rosterFailedParts, rosterPeek, rowNote } from '
 import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
-import { useArrivalPainted } from '../../lib/use-painted';
 
 export type { PhoneSort } from './sort';
 
@@ -50,6 +49,9 @@ const ROLL_HOLD_MS = CH_DUR.base * 1000 + 50;
  * and the player profile as a pushed screen with its ⋯ action sheet. Same
  * data, actions and catalog as desktop.
  */
+/** A `?tab=requests` arrival not yet shown (see RosterPhone). */
+let linkedRequests = false;
+
 export function RosterPhone({
   data,
   players,
@@ -82,6 +84,25 @@ export function RosterPhone({
   const copy = useCopyText();
   const [sort, setSort] = useChSessionState<PhoneSort>('phoneSort', 'avg');
   const [requestsOpen, setRequestsOpen] = useState(false);
+  // The bell's join-request notice links here with `?tab=requests` (createTeamJoinRequest): it opens the requests
+  // sheet once, and the param is dropped so a reload shows the list. The flag outlives a remount that dropping the
+  // param can cause (as the linked player does in Roster) and lapses when the sheet closes.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('tab') === 'requests') {
+      linkedRequests = true;
+      url.searchParams.delete('tab');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+    if (!linkedRequests) return;
+    if (jr.reqs.length) setRequestsOpen(true);
+    else linkedRequests = false;
+    // Once, on arrival: the list it reads is the one the page arrived with.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeRequests = useCallback(() => {
+    linkedRequests = false;
+    setRequestsOpen(false);
+  }, []);
   const [acting, setActing] = useState(false);
   const open = openId ? players.find((p) => p.id === openId) : undefined;
   const activeCount = players.filter((p) => p.status === 'active').length;
@@ -92,6 +113,14 @@ export function RosterPhone({
   // Only a chosen sort rolls the figures (a refresh that changes an average takes the new figure at once), so the
   // permission is set with the sort and lapses once the roll is over.
   const [rolling, setRolling] = useState(false);
+  // The figures are plain text until a finger or focus lands on the sort, the only control that rolls them (pointerdown
+  // comes before the click, so the numerals are mounted at their values when the sort rolls them). Mounting a list's
+  // worth of Number Flow elements was about 20ms of a switch to Roster's long frame (WebKit, phone, 57–67ms with them,
+  // 37–52ms without, 2026-10-16), and a frame after the paint it still landed inside the switch.
+  const [flowLive, setFlowLive] = useState(false);
+  const goLive = () => {
+    if (!flowLive) setFlowLive(true);
+  };
   const chooseSort = useCallback(
     (v: PhoneSort) =>
       startTransition(() => {
@@ -120,20 +149,30 @@ export function RosterPhone({
         title="Roster"
         start
         action={
-          <PhoneIconAction
-            icon={UserPlus}
-            label="Invite players"
-            onClick={() => {
-              onInvite();
-            }}
-          />
+          // One primary per screen: while nobody is on the roster the empty state (CH-3301) carries Invite players.
+          data.playersError || players.length > 0 ? (
+            <PhoneIconAction
+              icon={UserPlus}
+              label="Invite players"
+              onClick={() => {
+                onInvite();
+              }}
+            />
+          ) : undefined
         }
       />
       <div className="ch-rsm-page" inert={open ? true : undefined}>
         <header className="ch-rsm-head">
+          {/* With nobody on the roster the count is 0: the team's name says enough (wave 10). */}
           {!data.playersError && (
             <span className="ch-rsm-kicker">
-              {data.teamName} · <span className="ch-num">{activeCount}</span> active
+              {data.teamName}
+              {players.length > 0 && (
+                <>
+                  {' '}
+                  · <span className="ch-num">{activeCount}</span> active
+                </>
+              )}
             </span>
           )}
           {/* The top bar carries the page's heading; this is the design's large title. */}
@@ -170,7 +209,7 @@ export function RosterPhone({
           <InlineNotice
             code="CH-3201"
             title="The roster didn’t load"
-            body="Your players are safe. Try again, and if it keeps happening the error has already been reported."
+            body="Your players are safe. Try again; the error has been reported."
             onRetry={onRetry}
             covered={covered}
           />
@@ -178,9 +217,9 @@ export function RosterPhone({
           <EmptyState
             size="page"
             code="CH-3301"
-            icon={Users}
+            shape="people"
             title="No players yet"
-            body="Share your team code, then approve requests as they arrive. Players appear here as soon as they join."
+            body="Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here."
             action={
               <Button variant="primary" leftIcon={UserPlus} onClick={onInvite}>
                 Invite players
@@ -188,7 +227,7 @@ export function RosterPhone({
             }
             secondaryAction={
               data.joinCode ? (
-                <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+                <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                   Copy team code
                 </Button>
               ) : undefined
@@ -196,7 +235,7 @@ export function RosterPhone({
           />
         ) : (
           <>
-            <div className="ch-rsm-sort">
+            <div className="ch-rsm-sort" onPointerDownCapture={goLive} onFocusCapture={goLive}>
               <span>Sort by</span>
               <Segmented<PhoneSort>
                 size="sm"
@@ -215,7 +254,7 @@ export function RosterPhone({
               />
             </div>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} rolling={rolling} onOpen={onOpen} />
+              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} rolling={rolling} live={flowLive} onOpen={onOpen} />
             </SectionBoundary>
           </>
         )}
@@ -260,7 +299,7 @@ export function RosterPhone({
           onStatus(p);
         }}
       />
-      <RequestsSheet open={requestsOpen} onClose={() => setRequestsOpen(false)} data={data} jr={jr} />
+      <RequestsSheet open={requestsOpen} onClose={closeRequests} data={data} jr={jr} />
       {children}
     </main>
   );
@@ -278,6 +317,7 @@ function RosterPhoneList({
   statsError,
   sort,
   rolling,
+  live,
   onOpen,
 }: {
   active: ChRosterPlayer[];
@@ -286,6 +326,8 @@ function RosterPhoneList({
   sort: PhoneSort;
   /** A sort was just chosen: the figures roll to it (RosterPhone). */
   rolling: boolean;
+  /** The figures are Number Flow (a hand is on the sort), not text (RosterPhone). */
+  live: boolean;
   onOpen: (id: string) => void;
 }) {
   const reduced = useChReducedMotion();
@@ -295,10 +337,7 @@ function RosterPhoneList({
     drawn.current = sort;
   });
   const slide = !reduced && drawn.current !== sort;
-  // The figures are plain text for the page's first frame and become Number Flow once it is painted: mounting a list's
-  // worth of Number Flow elements was about 20ms of a switch to Roster's long frame (WebKit, phone, 57–67ms with them,
-  // 37–52ms without, 2026-10-16). The text is what Number Flow draws, so nothing moves when they swap.
-  const live = useArrivalPainted();
+  // The text is what Number Flow draws, so nothing moves when they swap.
   const row = (p: ChRosterPlayer) => (
     <li key={p.id}>
       <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} roll={rolling && !reduced} live={live} />
@@ -373,7 +412,13 @@ export function RosterPhoneRow({
           <Avatar name={p.name} size={40} />
           <span className="ch-rsm-row__b">
             <b>{p.name}</b>
-            <span className={note?.tone ? `is-${note.tone}` : undefined}>{[p.classYear, note?.text].filter(Boolean).join(' · ') || ' '}</span>
+            {/* The class year stays plain; only the note takes its tone (amber for a slide, green for a gain). */}
+            <span>
+              {p.classYear}
+              {p.classYear && note?.text ? ' · ' : null}
+              {note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : null}
+              {!p.classYear && !note?.text ? ' ' : null}
+            </span>
           </span>
           {p.trend.length >= 3 && (
             <span className="ch-rsm-row__spark" aria-hidden="true">
@@ -425,7 +470,7 @@ function RequestsBanner({ jr, error, covered, onRetry, onOpen }: { jr: ChJoinReq
       <InlineNotice
         code="CH-3203"
         title="Join requests didn’t load"
-        body="Pending requests are safe. Try again, and if it keeps happening the error has already been reported."
+        body="Pending requests are safe. Try again; the error has been reported."
         onRetry={onRetry}
         covered={covered}
       />
@@ -472,8 +517,8 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
       }
       footer={
         n > 0 || jr.approvingAll ? (
-          <Button variant="primary" size="lg" leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.approveAll()}>
-            {jr.approvingAll ? <span data-ch-code="CH-3403">Approving</span> : `Approve all ${n}`}
+          <Button variant="primary" size="lg" leftIcon={Check} busy={jr.approvingAll} disabled={jr.busy != null && !jr.approvingAll} feel={null} onClick={() => void jr.approveAll()}>
+            {jr.approvingAll ? <span data-ch-code="CH-3403">Approving…</span> : `Approve all ${n}`}
           </Button>
         ) : undefined
       }
@@ -514,11 +559,11 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
                 <span>Team code</span>
                 <b className="ch-num">{data.joinCode}</b>
               </span>
-              <Button size="sm" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+              <Button size="sm" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                 Copy
               </Button>
             </div>
-            <p className="ch-rsm-reqs__note">Players join with this code. Approved players see the team calendar and messages.</p>
+            <p className="ch-rsm-reqs__note">Requests come from players already on GolfHelm who enter this code in Settings. Approved players see the team calendar and messages.</p>
           </>
         )}
       </div>

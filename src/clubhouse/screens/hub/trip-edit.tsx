@@ -89,14 +89,33 @@ export function TripEditSheet({
     setTried(true);
     if (invalid) {
       haptic('warning');
+      // The refusal is said beside the field (role=alert) and focus moves to the first one, as Add a class does.
+      const first = v.name.trim().length < 3 ? 'name' : !v.destination.trim() ? 'destination' : !v.departDate ? 'departDate' : 'returnDate';
+      document.getElementById(`${id}-${first}`)?.focus();
       return;
     }
     void save.run({ id: t.id, ...v });
   };
 
-  const input = (k: 'name' | 'destination' | 'departDate' | 'departTime' | 'from' | 'returnDate' | 'returnTime' | 'hotel', label: string, type = 'text', err?: string | null, code?: string) => (
-    <Field label={label} id={`${id}-${k}`} error={err} errorCode={code}>
-      <input id={`${id}-${k}`} className="ch-input" type={type} value={v[k]} onChange={set(k)} aria-invalid={!!err} aria-describedby={err ? `${id}-${k}-err` : undefined} />
+  const input = (
+    k: 'name' | 'destination' | 'departDate' | 'departTime' | 'from' | 'returnDate' | 'returnTime' | 'hotel',
+    label: string,
+    type = 'text',
+    err?: string | null,
+    code?: string,
+    extra?: { optional?: boolean; min?: string },
+  ) => (
+    <Field label={label} id={`${id}-${k}`} error={err} errorCode={code} optional={extra?.optional}>
+      <input
+        id={`${id}-${k}`}
+        className="ch-input"
+        type={type}
+        value={v[k]}
+        min={extra?.min || undefined}
+        onChange={set(k)}
+        aria-invalid={!!err}
+        aria-describedby={err ? `${id}-${k}-err` : undefined}
+      />
     </Field>
   );
 
@@ -112,8 +131,8 @@ export function TripEditSheet({
           <Button variant="ghost" onClick={onClose} disabled={save.pending}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={save.pending} feel={null} onClick={() => submit()}>
-            {save.pending ? 'Saving' : 'Save changes'}
+          <Button variant="primary" busy={save.pending} feel={null} onClick={() => submit()}>
+            {save.pending ? 'Saving…' : 'Save changes'}
           </Button>
         </>
       }
@@ -141,16 +160,16 @@ export function TripEditSheet({
           </div>
         </div>
         <div className="ch-hb-2">
-          {input('departDate', 'Leaves', 'date', errs.departDate, 'CH-10105')}
-          {input('departTime', 'At', 'time')}
+          {input('departDate', 'Departs', 'date', errs.departDate, 'CH-10105')}
+          {input('departTime', 'Departure time', 'time')}
         </div>
-        {input('from', 'From')}
+        {input('from', 'From', 'text', null, undefined, { optional: true })}
         <div className="ch-hb-2">
-          {input('returnDate', 'Back', 'date', errs.returnDate, 'CH-10106')}
-          {input('returnTime', 'At', 'time')}
+          {input('returnDate', 'Returns', 'date', errs.returnDate, 'CH-10106', { min: v.departDate })}
+          {input('returnTime', 'Return time', 'time')}
         </div>
-        {input('hotel', 'Hotel (optional)')}
-        <Field label="Itinerary for the players (optional)" id={`${id}-notes`}>
+        {input('hotel', 'Hotel', 'text', null, undefined, { optional: true })}
+        <Field label="Itinerary for the players" id={`${id}-notes`} optional>
           <textarea id={`${id}-notes`} className="ch-textarea" rows={4} value={v.notes} onChange={set('notes')} />
         </Field>
         <button type="submit" hidden />

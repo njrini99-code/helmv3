@@ -1,5 +1,341 @@
 # Clubhouse changelog
 
+## 2026-10-19 — A toast in a dialog no longer covers its Save on desktop
+
+- CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's footer: after Publish, the "Published"
+  toast covered the Edit event dialog's Save changes and took its clicks (found by the write journeys on a production
+  build). Inside a dialog the toasts now sit at the top on desktop as they already did on the phone (ui.css), pinned
+  by a shell test.
+
+## 2026-10-19 — Date fields drop this year's year
+
+- ui/DateField shows a date in the current year as "Tue 22 Sep" (iOS's habit), and keeps the year for any other year.
+  Two half-width fields on the phone (qualifier start and end) no longer cut the date to "Tue 22 Sep 20…". The value,
+  the month grid's day names and typing are unchanged; the server render keeps the year (the year is read on the
+  client, so no time zone is guessed).
+
+## 2026-10-19 — The iPad tier of the shell
+
+`shell.css` (end block "W4c tablet tier"): between 821 and 1180px the sidebar is 208px (was 240px) and the page gutter 28px (was 40px), and the next-event card in the sidebar narrows with it. An iPad portrait with the sidebar open went from a 586px canvas to 618px, a 1024px Pro from 776px to 808px; the folded rail and everything from 1181px up are unchanged. Page-level tablet fixes are in each page's own changelog. Lane W4c.
+
+## 2026-10-19 — Hero tone titles follow the iPhone's text size
+
+`hero-tones.css` (shared): the scorecard and board tone titles (34px and 30px) are set in `calc(N * var(--ch-type-k))`, and their radii sit on the scale. Lane W4b.
+
+## 2026-10-19 — Complete and elevate: shared pieces
+
+The shared primitives behind the complete-and-elevate pass
+([COMPLETION_PLAN_2026-10-18.md](COMPLETION_PLAN_2026-10-18.md)); each page's
+own changelog says what changed on it.
+
+- **Date and time fields** (`ui/DateField.tsx`, `ui/TimeField.tsx`, with
+  `ui/PickerHost.tsx` and `ui/date-time.ts` underneath) replace every native
+  date and time input. Values are unchanged (`yyyy-mm-dd`, `HH:mm`); the field
+  reads "Thu 15 Oct 2026" and "3:30 PM". Phone: a sheet with a month grid or a
+  snapping 15-minute list. Desktop: a popover under the field that stays
+  typable ("10/15", "oct 15", "tomorrow", "fri", "3p", "1530"), with an inline
+  note when it can't read the text. Out-of-range days and times are disabled;
+  end pickers can't precede their start.
+- **Busy buttons:** `Button busy` sets `aria-busy`, blocks a second press and
+  keeps the lit look, so a primary that is saving no longer turns into the
+  grey unavailable one.
+- **Roving focus** (`ui/use-roving.ts`): arrow keys, Home and End inside every
+  hand-built choice group; one tab stop per group.
+- **Desktop command layer** (`shell/command/**`, `ui/Tooltip.tsx`,
+  `ui/ContextMenu.tsx`): the palette on ⌘K, G-then-letter navigation with a
+  plate that shows where each letter goes, `?` for the shortcuts sheet,
+  tooltips with shortcut hints on icon buttons, and right-click menus that
+  mirror each row's own actions. Desktop only; nothing fires while typing.
+- **Waiting pages** (`ui/States.tsx`, `ui/EmptyShape.tsx`): an empty section
+  draws the shape of what will fill it (the real rules and alignment, no
+  invented content) under one sentence and one action. First run, filtered
+  empty, no permission and failure read as different states.
+- **Motion:** the live duration set is written into the rules and the
+  checklist and pinned by `__tests__/motion-durations-pinned.test.ts`.
+
+## 2026-10-18 — First run: the empty team and the new player
+
+Coach Home's first run keys on players and rounds, not events, so adding an
+event keeps "Invite players" on screen; a player with events and no rounds
+gets one calm block instead of three empty ones. One name for joining ("team
+code", "invite link"), and the coach copy says what is true: code and link
+joins are instant, only Settings requests need approval. Every "go invite"
+button reads "Invite players" and opens the invite sheet. Empty heads drop
+zero counts; the qualifier form stops a coach with no roster before the
+fields; phone sign-up has "Already a member? Sign in"; team Stats with no
+rounds no longer crashes on desktop (`StatsTeamFirstRun` is a client
+component). Shot card (owner): raised result keys, miss squares, putt chips
+and quick picks; the blocked Next shot button names what is missing instead
+of a line above it. Preview: Home `?state=eventsonly` and `?state=norounds`,
+player Home `?state=norounds`.
+
+## 2026-10-18 — On the course: tracking and the round review
+
+Tracking: the Undo-shot and Discard-round confirms keep their button ink and
+sit on their own row; the save line stays on one line; a missed putt offers
+2–12 ft quick picks and 44px miss chips; once every hole is in, "Review and
+post" is the shot review's footer primary (the top note's button is
+secondary); short phones compact the hole hero so the putt result is on the
+first screen; the screen stays awake while tracking (`track/use-wake-lock.ts`,
+silent where unsupported). Round review: Fairway and GIR marks fold into Out
+and In rows on narrow widths, the dark GIR dot reads at 5:1, distances never
+break from their unit, one "Par" casing, score names instead of shot counts,
+and the player reads "what you wrote" about their own notes.
+
+## 2026-10-18 — Premium details: edges, presses, figures and fallbacks
+
+`ui.css`: buttons carry their inline padding as `--ch-btn-pad-x` (14, sm 11,
+lg 20, icon 0); `controls.css` adds `.ch-btn--flush-start` / `--flush-end`,
+which cancel it so a ghost button's label sits on the column edge (Home card
+link, Stats Filter and Export, Delete all classes). `ui/point-span.tsx`
+`withPointSpan` opens the decimal point in hero figures (`.ch-num__pt`), so
+"73.4" no longer reads "734" on Home, Rounds and Stats. Desktop coins under
+about 35px get the phone's initials floor; BackLink's chevron draws at the
+Clubhouse stroke (1.6). `shell.css`: the phone push bar's Back and text action
+dim while pressed, and the dark hero's theme-color and html background take
+the bar's `--ch-frame`. Also: dark coins on green cards, one icon per event
+type on every week strip, chart labels at 11px or more on desktop, image
+fallbacks for course and profile photos, and one filter-chip and search skin.
+
+## 2026-10-18 — The player's side: privacy, asks and replies
+
+A player sees a meeting only when they are on its invite list (own attendance
+row), on Calendar, Home, the sidebar and Classes; when the invite reads fail,
+meetings are hidden rather than shown (`screens/calendar/model.ts`
+`playerSeesMeeting`, `data/attendance-counts.ts` `loadOwnRows` /
+`loadInvitedCounts`). Player Home carries a quiet "From your coach" row
+(replies, acknowledgements, tasks due) and every surface shows the player's own
+reply ("You're going" / "Reply needed"). Players see their own class clashes.
+Qualifier rounds to play link to setup; the squad result reads from the
+player's own selection row; one handicap rule (`displayHandicap`); no role
+labels for players; CoachHelm Decline holds with Undo; the player Roster names
+the coaches.
+
+## 2026-10-18 — One Optional tag; placeholders that read as hints
+
+`controls.css` adds `.ch-field__opt`, the one "Optional" tag every form uses
+(qualifier, class, Team Hub sheets), replacing the qualifier-only tag and the
+"(optional)" label text. Placeholder ink is `--ch-ink-500`, and sample
+placeholders start with "e.g.", so a hint never reads as a typed value.
+
+## 2026-10-18 — Toasts that stay out of the way and keep their promises
+
+`ui/Toast.tsx`: a toast can carry `onExpire`, run once when it closes without
+its action (time out, dismiss, swipe, replace, overflow), so a deferred write
+happens exactly when its Undo leaves the screen; Calendar's drag-move Undo uses
+it, and an Undo pressed after the write says "Already saved. Drag it back to
+undo." A `replace` key drops a live toast of the same kind (CH-1910), so
+"Muted / Notifications back on / Muted" no longer stack. Devices with hover get
+a Dismiss X, and Esc closes a toast that holds focus (CH-1817). `ui.css` and
+`shell.css` lift the toast stack above the Messages composer by its measured
+height (`--ch-ms-comp-h`), so a toast never sits on Send. Pending labels end
+in "…" everywhere.
+
+## 2026-10-18 — Dynamic Type reaches phone text
+
+Phone text in the page sheets (messages, calendar, hub, home, qualifiers,
+roster, classes, recruiting, rounds, setup, track, stats, CoachHelm) and the
+shared sheets (`controls.css`, `ui.css`, `shell.css`: buttons, segments,
+badges, field labels, sheet titles, page bar, top bar and section switch,
+section strip, intro, zone sections) is set in `calc(N * var(--ch-type-k))`, so
+it follows iOS Text Size up to XXL. Form fields keep the iOS 16px floor and
+grow above it (`max(16px, calc(16 * var(--ch-type-k)))`, outranking the
+`globals.css` guard). Figures, score marks, scorecards, chart text, avatars,
+the bell count and the desktop sidebar stay fixed. Rendering at the default
+size is pixel identical. The hub task ring's numeral no longer inherits the
+task title's 15px, and the desktop event peek's kind label takes
+`--ch-type-label-s`.
+
+## 2026-10-18 — Focus rings that read; Animations off from the first frame
+
+`ui.css`, `controls.css`, `settings.css`, `calendar.css`: the button, segment,
+switch, slider, settings rail and week-day focus rings draw solid
+`--ch-border-focus` where they drew 45 to 55% green, and their dark overrides
+are gone (the token turns light green itself): 2.0 to 3.2:1 before, 5.2:1 or
+more after, light and dark. `shell.css`, `stats.css`: on the green frame the
+next-event card, the phone push bar's keys and the strokes-gained end row take
+the champagne ring. `src/components/golf/theme/ThemeScript.tsx` (shared with
+Fairway, dashboard paths only) marks `<html data-motion="off">` from the stored
+Animations setting before hydration, `ClubhouseFrame` keeps it in step, and
+`tokens.css` zeroes `--ch-dur-shimmer`, `--ch-dur-live` and `--ch-dur-sweep`
+under motion off, so skeleton shimmer and live pulses hold still from the first
+frame. `--ch-warning-600` is `#8a5a0c` (was `#94600e`), 4.7:1 or more on page
+and inset.
+
+## 2026-10-18 — One page-head line, head-coach identity, wave-3 copy
+
+`tokens.css` adds `--ch-page-gutter` (the 40px `--ch-gutter`) and
+`--ch-page-head-top` (34px). Every desktop page main takes them as its side and
+top padding and keeps its own max width and centring; a head with no eyebrow
+line, or a shorter one, adds that room to its top. At 1280 every full-head tab
+title lands at the same place. `shell.css`: page-head buttons take the body's
+10px radius. `data/shell.ts`: `ChShellData.viewerIsHeadCoach`, read from the
+coach's own `golf_team_coach_staff` row in the shell's parallel batch (a failed
+read is logged and the label falls back to "Coach"); the sidebar footer,
+account sheet and desktop Settings say "Head coach" for a head coach.
+`shell/NextEventCard` says "N of M going"; `ui/Ledger`'s chevron draws through
+`Icon` (1.6 stroke); the CoachHelm program pulse
+(`src/lib/coachhelm/v3/chat/program-pulse.ts`, shared with Fairway) says
+"haven’t replied to" and "N of M replied".
+
+## 2026-10-18 — Interaction review: focus, menus, phone fields, loading shapes
+
+`shell.css`: page-head secondary keys keep the shared focus ring (their
+hairline and hover ring skip `:focus-visible`, light and dark), and the phone
+section switcher draws its ring inside the title row that clipped it.
+`controls.css`: phone `.ch-input` fields are 44px tall (base 38px).
+`ui/Menu.tsx`: a menu closed by a scroll while focus is in it returns focus to
+its trigger instead of `<body>`. Page skeletons (Home, Stats, Rounds, Roster,
+Qualifiers, Calendar, Classes) now match their loaded layout, so content lands
+within a few pixels of where the skeleton drew it.
+
+## 2026-10-18 — States polish: no-team actions, settings failure, one notice voice
+
+No-team pages (Home, Roster, Calendar, Messages) offer Open team settings, as
+Classes and Recruiting do (coaches to the Team section, players to Golf
+profile). Settings' phone list says when every read failed (CH-8214, new).
+Notice copy is unified on "Try again; the error has been reported.", and
+Messages says "safe" like the rest. The phone bell's empty line matches the
+desktop's. Calendar's View itinerary lands on the trip in Team Hub
+(`?tab=travel&trip=`).
+
+## 2026-10-17 — Figures in rows keep tabular digits
+
+A page rule that sets type with the `font` shorthand resets
+`font-variant-numeric`, so `.ch-num` lost its tabular digits wherever such a
+rule styled the same element, and columns of scores, counts and times drifted
+from row to row. The rules that style figures now set
+`font-variant-numeric: tabular-nums` right after their `font`: about 310 rules
+across the page sheets, plus the shared ones in `shell.css` (sidebar and dock
+counts, the next-event line, the strip count), `ui.css` (`.ch-intro__eyebrow`,
+`.ch-nine`, `.ch-fgr dd`) and `controls.css` (`.ch-pill`). Display numerals
+(40px and up, and `.ch-serif-num`) stay proportional, as `base.css` intends. A
+WebKit sweep of the preview screens at 390px and 1280px finds no small `.ch-num`
+figure left proportional apart from the Classes term tile's week figure (a
+display figure) and the Team Hub's message times.
+
+## 2026-10-17 — New shadows use the depth tokens; the rail's small parts move by translate
+
+The CSS quality gate (`npm run clubhouse:css`) found 18 new blur shadows
+written as raw values. Each keeps its ring and inset layers and takes the
+nearest depth token for the blur: Qualifiers' ledger cards, facts and board
+`--ch-elevation-cast` (hover `--ch-elevation-overlay`), its hero
+`--ch-elevation-board` (hover `-board-hover`), the CoachHelm dive rail and the
+announcement section `--ch-elevation-reading-accent`, the standing and profile
+dots `--ch-elevation-mark-ink`, the desktop modal `--ch-elevation-overlay`, the
+rail toggle `--ch-elevation-on-frame` (hover and the name tip
+`-on-frame-card-hover`). Dark mode now follows the tokens' dark values. On the
+folding sidebar (P001), the toggle, the avatar and the name tip move by
+`translate` instead of `left`, `margin` and `top`, so they never re-run layout;
+their places are unchanged (toggle at 229px open and 45px folded, tip centred
+on its row). The sidebar's width and the brand's track still animate layout:
+an owner decision (STATUS.md).
+
+## 2026-10-17 — Rail width token and the curtain follows a folded sidebar
+
+`tokens.css` adds `--ch-rail-w` (56px), the sidebar folded to its icon rail
+(P001). `lib/rail-cookie.ts` names the cookie that remembers the fold;
+`lib/phone-hint.ts` reads it on the server (`railHint`), and `lib/handoff.ts`
+draws the hand-off curtain's canvas edge at the rail when it is set.
+
+## 2026-10-17 — Player RSVP counts come from a narrow function
+
+`data/attendance-counts.ts` (new) calls
+`golf_event_attendance_counts(p_event_ids)` (held migration 20261017102000) and
+returns `ok` with invited, accepted, declined and pending per event, `missing`
+when the function is not there yet (PGRST202 / 42883, so the caller keeps its
+direct read), or `error`. The player paths of the shell (P001), Home (P002) and
+Calendar (P006) use it, so once the migration narrows `golf_event_attendance` to
+a player's own row their counts still hold and no teammate's reply reaches a
+player's page. Team Hub (P010) needs no change: its player path reads only the
+player's own invites (`invitedTo`), and `attendanceFor` runs on the coach path
+only. The same batch writes two other held migrations with no Clubhouse code
+change: 20261017100000 (Settings P008: the six later notification switches stop
+being dropped by the `users` trigger) and 20261017101000 (Announcements P010:
+the recipient and task coach policies are scoped to the announcement's team).
+Tests: `src/clubhouse/__tests__/attendance-counts.test.ts` and the pgTAP suites
+under `supabase/tests/rls/`.
+
+## 2026-10-16 — The hand-off curtain holds first-sight motion
+
+`lib/handoff.ts` sets `data-ch-handoff` on `<html>` while its curtain is up and
+removes it with the curtain, so motion meant for the dashboard's first sight
+(the sidebar brand's entrance, P001) holds until it can be seen.
+
+## 2026-10-16 — A script face for the wordmark only
+
+`lib/fonts.ts` adds Norican as `--ch-font-script`, preloaded, for the
+sidebar's "Golfhelm" wordmark (P001) and nothing else: an owner-requested
+exception to the sans-only type rule. It replaces Great Vibes, which was tried
+first and was too thin at sidebar size.
+
+## 2026-10-16 — No card or row has a green side bar
+
+The owner's standing rule: never a card with a green side. Every remaining green
+left-edge bar (`inset Npx 0 0 var(--ch-green...)` or the field green) is
+removed, in three commits: the open read in Deep dive (`coachhelm-dive.css`),
+the selected row in Messages in light and dark (`messages.css`), the CoachHelm
+well (`coachhelm.css`), and the plaque hero's title (`hero-tones.css`, whose
+title also loses the 14px of left padding that made room for the bar). The
+selected rows keep their fill and raised shadow. CSS only; no visual check is
+recorded.
+
+## 2026-10-16 — Zone and game-detail summaries stick below the top bar
+
+A zone summary (`.ch-zn__id`, `ui.css`) and a game-detail summary (`.ch-gm__id`,
+`stats.css`) stuck at 24px, behind the sticky top bar. They now stick at the top
+bar's height plus 24px. Desktop only; the zones are drawn on Round review (P011)
+and Stats, and game detail is P005's.
+
+## 2026-10-16 — The chosen segment of every switcher is a lit green chip
+
+Owner, 2026-10-16: green, with more depth. Every segmented switcher now draws
+its chosen segment the same way: a green chip lifted off its well, with the
+light on its top edge, a contact shadow and a soft one under it, and ivory ink
+with a hairline of shadow under the letters (`controls.css` `.ch-seg`, from the
+new `--ch-seg-on-bg`, `--ch-seg-on-shadow` and `--ch-seg-on-ink` in
+`tokens.css`, with a dark-mode shadow). Home, Roster, Calendar, Messages and
+Rounds had their own greens or an ivory raised chip; those rules are gone and
+the pages use the shared one. Phone and desktop alike. Checked in Chrome (Stats,
+Roster, Messages, light and dark); not in Safari, and not on an iPhone.
+
+## 2026-10-16 — One material for every desktop window; smooth wheel and no scrollbars everywhere
+
+Owner, 2026-10-16 ("more premium and add same blur"; the course picker "still
+looks vibe coded"; "get rid of the shimmer").
+
+- **Desktop windows (`.ch-modal`, `styles/controls.css`).** Every window now
+  takes one material, measured against the Claude and ChatGPT dialogs and
+  Apple's sheets: the page behind dimmed with a light 8px blur, a solid panel
+  with one hairline and one soft shadow on 20px corners, a 20px title, and the
+  footer on the panel's surface over a hairline instead of a tinted bar; dark
+  mode to match. It is a plain desktop query (above 820px): Safari matched
+  nothing for a `not` of `prefers-reduced-transparency`. Phone sheets are
+  unchanged.
+- **A control in the window's head (`ui/Modal.tsx`).** `Modal` takes an
+  `action`, drawn beside Close (the course picker's Add a course). Nothing else
+  passes one yet.
+- **Smooth wheel scrolling everywhere (`lib/smooth-scroll.ts`).** The canvas
+  eased a wheel, but a list, a pane, a modal's body, a sheet and the sign-in
+  screens scrolled in raw steps. One wheel listener, `useSmoothWheelEverywhere`
+  (mounted in `ClubhouseFrame` and `AuthFrame`), eases whatever box the wheel is
+  over, hands on to the box around it when one runs out of room, and never goes
+  past a dialog or a box that contains its overscroll. Only a box that scrolls
+  up and down keeps the wheel (`chScrollsVertically`), so a wide table in a
+  sideways scroller no longer turns easing off under the pointer, and a sideways
+  wheel stays native. The same rules as before: desktop, a notched wheel (a
+  trackpad stays native), never with reduced motion or Animations off.
+- **No scrollbars inside the app (`styles/base.css`).** With "always show scroll
+  bars" (or a mouse) a long page took the bar's width and a short one gave it
+  back, so switching between them moved the shell sideways (desktop Safari).
+  Every scroller still scrolls by trackpad, wheel, touch and keyboard; forced
+  colours bring the bars back. The themed thin scrollbar and its tokens' use
+  here are gone.
+- Verification: `smooth-scroll.test.ts` covers which box keeps the wheel, the
+  hand-on to the box around it, the contained overscroll and the dialog edge.
+  Not checked with a real wheel in Safari, or on an iPhone (the easing is
+  desktop only).
+
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
 Owner, testing the preview: on Stats the switcher at the top seemed to be gone.
@@ -70,28 +406,29 @@ of showing what it held.
 
 ## 2026-10-16 — A switch to a phone tab shows the page, not its skeleton first
 
-Every section switch drew twice: the route's skeleton at once, then the page when
-the server answered (360–580ms later on the local stack, WebKit). The 30s router
-cache that let a revisit render at once (native-feel P0-2, 10-08) was removed
-app-wide on 10-13 (#2189) because Fairway, Baseball and Lift Lab served stale
-pages, and a default prefetch stops at a dynamic page's skeleton.
+Every section switch drew twice: the route's skeleton at once, then the page
+when the server answered (360–580ms later on the local stack, WebKit). The 30s
+router cache that let a revisit render at once (native-feel P0-2, 10-08) was
+removed app-wide on 10-13 (#2189) because Fairway, Baseball and Lift Lab served
+stale pages, and a default prefetch stops at a dynamic page's skeleton.
 
-The phone tabs (coach: Home, CoachHelm, Calendar, Stats; player: Home, CoachHelm,
-Rounds, Team Hub) are now fetched whole ahead of a tap (`use-prefetch-tabs.ts`, a
-full prefetch, which Next holds for its static stale time, 300s) on the shell's
-first idle moment and after every arrival. A switch shows the held page at once.
-If it was fetched more than 30s ago, it is refreshed in place once it has painted
-(`router.refresh()`, no skeleton), so what settles on screen is never more than
-30s old. A refresh drops every page Next held, so the other tabs are fetched
-again when idle. The owner chose this over a 30s expiry (2026-10-16): with a real
-network an expired tab was slower than today. next.config.mjs is unchanged
-(comment only). Measured (WebKit, local production build, phone, 700ms added to
-every page request): tab switches 10s and 45s after the last fetch show the page
-with no skeleton; at 45s one refresh request follows and the page updates in
-place (a team renamed in the database: the held name at 265ms, the new one at
-1,117ms). A tap within about a second of the app loading, while the first fetch
-is still in flight, can still show the skeleton. Other sections (Roster,
-Settings, Recruiting, …) still show their skeleton first.
+The phone tabs (coach: Home, CoachHelm, Calendar, Stats; player: Home,
+CoachHelm, Rounds, Team Hub) are now fetched whole ahead of a tap
+(`use-prefetch-tabs.ts`, a full prefetch, which Next holds for its static stale
+time, 300s) on the shell's first idle moment and after every arrival. A switch
+shows the held page at once. If it was fetched more than 30s ago, it is
+refreshed in place once it has painted (`router.refresh()`, no skeleton), so
+what settles on screen is never more than 30s old. A refresh drops every page
+Next held, so the other tabs are fetched again when idle. The owner chose this
+over a 30s expiry (2026-10-16): with a real network an expired tab was slower
+than today. next.config.mjs is unchanged (comment only). Measured (WebKit, local
+production build, phone, 700ms added to every page request): tab switches 10s
+and 45s after the last fetch show the page with no skeleton; at 45s one refresh
+request follows and the page updates in place (a team renamed in the database:
+the held name at 265ms, the new one at 1,117ms). A tap within about a second of
+the app loading, while the first fetch is still in flight, can still show the
+skeleton. Other sections (Roster, Settings, Recruiting, …) still show their
+skeleton first.
 
 ## 2026-10-16 — Back returns a page to where it was left, in WebKit too
 
@@ -186,13 +523,15 @@ into the drop (cards jumped 29px, frames of 30-59ms), and every open took
 
 ## 2026-10-14 — Bell drop, page intro and settings rows from the Simulator audit
 
-- The bell's drop keeps its list a scroller at every length (`.ch-bst__scroll::before`),
-  so a pan on a short list no longer scrolls the page under it (WebKit hands a
-  pan on a non-scrolling box to the document).
+- The bell's drop keeps its list a scroller at every length
+  (`.ch-bst__scroll::before`), so a pan on a short list no longer scrolls the
+  page under it (WebKit hands a pan on a non-scrolling box to the document).
 - `.ch-intro__row` wraps, so a page title and its view switch never push the
   switch off a phone under Safari's larger page text (Calendar's List was cut).
-- Phone settings rows keep label words whole; the summary ellipsizes first (P008).
-- The event editor's free-time lanes place the time on a tap, not on touch (P006).
+- Phone settings rows keep label words whole; the summary ellipsizes first
+  (P008).
+- The event editor's free-time lanes place the time on a tap, not on touch
+  (P006).
 
 ## 2026-10-14 — Contrast and targets from the Simulator audit
 
@@ -266,10 +605,9 @@ different tints; they now share one motion and one material.
   full speed. A centred desktop dialog
   keeps its 260ms fade and settle; the backdrop clears over 260ms either way.
 - **Left as they are, on purpose**: popovers and menus (`CH_POP`, 180ms: small,
-  anchored, quick by design); the
-  bell's drop (the reveal spring's slight landing give); Peek's deeper tint (a
-  focus preview, not a sheet); the
-  round's submit screen and course view, which cover the round on their own greens.
+  anchored, quick by design); the bell's drop (the reveal spring's slight
+  landing give); Peek's deeper tint (a focus preview, not a sheet); the round's
+  submit screen and course view, which cover the round on their own greens.
 
 ## 2026-10-12 — Motion audit: every phone transition on the compositor or out of its frames
 
@@ -363,10 +701,10 @@ Owner-approved from interactive prototypes (no owner board; spec in
 - **Smooth in WebKit** (measured in Safari at 402px, dev build): the drop stays
   rendered, hidden and inert, so opening it only moves it; no body scroll lock
   (it re-laid out the whole page in the first frame; touch-action holds the page
-  instead); no backdrop blur on the veil, cards or edges (the veil is solid green,
-  the cards solid ivory); no scale; an unchanged feed keeps its identity and the
-  stacks are memoized, so a refresh mid-drop re-renders nothing. First frame
-  about 40ms to about 20ms; every frame after it 11 to 15ms.
+  instead); no backdrop blur on the veil, cards or edges (the veil is solid
+  green, the cards solid ivory); no scale; an unchanged feed keeps its identity
+  and the stacks are memoized, so a refresh mid-drop re-renders nothing. First
+  frame about 40ms to about 20ms; every frame after it 11 to 15ms.
 - **The Ask CoachHelm key** is off the phone top bar (desktop keeps it).
 - Haptics: `select` when the section changes and when a stack fans; opening the
   strip is silent; the account pill ticks as the More button did.
@@ -394,10 +732,10 @@ through; no `error.tsx` file changed.
 
 With a team allowlist (`HELM_CLUBHOUSE_TEAMS`), the `/golf` loading boundary
 painted Clubhouse's frame before the team was known, so a team outside the
-allowlist saw Clubhouse flash and then swap to Fairway. `clubhouseLoadingFrame()`
-in `gate.ts` now answers for that boundary: Fairway with the flag off, Clubhouse
-with the flag on and no allowlist, and a neutral frame otherwise. No visible
-change with the flag off or with no allowlist.
+allowlist saw Clubhouse flash and then swap to Fairway.
+`clubhouseLoadingFrame()` in `gate.ts` now answers for that boundary: Fairway
+with the flag off, Clubhouse with the flag on and no allowlist, and a neutral
+frame otherwise. No visible change with the flag off or with no allowlist.
 
 ## 2026-10-11 — Depth from tokens and transform-only motion across the premium pass
 
@@ -587,26 +925,71 @@ page's own files change. Not yet reviewed by the owner.
 
 ## 2026-10-08 — Native phone navigation: cached tabs, steady bars, push and pop
 
-From the native-feel audit (docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md, P0-2, P0-3, P1-1, P1-2). Not yet reviewed by the owner.
+From the native-feel audit (docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md,
+P0-2, P0-3, P1-1, P1-2). Not yet reviewed by the owner.
 
-- **Router cache and prefetch** (`next.config.mjs`, `shell/use-prefetch-tabs.ts`). `experimental.staleTimes` keeps a visited dynamic page for 30s and a prefetched loading shell for 180s, so a revisited tab renders from memory. This is app-wide, Fairway included: a revisit can show data up to 30s old until a mutation refreshes it. The phone tab bar prefetches its tab routes once the shell is idle, but not with Data Saver on or offline.
-- **Steady bars** (`styles/shell.css`). The top bar and tab bar have their own view-transition names, with no animation. They no longer fade with the page, and the page's snapshots no longer draw over them.
-- **No skeleton flash** (`shell/RouteFrame.tsx`, `styles/base.css`, `styles/tokens.css`). A tab change onto a route skeleton keeps the old page up for 300ms (`--ch-dur-vt-hold`) and keeps the skeleton hidden for the same time. A page that arrives sooner replaces the old page directly. CH-1619's fade over the skeleton now runs only after the skeleton has shown and the crossfade has ended, so there is only ever one fade at a time. A hard load, reduced motion and Animations off still show the skeleton at once. This reverses F-37's 0ms delay, but only for in-app navigations.
-- **Push and pop** (`lib/nav-motion.ts`, `styles/shell.css`). On a phone, a drill-in (a More row, or a link into a detail) pushes: the new page slides in from the right edge on the smooth spring (462ms) while the old one draws back by 30%. A link up a level pops the same way in reverse. React commits a Back synchronously, without a view transition, so Back from a pushed page draws its own pop: a copy of the leaving page slides off to the right edge over the page beneath, which comes in from −30%. The pop is skipped after an iOS edge swipe, with reduced motion or Animations off, and on desktop. A tab change still crossfades.
-- **More leaves first** (`shell/TabBar.tsx`). A row that navigates hides the sheet and its scrim in the same tap, so neither appears in the page transition.
-- **Pushed screens pop on the spring** (`shell/PhoneScreen.tsx`, `shell/phone-chrome.tsx`; CH-1610, CH-1618). A pushed screen and the page beneath it now return on the smooth spring, not the 260ms ease-out. The pop had read as a 183ms jump; it now clears in about 350ms. The underlay shift stays at the owner-approved 24%.
-- **Hover card honors reduced motion** (`ui/Peek.tsx`, CH-1831). The desktop hover card's 4px rise now swaps in instantly under reduced motion or Animations off, like the phone peek already did.
+- **Router cache and prefetch** (`next.config.mjs`,
+  `shell/use-prefetch-tabs.ts`). `experimental.staleTimes` keeps a visited
+  dynamic page for 30s and a prefetched loading shell for 180s, so a revisited
+  tab renders from memory. This is app-wide, Fairway included: a revisit can
+  show data up to 30s old until a mutation refreshes it. The phone tab bar
+  prefetches its tab routes once the shell is idle, but not with Data Saver on
+  or offline.
+- **Steady bars** (`styles/shell.css`). The top bar and tab bar have their own
+  view-transition names, with no animation. They no longer fade with the page,
+  and the page's snapshots no longer draw over them.
+- **No skeleton flash** (`shell/RouteFrame.tsx`, `styles/base.css`,
+  `styles/tokens.css`). A tab change onto a route skeleton keeps the old page up
+  for 300ms (`--ch-dur-vt-hold`) and keeps the skeleton hidden for the same
+  time. A page that arrives sooner replaces the old page directly. CH-1619's
+  fade over the skeleton now runs only after the skeleton has shown and the
+  crossfade has ended, so there is only ever one fade at a time. A hard load,
+  reduced motion and Animations off still show the skeleton at once. This
+  reverses F-37's 0ms delay, but only for in-app navigations.
+- **Push and pop** (`lib/nav-motion.ts`, `styles/shell.css`). On a phone, a
+  drill-in (a More row, or a link into a detail) pushes: the new page slides in
+  from the right edge on the smooth spring (462ms) while the old one draws back
+  by 30%. A link up a level pops the same way in reverse. React commits a Back
+  synchronously, without a view transition, so Back from a pushed page draws its
+  own pop: a copy of the leaving page slides off to the right edge over the page
+  beneath, which comes in from −30%. The pop is skipped after an iOS edge swipe,
+  with reduced motion or Animations off, and on desktop. A tab change still
+  crossfades.
+- **More leaves first** (`shell/TabBar.tsx`). A row that navigates hides the
+  sheet and its scrim in the same tap, so neither appears in the page
+  transition.
+- **Pushed screens pop on the spring** (`shell/PhoneScreen.tsx`,
+  `shell/phone-chrome.tsx`; CH-1610, CH-1618). A pushed screen and the page
+  beneath it now return on the smooth spring, not the 260ms ease-out. The pop
+  had read as a 183ms jump; it now clears in about 350ms. The underlay shift
+  stays at the owner-approved 24%.
+- **Hover card honors reduced motion** (`ui/Peek.tsx`, CH-1831). The desktop
+  hover card's 4px rise now swaps in instantly under reduced motion or
+  Animations off, like the phone peek already did.
 
 ## 2026-10-08 — Premium pass backlog: one light, peeks, the Ask sheet, a dock
 
-Approved by the owner on 2026-10-08 (owner review; docs/clubhouse/PREMIUM_PASS_AUDIT.md). Each page's part is in its own log.
+Approved by the owner on 2026-10-08 (owner review;
+docs/clubhouse/PREMIUM_PASS_AUDIT.md). Each page's part is in its own log.
 
-- **The global light** (`lib/light.ts`, `lib/sun.ts`, `shell/light.tsx`). One sun for the whole app, from the time of day and the team's course location (CH-8320, held migration) or its time zone. It lights the frame and the materials, never data.
-- **Peeks** (`ui/Peek.tsx`, `ui/PlayerPeek.tsx`). Hover on desktop, hold on the phone, a player's card from data the page already has.
-- **The Ask sheet and the thumb dock** (`shell/AskSheet.tsx`, `shell/AskSheetBody.tsx`, `shell/Dock.tsx`), plus deep links (`lib/deep-link.ts`, `shell/DeepLinks.tsx`).
-- **Dynamic Type** (`lib/dynamic-type.ts`). Type scales with the text size setting.
-- **Dialogs and bars** (`lib/dialog-lifetime.ts`, `ui/Modal.tsx`, `ui/PhoneBar.tsx`). A bar can leave the heading to its page (one h1 per screen). The frame, sidebar, tab bar and top bar take the light, and pad for the tab bar only while it shows.
-- **Route errors** (`shell/ClubhouseRouteError.tsx`). The preview routes get the shell's error view; a stale chunk recovers through the existing recovery coordinator.
+- **The global light** (`lib/light.ts`, `lib/sun.ts`, `shell/light.tsx`). One
+  sun for the whole app, from the time of day and the team's course location
+  (CH-8320, held migration) or its time zone. It lights the frame and the
+  materials, never data.
+- **Peeks** (`ui/Peek.tsx`, `ui/PlayerPeek.tsx`). Hover on desktop, hold on the
+  phone, a player's card from data the page already has.
+- **The Ask sheet and the thumb dock** (`shell/AskSheet.tsx`,
+  `shell/AskSheetBody.tsx`, `shell/Dock.tsx`), plus deep links
+  (`lib/deep-link.ts`, `shell/DeepLinks.tsx`).
+- **Dynamic Type** (`lib/dynamic-type.ts`). Type scales with the text size
+  setting.
+- **Dialogs and bars** (`lib/dialog-lifetime.ts`, `ui/Modal.tsx`,
+  `ui/PhoneBar.tsx`). A bar can leave the heading to its page (one h1 per
+  screen). The frame, sidebar, tab bar and top bar take the light, and pad for
+  the tab bar only while it shows.
+- **Route errors** (`shell/ClubhouseRouteError.tsx`). The preview routes get the
+  shell's error view; a stale chunk recovers through the existing recovery
+  coordinator.
 
 ## 2026-10-08 — A switch that stretches, trackpads left alone, a steady bar
 
@@ -659,10 +1042,11 @@ Approved by the owner on 2026-10-08 (the shell's part is in P001's log).
 
 ## 2026-10-08 — The shell's own states join the family
 
-- **The bell:** its empty ("You’re all caught up", "Nothing of this kind") is the
-  shared section empty at the rows' inset, not a centred block of its own. When
-  its list doesn't load, the panel's head no longer says "3 unread" or offers
-  Mark all read beside "Notifications didn’t load"; the bell keeps its count.
+- **The bell:** its empty ("You’re all caught up", "Nothing of this kind") is
+  the shared section empty at the rows' inset, not a centred block of its own.
+  When its list doesn't load, the panel's head no longer says "3 unread" or
+  offers Mark all read beside "Notifications didn’t load"; the bell keeps its
+  count.
 - **Not rebuilt:** the placeholder for a route not rebuilt yet is the page
   empty's anatomy (an hourglass medallion, Back to Home), no longer a white
   card.
@@ -864,8 +1248,8 @@ the green scoreboards, wells, form fields, the composer, dialogs, segmented
 controls and chips.
 
 - **Shared rules (`shell.css`):** inside a framed page a `.ch-sheet` loses its
-  fill, shadow and radius. The serif type tokens map to the heavy sans (doctrine:
-  no serif), and section headings take forest ink.
+  fill, shadow and radius. The serif type tokens map to the heavy sans
+  (doctrine: no serif), and section headings take forest ink.
 - **Tokens:** `--ch-ledger-rule`, `--ch-ledger-rule-soft`, `--ch-ledger-ink`,
   `--ch-ledger-eyebrow` and `--ch-ledger-row-hover`.
 - **Components (`ui/Section.tsx`):** `Section` (heading, caption, actions and a
@@ -1056,7 +1440,10 @@ and owner visual acceptance remain open in [POPUP_AUDIT](POPUP_AUDIT.md).
 
 ## 2026-10-06 — Popup layout and native-layer repairs
 
-Reading-destination headings no longer wear the global control outline; shared buttons use their existing rounded focus treatment. Settings form/list sheets initially focus their heading. Calendar custom popovers and the desktop team listbox are height-bounded. These changes preserve keyboard access.
+Reading-destination headings no longer wear the global control outline; shared
+buttons use their existing rounded focus treatment. Settings form/list sheets
+initially focus their heading. Calendar custom popovers and the desktop team
+listbox are height-bounded. These changes preserve keyboard access.
 
 Menus inside native dialogs now receive pointer input in the same top layer.
 Tall menus are bounded and scroll above keyboard space. Modal descriptions are
@@ -1222,11 +1609,14 @@ TypeScript completed, all 181 static pages generated and route table emitted.
 | Segmented controls, Home, Calendar, Rounds | **Contrast sweep (X-1 to X-4): unselected segmented labels 4.1:1, Home weekday labels 4.1:1, class and busy event times 3.6:1 and 4.0:1, the shot strip's par labels 3.8:1 and its option notes 3.2:1.** | Secondary ink on the segmented label and the weekday label; the event time keeps its color; the strip labels 0.66 and the option notes tertiary. Past-event fade: Q-152. |
 | Qualifiers | Audited, no defect found. | None. |
 
-Findings, evidence and the owner questions (Q-148 to Q-152) are in `AESTHETIC_AUDIT.md`.
+Findings, evidence and the owner questions (Q-148 to Q-152) are in
+`AESTHETIC_AUDIT.md`.
 
 ## 2026-10-01 (shared pieces, backfilled from the history)
 
-The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `lib` or `styles` that no page owns) to this log. These changed on the branch with no entry or sha here; each row is read from its commit.
+The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`,
+`lib` or `styles` that no page owns) to this log. These changed on the branch
+with no entry or sha here; each row is read from its commit.
 
 | Shared piece | Issue | Fix |
 | --- | --- | --- |
@@ -1297,4 +1687,5 @@ The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `l
 | Rounds | **Cancel on Add a course (Clickables gap 24).** Closing Add a course dropped the coach out of the course picker. | Cancel goes back to the picker it was opened from, as on the board (preview only until #2104). |
 | CoachHelm | **Assign as focus on a strength (Clickables gap 12).** Assign was hidden on a strength, though the board draws it on Theo's card; contract 130806 had been written from the code, not the board. | CoachHelm offers Assign as focus on a strength (a keep-doing focus); 130806 is reworded (Q-80, kept by the owner). |
 
-Earlier changes (2026-09-28 to 2026-09-30: the page builds, the contract passes and their fixes) are listed in each page's changelog.
+Earlier changes (2026-09-28 to 2026-09-30: the page builds, the contract passes
+and their fixes) are listed in each page's changelog.

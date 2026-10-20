@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Flag, MessageSquare, Plus } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Flag, GraduationCap, MessageSquare, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ChPlayerHome } from '../../data/player-home';
 import { Button } from '../../ui/Button';
@@ -14,9 +14,11 @@ import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/use-now';
 import { usePhoneHero } from '../../shell/phone-chrome';
+import { rebuiltHref } from '../../shell/nav';
+import { CoachAsks } from './CoachAsks';
 import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
-import { playerFailedParts } from './model';
+import { noRoundsYet, playerFailedParts } from './model';
 import { PlayerGame } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
@@ -25,7 +27,8 @@ import { GirViz, PuttsViz, SgViz } from './RoundViz';
  * The player's phone Home (v2, design/handoff/Player - Home - Mobile.html,
  * m-player-home.jsx), in the Mobile clubhouse pass (owner, 2026-10-08): on the
  * parchment sheet, the day, the greeting, Up next with its countdown as the one
- * green feature card, and Message coach / Post a round; then, flush under
+ * green feature card, and Message coach / Start a round, and what the coach is
+ * waiting on (CoachAsks); then, flush under
  * engraved rules, the week with today's timeline, the latest round (paged, its
  * scorecard inline), scoring and the parts of the game. Same loader and
  * catalog as desktop.
@@ -75,7 +78,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
             </div>
           )}
         </SectionBoundary>
-        {/* On the parchment the hero's two keys are the shared buttons: Post a round the one primary, Message coach
+        {/* On the parchment the hero's two keys are the shared buttons: Start a round the one primary, Message coach
             the quiet one beside it (both tap lightly, D-70). */}
         <div className="ch-ph-acts">
           <Button size="lg" leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)} feel="press">
@@ -83,17 +86,18 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
           </Button>
           {post && (
             <Button size="lg" variant="primary" leftIcon={Plus} href={post}>
-              Post a round
+              Start a round
             </Button>
           )}
         </div>
+        <CoachAsks asks={data.asks} />
       </header>
 
       <div className="ch-hm-body">
         {!data.week.error && !nothingAhead ? (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
             {/* The board's Today is a small label inside This week, not a section of its own. */}
-            <WeekStrip days={data.week.days} note={data.weekNote} majorIcon={Flag}>
+            <WeekStrip days={data.week.days} note={data.weekNote}>
               <SectionBoundary surface="home.today" label="Today" code="CH-2214">
                 <Today inline list={data.today} now={now} failed={false} quiet={false} canPlan={false} />
               </SectionBoundary>
@@ -104,21 +108,51 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
             <Today list={data.today} now={now} failed={data.week.error} quiet={nothingAhead} canPlan={false} />
           </SectionBoundary>
         )}
-        <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-          <Latest data={data.latest} covered={covered} />
-        </SectionBoundary>
-        <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
-          <PlayerGame data={data} phone covered={covered} />
-        </SectionBoundary>
+        {noRoundsYet(data) ? (
+          <NoRoundsYet />
+        ) : (
+          <>
+            <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
+              <Latest data={data.latest} covered={covered} />
+            </SectionBoundary>
+            <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
+              <PlayerGame data={data} phone covered={covered} />
+            </SectionBoundary>
+          </>
+        )}
       </div>
     </main>
+  );
+}
+
+/**
+ * CH-2312 inside the loaded page (desktop and phone): the team has events but the player has no round yet, so one
+ * welcome stands in for the latest round, scoring and the game. Start a round is the head's; Add classes stays.
+ */
+export function NoRoundsYet() {
+  const classes = rebuiltHref('/golf/dashboard/classes', 'player');
+  return (
+    <EmptyState
+      size="page"
+      code="CH-2312"
+      shape="rows"
+      title="Welcome to the team"
+      body="Your stats start with the first round you post. Your latest round, scoring line and game fill in here."
+      secondaryAction={
+        classes ? (
+          <Button leftIcon={GraduationCap} href={classes}>
+            Add classes
+          </Button>
+        ) : undefined
+      }
+    />
   );
 }
 
 /** `changeTone`'s class as FigureRow's tone: a strokes gained that rounds to zero stays plain. */
 const figureTone = (t: string) => (t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : undefined);
 
-/** My latest round (board "Latest"): paged through the last three, the scorecard inline. */
+/** Your latest round (board "Latest"): paged through the last three, the scorecard inline. */
 function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: boolean }) {
   const [i, setI] = useState(0);
   const r = data.rounds[i];
@@ -130,7 +164,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-ph-latest">
       <div className="ch-hm-sec__h ch-ph-sec__h">
-        <h2 id="ch-ph-latest">My latest round</h2>
+        <h2 id="ch-ph-latest">Your latest round</h2>
         {data.rounds.length > 1 && (
           <span className="ch-ph-pg">
             {/* Keys: they shrink when pressed, as every button does (`data-ch-press`, CH-1606), and tint (home.css). */}
@@ -154,7 +188,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
         <div className="ch-ph-card">
           <div className="ch-ph-rd">
             <span className="ch-h-flag" aria-hidden="true">
-              <Flag size={16} />
+              <Icon icon={Flag} size={16} />
             </span>
             <span className="ch-ph-rd__b">
               <b>{course}</b>
@@ -184,7 +218,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
             ]}
           />
           {/* The board's "Open recap": the round's own review; My stats when it isn't rebuilt. */}
-          <Button variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} className="ch-ph-card__more">
+          <Button variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} className="ch-ph-card__more ch-btn--flush-end">
             {roundHref(r.id, 'player') ? 'Open recap' : 'My stats'}
           </Button>
         </div>

@@ -100,7 +100,7 @@ The form's rules show beside their field after the first refused Save (CH-12101 
 | 120513 | CH-12113 | `THE_READER_SAYS_THE_IMAGE_IS_NOT` | The reader says the image is not a class schedule |
 | 120514 | CH-12114 | `THE_READER_FINDS_NO_CLASSES` | The reader finds no classes |
 | 120515 | — | `IMPORT_SKIPS_WHAT_IS_ALREADY_ON_THE_SCHEDULE` | An import reads the classes the player already has before it writes, and skips any with the same stored name and term, so importing a schedule twice never doubles the calendar. A class saved with no term, or a blank one, is in the current term, so it is the same class; the same class in another term is another class and is imported. A read that fails stops the import with nothing saved. When every class is already there nothing is inserted and nothing is synced (CH-12307). |
-| 120516 | — | `ONLY_CLASSES_IN_THE_SAME_TERM_COUNT` | Every check that compares classes counts only the classes of the term in question. The exact-same-time refusal (CH-12107) and the overlap note (CH-12108) count only classes in the term the form is set to. This week's overlaps with the team (CH-12109), on the overview, the cards, the side card, the form and the import result, count only classes in the current term, because the week's events are this term's. A class with no term is in the current term. The same days and times in another term never refuse a save. |
+| 120516 | — | `ONLY_CLASSES_IN_THE_SAME_TERM_COUNT` | Every check that compares classes counts only the classes of the term in question. The exact-same-time refusal (CH-12107) and the overlap note (CH-12108) count only classes in the term the form is set to. This week's overlaps with the team (CH-12109), on the overview, the cards, the side card, the form and the import result, count only classes in the current term, because the week's events are this term's. The week's team events are the ones the player's Calendar shows: a meeting that invites no one is the coach's own (D2-8) and is left out, decided by `golf_event_attendance_counts` or, until migration 20261017102000 is applied, the attendance rows; a read that fails leaves every event in. A class with no term is in the current term. The same days and times in another term never refuse a save. |
 
 ## 06 — Server / system error
 
@@ -135,7 +135,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 120702 | CH-12902 | `A_READ_IS_SLOW` | A read is slow |
 | 120703 | — | `WRITES_REFUSE_OFFLINE` | Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device. |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -179,6 +179,7 @@ Removing a class asks first, with the warning haptic before the question, and sa
 | 121101 | CH-12501 | `REMOVE_CLASS` | Remove class |
 | 121102 | CH-12502 | `CANCEL_OR_CLOSE_A_FORM_THAT_HAS` | Cancel or close a form that has changes |
 | 121103 | CH-12503 | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
+| 121104 | CH-12504 | `START_OVER_IN_THE_IMPORT_REVIEW_ONCE` | Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once) |
 
 ## 12 — State preservation
 
@@ -277,7 +278,7 @@ CH-1842, 11825 CH-1816.
 | 121805 | CH-12805 | `THE_IMPORTS_DROP_ZONE` | The import's drop zone |
 | 121806 | — | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

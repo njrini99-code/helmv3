@@ -1,5 +1,7 @@
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import type { ChSgTour } from '../lib/sg';
+import type { EditableRoundType } from '@/lib/golf/round-type-options';
+import type { ChRoundTypeCurrent, ChRoundTypeOptions, ChRoundTypeViewer } from '../screens/rounds/entry/round-type';
 import { roundType, teeColorFor, teeLabel, type ChRoundType, type ChTeeColor } from './rounds-shape';
 
 /**
@@ -84,6 +86,11 @@ export interface ChRoundReview {
   tour: ChSgTour;
   /** The AI recap stored on the round; null when none was written. */
   recap: string | null;
+  /**
+   * A completed round with no stored recap: the review asks for one once it opens (`useRoundRecap`), as the Fairway
+   * round page does (`recapPending`). Absent in a fixture: nothing is asked for.
+   */
+  recapPending?: boolean;
   /** What the player wrote about the round when posting it. */
   notes: string | null;
   holes: ChReviewHole[];
@@ -97,6 +104,22 @@ export interface ChRoundReview {
   playerError?: boolean;
   /** The team's read failed: which Tour the strokes gained is measured against is unknown, and the card says so (no team at all is not this). */
   tourError?: boolean;
+}
+
+/**
+ * Changing a submitted round's type from its review (CH-11522): what it counts as now, what it can change to, and who
+ * is asking. The owning player and a coach of the player's team may (the Fairway round page's `canChangeType`).
+ */
+export interface ChReviewTypeEdit {
+  viewer: ChRoundTypeViewer;
+  current: ChRoundTypeCurrent;
+  options: ChRoundTypeOptions;
+}
+
+/** What a submitted round counts as now, from its row. A type outside the three editable ones reads as practice, as the Fairway editor reads it. */
+export function currentRoundType(r: { round_type: string | null; qualifier_id?: string | null; qualifier_round_number?: number | null }): ChRoundTypeCurrent {
+  const type: EditableRoundType = roundType(r.round_type) ?? 'practice';
+  return { type, qualifierId: type === 'qualifier' ? (r.qualifier_id ?? null) : null, roundNumber: type === 'qualifier' ? (r.qualifier_round_number ?? null) : null };
 }
 
 export type ChDistribution = Array<{ label: 'Eagle+' | 'Birdie' | 'Par' | 'Bogey' | 'Double+'; count: number }>;
@@ -134,7 +157,7 @@ export type ChHoleRow = {
   penalty_strokes: number | null;
 };
 
-const dist = (v: number | null, unit: string | null) => (v == null ? null : `${Math.round(v)} ${unit === 'feet' ? 'ft' : 'yds'}`);
+const dist = (v: number | null, unit: string | null) => (v == null ? null : `${Math.round(v)}\u00a0${unit === 'feet' ? 'ft' : 'yds'}`);
 
 export function toShot(r: ChShotRow): ChReviewShot {
   const raw = (r.result ?? r.lie_after ?? 'other').toLowerCase();
@@ -221,6 +244,12 @@ export type ChReviewRoundRow = {
   strokes_gained_approach: number | null;
   strokes_gained_around_green: number | null;
   strokes_gained_putting: number | null;
+  /** Read for the round-type change (CH-11522); absent in older fixtures. */
+  team_id?: string | null;
+  qualifier_id?: string | null;
+  qualifier_round_number?: number | null;
+  /** golf_rounds.status; absent in older fixtures. Only a completed round asks for its recap. */
+  status?: string | null;
 };
 
 /** The round's strokes gained; null when none of the five values is there. */
@@ -272,6 +301,7 @@ export function toReview(
     strokesGained: sgOf(r),
     tour: input.tour ?? null,
     recap: r.ai_recap?.trim() || null,
+    ...(r.status === 'completed' && !r.ai_recap?.trim() ? { recapPending: true } : {}),
     notes: r.notes?.trim() || null,
     holes: input.holes,
     holesError: input.holesError,

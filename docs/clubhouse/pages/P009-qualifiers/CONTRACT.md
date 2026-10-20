@@ -30,12 +30,12 @@ and Manage selections are coach-only.
 
 Status: DEFINED
 
-Every screen opens final on first paint, read on the server in one pass. The list opens on the live qualifier as its hero, with Active and Concluded below it (90101). A qualifier opens on six facts and the leaderboard, with round-by-round scores, selections and the course per round beside it for a coach (90102). The form opens with the whole active roster ticked and sensible defaults, or prefilled when editing (90103). Manage selections opens on its three steps (90104). Every address renders in place, never as a redirect (90105, D-23). `/my-qualifiers` is the player's own list (90106); a coach is not offered it, and inside the Clubhouse frame the shell shows its not-rebuilt page there (10401). With the Clubhouse off, the selection address sends a coach to the existing CoachHelm workspace (90107).
+Every screen opens final on first paint, read on the server in one pass. The list opens on the live qualifier as its hero, with Active and Concluded below it (90101). A qualifier opens on six facts and the leaderboard, with round-by-round scores, selections and the course per round beside it for a coach (90102); its rounds, order, ties and cut are the ones the squad is confirmed from, and the Bubble sits inside the squad (WIRING.md, "Standings parity"). The form opens with the whole active roster ticked and sensible defaults, or prefilled when editing (90103). Manage selections opens on its three steps (90104). Every address renders in place, never as a redirect (90105, D-23). `/my-qualifiers` is the player's own list (90106); a coach is not offered it, and inside the Clubhouse frame the shell shows its not-rebuilt page there (10401). With the Clubhouse off, the selection address sends a coach to the existing CoachHelm workspace (90107).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 90101 | — | `LIST_READY` | The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets Create qualifier. |
-| 90102 | — | `DETAIL_READY` | A qualifier opens with its status pill and name, six facts (dates, entry deadline, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
+| 90102 | — | `DETAIL_READY` | A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
 | 90103 | — | `FORM_READY` | Create opens with the whole active roster ticked, three rounds, a five-player squad and one coach's pick; Edit opens with the qualifier's own values, round courses and entrants. |
 | 90104 | — | `SELECTION_READY` | Manage selections opens with the qualifier's name and squad line, the three steps (Standings, Coach's picks, Squad confirmed) with the current one marked, the places on score now, the rest of the field, the coach's picks with their open slots, and the one primary action for the next step. |
 | 90105 | — | `ADDRESSES_RENDER_IN_PLACE` | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers and /my-qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. |
@@ -101,7 +101,7 @@ First-run and filtered are distinct, and a failed read is never drawn as empty. 
 
 Status: DEFINED
 
-Checked in the form before anything is sent. Each problem sits under its field (name, start date, end date, entry deadline, rounds, the one-round confirmation, players, squad size, coach's picks: 90501 to 90509), the top of the form says how many (90510), and focus moves to the first one (92001). Enter submits the form and shows the same problems (92002). The pick dialog needs a player (90512) and a reason (90511). Editing adds two rules the server also holds: a player with a round or a squad place stays entered (90513), and once the squad is confirmed its size is fixed (90514). Problems are alerts tied to their fields (91804).
+Checked in the form before anything is sent. Each problem sits under its field (name, start date, end date, rounds, the one-round confirmation, players, squad size, coach's picks: 90501 to 90509), the top of the form says how many (90510), and focus moves to the first one (92001). Enter submits the form and shows the same problems (92002). The pick dialog needs a player (90512) and a reason (90511). Editing adds two rules the server also holds: a player with a round or a squad place stays entered (90513), and once the squad is confirmed its size is fixed (90514). The form has no entry deadline field: a stored deadline is sent back unchanged while it is on or before the start date, and cleared once a new start date passes it, so 90504 never fires on a field the coach can't see (2026-10-17). Problems are alerts tied to their fields (91804).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -173,6 +173,7 @@ page again (91402), and Retry runs the write again (91401).
 | 90631 | CH-09221 | `THE_COACHS_PICK_NOTES_DONT_LOAD` | The coach's pick notes don't load (detail, coach, confirmed squad) |
 | 90632 | CH-09222 | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | A player's entries don't load on /my-qualifiers |
 | 90633 | CH-09220 | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
+| 90634 | CH-09223 | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | The player's rounds panel crashes (desktop, beside the leaderboard) |
 
 ## 07 — Network / offline
 
@@ -186,8 +187,10 @@ Offline, no write is sent: the shell's toast names what did not happen, the erro
 | 90702 | — | `WRITES_REFUSED_OFFLINE` | Offline, none of the eight writes (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) is sent: the shell's offline toast (CH-1903) names what did not happen, the error haptic fires, and the page does not move on. |
 | 90703 | CH-09904 | `THE_LISTS_FILTER_AND_SEARCH` | The list's filter and search |
 | 90704 | CH-09905 | `RETURNING_TO_THE_LIST_FROM_A_QUALIFIER` | Returning to the list from a qualifier |
+| 90705 | CH-09906 | `PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND` | Player: a live qualifier with a round still to play, before its last day |
+| 90706 | CH-09907 | `PLAYER_THE_SQUAD_IS_CONFIRMED` | Player: the squad is confirmed |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -365,7 +368,7 @@ CH-1842, 11825 CH-1816.
 | 91803 | CH-09803 | `A_LIVE_UPDATE_TO_THE_STANDINGS_IS` | A live update to the standings is announced |
 | 91804 | — | `FIELD_PROBLEMS_ARE_ALERTS` | Each problem in the form or the pick dialog is an alert tied to its field by aria-describedby, the field is marked aria-invalid, and a field with no problem is not. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 
@@ -375,7 +378,7 @@ At 820px and below a qualifier is one column with a rounds sheet (91901), the fo
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 91901 | — | `PHONE_DETAIL` | At 820px and below a qualifier is one column: three facts (rounds in, spots, deadline), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop. |
+| 91901 | — | `PHONE_DETAIL` | At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop. |
 | 91902 | — | `PHONE_FORM` | On the phone the form's Cancel and Create (Save when editing) sit in the top bar and the tab bar steps aside; Create runs the same checks as the page's button, and Cancel asks before discarding changes. |
 | 91903 | — | `PHONE_SELECTION` | On the phone Manage selections has its own top bar (Selections, with a way back to the qualifier) and the one primary action in a foot at the bottom of the page. |
 | 91904 | — | `PHONE_LIST` | On the phone the list's top bar reads ‹ More and the title (Qualifiers, or My qualifiers on a player's own list); the list itself is the desktop list with phone CSS. |
@@ -425,7 +428,7 @@ Failures are reported, server reads logged, intents breadcrumbed (92301, 92304).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 92301 | — | `FAILURES_REPORTED` | A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', <read>). |
+| 92301 | — | `FAILURES_REPORTED` | A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', {read}). |
 | 92302 | — | `HELD_SETUP_ACTIONS_REFUSE_OFF` | The squad-size and entrants actions refuse before any read unless the Clubhouse UI is on for the caller (D-61). |
 | 92303 | — | `SELECTION_REFUSAL_KEPT_FOR_THE_TRAIL` | The selection actions' own refusal text, cut at 200 characters, goes to a chTrail breadcrumb ('qualifiers selection refused') and not to the coach, so Sentry keeps what the server said. |
 | 92304 | — | `INTENTS_LEAVE_BREADCRUMBS` | Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action qualifiers.<name>). |

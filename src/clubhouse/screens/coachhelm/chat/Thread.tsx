@@ -18,7 +18,9 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { OFFLINE_LINE } from '../../../ui/Retry';
+import { Spinner } from '../../../ui/Spinner';
 import { useToast } from '../../../ui/Toast';
+import { Tooltip } from '../../../ui/Tooltip';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
 import { AskEvidenceView } from './Evidence';
 import { AskProse, AskUserText } from './Prose';
@@ -210,9 +212,11 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
                 })}
                 {turn.answerText && !turn.active && !turn.note && (
                   <div className="ch-th-tools">
-                    <button type="button" className="ch-th-icobtn" aria-label="Copy" title="Copy" onClick={() => void copy(turn.answerText)}>
-                      <Icon icon={Copy} size={16} />
-                    </button>
+                    <Tooltip>
+                      <button type="button" className="ch-th-icobtn" aria-label="Copy" onClick={() => void copy(turn.answerText)}>
+                        <Icon icon={Copy} size={16} />
+                      </button>
+                    </Tooltip>
                   </div>
                 )}
                 {showFollowUps && (
@@ -269,7 +273,7 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
         return (
           <li key={s.id} aria-current={current ? 'step' : undefined}>
             {current ? (
-              <span className="ch-th-spin" aria-hidden="true" />
+              <Spinner />
             ) : (
               <Icon icon={Check} size={14} className="ch-th-steps__ok" />
             )}

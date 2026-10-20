@@ -6,13 +6,13 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type Call = { table: string; op: string; values?: unknown; filters: Array<[string, unknown]> };
+type Call = { client: 'session' | 'admin'; table: string; op: string; values?: unknown; filters: Array<[string, unknown]> };
 const calls: Call[] = [];
 let updatedRows: Array<{ id: string }> | null = [{ id: 'as1' }];
 let updateError: { message: string } | null = null;
 
-function chain(table: string) {
-  const call: Call = { table, op: 'select', filters: [] };
+function chain(table: string, client: Call['client'] = 'session') {
+  const call: Call = { client, table, op: 'select', filters: [] };
   calls.push(call);
   const q: Record<string, unknown> = {};
   q.select = () => q;
@@ -40,6 +40,11 @@ vi.mock('@/lib/supabase/server', () => ({
     from: (t: string) => chain(t),
   }),
 }));
+// The task's roll-up runs as the service role: a player's session sees only their own assignment and cannot update
+// golf_tasks (golf_tasks_update_coach), so syncTaskStatusFromAssignments reads and writes with the admin client.
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ from: (t: string) => chain(t, 'admin') }),
+}));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), updateTag: vi.fn() }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn() }));
 vi.mock('@/lib/admin/observed-action', () => ({ withAdminObserved: (_n: string, _o: unknown, fn: unknown) => fn }));
@@ -63,7 +68,9 @@ describe('uncompleteTask', () => {
       ['player_id', 'pl1'],
       ['status', 'completed'],
     ]);
+    expect(write.client).toBe('session');
     const rollUp = calls.find((c) => c.table === 'golf_tasks' && c.op === 'update')!;
+    expect(rollUp.client).toBe('admin');
     expect(rollUp.values).toMatchObject({ status: 'pending', completed_at: null });
   });
 

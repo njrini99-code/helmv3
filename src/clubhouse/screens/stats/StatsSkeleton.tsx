@@ -55,8 +55,9 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
               <Skeleton width={72} height={12} />
               <Skeleton width={56} height={28} radius={7} />
               <Skeleton width={64} height={17} />
-              {/* The strokes gained figure's change line (the loaded hero keeps it in every window). */}
-              {i === 2 && <span className="ch-pf-hero__chg" style={{ display: 'block' }} />}
+              {/* The strokes gained figure's change line (the loaded hero keeps it in every window). It is the hero's widest
+                  line (about 140px), so beside the name at 1280 the coach's three actions wrap to two rows here as loaded. */}
+              {i === 2 && <span className="ch-pf-hero__chg" style={{ display: 'block', width: 139 }} />}
             </div>
           ))}
         </div>

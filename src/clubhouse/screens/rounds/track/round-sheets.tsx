@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
 import { formatToPar, NO_DATA } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
-import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useDialogLifetime } from '../../../lib/dialog-lifetime';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { ScoreMark } from '../../../ui/ScoreMark';
+import { Spinner } from '../../../ui/Spinner';
 
 /**
  * The round's own sheets, around the shot screen: Exit (save for later, keep
@@ -88,9 +88,12 @@ export function Scorecard({ holes, current }: { holes: ChCardHole[]; current: nu
 
 /** CH-11509: the scorecard, from the top bar. */
 export function ScorecardSheet({ open, onClose, course, tee, holes, current }: { open: boolean; onClose: () => void; course: string; tee: string | null; holes: ChCardHole[]; current: number }) {
-  const thru = holes.filter((h) => h.score != null).length;
+  const done = holes.filter((h) => h.score != null);
+  // Where the player stands, as the Exit sheet says it ("thru 3 · +1"): Tot counts the whole nine's par.
+  const toPar = done.reduce((s, h) => s + (h.score ?? 0) - h.par, 0);
+  const thru = `thru ${done.length}${done.length ? ` · ${formatToPar(toPar)}` : ''}`;
   return (
-    <Modal open={open} onClose={onClose} title="Scorecard" description={[course, tee, `thru ${thru}`].filter(Boolean).join(' · ')} icon={Table2} width={760} code="CH-11509">
+    <Modal open={open} onClose={onClose} title="Scorecard" description={[course, tee, thru].filter(Boolean).join(' · ')} icon={Table2} width={760} code="CH-11509">
       <Scorecard holes={holes} current={current} />
     </Modal>
   );
@@ -168,12 +171,12 @@ export function ExitSheet({
               </span>
             )}
           </div>
-          <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" disabled={discarding} onClick={() => setConfirm(false)}>
+          <button type="button" className="ch-btn ch-btn--ghost" disabled={discarding} onClick={() => setConfirm(false)}>
             <span>Keep it</span>
           </button>
           <button
             type="button"
-            className="ch-btn ch-btn--danger ch-btn--sm"
+            className="ch-btn ch-btn--danger"
             disabled={discarding}
             onClick={() => {
               haptic('warning');
@@ -229,7 +232,7 @@ export interface ChSummaryHole extends ChCardHole {
 
 /**
  * CH-11508: the round is complete. The figures (putts, fairways, greens,
- * front and back), the card, and Submit. Back returns to the last hole.
+ * front and back), the card, and Post round. Back returns to the last hole.
  */
 export function RoundCompleteSheet({
   open,
@@ -272,7 +275,7 @@ export function RoundCompleteSheet({
             <span>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</span>
           </button>
           <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onSubmit}>
-            <span>Submit round</span>
+            <span>Post round</span>
             <Icon icon={Send} size={16} />
           </button>
         </>
@@ -295,13 +298,13 @@ export function RoundCompleteSheet({
       </div>
       <Scorecard holes={holes} current={null} />
       {/* R-11: no promise of edits the round review doesn't offer, or of a coach the player may not have. */}
-      <p className="ch-rt-sum__n">Submitting posts this round to your stats.</p>
+      <p className="ch-rt-sum__n">Posting adds this round to your stats.</p>
     </Modal>
   );
 }
 
 /**
- * CH-11603: submitting the round, over the screen. It names what is really
+ * CH-11603: posting the round, over the screen. It names what is really
  * happening (the shot count) instead of timing fake steps (Q-72d); the spinner
  * stops with reduced motion. Posted: success, and the round's review (the round
  * screen opens it after a beat). Failed (CH-11005): the round stays saved on the
@@ -315,6 +318,7 @@ export function SubmitOverlay({
   course,
   shots,
   coach,
+  score = null,
   reviewHref,
   error,
   onRetry,
@@ -326,6 +330,8 @@ export function SubmitOverlay({
   course: string;
   shots: number;
   coach: string | null;
+  /** The posted round's strokes and score to par, named in the success line ("Your 74 (+2) at Finley GC is posted."). */
+  score?: { strokes: number; toPar: number } | null;
   reviewHref: string | null;
   error: string | null;
   onRetry: () => void;
@@ -334,7 +340,6 @@ export function SubmitOverlay({
   /** Closing (Go back after a failure) fades the card out on the dialog lifetime rather than unmounting it (A-18). */
   open?: boolean;
 }) {
-  const reduced = useChReducedMotion();
   // D6/D7: a real modal dialog on the top layer, so the round behind it is inert and can't be reached or read through;
   // it can't be dismissed (Esc does nothing): each state names its own way on. Focus moves to the state's title.
   const { ref, retainContent } = useDialogLifetime(open, { direction: 'center', surfaceSelector: '.ch-rt-subm' });
@@ -348,9 +353,9 @@ export function SubmitOverlay({
       <div className="ch-rt-subm" role={state === 'failed' ? 'alert' : 'status'} aria-live="polite">
         {state === 'saving' && (
           <>
-            <span className={'ch-rt-spin ch-rt-spin--lg' + (reduced ? ' is-still' : '')} aria-hidden="true" />
+            <Spinner size="lg" tone="mint" />
             <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1}>
-              Submitting round
+              Posting round
             </h2>
             <span className="ch-rt-subm__m">Saving {shots} shots, updating your stats and writing the round recap. Keep this screen open.</span>
             {slowHref && (
@@ -370,7 +375,7 @@ export function SubmitOverlay({
               Round posted
             </h2>
             <span className="ch-rt-subm__m">
-              Your round at {course} is posted.{coach ? ` ${coach} can see it now.` : ''}
+              Your {score ? `${score.strokes} (${formatToPar(score.toPar)})` : 'round'} at {course} is posted.{coach ? ` ${coach.replace(/ /g, '\u00a0')} can see it now.` : ''}
             </span>
             {reviewHref && (
               <a className="ch-btn ch-btn--primary ch-btn--lg" href={reviewHref}>
@@ -386,7 +391,7 @@ export function SubmitOverlay({
               <Icon icon={TriangleAlert} size={24} />
             </span>
             <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1} data-ch-code="CH-11005">
-              The round didn&rsquo;t submit
+              The round didn&rsquo;t post
             </h2>
             <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Check your connection, then try again.'}</span>
             <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onRetry}>

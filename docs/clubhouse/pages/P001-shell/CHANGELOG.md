@@ -1,5 +1,571 @@
 # P001 — Shell: changelog
 
+## 2026-10-19 — The phone shell feels native: edge swipe back, pushes that keep the dock, no late bars, idle prefetch
+
+```text
+Design package: none (complete-and-elevate plan, lane L10); no owner board, so the phone draft is docs/clubhouse/phone/shell-gestures.md
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (the sweep asks the server for pages the role can already open; no new read or write)
+Held items:     the native flag window.__helmNativeSwipe (Swift): until it lands the web gesture stays off in the iOS app
+```
+
+### Changed
+
+- Edge swipe back on a pushed phone screen. A finger that starts within the left 20px follows the screen (the page beneath, or
+  the screen beneath a second push, draws back with it by the pop's own parallax). Letting go past 35% of the width, or flicked
+  right, pops it: the screen's own Back runs and the screen leaves on the smooth spring from where it was let go, at the finger's
+  speed; sooner, and it springs back. A first travel that is vertical stays the page's scroll. The selection haptic ticks as the
+  mark is crossed. With reduced motion nothing follows the finger and a commit pops at once. It does not run beside the native
+  swipe (in the app only when the shell says its own is off), with a sheet or dialog open, on a round-tracking route, or for a
+  screen whose only Back is a form's Cancel.
+- A push is not immersive unless it says so (`PhoneScreen immersive`, implied by `keyboardAware`): the Resume round accessory
+  stays up over a profile or details screen, which stops above it, as iOS keeps its tab bar for such a push (NATIVE_FEEL P2-3).
+  Composers and the round itself still hide the dock (`shell/Dock.tsx` reads `dockKept`, and never shows an empty dock).
+- The shell's stand-in for a pushed page's bar now draws the page's always-present action in its place (Share on a coach's Player
+  stats, the Qualifier actions key for a coach), so the page's own bar replaces it without anything appearing late.
+- The first visit to Roster, Messages, Team Hub, Qualifiers, Recruiting, Settings (every section the role can reach) shows the
+  page, not a skeleton: after the tabs, when idle, the other sections are fetched whole two at a time with a 1.5 second rest,
+  under the same Data Saver and offline guards, and not again inside two minutes after a refresh.
+
+### Why
+
+- A drag that tracks the finger is what an iPhone user expects of Back; a screen that jumps, a bar whose key arrives late and a
+  skeleton on first visit are the three places the shell still read as a web page.
+
+### Verification
+
+- Unit tests: `shell/__tests__/edge-swipe.test.tsx` (the state machine: zone, slop, vertical wins, thresholds, flick, the
+  capability check, tracking routes, overlays, the screen's Back), `phone-shell-gestures.test.tsx` (the swipe bound to a screen,
+  the dock kept or hidden per screen, the stand-in action), `phone-prefetch-sweep.test.tsx` and `use-prefetch-tabs.test.tsx`
+  (ordering, the two-at-a-time cap, guards, the two-minute rest).
+- Captured headless WebKit 390x844, light and dark, scripted touch events: mid-drag, past the mark, spring back, commit with the
+  page returning in step (per-frame positions in VERIFY), a thread under its details (no frame moves the screen beneath backward);
+  the stand-in bar against the page's own; the dock over a profile with a round in progress (the accessory stays, the screen stops
+  above it, the page's thumb controls step aside). Not verified: a
+  physical iPhone (Safari's own swipe against ours, haptics, VoiceOver after a swipe pop), the iOS app (the native flag does not
+  exist yet), the idle prefetch in a production build.
+
+## 2026-10-19 — Desktop command layer: palette, shortcuts, tooltips
+
+```text
+Design package: none (complete-and-elevate plan, lane L1, desktop command layer)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no new read: the palette lists what the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Command palette on Cmd K (Ctrl K elsewhere), desktop only, in the shared Modal over cmdk. With nothing typed it shows Recent (the
+  last five sections visited this tab, not the one you are in) and Go to (every section the role's sidebar has, each with its G
+  shortcut). Typing searches Go to, People (a coach's players, from the roster the coach has already opened this session) and
+  Actions (New round, New event, New message, Post announcement, New qualifier, Add class, each only for the role that can do it;
+  every one just routes to the screen that does it). No matches says so and offers the nearest section.
+- Shortcuts: G then H, A, C, M, T, R, S, Q, E, O, L or a comma goes to a section (one second between the keys), `/` focuses the
+  page's search field, `?` opens a grouped shortcuts sheet. None fire while typing or inside a dialog or menu. N on Home and Cmd or
+  Ctrl backslash for the sidebar are unchanged and listed in the sheet. While G waits for its letter, a small plate lists the
+  letters and where they go.
+- Tooltips: every icon-only button (IconButton, the sheet and toast close keys, the sidebar fold toggle with its key) shows its name
+  and shortcut after the pointer rests for half a second, at once when moving along neighbours, and on keyboard focus. Never on
+  touch. Escape dismisses it. The browser's native `title` on IconButton is gone, so there is one tip, not two.
+- `ui/ContextMenu.tsx`: a right-click (and Shift F10 or the Menu key) menu on the shared Menu surface and rows. Shift, a text field
+  and a phone keep the browser's own menu.
+
+### Why
+
+- A desktop tool for a coach who works from the keyboard: jump anywhere in two keys, and every icon button says what it is.
+
+### Verification
+
+- Unit tests: `shell/command/__tests__` (key sequencing and its one-second window, suppression in fields and dialogs, the letter map
+  per role, what the palette lists per role, recent destinations, tooltip timing, the layer end to end), `ui/__tests__`.
+- Captured headless WebKit 1280x900, light and dark: palette empty and with a search, no results, shortcuts sheet, rail tooltip.
+
+## 2026-10-18 — Wave 8: push bar presses and the dark hero edge
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Phone push bar: Back and the text action dim to half opacity while
+  pressed (a disabled text action does not).
+- Dark phone hero: theme-color and the html background take the bar's own
+  `--ch-frame`; light keeps green-800, the light hero bar's colour.
+- Controls: `.ch-btn--flush-start` / `.ch-btn--flush-end` set a ghost
+  button's label on a column edge by cancelling its inline padding
+  (`--ch-btn-pad-x`, ui.css; 14px until a size sets it).
+
+## 2026-10-18 — Wave 7: a player's next event
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (the player's own attendance rows)
+Held items:     works before and after 20261017102000 (HELD.md)
+```
+
+### Fixed (2026-10-18, next event)
+
+- Decision B: a player's next-event card never counts down to a meeting
+  they aren't invited to (their own attendance row decides; when it doesn't
+  load, D2-8 from the counts; when that fails too, no meeting). It reads ten
+  upcoming events, not five, so passed-over meetings don't leave it empty.
+
+### Changed (2026-10-18, next event)
+
+- A player's card shows "Reply needed" while their own reply is still owed,
+  by Home's rule (`playerMine`), an event open to the whole team included.
+
+## 2026-10-18 — Wave 5: toasts close, replace and hold an Undo
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, toasts)
+
+- `ui/Toast.tsx`: on a device with a mouse a toast has a ghost Dismiss X
+  ("Dismiss notification"), and Esc closes it while focus is inside it;
+  focus goes back where it was, and inside a dialog Esc closes only the
+  toast (CH-1817). A toast raised with a `replace` key takes the place of a
+  live one with the same key, so contradictory notices never stack
+  (CH-1910). `onExpire` runs once when a toast leaves without its action
+  (it ran out, was closed, swiped, replaced or pushed out), never while its
+  action is still on screen, so held work like an Undo commits then.
+- `ui/Retry.tsx`, `ui/Notices.tsx`: "Trying again…" while a retry runs.
+
+## 2026-10-18 — Wave 4: Dynamic Type for the shell's phone text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, shell Dynamic Type)
+
+- `shell.css`: the phone's shell text (top bar title and section switch,
+  page bar back, title and text keys, section strip, More sheet, bell
+  stacks, empty page, notices, hero, offline line, skip link, toasts) is set
+  in `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The strip's count pill scales its line height with it.
+- Left fixed on purpose: the bell's count numeral, the brand word and the
+  desktop sidebar (sections, items, counts, crumbs, identity, next event).
+  At the default size every value is the same pixel.
+
+### Verification (2026-10-18, shell Dynamic Type)
+
+- WebKit 390 (Playwright, dev preview, `--ch-type-scale` 1.353), 39 phone
+  states with `controls.css` and `ui.css` converted alongside: unscaled
+  text 1471 to 966 in total; no horizontal overflow at XXL. Scale-1
+  screenshots are pixel identical to before (the dev overlay aside).
+
+## 2026-10-18 — Wave 3: focus rings that read; Animations off from the first frame
+
+```text
+Design package: none (wave-3 accessibility review, items 1, 3, 4, 6, 9)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, accessibility: rings and motion)
+
+- Keyboard focus rings are solid `--ch-border-focus` (green 600, light green at
+  night) where they were 45 to 55% green: the button ring (`ui.css`, still 2px
+  with a 2px page gap), segments, switches and sliders (`controls.css`). Their
+  dark overrides are gone; the token turns itself. Buttons 2.15:1 to 7.23:1
+  light, 3.22:1 to 7.8:1 dark; switches 2.15 to 7.23 light, 2.57 to 7.8 dark;
+  segments 1.96 to 5.24 light, 2.56 to 8.06 dark.
+- On the green frame the ring is champagne, as the sidebar's rows have it: the
+  next-event card (1.7:1 to 8.85:1) and the phone push bar's back, icon and text
+  keys (1.7:1 to 8.85:1, `shell.css`).
+- Animations off holds the loops still from the first frame on a hard load:
+  ThemeScript marks `<html data-motion="off">` on `/golf/dashboard` from the
+  stored setting; `FrameRoot` keeps it in step with the setting and clears it
+  when the frame goes. Under it `--ch-dur-shimmer`, `--ch-dur-live` and
+  `--ch-dur-sweep` are 0ms (`tokens.css`), and the skeleton fade and shimmer
+  rules also match the `<html>` form (`base.css`, `shell.css`).
+- `--ch-warning-600` is `#8a5a0c` (was `#94600e`): 4.79:1 on the page and
+  4.70:1 on an inset, where it was 4.32 and 4.24. `--ch-chart-loss` is
+  unchanged.
+
+### Verification (2026-10-18, accessibility: rings and motion)
+
+- WebKit (Playwright, dev preview, light and dark): focus ring contrast against
+  the colour beside it for a button, primary button, segment, switch, week day,
+  phone month day, settings rail row, sidebar row, next-event card, push bar
+  back key and the strokes-gained end row, every one 5.24:1 or more; close-ups
+  checked by eye (a 2px ring, not heavier than the global one).
+- Animations off with `<html>` marked as ThemeScript does: no running animation
+  at 150 or 400ms on Home and Stats loading, Calendar, the round or Recruiting
+  (unmarked: the shimmer, the live pulse and the round draw ran). Turning the
+  setting on clears `<html>`, off sets it again.
+- `ThemeScript.test.tsx`: marks the dashboard when animations are off; nothing
+  when absent, on, or on `/admin`, `/golf/login`, `/golf/welcome`; a malformed
+  preference still boots the theme.
+
+## 2026-10-18 — Wave 3: Head coach, the page-head line and its buttons
+
+```text
+Design package: none (wave-3 design review, items 2, 5, 13)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, identity and page-head line)
+
+- The identity line in the sidebar footer and the account sheet says "Head coach
+  · Varsity" for the team's head coach, as the boards and the phone Settings
+  list do; an assistant, a player or a staff read that fails keeps "Coach" or
+  "Player". The shell reads the coach's own `golf_team_coach_staff` row (`role`)
+  beside its other reads (`viewerIsHeadCoach`, `data/shell.ts`; a failure is
+  logged as `staffRole`).
+- Two layout tokens: `--ch-page-gutter` (the 40px `--ch-gutter`) and
+  `--ch-page-head-top` (34px). Every desktop page main takes them, so the title
+  lands 44px in from the frame and on one line across tabs; a head with no
+  eyebrow, or a shorter one, adds that room to its top (`tokens.css`).
+- A page-head button takes the body's 10px radius (`--ch-radius-md`) where the
+  head forced 8px; a small one keeps 8px (`shell.css`).
+
+### Verification (2026-10-18, identity and page-head line)
+
+- `npm run test:file` on `wiring-p001-identity.test.ts` (head coach, assistant,
+  failed read, player, read starts with the others) and `shell.test.tsx`
+  (sidebar and account sheet lines).
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: the next event counts who is going
+
+```text
+Design package: none (wave-3 design review, items 3, 12)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, next event and row chevrons)
+
+- The sidebar's next-event card reads "2 of 3 going", the word Home's day
+  card and the calendar peek use, where it said "confirmed"
+  (`NextEventCard.tsx`).
+- A Ledger row's chevron is drawn at the Clubhouse stroke (1.6) through
+  `Icon`, where it was Lucide's default 2 (`ui/Ledger.tsx`).
+
+### Verification (2026-10-18, next event and row chevrons)
+
+- `npm run test:file` on `shell.test.tsx` and `ledger-kit.test.tsx`.
+
+## 2026-10-18 — Polish: focus rings on page-head keys and the switcher; 44px phone fields
+
+```text
+Design package: none (wave-2 interaction review rows 1, 3, 5, 15)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Desktop page-head secondary keys (Calendar's More, every
+  `[data-canopy-head] .ch-btn--secondary`) draw the shared focus ring: their
+  hairline and hover ring now skip `:focus-visible` (light and dark).
+- The phone section switcher's title ring is drawn inside the button, where
+  the title row no longer clips it.
+- A menu closed by a scroll while focus is in it hands focus back to its
+  trigger instead of dropping it to the page (`ui/Menu.tsx`).
+- Phone `.ch-input` fields are drawn 44px tall (base 38px).
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: one bell empty line
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- The bell's empty feed on the stacks reads "Messages, events, reminders and
+  CoachHelm updates show up here.", the list's own words (CH-1302), where it
+  said they "land here first" (`BellStacks.tsx`).
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
+## 2026-10-17 — The sidebar folds to an icon rail; three new nav icons
+
+Owner: "a little circle that collapses the sidebar and just shows the golfhelm
+logo and all the icons? so it makes the dashboard bigger". A 22px ivory circle
+on the seam, level with the brand (`RailToggle`, Cmd or Ctrl with \), folds the
+sidebar from 240px to a 56px rail (`--ch-rail-w`) and opens it again; the canvas
+takes the width. The rail is exactly the icons' column, so no icon moves. One
+motion on the smooth spring: the edge slides, the circle rides it and its
+chevron turns, the word's track closes (a grid column, 1fr to 0fr) and the
+wheel glides to the rail's centre. Words go first and come back last (out in
+about 0.13s; in after about 0.14s, drifting the last 4px), so no label is seen
+squeezed. On the rail, group headings become short rules and stop taking focus
+(inert), counts ride the icon's corner, the next-event or resume card folds
+away (inert), and a name tip shows beside the row under the pointer or focus
+(`RailTip`). The choice is remembered in a cookie (`ch_rail`) that the layout
+reads, so a reload draws the rail from the first frame, and the hand-off
+curtain after sign in matches it. Desktop only; reduced motion and Animations
+off swap at once.
+
+Icons (owner's picks from options shown on the live sidebar): CoachHelm is now
+brain-circuit (also in the bell's CoachHelm stack), Team Hub clipboard-list,
+Qualifiers trophy.
+
+## 2026-10-17 — Wiring checked end to end: a link to the open screen opens its item; a player's next event follows D2-8
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (wiring audit, agent/course-picker-premium-pr)
+Contract IDs:   10301 and 10404 prose (no new IDs)
+Actions:        ACT-P001-OPEN-NOTIFICATION (arms the relink before the push)
+Data impact:    reads golf_event_attendance_counts (or the invite rows) for a player's upcoming meetings
+Held items:     none
+```
+
+### Changed
+
+- A bell row, universal link or tapped push to the screen already open, naming
+  another item (`/messages?conversation=` on Messages, `/calendar?event=` on
+  Calendar), opened nothing: the route is keyed by its pathname and those
+  screens read their item on mount. `shell/relink.ts` arms the link before the
+  push and the frame mounts the screen again when that address arrives
+  (`ClubhouseFrame` RouteFrame key, `Bell.openItem`, `DeepLinks`, and
+  `helm:push-navigate`). A screen's own address changes keep their state.
+- A player's sidebar next event skips a meeting nobody is invited to (D2-8, as
+  their Calendar does), so the card no longer names the coach's own meeting
+  and opens a Calendar that doesn't draw it (`data/shell.ts`
+  `loadMeetingInvites`). A failed invite read hides nothing and is logged
+  (`nextEventInvites`).
+- The bell's Messages filter now holds chat message notifications. Message
+  fan-out writes them to `golf_calendar_notifications` (`notification_type =
+  'message'`, about 2,400 production rows), and the shared feed model filed
+  every row of that table under Events, in Fairway's bell too. Shared
+  production change, minimal: `categorizeCalendarNotificationRow`
+  (`src/app/golf/actions/unified-notifications-model.ts`) returns `messages`
+  for that type; event rows, the dedupe-keyed `event_updated:…` and
+  `rsvp_response:…` included, stay Events.
+
+### Checked, no change
+
+- Every notification address in production and in every writer, for each
+  role that receives it, lands on a rebuilt screen or an alias, and the query
+  naming the item is read there (WIRING.md "Notification links").
+- Bell open, filter, mark one and mark all read call the same actions with the
+  same arguments as Fairway's bell; the unread count is the same sum.
+- Team switch: `setActiveTeam` with the same gate the switcher shows
+  (`canSwitchTeams`, head coach on two or more teams); sign out tears down the
+  push token, then ends the session; the Ask sheet follows CoachHelm's gate
+  and is the coach's alone; every sidebar, strip and More target is rebuilt
+  for the role that sees it.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/wiring-p001-*.test.ts*` plus
+  shell, attendance-counts, deep-link, team-switch, native, route-frame and
+  alias-frame tests. No screenshots: nothing visible changed.
+
+## 2026-10-17 — A player's next-event count reads counts, not teammates' replies
+
+```text
+Design package: none (no visible change)
+PR/commit:      uncommitted (owner-flagged attendance RLS, docs/clubhouse/STATUS.md)
+Contract IDs:   none new (CH-1304's "N of M confirmed" unchanged)
+Actions:        none
+Data impact:    reads golf_event_attendance_counts (held migration 20261017102000)
+Held items:     supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql (HELD.md)
+```
+
+### Changed (2026-10-17)
+
+- `loadClubhouseShell` (`data/shell.ts`): for a player, the sidebar next-event
+  card's "N of M confirmed" comes from `golf_event_attendance_counts` (numbers
+  only, the caller's own teams) instead of reading every invitee's row. A coach
+  keeps the direct read. Until the migration is applied the function answers
+  PGRST202 / 42883 and the player path reads the rows exactly as before; any
+  other failure hides the count and is logged (`nextEventAttendance`), as a
+  failed row read did.
+
+### Why
+
+- Migration 20261017102000 narrows `golf_event_attendance` so a player reads
+  only their own row; without this the player's count would read "1 of 1".
+
+### Verification (2026-10-17)
+
+- `npm run test:file -- src/clubhouse/__tests__/attendance-counts.test.ts
+  src/clubhouse/__tests__/shell.test.tsx` (function path, fallback, failure,
+  coach). No screenshots: nothing visible changed.
+
+## 2026-10-16 — The brand's entrance waits until the dashboard is seen
+
+The entrance counted from the sidebar's mount, but after the welcome the
+hand-off curtain stays up until fonts are in and then fades over 0.52s, so on
+a slow load the word wrote itself in under the curtain. The curtain now marks
+`<html data-ch-handoff>` while it is up and the entrance holds on its first
+frame until it lifts (`lib/handoff.ts`, shell.css). Measured in Chrome: curtain
+gone at 2.97s, the word starts at 3.63s.
+
+## 2026-10-16 — A more premium entrance for the brand
+
+Owner: "it needs to be more premium. i do like the wheel turning tho". After
+sign in, about 3.5s in all: the dashboard settles (0.55s); "Golfhelm" writes in
+behind a wide feathered edge while it comes into focus (a 3px blur and a 3px
+rise settling out with it, 1.5s); the wheel spins in three quarters of a turn
+from 55% and slows to a stop with a 5° settle (`--ch-ease-spring-smooth`,
+1.3s, overlapping the end of the word); then one soft glint crosses the frosted
+panel (1.1s). Measured in Chrome through Welcome → Continue: written by 2.0s,
+wheel settled by 2.5s, glint done by 3.5s. Reduced motion draws it all at once.
+
+## 2026-10-16 — The brand's logo, redrawn from the master as a detailed vector
+
+Owner: an ivory border, "matte and matching the greens", "use the actual
+logo", "outline the spokes", "not filled in its all white", then "pull up the
+actual logo and fix it. be detailed." Tried and replaced along the way: a
+simplified SVG wheel, the PNG in an ivory-ringed disc, CSS outlines on the
+116px PNG, and a built PNG with a traced outline (all soft or off-model at
+sidebar size).
+
+`HelmMark` (`shell/BrandWord.tsx`) is the GolfHelm logo redrawn from the 300px
+master (`public/anim/helm-golf-icon.png`), every part measured from it: the rim
+(radius 84.9 to 105.7), eight round-tipped spokes 23 wide reaching 146, the ball
+(radius 71.6) whose face is the overlap of two circles (the crescent below is
+its shade), the 13 dimples and the 6 highlights along the shade, each at its
+place in the master. Checked side by side with the master at 280px. Colours on
+the green: helm and shade in the mint "helm" is set in
+(`--ch-hero-mint-strong`), face and highlights ivory, dimples green
+(`--ch-green-500`), the gap open to the panel. "Golf" and the face share a
+darker, warmer ivory, `--ch-brand-ivory` #ebe1c8 ("golf should be ivory",
+"darker ivory"; picked from four shades on the panel). 34px, centred with the
+word in the panel (28px and 30px at the sides). Sharp at any size.
+
+## 2026-10-16 — The wordmark in Norican, in its frosted panel
+
+Owner: "fix the script font it looks trash" and "fix the layout". Great Vibes
+was too thin to read at sidebar size; the owner picked Norican from twelve
+scripts compared side by side on the sidebar green. The word is 34px and the
+wheel 28px, 9px after it, in the brand's frosted panel (the open green was tried
+and the owner asked for the panel back), tinted twice as strong as before with a
+light top edge ("give pane more tint"). Then "fix the layout so its even": the
+panel is as wide as the nav's rows (it overhung them by 2px), the word and wheel
+are centred in it (58px of empty space sat on the right), and the script is
+lifted 3px so its ink, the wheel and the panel share one centre (measured in
+Chrome: about 13.5px above and below the ink, 31px and 33px at the sides).
+
+## 2026-10-16 — The team names its own group; the brand stands alone
+
+Owner: "put the team name somewhere else". The brand block is only "Golfhelm"
+and the wheel. The team's name now heads the sidebar's Team group in place of
+the word "Team" (a group with no team keeps "Team"); a head coach on more than
+one team gets that heading as the switch (`TeamSwitch`, CH-1813, its label now
+"{team}. Switch team"). The footer's identity line still reads role · team.
+
+## 2026-10-16 — The brand is "Golfhelm" in script, then the wheel
+
+Owner: "script then logo". The sidebar's brand (and the team switcher's) reads
+"Golfhelm" in script (now Norican, above), helm in mint, with the wheel after
+the word and the team name under both (`shell/BrandWord.tsx`, shell.css
+`.ch-brand__line`). Opening the app from the welcome, the dashboard draws first,
+then the word writes itself in left to right (a mask wipe, 1.3s after a 0.6s
+hold), then the wheel turns a quarter into place. It plays once per sign in (a
+session flag set by the welcome's Continue and cleared on read); reduced motion
+and Animations off draw it whole. An owner-requested exception to the sans-only
+type rule, for this wordmark only. Checked in Chrome at 1440: word hidden until
+about 0.6s after the dashboard, written by 1.9s, wheel in by 2.5s.
+
+## 2026-10-16 — The sidebar sorted into clear groups
+
+Owner, 2026-10-16: "sort the side bar and make it look better".
+
+- **The order** (`nav.ts`): Team Hub and Qualifiers move under Team, for both
+  roles. A coach's sidebar reads Home, CoachHelm, Calendar, Messages; Team: Team
+  Hub, Roster, Stats, Qualifiers, Recruiting. A player's reads Home, CoachHelm,
+  Calendar, Messages; Team: Team Hub, Roster, Qualifiers; My game: Rounds, My
+  stats; then Classes. `shell.test.tsx`'s order expectations follow. The phone
+  strip lists the old tabs first and then the sidebar's order, so its later
+  pills follow this order too (docs/clubhouse/phone/section-strip.md).
+- **The look** (`shell.css`, desktop above 820px): each titled group is headed
+  by its name in mint, with no panel or shade behind it (a soft well was tried
+  and removed), the rows a little taller (36px) with brighter ink on those not
+  chosen; the chosen row keeps the plate's own green ink. The phone is
+  unchanged. No visual check is recorded; the shell vitest passed in the main
+  session.
+
+## 2026-10-16 — Section switches skip Next's scroll; the sidebar's sections are fetched ahead
+
+Owner, desktop Safari: every switch waited on the server for the whole page.
+
+- **RouteFrame owns the scroll** (`SectionStrip`, `Sidebar`, `section-switch`):
+  the strip's and the sidebar's links and the swipe's `router.push` pass
+  `scroll: false`. Next's own scroll-to-top read the arriving page's layout
+  inside the navigation commit on every switch (`getClientRects`, 22ms at 4x
+  CPU, Chromium); RouteFrame already opens a new page at the top and restores
+  Back and Forward positions.
+- **The section prefetch runs at every width** (`use-prefetch-tabs.ts`,
+  `SectionStrip`). It was phone only, so on the desktop a sidebar link fetched
+  only down to the route's loading boundary. `fetchAhead` and `whenIdle` are
+  exported for CoachHelm's views to reuse. Still skipped with Data Saver on or
+  offline, and Next prefetches only in production builds.
+- The 22ms is the owner-session measurement from the commit; nothing was
+  re-measured for this entry. Shared pieces: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
 Owner, testing the preview: on Stats the switcher seemed gone. The bar's
@@ -12,9 +578,9 @@ Shared detail: docs/clubhouse/CHANGELOG.md.
 
 - **Safe areas on the desktop frame** (shell.css `.ch-app`): a phone turned
   sideways (874pt) gets the desktop layout, whose sidebar started at x=0 under
-  the Dynamic Island and the corner (iOS reports 62pt each side) and whose canvas
-  ran into the home indicator's strip. The frame now pads by the safe-area insets
-  (0 on a desktop); the green fills them.
+  the Dynamic Island and the corner (iOS reports 62pt each side) and whose
+  canvas ran into the home indicator's strip. The frame now pads by the
+  safe-area insets (0 on a desktop); the green fills them.
 
 ## 2026-10-14 — A thread keeps its bar over the Safari keyboard; Home's title in dark
 
@@ -503,8 +1069,10 @@ the real components (390px, touch).
 - Pulled up 160px, the sheet gives 47px over its floor.
 - A Back flagged `hasUAVisualTransition` removes the pushed screen on the first
   frame.
-- With reduced motion, the `Modal` fades in 1ms and the plate jumps with no animation.
-- Frame-sampled once load fell to 14 to 18 (headless WebKit draws about every 10ms):
+- With reduced motion, the `Modal` fades in 1ms and the plate jumps with no
+  animation.
+- Frame-sampled once load fell to 14 to 18 (headless WebKit draws about every
+  10ms):
   - More rises within half a pixel at 474ms and closes by the scrim in 446ms.
   - Thrown at 2.4px/ms, More runs 3.8 to 4.3px/ms and is gone at 431ms; the old
     fixed ease-out started near 10px/ms. Its first frame runs faster (6.7px/ms),
@@ -992,7 +1560,7 @@ Actions:        7 (ACT-P001-*)
 Data impact:    none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
 - The six page docs, the manifest's actions, and 11 behaviour contracts, each
   named by a test.
@@ -1006,7 +1574,7 @@ Data impact:    none
 - `useAction`'s doc comment said a success fires the commit haptic; it fires
   success (D-70). Fixed.
 
-### Verification
+### Verification (2026-09-30)
 
 - `npx vitest run src/clubhouse/__tests__/shell.test.tsx
   src/clubhouse/__tests__/gate.test.ts`: 42/42.

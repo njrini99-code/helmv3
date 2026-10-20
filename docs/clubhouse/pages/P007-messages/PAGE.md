@@ -49,14 +49,14 @@ Manifest:           config/clubhouse/pages/P007-messages.json
 
 ### Primary user
 
-A college golf coach running the team's conversation: the whole team, groups (a travel squad,
-seniors) and one-to-one threads with players and staff. Players use the same page with their own
-permissions.
+A college golf coach running the team's conversation: the whole team, groups (a
+travel squad, seniors) and one-to-one threads with players and staff. Players
+use the same page with their own permissions.
 
 ### Job to be done
 
-Reach the right people fast, see who has read and answered, and never lose something that was
-written.
+Reach the right people fast, see who has read and answered, and never lose
+something that was written.
 
 ### Primary action
 
@@ -64,14 +64,17 @@ Send a message in the open conversation.
 
 ### Secondary actions
 
-Start a direct thread or a group, post an announcement (coach), acknowledge an announcement or mark
-its task done (player), react, edit or delete your own message, search, mute, add members to a
-group you created, leave a group, open shared files.
+Start a direct thread or a group, post an announcement (coach), acknowledge an
+announcement or mark its task done (player), react, edit or delete your own
+message, search, mute, add members to a group you created, leave a group, open
+shared files.
 
 ### Information hierarchy
 
-1. The open thread: who said what and when, newest at the bottom, the composer ready.
-2. The rail: conversations by recency, unread counts, announcements above today.
+1. The open thread: who said what and when, newest at the bottom, the composer
+   ready.
+2. The rail: conversations by recency, unread counts, announcements folded under
+   them in one row.
 3. Details: members, mute, files, and the group actions.
 
 ### User should notice first
@@ -80,14 +83,14 @@ Which conversations have something new, and the thread they were last in.
 
 ### User should never have to think about
 
-Whether a message sent (it says so if it didn't, and keeps the text), whether an unread count cleared
-by itself (desktop opens the newest thread without marking it read), or who is allowed to message whom
-(the server decides).
+Whether a message sent (it says so if it didn't, and keeps the text), whether an
+unread count cleared by itself (desktop opens the newest thread without marking
+it read), or who is allowed to message whom (the server decides).
 
 ### Success looks like
 
-A coach answers five players and posts an announcement in a couple of minutes, and every failure
-along the way told them exactly what didn't happen.
+A coach answers five players and posts an announcement in a couple of minutes,
+and every failure along the way told them exactly what didn't happen.
 
 ## Semantic features
 
@@ -112,14 +115,15 @@ Status:           approved
 
 ### Enters from
 
-The sidebar and the More sheet (D-66), the bell (a message notification), Home's Message team
-(D-4), Roster's and Stats' Message buttons (`?player=`), and push notifications.
+The sidebar and the More sheet (D-66), the bell (a message notification), Home's
+Message team (D-4), Roster's and Stats' Message buttons (`?player=`), and push
+notifications.
 
 ### Exits to
 
-Calendar's editor from a thread's Schedule (`?new=1`, D-47; on desktop a direct thread with a player also
-invites that player, `&with=`, D-52), a player's stats from a direct thread's
-Details (coach), and back to the rail.
+Calendar's editor from a thread's Schedule (`?new=1`, D-47; on desktop a direct
+thread with a player also invites that player, `&with=`, D-52), a player's stats
+from a direct thread's Details (coach), and back to the rail.
 
 ## Ownership
 

@@ -34,6 +34,23 @@ describe('old addresses Clubhouse moved (Simulator, 2026-10-14)', () => {
     expect(isAliased('/golf/dashboard')).toBe(false);
   });
 
+  it('a coach on the player-only Rounds and My qualifiers addresses moves on rather than standing on "not rebuilt"', () => {
+    for (const a of ['/golf/dashboard/rounds', '/golf/dashboard/my-qualifiers']) {
+      expect(isRebuilt(a, 'player'), a).toBe(true);
+      expect(isRebuilt(a, 'coach'), a).toBe(false);
+      expect(isAliased(a), a).toBe(true);
+    }
+    // Not their children: a coach's /rounds/new and a round's page are their own screens.
+    expect(isAliased('/golf/dashboard/rounds/new')).toBe(false);
+  });
+
+  it('a player on the coach-only Team stats address moves on to their own Stats', () => {
+    expect(isRebuilt('/golf/dashboard/stats/team', 'coach')).toBe(true);
+    expect(isRebuilt('/golf/dashboard/stats/team', 'player')).toBe(false);
+    expect(isAliased('/golf/dashboard/stats/team')).toBe(true);
+    expect(isAliased('/golf/dashboard/stats')).toBe(false);
+  });
+
   it('the frame renders an aliased segment (hidden) behind the not-rebuilt page, so its streamed redirect fires', () => {
     const frame = readFileSync(join(process.cwd(), 'src/clubhouse/shell/ClubhouseFrame.tsx'), 'utf8');
     expect(frame).toMatch(/isAliased\(pathname\) && <div hidden>\{children\}<\/div>/);

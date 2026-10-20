@@ -4,7 +4,13 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import { distribution, type ChReviewHole, type ChRoundReview } from '../../data/round-review-shape';
+import { updateRoundType } from '@/app/golf/actions/round-type';
+import { distribution, type ChReviewHole, type ChReviewTypeEdit, type ChRoundReview } from '../../data/round-review-shape';
+import { useAction } from '../../lib/use-action';
+import { Button } from '../../ui/Button';
+import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
+import { RoundTypeSheet } from './entry/RoundTypeSheet';
+import { scoreName } from './track/labels';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
@@ -22,9 +28,15 @@ import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
 import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from './round-insights';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
+import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
 import { checkedRecap } from './recap-check';
+import { hasCard } from './card/card-model';
+import { useJustSubmitted } from './card/just-submitted';
+import { RoundCard } from './card/RoundCard';
+import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
+import { SideScroll } from '../../ui/SideScroll';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -239,13 +251,17 @@ function HoleCard({
           </span>
         </div>
         <div className="ch-rv-step">
-          <button type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
-            <Icon icon={ChevronLeft} size={16} />
-          </button>
+          <Tooltip>
+            <button type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
+              <Icon icon={ChevronLeft} size={16} />
+            </button>
+          </Tooltip>
           <ScoreMark score={hole.score} par={hole.par} />
-          <button type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
-            <Icon icon={ChevronRight} size={16} />
-          </button>
+          <Tooltip>
+            <button type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
+              <Icon icon={ChevronRight} size={16} />
+            </button>
+          </Tooltip>
         </div>
       </div>
       {/* The shots slide in the direction of travel (CH-11604). */}
@@ -266,7 +282,7 @@ function HoleCard({
                 <div>
                   <b>{[s.kind, s.club].filter(Boolean).join(' · ')}</b>
                   <span>
-                    {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to].filter(Boolean).join(', ')].filter(Boolean).join(' → ')}
+                    {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to && `${s.to} left`].filter(Boolean).join(' · ')].filter(Boolean).join(' → ')}
                     {s.miss ? ` · ${s.miss}` : ''}
                   </span>
                   {s.read && <em>{s.read}</em>}
@@ -287,9 +303,62 @@ function HoleCard({
  * five figures, the card (tap a hole for its shots), the scoring
  * distribution, the recap and the player's notes.
  */
-export function RoundReview({ review }: { review: ChRoundReview }) {
+/**
+ * CH-11522: change what a submitted round counts toward, from its review (the Fairway round page's "Change round type",
+ * `RoundTypeEditor`; coach report 2026-08-19, players who tapped Practice for a qualifier round). The owning player
+ * and a coach of the player's team may; a coach is also offered the team's qualifiers the player isn't in yet, and
+ * the save enters them. The sheet is Continue's (`RoundTypeSheet`); Save calls `updateRoundType` and the page reads
+ * the round again. Scores never move.
+ */
+function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTypeEdit }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const change = useAction(
+    'rounds.review.changeType',
+    async (choice: ChRoundTypeChoice) => {
+      const res = await updateRoundType({ roundId, roundType: choice.type, qualifierId: choice.qualifierId, qualifierRoundNumber: choice.roundNumber });
+      if (res.success) {
+        setOpen(false);
+        router.refresh();
+      }
+      return res;
+    },
+    (choice: ChRoundTypeChoice) => ({
+      done: savedLine(
+        choice,
+        edit.options.qualifiers.find((q) => q.id === choice.qualifierId),
+      ),
+      failed: 'Couldn’t change the round type',
+      hint: 'The round and its scores are unchanged. Try again in a moment.',
+      code: 'CH-11020',
+    }),
+    (result, c) => (result.success ? c : { ...c, hint: roundTypeFailure(result.error, edit.viewer) ?? c.hint }),
+  );
+  return (
+    <>
+      <span className="ch-rv-type" data-ch-code="CH-11522">
+        <Button size="sm" variant="ghost" leftIcon={Flag} onClick={() => setOpen(true)}>
+          Change round type
+        </Button>
+      </span>
+      <RoundTypeSheet
+        open={open}
+        current={edit.current}
+        options={edit.options}
+        pending={change.pending}
+        viewer={edit.viewer}
+        live={false}
+        onClose={() => setOpen(false)}
+        onSave={(choice) => void change.run(choice)}
+      />
+    </>
+  );
+}
+
+export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null }) {
   const phone = useChPhone();
   const reduced = useChReducedMotion();
+  const justSubmitted = useJustSubmitted();
   const router = useRouter();
   const { refresh, refreshing } = useRefresh();
   const r = review;
@@ -306,8 +375,10 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   const coach = isCoachView(r);
   const hole = r.holes.find((h) => h.n === sel) ?? r.holes[0] ?? null;
   const dist = useMemo(() => distribution(r.holes), [r.holes]);
-  // D13: the stored recap, less any sentence its own figures contradict (recap-check.ts).
-  const recap = useMemo(() => checkedRecap(r), [r]);
+  // The stored recap, or the one written now for a completed round that has none (useRoundRecap, as the Fairway page
+  // does); then D13: less any sentence its own figures contradict (recap-check.ts).
+  const recapText = useRoundRecap(r.id, r.recap, r.recapPending === true);
+  const recap = useMemo(() => checkedRecap({ ...r, recap: recapText }), [r, recapText]);
   const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
   const back = reviewBack(r);
@@ -386,6 +457,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
         </div>
       </header>
 
+      {hasCard(r) && <RoundCard review={r} phone={phone} just={justSubmitted} settle={justSubmitted && !reduced} />}
+
       <dl className="ch-rv-figs">
         {figs.map(([k, v, m]) => (
           <div key={k}>
@@ -395,6 +468,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           </div>
         ))}
       </dl>
+
+      {typeEdit && <ChangeRoundType roundId={r.id} edit={typeEdit} />}
 
       {(r.teeError || r.playerError) && (
         <InlineNotice
@@ -412,7 +487,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           title="The round"
           def={
             <>
-              The score hole by hole against par. The line rises when {coach ? 'the player gains' : 'you gain'} on par and falls when strokes go back. <b>Lower is better.</b>
+              The score hole by hole against par. The line rises when {coach ? 'the player gains' : 'you gain'} on par and falls when strokes go back. <b>A lower score is better.</b>
             </>
           }
           read={
@@ -436,7 +511,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           }
         >
           {points.length >= 2 ? (
-            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Move across it to read a hole, click one to see its shots.">
+            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Pick a hole to read it and see its shots.">
               <ScoreFlow
                 holes={r.holes}
                 outScore={r.front.score}
@@ -516,8 +591,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                     >
                       <span className="ch-rzcost__n ch-num">{c.n}</span>
                       <span className="ch-rzcost__t">
-                        Hole {c.n} · par {c.par}
-                        <small>{r.holes.find((h) => h.n === c.n)?.shots.length ? `${r.holes.find((h) => h.n === c.n)!.shots.length} shots` : 'Scored as a total'}</small>
+                        Hole {c.n} · Par {c.par}
+                        <small>{r.holes.find((h) => h.n === c.n)?.shots.length ? scoreName(c.score, c.par) : `${scoreName(c.score, c.par)} · scored as a total`}</small>
                       </span>
                       <b className="ch-num">{c.score}</b>
                       <em className="ch-num">{formatSigned(c.delta, 0)}</em>
@@ -640,7 +715,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                     <div className="ch-znlines">
                       <span>
                         <b>Hole {hole.n}</b>
-                        {hole.par != null ? ` · par ${hole.par}` : ''}
+                        {hole.par != null ? ` · Par ${hole.par}` : ''}
                         {hole.yards ? ` · ${hole.yards} yds` : ''}
                       </span>
                       {hole.putts != null && (
@@ -666,10 +741,10 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                       <span>{phone ? 'Tap a hole to see every shot' : 'Select a hole to see every shot'}</span>
                     </div>
                   </div>
-                  <div className="ch-rv-cardw">
+                  <SideScroll className="ch-rv-cardw">
                     <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={pick} />
                     <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={pick} />
-                  </div>
+                  </SideScroll>
                 </section>
               </SectionBoundary>
               <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
@@ -682,7 +757,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                 n={6}
                 alt
                 title="In words"
-                def={<>What CoachHelm read in the round, and what the player wrote when posting it.</>}
+                def={<>What CoachHelm read in the round, and {coach ? 'what the player wrote' : 'what you wrote'} when posting it.</>}
               >
                 {recap && (
                   // C2: a passage under a rule, labelled in words for who wrote it (no sparkle, D14).

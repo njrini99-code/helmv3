@@ -535,3 +535,35 @@ keeps representative viewport/browser evidence; the complete state/opener
 ledger and review limitations are in the
 [premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
 Captured states are not all visually approved.
+
+## 2026-10-19 — Contract tests for nine reserved hand contracts
+
+Two new files: `src/clubhouse/__tests__/coachhelm-contracts.test.tsx` (36 cases) and
+`src/clubhouse/__tests__/coachhelm-actions-contracts.test.ts` (13 cases, the real `dismissInsight`, `reactivateInsight` and
+`createFocusAreaFromInsightV2` against a fake database). Each case names its Bridge ID in its title. No implementation file changed.
+This supersedes the "partly" and "no" rows of the table above for these contracts.
+
+| Contract | What the test forces | Result |
+| --- | --- | --- |
+| 130104 the drills' addresses | `?view=development` redirects to `/golf/dashboard/stats?tab=dev`; profile, standing and deep-dive are the session's player whatever `?player=` says; insights, none and other values draw the board; a coach's `?view=` is the coach's board; none of the three screens says "not rebuilt" | pass |
+| 130608 a failed gate lookup | player and coach, gate reason or throw: failed read (CH-13201, CH-13202), logged as `gate`, nothing else read; on the coach's, the pulse is read and drawn beside the notice | pass |
+| 130702 offline writes | Assign, Dismiss (the warning haptic first, then the error) and Undo each refused offline with nothing sent; Retry sends once online | pass |
+| 130804 server actions are the gate | not signed in, a player, another team's coach, an insight with no team, an unknown insight; the duplicate guard; the right coach's write touches only that team's row | pass |
+| 131201 a visit's changes | the chip and the dismissed notice survive choosing another player; a reload opens on the first player with no chip; Back, once the app is running, returns the kept pick (CH-13911) | pass |
+| 131501 no background refresh | no `router.refresh` after Assign, Dismiss or Undo, nor on focus, online or visibility events; Try again is the one re-read | pass |
+| 131901 phone layout | phone class, the shell's top bar reads CoachHelm, the pills; scroll into view on the player's phone only; the 640px container rule in `coachhelm.css` | pass; the pill row is read from the stylesheet, not rendered |
+| 132101 loaders read in rounds | read waves for the coach (gate, roster, names, visible + heads, drills + focus areas; one request per kind) and the player (gate, feed beside the team, drills + proposals + focus areas; the dismissal and visible reads only on an empty feed) | pass |
+| 132301 failures reported | every named read logged under `coachhelm`; a refused write reported at low severity after its breadcrumb, a thrown one at the default severity; the pulse, players, focus and side sections each report under their own surface | pass |
+
+Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx eslint` on them, exit 0;
+`node scripts/clubhouse/registry.mjs check`, exit 0. The registry now shows 158 IDs, 150 on an element or in code, 8 reserved.
+
+**Still reserved, and why.** 131807 is a script (`clubhouse:a11y`), not a vitest case. The other seven (130713, 130721, 130722, 131704,
+131808, 131816, 131817) each carry a catalog code and are already named in tests (`coachhelm-views`, `coachhelm-return-state`,
+`coachhelm-ask-races`, `coachhelm`, `coachhelm-profile`, `coachhelm-standing`), but the registry marks a coded contract
+`implemented` only when its CH- code appears in the source, and none of these does. The fix is a `data-ch-code` (or a comment) in the
+owning component, not a test.
+
+**Wording that predates the code.** 130608 recorded a defect (on a coach's gate failure the pulse was not read and the empty line drew
+beside CH-13202); the loader now reads the pulse on a failed gate and the test pins it. 131201 says a reload opens on the first
+player: true of a hard reload; Back in the running app returns the kept pick, which is CH-13911.

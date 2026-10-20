@@ -124,6 +124,62 @@
       ]
     },
     {
+      "id": "ACT-P006-RESTORE-EVENT",
+      "label": "Restore a cancelled event (coach)",
+      "component": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar",
+      "handler": "restore (useAction calendar.restoreEvent)",
+      "service": "src/app/golf/actions/calendar-events.ts#updateGolfEvent",
+      "data": [
+        "golf_events"
+      ],
+      "bridge": {
+        "failure": 60629,
+        "success": 60901,
+        "retry": 61401,
+        "offline": 10703,
+        "permission": 60806
+      },
+      "tests": [
+        "src/clubhouse/__tests__/calendar.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P006-DELETE-EVENT",
+      "label": "Delete a cancelled event permanently (coach)",
+      "component": "src/clubhouse/screens/calendar/editor.tsx#DeleteEvent",
+      "handler": "remove (useAction calendar.deleteEvent)",
+      "service": "src/app/golf/actions/calendar-events.ts#deleteGolfEventPermanently",
+      "data": [
+        "golf_events",
+        "golf_event_attendance"
+      ],
+      "bridge": {
+        "confirm": 61105,
+        "failure": 60630,
+        "success": 60901,
+        "retry": 61401,
+        "offline": 10703,
+        "permission": 60806
+      },
+      "tests": [
+        "src/clubhouse/__tests__/calendar.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P006-OPEN-TRIP",
+      "label": "Open the trip linked to an event",
+      "component": "src/clubhouse/screens/calendar/extras.tsx#LinkedTrip",
+      "handler": "effect on LinkedTrip, then a link to Travel",
+      "service": "src/app/golf/actions/travel.ts#getItineraryForEvent",
+      "data": [
+        "golf_travel_itineraries"
+      ],
+      "bridge": {},
+      "tests": [
+        "src/clubhouse/__tests__/calendar-parity.test.tsx"
+      ]
+    },
+    {
       "id": "ACT-P006-REPLY",
       "label": "Reply to an event (player)",
       "component": "src/clubhouse/screens/calendar/inspector.tsx#PlayerReply",

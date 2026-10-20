@@ -38,6 +38,13 @@ export interface ChCalEvent {
    * an event without it shows no reply controls, counts or "no reply" nudges. Invitees still make up who is on it.
    */
   rsvpRequired: boolean;
+  /** `golf_events.rsvp_deadline`: replies lock after it, as the server enforces (Fairway's editor can set one). */
+  rsvpDeadline?: string | null;
+  /**
+   * A player's data only: the event asks for replies and the coach invited no one, so it is the team's and any player
+   * may reply (as production allows, golf_event_attendance_insert_self). Their reply puts them on it.
+   */
+  openReply?: boolean;
   /** Class blocks: the player whose schedule this is. */
   owner: string | null;
   /** Classes a viewer may only see as Busy carry no title or room. */
@@ -51,8 +58,12 @@ export interface ChCalEvent {
   seriesId: string | null;
   /** The stored start instant (series edits and cancels key on it). */
   startIso: string;
-  /** Multi-day all-day events: the whole span, repeated on each day's entry. */
-  span: { from: string; to: string } | null;
+  /**
+   * Multi-day events: the whole span, repeated on each day's entry. A timed one (a tournament from Friday 7 AM to Sunday
+   * 4:30 PM, an overnight trip) also carries its first day's start and its last day's end, in decimal hours: each day's
+   * entry draws only its part of the run (the start to midnight, the whole day, midnight to the end).
+   */
+  span: { from: string; to: string; start?: number; end?: number } | null;
 }
 
 export interface ChCalOverlap {
@@ -92,12 +103,80 @@ export function daylightOn(date: string, place: LatLng, timeZone: string): ChDay
  * The hour the Week and Day grids open on (P006-B1): now, when today is on show; else the first event still ahead on
  * the days shown; else the first timed event shown; else null (the grid stays at its top).
  */
-export function focusHour(dates: string[], events: Array<{ date: string; allDay?: boolean; start: number | null }>, now: { date: string; hour: number }): number | null {
+export function focusHour(dates: string[], events: Array<{ date: string; allDay?: boolean; start: number | null; span?: ChCalEvent['span'] }>, now: { date: string; hour: number }): number | null {
   // Now only leads inside the day's working hours: at 10 PM or 5 AM it would park the grid on its empty bottom or top.
   if (dates.includes(now.date) && now.hour >= CAL_START && now.hour < CAL_END) return now.hour;
-  const timed = events.filter((e) => !e.allDay && e.start != null && dates.includes(e.date)).sort((a, b) => a.date.localeCompare(b.date) || a.start! - b.start!);
+  // A later day of a timed run starts at midnight only because the run began the day before: it is not a start to open on.
+  const timed = events.filter((e) => !e.allDay && e.start != null && dates.includes(e.date) && !(e.span?.start != null && e.date !== e.span.from)).sort((a, b) => a.date.localeCompare(b.date) || a.start! - b.start!);
   const ahead = timed.find((e) => e.date > now.date || (e.date === now.date && e.start! >= now.hour));
   return (ahead ?? timed[0])?.start ?? null;
+}
+
+/**
+ * Why a player can no longer reply, or null: the server's locks (lib/calendar/rsvp.ts, as Fairway's drawer reads them).
+ * A timed event locks at its stored start, an all-day one 24 hours after its stored UTC midnight, every day of a run
+ * with the run, and any event past its reply deadline. Without the browser's clock (`ms`: the server's first render, a
+ * frozen preview) it reads the team's day and hour instead.
+ */
+export function replyLock(
+  e: Pick<ChCalEvent, 'startIso' | 'allDay' | 'date' | 'start' | 'span' | 'rsvpDeadline'>,
+  now: { date: string; hour: number; ms?: number },
+): 'started' | 'deadline' | null {
+  const lockAt = Date.parse(e.startIso) + (e.allDay ? 86_400_000 : 0);
+  const first = e.span?.from ?? e.date;
+  const started =
+    now.ms != null && Number.isFinite(lockAt) ? lockAt <= now.ms : first < now.date || (first === now.date && !e.allDay && (e.span?.start ?? e.start ?? 0) <= now.hour);
+  if (started) return 'started';
+  const deadline = e.rsvpDeadline ? Date.parse(e.rsvpDeadline) : NaN;
+  return now.ms != null && Number.isFinite(deadline) && deadline < now.ms ? 'deadline' : null;
+}
+
+/**
+ * Decision B (owner, wave 7): a player sees a meeting only when they are on its invite list, which is their own attendance
+ * row (`own`; a player reads it before and after migration 20261017102000). Only when that read failed (`own` null) does
+ * D2-8 decide: a meeting nobody is invited to is the coach's own. When the count failed too (`invitedCount` null) the
+ * meeting is hidden: a failed read never shows a player more than they are invited to (fail closed).
+ */
+export function playerSeesMeeting(own: boolean | null, invitedCount: number | null): boolean {
+  return own ?? (invitedCount != null && invitedCount !== 0);
+}
+
+/**
+ * The player's own reply mark (Home's Up next, the sidebar's next event), one rule for both: `going` once they said yes;
+ * otherwise only while the server would take a reply (`closed` false): `needed` when their own row is unanswered, or,
+ * with no row, when the event is open to the whole team (the coach invited no one; null: unknown, nothing claimed).
+ */
+export function playerMine(reply: ChRsvp | undefined, closed: boolean, openToTeam: boolean | null): 'going' | 'needed' | null {
+  if (reply === 'accepted') return 'going';
+  if (closed) return null;
+  if (reply) return reply === 'pending' ? 'needed' : null;
+  return openToTeam ? 'needed' : null;
+}
+
+/**
+ * A stored event row takes no reply now: the rules updateRSVP enforces (lib/calendar/rsvp.ts), as Team Hub's
+ * `replyIsClosed` reads them: it doesn't ask for replies (null reads as off), it is cancelled, it has started (an all-day
+ * event a day after its stored start), or it is past its RSVP deadline.
+ */
+export function replyClosedAt(
+  e: { requires_rsvp?: boolean | null; status?: string | null; cancelled_at?: string | null; all_day: boolean | null; start_time: string; rsvp_deadline?: string | null },
+  nowMs: number,
+): boolean {
+  if (e.requires_rsvp !== true || e.status === 'cancelled' || e.cancelled_at) return true;
+  const start = Date.parse(e.start_time);
+  if (Number.isFinite(start) && (e.all_day ? start + 86_400_000 : start) <= nowMs) return true;
+  return !!e.rsvp_deadline && Date.parse(e.rsvp_deadline) < nowMs;
+}
+
+/** The player's reply is waiting on this event: it asks for replies, they are invited (or it is open to the team), they haven't answered, and the server would still take an answer. */
+export function playerReplyNeeded(
+  e: Pick<ChCalEvent, 'rsvpRequired' | 'cancelled' | 'people' | 'openReply' | 'rsvp' | 'startIso' | 'allDay' | 'date' | 'start' | 'span' | 'rsvpDeadline'>,
+  viewerId: string | null,
+  now: { date: string; hour: number; ms?: number },
+): boolean {
+  if (!viewerId || !e.rsvpRequired || e.cancelled) return false;
+  if (!e.people.includes(viewerId) && !e.openReply) return false;
+  return (e.rsvp[viewerId] ?? 'pending') === 'pending' && !replyLock(e, now);
 }
 
 export const TYPE_LABEL: Record<ChCalType, string> = {
@@ -170,10 +249,24 @@ export function fmtHour(h: number, meridiem = true): string {
   return `${h12}:${String(mm).padStart(2, '0')}${meridiem ? (hh < 12 ? ' AM' : ' PM') : ''}`;
 }
 
-export function rangeLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end'>): string {
+export function rangeLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end'> & { date?: string; span?: ChCalEvent['span'] }): string {
+  // One day of a timed run over several days says which part of it this day holds.
+  const s = e.span;
+  if (!e.allDay && s?.start != null && s.end != null && e.date) {
+    if (e.date === s.from) return `From ${fmtHour(s.start)}`;
+    if (e.date === s.to) return `Until ${fmtHour(s.end)}`;
+    return 'All day';
+  }
   if (e.allDay || e.start == null || e.end == null) return 'All day';
   const sameHalf = e.start < 12 === e.end < 12;
   return `${fmtHour(e.start, !sameHalf)} – ${fmtHour(e.end)}`;
+}
+
+/** A list row's time: the start, or, on a later day of a timed run over several days, "All day" or "Until 4:30 PM". */
+export function startLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end' | 'date' | 'span'>, meridiem = true): string {
+  if (e.allDay || e.start == null) return 'All day';
+  if (e.span?.start != null && e.date !== e.span.from) return rangeLabel(e);
+  return fmtHour(e.start, meridiem);
 }
 
 export function dayLabel(date: string, today: string): string {
@@ -328,13 +421,14 @@ export function findOverlaps(events: ChCalEvent[]): ChCalOverlap[] {
       if (e.rsvp[pid] === 'declined') continue;
       for (const b of busyFor(events, pid, e.date, e.id)) {
         if (b.start == null || b.end == null || !overlaps([e.start, e.end], [b.start, b.end])) continue;
-        // Report each pair once, on the later-starting event (the one to move).
+        // Report each pair once, on the later-starting event (the one to move); a class doesn't move, so a clash with a
+        // class that starts later is reported on the team event (a 3:30 practice over a 4:00 class was missed).
         const [later, earlier] = e.start > b.start || (e.start === b.start && e.id > b.id) ? [e, b] : [b, e];
-        if (later.type === 'class') continue;
-        const key = `${later.id}:${earlier.id}:${pid}`;
+        const [at, other] = later.type === 'class' ? [earlier, later] : [later, earlier];
+        const key = `${at.id}:${other.id}:${pid}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        out.push({ id: key, eventId: later.id, withId: earlier.id, who: pid, from: Math.max(e.start, b.start), to: Math.min(e.end, b.end) });
+        out.push({ id: key, eventId: at.id, withId: other.id, who: pid, from: Math.max(e.start, b.start), to: Math.min(e.end, b.end) });
       }
     }
   }

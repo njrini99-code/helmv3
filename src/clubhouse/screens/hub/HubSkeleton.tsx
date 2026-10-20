@@ -1,5 +1,5 @@
 import { Skeleton, SkelLine, SkelRows } from '../../ui/States';
-import { HubSkeletonTop } from './HubSkeletonTop';
+import { HubSkeletonChip, HubSkeletonTop } from './HubSkeletonTop';
 import '../../styles/hub.css';
 
 /**
@@ -12,8 +12,7 @@ export function HubSkeleton() {
     <main className="ch-hb ch-hb--skel" data-canopy="" aria-busy="true" aria-label="Loading Team Hub" data-ch-code="CH-10405">
       <header className="ch-hb-h" data-canopy-head="">
         <div>
-          <Skeleton width={96} height={24} radius={12} />
-          <div style={{ height: 4 }} />
+          <HubSkeletonChip />
           <Skeleton width={220} height={40} radius={10} />
           <div style={{ height: 12 }} />
           <Skeleton width={150} height={13} />
@@ -47,7 +46,7 @@ export function HubSkeleton() {
         </div>
       </div>
       {/* The phone's shape (hub.css), in the loaded page's own classes so it lands in place: the opening on its double
-          rule with the role chip and the team line (and a coach's New announcement), the tabs on their hairline, then
+          rule with a coach's role chip and the team line (and a coach's New announcement), the tabs on their hairline, then
           two flush sections with their headings and rows on seams. Switched in CSS, since this renders on the server. */}
       <div className="ch-hb-skelm">
         <HubSkeletonTop />

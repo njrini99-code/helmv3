@@ -16,7 +16,7 @@
 }
 .ch-rt--empty {
   padding: 60px 28px;
-  font: 400 15px/1.5 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 
@@ -44,7 +44,7 @@
   height: 36px;
   padding: 0 14px 0 10px;
   border-radius: 999px;
-  font: 500 13.5px/1 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
 }
@@ -59,17 +59,18 @@
 .ch-rt-card {
   display: contents;
 }
-.ch-rt-pill:focus-visible,
-.ch-rt-strip__h:focus-visible,
-.ch-rt-log__h:focus-visible,
-.ch-rt-rs:focus-visible,
-.ch-rt-seg button:focus-visible,
-.ch-rt-amiss button:focus-visible,
-.ch-rt-tags button:focus-visible,
-.ch-rt-quick button:focus-visible,
-.ch-rt-bar__i:focus-visible,
-.ch-rt-opt:focus-visible,
-.ch-rt-xopt:focus-visible {
+.ch-root .ch-rt-pill:focus-visible,
+.ch-root .ch-rt-strip__h:focus-visible,
+.ch-root .ch-rt-log__h:focus-visible,
+.ch-root .ch-rt-log__r--btn:focus-visible,
+.ch-root .ch-rt-rs:focus-visible,
+.ch-root .ch-rt-seg button:focus-visible,
+.ch-root .ch-rt-amiss button:focus-visible,
+.ch-root .ch-rt-tags button:focus-visible,
+.ch-root .ch-rt-quick button:focus-visible,
+.ch-root .ch-rt-bar__i:focus-visible,
+.ch-root .ch-rt-opt:focus-visible,
+.ch-root .ch-rt-xopt:focus-visible {
   outline: 2px solid var(--ch-green-600);
   outline-offset: 2px;
 }
@@ -82,14 +83,14 @@
   text-align: center;
 }
 .ch-rt-top__c h1 {
-  font: 600 16px/1.1 var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   letter-spacing: -0.01em;
 }
 .ch-rt-top__c span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: 400 12.5px/1 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 /* The readout's foot: the distance (or the holed score) and the save line beside it. On the desktop it is no box at all,
@@ -105,7 +106,7 @@
   margin: 10px 0 0;
   padding: 4px 10px;
   border-radius: 999px;
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   background: var(--ch-green-50);
   color: var(--ch-green-700);
 }
@@ -126,7 +127,7 @@
   min-width: 0;
   margin-top: 14px;
   padding: 6px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: linear-gradient(180deg, #0e432b, var(--ch-green-800));
   box-shadow: 0 0 0 1px var(--ch-green-900);
 }
@@ -198,6 +199,8 @@ button.ch-rt-strip__h {
 }
 .ch-rt-strip__tot em {
   font: 500 10px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: rgb(244 241 232 / 0.66);
 }
@@ -223,7 +226,7 @@ button.ch-rt-strip__h {
   gap: 18px;
   min-width: 0;
   padding: 22px;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   background: radial-gradient(90% 70% at 100% 0%, rgb(123 199 154 / 0.1), transparent 60%), var(--ch-bg-surface);
   box-shadow:
     0 0 0 1px rgb(176 149 96 / 0.28),
@@ -246,8 +249,9 @@ button.ch-rt-strip__h {
   justify-content: center;
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   font: 600 24px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
@@ -268,11 +272,12 @@ button.ch-rt-strip__h {
 }
 .ch-rt-hmeta b {
   width: 100%;
-  font: 600 17px/1 var(--ch-font-sans);
+  font: 600 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 .ch-rt-hmeta i {
-  font: 400 13px/1 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -288,11 +293,14 @@ button.ch-rt-strip__h {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font: 600 14px/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
 .ch-rt-hero__shot em {
-  font: 400 13px/1 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -304,7 +312,9 @@ button.ch-rt-strip__h {
   color: var(--ch-ink-950);
 }
 .ch-rt-hero__dist > em {
-  font: 500 15px/1 var(--ch-font-sans);
+  font: 500 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-ink-600);
 }
@@ -325,8 +335,8 @@ button.ch-rt-strip__h {
   font: 600 34px/1 var(--ch-font-sans);
   letter-spacing: -0.03em;
 }
-.ch-rt-hero__done span {
-  font: 400 14px/1.3 var(--ch-font-sans);
+.ch-rt-hero__done span:not(.ch-score) {
+  font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 
@@ -342,11 +352,11 @@ button.ch-rt-strip__h {
   align-self: center;
   display: block;
   width: 160px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   overflow: hidden;
   filter: drop-shadow(0 10px 18px rgb(11 58 37 / 0.25));
 }
-.ch-rt-hero__map:focus-visible {
+.ch-root .ch-rt-hero__map:focus-visible {
   outline: 2px solid var(--ch-green-600);
   outline-offset: 3px;
 }
@@ -475,7 +485,7 @@ button.ch-rt-strip__h {
   grid-column: 1 / -1;
 }
 .ch-rt-log {
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-0);
   box-shadow:
     0 0 0 1px rgb(28 25 18 / 0.1),
@@ -490,8 +500,12 @@ button.ch-rt-strip__h {
   border: 1px dashed rgb(28 25 18 / 0.14);
   background: transparent;
   box-shadow: none;
-  font: 400 12.5px/1 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+/* The hole before has just saved (RoundTracking): the same quiet line, its tick in green. */
+.ch-rt-log.is-saved svg {
+  color: var(--ch-green-600);
 }
 .ch-rt-log__h {
   all: unset;
@@ -554,11 +568,11 @@ button.ch-rt-strip__h {
   gap: 3px;
 }
 .ch-rt-log__t b {
-  font: 600 13.5px/1.1 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.1 var(--ch-font-sans);
 }
 .ch-rt-log__t em {
   overflow: hidden;
-  font: 400 12px/1.2 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-style: normal;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -597,18 +611,39 @@ button.ch-rt-strip__h {
   min-width: 0;
 }
 .ch-rt-log__rb b {
-  font: 600 13px/1.1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.1 var(--ch-font-sans);
 }
 .ch-rt-log__rb em {
-  font: 400 12px/1.2 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-style: normal;
   font-variant-numeric: tabular-nums;
+  color: var(--ch-ink-600);
+}
+/* CH-11505 mid-hole: a recorded shot in the open log opens the change sheet. */
+.ch-rt-log__r--btn {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid rgb(28 25 18 / 0.06);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ch-rt-log__r--btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.ch-rt-log__pen {
+  flex: none;
   color: var(--ch-ink-600);
 }
 .ch-rt-log__r strong {
   padding: 3px 7px;
   border-radius: 999px;
-  font: 700 11px/1 var(--ch-font-sans);
+  font: 700 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
 }
@@ -618,7 +653,7 @@ button.ch-rt-strip__h {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow:
     0 0 0 1px rgb(21 90 57 / 0.18),
@@ -631,7 +666,7 @@ button.ch-rt-strip__h {
 }
 .ch-rt-card > .ch-rt-sec:first-child {
   padding-top: 18px;
-  border-radius: 20px 20px 0 0;
+  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
 }
 .ch-rt-sec.is-tint {
   background: #f7f5ef;
@@ -647,7 +682,7 @@ button.ch-rt-strip__h {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-ink-700);
 }
 .ch-rt-sec__h > span::before,
@@ -661,7 +696,7 @@ button.ch-rt-strip__h {
 .ch-rt-hint {
   padding: 4px 8px;
   border-radius: 999px;
-  font: 600 11px/1 var(--ch-font-sans);
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   background: var(--ch-bg-subtle);
   color: var(--ch-text-tertiary);
@@ -677,7 +712,7 @@ button.ch-rt-strip__h {
 .ch-rt-sub > label {
   display: block;
   margin-bottom: 7px;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -685,7 +720,7 @@ button.ch-rt-strip__h {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: linear-gradient(180deg, #edeae1, #f2efe7);
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12);
 }
@@ -704,15 +739,15 @@ button.ch-rt-strip__h {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   text-align: center;
-  font: 500 14px/1.1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   color: var(--ch-ink-700);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 /* A result option's note and the rare options were #8a857a on the well: 3.2:1 (aesthetic audit X-4); tertiary holds 4.7:1. */
 .ch-rt-seg button em {
-  font: 400 10.5px/1 var(--ch-font-sans);
+  font: 400 calc(10.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -721,11 +756,9 @@ button.ch-rt-strip__h {
 }
 .ch-rt-seg button[aria-checked='true'] {
   font-weight: 600;
-  background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-600));
-  color: var(--ch-on-fill-100);
-  box-shadow:
-    0 1px 2px rgb(11 58 37 / 0.35),
-    inset 0 1px 0 rgb(255 255 255 / 0.14);
+  background: var(--ch-seg-on-bg);
+  color: var(--ch-seg-on-ink);
+  box-shadow: var(--ch-seg-on-shadow);
 }
 .ch-rt-seg button[aria-checked='true'] em {
   color: rgb(244 241 232 / 0.8);
@@ -739,7 +772,7 @@ button.ch-rt-strip__h {
   gap: 8px;
 }
 .ch-rt-amiss__k {
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rt-amiss {
@@ -751,7 +784,7 @@ button.ch-rt-strip__h {
   max-width: 320px;
   padding: 6px;
   box-sizing: border-box;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: #efece4;
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12);
 }
@@ -760,9 +793,9 @@ button.ch-rt-strip__h {
   cursor: pointer;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   text-align: center;
-  font: 500 13px/1.1 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   color: var(--ch-ink-700);
   background: rgb(255 255 255 / 0.6);
 }
@@ -794,10 +827,10 @@ button.ch-rt-strip__h {
 .ch-rt-tags button {
   all: unset;
   cursor: pointer;
-  height: 40px;
+  height: 44px;
   padding: 0 14px;
   border-radius: 999px;
-  font: 500 13px/40px var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/44px var(--ch-font-sans);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
 }
@@ -820,7 +853,7 @@ button.ch-rt-strip__h {
   width: 120px;
   height: 58px;
   padding: 0 14px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   text-align: right;
   font: 500 32px/58px var(--ch-font-sans);
   letter-spacing: -0.03em;
@@ -837,7 +870,7 @@ button.ch-rt-strip__h {
   box-shadow: 0 0 0 2px var(--ch-danger-600);
 }
 .ch-rt-dist > em {
-  font: 600 14px/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-ink-600);
 }
@@ -867,7 +900,7 @@ button.ch-rt-strip__h {
 }
 .ch-rt-shotlen {
   margin: 10px 0 0;
-  font: 400 12.5px/1 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rt-shotlen b {
@@ -887,14 +920,14 @@ button.ch-rt-strip__h {
 }
 .ch-rt-tapin__w {
   flex: 1 1 12em;
-  font: 400 12.5px/1.35 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-rt-error {
   display: block;
   margin: 8px 0 0;
-  font: 500 12.5px/1.35 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-danger-600);
 }
 
@@ -905,8 +938,8 @@ button.ch-rt-strip__h {
   gap: 8px;
   margin: 10px 0 0;
   padding: 10px 12px;
-  border-radius: 12px;
-  font: 500 13px/1.4 var(--ch-font-sans);
+  border-radius: var(--ch-radius-lg);
+  font: 500 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   background: var(--ch-green-50);
   color: var(--ch-green-700);
 }
@@ -939,27 +972,32 @@ button.ch-rt-strip__h {
 .ch-rt-note.is-saving {
   animation: ch-rt-saving-in var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-base) backwards;
 }
+/* The question on its own row, then Keep it and the danger button together under it, at the right (wave 9). */
 .ch-rt-confirm {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   margin: 12px 18px 0;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-warning-100);
+  /* Brought into view (UndoConfirm) clear of the sticky action bar under the card. */
+  scroll-margin-bottom: 140px;
 }
 .ch-rt-confirm > div {
-  flex: 1 1 200px;
+  flex: 1 1 100%;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 .ch-rt-confirm b {
-  font: 600 14px/1.2 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
-.ch-rt-confirm span {
-  font: 400 12.5px/1.35 var(--ch-font-sans);
+/* The question's own lines only: a button's label keeps its button's ink. */
+.ch-rt-confirm > div > span {
+  font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-ink-600);
 }
 .ch-rt-confirm .ch-rt-error {
@@ -978,17 +1016,11 @@ button.ch-rt-strip__h {
   z-index: 1;
   margin-top: auto;
   padding: 12px 14px;
-  border-radius: 0 0 20px 20px;
+  border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
   background: rgb(253 252 248 / 0.92);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   box-shadow: 0 -1px 0 rgb(28 25 18 / 0.08);
-}
-.ch-rt-blocker {
-  margin: 0 0 8px;
-  text-align: center;
-  font: 500 12.5px/1.3 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
 }
 .ch-rt-bar__row {
   display: flex;
@@ -1006,8 +1038,8 @@ button.ch-rt-strip__h {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 14px;
-  font: 500 11px/1 var(--ch-font-sans);
+  border-radius: var(--ch-radius-lg);
+  font: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-ink-700);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
@@ -1019,13 +1051,25 @@ button.ch-rt-strip__h {
 .ch-rt-bar__go {
   flex: 1;
   height: 52px;
-  font-size: 16px;
+  font-size: calc(16 * var(--ch-type-k));
 }
 .ch-rt-bar__go:disabled {
   background: #e4e0d6;
   color: #8a857a;
   box-shadow: none;
   opacity: 1;
+}
+/* CH-11101: a blocked button names what is missing in place of "Next shot" (owner 2026-10-18: the line above it
+   crowded the bar), so it reads as a hint, not a dimmed label. */
+.ch-rt-bar__go.is-blocked {
+  font-weight: 500;
+  font-size: calc(14.5 * var(--ch-type-k));
+  line-height: 1.2;
+  color: var(--ch-ink-600);
+}
+.ch-rt-bar__go.is-blocked > span {
+  white-space: normal;
+  text-wrap: balance;
 }
 
 /* The holed-out review */
@@ -1036,7 +1080,7 @@ button.ch-rt-strip__h {
   padding: 18px 18px 10px;
 }
 .ch-rt-review__h b {
-  font: 600 16px/1 var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 .ch-rt-review__h span {
   font: var(--ch-type-caption);
@@ -1083,11 +1127,11 @@ button.ch-rt-strip__h {
   gap: 3px;
 }
 .ch-rt-rs__b b {
-  font: 600 14px/1.2 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-rt-rs__b span {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
 .ch-rt-review__f {
@@ -1148,7 +1192,7 @@ button.ch-rt-strip__h {
 }
 .ch-rt-opts__k {
   margin: 0 0 2px;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rt-opt {
@@ -1159,7 +1203,7 @@ button.ch-rt-strip__h {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
 }
@@ -1169,10 +1213,10 @@ button.ch-rt-strip__h {
   gap: 3px;
 }
 .ch-rt-opt b {
-  font: 600 14px/1.2 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-rt-opt em {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -1199,7 +1243,7 @@ button.ch-rt-strip__h {
 }
 .ch-rt-delq {
   margin: 0;
-  font: 400 14px/1.5 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-ink-700);
 }
 .ch-rt-grow {
@@ -1215,7 +1259,7 @@ button.ch-rt-strip__h {
   align-items: center;
   gap: 14px;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
 }
@@ -1227,10 +1271,11 @@ button.ch-rt-strip__h {
 }
 .ch-rt-exitc b {
   display: block;
-  font: 600 15px/1.2 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-rt-exitc > div > span {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: rgb(244 241 232 / 0.72);
 }
 .ch-rt-exitc__n {
@@ -1242,7 +1287,7 @@ button.ch-rt-strip__h {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(255 255 255 / 0.08);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
 }
@@ -1283,7 +1328,7 @@ button.ch-rt-strip__h {
   align-items: center;
   gap: 12px;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   color: var(--ch-ink-700);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
@@ -1294,11 +1339,11 @@ button.ch-rt-strip__h {
   gap: 3px;
 }
 .ch-rt-xopt b {
-  font: 600 14.5px/1.2 var(--ch-font-sans);
+  font: 600 calc(14.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-rt-xopt em {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -1311,6 +1356,21 @@ button.ch-rt-strip__h {
 .ch-rt-xopt.is-danger b {
   color: var(--ch-danger-600);
 }
+/* Desktop hover: the face takes the ledger's row tint; the green and red choices also step their ring. */
+@media (hover: hover) {
+  .ch-rt-xopt:not(:disabled):not(.is-primary):hover {
+    background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-ivory-0);
+  }
+  .ch-rt-xopt.is-danger:not(:disabled):hover {
+    box-shadow: var(--ch-elevation-control), 0 0 0 1px color-mix(in srgb, var(--ch-danger-600) 35%, transparent);
+  }
+  .ch-rt-xopt.is-primary:not(:disabled):hover {
+    box-shadow: 0 0 0 1.5px rgb(21 90 57 / 0.55);
+  }
+  :where(html[data-fw-theme='dark']) .ch-rt-xopt.is-primary:not(:disabled):hover {
+    box-shadow: 0 0 0 1.5px rgb(107 187 140 / 0.6);
+  }
+}
 
 /* Scorecard */
 .ch-rt-mcw {
@@ -1319,13 +1379,20 @@ button.ch-rt-strip__h {
   gap: 10px;
   overflow-x: auto;
 }
+/* Even hole columns between a fixed label column and a fixed Tot. When the card is wider than its sheet (a phone),
+   the label and Tot columns stay put on ivory while the holes scroll between them, and a fade at Tot says there is
+   more. Separate borders (no spacing) so the pinned corner cells can keep the card's radius. */
 .ch-rt-mc {
+  width: 100%;
   min-width: 520px;
-  border-collapse: collapse;
-  border-radius: 12px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
   font: 500 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rt-mc th,
 .ch-rt-mc td {
@@ -1362,8 +1429,49 @@ button.ch-rt-strip__h {
 .ch-rt-mc .is-p {
   color: var(--ch-ink-600);
 }
+.ch-rt-mc thead th:first-child {
+  width: 56px;
+}
+.ch-rt-mc thead th:last-child {
+  width: 48px;
+}
+.ch-rt-mc tr > :first-child,
+.ch-rt-mc tr > :last-child {
+  position: sticky;
+  z-index: 1;
+  background: var(--ch-ivory-0);
+}
+.ch-rt-mc tr > :first-child {
+  left: 0;
+}
+.ch-rt-mc tr > :last-child {
+  right: 0;
+}
+.ch-rt-mc tr > :last-child::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 14px;
+  background: linear-gradient(90deg, transparent, var(--ch-ivory-0));
+  pointer-events: none;
+}
+.ch-rt-mc thead tr > :first-child {
+  border-top-left-radius: 12px;
+}
+.ch-rt-mc thead tr > :last-child {
+  border-top-right-radius: 12px;
+}
+.ch-rt-mc tbody tr:last-child > :first-child {
+  border-bottom-left-radius: 12px;
+}
+.ch-rt-mc tbody tr:last-child > :last-child {
+  border-bottom-right-radius: 12px;
+}
 .ch-rt-mc b {
   font: 700 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Round complete */
@@ -1374,7 +1482,7 @@ button.ch-rt-strip__h {
   align-items: center;
   margin-bottom: 14px;
   padding: 16px 18px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   color: var(--ch-on-fill-100);
   background: radial-gradient(120% 140% at 100% 0%, rgb(123 199 154 / 0.18), transparent 60%), var(--ch-green-800);
 }
@@ -1384,7 +1492,7 @@ button.ch-rt-strip__h {
   gap: 4px;
 }
 .ch-rt-sum__hero span {
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.66);
 }
 .ch-rt-sum__hero b {
@@ -1394,7 +1502,7 @@ button.ch-rt-strip__h {
   font-variant-numeric: tabular-nums;
 }
 .ch-rt-sum__hero em {
-  font: 600 16px/1 var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: #e7b866;
 }
@@ -1408,7 +1516,7 @@ button.ch-rt-strip__h {
   margin: 0;
 }
 .ch-rt-sum__f dt {
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.62);
 }
 .ch-rt-sum__f dd {
@@ -1474,14 +1582,14 @@ button.ch-rt-strip__h {
 }
 .ch-rt-subm > h2 {
   margin: 0;
-  font: 600 26px/1.1 var(--ch-font-sans);
+  font: 600 calc(26 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   letter-spacing: -0.025em;
   color: var(--ch-on-green-ink);
   outline: none;
 }
 .ch-rt-subm__m {
   margin-bottom: 8px;
-  font: 400 14px/1.45 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.78);
 }
 .ch-rt-subm__ok,
@@ -1527,7 +1635,7 @@ button.ch-rt-strip__h {
     padding: 8px 0;
   }
   .ch-rt-hero__dist b {
-    font-size: 72px;
+    font-size: calc(72 * var(--ch-type-k));
   }
 }
 
@@ -1545,7 +1653,7 @@ button.ch-rt-strip__h {
     grid-template-columns: minmax(0, 1fr);
   }
   .ch-rt-sum__hero b {
-    font-size: 54px;
+    font-size: calc(54 * var(--ch-type-k));
   }
 }
 
@@ -1624,6 +1732,7 @@ button.ch-rt-strip__h {
   box-shadow: none;
 }
 :where(html[data-fw-theme='dark']) .ch-rt-log__r,
+:where(html[data-fw-theme='dark']) .ch-rt-log__r--btn,
 :where(html[data-fw-theme='dark']) .ch-rt-rs,
 :where(html[data-fw-theme='dark']) .ch-rt-review__f,
 :where(html[data-fw-theme='dark']) .ch-rt-mc tr + tr > * {
@@ -1739,9 +1848,9 @@ button.ch-rt-strip__h {
   background: var(--ch-on-green-ink);
   color: var(--ch-green-800);
 }
-/* The light-mode amber: the night amber is too pale on the ivory disc. */
+/* The light-mode amber (light --ch-warning-600): the night amber is too pale on the ivory disc. */
 :where(html[data-fw-theme='dark']) .ch-rt-subm__bad {
-  color: #94600e;
+  color: #8a5a0c;
 }
 @container chrt (max-width: 640px) {
   :where(html[data-fw-theme='dark']) .ch-rt-review__f {
@@ -1836,12 +1945,12 @@ button.ch-rt-strip__h {
   white-space: nowrap;
 }
 .ch-rtcv__t b {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-on-green-ink);
 }
 .ch-rtcv__t span {
   overflow: hidden;
-  font: 400 13.5px/1 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   color: var(--ch-on-green-ink-soft);
@@ -1867,8 +1976,8 @@ button.ch-rt-strip__h {
   cursor: default;
   opacity: 0.35;
 }
-.ch-rtcv__back:focus-visible,
-.ch-rtcv__nav button:focus-visible {
+.ch-root .ch-rtcv__back:focus-visible,
+.ch-root .ch-rtcv__nav button:focus-visible {
   outline: 2px solid var(--ch-champagne-300);
   outline-offset: -2px;
 }
@@ -1907,11 +2016,11 @@ button.ch-rt-strip__h {
 }
 .ch-rtcv__sh h3 {
   margin: 0;
-  font: 600 17px/1.2 var(--ch-font-sans);
+  font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-ink-900);
 }
 .ch-rtcv__sh span {
-  font: 400 13px/1.2 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-ink-500);
 }
 .ch-rtcv__list {
@@ -1947,7 +2056,7 @@ button.ch-rt-strip__h {
 }
 .ch-rtcv__w {
   min-width: 0;
-  font: 400 15px/1.3 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
 }
 .ch-rtcv__w b {
   font-weight: 600;
@@ -1962,7 +2071,7 @@ button.ch-rt-strip__h {
 }
 .ch-rtcv__none {
   margin: 4px 0 0;
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-ink-500);
 }
 @media (min-width: 821px) {
@@ -1996,7 +2105,7 @@ button.ch-rt-strip__h {
     height: 44px;
     padding: 0 14px 0 12px;
     border-radius: 22px;
-    font: 600 14px/1 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-on-green-ink);
     background: rgb(244 238 221 / 0.08);
     box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14);
@@ -2011,11 +2120,11 @@ button.ch-rt-strip__h {
   .ch-rt-pill--card .ch-rt-pill__s {
     display: inline;
   }
-  .ch-rt-pill:focus-visible,
-  .ch-rt-strip__h:focus-visible,
-  .ch-rt-log__h:focus-visible,
-  .ch-rt-bar__i:focus-visible,
-  .ch-rt-hero__map:focus-visible {
+  .ch-root .ch-rt-pill:focus-visible,
+  .ch-root .ch-rt-strip__h:focus-visible,
+  .ch-root .ch-rt-log__h:focus-visible,
+  .ch-root .ch-rt-bar__i:focus-visible,
+  .ch-root .ch-rt-hero__map:focus-visible {
     outline: 2px solid var(--ch-champagne-300);
     outline-offset: 2px;
   }
@@ -2024,20 +2133,22 @@ button.ch-rt-strip__h {
     overflow: hidden;
     color: var(--ch-on-green-ink);
     max-width: 100%;
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
     white-space: nowrap;
     text-overflow: ellipsis;
   }
   .ch-rt-top__c span {
     color: var(--ch-on-green-ink-soft);
   }
-  /* The save line (CH-11901), set quietly beside the readout (board 3: "Saved on this phone"). It wraps inside its own
-     column rather than crowd the distance, and holds its place at the foot's baseline. */
+  /* The save line (CH-11901), set quietly beside the readout (board 3: "Saved on this phone"). It stays one line, its
+     icon next to its words; when the readout leaves no room it drops under it, at the right (wave 9: shrunk to its
+     longest word it wrapped to three lines on the drawn hole, its icon 60px from the words). */
   .ch-rt-hero__foot {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 12px;
+    gap: 4px 12px;
     min-width: 0;
   }
   .ch-rt-hero__foot > .ch-rt-hero__dist {
@@ -2049,18 +2160,23 @@ button.ch-rt-strip__h {
     flex: 0 0 auto;
   }
   .ch-rt-sync {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     align-self: flex-end;
     align-items: flex-start;
+    justify-content: flex-end;
     gap: 5px;
-    max-width: 46%;
     margin: 0 0 3px;
+    white-space: nowrap;
     padding: 0;
     border-radius: 0;
-    font: 500 12px/1.25 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     text-align: right;
     background: none;
     color: var(--ch-on-green-ink-soft);
+  }
+  /* Past base.css's `.ch-root p` margin reset, which otherwise leaves a dropped line at the left. */
+  .ch-rt-hero__foot > .ch-rt-sync {
+    margin-left: auto;
   }
   .ch-rt-sync > svg,
   .ch-rt-sync > .ch-rt-spin {
@@ -2170,14 +2286,19 @@ button.ch-rt-strip__h {
   .ch-rt-strip .ch-rt-strip__h.is-cur.is-under .ch-score {
     color: var(--ch-score-under-on-ivory);
   }
-  .ch-rt-strip__h:focus-visible {
+  .ch-root .ch-rt-strip__h:focus-visible {
     outline: none;
   }
-  .ch-rt-strip__h:focus-visible::before {
+  .ch-root .ch-rt-strip__h:focus-visible::before {
     outline: 2px solid var(--ch-champagne-300);
     outline-offset: 2px;
   }
+  /* The running total stays pinned at the strip's right edge while the holes scroll under it, behind a short fade
+     that never takes a tap from the chips. */
   .ch-rt-strip__tot {
+    position: sticky;
+    right: 0;
+    z-index: 1;
     flex-direction: row;
     align-items: baseline;
     gap: 6px;
@@ -2185,7 +2306,20 @@ button.ch-rt-strip__h {
     margin-left: 4px;
     padding: 0 6px 0 12px;
     border-left: 1px solid rgb(244 238 221 / 0.16);
+    background: var(--ch-green-900);
+    /* Covers the strip's own 8px right padding too, where a chip would otherwise show past it. */
+    box-shadow: 8px 0 0 var(--ch-green-900);
     white-space: nowrap;
+  }
+  .ch-rt-strip__tot::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: calc(100% + 1px);
+    width: 20px;
+    background: linear-gradient(90deg, rgb(8 43 28 / 0), var(--ch-green-900));
+    pointer-events: none;
   }
   .ch-rt-strip__tot em {
     align-self: center;
@@ -2193,7 +2327,7 @@ button.ch-rt-strip__h {
   }
   .ch-rt-strip__tot b {
     align-self: center;
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
     color: var(--ch-on-green-ink);
   }
 
@@ -2288,12 +2422,13 @@ button.ch-rt-strip__h {
   }
   .ch-rt-hmeta b {
     width: auto;
-    font: 500 14px/1 var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink);
   }
   .ch-rt-hmeta i {
-    font: 500 14px/1 var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink);
   }
   .ch-rt-hmeta i::before {
@@ -2311,11 +2446,14 @@ button.ch-rt-strip__h {
   .ch-rt-hero__shot {
     width: 100%;
     gap: 0;
-    font: 400 13px/1.2 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-champagne-300);
   }
   .ch-rt-hero__shot em {
     font: inherit;
+
+    font-variant-numeric: tabular-nums;
     color: inherit;
   }
   .ch-rt-hero__shot em::before {
@@ -2323,12 +2461,16 @@ button.ch-rt-strip__h {
   }
   .ch-rt-hero__dist b {
     font: 600 52px/0.95 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     font-variation-settings: 'wdth' 86;
     letter-spacing: -0.05em;
     color: var(--ch-on-green-ink);
   }
   .ch-rt-hero__dist > em {
-    font: 400 14px/1 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink-soft);
   }
   .ch-rt-hero__done {
@@ -2339,14 +2481,18 @@ button.ch-rt-strip__h {
   .ch-rt-hero__done .ch-score {
     transform: scale(1.6);
     margin-right: 20px;
-    color: var(--ch-on-green-ink);
     text-shadow: none;
   }
-  .ch-rt-hero__done b {
-    font-size: 26px;
+  /* Ivory only where the mark has no pale disc of its own: a birdie and a bogey keep their ui.css inks (and the
+     caption's ink below skips the mark, a span too). */
+  .ch-rt-hero__done .ch-score:not(.ch-score--birdie, .ch-score--bogey) {
     color: var(--ch-on-green-ink);
   }
-  .ch-rt-hero__done span {
+  .ch-rt-hero__done b {
+    font-size: calc(26 * var(--ch-type-k));
+    color: var(--ch-on-green-ink);
+  }
+  .ch-rt-hero__done span:not(.ch-score) {
     color: var(--ch-on-green-ink-soft);
   }
 
@@ -2368,6 +2514,9 @@ button.ch-rt-strip__h {
     border: 0;
     color: var(--ch-on-green-ink-soft);
   }
+  .ch-rt-log.is-saved svg {
+    color: var(--ch-hero-mint);
+  }
   .ch-rt-log__h {
     min-height: 44px;
     gap: 8px;
@@ -2383,11 +2532,11 @@ button.ch-rt-strip__h {
   }
   .ch-rt-log__t b {
     flex: none;
-    font: 600 13.5px/1.2 var(--ch-font-sans);
+    font: 600 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-champagne-300);
   }
   .ch-rt-log__t em {
-    font: 400 13.5px/1.2 var(--ch-font-sans);
+    font: 400 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-on-green-ink-soft);
   }
   .ch-rt-log__chev {
@@ -2464,13 +2613,22 @@ button.ch-rt-strip__h {
     background: none;
     box-shadow: none;
   }
+  /* Raised keys on the ivory card (owner 2026-10-18: more depth and contrast): a lit face, a firm edge and a contact
+     shadow, pressed flat on tap. */
   .ch-rt-seg button {
     min-height: 46px;
-    border-radius: 14px;
-    font-size: 15px;
-    background: var(--ch-ivory-25);
+    border-radius: var(--ch-radius-lg);
+    font-size: calc(15 * var(--ch-type-k));
+    background: var(--ch-raised-bg);
     color: var(--ch-ink-900);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline);
+    box-shadow: var(--ch-key-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
+    transition:
+      background var(--ch-dur-quick) var(--ch-ease),
+      transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rt-seg button:not([aria-checked='true']):active {
+    transform: translateY(1px);
+    box-shadow: var(--ch-elevation-control), 0 0 0 1px var(--ch-border-subtle);
   }
   .ch-rt-seg button.is-rare {
     background: transparent;
@@ -2495,6 +2653,7 @@ button.ch-rt-strip__h {
     height: 52px;
     text-align: left;
     font: 600 28px/52px var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     background: var(--ch-ivory-25);
     box-shadow: inset 0 0 0 1.5px var(--ch-ink-900);
   }
@@ -2520,18 +2679,44 @@ button.ch-rt-strip__h {
   .ch-rt-quick button {
     height: 44px;
     min-width: 0;
-    border-radius: 10px;
+    border-radius: var(--ch-radius-md);
     font: 600 13px/44px var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     background: var(--ch-ivory-200);
     color: var(--ch-ink-700);
     box-shadow: none;
   }
+  /* The picked distance is the course's green, as on desktop, not black. */
   .ch-rt-quick button[aria-pressed='true'] {
-    background: var(--ch-ink-900);
-    color: var(--ch-ivory-100);
+    background: var(--ch-green-800);
+    color: var(--ch-on-fill-100);
+  }
+  /* The other choices on the shot card take the result keys' raised face (owner 2026-10-18): miss squares, putt-miss
+     chips and quick picks. Picked ones keep their green. */
+  .ch-rt-amiss button:not([aria-checked='true']),
+  .ch-rt-tags button:not([aria-pressed='true']),
+  .ch-rt-quick button:not([aria-pressed='true']) {
+    background: var(--ch-raised-bg);
+    color: var(--ch-ink-900);
+    box-shadow: var(--ch-key-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
+    transition: transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rt-amiss button:not([aria-checked='true']):active,
+  .ch-rt-tags button:not([aria-pressed='true']):active,
+  .ch-rt-quick button:not([aria-pressed='true']):active {
+    transform: translateY(1px);
+    box-shadow: var(--ch-elevation-control), 0 0 0 1px var(--ch-border-subtle);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ch-rt-seg button,
+    .ch-rt-amiss button:not([aria-checked='true']),
+    .ch-rt-tags button:not([aria-pressed='true']),
+    .ch-rt-quick button:not([aria-pressed='true']) {
+      transition: none;
+    }
   }
   .ch-rt-shotlen {
-    font-size: 13px;
+    font-size: calc(13 * var(--ch-type-k));
     color: var(--ch-ink-600);
   }
   .ch-rt-shotlen b {
@@ -2552,9 +2737,6 @@ button.ch-rt-strip__h {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
-  .ch-rt-blocker {
-    color: var(--ch-on-green-ink-soft);
-  }
   .ch-rt-bar__row {
     display: grid;
     grid-template-columns: 60px 60px minmax(0, 1fr);
@@ -2564,8 +2746,8 @@ button.ch-rt-strip__h {
     width: 60px;
     height: 56px;
     gap: 3px;
-    border-radius: 18px;
-    font: 600 12px/1 var(--ch-font-sans);
+    border-radius: var(--ch-radius-xl);
+    font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-on-green-ink);
     background: rgb(244 238 221 / 0.08);
     box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14);
@@ -2573,7 +2755,7 @@ button.ch-rt-strip__h {
   .ch-rt-bar__row > .ch-btn.ch-rt-bar__go {
     height: 56px;
     border-radius: 28px;
-    font: 600 17px/1 var(--ch-font-sans);
+    font: 600 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
     background: var(--ch-on-green-ink);
     color: var(--ch-green-900);
     box-shadow: var(--ch-elevation-on-frame);
@@ -2582,6 +2764,10 @@ button.ch-rt-strip__h {
     background: rgb(244 238 221 / 0.16);
     color: var(--ch-on-green-ink-muted);
     box-shadow: none;
+  }
+  .ch-rt-bar__row > .ch-btn.ch-rt-bar__go.is-blocked {
+    font: 500 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    color: var(--ch-on-green-ink-soft);
   }
 
   /* A holed hole: its shots on the same ivory card. */
@@ -2604,6 +2790,59 @@ button.ch-rt-strip__h {
   }
 }
 
+/* Short phones (wave 9, owner decision E; 375 x 667, an iPhone SE): the field order stays (rounds.md, "Tap in on the
+   phone"), so the hole hero gives the height back instead. A smaller numeral and readout, and the drawn hole at the
+   right at a smaller scale (its whole shape still shows), bring a putt's Putt result onto the first screen. Taller
+   phones and the desktop are untouched. */
+@media (max-height: 700px) {
+  @container chrt (max-width: 640px) {
+    .ch-rt-body {
+      padding-top: 4px;
+    }
+    .ch-rt-hero__map {
+      justify-self: end;
+      width: 54%;
+    }
+    /* Its left edge dissolves into the field too, as its top and bottom do. */
+    .ch-rt-hero__map::after {
+      background:
+        linear-gradient(90deg, var(--ch-green-900), transparent 24%),
+        linear-gradient(180deg, var(--ch-green-900), transparent 26%, transparent 66%, var(--ch-green-900));
+    }
+    .ch-rt-panel {
+      margin-top: 6px;
+    }
+    .ch-rt-hero__main {
+      gap: 6px;
+      padding: 2px 20px 4px;
+    }
+    .ch-rt-hero__k {
+      gap: 4px;
+    }
+    .ch-rt-hno {
+      font-size: calc(40 * var(--ch-type-k));
+    }
+    .ch-rt-hero__dist b {
+      font-size: calc(38 * var(--ch-type-k));
+    }
+    .ch-rt-hero__done b {
+      font-size: calc(22 * var(--ch-type-k));
+    }
+  }
+}
+
+/* The page is what scrolls the shot screen on a phone, under the sticky action bar (96px tall with its hint): whatever
+   is brought into view (Tap in, a focused box, the undo question) lands clear of the bar, not under it (wave 9, E). The
+   undo question's own margin then only needs a breath. */
+@media (max-width: 820px) {
+  html:has(.ch-rt-q) {
+    scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  .ch-rt-panel .ch-rt-confirm {
+    scroll-margin-bottom: 12px;
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
@@ -2613,6 +2852,11 @@ button.ch-rt-strip__h {
   .ch-rt-hno em,
   .ch-rt-log__dots i,
   .ch-rt-log__n,
+  .ch-rt-exitc__n em,
+  .ch-rt-mc th[scope='row'],
+  .ch-rt-mc thead th {
+    font-size: 12px;
+  }
   .ch-rt-log__r strong,
   .ch-rt-hint,
   .ch-rt-sub > em,
@@ -2621,10 +2865,19 @@ button.ch-rt-strip__h {
   .ch-rt-amiss__k,
   .ch-rt-bar__i,
   .ch-rt-opts__k,
-  .ch-rt-exitc__n em,
-  .ch-rt-mc th[scope='row'],
-  .ch-rt-mc thead th,
   .ch-rt-sum__f dt {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
+  }
+}
+
+/* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
+@media (max-width: 820px) {
+  .ch-rt-quick button {
+    position: relative;
+  }
+  .ch-rt-quick button::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
   }
 }

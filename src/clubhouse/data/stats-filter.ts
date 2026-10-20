@@ -270,7 +270,7 @@ export function nineRoundsInWindow(f: ChFilter, options: { rounds: ChFilterRow[]
   return candidates(options.rounds, withHoles(f, 'all'), options.seasonStart, (r) => r).some((r) => r.holes === 9);
 }
 
-/** The ten matching rounds before the newest ten, for "vs. previous 10" (across seasons, as the newest ten are); null with no previous window or fewer than three whole rounds. */
+/** The ten matching rounds before the newest ten, for "vs previous 10" (across seasons, as the newest ten are); null with no previous window or fewer than three whole rounds. */
 export function previousRounds<T>(rows: T[], f: ChFilter, seasonStart: string, toRow: (t: T) => ChFilterRow): T[] | null {
   if (!hasPrevious(f)) return null;
   const prev = candidates(rows, f, seasonStart, toRow).slice(10, 20);

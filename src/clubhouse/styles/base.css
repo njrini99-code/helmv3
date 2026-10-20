@@ -33,38 +33,16 @@
 .ch-root *::after {
   box-sizing: border-box;
 }
-/* App-owned scrolling has one inherited theme. The browser's chrome is outside this scope. */
-[data-ui='clubhouse'] {
-  scrollbar-color: var(--ch-scrollbar-thumb) var(--ch-scrollbar-track);
-  scrollbar-width: thin;
-}
+/* No scrollbars inside the app (owner, 2026-10-16): with "always show scroll bars" (or a mouse) a long page took the
+   bar's width and a short one gave it back, so a switch between them moved the shell sideways. Everything still scrolls
+   by trackpad, wheel, touch and keyboard. The browser's chrome is outside this scope; forced colours bring them back. */
+[data-ui='clubhouse'],
 [data-ui='clubhouse'] * {
-  scrollbar-color: inherit;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
 [data-ui='clubhouse']::-webkit-scrollbar,
 [data-ui='clubhouse'] *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-[data-ui='clubhouse']::-webkit-scrollbar-track,
-[data-ui='clubhouse'] *::-webkit-scrollbar-track {
-  background: var(--ch-scrollbar-track);
-}
-[data-ui='clubhouse']::-webkit-scrollbar-thumb,
-[data-ui='clubhouse'] *::-webkit-scrollbar-thumb {
-  background: var(--ch-scrollbar-thumb);
-  border-radius: var(--ch-radius-xs);
-}
-@media (hover: hover) {
-  [data-ui='clubhouse']::-webkit-scrollbar-thumb:hover,
-  [data-ui='clubhouse'] *::-webkit-scrollbar-thumb:hover {
-    background: var(--ch-scrollbar-thumb-hover);
-  }
-}
-[data-ui='clubhouse']::-webkit-scrollbar-thumb:active,
-[data-ui='clubhouse'] *::-webkit-scrollbar-thumb:active {
-  background: var(--ch-scrollbar-thumb-active);
+  display: none;
 }
 @media (forced-colors: active) {
   [data-ui='clubhouse'] {
@@ -144,7 +122,7 @@
 }
 /* Text fields draw their own focus (green ring, underline, or the wrapper's
    focus-within), so the ring above would double it. */
-.ch-root :is(.ch-input, .ch-textarea, .ch-ed__title, .ch-search input, .ch-select select, .ch-ms-comp__field textarea, .ch-au-input input):focus-visible {
+.ch-root :is(.ch-input, .ch-textarea, .ch-ed__title, .ch-search input, .ch-select select, .ch-ms-comp__field textarea, .ch-au-input input, .ch-rsu-in):focus-visible {
   outline: none;
 }
 .ch-root h1,
@@ -307,7 +285,8 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
   animation-delay: calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out));
 }
 
-/* Animations off (Settings) and reduced motion: no skeleton fade. */
+/* Animations off (Settings; <html> carries it from the first frame, ThemeScript) and reduced motion: no skeleton fade. */
+[data-motion='off'] [data-ui='clubhouse'] main[aria-busy='true'],
 [data-ui='clubhouse'][data-motion='off'] main[aria-busy='true'] {
   animation: none;
 }

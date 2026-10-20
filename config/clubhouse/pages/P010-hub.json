@@ -128,6 +128,55 @@
       ]
     },
     {
+      "id": "ACT-P010-OPEN-ATTACHMENT",
+      "label": "List a post's attachments and open one",
+      "component": "src/clubhouse/screens/hub/parts.tsx#Attachments",
+      "handler": "toggle, files.open",
+      "service": "src/app/golf/actions/announcements.ts#getAnnouncementDetail",
+      "data": [
+        "golf_announcement_documents",
+        "golf_documents",
+        "storage documents"
+      ],
+      "bridge": {
+        "failure": 100604,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/wiring-p010-hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-OPEN-UPDATE",
+      "label": "Open an update (marks it read)",
+      "component": "src/clubhouse/screens/hub/parts.tsx#Updates",
+      "handler": "onOpenUpdate",
+      "service": "src/app/golf/actions/unified-notifications.ts#markNotificationRead",
+      "data": [
+        "notifications",
+        "golf_calendar_notifications"
+      ],
+      "bridge": {},
+      "tests": [
+        "src/clubhouse/__tests__/wiring-p010-hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-MARK-TRAVEL-SEEN",
+      "label": "A player's Travel tab clears the travel badge",
+      "component": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub",
+      "handler": "travelSeen effect",
+      "service": "src/app/golf/actions/player-notifications.ts#markTravelSeen",
+      "data": [
+        "golf_player_notification_state"
+      ],
+      "bridge": {},
+      "tests": [
+        "src/clubhouse/__tests__/wiring-p010-hub.test.tsx"
+      ]
+    },
+    {
       "id": "ACT-P010-POST-ANNOUNCEMENT",
       "label": "Post an announcement (coach)",
       "component": "src/clubhouse/screens/hub/sheets.tsx#ComposeSheet",

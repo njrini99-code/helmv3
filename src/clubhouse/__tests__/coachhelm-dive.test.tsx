@@ -106,7 +106,7 @@ describe('the deep dive as the page draws it', () => {
   });
 
   it('what was measured: the metric’s label, the generator’s own number, and the span in dates, or All rounds for a lifetime read', () => {
-    expect(by(PREVIEW_DIVE, 'in-slope').measured).toEqual({ label: 'Downhill penalty vs level putts (distance-controlled)', value: '23 pts', span: 'Jul 5 to Oct 1' });
+    expect(by(PREVIEW_DIVE, 'in-slope').measured).toEqual({ label: 'Make rate, downhill vs level, same distance', value: '23 pts', span: 'Jul 5 to Oct 1' });
     expect(by(PREVIEW_DIVE, 'in-pen').measured.span).toBe('All rounds');
     // A read that names no dates says none rather than guessing.
     expect(by(PREVIEW_DIVE, 'in-brk').measured.span).toBeNull();
@@ -473,8 +473,8 @@ describe('the Deep dive screen', () => {
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
     expect(screen.getByRole('region', { name: /CoachHelm has 4 reads on your game/ })).toBeTruthy();
     expect(within(rail()).getByRole('region', { name: 'Needs work' })).toBeTruthy();
-    expect(within(rail()).getByRole('region', { name: 'Working' })).toBeTruthy();
-    expect(screen.getByRole('article', { name: 'Downhill putts inside 4-6 ft: a real penalty' })).toBeTruthy();
+    expect(within(rail()).getByRole('region', { name: 'What’s working' })).toBeTruthy();
+    expect(screen.getByRole('article', { name: /^Downhill putts from 4–6\sft: a real penalty$/ })).toBeTruthy();
     for (const part of ['What was measured', 'How it has moved', 'The rounds behind it', 'Why CoachHelm thinks so', 'Where this goes']) {
       expect(within(article()).getByRole('region', { name: part })).toBeTruthy();
     }
@@ -484,8 +484,8 @@ describe('the Deep dive screen', () => {
   it('the summary: how many reads, how many need work, how many are working, how many are in a plan', () => {
     show();
     const hero = screen.getByRole('region', { name: /CoachHelm has 4 reads on your game/ });
-    expect(within(hero).getByText('Need work').nextElementSibling!.textContent).toBe('3');
-    expect(within(hero).getByText('Working').nextElementSibling!.textContent).toBe('1');
+    expect(within(hero).getByText('Needs work').nextElementSibling!.textContent).toBe('3');
+    expect(within(hero).getByText('What’s working').nextElementSibling!.textContent).toBe('1');
     expect(within(hero).getByText('In your plan').nextElementSibling!.textContent).toBe('2');
   });
 
@@ -493,11 +493,13 @@ describe('the Deep dive screen', () => {
     show();
     const needs = within(rail()).getByRole('region', { name: 'Needs work' });
     const rows = within(needs).getAllByRole('button');
-    expect(rows.map((r) => r.querySelector('b')!.textContent)).toEqual(['Downhill putts inside 4-6 ft: a real penalty', 'Penalty strokes: 1.1 per round', 'Putting break: under-reading left-to-right (10-20 ft)']);
+    expect(rows.map((r) => r.querySelector('b')!.textContent)).toEqual(['Downhill putts from 4–6\u00a0ft: a real penalty', 'Penalty strokes: 1.1 per round', 'Putting break: under-reading left-to-right (10–20\u00a0ft)']);
     expect(rows[0]!.textContent).toContain('Putting · Worth closing');
     expect(rows[1]!.textContent).toContain('Course management · Priority');
-    expect(rows[0]!.querySelector('.ch-hd-it__v')!.textContent).toBe('23 pts');
-    const working = within(rail()).getByRole('region', { name: 'Working' });
+    // The number, and what it counts beneath it: a points gap is a gap, not a rate.
+    expect(rows[0]!.querySelector('.ch-hd-it__v')!.textContent).toBe('23 pts gap');
+    expect(rows.map((r) => r.querySelector('.ch-hd-it__v small')?.textContent ?? null)).toEqual(['gap', 'a round', 'made']);
+    const working = within(rail()).getByRole('region', { name: 'What’s working' });
     expect(within(working).getByRole('button').textContent).toContain('Course management · Working');
   });
 
@@ -531,7 +533,7 @@ describe('the Deep dive screen', () => {
     show();
     const part = within(article()).getByRole('region', { name: 'What was measured' });
     expect(part.querySelector('.ch-hd-meas__v b')!.textContent).toBe('23 pts');
-    expect(within(part).getByText('Downhill penalty vs level putts (distance-controlled)')).toBeTruthy();
+    expect(within(part).getByText('Make rate, downhill vs level, same distance')).toBeTruthy();
     expect(within(part).getByText('Jul 5 to Oct 1')).toBeTruthy();
     // The Board's own evidence: the two make rates, the sample, the window and the confidence word.
     expect(within(part).getByText('58%')).toBeTruthy();
@@ -577,7 +579,7 @@ describe('the Deep dive screen', () => {
 
   it('CH-13383 a read with no movement, outcome, category trend or strip says there is no trend yet, in place', () => {
     show(diveLoad(PREVIEW_DIVE_YOUNG), 'in-brk');
-    expect(code('CH-13383')!.textContent).toMatch(/^No trend yet\./);
+    expect(code('CH-13383')!.textContent).toMatch(/^No trend yet/);
     expect(code('CH-13283')).toBeNull();
   });
 

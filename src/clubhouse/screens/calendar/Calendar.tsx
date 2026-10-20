@@ -24,12 +24,13 @@ import { AgendaView, MonthView, TimeGrid, type ChMoveTarget, type ChNow } from '
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { useToast } from '../../ui/Toast';
-import { friendlyReason, isOffline } from '../../lib/use-action';
+import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
-import { CancelEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
+import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
+import { Tooltip } from '../../ui/Tooltip';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_POP, chTween } from '../../lib/motion';
@@ -37,12 +38,13 @@ import { useLightPlace } from '../../shell/light';
 import { canvasLenis, canvasScrollNow, usePanelSmoothScroll } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
+import { useCalendarLive } from './live';
 import { chFocusQuietly } from '../../lib/focus-quietly';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
   for (const x of new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(d)) p[x.type] = x.value;
-  return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60 };
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60, ms: d.getTime() };
 }
 
 /**
@@ -94,22 +96,22 @@ function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | n
   }, [tick, first, on, hour, reduced]);
 }
 
-/**
- * P006-B3: how long a dragged event's move can be undone: the done toast's own life (ui/Toast.tsx DISMISS_MS.done), so
- * Undo is on screen for the whole window. Nothing is written until it closes, so invitees hear of a move only once
- * it stands, and an undone move never reaches anyone.
- */
-const MOVE_UNDO_MS = 4000;
 /** Widgets whose arrow keys move their own selection or focus, and the page's popovers (A-09). */
 const COMPOSITE = '[role="radiogroup"], [role="tablist"], [role="menu"], [role="menubar"], [role="listbox"], [role="grid"], [role="tree"], [role="slider"], [role="dialog"]';
 const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 
-/** Optimistic moves held for their Undo window, then written. Leaving the page writes a waiting move at once. */
+/**
+ * P006-B3: optimistic moves held while their toast offers Undo, then written. The write is the toast's onExpire, so it
+ * lands exactly when Undo stops being offered (the clock waits while the toast is held, hovered or focused), and
+ * invitees hear of a move only once it stands. Leaving the page, or the next move, writes a waiting move at once; an
+ * Undo pressed after that says the move already stands.
+ */
 /** `preview`: the dev preview keeps a move on screen and writes nothing. */
 function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean) {
   const toast = useToast();
   const [moves, setMoves] = useState<Map<string, ChMoveTarget>>(() => new Map());
-  const held = useRef<{ id: string; timer: number; write: () => void } | null>(null);
+  /** The move waiting on its Undo; each move is its own record, so a stale toast never acts on a newer move. */
+  const held = useRef<{ id: string; write: () => void } | null>(null);
   const drop = useCallback((id: string) => setMoves((m) => (m.has(id) ? new Map([...m].filter(([k]) => k !== id)) : m)), []);
   // The server's copy has caught up: the moves already written stand on their own.
   useEffect(() => {
@@ -118,7 +120,6 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
   const flush = useCallback(() => {
     const h = held.current;
     if (!h) return;
-    window.clearTimeout(h.timer);
     h.write();
   }, []);
   useEffect(() => {
@@ -139,6 +140,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
       setMoves((m) => new Map(m).set(e.id, to));
       const write = () => {
         held.current = null;
+        entry.written = true;
         if (preview) return;
         chTrail('calendar move event');
         const startTime = toHHMM(to.start);
@@ -159,20 +161,26 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
           .then((res) => (res?.success ? onSaved() : fail(new Error(res?.error || 'Move was not saved'))))
           .catch(fail);
       };
-      held.current = { id: e.id, timer: window.setTimeout(write, MOVE_UNDO_MS), write };
+      const entry = { id: e.id, write, written: false };
+      held.current = entry;
       const day = to.date === e.date ? '' : ` ${to.date === today ? 'today' : `on ${dowOf(to.date)} ${dayNum(to.date)}`}`;
       toast({
         title: `Moved to ${fmtHour(to.start)}${day}`,
         action: {
           label: 'Undo',
           run: () => {
-            const h = held.current;
-            if (!h || h.id !== e.id) return;
-            window.clearTimeout(h.timer);
+            if (held.current !== entry) {
+              // Written already (a second press of an Undo that ran does nothing).
+              if (entry.written) toast({ title: 'Already saved. Drag it back to undo.' });
+              return;
+            }
             held.current = null;
             drop(e.id);
             haptic('select');
           },
+        },
+        onExpire: () => {
+          if (held.current === entry) flush();
         },
       });
     },
@@ -393,6 +401,7 @@ export function Calendar({
   initialWith,
   initialType,
   frozen = false,
+  live = false,
 }: {
   data: ChCalendarData;
   initialEvent?: string;
@@ -402,9 +411,12 @@ export function Calendar({
   /** With `initialNew`: the new event's type (the phone Home's quick chips). */
   initialType?: ChCalType;
   frozen?: boolean;
+  /** Follow the team's events as they change (realtime, `useCalendarLive`). The route turns it on; tests and the preview leave it off. */
+  live?: boolean;
 }) {
   const preview = frozen;
   const router = useRouter();
+  useCalendarLive(data.teamId, live && !frozen);
   const [pending, start] = useTransition();
   const coach = data.role === 'coach';
   const [view, setView] = useState<ChCalView>(data.view);
@@ -429,6 +441,7 @@ export function Calendar({
     window.history.replaceState(null, '', url.pathname + url.search);
   }, [initialNew, frozen]);
   const [cancelling, setCancelling] = useState<ChCalEvent | null>(null);
+  const [deleting, setDeleting] = useState<ChCalEvent | null>(null);
   const [subs, setSubs] = useState(false);
   const [busyOpen, setBusyOpen] = useState(false);
   const [jump, setJump] = useState(false);
@@ -459,7 +472,9 @@ export function Calendar({
     () => (sel.length ? placed.filter((e) => (e.type === 'class' ? e.owner != null && sel.includes(e.owner) : e.people.some((p) => sel.includes(p)))) : placed),
     [placed, sel],
   );
-  const overlaps = useMemo(() => (coach ? findOverlaps(data.events.filter((e) => !e.cancelled)) : []), [coach, data.events]);
+  // A player's own clashes too (wave 7): their payload holds only their classes and the events they're on, so these are
+  // theirs alone. The coach's Overlap panel (move, keep) stays the coach's; a player is told, and can message the coach.
+  const overlaps = useMemo(() => findOverlaps(data.events.filter((e) => !e.cancelled)), [data.events]);
   const flagged = useMemo(() => new Set(overlaps.map((o) => o.eventId)), [overlaps]);
 
   const go = useCallback(
@@ -498,6 +513,18 @@ export function Calendar({
   }, [go, view, now.date]);
 
   const refresh = useCallback(() => start(() => router.refresh()), [router]);
+  // Restore event (a cancelled event, coach): back to confirmed, as Fairway's event menu does (updateGolfEvent with
+  // status 'confirmed', which clears the cancellation and notifies no one). Not destructive, so not asked first; the
+  // re-read that follows a landed restore is part of the action, so the toast's Retry does it too.
+  const restore = useAction(
+    'calendar.restoreEvent',
+    async (e: ChCalEvent) => {
+      const res = await updateGolfEvent(e.id, { status: 'confirmed' } as never);
+      if (normalise(res).success) refresh();
+      return res;
+    },
+    (e) => ({ done: `Restored · ${e.title}`, failed: `Couldn’t restore ${e.title}`, code: 'CH-6016' }),
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -505,7 +532,7 @@ export function Calendar({
       const t = e.target instanceof Element ? e.target : null;
       // A key a control already used (the View radios' arrows, a popover's Esc) is not also a calendar shortcut (A-09).
       if (e.defaultPrevented) return;
-      if (t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') || e.metaKey || e.ctrlKey || e.altKey || editor || cancelling || subs || busyOpen) return;
+      if (t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') || e.metaKey || e.ctrlKey || e.altKey || editor || cancelling || deleting || subs || busyOpen) return;
       // Arrows inside a widget that moves its own selection, or inside a popover, belong to it; N and T still work there.
       if (e.key.startsWith('Arrow') && t?.closest(COMPOSITE)) return;
       if (e.key === 'n' && coach) {
@@ -518,7 +545,7 @@ export function Calendar({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [coach, editor, cancelling, subs, busyOpen, view, anchor, insp, goToday, step]);
+  }, [coach, editor, cancelling, deleting, subs, busyOpen, view, anchor, insp, goToday, step]);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
   // P006-A1: the global light's sun at the team's place, on the team's clock; one read per day shown.
@@ -622,6 +649,8 @@ export function Calendar({
     },
     onEdit: (e, proposal) => setEditor({ event: e, proposal }),
     onCancel: (e) => setCancelling(e),
+    onRestore: (e) => void restore.run(e),
+    onDelete: (e) => setDeleting(e),
     onDuplicate: (e) => setEditor({ event: null, copyOf: e }),
     onFind: (date, invite) => setEditor({ event: null, date, invite }),
     refresh,
@@ -689,6 +718,17 @@ export function Calendar({
         />
       )}
       {coach && (
+        <DeleteEvent
+          event={deleting}
+          onClose={() => setDeleting(null)}
+          onDone={() => {
+            setDeleting(null);
+            setInsp(null);
+            refresh();
+          }}
+        />
+      )}
+      {coach && (
         <CancelEvent
           event={cancelling}
           onClose={() => setCancelling(null)}
@@ -736,12 +776,8 @@ export function Calendar({
           view={view}
           flagged={flagged}
           selId={selId}
-          notices={
-            <>
-              {notices}
-              {data.eventsError && <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} />}
-            </>
-          }
+          notices={notices}
+          eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} /> : null}
           onView={go}
           onStep={step}
           onOpen={open}
@@ -806,9 +842,11 @@ export function Calendar({
             label="More calendar actions"
             items={moreItems}
             trigger={(p) => (
-              <button type="button" className="ch-btn ch-btn--secondary ch-iconbtn" aria-label="More" {...p}>
-                <Icon icon={Ellipsis} size={16} />
-              </button>
+              <Tooltip>
+                <button type="button" className="ch-btn ch-btn--secondary ch-iconbtn" aria-label="More" {...p}>
+                  <Icon icon={Ellipsis} size={16} />
+                </button>
+              </Tooltip>
             )}
           />
           {coach && (
@@ -875,7 +913,7 @@ export function Calendar({
               <Swap swapKey={view}>
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} daylight={daylight} coach={coach} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
                   )}
                   {view === 'month' && (
                     <MonthView
@@ -894,7 +932,7 @@ export function Calendar({
                   )}
                   {view === 'agenda' &&
                     (events.some((e) => e.date >= now.date) || events.length ? (
-                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} />
+                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} viewerId={data.viewerPlayerId} />
                     ) : (
                       <div className="ch-cal-surface">
                         <EmptyState

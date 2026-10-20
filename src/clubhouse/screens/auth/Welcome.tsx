@@ -2,6 +2,7 @@
 
 import { ArrowRight, CalendarDays, CircleAlert, CircleCheck, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, type LucideIcon } from 'lucide-react';
 import { m } from 'motion/react';
+import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotificationCategoryId } from '@/app/golf/actions/unified-notifications-model';
@@ -12,6 +13,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { dropHandoffCurtain } from '../../lib/handoff';
+import { markBrandWrite } from '../../shell/BrandWord';
 import { HANDOFF_MS, WELCOME_PHONE_AUTO_MS, welcomeBody, welcomeCard, welcomeDate, welcomeHint, welcomeItem, welcomeLine1, welcomeMark, welcomeName, welcomeScrim, type AuthCustom } from './auth-motion';
 import { greetingWord, isDarkSky } from './scene-sky';
 import { useLastHereLabel, useLocalDateLabel, useLocalHour, useSkyHour } from './use-hour';
@@ -90,9 +92,12 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   // The fold lands on the dashboard's canvas, so it is drawn only when that is where this goes and it is Clubhouse.
   const fold = data.clubhouseDashboard && isDashboardDestination(destination) && !reduced;
 
-  // The destination is known at mount, so it is fetched while the person reads.
+  // The destination is known at mount, so it is fetched while the person reads: in full, data and all (owner,
+  // 2026-10-16, "fix the login and animation mechanics"). The default prefetch of a dynamic page stops at its loading
+  // boundary, so the dashboard was only asked for when the fold had landed and the empty frame waited a server render
+  // (0.7s warm, over 2s cold, in dev). Read in full while the greeting plays, it is ready when Continue is pressed.
   useEffect(() => {
-    if (!navigate) router.prefetch(destination);
+    if (!navigate) router.prefetch(destination, { kind: PrefetchKind.FULL });
   }, [router, destination, navigate]);
 
   // Nothing starts before hydration has settled what the viewer's motion setting is: the text waits a frame.
@@ -113,6 +118,8 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
     started.current = true;
     // CH-15604, CH-15705: Continue (or Return) commits once and folds the course into the canvas.
     haptic('commit');
+    // The sidebar's wordmark writes itself in once when the app opens from here (owner, 2026-10-16).
+    markBrandWrite();
     setLeaving(true);
     stage.begin(fold ? 'fold' : 'fade');
     timer.current = window.setTimeout(
@@ -197,7 +204,7 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
                 ))}
               </ul>
             ) : news.first ? (
-              <NewsEmpty icon={Sparkles} code="CH-15302" title="Your team’s updates will show up here" body="Messages, posted rounds and RSVPs since your last visit." custom={custom} />
+              <NewsEmpty icon={Sparkles} code="CH-15302" title="Your team’s updates will show up here" body="Messages, posted rounds and RSVPs land here each time you sign in." custom={custom} />
             ) : (
               <NewsEmpty icon={CircleCheck} code="CH-15301" title="You’re all caught up" body="Nothing new since your last visit." custom={custom} />
             )}

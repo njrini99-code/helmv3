@@ -4,7 +4,8 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chLogServer } from '../lib/track-server';
 import { fullName } from './season';
 import { tourForGender } from './stats-common';
-import { toHoles, toReview, type ChHoleRow, type ChReviewRoundRow, type ChRoundReview, type ChShotRow } from './round-review-shape';
+import { readRoundTypeOptions } from './rounds-type-options';
+import { currentRoundType, toHoles, toReview, type ChHoleRow, type ChReviewRoundRow, type ChReviewTypeEdit, type ChRoundReview, type ChShotRow } from './round-review-shape';
 
 export type * from './round-review-shape';
 
@@ -27,10 +28,11 @@ export type * from './round-review-shape';
 /** A player's `teamId` names the strokes gained baseline (a women's team is measured on the women's Tour curve); without it no baseline is claimed. */
 export type ChReviewViewer = { role: 'player'; playerId: string; teamId?: string | null } | { role: 'coach'; teamId: string };
 
-export type ChRoundReviewResult = { kind: 'ok'; review: ChRoundReview } | { kind: 'notFound' } | { kind: 'inProgress' } | { kind: 'error' };
+/** `typeEdit`: changing the round's type (CH-11522), for the owning player or a coach of the player's team (both are the only viewers who get here). */
+export type ChRoundReviewResult = { kind: 'ok'; review: ChRoundReview; typeEdit: ChReviewTypeEdit } | { kind: 'notFound' } | { kind: 'inProgress' } | { kind: 'error' };
 
 const ROUND_COLUMNS =
-  'id, player_id, status, course_name, tees_played, tee_id, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, course_rating, course_slope, ai_recap, notes, is_test, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
+  'id, player_id, status, course_name, tees_played, tee_id, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, course_rating, course_slope, ai_recap, notes, is_test, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, team_id, qualifier_id, qualifier_round_number';
 const SHOT_COLUMNS =
   'hole_number, shot_number, shot_type, club_type, result, lie_after, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, miss_direction, putt_break, putt_slope, is_penalty';
 
@@ -66,7 +68,8 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
   }
   if (round.status === 'in_progress') return { kind: 'inProgress' };
 
-  const [holesRes, shotsRes, teeRes, playerRes, teamRes] = await Promise.all([
+  const row = round as ChReviewRoundRow;
+  const [holesRes, shotsRes, teeRes, playerRes, teamRes, typeOptions] = await Promise.all([
     supabase.from('golf_holes').select('hole_number, par, yardage, score, putts, fairway_hit, gir, penalty_strokes').eq('round_id', roundId).order('hole_number', { ascending: true }),
     fetchAllRowsResult<ChShotRow>(
       (from, to) => supabase.from('golf_shots').select(SHOT_COLUMNS).eq('round_id', roundId).order('hole_number', { ascending: true }).order('shot_number', { ascending: true }).range(from, to),
@@ -76,6 +79,8 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
     round.tee_id ? supabase.from('golf_course_tees').select('total_yards').eq('id', round.tee_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
     viewer.role === 'coach' ? supabase.from('golf_players').select('first_name, last_name').eq('id', round.player_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
     viewer.teamId ? supabase.from('golf_teams').select('gender').eq('id', viewer.teamId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    // The Fairway round page's qualifier reads for its type editor; logs and degrades on its own (never throws).
+    readRoundTypeOptions(supabase, { playerId: round.player_id, roundId, roundTeamId: row.team_id ?? null, coach: viewer.role === 'coach' }),
   ]);
   if (holesRes.error) log('holes', holesRes.error);
   if (shotsRes.error) log('shots', shotsRes.error);
@@ -86,7 +91,8 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
   const holes = holesRes.error ? [] : toHoles((holesRes.data ?? []) as ChHoleRow[], shotsRes.error ? [] : (shotsRes.data ?? []));
   return {
     kind: 'ok',
-    review: toReview(round as ChReviewRoundRow, {
+    typeEdit: { viewer: viewer.role, current: currentRoundType(row), options: typeOptions },
+    review: toReview(row, {
       holes,
       holesError: !!holesRes.error,
       shotsError: !!shotsRes.error,

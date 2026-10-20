@@ -1,9 +1,10 @@
 'use client';
 
-import { ClipboardList, Megaphone, Plane, Plus, User, UsersRound } from 'lucide-react';
+import { ClipboardList, Plane, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
+import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -22,7 +23,10 @@ import { PhoneTop } from '../../shell/phone-chrome';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
 import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet, type ChAnnouncementEdit } from './sheets';
 import { TripEditSheet } from './trip-edit';
+import { uploadRefusal } from './upload-rules';
 import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
+import { useToast } from '../../ui/Toast';
+import { useHScroll } from '../../ui/use-hscroll';
 import '../../styles/hub.css';
 
 // The tabs and their `?tab=` parser live in a plain module so the server route can call the parser.
@@ -107,6 +111,7 @@ export function TeamHub({
   initialTab,
   viewerName,
   focusTask,
+  focusTrip,
 }: {
   data: ChTeamHub;
   writes?: ChHubWrites;
@@ -114,6 +119,8 @@ export function TeamHub({
   viewerName: string;
   /** A task a notification named (`?task=`): its row scrolls into view and is lit once. */
   focusTask?: string | null;
+  /** A trip Calendar's View itinerary named (`?tab=travel&trip=`): Travel scrolls it into view once. */
+  focusTrip?: string | null;
 }) {
   const router = useRouter();
   const phone = useChPhone();
@@ -123,16 +130,20 @@ export function TeamHub({
   const [taskToFocus, setTaskToFocus] = useState<string | null>(focusTask ?? null);
   // A new address on the same page (a notification's ?tab=tasks&task= while Team Hub is open) re-renders the route
   // without remounting it, so the tab and the task follow the address; the page stood on its first tab (2026-10-14).
-  const [seenAddress, setSeenAddress] = useState({ initialTab, focusTask });
-  if (seenAddress.initialTab !== initialTab || seenAddress.focusTask !== focusTask) {
-    setSeenAddress({ initialTab, focusTask });
+  const [tripToFocus, setTripToFocus] = useState<string | null>(focusTrip ?? null);
+  const [seenAddress, setSeenAddress] = useState({ initialTab, focusTask, focusTrip });
+  if (seenAddress.initialTab !== initialTab || seenAddress.focusTask !== focusTask || seenAddress.focusTrip !== focusTrip) {
+    setSeenAddress({ initialTab, focusTask, focusTrip });
     if (initialTab && initialTab !== seenAddress.initialTab) setTab(initialTab);
     if (focusTask && focusTask !== seenAddress.focusTask) setTaskToFocus(focusTask);
+    if (focusTrip && focusTrip !== seenAddress.focusTrip) setTripToFocus(focusTrip);
   }
   const taskFocused = () => setTaskToFocus(null);
+  const tripFocused = () => setTripToFocus(null);
   // The underline moves on the press (CH-10602); the panel renders just behind it.
   const shownTab = useDeferredValue(tab);
   const tabsRef = useRef<HTMLDivElement>(null);
+  const tabsEdges = useHScroll<HTMLDivElement>(tabsRef);
   const reduced = useChReducedMotion();
   useSlidePlate(tabsRef, '[aria-selected="true"] > .ch-hb-tabs__bar', tab, { reduced, kind: 'smooth' });
   const [replies, setReplies] = useState(() => new Map<string, ChRsvp>());
@@ -155,6 +166,10 @@ export function TeamHub({
   const [uploading, setUploading] = useState(false);
 
   const refresh = () => router.refresh();
+  // Team Hub's badge (a player's unread posts, open tasks and new trips) is a polled feed: a write that changes it reads
+  // it again at once, as production's hub does after Got it and a task's tick, instead of up to 45s later.
+  const badges = useNotificationBadges();
+  const recount = () => void badges.refetch().catch(() => {});
 
   // Every follow-up to a write (the optimistic tick and its undo, the tab that opens, the refresh, the row that leaves,
   // the dialog that closes) lives inside the action. The error toast's Retry re-runs the action and nothing else, so
@@ -202,7 +217,10 @@ export function TeamHub({
     () => setAcked(confirmedAck.current.has(a.id) ? withId(a.id) : withoutId(a.id)),
     async () => {
       const res = await writes.acknowledge(a.id);
-      if (normalise(res).success) confirmedAck.current.add(a.id);
+      if (normalise(res).success) {
+        confirmedAck.current.add(a.id);
+        recount();
+      }
       return res;
     },
   ));
@@ -220,7 +238,10 @@ export function TeamHub({
     },
     async () => {
       const res = await (nextDone ? writes.completeTask(t.id) : writes.uncompleteTask(t.id));
-      if (normalise(res).success) confirmedTask.current.set(t.id, nextDone);
+      if (normalise(res).success) {
+        confirmedTask.current.set(t.id, nextDone);
+        recount();
+      }
       return res;
     },
   ));
@@ -257,6 +278,9 @@ export function TeamHub({
   );
 
   // ── Coach writes (the three forms are in sheets.tsx, each with its own action) ──
+  // Several files dropped at once land with one summary toast (onUpload), not one each; a failure still has its own, with
+  // Retry. The batch is read when each upload starts, so a Retry pressed later says its own "shared".
+  const batch = useRef(0);
   const upload = useAction(
     'hub.uploadDocument',
     async (f: File) => {
@@ -264,7 +288,7 @@ export function TeamHub({
       if (normalise(res).success) refresh();
       return res;
     },
-    (f) => ({ done: `${f.name} shared with the team`, failed: `Couldn’t upload ${f.name}`, hint: 'Check the file is under 50 MB and try again.', code: 'CH-10008' }),
+    (f) => ({ done: batch.current > 1 ? '' : `${f.name} shared with the team`, failed: `Couldn’t upload ${f.name}`, hint: 'Check the file is under 25 MB and try again.', code: 'CH-10008' }),
   );
   const remove = useAction(
     'hub.delete',
@@ -289,17 +313,62 @@ export function TeamHub({
     },
   );
 
+  // An update opened from the feed is read, here and in the bell (markNotificationRead, as the bell's own open does).
+  const [readUpdates, setReadUpdates] = useState(() => new Set<string>());
+  const onOpenUpdate = (n: ChHubUpdate) => {
+    if (!n.unread || readUpdates.has(n.id) || !n.source || !writes.markUpdateRead) return;
+    setReadUpdates(withId(n.id));
+    void writes
+      .markUpdateRead(n.id, n.source)
+      .then(recount)
+      .catch(() => {});
+  };
+
+  // A player's Travel tab clears the travel part of the badge, once a visit: production's Travel page does this on
+  // mount (markTravelSeen), and /golf/dashboard/travel now opens this tab. A failed mark leaves the badge as it was.
+  const travelSeen = useRef(false);
+  useEffect(() => {
+    if (coach || shownTab !== 'travel' || travelSeen.current || !writes.markTravelSeen) return;
+    travelSeen.current = true;
+    void writes
+      .markTravelSeen()
+      .then((res) => {
+        if (normalise(res).success) recount();
+      })
+      .catch(() => {});
+    // recount reads the badge context of this render; it is stable enough for a one-off.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coach, shownTab, writes]);
+
   const onReply = reply;
   const onAck = ack;
   const onToggle = toggle;
   const onOpen = (f: ChHubFile) => void open.run(f);
+  // A post's attachments: listed on request, each opened like a file in Documents (production's announcement card).
+  const attachments = writes.announcementFiles ? { load: writes.announcementFiles, open: onOpen, opening } : undefined;
+  const toast = useToast();
   const onUpload = async (files: File[]) => {
+    // A file the documents bucket would refuse (its type or its 25 MB limit) is refused here, before it is sent, and
+    // the rest go on (upload-rules.ts; the types are Fairway Documents' picker list).
+    const sendable = files.filter((f) => {
+      const no = uploadRefusal(f);
+      if (no) {
+        haptic('error');
+        toast({ tone: 'error', title: no.title, body: no.body, code: 'CH-10008' });
+      }
+      return !no;
+    });
+    if (!sendable.length) return;
     setUploading(true);
+    batch.current = sendable.length;
+    let shared = 0;
     try {
-      for (const f of files) await upload.run(f);
+      for (const f of sendable) if ((await upload.run(f)).success) shared += 1;
     } finally {
+      batch.current = 0;
       setUploading(false);
     }
+    if (sendable.length > 1 && shared > 0) toast({ title: shared === 1 ? '1 file shared with the team' : `${shared} files shared with the team` });
   };
   const onConfirmDelete = () => {
     if (confirm) void remove.run(confirm);
@@ -346,6 +415,9 @@ export function TeamHub({
     data.updates.error && 'updates',
     data.tasks.error && (coach ? 'tasks' : 'your tasks'),
     data.documents.error && 'documents',
+    // CH-10208: the coach's roster read failed. The pickers in New announcement, Plan a trip and Assign a task have
+    // nobody to offer, so the page says so up front instead of letting an empty picker read as an empty team.
+    coach && data.playersError && 'the team list',
   ].filter((part): part is string => !!part);
   const covered = failedParts.length > 1;
 
@@ -385,16 +457,25 @@ export function TeamHub({
           ? { label: 'Assign a task', icon: Plus, run: () => setAssign(true) }
           : null;
 
+  const yourTasks = (
+    <SectionBoundary surface="hub.tasks" label="Your tasks" code="CH-10205">
+      <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
+    </SectionBoundary>
+  );
+
   return (
     <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
       {phone && !coach && <PhoneTop start title="Team Hub" heading={false} />}
       {phone && coach && <PhoneTop title="Team Hub" start heading={false} />}
       <header className="ch-hb-h" data-canopy-head="">
         <div>
-          <span className="ch-hb-role">
-            <Icon icon={coach ? ClipboardList : User} size={12} />
-            {coach ? 'Coach view' : 'Player view'}
-          </span>
+          {/* Coach only (wave 7): a player is never told their own role. */}
+          {coach && (
+            <span className="ch-hb-role">
+              <Icon icon={ClipboardList} size={12} />
+              Coach view
+            </span>
+          )}
           <h1 id="ch-hb-title" className={phone ? 'ch-sr-only' : undefined}>
             Team Hub
           </h1>
@@ -408,9 +489,16 @@ export function TeamHub({
       </header>
 
       <PageRefreshNotice parts={failedParts} />
+      {coach && data.playersError && !covered && (
+        <RefreshNotice
+          code="CH-10208"
+          title="The team list didn’t load."
+          body="Players can’t be chosen for a post, a trip or a task until it does; a post to the whole team still goes out. Try again; the error has been reported."
+        />
+      )}
 
       {/* CH-10801: real tabs, each controlling its panel. */}
-      <div ref={tabsRef} className="ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
+      <div ref={tabsEdges} className="ch-hscroll ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
         {HUB_TABS[data.role].map(([k, l]) => (
           <button
             key={k}
@@ -418,7 +506,7 @@ export function TeamHub({
             role="tab"
             id={`ch-hb-tab-${k}`}
             aria-selected={tab === k}
-            aria-controls={`ch-hb-panel-${k}`}
+            aria-controls={k === shownTab ? `ch-hb-panel-${k}` : undefined}
             tabIndex={tab === k ? 0 : -1}
             onClick={() => pick(k)}
             onKeyDown={tabKeys}
@@ -437,7 +525,7 @@ export function TeamHub({
               <EmptyState
                 size="page"
                 code={coach ? 'CH-10305' : 'CH-10306'}
-                icon={coach ? Megaphone : UsersRound}
+                shape="rows"
                 title={coach ? 'Nothing posted yet' : 'No team updates yet'}
                 body={coach ? 'Post an announcement, plan a trip or share a document. Everything you post shows up in your players’ Team Hub.' : 'Announcements, trips and documents from your coaches will show up here.'}
                 // The head's New announcement is the page's one primary action on every tab (states audit b9): the empty
@@ -470,7 +558,7 @@ export function TeamHub({
                         <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
                       </div>
                     ) : featured ? (
-                      <Announcement key={featured.id} a={featured} role={data.role} featured acked={isAcked(featured)} pending={ackPending(featured)} onAck={onAck} onEdit={setEditing} onDelete={(a) => askDelete({ kind: 'ann', a })} />
+                      <Announcement key={featured.id} a={featured} role={data.role} featured acked={isAcked(featured)} pending={ackPending(featured)} onAck={onAck} onEdit={setEditing} onDelete={(a) => askDelete({ kind: 'ann', a })} files={attachments} />
                     ) : null}
                   </SectionBoundary>
                   <SectionBoundary surface="hub.trip" label="The next trip" code="CH-10205">
@@ -484,14 +572,12 @@ export function TeamHub({
                   </SectionBoundary>
                 </div>
                 <div className="ch-hb-col">
+                  {/* A player's phone puts their tasks before Updates: the column stacks under the first, and Updates ran long enough to hide them (wave 7). */}
+                  {!coach && phone && yourTasks}
                   <SectionBoundary surface="hub.updates" label="Updates" code="CH-10205">
-                    <Updates data={data.updates} covered={covered} />
+                    <Updates data={data.updates} covered={covered} read={readUpdates} onOpen={onOpenUpdate} />
                   </SectionBoundary>
-                  {!coach && (
-                    <SectionBoundary surface="hub.tasks" label="Your tasks" code="CH-10205">
-                      <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
-                    </SectionBoundary>
-                  )}
+                  {!coach && !phone && yourTasks}
                 </div>
               </div>
             ))}
@@ -503,9 +589,9 @@ export function TeamHub({
                 {data.announcements.error ? (
                   <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
                 ) : !anns.length ? (
-                  <EmptyState compact code="CH-10307" icon={Megaphone} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
+                  <EmptyState code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
-                  anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} />)
+                  anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)
                 )}
                 {coach && !phone && anns.length > 0 && !data.announcements.error && <ReadMargin anns={anns} />}
               </div>
@@ -518,14 +604,14 @@ export function TeamHub({
                 {data.trips.error ? (
                   <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
                 ) : !tripRows.length ? (
-                  <EmptyState compact code="CH-10308" icon={Plane} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
+                  <EmptyState code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 ) : (
                   <>
-                    {nextTrip && <TripPass t={nextTrip} big role={data.role} {...tripActions} />}
+                    {nextTrip && <TripPass t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}
                     {tripRows
                       .filter((t) => t !== nextTrip)
                       .map((t) => (
-                        <TripPass key={t.id} t={t} later role={data.role} {...tripActions} />
+                        <TripPass key={t.id} t={t} later role={data.role} focus={tripToFocus === t.id} onFocused={tripFocused} {...tripActions} />
                       ))}
                   </>
                 )}

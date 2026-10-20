@@ -22,6 +22,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
@@ -1340,8 +1341,14 @@ async function setCourseDeleted(courseId: string, deleted: boolean): Promise<Res
 /**
  * Set golf_courses.image_url to a freshly-uploaded course photo. Accepts ONLY a
  * public URL we minted in our own course-images bucket (never an arbitrary
- * external URL). Goes through the audited updateCourse path (attribution +
- * edit-history).
+ * external URL).
+ *
+ * Any golf team member (coach or player) may set a course photo (owner
+ * decision 2026-10-16), so this does NOT go through updateCourse and its coach
+ * gate. It calls golf_set_course_image, a SECURITY DEFINER function that
+ * re-checks membership and the URL's course folder, updates image_url and the
+ * last-edited attribution only, and writes the edit-history row itself.
+ * golf_courses_update_authenticated is deliberately not widened.
  */
 async function setCourseImageUrlImpl(
   courseId: string,
@@ -1376,9 +1383,59 @@ async function setCourseImageUrlImpl(
     return { success: false, error: 'Invalid image URL' };
   }
 
-  const result = await updateCourse(courseId, { imageUrl });
-  if (!result.success) return { success: false, error: result.error };
+  const { error } = await supabase.rpc('golf_set_course_image', {
+    p_course_id: courseId,
+    p_image_url: imageUrl,
+  });
+  if (error && isMissingRpcError(error.code)) {
+    // The code shipped before 20261016220000 was applied. Fall back to the old
+    // coach-only path so coaches keep working; a player gets updateCourse's
+    // refusal until the migration is applied.
+    await logServerError(
+      `golf_set_course_image is not deployed yet, falling back to updateCourse: ${describeError(error)}`,
+      {
+        action: 'courseLibrary.setCourseImageUrl',
+        featureArea: 'course_library',
+        extra: { courseId, code: error.code },
+      },
+      'warning',
+    );
+    const fallback = await updateCourse(courseId, { imageUrl });
+    if (!fallback.success) return { success: false, error: fallback.error };
+    return { success: true, data: { imageUrl } };
+  }
+  if (error) {
+    await logServerError(`setCourseImageUrl failed: ${describeError(error)}`, {
+      action: 'courseLibrary.setCourseImageUrl',
+      featureArea: 'course_library',
+      extra: { courseId, code: error.code },
+    });
+    return { success: false, error: courseImageRpcErrorMessage(error.code) };
+  }
+
+  revalidateLibrary();
   return { success: true, data: { imageUrl } };
+}
+
+/** PostgREST PGRST202 (no such function in the schema cache) or Postgres 42883 (undefined_function). */
+function isMissingRpcError(code: string | undefined): boolean {
+  return code === 'PGRST202' || code === '42883';
+}
+
+/** golf_set_course_image SQLSTATEs (20261016220000) → short user message. */
+function courseImageRpcErrorMessage(code: string | undefined): string {
+  switch (code) {
+    case '28000':
+      return 'You must be logged in';
+    case '42501':
+      return 'Only members of a golf team can set a course photo';
+    case '22023':
+      return 'Invalid image URL';
+    case 'P0002':
+      return 'That course no longer exists';
+    default:
+      return 'Failed to save the course photo';
+  }
 }
 
 const observedSetCourseImageUrl = withAdminObserved(
@@ -1504,8 +1561,7 @@ async function createTeeImpl(
         action: 'createTee', featureArea: 'course-library', extra: { teeId: tee.id },
       });
       // Soft-delete the just-created tee so we don't leave a holeless ghost.
-      await supabase.from('golf_course_tees')
-        .update({ deleted_at: new Date().toISOString() }).eq('id', tee.id as string);
+      await rollBackCreatedTee(tee.id as string, actor.userId, courseId);
       return { success: false, error: 'Failed to save tee holes' };
     }
   }
@@ -1518,6 +1574,40 @@ async function createTeeImpl(
   return getTeeWithHoles(tee.id as string).then((t) =>
     t ? { success: true as const, data: t } : { success: false as const, error: 'Tee created but could not be reloaded' },
   );
+}
+
+/**
+ * Soft-delete a tee that THIS createTee call inserted a moment ago, after its
+ * holes insert failed. Uses the service-role client: golf_course_tees_update
+ * requires is_golf_coach() OR is_super_admin(), so a player contributing a tee
+ * from a saved round (skipCoachGate) had the rollback silently filtered to zero
+ * rows and the holeless tee stayed live (P011). Scoped to the id this call just
+ * received from its own insert (never a client-supplied id), to the caller as
+ * its creator, and to a still-live row. Soft delete frees the name: the
+ * (course_id, normalized_tee_name) unique index is partial on deleted_at IS NULL.
+ * Never throws; a failed rollback is logged.
+ */
+async function rollBackCreatedTee(teeId: string, userId: string, courseId: string): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('golf_course_tees')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', teeId)
+      .eq('created_by_user_id', userId)
+      .is('deleted_at', null)
+      .select('id');
+    if (error || !data || data.length === 0) {
+      await logServerError(
+        `createTee rollback failed; a holeless tee may remain: ${error ? describeError(error) : 'no row updated'}`,
+        { action: 'createTee', featureArea: 'course-library', extra: { teeId, courseId, code: error?.code } },
+      );
+    }
+  } catch (err) {
+    await logServerError(`createTee rollback threw; a holeless tee may remain: ${describeError(err)}`, {
+      action: 'createTee', featureArea: 'course-library', extra: { teeId, courseId },
+    });
+  }
 }
 
 const observedCreateTee = withAdminObserved(

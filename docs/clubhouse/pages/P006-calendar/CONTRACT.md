@@ -33,14 +33,14 @@ gate is proved.
 
 Status: DEFINED
 
-Calendar opens on the week that holds today, with the team's events on a grid and the day's panel beside it (60101). The address decides the view, the day and the open event, and anything that is not real falls back (60102). Other pages open New event through `?new=1` and its seeds (60103). Every time is in the team's zone (60104). On the phone the same data is Day, Month and List (61901). The page opens at the top (10101). Open, not built: v2 also draws a whole-page first-run state for a team that has never scheduled anything (D-71); an empty range still draws the grid, and the panel says there is nothing on the team calendar today (60402).
+Calendar opens on the week that holds today, with the team's events on a grid and the day's panel beside it (60101). The address decides the view, the day and the open event, and anything that is not real falls back (60102). Other pages open New event through `?new=1` and its seeds (60103). Every time is in the team's zone (60104). On the phone the same data is Day, Month and List (61901). The page opens at the top (10101). v2 also draws a whole-page first-run state for a team that has never scheduled anything (D-71): built, `CalendarFirstRun` (corrected 2026-10-17); an empty range on a team that has scheduled before still draws the grid, and the panel says there is nothing on the team calendar today (60402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 60101 | — | `CALENDAR_READY` | Calendar opens on the week that holds today, for a coach and for a player: the month, the count of team events this week and the team's zone, the week grid, and beside it the day's panel (today's events, what needs attention, where the data comes from); a coach also gets New event. On the phone the week opens as Day. |
 | 60102 | — | `ADDRESS_HOLDS_VIEW_DAY_AND_EVENT` | The address decides what is shown: ?view=day\|week\|month\|agenda, ?date=YYYY-MM-DD and ?event=<id> are read on the server, so the right window and the open panel are there on first paint and a state can be linked. A value that is not real (an unknown view, an impossible date such as 2026-02-30) falls back to the week and to today, an event that is no longer in the loaded range says so (CH-6305), and changing the view or the day rewrites the address. |
 | 60103 | — | `SEEDS_FROM_OTHER_PAGES` | ?new=1 opens New event once for a coach and drops itself from the address; &with=<player> makes it a meeting with only that player invited (a player the Calendar does not list invites nobody, never the team); &type= picks the new event's type from those a coach can create and ignores anything else. |
-| 60104 | — | `TIMES_ARE_THE_TEAMS_ZONE` | Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour, one that runs past midnight ends at 24, and an all-day event keeps its stored dates, one entry for each day of a span. |
+| 60104 | — | `TIMES_ARE_THE_TEAMS_ZONE` | The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and it never drags; an all-day event keeps its stored dates, one entry for each day of a span. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
@@ -70,7 +70,7 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 Status: DEFINED
 
-The page does not subscribe to changes. The server reads it when it opens and again after a change lands (`router.refresh`) or when Try again is pressed. Stepping inside the loaded window is instant and rewrites the address without a request (60302); going past the window loads the next one and marks the page busy, and a save in flight reads Publishing…, Saving…, Cancelling…, Removing… or Attaching… on a button that cannot be pressed twice (60301). The screen follows the server when it sends a different view or day (60303). Not built: pull to refresh, and a periodic re-read while the page is open; "Checked" says how old the data is (61501).
+The page follows the team's events as production's calendar does: one realtime channel on `golf_events` for the team (`useCalendarLive`, live.ts); any change, and a reconnect after the feed dropped, re-reads the page on the server (`router.refresh`, a burst of changes is one re-read after 800 ms), and a dropped feed is reported. The server also reads it when it opens, after a change of your own lands and when Try again is pressed. Replies and attendance are not on the feed (nor in production): a player's reply shows on the next read. Stepping inside the loaded window is instant and rewrites the address without a request (60302); going past the window loads the next one and marks the page busy, and a save in flight reads Publishing…, Saving…, Cancelling…, Removing… or Attaching… on a button that cannot be pressed twice (60301). The screen follows the server when it sends a different view or day (60303). Not built: pull to refresh, and a periodic re-read while the page is open; "Checked" says how old the data is (61501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -142,9 +142,10 @@ one, so a failure can leave either state, and the links are read again so the
 row shows what exists. Removing a link has one (60627). A server refusal written
 for a person is shown as the toast's reason (a reply's lock: the deadline
 passed, the event started or was cancelled); one written for a developer is
-replaced by the toast's own hint. Open, not fixed: a create whose answer is lost
-on the way back may have landed, and Retry then creates it a second time (no
-write here carries an idempotency key).
+replaced by the toast's own hint. A create whose answer is lost on the way back
+is safe to retry: a new event, a repeating series and busy time each send a
+request id that becomes the row's key, and a repeat returns the row that landed
+(C-17; busy time 2026-10-17).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -176,6 +177,8 @@ write here carries an idempotency key).
 | 60626 | CH-6013 | `MAKING_A_NEW_CALENDAR_APP_LINK_FAILS` | Making a new calendar-app link fails |
 | 60627 | CH-6014 | `REMOVING_A_CALENDAR_APP_LINK_FAILS` | Removing a calendar-app link fails |
 | 60628 | CH-6015 | `MOVING_AN_EVENT_BY_DRAG_OR_ALT` | Moving an event by drag or Alt+arrow fails (P006-B3) |
+| 60629 | CH-6016 | `RESTORING_A_CANCELLED_EVENT_FAILS` | Restoring a cancelled event fails |
+| 60630 | CH-6017 | `DELETING_A_CANCELLED_EVENT_PERMANENTLY_FAILS` | Deleting a cancelled event permanently fails |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211.
 
@@ -189,7 +192,7 @@ Offline and slow saves are the shell's: nothing is sent offline (10703), a save 
 | --- | --- | --- | --- |
 | 60701 | — | `FILE_REMOVAL_REFUSES_OFFLINE` | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -215,7 +218,7 @@ Open, not this page's to fix. The baseline migration's `golf_event_attendance_se
 | 60804 | — | `PLAYER_IS_NOT_OFFERED_THE_TEAM_LINK` | In Add to calendar app a player is offered only My schedule; the team link is a coach's, because createCalendarFeed refuses it to anyone else. |
 | 60805 | — | `ROUTE_STOPS_WITHOUT_A_SESSION_OR_TEAM` | With no session the route renders nothing (the page sends the visitor to login); a coach or player with no team gets the no-team page (CH-6307) and nothing is read; a coach is loaded as a coach with their own id and a player as that player with no coach id; a player whose team membership cannot be read throws to the route error view and is never told they have no team. |
 | 60806 | — | `SERVER_ACTIONS_ARE_THE_GATE` | Every write is checked again by its server action and by row-level security, whatever the screen shows: creating, editing and cancelling an event and adding or removing busy time are for a coach, attendance for a coach on the event's team, a team calendar link for a coach, a reply for an active member of the event's team, and attaching or detaching a file for the event's team coaches. Read in this pass, not run: no test here forces a refusal. |
-| 60807 | — | `REPLY_IS_FOR_INVITED_PLAYERS` | A player is offered the reply (Going, Maybe, Can't make it) only on an event that requires an RSVP, whose invite list they are on, that has not started and is not cancelled; once it starts the panel says replies are closed. An event without RSVP (requires_rsvp off or null, the default) shows no reply control, reply counts or badges, Needs attention row or Nudge; the coach panel lists it as Invited. The editor Require RSVP switch is off for a new event and is sent on create, edit and series edit (series only when changed). |
+| 60807 | — | `REPLY_IS_FOR_INVITED_PLAYERS` | A player is offered the reply (Going, Maybe, Can't make it) only on an event that requires an RSVP, whose invite list they are on or that invites no one (the team's: any player may reply, as production allows, golf_event_attendance_insert_self; told "Open to the whole team"; from the rows, an invite list is the rows the coach's invitation wrote, notified_at, so a teammate's own reply keeps it open; and once migration 20261017102000 is applied the count function's coach_invited says the same, so a teammate's reply still keeps it open), that has not started and is not cancelled, locked when the server locks it (`lib/calendar/rsvp.ts`, as Fairway's drawer reads it): a timed event at its stored start, an all-day event 24 hours after its stored UTC midnight, every day of a run with the run, and any event past its reply deadline (`rsvp_deadline`, which Fairway's editor can set). Once it starts the panel says replies are closed; past the deadline it says the deadline the coach set has passed. An event without RSVP (requires_rsvp off or null, the default) shows no reply control, reply counts or badges, Needs attention row or Nudge; the coach panel lists it as Invited. The editor Require RSVP switch is off for a new event and is sent on create, edit and series edit (series only when changed). |
 | 60808 | — | `BUSY_TIME_IS_THE_COACHS_OWN` | Busy time is read only for a coach and only their own rows (coach_id is the signed-in coach), and is never read for a player. |
 
 From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
@@ -255,6 +258,7 @@ Cancelling an event asks first (61101) and says what happens. One event is a sof
 | 61102 | CH-6502 | `REMOVE_BUSY_TIME` | Remove busy time |
 | 61103 | CH-6504 | `NEW_LINK` | New link (a calendar-app link) |
 | 61104 | CH-6505 | `REMOVE` | Remove (a calendar-app link) |
+| 61105 | CH-6506 | `DELETE_PERMANENTLY` | Delete permanently (a cancelled event's menu, coach) |
 
 ## 12 — State preservation
 
@@ -306,7 +310,7 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: DEFINED
 
-"Checked 2:40 PM" in Sources is the hour the server read the data (61501). The page does not subscribe to changes: another coach's edit, or a player's reply, shows on the next read, which is the page opening again or a re-read after a change of your own. The now line and "today" follow the browser's clock in the team's zone.
+"Checked 2:40 PM" in Sources is the hour the server read the data (61501). Another coach's change to an event arrives on the realtime feed and re-reads the page; a player's reply shows on the next read (replies are not on the feed, as in production). The now line and "today" follow the browser's clock in the team's zone.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -374,7 +378,7 @@ CH-1842, 11825 CH-1816.
 | 61803 | CH-6803 | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 
@@ -428,7 +432,7 @@ Loader reads log through `chLogServer("calendar", <read>)` and are named on the 
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 62301 | — | `FAILURES_REPORTED` | A read that fails in the loader is logged through chLogServer("calendar", <read>) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance). |
+| 62301 | — | `FAILURES_REPORTED` | A read that fails in the loader is logged through chLogServer("calendar", {read}) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance). |
 
 From the shell (P001): 12301 FAILURES_REPORTED.
 

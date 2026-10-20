@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, m } from 'motion/react';
-import { BellOff, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, X, type LucideIcon } from 'lucide-react';
+import { BellOff, BrainCircuit, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Users, X, type LucideIcon } from 'lucide-react';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type Ref, type RefObject } from 'react';
 import { isUnread, type NotificationCategoryId, type UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { haptic } from '../lib/haptics';
@@ -17,7 +17,7 @@ export const CH_NOTIFICATION_KIND: Record<NotificationCategoryId, { icon: Lucide
   events: { icon: CalendarDays, label: 'Events' },
   announcements: { icon: Megaphone, label: 'Announcements' },
   tasks: { icon: ClipboardCheck, label: 'Tasks' },
-  coachhelm: { icon: Sparkles, label: 'CoachHelm' },
+  coachhelm: { icon: BrainCircuit, label: 'CoachHelm' },
   pipeline: { icon: Users, label: 'Team' },
   profile_views: { icon: Eye, label: 'Profile' },
 };
@@ -149,7 +149,7 @@ function BellStacksView({
             <Icon icon={BellOff} size={20} />
           </span>
           <b>You’re all caught up</b>
-          <span>Messages, events, reminders and CoachHelm updates land here first.</span>
+          <span>Messages, events, reminders and CoachHelm updates show up here.</span>
         </m.div>
       )}
       {/* A stack cleared to nothing fades where it was, out of the flow, and the stacks under it rise into its place. */}

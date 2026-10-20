@@ -25,6 +25,12 @@ export function changeTone(value: number | null | undefined, lowerIsBetter: bool
   return value < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
 }
 
+/** A percentage at a whole number by default: 61%, 0%, and an em dash for no data. */
+export function formatPct(value: number | null | undefined, digits = 0): string {
+  if (value == null || Number.isNaN(value)) return NO_DATA;
+  return `${value.toFixed(digits)}%`;
+}
+
 export function formatFixed(value: number | null | undefined, digits = 1): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
   return value.toFixed(digits);
