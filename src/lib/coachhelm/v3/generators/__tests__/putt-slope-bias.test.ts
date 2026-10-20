@@ -28,7 +28,12 @@ describe('PuttSlopeBiasGenerator.composeContent — quality contracts', () => {
     expect(c.content).toContain('55%');
     expect(c.content).toContain('96%');
     expect(c.content).toContain('41');
-    expect(c.content).toContain('n=13 downhill / 13 level');
+    // The sample is the evidence's (sample_n, and each side in detail), never a "(n=…)" aside in the prose.
+    expect(c.content).not.toContain('n=');
+    expect(c.evidence.sample_n).toBe(26);
+    expect(c.title).toBe('Downhill putts from 0-3 ft: a real penalty');
+    expect(c.content.startsWith('From 0-3 ft, you')).toBe(true);
+    expect(c.evidence.metric_label).toBe('Make rate, downhill vs level, same distance');
     expect(c.content.toLowerCase()).toMatch(/ladder drill|dying the ball/);
     expect(c.priority).toBe('medium');
     expect(c.signature).toBe('putt_slope_bias:0-3 ft');

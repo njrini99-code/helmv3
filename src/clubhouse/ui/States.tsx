@@ -1,11 +1,13 @@
-import { CircleAlert, type LucideIcon } from 'lucide-react';
+import { CircleAlert, ListFilter, Lock, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { EmptyShape, type EmptyShapeKind } from './EmptyShape';
 import { Icon } from './Icon';
 import { PageRetry } from './Retry';
 
 /**
  * The honest states every Clubhouse surface needs, kept visually distinct:
- *   EmptyState   - the read worked and there is genuinely nothing yet; `tone="danger"` when the page's one read failed
+ *   EmptyState   - the read worked and there is genuinely nothing yet; `tone="danger"` when the page's one read failed.
+ *                  `shape` and `kind` opt in to the waiting form (below): four states that read differently
  *   InlineNotice - a part of the page could not load (./Notices, client); PageNotice when several parts did
  *   Skeleton     - the page is on its way (route loading only), with SkelLine, SkelRows and SkelRule
  * A failed read is never drawn as an empty state: it takes the danger tone, with Try again. This file is server-safe
@@ -21,6 +23,17 @@ export function stateTitle(title: string): string {
   return title.endsWith('.') && !title.endsWith('..') ? title.slice(0, -1) : title;
 }
 
+/**
+ * The four honest states, told apart on sight (the shaped form of EmptyState):
+ *   first-run  - nothing has been made yet: the sentence names what fills the space and who does it, then the shape
+ *   filtered   - there is data, a filter hides all of it: names the filter, and the one action is to clear it
+ *   restricted - the viewer may not see or change this: a lock and who can, never an action that would fail
+ *   error      - the read failed: `tone="danger"`, never drawn as empty
+ */
+export type EmptyKind = 'first-run' | 'filtered' | 'restricted';
+
+const KIND_GLYPH: Record<EmptyKind, LucideIcon | undefined> = { 'first-run': undefined, filtered: ListFilter, restricted: Lock };
+
 export function EmptyState({
   icon,
   title,
@@ -32,6 +45,9 @@ export function EmptyState({
   size = 'section',
   tone,
   code,
+  shape,
+  kind,
+  shapeCount,
 }: {
   icon?: LucideIcon;
   /** Shown without a trailing full stop (`stateTitle`). */
@@ -58,8 +74,59 @@ export function EmptyState({
   tone?: 'danger';
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
+  /**
+   * Opt in to the waiting form: the shape of what will be here (ui/EmptyShape) under one sentence, the sentence in the
+   * first row's place. Without it, and without `kind`, the state renders as it always has. A `compact` state stays one
+   * line and draws no shape, so a dense section never grows.
+   */
+  shape?: EmptyShapeKind;
+  /** Which honest state this is (see EmptyKind); passing it opts in to the waiting form. Default `first-run`. */
+  kind?: EmptyKind;
+  /** How many rows (or lanes) the shape draws, where its default is not the layout's. */
+  shapeCount?: number;
 }) {
   const heading = stateTitle(title);
+  if ((shape || kind) && tone !== 'danger') {
+    const state = kind ?? 'first-run';
+    // The shape is the picture of a first run; a filter or a lock shows its own glyph instead (the caller's, or the kind's).
+    const glyph = state === 'first-run' ? undefined : (icon ?? KIND_GLYPH[state]);
+    const drawn = shape && state === 'first-run' && !compact;
+    const Root = size === 'page' ? 'section' : 'div';
+    const Title = size === 'page' ? 'h2' : 'p';
+    return (
+      <Root
+        className={`ch-es ch-es--${size} ch-es--${state}${compact ? ' ch-es--line' : ''}${drawn ? ' ch-es--shaped' : ''}`}
+        data-ch-code={code}
+        data-ch-state={state}
+      >
+        <div className="ch-es__copy">
+          {glyph && (
+            <span className="ch-es__glyph" aria-hidden="true">
+              <Icon icon={glyph} size={16} />
+            </span>
+          )}
+          <div className="ch-es__text">
+            <Title className="ch-es__title" role={state === 'filtered' ? 'status' : undefined}>
+              {heading}
+            </Title>
+            {body && <p className="ch-es__body">{body}</p>}
+            {progress && (
+              <p className="ch-es__prog ch-num">
+                {progress.done} of {progress.total} {progress.label}
+              </p>
+            )}
+          </div>
+          {(action || secondaryAction) && (
+            <div className="ch-es__a">
+              {action}
+              {secondaryAction}
+            </div>
+          )}
+        </div>
+        {drawn && <EmptyShape kind={shape} count={shapeCount} />}
+      </Root>
+    );
+  }
   if (size === 'page') {
     const danger = tone === 'danger';
     const glyph = icon ?? (danger ? CircleAlert : undefined);

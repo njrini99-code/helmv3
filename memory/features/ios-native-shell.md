@@ -38,7 +38,7 @@ Native surface today:
   machine (persistence deferred until an authenticated session), value-first
   pre-prompt `src/components/golf/PushPermissionSoftAsk.tsx`, deep links
   validated by `isSafeInternalPath`. Clubhouse has its own ask
-  (`src/clubhouse/shell/PushAsk.tsx`, CH-1910) on the same shared functions
+  (`src/clubhouse/shell/PushAsk.tsx`, CH-1911) on the same shared functions
   and the same stored answer, and a Settings row for the app's push
   (`useNativePush`, CH-8902/CH-8903) that reads `nativePushPermission` and
   opens the app's page in iOS Settings (`openNativeAppSettings`,

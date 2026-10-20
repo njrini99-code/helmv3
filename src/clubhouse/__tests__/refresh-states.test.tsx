@@ -22,7 +22,7 @@ describe('InlineNotice retrying', () => {
   it('says Trying again, disables the control, marks the notice busy, and ignores a tap', async () => {
     const onRetry = vi.fn();
     render(<InlineNotice title="Did not load" onRetry={onRetry} retrying />);
-    const btn = screen.getByRole('button', { name: 'Trying again' }) as HTMLButtonElement;
+    const btn = screen.getByRole('button', { name: 'Trying again…' }) as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
     expect(screen.getByRole('alert').getAttribute('aria-busy')).toBe('true');
     await userEvent.click(btn);

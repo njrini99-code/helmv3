@@ -237,6 +237,20 @@ describe('P007 wiring · a coach’s group holds a player', () => {
     await waitFor(() => expect(a.addGolfGroupMember).toHaveBeenCalledWith('g1', 'dan'));
   });
 
+  it('a chosen player with no player id is stopped too: an empty list never reaches the broadcast', async () => {
+    // createGolfTeamBroadcast refuses an empty list (it once meant the whole team); every chosen player here has no
+    // player id, so the list would be empty. The group is stopped before any write.
+    const user = userEvent.setup();
+    const noIds: ChMessagesData = { ...data, directory: data.directory.map((p) => (p.role === 'player' ? { ...p, playerId: null } : p)) };
+    show(noIds);
+    const dlg = await newMessage(user, /Group/);
+    await user.type(dlg.getByRole('textbox', { name: 'Group name' }), 'Travel');
+    await user.click(dlg.getByRole('option', { name: /Eli Brandt/ }));
+    await user.click(dlg.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7105', /Choose at least one player/);
+    expect(a.createGolfTeamBroadcast).not.toHaveBeenCalled();
+  });
+
   it('phone: two coaches picked make a group that is stopped the same way', async () => {
     const user = userEvent.setup();
     showPhone();

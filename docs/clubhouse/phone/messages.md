@@ -182,7 +182,7 @@ A pushed screen: "‹ Chat", "Details", and Edit on groups.
 | Hero: a 72px group mark or avatar, the title, and "8 members · created by you" or a class line | `PhoneDetails` | `memberCount`. "Created by you" when `creatorId` is the viewer; otherwise the creator's name from the directory. Direct: `subtitle` |
 | Tile: Call | — | Hidden (D-48) |
 | Tile: Schedule | Link | Coach only: `/golf/dashboard/calendar?new=1`, the editor Home already opens. No way to prefill invitees exists (D-47) |
-| Tile: Mute / Muted | `PhoneDetails` | `setGolfConversationMute(id, muted, hours)`, read with `getGolfConversationMute` (CH-7011, CH-7208, CH-7407) (D-47) |
+| Tile: Mute / Muted | `PhoneDetails` | Mute opens desktop's three choices in a sheet (8 hours, a week, until turned back on); Muted turns notifications back on. `setGolfConversationMute(id, muted, hours)`, read with `getGolfConversationMute` (CH-7011, CH-7208, CH-7407) (D-47; owner decision, wave 5) |
 | Tile: Search | — | Hidden. `searchGolfMessages` can't be narrowed to one conversation (D-48) |
 | Pinned | — | Hidden (D-48) |
 | Members, with Add (groups) | `PhoneDetails` | `api.members` → `getGolfConversationParticipantIdentities` (CH-7204, CH-7405). Add: `getGolfGroupAddCandidates` and `addGolfGroupMember`, for the group's creator only (D-47) |
@@ -190,7 +190,7 @@ A pushed screen: "‹ Chat", "Details", and Edit on groups.
 | Member row: message icon | `PhoneDetails` | `api.startDirect(userId)`. As drawn, it isn't on your own row. It is drawn on the other person in a direct thread too, where it can only lead back to this conversation (D-49) |
 | People (direct): you and them | `PhoneDetails` | The viewer, and `memberIds[0]` from the directory |
 | Files: a count, and a list or "No files shared yet." | `PhoneDetails` | A new read-only action for the conversation's files, RLS-scoped, which checks that the caller is a participant (D-48) |
-| Switch: Mute notifications | `Switch` | The same call as the Mute tile (D-47) |
+| Switch: Mute notifications | — | Removed (owner decision, wave 5): the tile is the one control. Muted, the panel says until when ("Muted until Oct 25 · 2:40 PM") |
 | Switch: Only coaches can post | — | Hidden (D-48) |
 | Leave group (groups) | Row, in `--ch-danger-600` | `api.leave` → `leaveGolfGroup` (CH-7502, CH-7010). Desktop hides it from the creator; the design shows it on "created by you" (D-47) |
 | Delete conversation (direct) | Row, in `--ch-danger-600` | Built 2026-10-08 (owner request) for direct and group conversations, not a team channel: `api.deleteConversation` → `hideGolfConversation` (CH-7503), a per-person hide of the viewer's own inbox row. Offered only once the held migration `20261008160000` is applied (`canHideGolfConversations`) |

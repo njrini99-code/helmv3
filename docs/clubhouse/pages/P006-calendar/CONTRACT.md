@@ -192,7 +192,7 @@ Offline and slow saves are the shell's: nothing is sent offline (10703), a save 
 | --- | --- | --- | --- |
 | 60701 | — | `FILE_REMOVAL_REFUSES_OFFLINE` | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -221,7 +221,7 @@ Open, not this page's to fix. The baseline migration's `golf_event_attendance_se
 | 60807 | — | `REPLY_IS_FOR_INVITED_PLAYERS` | A player is offered the reply (Going, Maybe, Can't make it) only on an event that requires an RSVP, whose invite list they are on or that invites no one (the team's: any player may reply, as production allows, golf_event_attendance_insert_self; told "Open to the whole team"; from the rows, an invite list is the rows the coach's invitation wrote, notified_at, so a teammate's own reply keeps it open; and once migration 20261017102000 is applied the count function's coach_invited says the same, so a teammate's reply still keeps it open), that has not started and is not cancelled, locked when the server locks it (`lib/calendar/rsvp.ts`, as Fairway's drawer reads it): a timed event at its stored start, an all-day event 24 hours after its stored UTC midnight, every day of a run with the run, and any event past its reply deadline (`rsvp_deadline`, which Fairway's editor can set). Once it starts the panel says replies are closed; past the deadline it says the deadline the coach set has passed. An event without RSVP (requires_rsvp off or null, the default) shows no reply control, reply counts or badges, Needs attention row or Nudge; the coach panel lists it as Invited. The editor Require RSVP switch is off for a new event and is sent on create, edit and series edit (series only when changed). |
 | 60808 | — | `BUSY_TIME_IS_THE_COACHS_OWN` | Busy time is read only for a coach and only their own rows (coach_id is the signed-in coach), and is never read for a player. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1910.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -378,7 +378,7 @@ CH-1842, 11825 CH-1816.
 | 61803 | CH-6803 | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

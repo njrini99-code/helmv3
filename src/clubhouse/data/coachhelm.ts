@@ -7,9 +7,12 @@ import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/c
 import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { getPlayerSignalSettings } from '@/lib/golf/player-signal-settings';
+import { resolveMinerWindows } from '@/lib/coachhelm/v2/mining/pattern-miner';
 import { chLogServer } from '../lib/track-server';
 import { isNote, isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
+import { speak } from './coachhelm-voice';
 import { boardMissing, firstName, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChPulse, type ChPulseResult, type ChTourBaseline } from './coachhelm-shape';
 import { tourForGender } from './stats-common';
 
@@ -77,6 +80,35 @@ export async function loadPlayerDismissed(supabase: Supabase, playerId: string):
     if (r.rating === 'dismissed') ids.add(r.insight_id);
   }
   return { ids, error: false };
+}
+
+/**
+ * How many more rounds the pattern miner needs before it reads this player, counted as it counts them: its floor (the coach's
+ * `min_rounds_for_signal` through the engine's own resolver, never under the miner's minimum, `resolveMinerWindows`) less the
+ * countable completed rounds in its lookback window. For the empty board's "Post 2 more rounds"; null when a read failed.
+ */
+async function roundsToGo(supabase: Supabase, playerId: string): Promise<number | null> {
+  try {
+    const settings = await getPlayerSignalSettings(playerId);
+    const { minRounds, lookbackDays } = resolveMinerWindows({ minRounds: settings.minRoundsForSignal, lookbackDays: settings.patternLookbackDays });
+    const since = new Date(Date.now() - lookbackDays * 86_400_000).toISOString().slice(0, 10);
+    const res = await supabase
+      .from('golf_rounds')
+      .select('id, total_score, front_nine, back_nine, holes_played, total_putts')
+      .eq('player_id', playerId)
+      .eq('is_test', false)
+      .eq('status', 'completed')
+      .gte('round_date', since)
+      .limit(100);
+    if (res.error) {
+      log('roundsToGo', res.error);
+      return null;
+    }
+    return Math.max(0, minRounds - (res.data ?? []).filter((r) => isCountableRound(r)).length);
+  } catch (err) {
+    log('roundsToGo', err);
+    return null;
+  }
 }
 
 /** Countable rounds the player has posted, or null when the read fails (the empty state then names no number). */
@@ -272,7 +304,7 @@ async function loadProposals(supabase: Supabase, playerId: string, teamId: strin
   if (!teamId) return { list: [], error: false };
   const res = await supabase
     .from('golf_player_focus_areas')
-    .select('id, title, from_insight_id, created_at')
+    .select('id, title, from_insight_id, coach_id, created_at')
     .eq('player_id', playerId)
     .or(`team_id.is.null,team_id.eq.${teamId}`)
     .eq('status', 'proposed')
@@ -281,9 +313,25 @@ async function loadProposals(supabase: Supabase, playerId: string, teamId: strin
     log('proposals', res.error);
     return { list: [], error: true };
   }
-  const titles = new Map(insights.map((i) => [i.id, i.title]));
-  const list: ChProposal[] = (res.data ?? []).map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null }));
+  // The read's title as the player reads it everywhere else on the page: typeset, in their voice.
+  const titles = new Map(insights.map((i) => [i.id, speak(i.title, { role: 'player' })]));
+  const rows = res.data ?? [];
+  const coaches = await coachUserIds(supabase, rows.map((r) => r.coach_id).filter((id): id is string => !!id));
+  const list: ChProposal[] = rows.map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null, coachUserId: (r.coach_id && coaches?.get(r.coach_id)) || null }));
   return { list, error: false };
+}
+
+/** The user ids of these coaches (golf_coaches is readable to any signed-in user). A failed read is logged and leaves them unknown. */
+/** Proposing coaches' user ids by coach id, or null when the read failed (each proposal then offers no "Tell coach why"). */
+async function coachUserIds(supabase: Supabase, coachIds: string[]): Promise<Map<string, string> | null> {
+  const ids = [...new Set(coachIds)];
+  if (!ids.length) return new Map();
+  const res = await supabase.from('golf_coaches').select('id, user_id').in('id', ids);
+  if (res.error) {
+    log('proposalCoaches', res.error);
+    return null;
+  }
+  return new Map((res.data ?? []).filter((c): c is { id: string; user_id: string } => !!c.user_id).map((c) => [c.id, c.user_id]));
 }
 
 /** The disabled gate names why; a failed lookup is a failed read, not "off". */
@@ -344,15 +392,15 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
     // Empty: a real first run, or a swallowed failure? Rows the player has not dismissed themselves and the feed could draw say it failed.
     const [visible, dismissed] = await Promise.all([loadVisible(supabase, [input.playerId]), loadPlayerDismissed(supabase, input.playerId)]);
     if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return failed;
-    const [proposals, rounds] = await Promise.all([proposalsOf([]), countCountableRounds(supabase, input.playerId)]);
-    return { off: null, proposals, insights: { list: [], error: false }, rounds };
+    const [proposals, rounds, toGo] = await Promise.all([proposalsOf([]), countCountableRounds(supabase, input.playerId), roundsToGo(supabase, input.playerId)]);
+    return { off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo };
   }
 
   // A card that states no finding ("no clear preference", "Scoring by par type") is not drawn on the player's board: it has nothing to work on.
   const drawn = feed.filter((i) => kindOf(i, team.tour) !== 'note');
   if (drawn.length === 0) {
-    const [proposals, rounds] = await Promise.all([proposalsOf(feed), countCountableRounds(supabase, input.playerId)]);
-    return { off: null, proposals, insights: { list: [], error: false }, rounds };
+    const [proposals, rounds, toGo] = await Promise.all([proposalsOf(feed), countCountableRounds(supabase, input.playerId), roundsToGo(supabase, input.playerId)]);
+    return { off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo };
   }
 
   const [drills, proposals, assigned, newest] = await Promise.all([
@@ -488,7 +536,8 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   // A read beside the cards that failed leaves them drawn without it, and the board says so: never "not assigned", "not declined",
   // "not out of date" or "no Tour comparison", and with the focus status unknown it does not offer Assign.
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
-  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length, ...(missing ? { missing } : {}) };
+  const withoutNames = roster.filter((p) => !heads.get(p.id)?.[0] && p.name !== NO_NAME).map((p) => p.name);
+  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length, withoutNames, ...(missing ? { missing } : {}) };
 }
 
 async function topInsights(ids: string[]): Promise<Map<string, EvidenceInsight[]>> {

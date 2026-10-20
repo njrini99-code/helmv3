@@ -166,6 +166,14 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 
 ## Business Rules
 
+- Back-nine start and failed reads (2026-10-17): a 9-hole back-nine start from
+  a saved course writes its hole setup numbered 1..9 (the engine's numbering);
+  the course catalog contribution keeps 10..18. The library banner's Discard
+  marks the round discarded and drops its offline-queue copy, as the round
+  screen does. Continue and round detail offer no qualifier when the
+  taken-rounds or entries read fails, instead of showing every round free.
+  Held `20261017110000` makes `recompute_golf_round_totals` keep unrecorded
+  putts NULL (apply after `20260708141000`).
 - Test rounds (OD-03, 2026-09-27): `golf_rounds.is_test = true` marks a QA or
   demo round. List and aggregate reads (the rounds list, home, recent
   courses) filter `.eq('is_test', false)`; by-id reads (round detail, review,

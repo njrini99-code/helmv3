@@ -1,10 +1,11 @@
 'use client';
 
-import { AnimatePresence, m } from 'motion/react';
-import { CircleAlert, CircleCheck } from 'lucide-react';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { AnimatePresence, m, useIsPresent } from 'motion/react';
+import { CircleAlert, CircleCheck, X } from 'lucide-react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
+import { Tooltip } from './Tooltip';
 import { CH_DUR, chSpringCurve, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { chSupportsLinear, chThrownExit } from '../lib/sheet-drag';
@@ -28,6 +29,14 @@ export interface ToastInput {
   code?: string;
   /** Ends only this notice's lifetime; aborting never cancels the work it describes. */
   signal?: AbortSignal;
+  /** A live notice with the same key leaves as this one arrives, so "Muted" and "Notifications back on" never stack. */
+  replace?: string;
+  /**
+   * Runs once when the notice leaves without its action taken: its clock ran out (it waits while held, hovered or
+   * focused), or it was swiped, closed, replaced or pushed out of the stack. Not when its action runs, and not when a
+   * team switch or unmount clears the stack (the caller's own cleanup owns that). An Undo's held work commits here.
+   */
+  onExpire?: () => void;
 }
 
 type ShowToast = (toast: ToastInput) => void;
@@ -126,10 +135,13 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
     setToasts([]);
   }
   const nextId = useRef(1);
-  const scoped = useMemo(() => ({ scope, lifetimes: new Map<number, () => void>(), clocks: new Map<number, ToastClock>() }), [scope]);
+  const scoped = useMemo(
+    () => ({ scope, lifetimes: new Map<number, () => void>(), clocks: new Map<number, ToastClock>(), expiries: new Map<number, () => void>(), keys: new Map<string, number>() }),
+    [scope],
+  );
   const currentScope = useRef(scoped);
   currentScope.current = scoped;
-  const { lifetimes, clocks } = scoped;
+  const { lifetimes, clocks, expiries, keys } = scoped;
   const reduced = useChReducedMotion();
   // Release timers and abort listeners on team changes as well as provider unmount.
   useEffect(() => {
@@ -143,19 +155,36 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
     const cleanup = lifetimes.get(id);
     lifetimes.delete(id);
     clocks.delete(id);
+    expiries.delete(id);
+    for (const [key, owner] of keys) if (owner === id) keys.delete(key);
     cleanup?.();
-  }, [lifetimes, clocks]);
-  const dismiss = useCallback((id: number) => {
+  }, [lifetimes, clocks, expiries, keys]);
+  /** The notice leaves without its action taken: its onExpire runs, once. */
+  const expire = useCallback((id: number) => {
+    const onExpire = expiries.get(id);
     release(id);
+    onExpire?.();
+  }, [expiries, release]);
+  const dismiss = useCallback((id: number) => {
+    expire(id);
     setToasts((t) => t.filter((x) => x.id !== id));
-  }, [release]);
+  }, [expire]);
+  /** Its action ran: whatever onExpire would have committed is the action's to decide. */
+  const acted = useCallback((id: number) => {
+    expiries.delete(id);
+    dismiss(id);
+  }, [expiries, dismiss]);
   const show = useCallback<ShowToast>(
-    ({ title, tone = 'done', body, action, code, signal }) => {
+    ({ title, tone = 'done', body, action, code, signal, replace, onExpire }) => {
       // Async feedback from a prior team never repopulates the new team's stack.
       if (scoped !== currentScope.current || signal?.aborted) return;
+      const replaced = replace == null ? undefined : keys.get(replace);
+      if (replaced != null) dismiss(replaced);
       // The stack holds at most three notices; an evicted notice owns no future timer/listener.
-      if (lifetimes.size >= 3) release(lifetimes.keys().next().value!);
+      if (lifetimes.size >= 3) expire(lifetimes.keys().next().value!);
       const id = nextId.current++;
+      if (onExpire) expiries.set(id, onExpire);
+      if (replace != null) keys.set(replace, id);
       const abort = () => dismiss(id);
       const clock: ToastClock = { left: DISMISS_MS[tone], since: Date.now(), timer: window.setTimeout(() => dismiss(id), DISMISS_MS[tone]), held: false };
       clocks.set(id, clock);
@@ -166,7 +195,7 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
       });
       setToasts((t) => [...t.slice(-2), { id, title, tone, body, action, code }]);
     },
-    [dismiss, release, scoped, lifetimes, clocks],
+    [dismiss, expire, scoped, lifetimes, clocks, expiries, keys],
   );
   const value = useMemo(() => show, [show]);
   // CH-1614: a finger on a toast stops its clock; letting go starts it again with what was left, and never less than
@@ -193,7 +222,7 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
     <div className={'ch-toasts' + (host ? ' ch-toasts--in-dialog' : '')} aria-live="polite" data-ui="clubhouse">
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
-          <ToastCard key={t.id} toast={t} reduced={reduced} onHold={hold} onLetGo={letGo} onDismiss={dismiss} />
+          <ToastCard key={t.id} toast={t} reduced={reduced} onHold={hold} onLetGo={letGo} onDismiss={dismiss} onAct={acted} />
         ))}
       </AnimatePresence>
     </div>
@@ -211,7 +240,8 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
  * One toast. CH-1604: it slides up 10px and fades in; the stack reflows (layout). CH-1614: a finger holds it (its
  * clock stops) and can throw it toward the edge the stack sits on; past 40px or on a flick it goes on at the speed
  * it was thrown and fades, otherwise it springs back. The other way it barely gives. Its action stays a button. With
- * reduced motion it doesn't follow the finger, but holding still stops its clock.
+ * reduced motion it doesn't follow the finger, but holding still stops its clock. With a mouse it has a Dismiss X
+ * (shown on hover-capable devices, ui.css), and Esc closes it while focus is inside; focus goes back where it came from.
  */
 function ToastCard({
   toast: t,
@@ -219,14 +249,32 @@ function ToastCard({
   onHold,
   onLetGo,
   onDismiss,
+  onAct,
 }: {
   toast: ToastItem;
   reduced: boolean;
   onHold: (id: number) => void;
   onLetGo: (id: number) => void;
   onDismiss: (id: number) => void;
+  onAct: (id: number) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // On its way out it takes no input: an Undo or Retry pressed twice never acts on a notice that has already gone.
+  const present = useIsPresent();
+  /** Where keyboard focus was before it came into the toast, to return to when the toast is closed from inside. */
+  const cameFrom = useRef<HTMLElement | null>(null);
+  const close = () => {
+    const back = ref.current?.contains(document.activeElement) ? cameFrom.current : null;
+    onDismiss(t.id);
+    if (back?.isConnected) back.focus();
+  };
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Escape') return;
+    // Inside an open dialog (CH-1812) Esc closes only the toast, not the dialog under it.
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+  };
   // A toast holds its clock while anything keeps it in use: a finger on it, a pointer over it, or keyboard focus inside
   // it (audit A-17: an error toast's Retry expired after 8 s for keyboard and VoiceOver users, WCAG 2.2.1).
   const holding = useRef(new Set<'press' | 'hover' | 'focus'>());
@@ -306,6 +354,7 @@ function ToastCard({
       className={'ch-toast' + (t.tone === 'error' ? ' ch-toast--error' : '')}
       role={t.tone === 'error' ? 'alert' : 'status'}
       data-ch-code={t.code}
+      inert={!present}
       // CH-1604: it fades in here and rises 10px by CSS (`ch-toast-in`, ui.css), on the compositor; Motion keeps the
       // stack's reflow (layout), which owns this element's transform.
       initial={reduced ? false : { opacity: 0 }}
@@ -317,8 +366,12 @@ function ToastCard({
       onPointerDown={onPointerDown}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') holdFor('hover'); }}
       onPointerLeave={(e) => { if (e.pointerType === 'mouse') releaseFor('hover'); }}
-      onFocus={() => holdFor('focus')}
+      onFocus={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) cameFrom.current = e.relatedTarget instanceof HTMLElement ? e.relatedTarget : null;
+        holdFor('focus');
+      }}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) releaseFor('focus'); }}
+      onKeyDown={onKeyDown}
     >
       <Icon icon={t.tone === 'error' ? CircleAlert : CircleCheck} size={16} className="ch-toast__icon" />
       <span className="ch-toast__txt">
@@ -331,12 +384,17 @@ function ToastCard({
           className="ch-toast__action"
           onClick={() => {
             t.action?.run();
-            onDismiss(t.id);
+            onAct(t.id);
           }}
         >
           {t.action.label}
         </button>
       )}
+      <Tooltip label="Dismiss notification">
+        <button type="button" className="ch-toast__close" aria-label="Dismiss notification" onClick={close}>
+          <Icon icon={X} size={14} />
+        </button>
+      </Tooltip>
     </m.div>
   );
 }

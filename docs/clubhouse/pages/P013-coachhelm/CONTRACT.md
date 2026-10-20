@@ -40,6 +40,10 @@ contract `implemented` only when a test file names its Bridge ID in a test title
 `coachhelm.test.tsx` names catalog codes, not these IDs yet. Each note below says which of
 them a test in that file covers today (`VERIFY.md` has the same list); the ones it says
 are not tested, or only partly, stay reserved.
+`coachhelm-contracts.test.tsx` and `coachhelm-actions-contracts.test.ts` (2026-10-19) name 130104, 130608, 130702, 130804, 131201, 131501, 131901,
+132101 and 132301 in test titles, so those are implemented. The ones that stay reserved are 131807 (a script, not a test) and the seven that
+have a catalog code (130713, 130721, 130722, 131704, 131808, 131816, 131817): their tests exist, but the registry marks a coded contract
+`implemented` only once its CH- code is in the source, and these are not yet.
 
 ## 01 — Default / core UI
 
@@ -69,7 +73,7 @@ The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
 | 130202 | CH-13402 | `THE_COACHS_PAGE_IS_ON_ITS_WAY` | The coach's page is on its way |
 | 130203 | CH-13403 | `ASSIGN_OR_DISMISS_IS_SAVING` | Assign or Dismiss is saving |
 | 130204 | — | `THE_ROUTE_SKELETON_TAKES_THE_ROLES_SHAPE` | The route's loading.tsx draws the Clubhouse skeleton only inside the Clubhouse shell (Fairway's skeleton everywhere else), in the shape of the signed-in role's page: the coach's program pulse, then the players beside the focus card; the player's focus card beside a short list. The player's shape is used until the role is known. |
-| 130205 | CH-13404 | `A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING` | A player's Accept or Decline is being sent |
+| 130205 | CH-13404 | `A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING` | A player's Accept is being sent |
 | 130206 | CH-13420 | `ASK_THE_CHAT_PAGE_LOADS` | Ask: The chat page loads |
 | 130207 | CH-13421 | `ASK_A_REPLY_IS_STREAMING` | Ask: A reply is streaming |
 | 130208 | CH-13450 | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | Ask: An action was confirmed and is being carried out |
@@ -102,7 +106,7 @@ filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 130401 | CH-13301 | `PLAYER_NO_ROUND_POSTED_YET` | Player: no round posted yet |
+| 130401 | CH-13301 | `PLAYER_NO_ROUND_POSTED_YET` | Player: no round posted yet (the lede reads "One thing to work on each week, from the rounds you post.") |
 | 130402 | CH-13302 | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | Player: every insight is a strength |
 | 130404 | CH-13304 | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation) |
@@ -157,9 +161,9 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130605 | CH-13202 | `THE_COACHS_ROSTER_OR_PLAYERS_INSIGHTS_DONT` | The coach's roster or players' insights don't load (same tests, for the team) |
 | 130606 | CH-13203 | `THE_PROGRAM_PULSE_DOESNT_LOAD` | The program pulse doesn't load |
 | 130607 | CH-13204 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
-| 130608 | — | `A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF` | The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Found in this pass, not fixed: on a coach's gate failure the pulse is not read, and the board draws its empty line 'Nothing is flagged in the pulse right now.' beside the CH-13202 notice. |
+| 130608 | — | `A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF` | The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Fixed since: on a coach's gate failure the pulse is still read and drawn beside the CH-13202 notice, never the empty line (coachhelm-contracts.test.tsx). |
 | 130609 | CH-13004 | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | A player's Accept of a proposed focus area fails |
-| 130610 | CH-13005 | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | A player's Decline of a proposed focus area fails |
+| 130610 | CH-13005 | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | A player's Decline of a proposed focus area fails (written when its Undo toast goes, CH-13912) |
 | 130611 | CH-13205 | `THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD` | The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read) |
 | 130612 | CH-13050 | `ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER` | Ask: An action CoachHelm proposed fails after Confirm |
 | 130613 | CH-13051 | `ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD` | Ask: Copy is refused by the clipboard |
@@ -218,6 +222,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130720 | CH-13910 | `DEEP_DIVE_THE_READ_THAT_WAS_OPEN` | Deep dive: the read that was open is no longer on the page after a refresh |
 | 130721 | CH-13911 | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
 | 130722 | CH-13924 | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | Ask: coming back to the page after leaving it |
+| 130723 | CH-13912 | `PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED` | Player: a proposed focus area is declined (wave 7, decision C) |
 
 ## 08 — Permission / authorization
 
@@ -230,11 +235,11 @@ Who may open the page: a coach or a player with `golf_clubhouse_ui` on; anyone e
 | 130801 | — | `CONTROLS_FOLLOW_THE_ROLE` | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
 | 130802 | — | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 | — | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |
-| 130804 | — | `SERVER_ACTIONS_ARE_THE_GATE` | Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Read in this pass, not run: no test here forces a refusal. |
+| 130804 | — | `SERVER_ACTIONS_ARE_THE_GATE` | Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Run in coachhelm-actions-contracts.test.ts against the real actions. |
 | 130805 | — | `THE_PAGE_GIVES_CLUBHOUSE_ONLY_BEHIND_THE_FLAG` | With golf_clubhouse_ui on, a signed-in coach or player gets the Clubhouse route, drawn in place with no redirect, and ?view= is handed to it. With it off, everyone keeps the Fairway page (a coach gets its pointer to the Brief), and no session goes to sign in. |
 | 130806 | — | `ASSIGN_IS_OFFERED_ONLY_FOR_AN_INSIGHT_NOT_YET_MADE` | Assign as focus is offered when no focus has been made from the chosen player's top insight. One that is working (a strength) is offered too, as a keep-doing focus, as the board draws it on Theo's card (Q-80); it can also be dismissed. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus no longer blocks Assign, and a failed focus-area read leaves Assign available (the server's duplicate guard still holds). |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1910.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -368,7 +373,7 @@ CH-1842, 11825 CH-1816.
 | 131817 | CH-13880 | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | Deep dive: a screen reader moves through the page |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 
@@ -422,7 +427,7 @@ From the shell (P001): 12301 FAILURES_REPORTED.
 
 Status: DEFINED
 
-`src/clubhouse/__tests__/coachhelm.test.tsx` names in a test title every catalog code of kinds 0 to 5 on this page that is not marked preview (CH-13001 to CH-13901), which `clubhouse:check` enforces for the catalog. It does not name the hand contracts above by Bridge ID yet, which is why they are reserved.
+`src/clubhouse/__tests__/coachhelm.test.tsx` names in a test title every catalog code of kinds 0 to 5 on this page that is not marked preview (CH-13001 to CH-13901), which `clubhouse:check` enforces for the catalog. It does not name the hand contracts above by Bridge ID; `coachhelm-contracts.test.tsx` and `coachhelm-actions-contracts.test.ts` name the ones listed at the top of this file.
 
 From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 

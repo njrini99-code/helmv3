@@ -6,8 +6,9 @@
  *   W  the selection workspace (loadQualifyingWorkspace), what production's confirm commits;
  *   C  Clubhouse's board (loadQualifierDetail).
  *
- * C must equal W on which rounds count, totals, to par, order and cut membership. Where C keeps a rule F breaks, the
- * divergence is asserted outright, so a change to either side shows up here. The decisions are in
+ * C must equal W on which rounds count, totals, to par, order and cut membership, and F (fixed 2026-10-17) must equal C
+ * on the same, plus position labels and the tie at the cut. Where F still differs (the average, the Bubble's
+ * min-rounds gate) the divergence is asserted outright, so a change to either side shows up here. The decisions are in
  * docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity".
  */
 import { describe, expect, it, vi } from 'vitest';
@@ -115,21 +116,23 @@ describe('Standings parity: which rounds count', () => {
     expect(C.map((r) => r.playerId)).toEqual(['a', 'b']);
   });
 
-  it('a test round counts in neither Clubhouse nor the workspace; Fairway counts it (production is wrong, kept)', async () => {
+  it('a test round counts nowhere: Clubhouse, the workspace and Fairway (fixed 2026-10-17)', async () => {
     const fx: ParityFixture = { qualifier: qualifier(), entries: entrants('a', 'b'), rounds: [rd('a', 1, 74, 2), rd('a', 2, 66, -6, { is_test: true }), rd('b', 1, 72, 0)] };
     const { F, W, C } = await all(fx);
     expect(pick(C, SCORE)).toEqual(pick(W, SCORE));
     expect(byId(C, 'a')).toMatchObject({ played: 1, total: 74, toPar: 2, order: 1 });
-    // Fairway: the test round's 66 lifts "a" to the lead.
-    expect(byId(F, 'a')).toMatchObject({ played: 2, total: 140, toPar: -4, order: 0 });
+    // Fairway counted the test round's 66, which lifted "a" to the lead.
+    expect(pick(F, SCORE)).toEqual(pick(C, SCORE));
+    expect(byId(F, 'a')).toMatchObject({ played: 1, total: 74, toPar: 2, order: 1 });
   });
 
-  it('a completed round without a total is unknown: Clubhouse and the workspace leave it out; Fairway counts it as a played round of 0 strokes', async () => {
+  it('a completed round without a total is unknown: left out everywhere (Fairway counted it as 0 strokes until 2026-10-17)', async () => {
     const fx: ParityFixture = { qualifier: qualifier(), entries: entrants('a'), rounds: [rd('a', 1, 72, 0), rd('a', 2, null, null)] };
     const { F, W, C } = await all(fx);
     expect(pick(C, SCORE)).toEqual(pick(W, SCORE));
     expect(byId(C, 'a')).toMatchObject({ played: 1, total: 72 });
-    expect(byId(F, 'a')).toMatchObject({ played: 2, total: 72, avg: '36.0' });
+    expect(pick(F, SCORE)).toEqual(pick(C, SCORE));
+    expect(byId(F, 'a')).toMatchObject({ played: 1, total: 72, avg: '72.0' });
   });
 
   it('a round with no stored round number counts beside a numbered round 1, as the workspace counts it (fixed 2026-10-17)', async () => {
@@ -140,16 +143,17 @@ describe('Standings parity: which rounds count', () => {
     expect(pick(F, SCORE)).toEqual(pick(C, SCORE));
   });
 
-  it('a second completed round in one numbered slot counts once in Clubhouse and the workspace (the first by id); Fairway adds both', async () => {
+  it('a second completed round in one numbered slot counts once everywhere (the first by id; Fairway added both until 2026-10-17)', async () => {
     // The database refuses this (golf_rounds_qualifier_player_round_number_uq); it is held here so the rule cannot drift.
     const fx: ParityFixture = { qualifier: qualifier(), entries: entrants('a'), rounds: [rd('a', 1, 72, 0), rd('a', 1, 80, 8)] };
     const { F, W, C } = await all(fx);
     expect(pick(C, SCORE)).toEqual(pick(W, SCORE));
     expect(byId(C, 'a')).toMatchObject({ played: 1, total: 72 });
-    expect(byId(F, 'a')).toMatchObject({ played: 2, total: 152 });
+    expect(pick(F, SCORE)).toEqual(pick(C, SCORE));
+    expect(byId(F, 'a')).toMatchObject({ played: 1, total: 72 });
   });
 
-  it('a player with no completed round is unscored in Clubhouse and the workspace, whatever the stored aggregate says; Fairway falls back to it', async () => {
+  it('a player with no completed round is unscored everywhere, whatever the stored aggregate says (Fairway fell back to it until 2026-10-17)', async () => {
     const fx: ParityFixture = {
       qualifier: qualifier(),
       entries: [{ player_id: 'a' }, { player_id: 'stale', rounds_completed: 2, total_score: 140, total_to_par: -4 }],
@@ -158,7 +162,8 @@ describe('Standings parity: which rounds count', () => {
     const { F, W, C } = await all(fx);
     expect(pick(C, SCORE)).toEqual(pick(W, SCORE));
     expect(byId(C, 'stale').scored).toBe(false);
-    expect(byId(F, 'stale')).toMatchObject({ scored: true, played: 2, total: 140, toPar: -4, order: 0 });
+    expect(pick(F, SCORE)).toEqual(pick(C, SCORE));
+    expect(byId(F, 'stale').scored).toBe(false);
   });
 });
 
@@ -203,7 +208,7 @@ describe('Standings parity: the score', () => {
 });
 
 describe('Standings parity: ties and the cut', () => {
-  it('a tie across the last place on score: Clubhouse and the workspace both say "tie" for the level players; Fairway numbers them 3, T4 and puts one in', async () => {
+  it('a tie across the last place on score: all three say "tie" for the level players, never in or out by stored order', async () => {
     const fx: ParityFixture = {
       qualifier: qualifier({ num_rounds: 1, selection_slots_total: 3, selection_slots_coach_pick: 0 }),
       entries: entrants('a', 'b', 'c', 'd', 'e'),
@@ -222,13 +227,29 @@ describe('Standings parity: ties and the cut', () => {
       e: { label: '5', cut: 'out' },
     });
     expect(tieGroups(C)).toEqual([['a'], ['b'], ['c', 'd'], ['e']]);
-    // Fairway (production): positions count up through a tie and only the second row carries the T; the cut puts the
-    // first of the level pair in by stored order.
-    expect(F.filter((r) => r.scored).map((r) => r.label)).toEqual(['1', '2', '3', 'T4', '5']);
-    expect(F.filter((r) => r.scored).map((r) => r.cut)).toEqual(['in', 'in', 'in', 'out', 'out']);
+    // Fairway drew 1, 2, 3, T4, 5 and put the first of the level pair in by stored order until 2026-10-17.
+    expect(pick(F, ['label', 'cut'])).toEqual(pick(C, ['label', 'cut']));
   });
 
-  it('a tie away from the cut shares a position in Clubhouse (T2, T2, 4); Fairway draws 2, T3, 4', async () => {
+  it('with coach’s picks, the tie is at the top-score line, not the travel cut, in Clubhouse and Fairway', async () => {
+    const fx: ParityFixture = {
+      qualifier: qualifier({ num_rounds: 1, selection_slots_total: 4, selection_slots_coach_pick: 1 }),
+      entries: entrants('a', 'b', 'c', 'd', 'e'),
+      rounds: [rd('a', 1, 70, -2), rd('b', 1, 72, 0), rd('c', 1, 73, 1), rd('d', 1, 73, 1), rd('e', 1, 76, 4)],
+    };
+    const { F, W, C } = await all(fx);
+    expect(pick(C, ['label', 'cut'])).toEqual({
+      a: { label: '1', cut: 'in' },
+      b: { label: '2', cut: 'in' },
+      c: { label: 'T3', cut: 'tie' },
+      d: { label: 'T3', cut: 'tie' },
+      e: { label: '5', cut: 'out' },
+    });
+    expect(pick(F, ['label', 'cut'])).toEqual(pick(C, ['label', 'cut']));
+    expect(pick(W, ['cut'])).toEqual(pick(C, ['cut']));
+  });
+
+  it('a tie away from the cut shares a position everywhere it is drawn (T2, T2, 4; Fairway drew 2, T3, 4 until 2026-10-17)', async () => {
     const fx: ParityFixture = {
       qualifier: qualifier({ num_rounds: 1, selection_slots_total: 4 }),
       entries: entrants('a', 'b', 'c', 'd'),
@@ -238,10 +259,10 @@ describe('Standings parity: ties and the cut', () => {
     expect(C.filter((r) => r.scored).map((r) => r.label)).toEqual(['1', 'T2', 'T2', '4']);
     expect(pick(C, ['cut'])).toEqual(pick(W, ['cut']));
     expect(rankedOrder(F)).toEqual(rankedOrder(C));
-    expect(F.filter((r) => r.scored).map((r) => r.label)).toEqual(['1', '2', 'T3', '4']);
+    expect(pick(F, ['label', 'cut'])).toEqual(pick(C, ['label', 'cut']));
   });
 
-  it('level on to par but not strokes is not a tie in Clubhouse or the workspace; Fairway marks it T', async () => {
+  it('level on to par but not strokes is not a tie anywhere (Fairway marked it T until 2026-10-17)', async () => {
     const fx: ParityFixture = {
       qualifier: qualifier({ num_rounds: 2, selection_slots_total: 4 }),
       entries: entrants('a', 'b'),
@@ -252,7 +273,8 @@ describe('Standings parity: ties and the cut', () => {
     expect(rankedOrder(C)).toEqual([['a'], ['b']]);
     expect(rankedOrder(W)).toEqual(rankedOrder(C));
     expect(C.map((r) => r.label)).toEqual(['1', '2']);
-    expect(F.map((r) => r.label)).toEqual(['1', 'T2']);
+    expect(rankedOrder(F)).toEqual(rankedOrder(C));
+    expect(F.map((r) => r.label)).toEqual(['1', '2']);
   });
 
   it('the Bubble is inside the squad, below the places on score, in Clubhouse and Fairway; the player after the travel cut is out', async () => {
@@ -299,11 +321,11 @@ describe('Standings parity: ties and the cut', () => {
     expect(pick(F, ['cut'])).toEqual(pick(C, ['cut']));
   });
 
-  it('a test qualifier: Clubhouse does not show it; the workspace and Fairway’s board still read it', async () => {
+  it('a test qualifier: Clubhouse does not show it; the workspace and Fairway’s board read it, and its test rounds count in neither', async () => {
     const fx: ParityFixture = { qualifier: qualifier({ is_test: true }), entries: entrants('a'), rounds: [rd('a', 1, 72, 0, { is_test: true })] };
     expect(await runClubhouse(fx)).toBeNull();
     expect(byId((await runWorkspace(fx))!, 'a').scored).toBe(false);
-    expect(byId(await runFairway(fx), 'a').scored).toBe(true);
+    expect(byId(await runFairway(fx), 'a').scored).toBe(false);
   });
 });
 

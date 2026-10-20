@@ -12,7 +12,7 @@
       "baseball_core matches 43% of settings_preferences's own migration files (6/14)",
       "baseball_core matches 58% of team_access_control's own migration files (7/12)",
       "calendar_events matches 89% of player_hub's own migration files (17/19)",
-      "player_hub matches 85% of calendar_events's own migration files (17/20)"
+      "player_hub matches 77% of calendar_events's own migration files (17/22)"
     ]
   },
   "unowned_migrations": {

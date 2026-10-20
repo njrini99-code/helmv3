@@ -26,6 +26,7 @@ import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
+import { PrintHead } from './PrintHead';
 import { StandingsSpread } from './StandingsSpread';
 import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
@@ -149,7 +150,7 @@ export function QualifierDetail({
             feel={null}
             onClick={() => void close.run()}
           >
-            {close.pending ? <span data-ch-code="CH-09405">Closing</span> : 'Close qualifier'}
+            {close.pending ? <span data-ch-code="CH-09405">Closing…</span> : 'Close qualifier'}
           </Button>
         </>
       }
@@ -181,6 +182,7 @@ export function QualifierDetail({
   return (
     <SecondaryProvider value={shown.source}>
       <main className="ch-qf ch-qf--detail" data-canopy="">
+        <PrintHead data={data} />
         <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
           <BackLink href={LIST_HREF}>Qualifiers</BackLink>
         </div>
@@ -223,7 +225,7 @@ export function QualifierDetail({
                   disabled={reopen.pending}
                   onClick={() => void reopenNow()}
                 >
-                  {reopen.pending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
+                  {reopen.pending ? <span data-ch-code="CH-09406">Reopening…</span> : 'Reopen qualifier'}
                 </Button>
               )}
             </div>
@@ -342,7 +344,6 @@ function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
 }
 
 /** Pos, Player, Thru, Avg, Total, To par (the plate), Status, the scorecards' chevron (P009-A1, C2). */
-const LB_COLS = '56px minmax(0, 1fr) 48px 52px 52px 64px 108px 28px';
 
 function Leaderboard({
   data,
@@ -439,7 +440,7 @@ function Leaderboard({
       <StandingsSpread rows={b.rows} topScore={b.topScore} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">
-          <div className="ch-qf-row ch-qf-row--head" role="row" style={{ gridTemplateColumns: LB_COLS }}>
+          <div className="ch-qf-row ch-qf-row--head ch-qf-lbrow" role="row">
             <span role="columnheader">Pos</span>
             <span role="columnheader">Player</span>
             <span role="columnheader" className="r">
@@ -477,10 +478,9 @@ function Leaderboard({
                   {/* The row is a mouse target too; the keyboard path is the scorecards button in its last cell (44pt on touch). */}
                   {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
                   <div
-                    className={'ch-qf-row' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
+                    className={'ch-qf-row ch-qf-lbrow' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
                     data-state={r.state ?? undefined}
                     role="row"
-                    style={{ gridTemplateColumns: LB_COLS }}
                     onClick={openable ? () => toggle(r) : undefined}
                   >
                     <span role="cell">
@@ -560,7 +560,7 @@ function Leaderboard({
             );
           })}
           {b.unscored.map((r) => (
-            <div key={r.playerId} className={'ch-qf-row is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')} role="row" style={{ gridTemplateColumns: LB_COLS }}>
+            <div key={r.playerId} className={'ch-qf-row ch-qf-lbrow is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')} role="row">
               <span role="cell">
                 <Pos position={null} tied={false} move={null} />
               </span>
@@ -763,7 +763,7 @@ function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number
           <p>Gross strokes · coach only</p>
         </div>
       </div>
-      <ScrollRegion label="Round-by-round scores" className="ch-qf-table">
+      <ScrollRegion label="Round-by-round scores, scrolls sideways" className="ch-qf-table">
         <div role="table" aria-labelledby="ch-qf-rbr" style={{ minWidth }}>
           <div role="rowgroup">
             <div className="ch-qf-row ch-qf-row--head" role="row" style={{ gridTemplateColumns: cols }}>

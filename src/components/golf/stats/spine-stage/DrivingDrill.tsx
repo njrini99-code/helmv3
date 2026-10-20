@@ -182,6 +182,8 @@ export function DrivingDrill({ detailedStats, sprayData, patterns = [], trends =
                 className="w-full"
                 value={fwPct ?? undefined}
                 unit="%"
+                // The rate arrives unrounded (withExactHeadlineRates); this is its one rounding.
+                format={{ maximumFractionDigits: 1 }}
                 label="Fairways hit"
                 size="md"
                 state={fwPct != null ? 'live' : 'awaiting'}

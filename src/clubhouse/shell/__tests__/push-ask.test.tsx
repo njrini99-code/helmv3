@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * CH-1910: the push soft ask in the iOS app (release blocker 12, docs/clubhouse/phone/push-opt-in.md). Shown once, at a
+ * CH-1911: the push soft ask in the iOS app (release blocker 12, docs/clubhouse/phone/push-opt-in.md). Shown once, at a
  * calm moment, while iOS has not been asked and nobody has answered; Turn on is iOS's prompt through the shared
  * requestPushPermission; Not now is kept and never asked again.
  */
@@ -30,7 +30,7 @@ const tree = (pathname: string, role: 'coach' | 'player' = 'player') => (
     </ToastProvider>
   </div>
 );
-const sheet = () => document.querySelector('dialog[data-ch-code="CH-1910"][open]');
+const sheet = () => document.querySelector('dialog[data-ch-code="CH-1911"][open]');
 /** Let the settle time pass and the stored-answer read land. */
 async function settle(ms = PUSH_ASK_SETTLE_MS) {
   await act(async () => {
@@ -52,7 +52,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('CH-1910 when the push ask may show', () => {
+describe('CH-1911 when the push ask may show', () => {
   it('waits for the page to settle: nothing on first paint, the sheet once the page has held', async () => {
     render(tree(HOME));
     await settle(PUSH_ASK_SETTLE_MS - 100);
@@ -140,7 +140,7 @@ describe('CH-1910 when the push ask may show', () => {
   });
 });
 
-describe('CH-1910 answering the push ask', () => {
+describe('CH-1911 answering the push ask', () => {
   it('Turn on: the light tap, then iOS prompt; allowed, the success tap and "Notifications are on"', async () => {
     render(tree(HOME));
     await settle();

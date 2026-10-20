@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, Flag, Plus, Search } from 'lucide-react';
 import { haptic } from '../../../lib/haptics';
+import { useChPhone } from '../../../lib/use-phone';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
 import { Modal } from '../../../ui/Modal';
@@ -51,6 +52,7 @@ export function CoursePicker({
   onAddCourse: () => void;
 }) {
   const [course, setCourse] = useState<ChSetupCourse | null>(initialCourse);
+  const phone = useChPhone();
   useEffect(() => {
     if (open) setCourse(initialCourse);
   }, [open, initialCourse]);
@@ -86,9 +88,10 @@ export function CoursePicker({
       // Typing a course in is in the head's corner, always in reach (owner, 2026-10-16), not under the whole library.
       action={
         course ? undefined : (
-          <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" onClick={onAddCourse}>
+          // The phone head says "Add" so the title stays on one line at 390; the name stays whole.
+          <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" aria-label="Add a course" onClick={onAddCourse}>
             <Icon icon={Plus} size={14} />
-            <span>Add a course</span>
+            <span>{phone ? 'Add' : 'Add a course'}</span>
           </button>
         )
       }
@@ -165,9 +168,7 @@ function CourseList({
                   <span className="ch-cpk__card">
                     {/* The course's own photo (one its team uploaded, or the real course's), never a stand-in scene: a
                         course without one is a quiet tile with the flag (owner, 2026-10-16). */}
-                    <span className={'ch-cpk__media' + (c.image ? '' : ' is-blank')}>
-                      {c.image ? <img src={c.image} alt="" loading="lazy" decoding="async" /> : <Icon icon={Flag} size={20} />}
-                    </span>
+                    <CourseMedia image={c.image} />
                     <span className="ch-cpk__row">
                       <span className="ch-cpk__b">
                         <b>{c.name}</b>
@@ -240,7 +241,7 @@ function TeeList({ course, listTees, onBack, onPick }: { course: ChSetupCourse; 
               </span>
               <span className="ch-rsu-tee__y">
                 <b>{t.yards ? t.yards.toLocaleString('en-US') : '—'}</b>
-                <em>yds</em>
+                {t.yards ? <em>yds</em> : null}
               </span>
               <span className="ch-rsu-tee__f">
                 <span>
@@ -264,5 +265,16 @@ function TeeList({ course, listTees, onBack, onPick }: { course: ChSetupCourse; 
         </div>
       )}
     </div>
+  );
+}
+
+/** A course's photo, or the quiet flag tile when it has none or its photo doesn't load (a broken image never shows). */
+function CourseMedia({ image }: { image: string | null | undefined }) {
+  const [broken, setBroken] = useState<string | null>(null);
+  const src = image && image !== broken ? image : null;
+  return (
+    <span className={'ch-cpk__media' + (src ? '' : ' is-blank')}>
+      {src ? <img src={src} alt="" loading="lazy" decoding="async" onError={() => setBroken(src)} /> : <Icon icon={Flag} size={20} />}
+    </span>
   );
 }

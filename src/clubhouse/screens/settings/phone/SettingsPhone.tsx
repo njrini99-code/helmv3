@@ -4,6 +4,7 @@ import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { Bell, ChevronRight, Flag, SlidersVertical, Sparkle, UserRound, Users, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { Icon } from '../../../ui/Icon';
+import { InlineNotice } from '../../../ui/Notices';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { chTween } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
@@ -74,7 +75,7 @@ function PushPage({ ref, sub, way, reduced, children }: { ref?: Ref<HTMLDivEleme
 
 /** What each row on the list says about its section (the design's short summaries). */
 const SUMMARY: Record<'coach' | 'player', Partial<Record<ChSettingsSection, string>>> = {
-  coach: { account: 'Profile, email', notifications: 'Email, Push', team: 'Scoring, invites', coachhelm: 'Priorities, alerts', preferences: 'Motion, units' },
+  coach: { account: 'Profile, email', notifications: 'Email, push', team: 'Scoring, invites', coachhelm: 'Priorities, alerts', preferences: 'Motion, units' },
   player: { account: 'Profile, email', golf: 'Handicap, team', notifications: 'Push, CoachHelm', preferences: 'Motion, units' },
 };
 
@@ -253,6 +254,12 @@ export function SettingsPhone({
   );
 }
 
+/** CH-8214: every read Settings made failed, so the list would stand silent over sections that each hold only a notice. */
+export function everyReadFailed(data: ChSettingsData): boolean {
+  const reads = [data.profile, data.delivery, data.playerRouting, data.digest, data.scoring, data.reminders, data.team, data.joinCode, data.golf, data.membership, data.coachhelm];
+  return reads.every((r) => !r || r.error);
+}
+
 /** The list: who you are, the sections, help and legal, and Sign out. */
 function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; writes: ChSettingsWrites; onOpen: (id: ChSettingsSection) => void; onProfile: () => void }) {
   const { report, opening } = useReportProblem();
@@ -260,19 +267,24 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
   const coach = data.role === 'coach';
   const profile = data.profile.error ? null : data.profile.value;
   const name = profile?.fullName || data.email || 'Your profile';
+  // A photo that doesn't load falls back to the initials.
+  const [broken, setBroken] = useState<string | null>(null);
+  const photo = profile?.avatarUrl && profile.avatarUrl !== broken ? profile.avatarUrl : null;
   const head = data.coachhelm && !data.coachhelm.error ? !!data.coachhelm.value.team?.isHeadCoach : false;
-  const hcp = data.golf && !data.golf.error ? data.golf.value.handicap.trim() : '';
+  // The handicap the roster shows (data/season.ts displayHandicap): the index when set, else the handicap.
+  const hcp = data.golf && !data.golf.error ? data.golf.value.handicapIndex.trim() || data.golf.value.handicap.trim() : '';
   const line = coach
     ? [head ? 'Head coach' : 'Coach', data.teamName].filter(Boolean).join(' · ')
     : ['Player', data.teamName, hcp ? `HCP ${hcp}` : null].filter(Boolean).join(' · ');
   return (
     <>
+      {everyReadFailed(data) && <InlineNotice code="CH-8214" title="Settings didn’t load" body="Nothing was changed. Try again; the error has been reported." onRetry={writes.refresh} />}
       {/* A profile that didn't load opens Account, where the notice and Try again are. */}
       <button type="button" className="ch-setm-id" onClick={profile ? onProfile : () => onOpen('account')}>
         <span className={'ch-setm-coin' + (coach ? '' : ' is-player')} aria-hidden="true">
-          {profile?.avatarUrl ? (
+          {photo ? (
             // A user-uploaded storage URL, shown as a plain image.
-            <img src={profile.avatarUrl} alt="" width={56} height={56} />
+            <img src={photo} alt="" width={56} height={56} onError={() => setBroken(photo)} />
           ) : (
             initials(name)
           )}
@@ -298,7 +310,7 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
       </Group>
 
       <div className="ch-setm-group is-end">
-        <button type="button" className="ch-setm-signout is-danger" disabled={signingOut} onClick={() => void signOut()}>
+        <button type="button" className="ch-setm-signout" disabled={signingOut} onClick={() => void signOut()}>
           {signingOut ? 'Signing out…' : 'Sign out'}
         </button>
       </div>

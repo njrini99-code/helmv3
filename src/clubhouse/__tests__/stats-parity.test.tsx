@@ -434,12 +434,12 @@ describe('the profile’s extra figures', () => {
 /* ─── Game detail: More detail ─── */
 
 describe('Game detail · More detail', () => {
-  it('each section has one, open on the desktop, a native disclosure with its own panels', async () => {
+  it('each section has one, closed to start, a native disclosure with its own panels', async () => {
     showPlayer(player());
     await openTab(/Game detail/);
     const more = [...document.querySelectorAll('details.ch-gx-more')] as HTMLDetailsElement[];
     expect(more).toHaveLength(5);
-    expect(more.every((d) => d.open && d.querySelector('summary')!.textContent === 'More detail')).toBe(true);
+    expect(more.every((d) => !d.open && d.querySelector('summary')!.textContent === 'More detail')).toBe(true);
     expect([...document.querySelectorAll('.ch-gm')].every((s) => s.querySelector('.ch-gx-rule')!.textContent!.includes('18 holes only'))).toBe(true);
   });
 
@@ -550,7 +550,7 @@ describe('Game detail · More detail', () => {
     expect(cells(rowOf(panel('Short, low and high misses by break'), 'Straight'))).toEqual(['40%', '40%', '20%']);
     const tour = panel('Against the Tour');
     expect(tour.querySelectorAll('tbody tr')).toHaveLength(5);
-    expect(cells(rowOf(tour, '3–5 ft'))).toEqual(['63%', '90.5%', '38', 'Below the Tour']);
+    expect(cells(rowOf(tour, '3–5 ft'))).toEqual(['63%', '91%', '38', 'Below the Tour']);
     expect(panel('Putts by round').querySelector('svg.ch-gx-line')).not.toBeNull();
   });
 
@@ -646,7 +646,7 @@ describe('Game detail · states', () => {
   it('CH-5316 a proximity band under 10 shots says how many it has and is not graded; no approaches at all says so', async () => {
     showPlayer(player());
     await openTab(/Game detail/);
-    expect(code('CH-5316')!.textContent).toBe('175+ yards: 7 shots, under 10');
+    expect(code('CH-5316')!.textContent).toContain('175+ yards: 7 shots, under 10');
     expect(panel('Proximity against the Tour').querySelectorAll('.ch-lad__fill')).toHaveLength(2);
     cleanup();
     showPlayer(bare());
@@ -705,7 +705,7 @@ describe('Rounds tab · bests and comparison', () => {
     expect(tile(bests, 'Best score').textContent).toContain('72');
     expect(tile(bests, 'Best score').textContent).toContain('Pinehurst No. 8 · Sep 9');
     expect(tile(bests, 'Best to par').querySelector('dd')!.textContent).toBe('E');
-    expect(tile(bests, 'Best GIR').querySelector('dd')!.textContent).toBe('83.3%');
+    expect(tile(bests, 'Best GIR').querySelector('dd')!.textContent).toBe('83%');
     expect(tile(bests, 'Fewest putts').textContent).toContain('Oakmont CC · Oct 12');
     const cmp = card('rx-compare');
     expect(cmp.querySelector('th[scope="col"]:nth-child(2)')!.textContent).toBe('Latest 10');
@@ -727,7 +727,7 @@ describe('Rounds tab · bests and comparison', () => {
     cleanup();
     showPlayer(withExtra({ compare: null }));
     await openTab(/Rounds/);
-    expect(code('CH-5313')!.textContent).toContain('Needs 3 earlier 18-hole rounds');
+    expect(code('CH-5313')!.textContent).toContain('Comparing starts at 13 rounds');
   });
 
   it('CH-5314 the score line needs two rounds, and a window with no rounds shows none of it', async () => {
@@ -776,7 +776,7 @@ describe('Overview · the zones', () => {
     expect(pars.getAttribute('aria-label')).toMatch(/Par 3 \+0\.\d+, Par 4 \+\d\.\d+, Par 5/);
     // The approach ranges: 50–125 yd reads 26 ft against the Tour's 18 ft, and amber because it is further.
     const rows = [...document.querySelectorAll('.ch-zrow')];
-    const near = rows.find((r) => r.textContent?.startsWith('50-125 yd'))!;
+    const near = rows.find((r) => r.textContent?.startsWith('50–125 yds'))!;
     expect(near.textContent).toContain('26 ft');
     expect(near.querySelector('.ch-ztrack__fill')!.className).toContain('is-bad');
     expect(near.querySelector('.ch-ztrack__tick.is-tour')).not.toBeNull();
@@ -931,11 +931,11 @@ describe('Game detail on the phone · the approach section', () => {
     expect([...section('putting').querySelectorAll('.ch-gm__figs dd')].some((d) => d.textContent === '—')).toBe(false);
   });
 
-  it('the type contract in the stylesheet: the value is 28px and 600, its label and scope are 13 to 14px in secondary ink, and nothing floors them back to 12px', () => {
+  it('the type contract in the stylesheet: the value is 28px and 600, its label and scope are 13 to 14px (Dynamic Type steps) in secondary ink, and nothing floors them back to 12px', () => {
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../styles/stats.css'), 'utf8');
     expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd:not\(\.ch-gm__sub\) \{\s*font: 600 28px\/32px/);
-    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dt \{\s*font: 500 13\.5px\/19px var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
-    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd\.ch-gm__sub \{\s*font: 400 13px\/18px var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dt \{\s*font: 500 calc\(13\.5 \* var\(--ch-type-k\)\)\/calc\(19 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd\.ch-gm__sub \{\s*font: 400 calc\(13 \* var\(--ch-type-k\)\)\/calc\(18 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
     const floor = css.slice(css.indexOf('Phone text floor'));
     expect(floor).not.toMatch(/\.ch-gd\.is-phone \.ch-gm__figs d[td]/);
   });

@@ -68,6 +68,7 @@ const TEAM_PICK_ROUNDS: ChPickRound[] = P.flatMap(([id, name, scores], pi) =>
 
 export const PREVIEW_TEAM_STATS: ChTeamStats = {
   teamName: 'Varsity',
+  season: 'Fall 2026',
   window: 'last10',
   filter: filterFor('last10'),
   filterOptions: optionsFrom(TEAM_PICK_ROUNDS),
@@ -75,11 +76,11 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
   roundCount: 64,
   roundsEffective: 64,
   figures: [
-    { key: 'sg', series: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], label: 'Team SG per round', value: -0.5, unit: '', digits: 1, signed: true, delta: 0.4, lowerIsBetter: false, context: 'vs. previous 10', note: 'vs Tour · 58 rounds with shots', gauge: { kind: 'sg' } },
-    { key: 'score', series: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4], label: 'Scoring average', value: 73.6, unit: '', digits: 1, delta: -0.9, lowerIsBetter: true, context: 'vs. previous 10', gauge: { kind: 'par', toPar: 1.6 } },
+    { key: 'sg', series: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], label: 'Team SG per round', value: -0.5, unit: '', digits: 1, signed: true, delta: 0.4, lowerIsBetter: false, context: 'vs previous 10', note: 'vs Tour · 58 rounds with shots', gauge: { kind: 'sg' } },
+    { key: 'score', series: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4], label: 'Scoring average', value: 73.6, unit: '', digits: 1, delta: -0.9, lowerIsBetter: true, context: 'vs previous 10', gauge: { kind: 'par', toPar: 1.6 } },
     { key: 'gir', series: [56, 57, 59, 60, 60, 62, 63], label: 'Greens in regulation', value: 61, unit: '%', digits: 0, delta: 3, lowerIsBetter: false, context: 'Tour averages 66%', gauge: { kind: 'rate', ref: 66 } },
-    { key: 'putts', series: [31.2, 30.9, 30.8, 30.5, 30.4, 30.1, 30.4], label: 'Putts per round', value: 30.4, unit: '', digits: 1, delta: 0.3, lowerIsBetter: true, context: 'vs. previous 10', gauge: { kind: 'putts' } },
-    { key: 'scramble', series: [44, 46, 49, 50, 52, 54, 53], label: 'Scrambling', value: 52, unit: '%', digits: 0, delta: 4, lowerIsBetter: false, context: 'vs. previous 10', gauge: { kind: 'rate' } },
+    { key: 'putts', series: [31.2, 30.9, 30.8, 30.5, 30.4, 30.1, 30.4], label: 'Putts per round', value: 30.4, unit: '', digits: 1, delta: 0.3, lowerIsBetter: true, context: 'vs previous 10', gauge: { kind: 'putts' } },
+    { key: 'scramble', series: [44, 46, 49, 50, 52, 54, 53], label: 'Scrambling', value: 52, unit: '%', digits: 0, delta: 4, lowerIsBetter: false, context: 'vs previous 10', gauge: { kind: 'rate' } },
     { key: 'birdies', series: [2.1, 2.3, 2.3, 2.5, 2.6, 2.8, 2.7], label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, lowerIsBetter: false, context: 'Eagles not counted', gauge: { kind: 'holes' } },
   ],
   weeks: WEEKS,
@@ -121,7 +122,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     { label: 'Most improved', playerId: 'priya', name: 'Priya Natarajan', value: '−4.0', meta: 'Scoring avg, first five rounds to latest five' },
   ],
   tour: 'pga',
-  sgChange: { delta: 0.4, context: 'vs. previous 10' },
+  sgChange: { delta: 0.4, context: 'vs previous 10' },
   sgRounds: 58,
   roundsError: false,
   cacheError: false,
@@ -412,7 +413,7 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
   win: windowSeason(season(JONAH_AVG, JONAH_SCORES.slice(-7), -0.9, 10, 'slipping')),
   teamAvg: 72.8,
   tour: 'pga',
-  sgChange: { delta: -1.3, context: 'vs. previous 10' },
+  sgChange: { delta: -1.3, context: 'vs previous 10' },
   puttBands: [
     { label: '0–3 ft', made: 57, attempts: 64, bench: null },
     { label: '3–5 ft', made: 24, attempts: 38, bench: 90.5 },

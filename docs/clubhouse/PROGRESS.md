@@ -1121,6 +1121,42 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
   Rounds (list, course picker, add a course, setup and scorecard, shot tracking,
   hole complete, review).
 
+- Decisions of 2026-10-19 (lead, under the owner's brief of 2026-10-18: "be
+  creative, exceed expectations, take command, go full auto, complete every
+  aspect of Clubhouse"). Each is cheap to reverse; production deploys,
+  production migrations and the production flag stay with the owner. Plan:
+  [COMPLETION_PLAN_2026-10-18.md](COMPLETION_PLAN_2026-10-18.md).
+  - D-72: Empty sections draw the shape of what will fill them
+    (`ui/EmptyShape.tsx`): the real layout's rules and alignment, no invented
+    content, one sentence and one action. Supersedes D-71's medallion for page
+    empties; first run, filtered empty, no permission and failure stay distinct
+    states.
+  - D-73: The live motion durations are the set (the 2026-10-12 "two duration
+    sets" question): D-64's five steps, the fade-through 120/120/220 ms with a
+    300 ms skeleton hold, the 462 ms smooth spring, loops 1.9 s/2.8 s/900 ms.
+    The rules and the checklist say so and `motion-durations-pinned.test.ts`
+    pins them.
+  - D-74: The folding sidebar keeps its width spring (STATUS decision 6): it is
+    the owner's 2026-10-16 design and how macOS sidebars move; `clubhouse:css`
+    is clean against main. Frame cost is measured on a production build before
+    turn-on.
+  - D-75: Desktop is a keyboard tool: ⌘K palette (sections, people the role
+    already sees, actions the role can take), G then a letter, `?` for the
+    sheet, tooltips that carry shortcuts, right-click menus that mirror each
+    row's own actions. Nothing fires while typing; nothing on the phone.
+  - D-76: Clubhouse date and time fields replace browser inputs everywhere
+    (values unchanged); times are 12-hour until Settings offers a 24-hour
+    choice.
+  - D-77: Every way in has a Clubhouse screen (reset password, join by code,
+    staff invitation, new coach, waiting for approval, demo), calling the same
+    actions; the front-door flag stays off in production.
+  - D-78: The native launch colour stays Fairway's canvas while the app serves
+    Fairway (Q-140); it changes in the native build that ships with Clubhouse
+    on.
+  - D-79: A finished round is a scorecard to keep: it settles in once after a
+    submit, prints on one page and exports an image drawn on the device (player,
+    course, Golfhelm foot). No share endpoint or public URL.
+
 ## Open owner questions
 
 - Q-1 Roster status: decided 2026-09-29, add a separate availability field. The

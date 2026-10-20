@@ -83,7 +83,7 @@
   /* Status (text on tint) */
   --ch-positive-600: #1c6b43;
   --ch-positive-100: #e6f2ea;
-  --ch-warning-600: #94600e;
+  --ch-warning-600: #8a5a0c;
   --ch-warning-100: #faf0dc;
   --ch-danger-600: #b03a2e;
   --ch-danger-100: #fbe9e6;
@@ -224,6 +224,12 @@
 
   /* Space and layout */
   --ch-gutter: 40px;
+  /* The desktop page (wave 3, design #5): every tab's main sets its framed head on one line, so the title holds still
+     between tabs. The gutter is each main's side padding (the head's 4px inset puts the title 44px in from the frame);
+     the head top is its top padding above the head's double rule. A main keeps its own max width and centres past it; a
+     page whose head has no eyebrow line, or a shorter one, adds that room to this top so its title lands level. */
+  --ch-page-gutter: var(--ch-gutter);
+  --ch-page-head-top: 34px;
   --ch-sidebar-w: 240px;
   /* The sidebar folded to its icon rail (RailToggle): the rows' 16px icons, 20px in from the edge, stay where they are. */
   --ch-rail-w: 56px;
@@ -800,6 +806,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
   --ch-skel-delay: 0ms;
+  /* The loops too, so a skeleton's shimmer, the calendar's live pulse and the pending sweep hold still from the first
+     frame: ThemeScript marks <html> before hydration, ahead of the rules that stop them by name. */
+  --ch-dur-shimmer: 0ms;
+  --ch-dur-live: 0ms;
+  --ch-dur-sweep: 0ms;
 }
 
 /* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off

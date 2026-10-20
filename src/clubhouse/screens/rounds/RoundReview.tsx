@@ -10,6 +10,7 @@ import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
 import { RoundTypeSheet } from './entry/RoundTypeSheet';
+import { scoreName } from './track/labels';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
@@ -27,10 +28,15 @@ import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
 import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from './round-insights';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
+import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
 import { checkedRecap } from './recap-check';
+import { hasCard } from './card/card-model';
+import { useJustSubmitted } from './card/just-submitted';
+import { RoundCard } from './card/RoundCard';
 import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
+import { SideScroll } from '../../ui/SideScroll';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -245,13 +251,17 @@ function HoleCard({
           </span>
         </div>
         <div className="ch-rv-step">
-          <button type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
-            <Icon icon={ChevronLeft} size={16} />
-          </button>
+          <Tooltip>
+            <button type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
+              <Icon icon={ChevronLeft} size={16} />
+            </button>
+          </Tooltip>
           <ScoreMark score={hole.score} par={hole.par} />
-          <button type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
-            <Icon icon={ChevronRight} size={16} />
-          </button>
+          <Tooltip>
+            <button type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
+              <Icon icon={ChevronRight} size={16} />
+            </button>
+          </Tooltip>
         </div>
       </div>
       {/* The shots slide in the direction of travel (CH-11604). */}
@@ -272,7 +282,7 @@ function HoleCard({
                 <div>
                   <b>{[s.kind, s.club].filter(Boolean).join(' · ')}</b>
                   <span>
-                    {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to].filter(Boolean).join(', ')].filter(Boolean).join(' → ')}
+                    {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to && `${s.to} left`].filter(Boolean).join(' · ')].filter(Boolean).join(' → ')}
                     {s.miss ? ` · ${s.miss}` : ''}
                   </span>
                   {s.read && <em>{s.read}</em>}
@@ -348,6 +358,7 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
 export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null }) {
   const phone = useChPhone();
   const reduced = useChReducedMotion();
+  const justSubmitted = useJustSubmitted();
   const router = useRouter();
   const { refresh, refreshing } = useRefresh();
   const r = review;
@@ -446,6 +457,8 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
         </div>
       </header>
 
+      {hasCard(r) && <RoundCard review={r} phone={phone} just={justSubmitted} settle={justSubmitted && !reduced} />}
+
       <dl className="ch-rv-figs">
         {figs.map(([k, v, m]) => (
           <div key={k}>
@@ -474,7 +487,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           title="The round"
           def={
             <>
-              The score hole by hole against par. The line rises when {coach ? 'the player gains' : 'you gain'} on par and falls when strokes go back. <b>Lower is better.</b>
+              The score hole by hole against par. The line rises when {coach ? 'the player gains' : 'you gain'} on par and falls when strokes go back. <b>A lower score is better.</b>
             </>
           }
           read={
@@ -498,7 +511,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           }
         >
           {points.length >= 2 ? (
-            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Move across it to read a hole, click one to see its shots.">
+            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Pick a hole to read it and see its shots.">
               <ScoreFlow
                 holes={r.holes}
                 outScore={r.front.score}
@@ -578,8 +591,8 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                     >
                       <span className="ch-rzcost__n ch-num">{c.n}</span>
                       <span className="ch-rzcost__t">
-                        Hole {c.n} · par {c.par}
-                        <small>{r.holes.find((h) => h.n === c.n)?.shots.length ? `${r.holes.find((h) => h.n === c.n)!.shots.length} shots` : 'Scored as a total'}</small>
+                        Hole {c.n} · Par {c.par}
+                        <small>{r.holes.find((h) => h.n === c.n)?.shots.length ? scoreName(c.score, c.par) : `${scoreName(c.score, c.par)} · scored as a total`}</small>
                       </span>
                       <b className="ch-num">{c.score}</b>
                       <em className="ch-num">{formatSigned(c.delta, 0)}</em>
@@ -702,7 +715,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                     <div className="ch-znlines">
                       <span>
                         <b>Hole {hole.n}</b>
-                        {hole.par != null ? ` · par ${hole.par}` : ''}
+                        {hole.par != null ? ` · Par ${hole.par}` : ''}
                         {hole.yards ? ` · ${hole.yards} yds` : ''}
                       </span>
                       {hole.putts != null && (
@@ -728,10 +741,10 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                       <span>{phone ? 'Tap a hole to see every shot' : 'Select a hole to see every shot'}</span>
                     </div>
                   </div>
-                  <div className="ch-rv-cardw">
+                  <SideScroll className="ch-rv-cardw">
                     <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={pick} />
                     <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={pick} />
-                  </div>
+                  </SideScroll>
                 </section>
               </SectionBoundary>
               <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
@@ -744,7 +757,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                 n={6}
                 alt
                 title="In words"
-                def={<>What CoachHelm read in the round, and what the player wrote when posting it.</>}
+                def={<>What CoachHelm read in the round, and {coach ? 'what the player wrote' : 'what you wrote'} when posting it.</>}
               >
                 {recap && (
                   // C2: a passage under a rule, labelled in words for who wrote it (no sparkle, D14).

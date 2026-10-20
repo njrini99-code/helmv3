@@ -42,7 +42,7 @@ export function roundsInFilter(rounds: ChRound[], f: ChFilter): ChRound[] {
   return selectRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
 }
 
-/** The matching rounds before the newest ten, for "vs. previous 10", across seasons like the ten; null when the filter has no previous window or there are fewer than three. */
+/** The matching rounds before the newest ten, for "vs previous 10", across seasons like the ten; null when the filter has no previous window or there are fewer than three. */
 export function previousInFilter(rounds: ChRound[], f: ChFilter): ChRound[] | null {
   return previousRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
 }
@@ -87,7 +87,7 @@ export function filterOptions(rounds: ChRound[], names?: Map<string, string>): C
 /** How strokes gained moved against the previous window: the chip's change, and the words when there is none to show. */
 export interface ChSgChange {
   delta: number | null;
-  /** "vs. previous 10", "No earlier rounds", ...; empty when the window has no previous one by design (season, qualifiers). */
+  /** "vs previous 10", "No earlier rounds", ...; empty when the window has no previous one by design (season, qualifiers). */
   context: string;
 }
 
@@ -97,7 +97,7 @@ export interface ChSgChange {
  * said only when there are none, and a thin earlier stretch says so instead.
  */
 export function sgChange(current: number | null, previous: number | null, window: ChWindow, earlier: number): ChSgChange {
-  if (current != null && previous != null) return { delta: current - previous, context: 'vs. previous 10' };
+  if (current != null && previous != null) return { delta: current - previous, context: 'vs previous 10' };
   if (window !== 'last10' || current == null) return { delta: null, context: '' };
   return { delta: null, context: earlier <= 0 ? 'No earlier rounds' : 'Too few earlier rounds with shots' };
 }
@@ -168,10 +168,11 @@ export async function loadRoundCache(
 }
 
 /**
- * A round's putts, or its three-putts, from its cache row: none when the round has no putt recorded. Production's round totals
- * (recompute_golf_round_totals, then update_round_stats_cache) write 0 putts for a round whose holes carry no putt count, and the
- * Fairway pages leave such a round out of putts per round (calculatePuttsPerRound, aggregateCountableRounds: putts > 0), so a
- * zero here is "not recorded", never a round holed in no putts. Three-putts follow: no putts recorded, no three-putt count.
+ * A round's putts, or its three-putts, from its cache row: none when the round has no putt recorded. The cache
+ * (update_round_stats_cache) writes 0 putts for a round whose holes carry no putt count: recompute_golf_round_totals writes 0 to
+ * golf_rounds.total_putts today, NULL once 20261017110000 is applied, and the cache falls back to the holes' own sum (0) either
+ * way. The Fairway pages leave such a round out of putts per round (calculatePuttsPerRound, aggregateCountableRounds: putts > 0),
+ * so a zero here is "not recorded", never a round holed in no putts. Three-putts follow: no putts recorded, no three-putt count.
  */
 export function cachedPutts(c: ChRoundCache | undefined, key: 'total_putts' | 'three_putts' = 'total_putts'): number | null {
   if (!c || typeof c.total_putts !== 'number' || c.total_putts <= 0) return null;

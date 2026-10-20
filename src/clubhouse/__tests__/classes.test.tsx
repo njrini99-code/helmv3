@@ -537,7 +537,7 @@ describe('Classes route and page', () => {
     teamOf.current = null;
     inProviders((await ClubhouseClassesRoute())!);
     await expectCode('CH-12305', /You aren’t on a team yet/);
-    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
     expect(screen.queryByRole('button', { name: /Add|Import/ })).toBeNull();
   });
 
@@ -573,7 +573,10 @@ describe('Classes route and page', () => {
     render(<ClassesSkeleton />);
     await expectCode('CH-12401');
     expect(screen.getByRole('main', { name: 'Loading your classes' }).getAttribute('aria-busy')).toBe('true');
-    expect(document.querySelectorAll('.ch-cl-deck .ch-skel')).toHaveLength(4);
+    // Four rows, under Your classes' heading and the week's days once (2026-10-18: the first row landed 82px lower without them).
+    expect(document.querySelectorAll('.ch-cl-deck > .ch-skel')).toHaveLength(4);
+    expect(document.querySelector('.ch-cl-sk-desk .ch-cl-sec > .ch-sec__head + .ch-cl-deck > .ch-cl-tthead:first-child')).not.toBeNull();
+    expect(document.querySelectorAll('.ch-cl-sk-desk .ch-cl-tthead__days > span')).toHaveLength(5);
   });
 
   it('the no-team page draws without the router (it is a server component)', () => {
@@ -1239,7 +1242,8 @@ describe('Classes, on the phone', () => {
 
 const STAT_ID = 'c0000000-0000-4000-8000-000000000001';
 const sheet = () => screen.getByRole('dialog', { name: /^(Add a class|Edit class)$/ });
-const field = (label: string) => within(sheet()).getByLabelText(label) as HTMLInputElement;
+// An optional field's label ends in its Optional tag ("Room Optional"), which is part of its name.
+const field = (label: string) => within(sheet()).getByLabelText(new RegExp(`^${label}( Optional)?$`)) as HTMLInputElement;
 const setField = (label: string, value: string) => fireEvent.change(field(label), { target: { value } });
 const day = (d: string) => within(sheet()).getByRole('button', { name: d });
 const submitForm = (user: ReturnType<typeof userEvent.setup>) => user.click(within(sheet()).getByRole('button', { name: /^(Add class|Save changes)$/ }));
@@ -1365,7 +1369,7 @@ describe('Classes, add and edit', () => {
       field('Building').value,
       field('Room').value,
       field('Instructor').value,
-    ]).toEqual(['STAT 201', 'Probability and Statistics', '3', '09:00', '10:15', 'Hanes Hall', '120', 'Dr. L. Osei']);
+    ]).toEqual(['STAT 201', 'Probability and Statistics', '3', '9:00 AM', '10:15 AM', 'Hanes Hall', '120', 'Dr. L. Osei']);
     expect([day('Mon'), day('Tue'), day('Wed'), day('Thu'), day('Fri')].map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false', 'true', 'false']);
     setField('Room', '121');
     await submitForm(user);
@@ -1621,7 +1625,7 @@ describe('Classes, delete all', () => {
   /** The control under the deck (the dialog has a button of the same name). */
   const deleteAll = () => within(document.querySelector('.ch-cl-delall') as HTMLElement).getByRole('button', { name: 'Delete all classes' }) as HTMLButtonElement;
   const question = () => screen.getByRole('dialog', { name: 'Delete all classes?' });
-  const confirm = (user: ReturnType<typeof userEvent.setup>) => user.click(within(question()).getByRole('button', { name: /^(Delete all classes|Deleting)$/ }));
+  const confirm = (user: ReturnType<typeof userEvent.setup>) => user.click(within(question()).getByRole('button', { name: /^(Delete all classes|Deleting…)$/ }));
   const answer = (over: Partial<ChRemoveAllData>, error = 'stopped'): { success: boolean; error: string; data: ChRemoveAllData } => ({ success: false, error, data: { removed: [], kept: [], offCalendar: [], ...over } });
   const idOf = (n: number) => `c0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
@@ -1686,8 +1690,8 @@ describe('Classes, delete all', () => {
     const w = show(PREVIEW_CLASSES, { removeAll: vi.fn(() => held.promise) });
     await user.click(deleteAll());
     await confirm(user);
-    await waitFor(() => expect(within(question()).getByRole('button', { name: 'Deleting' })).toBeTruthy());
-    expect((within(question()).getByRole('button', { name: 'Deleting' }) as HTMLButtonElement).disabled).toBe(true);
+    await waitFor(() => expect(within(question()).getByRole('button', { name: 'Deleting…' })).toBeTruthy());
+    expect((within(question()).getByRole('button', { name: 'Deleting…' }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(question()).getByRole('button', { name: 'Keep them' }) as HTMLButtonElement).disabled).toBe(true);
     expect(deleteAll().disabled).toBe(true);
     // Esc and the Close button leave it open: closing would hide a delete that is still going.
@@ -1904,6 +1908,26 @@ describe('Classes, import', () => {
     expect(await screen.findByRole('dialog', { name: 'Import schedule' })).toBeTruthy();
   });
 
+  it('CH-12504 Start over asks first once the review holds a few classes or one came off; Keep reviewing keeps it as it was', async () => {
+    const user = userEvent.setup();
+    show();
+    await openImport(user);
+    await pasteAndRead(user);
+    await reviewArrived();
+    await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
+    await user.click(inSheet().getByRole('button', { name: 'Start over' }));
+    const ask = await screen.findByRole('dialog', { name: 'Start over?' });
+    expect(ask.getAttribute('data-ch-code')).toBe('CH-12504');
+    expect(within(ask).getByText('The 4 classes you reviewed are let go, and nothing is imported.')).toBeTruthy();
+    // One dialog at a time: the review steps aside while it is asked.
+    expect(screen.queryByRole('dialog', { name: 'Review your schedule' })).toBeNull();
+    await user.click(within(ask).getByRole('button', { name: 'Keep reviewing' }));
+    expect(await screen.findByRole('button', { name: 'Import 4 classes' })).toBeTruthy();
+    await user.click(inSheet().getByRole('button', { name: 'Start over' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Start over?' })).getByRole('button', { name: 'Start over' }));
+    expect(await screen.findByRole('dialog', { name: 'Import schedule' })).toBeTruthy();
+  });
+
   it('CH-12109 an import saves the reviewed rows, puts each on the calendar from next Monday, and says how many, until when, and what overlaps the team', async () => {
     const user = userEvent.setup();
     const w = show();
@@ -1922,7 +1946,9 @@ describe('Classes, import', () => {
     expect(inSheet().getByText('4 classes imported')).toBeTruthy();
     // PHIL 150 has no days: it is saved, and the result says it isn't on the calendar and why, rather than "they're on your calendar".
     expect(inSheet().getByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing.")).toBeTruthy();
-    expect([...importSheet().querySelectorAll('.ch-cl-ok__chips span')].map((s) => s.textContent)).toEqual(['GEOG 110', 'MATH 232', 'ART 101', 'PHIL 150']);
+    expect([...importSheet().querySelectorAll('.ch-cl-ok__chips > *')].map((s) => s.textContent)).toEqual(['GEOG 110', 'MATH 232', 'ART 101', 'PHIL 150']);
+    // Only the class that isn't on the calendar is a button: it opens that class's form.
+    expect([...importSheet().querySelectorAll('.ch-cl-ok__chips > button')].map((b) => b.getAttribute('aria-label'))).toEqual(['Open PHIL 150 to add what’s missing']);
     await expectCode('CH-12109', /3 overlaps with the team this week\.GEOG 110 meets over Practice; GEOG 110 meets over Practice/);
     expect(hapticSpy).toHaveBeenCalledWith('success');
     await user.click(inSheet().getByRole('button', { name: 'View classes' }));
@@ -2142,11 +2168,11 @@ describe('Classes, offline and slow', () => {
     await screen.findByRole('dialog', { name: 'Edit class' });
     fireEvent.click(within(sheet()).getByRole('button', { name: 'Save changes' }));
     expect(w.save).toHaveBeenCalledTimes(1);
-    expect((within(sheet()).getByRole('button', { name: 'Saving' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(sheet()).getByRole('button', { name: 'Saving…' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => void vi.advanceTimersByTime(CH_SLOW_SAVE_AFTER + 10));
     await expectCode('CH-1902', /Still saving/);
     // A second tap while it runs sends nothing more.
-    fireEvent.click(within(sheet()).getByRole('button', { name: 'Saving' }));
+    fireEvent.click(within(sheet()).getByRole('button', { name: 'Saving…' }));
     expect(w.save).toHaveBeenCalledTimes(1);
     await act(async () => answer.resolve({ success: false }));
   });
@@ -2164,6 +2190,7 @@ describe('Classes, offline and slow', () => {
     await waitFor(() => expect(w.read).toHaveBeenCalledWith({ kind: 'file', file }));
     await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Start over' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Start over?' })).getByRole('button', { name: 'Start over' }));
     await screen.findByRole('dialog', { name: 'Import schedule' });
     line!.mockReturnValue(false);
     w.read.mockClear();
@@ -2171,6 +2198,7 @@ describe('Classes, offline and slow', () => {
     await waitFor(() => expect(w.read).toHaveBeenCalledTimes(1));
     await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Start over' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Start over?' })).getByRole('button', { name: 'Start over' }));
     await pasteAndRead(user);
     await waitFor(() => expect(w.read).toHaveBeenCalledTimes(2));
   });
@@ -2382,6 +2410,11 @@ describe('Classes, review fixes on screen', () => {
     await user.click(inSheet().getByRole('button', { name: 'Import 1 class' }));
     const result = await inSheet().findByText(/^Not on your calendar: PHIL 150 \(no meeting days\)\./);
     expect(result.textContent).not.toMatch(/on your calendar and repeat/);
+    // Its chip opens the class's form, in place of the result (one dialog at a time).
+    await user.click(inSheet().getByRole('button', { name: 'Open PHIL 150 to add what’s missing' }));
+    expect(await screen.findByRole('dialog', { name: 'Edit class' })).toBeTruthy();
+    expect(field('Course code').value).toBe('PHIL 150');
+    expect(screen.queryByRole('dialog', { name: 'Schedule imported' })).toBeNull();
   });
 
   it('CH-12109 the import result counts overlaps with this week’s practice only for classes in this term', async () => {

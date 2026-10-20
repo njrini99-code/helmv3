@@ -109,8 +109,8 @@ describe('112401 Round review, on screen', () => {
     const shots = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(shots).toHaveLength(6);
     expect(shots[0]!.textContent).toContain('Tee · Driver');
-    expect(shots[0]!.textContent).toContain('518 yds → rough, 238 yds · missed right');
-    expect(shots[shots.length - 1]!.textContent).toContain('3 ft → holed');
+    expect(shots[0]!.textContent).toContain('518\u00a0yds → rough · 238\u00a0yds left · missed right');
+    expect(shots[shots.length - 1]!.textContent).toContain('3\u00a0ft → holed');
     expect(shots[shots.length - 1]!.textContent).toContain('Straight · level');
   });
 
@@ -146,7 +146,8 @@ describe('112401 Round review, on screen', () => {
 
   it('CH-11804 the card is two captioned tables; a par 3 has no fairway; three putts are flagged', () => {
     show(PREVIEW_REVIEW);
-    const [out] = screen.getAllByRole('table');
+    // The review's own scorecard (Scorecard and shots); the round card above it has tables of its own (screens/rounds/card).
+    const [out] = within(document.getElementById('ch-rz-card')!).getAllByRole('table');
     expect(out!.querySelector('caption')!.textContent).toMatch(/^Front nine/);
     const firRow = within(out!).getByRole('row', { name: /^FIR/ });
     // Hole 3 is a par 3.
@@ -178,12 +179,23 @@ describe('112401 Round review, on screen', () => {
     expect(screen.getByText('Written by CoachHelm from 18 holes')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Your notes' })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Rounds/ }).getAttribute('href')).toBe('/golf/dashboard/rounds');
+    // Wave 9 (row 12): the player reads about their own notes in the second person.
+    expect(document.body.textContent).toContain('and what you wrote when posting it.');
+  });
+
+  it('wave 9: the round line says which way is better without contradicting itself; the costliest holes name the score, not the shot count again', () => {
+    show(PREVIEW_REVIEW);
+    expect(document.body.textContent).toContain('falls when strokes go back. A lower score is better.');
+    const costly = [...document.querySelectorAll('.ch-rzcost__t small')].map((e) => e.textContent);
+    expect(costly.length).toBeGreaterThan(0);
+    for (const t of costly) expect(t).toMatch(/^(Bogey|Double bogey|Triple bogey|\+\d+)( · scored as a total)?$/);
   });
 
   it('110102 a coach viewing: the player’s name in the kicker, "Jonah’s notes", and back to that player’s rounds on Stats', () => {
     show(PREVIEW_REVIEW_COACH);
     expect(within(screen.getByRole('banner')).getByText('Jonah Okafor · Wed Oct 14 · Practice')).toBeTruthy();
     expect(screen.getByRole('heading', { name: "Jonah’s notes" })).toBeTruthy();
+    expect(document.body.textContent).toContain('and what the player wrote when posting it.');
     expect(screen.getByRole('link', { name: /Jonah Okafor/ }).getAttribute('href')).toBe('/golf/dashboard/stats?player=preview-player&tab=rounds');
   });
 
@@ -200,7 +212,7 @@ describe('112401 Round review, on screen', () => {
   it('CH-11205 the shots fail to load: said in the hole card; the card still shows', async () => {
     show(PREVIEW_REVIEW_NO_SHOTS);
     await expectCode('CH-11205', /The shots for this round didn’t load/);
-    expect(screen.getAllByRole('table')).toHaveLength(2);
+    expect(within(document.getElementById('ch-rz-card')!).getAllByRole('table')).toHaveLength(2);
     expect(code('CH-11306')).toBeNull();
   });
 
@@ -228,7 +240,7 @@ describe('Round review, shaping', () => {
       read: 'Multiple breaks · severe',
     });
     expect(toShot(shot({ miss_direction: 'short_right' })).miss).toBe('missed short right');
-    expect(toShot(shot({ distance_to_hole_after: 24.4, distance_unit_after: 'feet', result: 'green' })).to).toBe('24 ft');
+    expect(toShot(shot({ distance_to_hole_after: 24.4, distance_unit_after: 'feet', result: 'green' })).to).toBe('24\u00a0ft');
     expect(toShot(shot({ result: 'hole' })).to).toBeNull();
     expect(toShot(shot({ result: 'lipout' })).lie).toBe('other');
   });

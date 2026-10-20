@@ -149,7 +149,7 @@ function BellStacksView({
             <Icon icon={BellOff} size={20} />
           </span>
           <b>You’re all caught up</b>
-          <span>Messages, events, reminders and CoachHelm updates land here first.</span>
+          <span>Messages, events, reminders and CoachHelm updates show up here.</span>
         </m.div>
       )}
       {/* A stack cleared to nothing fades where it was, out of the flow, and the stacks under it rise into its place. */}

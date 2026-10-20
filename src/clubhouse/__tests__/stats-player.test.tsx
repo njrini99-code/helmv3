@@ -121,7 +121,7 @@ describe('Stats player · saves', () => {
     await user.click(screen.getByRole('button', { name: 'Add focus area' }));
     await user.type(screen.getByRole('textbox', { name: 'What to work on' }), 'Lag putting');
     await user.click(screen.getByRole('button', { name: 'Propose focus area' }));
-    await expectCode('CH-5401', /Adding/);
+    await expectCode('CH-5401', /Adding…/);
     expect((code('CH-5401')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
   });
 });
@@ -177,7 +177,7 @@ describe('Stats player · reads that fail', () => {
     // Only the proposed one takes an answer.
     expect(screen.getAllByRole('group', { name: /^Answer / })).toHaveLength(1);
     await user.click(within(group).getByRole('button', { name: 'Accept' }));
-    await expectCode('CH-5404', /Accepting/);
+    await expectCode('CH-5404', /Accepting…/);
     expect(within(group).getByRole('button', { name: 'Decline' })).toHaveProperty('disabled', true);
     expect(answer.accept).toHaveBeenCalledWith('f9');
     release({ success: false, error: 'nope' });
@@ -236,6 +236,16 @@ describe('Stats player · empty', () => {
   it('CH-5305 an early read says what will move', () => {
     show(PREVIEW_PLAYER_EARLY);
     expect(code('CH-5305')!.textContent).toMatch(/Early read\. .+ Strokes gained shows once there are three/);
+  });
+
+  it('CH-5309 an early read with no strokes gained: the desktop says it in one line, as the phone does, not a chart of dashes', () => {
+    show(PREVIEW_PLAYER_EARLY);
+    expect(code('CH-5309')!.textContent).toMatch(/No strokes gained in this window.*after three rounds with shots/);
+    expect(screen.queryByRole('heading', { name: 'Where the strokes go' })).toBeNull();
+    cleanup();
+    show(PREVIEW_PLAYER);
+    expect(code('CH-5309')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Where the strokes go' })).toBeTruthy();
   });
 
   it('CH-5306 CH-5307 a player not on the team, for a coach and for a player', () => {
@@ -364,11 +374,13 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 21 rounds this season · 3.9 hcp');
     const figs = document.querySelector('.ch-stm-figs')!;
     // The board's three (m-stats.jsx Player): the trend in words, green when scores come down, amber when they rise (F-54).
-    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Trend']);
+    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Scoring trend']);
     const trend = figs.querySelector('dd.is-words')!;
-    expect(trend.textContent).toMatch(/^(down|up) \d+\.\d$|^level$|^—$/);
-    if (trend.textContent!.startsWith('down')) expect(trend.classList.contains('ch-gain')).toBe(true);
-    if (trend.textContent!.startsWith('up')) expect(trend.classList.contains('ch-loss')).toBe(true);
+    expect(trend.textContent).toMatch(/^\d+\.\d (lower|higher)$|^level$|^—$/);
+    if (trend.textContent!.endsWith('lower')) expect(trend.classList.contains('ch-gain')).toBe(true);
+    if (trend.textContent!.endsWith('higher')) expect(trend.classList.contains('ch-loss')).toBe(true);
+    // The sub-line names the halves it compares (wave 7, item 7).
+    if (trend.textContent !== '—') expect(trend.nextElementSibling!.textContent).toMatch(/^Newest (\d+ vs first \d+|round vs first)$/);
     // Drawn against their references under the figures: scoring from par, strokes gained from the Tour's zero; the trend is words.
     const gauges = document.querySelector('.ch-stm-overview .ch-stm-gauges')!;
     expect(gauges.getAttribute('aria-hidden')).toBe('true');
@@ -382,7 +394,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.queryByRole('heading', { level: 2, name: 'Scoring' })).toBeNull();
     expect(screen.getByText('Proximity against the Tour')).toBeTruthy();
     expect(screen.getByText('Finish when the green is hit')).toBeTruthy();
-    // More detail is closed on the phone (and open on the desktop): the disclosure is a real details element.
+    // More detail is closed to start on every screen: the disclosure is a real details element.
     const more = document.querySelector('details.ch-gx-more') as HTMLDetailsElement;
     expect(more.open).toBe(false);
     hapticSpy.mockClear();
@@ -491,7 +503,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(caveat.textContent).toMatch(/Early read\. .+ averages and trends will move a lot\. Strokes gained shows once there are three/);
     expect(caveat.getAttribute('data-ch-code')).toBe('CH-5305');
     expect(within(overview as HTMLElement).getByText('SG / round')).toBeTruthy();
-    expect(within(overview as HTMLElement).getByText('Trend')).toBeTruthy();
+    expect(within(overview as HTMLElement).getByText('Scoring trend')).toBeTruthy();
     cleanup();
     phone(player());
     const enough = document.querySelector('.ch-stm-overview')!;

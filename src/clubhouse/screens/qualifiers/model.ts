@@ -13,8 +13,8 @@
  * rounds, name), the same order the selection workspace and the squad
  * confirmation use. Two scored players tie only when to par and total
  * strokes both match; ties share a position shown with a T. Fairway's live
- * leaderboard numbers ties 1, T2 and counts test rounds; that is not this
- * rule (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
+ * leaderboard uses the same round set and order since 2026-10-17
+ * (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
  */
 
 import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
@@ -118,6 +118,13 @@ export interface ChQBoard {
   topScore: number;
   squad: number;
   submitted: number;
+}
+
+/** The first scheduled round with no score in (the one a player plays next), or null when every round is in. */
+export function nextRoundNumber(rounds: ReadonlyArray<{ number: number }>, numRounds: number): number | null {
+  const played = new Set(rounds.map((r) => r.number));
+  for (let n = 1; n <= numRounds; n++) if (!played.has(n)) return n;
+  return null;
 }
 
 /** "T3", "4", or a dash for someone with no round in. */
@@ -330,7 +337,7 @@ export const STATE_LABEL: Record<Exclude<ChQRowState, null>, { tone: 'positive' 
 export const STATUS_LABEL: Record<ChQStatus, { tone: 'accent' | 'warning' | 'neutral'; label: string }> = {
   in_progress: { tone: 'accent', label: 'Live' },
   upcoming: { tone: 'warning', label: 'Upcoming' },
-  completed: { tone: 'neutral', label: 'Completed' },
+  completed: { tone: 'neutral', label: 'Concluded' },
 };
 
 export function ctaLabel(status: ChQStatus): string {
@@ -339,7 +346,7 @@ export function ctaLabel(status: ChQStatus): string {
 
 /** The list's lede, by who reads it. The list and its skeleton say the same sentence, so the skeleton's lines wrap where the page's do. */
 export function listLede(coach: boolean, mode: 'all' | 'mine'): string {
-  if (coach) return 'Run head-to-head qualifiers to decide who plays this week.';
+  if (coach) return 'Rank players over counted rounds and pick who travels.';
   return mode === 'mine' ? 'The qualifiers you’re entered in, and where you stand.' : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
 }
 
@@ -379,9 +386,13 @@ const asDate = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00Z`);
 export function dayLabel(d: string): string {
   return DAY.format(asDate(d));
 }
-/** "Sep 22, 2026 – Oct 1, 2026", or one date when it starts and ends the same day. */
+/**
+ * "Sep 22 – Oct 1, 2026", the year said once; "Dec 28, 2026 – Jan 3, 2027" across a new year; one date when it starts
+ * and ends the same day. Built by hand rather than with formatRange, whose spacing differs between engines.
+ */
 export function rangeLabel(start: string, end: string | null): string {
-  return !end || end === start ? DAY_YEAR.format(asDate(start)) : `${DAY_YEAR.format(asDate(start))} – ${DAY_YEAR.format(asDate(end))}`;
+  if (!end || end === start) return DAY_YEAR.format(asDate(start));
+  return `${yearOf(start) === yearOf(end) ? dayLabel(start) : DAY_YEAR.format(asDate(start))} – ${DAY_YEAR.format(asDate(end))}`;
 }
 /** "Sep 22 – Oct 1" without the year, for the facts strip. */
 export function shortRange(start: string, end: string | null): string {
@@ -408,13 +419,21 @@ export const FORM_HELP = {
  * What Manage selections is waiting for, by stage (0 standings, 1 picks, 2 confirmed). Its skeleton draws the standings
  * stage's sentence, the commonest way in, so the note's lines wrap where the page's do.
  */
-export function stageNoteText(stage: 0 | 1 | 2, o: { topN: number; picks: number; picksReady?: boolean; nobody?: boolean; tie?: number }): string {
-  const { topN, picks, picksReady = false, nobody = false, tie = 0 } = o;
+export function stageNoteText(
+  stage: 0 | 1 | 2,
+  o: { topN: number; picks: number; made?: number; reasons?: number; picksReady?: boolean; nobody?: boolean; tie?: number },
+): string {
+  // At stage 1 the note counts down (wave-6 #11): `picks` is the picks still to make, `made` those made, `reasons` those made without one.
+  const { topN, picks, made = 0, reasons = 0, picksReady = false, nobody = false, tie = 0 } = o;
   if (stage === 1 && tie > 0) return `Players are level at the last place on score. Give ${plural(tie, 'more place', 'more places')} to confirm the squad.`;
   if (stage === 0) return `Start selecting when the standings are where you want them.${picks ? ` Then choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason.` : ''} The top ${topN} on score are set when you confirm.`;
   if (stage === 1) {
     if (nobody) return 'Nobody has a score in and no pick is made yet, so there is no squad to confirm.';
-    return picksReady ? 'Every pick is made. Confirm the squad to tell the players.' : `Choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason, to confirm the squad.`;
+    if (picksReady) return 'Every pick is made. Confirm the squad to tell the players.';
+    const missing = reasons === 1 ? 'the missing reason' : `the ${reasons} missing reasons`;
+    if (!picks) return `Every pick is chosen. Add ${missing}, then confirm the squad.`;
+    const what = made ? plural(picks, 'more coach’s pick', 'more coach’s picks') : plural(picks, 'coach’s pick', 'coach’s picks');
+    return `Choose ${what}, ${picks === 1 ? 'with a reason' : 'each with a reason'}, to confirm the squad.${reasons ? ` Add ${missing} too.` : ''}`;
   }
   return 'The squad is confirmed, and every entrant has been told whether they made it.';
 }

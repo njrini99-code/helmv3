@@ -1,5 +1,20 @@
 # P005 — Stats (player): verification
 
+## 2026-10-19 — Scorecard pass (lane L6a)
+
+Rounds table, putting rings, collapsed More detail, compact empty states, one number voice, the scoring form scrub, print.
+
+Vitest, `npx vitest run src/clubhouse/__tests__/stats- src/clubhouse/lib/__tests__/format-number.test.ts`: 20 files, 432 tests pass (exit 0),
+including `stats-scrub` (snapping, arrow keys, the live region), `stats-print` and `stats-tape`. ESLint on `screens/stats` is clean.
+`npm run typecheck` reports no error in these files (it fails on other lanes' files).
+
+WebKit 26, headless, against the dev server, reduced motion: `/clubhouse-preview/player` Rounds tab at 1024, 1100, 1280 and 1440px
+has no horizontal overflow (scrollWidth equals clientWidth in the table); the scrub was driven by pointer and by ArrowLeft, light and dark;
+the putting rings were looked at light and dark. Print was checked as a Letter PDF from headless Chromium (WebKit cannot make a PDF):
+white page, no controls, the head line, no section split across sheets, light tokens even when the page was dark.
+Not checked: a real Safari print dialog, the phone widths for the rounds table and the scrub (the phone view has its own markup),
+and the compact empty states in Game detail panels (no fixture reaches them).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

@@ -47,7 +47,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
         }}
       >
         <span className={'ch-ms-grp is-ann' + (api.announcements[0]?.urgent ? ' is-urgent' : '')}>
-          <Icon icon={Megaphone} size={15} />
+          <Icon icon={api.announcements[0]?.urgent ? TriangleAlert : Megaphone} size={15} />
         </span>
         <span className="ch-ms-fold__b">
           <b>
@@ -80,7 +80,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
                   }}
                 >
                   <span className={'ch-ms-grp is-ann' + (a.urgent ? ' is-urgent' : '')}>
-                    <Icon icon={Megaphone} size={15} />
+                    <Icon icon={a.urgent ? TriangleAlert : Megaphone} size={15} />
                   </span>
                   <span className="ch-ms-row__main">
                     <span className="ch-ms-row__top">
@@ -89,6 +89,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
                     </span>
                     <span className="ch-ms-row__bot">
                       <span>
+                        {a.urgent && <em className="is-urgent">Urgent · </em>}
                         {api.viewer.role === 'coach' && a.requiresAck ? <em>{`${a.ackCount} of ${a.total} acknowledged · `}</em> : mine ? <em>Needs your acknowledgement · </em> : null}
                         {a.body}
                       </span>
@@ -179,7 +180,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
             <IconButton icon={ChevronLeft} label="All conversations" onClick={onBack} />
           </span>
           <span className={'ch-ms-grp is-lg is-ann' + (a.urgent ? ' is-urgent' : '')}>
-            <Icon icon={Megaphone} size={17} />
+            <Icon icon={a.urgent ? TriangleAlert : Megaphone} size={17} />
           </span>
           <div style={{ minWidth: 0 }}>
             <b>Announcement</b>
@@ -220,7 +221,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
               <Button
                 variant="primary"
                 leftIcon={Check}
-                disabled={busy === 'ack'}
+                busy={busy === 'ack'}
                 onClick={async () => {
                   setBusy('ack');
                   await api.acknowledge(a.id);
@@ -271,7 +272,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
                         ) : (
                           <Button
                             size="sm"
-                            disabled={busy === t.taskId}
+                            busy={busy === t.taskId}
                             onClick={async () => {
                               setBusy(t.taskId);
                               await api.completeTask(a.id, t.taskId);

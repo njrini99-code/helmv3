@@ -2127,6 +2127,20 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
         .eq('player_id', player.id)
         .maybeSingle();
       if (!probeError && !remaining) {
+        // The probe above is scoped to this player, so another player's round
+        // also reads as gone. Look it up by id alone before answering success:
+        // a round this caller can still see under another player is refused.
+        // One that RLS hides cannot be told from a gone round, and nothing was
+        // deleted either way (P011 110804).
+        const { data: othersRound, error: othersError } = await supabase
+          .from('golf_rounds')
+          .select('id')
+          .eq('id', roundId)
+          .maybeSingle();
+        if (!othersError && othersRound) {
+          recordDiscardRoundOutcome('not_owner');
+          return { success: false, error: 'Only the player who started this round can discard it.' };
+        }
         // Nothing changed here, so nothing to revalidate.
         recordDiscardRoundOutcome('already_removed');
         return { success: true, data: undefined };

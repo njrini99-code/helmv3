@@ -246,6 +246,11 @@ React state, which dies with the component.
 
 ## Business Rules
 
+- A team broadcast reaches the whole team only with `allPlayers: true`; an empty
+  or missing player list is refused with nothing written, and only active
+  members are added (2026-10-17). Fairway Messages opens every `?conversation=`
+  and `?player=` link, not only the first. Regenerating a
+  join code fails visibly when the code was not saved.
 - Participants should only read conversations they belong to.
 - Message attachments must be scoped to the conversation/team and should not expose storage paths broadly.
 - Announcement targeting must be explicit: broadcast or recipient-specific.

@@ -48,7 +48,7 @@ function fakeSupabase(opts: { selections: Row[] | { error: string }; picks?: num
   const from = (table: string) => {
     const q: Record<string, unknown> = {};
     const chain = () => q;
-    for (const m of ['select', 'eq', 'order']) q[m] = chain;
+    for (const m of ['select', 'eq', 'in', 'order']) q[m] = chain;
     q.maybeSingle = async () => ({ data: table === 'golf_qualifiers' ? qualifier : null, error: null });
     q.range = async () => ({ data: ROUNDS, error: null });
     q.then = (resolve: (v: unknown) => unknown) =>
@@ -57,8 +57,8 @@ function fakeSupabase(opts: { selections: Row[] | { error: string }; picks?: num
       writes.push({ table, op: 'upsert', row });
       return { error: null };
     };
-    q.update = () => {
-      writes.push({ table, op: 'update' });
+    q.update = (row: unknown) => {
+      writes.push({ table, op: 'update', row });
       return q;
     };
     q.delete = () => {
@@ -104,7 +104,12 @@ describe('the writes behind the workspace refuse when it did not load, and write
   it('chooseTiePlace: with the picks read, the same call gives the place (the control: the refusal above is the failed read)', async () => {
     const { sb, writes } = fakeSupabase({ selections: [] });
     expect(await chooseTiePlace(sb, { qualifier_id: 'q1', player_id: 'p-cal', user_id: 'u1', give: true })).toEqual({ ok: true, data: undefined });
-    expect(writes).toEqual([{ table: 'golf_qualifier_selections', op: 'upsert', row: expect.objectContaining({ player_id: 'p-cal', selection_type: 'top_score' }) }]);
+    expect(writes).toEqual([
+      { table: 'golf_qualifier_selections', op: 'upsert', row: [expect.objectContaining({ player_id: 'p-cal', selection_type: 'top_score' })] },
+      { table: 'golf_qualifier_selections', op: 'update', row: { coach_reasoning: null } },
+    ]);
+    // Held 20260929200000 withholds SELECT on coach_reasoning: an upsert carrying it is refused, so it never does.
+    expect((writes[0]!.row as Array<Record<string, unknown>>)[0]).not.toHaveProperty('coach_reasoning');
   });
 
   it('chooseTiePlace: a place already given is counted: a second give at the same tie is refused', async () => {

@@ -4,6 +4,7 @@ import { useId } from 'react';
 import type { ChTeamForm } from '../../data/home';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { useInViewOnce } from '../../lib/use-in-view';
+import { withPointSpan } from '../../ui/point-span';
 import { formBasis, partOf } from './HomePhone';
 
 const PAD_X = 2;
@@ -31,7 +32,7 @@ export function TeamForm({ form }: { form: ChTeamForm }) {
     <section className="ch-h-form" aria-labelledby={`${id}-t`} data-tone={tone || 'flat'}>
       <div className="ch-h-form__lead">
         <h2 id={`${id}-t`}>Team scoring average</h2>
-        <b className="ch-h-form__big ch-num">{formatFixed(form.avg)}</b>
+        <b className="ch-h-form__big ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         <span className={'ch-h-form__delta ch-num ' + tone}>
           {form.delta != null ? (
             <>
@@ -67,7 +68,7 @@ export function TeamForm({ form }: { form: ChTeamForm }) {
         <div>
           <dt>GIR</dt>
           <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
-          <dd className={'ch-num ' + changeTone(form.gir.delta, false, 0)}>{form.gir.delta != null ? formatSigned(form.gir.delta, 0) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + changeTone(form.gir.delta, false, 0)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>

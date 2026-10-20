@@ -157,7 +157,7 @@ export type ChHoleRow = {
   penalty_strokes: number | null;
 };
 
-const dist = (v: number | null, unit: string | null) => (v == null ? null : `${Math.round(v)} ${unit === 'feet' ? 'ft' : 'yds'}`);
+const dist = (v: number | null, unit: string | null) => (v == null ? null : `${Math.round(v)}\u00a0${unit === 'feet' ? 'ft' : 'yds'}`);
 
 export function toShot(r: ChShotRow): ChReviewShot {
   const raw = (r.result ?? r.lie_after ?? 'other').toLowerCase();

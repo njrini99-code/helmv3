@@ -1,7 +1,7 @@
 'use client';
 
-import { Ellipsis, GraduationCap, Plus, SearchX, Trash2 } from 'lucide-react';
-import { CH_STAGES, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
+import { Ellipsis, Plus, SearchX, Trash2 } from 'lucide-react';
+import { CH_STAGES, isNextStepLate, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
@@ -11,9 +11,10 @@ import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
 import { EmptyState } from '../../ui/States';
+import { Tooltip } from '../../ui/Tooltip';
 import type { RecCtx } from './ctx';
 import { Documents } from './Documents';
-import { CalendarLine, CommitRule, ContactSection, MetaLine, NextStepSection, NotesSection, ProspectAvatar, StageChip, isStrong } from './parts';
+import { CalendarLine, CommitRule, ContactSection, MetaLine, NextStepPlate, NextStepSection, NextStepSrPrefix, NotesSection, ProspectAvatar, StageChip, isStrong } from './parts';
 import { Pipeline } from './Pipeline';
 
 /**
@@ -59,7 +60,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
             <EmptyState
               size="page"
               code="CH-14301"
-              icon={GraduationCap}
+              shape="columns"
               title="Your prospect list starts here"
               body="Add the golfers you’re watching. Keep their contact details, notes and documents in one place, and move them through Watched, Recruiting, Offered and Committed. Only coaches see this page."
               action={
@@ -73,7 +74,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
               <SectionBoundary surface="recruiting.list" label="The prospect list" code="CH-14203">
                 <section className="ch-rec-list" aria-label="Prospects">
                   <div className="ch-rec-bar">
-                    <SearchField className="ch-rec-search" value={c.query} onChange={c.setQuery} placeholder="Search" label="Search prospects" />
+                    <SearchField className="ch-rec-search" value={c.query} onChange={c.setQuery} placeholder="Search prospects" label="Search prospects" />
                     {c.rows.length > 0 && (
                       <Segmented size="sm" label="Sort prospects" value={c.sort} onChange={c.setSort} options={c.sorts.map((s) => ({ value: s.value, label: s.label }))} />
                     )}
@@ -105,32 +106,13 @@ export function NoMatch({ query, stage, onClear, onAll, phone = false }: { query
       ? `Try another word${stage ? ', or look across every stage' : ''}.`
       : `Search looks at names, hometowns, states, email and notes. Try another word${stage ? ', or look across every stage' : ''}.`
     : 'Nothing has reached this stage yet. Move a prospect here from their panel, or look across every stage.';
-  return (
-    <div className={'ch-rec-none-match' + (phone ? ' is-phone' : '')} data-ch-code="CH-14302">
-      <span className="ch-rec-none-match__ic" aria-hidden="true">
-        <SearchX size={20} strokeWidth={1.6} />
-      </span>
-      <b role="status">{title}</b>
-      <span>{body}</span>
-      <div className="ch-rec-none-match__a">
-        {phone ? (
-          <>
-            {stage && (
-              <Button variant="primary" onClick={onAll}>
-                {q ? 'Search all stages' : 'Show all stages'}
-              </Button>
-            )}
-            {q && <Button onClick={onClear}>Clear search</Button>}
-          </>
-        ) : (
-          <>
-            {q && <Button onClick={onClear}>Clear search</Button>}
-            {stage && <Button variant={q ? 'secondary' : 'primary'} onClick={onAll}>{q ? 'Search all stages' : 'Show all stages'}</Button>}
-          </>
-        )}
-      </div>
-    </div>
-  );
+  const all = stage ? (
+    <Button variant={phone || !q ? 'primary' : 'secondary'} onClick={onAll}>
+      {q ? 'Search all stages' : 'Show all stages'}
+    </Button>
+  ) : undefined;
+  const clear = q ? <Button onClick={onClear}>Clear search</Button> : undefined;
+  return <EmptyState kind="filtered" code="CH-14302" icon={SearchX} title={title} body={body} action={phone ? all : clear} secondaryAction={phone ? clear : all} />;
 }
 
 function ProspectTable({ c }: { c: RecCtx }) {
@@ -168,6 +150,8 @@ function ProspectTable({ c }: { c: RecCtx }) {
                   <span>
                     <b>{p.name}</b>
                     <span className="ch-rec-tb__sub">{rowLineOf(p)}</span>
+                    {/* Sorted by the next step, a list too narrow for its column carries the step under the name (CSS). */}
+                    {c.nextStep && c.sort === 'next' && <NextStepPlate p={p} now={c.now} tz={c.tz} always />}
                   </span>
                 </button>
               </th>
@@ -176,13 +160,25 @@ function ProspectTable({ c }: { c: RecCtx }) {
               <td>
                 <StageChip stage={p.stage} />
               </td>
-              {c.nextStep && <td className="is-next ch-num">{nextStepLine(p, c.now, c.tz) ?? '—'}</td>}
+              {c.nextStep && <NextCell p={p} c={c} />}
               <td className="is-when ch-num">{whenLabel(p.updatedAt, c.now, c.tz)}</td>
             </tr>
           );
         })}
       </tbody>
     </table>
+  );
+}
+
+/** The Next step column: the step, or a dash; a step whose day has passed is late (warning ink, "Overdue:" for VoiceOver). */
+function NextCell({ p, c }: { p: ChProspect; c: RecCtx }) {
+  const line = nextStepLine(p, c.now, c.tz);
+  const late = !!line && isNextStepLate(p, c.now, c.tz);
+  return (
+    <td className={'is-next ch-num' + (late ? ' is-late' : '')}>
+      {late && <NextStepSrPrefix late />}
+      {line ?? '—'}
+    </td>
   );
 }
 
@@ -208,9 +204,11 @@ function ProspectPanel({ p, c }: { p: ChProspect; c: RecCtx }) {
             align="end"
             items={[{ label: 'Delete prospect', icon: Trash2, danger: true, onSelect: () => c.askDelete(p) }]}
             trigger={(t) => (
-              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`More for ${p.name}`} {...t}>
-                <Icon icon={Ellipsis} size={18} />
-              </button>
+              <Tooltip>
+                <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`More for ${p.name}`} {...t}>
+                  <Icon icon={Ellipsis} size={18} />
+                </button>
+              </Tooltip>
             )}
           />
         </div>

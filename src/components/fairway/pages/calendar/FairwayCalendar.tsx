@@ -540,6 +540,12 @@ export function FairwayCalendar({
       const timezoneOffset =
         offsetMinutesFor(data.startDate, !data.allDay && data.startTime ? data.startTime : '12:00', zone) ??
         new Date().getTimezoneOffset();
+      // An emptied field on edit is sent as '' (the server stores null) so a coach can clear a location or notes; an
+      // empty field the event never had stays undefined, so a series edit leaves other occurrences' values alone.
+      const clearedLocation = data.location || (editorEvent?.location ? '' : undefined);
+      const clearedDescription = data.description || (editorEvent?.description ? '' : undefined);
+      // The save landed but its invitations did not: the server says so beside `success`.
+      let invitationsError: string | undefined;
       try {
         if (!editorEvent) {
           if (data.recurrence && data.recurrence !== 'none') {
@@ -574,6 +580,7 @@ export function FairwayCalendar({
               timeZone: zone,
             });
             if (!result.success) throw new Error(result.error || 'Failed to create recurring event');
+            invitationsError = result.data?.invitationsError;
           } else {
             const { createGolfEvent } = await import('@/app/golf/actions/calendar-events');
             const result = await createGolfEvent({
@@ -595,6 +602,7 @@ export function FairwayCalendar({
               timezoneOffset,
             } as never);
             if (!result.success) throw new Error(result.error || 'Failed to create event');
+            invitationsError = result.data?.invitationsError;
           }
         } else if (data.editScope && data.editScope !== 'this') {
           const { serializeRecurrenceRule } = await import('@/lib/golf/recurrence');
@@ -607,12 +615,12 @@ export function FairwayCalendar({
             timeZone: zone,
             updates: {
               title: data.title,
-              description: data.description || undefined,
+              description: clearedDescription,
               startDate: data.startDate,
               endDate: data.endDate || data.startDate,
               startTime: data.allDay ? undefined : data.startTime || undefined,
               endTime: data.allDay ? undefined : data.endTime || undefined,
-              location: data.location || undefined,
+              location: clearedLocation,
               // Forward a re-patterned series rule when the editor produced one.
               recurrenceRule: data.recurrenceRule
                 ? serializeRecurrenceRule(data.recurrenceRule)
@@ -630,9 +638,9 @@ export function FairwayCalendar({
             startTime: data.allDay ? undefined : data.startTime || undefined,
             endTime: data.allDay ? undefined : data.endTime || undefined,
             allDay: data.allDay,
-            location: data.location || undefined,
+            location: clearedLocation,
             courseName: data.courseName || undefined,
-            description: data.description || undefined,
+            description: clearedDescription,
             isMandatory: data.isMandatory,
             requiresRsvp: data.requiresRsvp,
             rsvpDeadline: data.rsvpDeadline || undefined,
@@ -645,14 +653,20 @@ export function FairwayCalendar({
             timezoneOffset,
           } as never);
           if (!result.success) throw new Error(result.error || 'Failed to update event');
+          invitationsError = result.data?.invitationsError;
         }
         const wasCreate = !editorEvent;
         const isSeriesEdit = !wasCreate && data.editScope != null && data.editScope !== 'this';
         // Visible confirmation of system status (audit P238) — every successful
         // mutation gives one consistent Fairway toast.
-        fairwayToast.success(
-          wasCreate ? 'Event created' : isSeriesEdit ? 'Series updated' : 'Event updated',
-        );
+        const savedLabel = wasCreate ? 'Event created' : isSeriesEdit ? 'Series updated' : 'Event updated';
+        if (invitationsError) {
+          fairwayToast.warning(`${savedLabel} · invitations didn’t go out`, {
+            description: `${invitationsError} Open the event and invite them again.`,
+          });
+        } else {
+          fairwayToast.success(savedLabel);
+        }
         setEditorOpen(false);
         setEditorEvent(null);
         // A newly created event must never silently vanish: if its date falls

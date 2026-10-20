@@ -347,6 +347,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10706,
+    "page": "P001",
+    "category": 7,
+    "item": 6,
+    "name": "TWO_NOTICES_ABOUT_THE_SAME_THING_IN",
+    "chCode": "CH-1910",
+    "meaning": "Two notices about the same thing in a row (Conversation muted, then Notifications back on)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10801,
     "page": "P001",
     "category": 8,
@@ -391,7 +402,7 @@
     "category": 8,
     "item": 4,
     "name": "IN_THE_IPHONE_APP_ONCE_A_LAUNCH",
-    "chCode": "CH-1910",
+    "chCode": "CH-1911",
     "meaning": "In the iPhone app, once a launch at most, while iOS has not asked about push and the person has not answered this ask in either UI (the stored answer is shared with the current app's ask): a page has held for 4 seconds, nothing else is open or focused, and it is not round entry, onboarding or Settings",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
@@ -1065,6 +1076,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11826,
+    "page": "P001",
+    "category": 18,
+    "item": 26,
+    "name": "A_TOAST_IS_CLOSED_WITHOUT_A_FINGER",
+    "chCode": "CH-1817",
+    "meaning": "A toast is closed without a finger: on a device with a mouse (`hover: hover`) it has a ghost Dismiss X (\"Dismiss notification\"), and Esc closes it while focus is inside it. Focus goes back where it was before it came into the toast; inside an open dialog (CH-1812) Esc closes only the toast. Closing it counts as letting it run out: held work (a calendar move, CH-6015) is written",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11901,
     "page": "P001",
     "category": 19,
@@ -1199,7 +1221,7 @@
     "category": 1,
     "item": 2,
     "name": "PLAYER_HOME_READY",
-    "meaning": "Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901).",
+    "meaning": "Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and Your latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901).",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/data/player-home.ts#loadPlayerHome",
     "tests": [
@@ -1330,7 +1352,7 @@
     "item": 8,
     "name": "A_TEAM_WITH_NOTHING_YET_NO_PLAYERS",
     "chCode": "CH-2308",
-    "meaning": "A team with nothing yet: no players, no events this week, no rounds, and every read answered",
+    "meaning": "A team with nobody on it yet: no players, no rounds, and every read answered (events or not: it rests on the people, not the calendar)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1374,7 +1396,7 @@
     "item": 12,
     "name": "A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON",
     "chCode": "CH-2312",
-    "meaning": "A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71)",
+    "meaning": "A new player: no rounds, every read answered (v2 first-run, D-71)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1634,7 +1656,7 @@
     "category": 8,
     "item": 4,
     "name": "PLAYER_WEEK_NAMES_NO_ONE",
-    "meaning": "A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 confirmed), and no teammate's name or id is in what the page receives.",
+    "meaning": "A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 going), and no teammate's name or id is in what the page receives.",
     "status": "implemented",
     "where": "src/clubhouse/data/player-home.ts#loadPlayerHome (names: new Map()); src/clubhouse/data/home.ts#loadHomeWeek",
     "tests": [
@@ -1660,7 +1682,7 @@
     "category": 8,
     "item": 6,
     "name": "CONTROLS_STAY_WITH_THEIR_ROLE",
-    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Post a round or countdown.",
+    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Start a round or countdown.",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/screens/home/CoachHome.tsx#CoachHome",
     "tests": [
@@ -1835,7 +1857,7 @@
     "category": 19,
     "item": 1,
     "name": "PHONE_HOME",
-    "meaning": "At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, My latest round, Scoring and the parts of the game; wider canvases get the desktop Home.",
+    "meaning": "At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, Your latest round, Scoring and the parts of the game; wider canvases get the desktop Home.",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/HomePhone.tsx#HomePhone; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/lib/use-phone.ts#useChPhone",
     "tests": [
@@ -2008,7 +2030,7 @@
     "item": 4,
     "name": "THE_TEAM_HAS_NO_JOIN_CODE",
     "chCode": "CH-3304",
-    "meaning": "The team has no join code",
+    "meaning": "The team has no team code",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2053,6 +2075,17 @@
     "name": "A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE",
     "chCode": "CH-3308",
     "meaning": "A player signed in with no active team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30409,
+    "page": "P003",
+    "category": 4,
+    "item": 9,
+    "name": "A_PLAYER_ALONE_ON_THEIR_TEAMS_ROSTER",
+    "chCode": "CH-3309",
+    "meaning": "A player alone on their team's roster (they are always on it once joined, so this is a new team's first run)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2142,7 +2175,7 @@
     "item": 6,
     "name": "COPYING_THE_JOIN_CODE_OR_LINK_FAILS",
     "chCode": "CH-3006",
-    "meaning": "Copying the join code or link fails",
+    "meaning": "Copying the team code or invite link fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2670,6 +2703,17 @@
     "name": "THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT",
     "chCode": "CH-3807",
     "meaning": "The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31808,
+    "page": "P003",
+    "category": 18,
+    "item": 8,
+    "name": "THE_PLAYERS_ROSTER_NAMES_THE_COACHES",
+    "chCode": "CH-3808",
+    "meaning": "The player's roster names the coaches (wave 7, decision D): a \"Coaches\" group above the players: name and role (\"Head coach\" first, else their title, else \"Coach\"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then \"Players\". Left out when the staff read failed (logged `playerCoaches`) or none is on record",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -3637,7 +3681,7 @@
     "item": 7,
     "name": "PHONE_NO_STROKES_GAINED_IN_THE_WINDOW",
     "chCode": "CH-5309",
-    "meaning": "Phone: no strokes gained in the window (no leg and no total)",
+    "meaning": "No strokes gained in the window (no leg and no total)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -5767,7 +5811,7 @@
     "item": 2,
     "name": "A_RAIL_SEARCH_OR_THE_UNREAD_FILTER",
     "chCode": "CH-7302",
-    "meaning": "A rail search or the Unread filter has nothing",
+    "meaning": "A rail search or a filter has nothing",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -5900,6 +5944,17 @@
     "name": "NOBODY_CHOSEN",
     "chCode": "CH-7105",
     "meaning": "Nobody chosen, or a coach's group with no player",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70506,
+    "page": "P007",
+    "category": 5,
+    "item": 6,
+    "name": "MORE_THAN_TEN_FILES_PICKED_FOR_ONE",
+    "chCode": "CH-7106",
+    "meaning": "More than ten files picked for one message (desktop or phone composer, phone New message)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6296,6 +6351,17 @@
     "name": "REMOVING_SOMEONE_FROM_A_GROUP_FAILS",
     "chCode": "CH-7024",
     "meaning": "Removing someone from a group fails (the group's creator, desktop or phone Details › Remove)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70637,
+    "page": "P007",
+    "category": 6,
+    "item": 37,
+    "name": "DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS",
+    "chCode": "CH-7025",
+    "meaning": "Deleting a conversation from your inbox fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6789,7 +6855,7 @@
     "item": 3,
     "name": "COACHHELM_SETTINGS_ARE_SAVING",
     "chCode": "CH-8405",
-    "meaning": "CoachHelm settings are saving",
+    "meaning": "A setting that saves as it changes has saved",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7154,7 +7220,7 @@
     "item": 12,
     "name": "MAKING_A_NEW_INVITE_CODE_FAILS",
     "chCode": "CH-8012",
-    "meaning": "Making a new invite code fails",
+    "meaning": "Making a new team code fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7352,7 +7418,7 @@
     "item": 30,
     "name": "THE_INVITE_CODE_DOESNT_LOAD",
     "chCode": "CH-8206",
-    "meaning": "The invite code doesn't load",
+    "meaning": "The team code doesn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7474,6 +7540,17 @@
     "name": "SEND_A_TEST_PUSH_FAILS",
     "chCode": "CH-8029",
     "meaning": "Send a test push fails (P008-C3, D1-6)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80642,
+    "page": "P008",
+    "category": 6,
+    "item": 42,
+    "name": "EVERY_READ_FAILS",
+    "chCode": "CH-8214",
+    "meaning": "Every read fails (phone list)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7735,7 +7812,7 @@
     "item": 3,
     "name": "MAKE_A_NEW_INVITE_CODE",
     "chCode": "CH-8503",
-    "meaning": "Make a new invite code",
+    "meaning": "Make a new team code",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7780,6 +7857,17 @@
     "name": "PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS",
     "chCode": "CH-8510",
     "meaning": "Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 81108,
+    "page": "P008",
+    "category": 11,
+    "item": 8,
+    "name": "DECLINE_AN_ASSISTANT_COACH_REQUEST",
+    "chCode": "CH-8511",
+    "meaning": "Decline an assistant coach request (Team, head coach)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -8068,7 +8156,7 @@
     "item": 5,
     "name": "COPYING_THE_INVITE_CODE_OR_LINK",
     "chCode": "CH-8705",
-    "meaning": "Copying the invite code or link",
+    "meaning": "Copying the team code or invite link",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -9185,6 +9273,28 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90705,
+    "page": "P009",
+    "category": 7,
+    "item": 5,
+    "name": "PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND",
+    "chCode": "CH-09906",
+    "meaning": "Player: a live qualifier with a round still to play, before its last day",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90706,
+    "page": "P009",
+    "category": 7,
+    "item": 6,
+    "name": "PLAYER_THE_SQUAD_IS_CONFIRMED",
+    "chCode": "CH-09907",
+    "meaning": "Player: the squad is confirmed",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90801,
     "page": "P009",
     "category": 8,
@@ -10115,7 +10225,7 @@
     "item": 14,
     "name": "PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH",
     "chCode": "CH-10313",
-    "meaning": "Plan a trip: the Travelers step with no calendar event",
+    "meaning": "Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -10915,7 +11025,7 @@
     "category": 1,
     "item": 6,
     "name": "UNFINISHED_ROUNDS_ARE_LISTED",
-    "meaning": "The newest unfinished round fills the card; every other one is listed under \"N more unfinished rounds\" with Discard, Continue or Submit. A round whose every hole has a score reads \"Ready to submit\" (the card says \"Submit round\"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one.",
+    "meaning": "The newest unfinished round fills the card; every other one is listed under \"N more unfinished rounds\" with Discard, Continue or Post. A round whose every hole has a score reads \"Ready to post\" (the card says \"Post round\"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/parts.tsx#UnfinishedCard; src/clubhouse/data/rounds.ts#loadUnfinished",
     "tests": [
@@ -11950,13 +12060,14 @@
     "category": 7,
     "item": 2,
     "name": "WRITES_REFUSE_OFFLINE",
-    "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). Each is forced offline in a test: the library's Discard (rounds.test: nothing sent, the card stays, and Retry once back online discards it), round entry's Start, Save for later and Exit's Discard (round-entry-wiring.test, CH-1903: nothing is sent, Exit's Discard keeps a hole that exists only on the device, and a browser that says offline but reaches the server goes ahead), and the hole's Try again (round-tracking.test). A discard whose request never lands keeps the device copy and the queued entry (rounds.test for the library's write, use-new-round-session.preservation.test for the engine's). The shell's tests cover useAction's refusal.",
+    "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). Each is forced offline in a test: the library's Discard (rounds.test: nothing sent, the card stays, and Retry once back online discards it), round entry's Start, Save for later and Exit's Discard (round-entry-wiring.test, CH-1903: nothing is sent, Exit's Discard keeps a hole that exists only on the device, and a browser that says offline but reaches the server goes ahead), and the hole's Try again (round-tracking.test); the library's Discard, setup's Start and the hole's Try again are also driven offline (the browser's own flag) in rounds-contracts.test.tsx. A discard whose request never lands keeps the device copy and the queued entry (rounds.test for the library's write, use-new-round-session.preservation.test for the engine's). The shell's tests cover useAction's refusal.",
     "status": "implemented",
     "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime (discard)",
     "tests": [
       "src/clubhouse/__tests__/rounds.test.tsx",
       "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
       "src/clubhouse/__tests__/round-tracking.test.tsx",
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx",
       "src/lib/golf/round-session/__tests__/use-new-round-session.preservation.test.tsx"
     ]
   },
@@ -12093,6 +12204,61 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110715,
+    "page": "P011",
+    "category": 7,
+    "item": 15,
+    "name": "A_POSTED_ROUND_WITH_ITS_HOLES_HAS",
+    "chCode": "CH-11920",
+    "meaning": "A posted round with its holes has a scorecard to keep, under the hero",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110716,
+    "page": "P011",
+    "category": 7,
+    "item": 16,
+    "name": "SHARE_CARD_IS_PRESSED",
+    "chCode": "CH-11921",
+    "meaning": "Share card is pressed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110717,
+    "page": "P011",
+    "category": 7,
+    "item": 17,
+    "name": "SAVE_IMAGE_DOWNLOADED_THE_PICTURE",
+    "chCode": "CH-11922",
+    "meaning": "Save image downloaded the picture",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110718,
+    "page": "P011",
+    "category": 7,
+    "item": 18,
+    "name": "SHARING_THE_CARD_FAILS",
+    "chCode": "CH-11923",
+    "meaning": "Sharing the card fails (not closing the share sheet, not a refused share)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110719,
+    "page": "P011",
+    "category": 7,
+    "item": 19,
+    "name": "THE_REVIEW_IS_OPENED_STRAIGHT_FROM_POST",
+    "chCode": "CH-11924",
+    "meaning": "The review is opened straight from Post round (`?just=submitted`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110801,
     "page": "P011",
     "category": 8,
@@ -12125,9 +12291,12 @@
     "category": 8,
     "item": 3,
     "name": "LIBRARY_HOLDS_ONLY_THE_PLAYERS_OWN_ROUNDS",
-    "meaning": "The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Read in this pass, not run: no test asserts the player filter.",
-    "status": "reserved",
-    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/rounds.ts#loadUnfinished"
+    "meaning": "The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Tested in rounds-contracts.test.tsx: both reads carry the session player's id and leave test rounds out, whoever the player is, and a coach session reads nothing.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/rounds.ts#loadUnfinished",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 110804,
@@ -12135,9 +12304,12 @@
     "category": 8,
     "item": 4,
     "name": "DISCARD_IS_CHECKED_AGAIN_BY_ITS_SERVER_ACTION",
-    "meaning": "Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Read in this pass, not run: no test here forces a refusal; the action is the legacy library's, unchanged.",
-    "status": "reserved",
-    "where": "src/app/golf/actions/round-partial.ts#deleteInProgressRound; src/clubhouse/screens/rounds/writes.ts#LIVE_ROUNDS_WRITES"
+    "meaning": "Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Run in rounds-actions-contracts.test.ts: an invalid id, a caller who is not signed in, a caller with no player profile, a round that is no longer in progress and another player's round the caller can see are refused and nothing is deleted. In production a player reads every round on their team (golf_rounds_select), so a teammate's round is refused; a round on another team is hidden by RLS, cannot be told from a gone one, and is answered with success (a discard is idempotent). Nothing is deleted either way.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/round-partial.ts#deleteInProgressRound; src/clubhouse/screens/rounds/writes.ts#LIVE_ROUNDS_WRITES",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-actions-contracts.test.ts"
+    ]
   },
   {
     "id": 110805,
@@ -12427,11 +12599,12 @@
     "category": 12,
     "item": 1,
     "name": "SETUP_KEPT_WHEN_START_FAILS",
-    "meaning": "A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. round-setup.test fails a start and checks every field and the dock, then presses Start again and checks the same form is sent; use-new-round-session.preservation.test makes the engine's create throw and checks nothing is adopted and the next start goes ahead with the same payload.",
+    "meaning": "A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. round-setup.test fails a start and checks every field and the dock, then presses Start again and checks the same form is sent; rounds-contracts.test.tsx checks that after a failed Start the course and tees, the nine, the date, the edited holes and a qualifier all stay, and that pressing Start again or Retry sends the same setup; use-new-round-session.preservation.test makes the engine's create throw and checks nothing is adopted and the next start goes ahead with the same payload.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup",
     "tests": [
       "src/clubhouse/__tests__/round-setup.test.tsx",
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx",
       "src/lib/golf/round-session/__tests__/use-new-round-session.preservation.test.tsx"
     ]
   },
@@ -12441,11 +12614,12 @@
     "category": 12,
     "item": 2,
     "name": "SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE",
-    "meaning": "When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). round-tracking.test checks the shots, the words and that the round stays on the hole; use-new-round-session.preservation.test drops the connection on the hole's checkpoint and checks the device copy holds the hole's score and shots, that Try again sends that hole, and that the copy is cleared only once the save lands.",
+    "meaning": "When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). round-tracking.test and rounds-contracts.test.tsx check the shots, the words, that the round stays on the hole and that Try again sends the same hole; use-new-round-session.preservation.test drops the connection on the hole's checkpoint and checks the device copy holds the hole's score and shots, that Try again sends that hole, and that the copy is cleared only once the save lands.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/hooks/golf/use-shot-tracking.ts#handleRetryHoleCheckpoint",
     "tests": [
       "src/clubhouse/__tests__/round-tracking.test.tsx",
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx",
       "src/lib/golf/round-session/__tests__/use-new-round-session.preservation.test.tsx"
     ]
   },
@@ -12829,9 +13003,12 @@
     "category": 18,
     "item": 10,
     "name": "THE_SCORECARD_SCROLLS_IN_A_FOCUSABLE_REGION",
-    "meaning": "The scorecard on the shot screen's sheets (Scorecard and Round complete) scrolls sideways inside a labelled, focusable region (role region, tabIndex 0, \"Scorecard\"), so the keyboard can scroll it (axe scrollable-region-focusable). Found and fixed on 2026-09-30 by clubhouse:a11y; no vitest test asserts the region.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/track/round-sheets.tsx#Scorecard"
+    "meaning": "The scorecard on the shot screen's sheets (Scorecard and Round complete) scrolls sideways inside a labelled, focusable region (role region, tabIndex 0, \"Scorecard\"), so the keyboard can scroll it (axe scrollable-region-focusable). Found and fixed on 2026-09-30 by clubhouse:a11y; rounds-contracts.test.tsx asserts the region on both sheets.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/track/round-sheets.tsx#Scorecard",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 111811,
@@ -12853,9 +13030,12 @@
     "category": 19,
     "item": 1,
     "name": "LIBRARY_AND_REVIEW_PHONE_LAYOUT",
-    "meaning": "At phone width the library and the review are the phone build (useChPhone), not a shrunken desktop. The library's top bar is the tab root's \"Rounds\" with no back link and it keeps its own header; below 860px the round card and the season card stack, and at 640px and below the book drops Out · In · Tot and the meters to a date tile, the course and tee, and the to-par box (a group's header drops its average and low). The review's top bar is \"Round\" with \"‹ Rounds\" (or \"‹ Stats\" for a coach), its hero stacks and its card scrolls sideways inside its own frame. Not tested (PhoneTop needs the shell's slot and the layout is CSS): seen headless at 390 on 2026-09-30, not on an iPhone.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview; src/clubhouse/styles/rounds.css"
+    "meaning": "At phone width the library and the review are the phone build (useChPhone), not a shrunken desktop. The library's top bar is the tab root's \"Rounds\" with no back link and it keeps its own header; below 860px the round card and the season card stack, and at 640px and below the book drops Out · In · Tot and the meters to a date tile, the course and tee, and the to-par box (a group's header drops its average and low). The review's top bar is \"Round\" with \"‹ Rounds\" (or \"‹ Stats\" for a coach), its hero stacks and its card scrolls sideways inside its own frame. Tested in rounds-contracts.test.tsx with the shell's top-bar slot (the top bars) and against the stylesheet's container rules (the stacking and the dropped columns); seen headless at 390 on 2026-09-30, not on an iPhone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview; src/clubhouse/styles/rounds.css",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 111902,
@@ -12876,9 +13056,12 @@
     "category": 19,
     "item": 3,
     "name": "SETUP_AND_TRACKING_ARE_FULL_SCREEN_ON_THE_PHONE",
-    "meaning": "A new round and the shot screen are full-screen flows on the phone: the tab bar hides while either is open (usePhoneTabsHidden). Setup keeps Start round in a dock above the home indicator and Back in its band; the shot screen keeps Exit and Scorecard in its own top bar. Not tested: setup and tracking were driven in real Chromium at 390 on 2026-09-30 (a shot recorded; the dock read \"Finley GC · Blue · 18 holes · Par 72\"), not on an iPhone.",
-    "status": "reserved",
-    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/RoundTracking.tsx#RoundTracking; src/clubhouse/shell/phone-chrome.tsx#usePhoneTabsHidden"
+    "meaning": "A new round and the shot screen are full-screen flows on the phone: the tab bar hides while either is open (usePhoneTabsHidden). Setup keeps Start round in a dock above the home indicator and Back in its band; the shot screen keeps Exit and Scorecard in its own top bar. Tested in rounds-contracts.test.tsx (the tab bar hides while either is open and returns when it closes; Start round is in the dock, Exit and Scorecard in the shot screen's top bar); setup and tracking were also driven in real Chromium at 390 on 2026-09-30 (a shot recorded; the dock read \"Finley GC · Blue · 18 holes · Par 72\"), not on an iPhone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/RoundTracking.tsx#RoundTracking; src/clubhouse/shell/phone-chrome.tsx#usePhoneTabsHidden",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 112001,
@@ -12886,9 +13069,12 @@
     "category": 20,
     "item": 1,
     "name": "SHEETS_CLOSE_ON_ESC_AND_FOCUS_RETURNS",
-    "meaning": "Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. No P011 test presses Esc. In the app the keyboard keeps its Done key for the whole round, setup and sheets included: round entry holds the native accessory bar up (`useRoundDoneKey`; Mobile Safari draws it itself). Not built: arrow keys inside the radio groups (each choice is its own Tab stop).",
-    "status": "reserved",
-    "where": "src/clubhouse/ui/Modal.tsx#Modal; src/clubhouse/screens/rounds/track/parts.tsx#Seg; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup"
+    "meaning": "Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. Tested in rounds-contracts.test.tsx: Esc (the dialog's cancel event) closes each of the nine and focus returns to the opener, except Add a course, which returns to the course picker it was opened from. In the app the keyboard keeps its Done key for the whole round, setup and sheets included: round entry holds the native accessory bar up (`useRoundDoneKey`; Mobile Safari draws it itself). Not built: arrow keys inside the radio groups (each choice is its own Tab stop).",
+    "status": "implemented",
+    "where": "src/clubhouse/ui/Modal.tsx#Modal; src/clubhouse/screens/rounds/track/parts.tsx#Seg; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 112101,
@@ -12896,9 +13082,12 @@
     "category": 21,
     "item": 1,
     "name": "LOADERS_READ_IN_ROUNDS",
-    "meaning": "The library loader reads on the server before first paint, never one request per round: the team's time zone (when there is a team), then the posted rounds (paged), then the in-progress rounds, then their holes together (paged, at most 20 rounds at once). The review reads the round, then a coach's membership check, then the holes, the shots (paged), the tee's yards and the player's name together. A read that fails is flagged on its own part and logged, never thrown (110619). No test asserts the order.",
-    "status": "reserved",
-    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/round-review.ts#loadRoundReview"
+    "meaning": "The library loader reads on the server before first paint, never one request per round: the team's time zone (when there is a team), then the posted rounds (paged), then the in-progress rounds, then their holes together (paged, at most 20 rounds at once). The review reads the round, then a coach's membership check, then the holes, the shots (paged), the tee's yards and the player's name together. A read that fails is flagged on its own part and logged, never thrown (110619). Tested in rounds-contracts.test.tsx. The library's reads run as the loader does now: the team's time zone, the posted rounds and the in-progress rounds start together, then the holes of every in-progress round are one read (the order above predates that); the review's order is as written.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/round-review.ts#loadRoundReview",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-contracts.test.tsx"
+    ]
   },
   {
     "id": 112301,
@@ -13556,6 +13745,17 @@
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
+    "id": 121104,
+    "page": "P012",
+    "category": 11,
+    "item": 4,
+    "name": "START_OVER_IN_THE_IMPORT_REVIEW_ONCE",
+    "chCode": "CH-12504",
+    "meaning": "Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
     "id": 121201,
     "page": "P012",
     "category": 12,
@@ -13919,11 +14119,10 @@
     "item": 4,
     "name": "FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT",
     "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive is their own board (Q-76: the player's views are built; a coach's equivalents are not asked for).",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx",
-      "src/clubhouse/__tests__/coachhelm-views.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -14016,7 +14215,7 @@
     "item": 5,
     "name": "A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING",
     "chCode": "CH-13404",
-    "meaning": "A player's Accept or Decline is being sent",
+    "meaning": "A player's Accept is being sent",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14104,7 +14303,7 @@
     "item": 1,
     "name": "PLAYER_NO_ROUND_POSTED_YET",
     "chCode": "CH-13301",
-    "meaning": "Player: no round posted yet",
+    "meaning": "Player: no round posted yet (the lede reads \"One thing to work on each week, from the rounds you post.\")",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14512,11 +14711,11 @@
     "category": 6,
     "item": 8,
     "name": "A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF",
-    "meaning": "The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Found in this pass, not fixed: on a coach's gate failure the pulse is not read, and the board draws its empty line 'Nothing is flagged in the pulse right now.' beside the CH-13202 notice.",
-    "status": "reserved",
+    "meaning": "The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Fixed since: on a coach's gate failure the pulse is still read and drawn beside the CH-13202 notice, never the empty line (coachhelm-contracts.test.tsx).",
+    "status": "implemented",
     "where": "src/clubhouse/data/coachhelm.ts#loadPlayerCoachHelm (gate); src/clubhouse/data/coachhelm.ts#loadCoachCoachHelm (gate); src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -14537,7 +14736,7 @@
     "item": 10,
     "name": "A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS",
     "chCode": "CH-13005",
-    "meaning": "A player's Decline of a proposed focus area fails",
+    "meaning": "A player's Decline of a proposed focus area fails (written when its Undo toast goes, CH-13912)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14856,10 +15055,10 @@
     "item": 2,
     "name": "WRITES_REFUSE_OFFLINE",
     "meaning": "Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo)",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15083,6 +15282,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130723,
+    "page": "P013",
+    "category": 7,
+    "item": 23,
+    "name": "PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED",
+    "chCode": "CH-13912",
+    "meaning": "Player: a proposed focus area is declined (wave 7, decision C)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,
@@ -15127,9 +15337,12 @@
     "category": 8,
     "item": 4,
     "name": "SERVER_ACTIONS_ARE_THE_GATE",
-    "meaning": "Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Read in this pass, not run: no test here forces a refusal.",
-    "status": "reserved",
-    "where": "src/app/golf/actions/insights-feed.ts#dismissInsight; src/app/golf/actions/insights-feed.ts#reactivateInsight; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2; src/lib/auth/verify-player-access.ts#verifyInsightAccess"
+    "meaning": "Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Run in coachhelm-actions-contracts.test.ts against the real actions.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/insights-feed.ts#dismissInsight; src/app/golf/actions/insights-feed.ts#reactivateInsight; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2; src/lib/auth/verify-player-access.ts#verifyInsightAccess",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm-actions-contracts.test.ts"
+    ]
   },
   {
     "id": 130805,
@@ -15203,10 +15416,10 @@
     "item": 1,
     "name": "THIS_VISITS_CHANGES_STAY_WHILE_THE_PAGE_IS_OPEN",
     "meaning": "The Assigned chip, the dismissed notice and the chosen player are held in the page's own state: choosing another player and coming back finds the chip still there. A reload reads the server again and opens on the first player (the chip then comes from the focus-area read). The chosen player or insight is not kept in the address.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (sel, assigned, dismissed); src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard (picked)",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15255,10 +15468,10 @@
     "item": 1,
     "name": "THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ",
     "meaning": "Nothing on the page refreshes in the background. A landed Assign, Dismiss or Undo changes the page in place from the board's own state and does not call router.refresh (the dismissed notice is never refreshed away); Try again on a failed-read notice is the one client re-read (131402).",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15619,10 +15832,10 @@
     "item": 1,
     "name": "PHONE_LAYOUT",
     "meaning": "At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (phone); src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard (phone, pick); src/clubhouse/lib/use-phone.ts#useChPhone",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15632,10 +15845,10 @@
     "item": 1,
     "name": "LOADER_READS_IN_ROUNDS",
     "meaning": "The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/data/coachhelm.ts#loadCoachCoachHelm; src/clubhouse/data/coachhelm.ts#loadPlayerCoachHelm",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -15645,10 +15858,10 @@
     "item": 1,
     "name": "FAILURES_REPORTED",
     "meaning": "A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players).",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/data/coachhelm.ts#log; src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/ui/SectionBoundary.tsx#SectionBoundary",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
   {
@@ -16422,6 +16635,72 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 150203,
+    "page": "P015",
+    "category": 2,
+    "item": 3,
+    "name": "THE_RESET_LINK_IS_BEING_CHECKED",
+    "chCode": "CH-15430",
+    "meaning": "The reset link is being checked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150204,
+    "page": "P015",
+    "category": 2,
+    "item": 4,
+    "name": "SAVING_THE_NEW_PASSWORD",
+    "chCode": "CH-15431",
+    "meaning": "Saving the new password",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150205,
+    "page": "P015",
+    "category": 2,
+    "item": 5,
+    "name": "JOINING_A_TEAM",
+    "chCode": "CH-15432",
+    "meaning": "Joining a team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150206,
+    "page": "P015",
+    "category": 2,
+    "item": 6,
+    "name": "A_STAFF_INVITATION_IS_READING_THE_SESSION",
+    "chCode": "CH-15433",
+    "meaning": "A staff invitation is reading the session, or the accept or sign-up is in flight",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150207,
+    "page": "P015",
+    "category": 2,
+    "item": 7,
+    "name": "THE_DEMO_IS_CHECKING_WHO_IS_SIGNED",
+    "chCode": "CH-15435",
+    "meaning": "The demo is checking who is signed in, or entering",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150208,
+    "page": "P015",
+    "category": 2,
+    "item": 8,
+    "name": "A_TEAM_CODE_IS_BEING_TAKEN_TO",
+    "chCode": "CH-15436",
+    "meaning": "A team code is being taken to its team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 150301,
     "page": "P015",
     "category": 3,
@@ -16517,6 +16796,94 @@
     "name": "RESET_PASSWORD_AN_ADDRESS_THAT_IS_NOT",
     "chCode": "CH-15121",
     "meaning": "Reset password: an address that is not one",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150505,
+    "page": "P015",
+    "category": 5,
+    "item": 5,
+    "name": "RESET_PASSWORD_SAVE_WITH_NO_NEW_PASSWORD",
+    "chCode": "CH-15130",
+    "meaning": "Reset password: Save with no new password",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150506,
+    "page": "P015",
+    "category": 5,
+    "item": 6,
+    "name": "RESET_PASSWORD_A_RULE_IS_MISSING",
+    "chCode": "CH-15131",
+    "meaning": "Reset password: a rule is missing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150507,
+    "page": "P015",
+    "category": 5,
+    "item": 7,
+    "name": "RESET_PASSWORD_THE_CONFIRMATION_IS_EMPTY",
+    "chCode": "CH-15132",
+    "meaning": "Reset password: the confirmation is empty",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150508,
+    "page": "P015",
+    "category": 5,
+    "item": 8,
+    "name": "RESET_PASSWORD_THE_TWO_BOXES_DIFFER",
+    "chCode": "CH-15133",
+    "meaning": "Reset password: the two boxes differ",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150509,
+    "page": "P015",
+    "category": 5,
+    "item": 9,
+    "name": "JOIN_A_TEAM_CONTINUE_WITH_NO_CODE",
+    "chCode": "CH-15140",
+    "meaning": "Join a team: Continue with no code",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150510,
+    "page": "P015",
+    "category": 5,
+    "item": 10,
+    "name": "JOIN_A_TEAM_FEWER_THAN_FOUR_CHARACTERS",
+    "chCode": "CH-15141",
+    "meaning": "Join a team: fewer than four characters",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150511,
+    "page": "P015",
+    "category": 5,
+    "item": 11,
+    "name": "STAFF_INVITATION_THE_ACCOUNT_FORM_IS_MISSING",
+    "chCode": "CH-15142",
+    "meaning": "Staff invitation: the account form is missing something",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150512,
+    "page": "P015",
+    "category": 5,
+    "item": 12,
+    "name": "DEMO_ENTRY_AND_THE_NEW_COACHS_QUESTIONS",
+    "chCode": "CH-15143",
+    "meaning": "Demo entry and the new coach's questions: an answer is missing",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -16675,6 +17042,83 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 150615,
+    "page": "P015",
+    "category": 6,
+    "item": 15,
+    "name": "RESET_PASSWORD_THE_SERVER_REFUSES_THE_NEW",
+    "chCode": "CH-15030",
+    "meaning": "Reset password (the link's page): the server refuses the new password itself (the one already in use, or too easy to guess)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150616,
+    "page": "P015",
+    "category": 6,
+    "item": 16,
+    "name": "RESET_PASSWORD_SAVE_FAILS_FOR_A_REASON",
+    "chCode": "CH-15031",
+    "meaning": "Reset password: Save fails for a reason that is not about the password (too many tries, no connection, anything else)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150617,
+    "page": "P015",
+    "category": 6,
+    "item": 17,
+    "name": "JOIN_A_TEAM_THE_SERVER_REFUSES_THE",
+    "chCode": "CH-15032",
+    "meaning": "Join a team: the server refuses the join (a code that no longer matches, or anything the validator words)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150618,
+    "page": "P015",
+    "category": 6,
+    "item": 18,
+    "name": "JOIN_A_TEAM_THE_REQUEST_NEVER_REACHED",
+    "chCode": "CH-15033",
+    "meaning": "Join a team: the request never reached the server",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150619,
+    "page": "P015",
+    "category": 6,
+    "item": 19,
+    "name": "STAFF_INVITATION_THE_SERVER_REFUSES_THE_ACCOUNT",
+    "chCode": "CH-15034",
+    "meaning": "Staff invitation: the server refuses the account or the accept for any reason but the wrong account (CH-15944)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150620,
+    "page": "P015",
+    "category": 6,
+    "item": 20,
+    "name": "NEW_COACH_THE_PROGRAM_COULD_NOT_BE",
+    "chCode": "CH-15035",
+    "meaning": "New coach: the program could not be made (the action rolls the organization, team and coach back together)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150621,
+    "page": "P015",
+    "category": 6,
+    "item": 21,
+    "name": "DEMO_ENTRY_THE_SERVER_REFUSES_OR_THE",
+    "chCode": "CH-15036",
+    "meaning": "Demo entry: the server refuses (a rate limit, anything `enterDemo` words) or the request fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 150701,
     "page": "P015",
     "category": 7,
@@ -16682,6 +17126,292 @@
     "name": "THE_SERVER_CANNOT_BE_REACHED",
     "chCode": "CH-15004",
     "meaning": "The server cannot be reached",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150705,
+    "page": "P015",
+    "category": 7,
+    "item": 5,
+    "name": "THE_RESET_LINK_IS_SPENT_EXPIRED_OR",
+    "chCode": "CH-15930",
+    "meaning": "The reset link is spent, expired or has no token (or the session ran out between the check and Save)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150706,
+    "page": "P015",
+    "category": 7,
+    "item": 6,
+    "name": "THE_RESET_LINK_WAS_OPENED_ON_A",
+    "chCode": "CH-15931",
+    "meaning": "The reset link was opened on a device signed in as someone else",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150707,
+    "page": "P015",
+    "category": 7,
+    "item": 7,
+    "name": "THE_PASSWORD_IS_SAVED",
+    "chCode": "CH-15932",
+    "meaning": "The password is saved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150708,
+    "page": "P015",
+    "category": 7,
+    "item": 8,
+    "name": "GOLF_JOIN",
+    "chCode": "CH-15933",
+    "meaning": "`/golf/join`",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150709,
+    "page": "P015",
+    "category": 7,
+    "item": 9,
+    "name": "GOLF_JOIN_CODE_WITH_A_CODE_THAT",
+    "chCode": "CH-15934",
+    "meaning": "`/golf/join/[code]` with a code that names a team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150710,
+    "page": "P015",
+    "category": 7,
+    "item": 10,
+    "name": "A_CODE_THAT_NAMES_NO_TEAM",
+    "chCode": "CH-15935",
+    "meaning": "A code that names no team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150711,
+    "page": "P015",
+    "category": 7,
+    "item": 11,
+    "name": "THE_PLAYER_IS_ALREADY_ON_THIS_TEAM",
+    "chCode": "CH-15936",
+    "meaning": "The player is already on this team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150712,
+    "page": "P015",
+    "category": 7,
+    "item": 12,
+    "name": "THE_JOIN_LANDS",
+    "chCode": "CH-15937",
+    "meaning": "The join lands",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150713,
+    "page": "P015",
+    "category": 7,
+    "item": 13,
+    "name": "THE_WRONG_PERSON_IS_SIGNED_IN",
+    "chCode": "CH-15938",
+    "meaning": "The wrong person is signed in (a link opened on someone else's browser)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150714,
+    "page": "P015",
+    "category": 7,
+    "item": 14,
+    "name": "THE_PLAYER_IS_ON_ANOTHER_TEAM",
+    "chCode": "CH-15939",
+    "meaning": "The player is on another team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150715,
+    "page": "P015",
+    "category": 7,
+    "item": 15,
+    "name": "A_STAFF_INVITATION_THAT_IS_NOT_VALID",
+    "chCode": "CH-15940",
+    "meaning": "A staff invitation that is not valid",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150716,
+    "page": "P015",
+    "category": 7,
+    "item": 16,
+    "name": "A_VALID_INVITATION_SIGNED_IN",
+    "chCode": "CH-15941",
+    "meaning": "A valid invitation, signed in",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150717,
+    "page": "P015",
+    "category": 7,
+    "item": 17,
+    "name": "NOT_YOU_ON_THE_INVITATION",
+    "chCode": "CH-15943",
+    "meaning": "\"Not you?\" on the invitation",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150718,
+    "page": "P015",
+    "category": 7,
+    "item": 18,
+    "name": "THE_SIGNED_IN_ACCOUNT_ALREADY_BELONGS_TO",
+    "chCode": "CH-15944",
+    "meaning": "The signed-in account already belongs to another program",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150719,
+    "page": "P015",
+    "category": 7,
+    "item": 19,
+    "name": "A_VALID_INVITATION_SIGNED_OUT",
+    "chCode": "CH-15945",
+    "meaning": "A valid invitation, signed out",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150720,
+    "page": "P015",
+    "category": 7,
+    "item": 20,
+    "name": "THE_STAFF_INVITATION_LANDS",
+    "chCode": "CH-15946",
+    "meaning": "The staff invitation lands",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150721,
+    "page": "P015",
+    "category": 7,
+    "item": 21,
+    "name": "A_NEW_COACHS_PROGRAM_IS_MADE",
+    "chCode": "CH-15950",
+    "meaning": "A new coach's program is made",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150722,
+    "page": "P015",
+    "category": 7,
+    "item": 22,
+    "name": "THE_CODE_COULD_NOT_BE_COPIED",
+    "chCode": "CH-15951",
+    "meaning": "The code could not be copied",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150723,
+    "page": "P015",
+    "category": 7,
+    "item": 23,
+    "name": "WHO_MAY_SEE_THE_NEW_PROGRAM_QUESTIONS",
+    "chCode": "CH-15952",
+    "meaning": "Who may see the new-program questions",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150724,
+    "page": "P015",
+    "category": 7,
+    "item": 24,
+    "name": "THE_NEW_PROGRAM_QUESTIONS_ARE_CHECKING_THE",
+    "chCode": "CH-15953",
+    "meaning": "The new-program questions are checking the account",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150725,
+    "page": "P015",
+    "category": 7,
+    "item": 25,
+    "name": "GOLF_COACH_PENDING",
+    "chCode": "CH-15960",
+    "meaning": "`/golf/coach/pending`",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150726,
+    "page": "P015",
+    "category": 7,
+    "item": 26,
+    "name": "CHECK_AGAIN",
+    "chCode": "CH-15961",
+    "meaning": "Check again",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150727,
+    "page": "P015",
+    "category": 7,
+    "item": 27,
+    "name": "SIGN_OUT_FAILS",
+    "chCode": "CH-15962",
+    "meaning": "Sign out fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150728,
+    "page": "P015",
+    "category": 7,
+    "item": 28,
+    "name": "GOLF_DEMO",
+    "chCode": "CH-15970",
+    "meaning": "`/golf/demo`",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150729,
+    "page": "P015",
+    "category": 7,
+    "item": 29,
+    "name": "THE_DEMO_IS_OPENED_BY_SOMEONE_ALREADY",
+    "chCode": "CH-15971",
+    "meaning": "The demo is opened by someone already signed in",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150730,
+    "page": "P015",
+    "category": 7,
+    "item": 30,
+    "name": "MESSAGE_DEMO_SESSION_EXPIRED",
+    "chCode": "CH-15972",
+    "meaning": "`?message=demo_session_expired`",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },

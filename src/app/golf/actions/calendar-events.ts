@@ -11,6 +11,8 @@ import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { isClassEvent } from '@/lib/calendar/class-events';
+import { isMeetingEvent } from '@/lib/calendar/meeting-visibility';
+import { loadInvitedMeetingIds } from '@/lib/calendar/meeting-invites';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -840,13 +842,24 @@ async function updateGolfEventImpl(
     // failure comes back beside `success` so the caller can say so.
     let invitationsError: string | undefined;
     if (inviteIds.length > 0) {
-      const { data: attendanceRows } = await supabase
+      const { data: attendanceRows, error: attendanceError } = await supabase
         .from('golf_event_attendance')
         .select('player_id')
         .eq('event_id', eventId);
 
+      // A failed read used to look like nobody was invited, so every invitee went back through the invitation upsert,
+      // which writes status 'pending': one transient error reset the whole roster's replies. Invite nobody instead.
+      if (attendanceError) {
+        invitationsError = "The changes were saved, but the new invitations didn't go out.";
+        await logServerError(
+          `[updateGolfEvent] attendance read failed for event ${eventId}; skipped inviting: ${describeError(attendanceError)}`,
+          { action: 'golf.updateGolfEvent.invitations', featureArea: 'calendar', extra: { eventId } },
+          'error',
+        );
+      }
+
       const existingIds = new Set((attendanceRows || []).map(row => row.player_id));
-      const toAdd = inviteIds.filter((id) => !existingIds.has(id));
+      const toAdd = attendanceError ? [] : inviteIds.filter((id) => !existingIds.has(id));
 
       if (toAdd.length > 0) {
         try {
@@ -1369,6 +1382,20 @@ async function respondToEventImpl(
     // event_type is refused the same way every read path already treats it.
     if (isClassEvent(event)) {
       return { success: false, error: 'Class meetings don\'t take RSVPs.', code: 'class_meeting' };
+    }
+
+    // A meeting takes replies only from the players invited to it (their own
+    // attendance row; meeting-visibility.ts). Without this, a self-RSVP
+    // (golf_event_attendance_insert_self) would put a player on a 1:1 they
+    // were never invited to, and that row is what makes a meeting visible to
+    // them. Answered as "not found" so the reply does not confirm the meeting
+    // exists. The held migration 20261018120000 refuses the insert as well.
+    if (isMeetingEvent(event)) {
+      const invited = await loadInvitedMeetingIds(supabase, player.id, [event.id], {
+        action: 'golf.respondToEvent.meetingInvite',
+      });
+      if (!invited) return { success: false, error: UNREADABLE };
+      if (!invited.has(event.id)) return { success: false, error: 'Event not found' };
     }
 
     const { data: membership, error: membershipError } = await supabase
@@ -2189,7 +2216,12 @@ async function getEventRSVPImpl(eventId: string): Promise<ActionResult<RSVPStats
 
     return { success: true, data: stats };
 
-  } catch {
+  } catch (err) {
+    await logServerError(`getEventRSVP failed for event ${eventId}: ${describeError(err)}`, {
+      action: 'golf.getEventRSVP',
+      featureArea: 'calendar',
+      extra: { eventId },
+    }, 'warning');
     return { success: false, error: 'Failed to fetch RSVP data' };
   }
 }

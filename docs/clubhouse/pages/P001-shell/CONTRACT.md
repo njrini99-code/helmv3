@@ -167,6 +167,7 @@ remain four seconds and errors eight seconds.
 | 10703 | CH-1903 | `SOMEONE_SAVES_WHILE_OFFLINE` | Someone saves while offline |
 | 10704 | CH-1905 | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | Someone presses Try again on a notice, or on a page that didn't load, while offline |
 | 10705 | CH-1909 | `IN_THE_IPHONE_APP_PULLING_A_PHONE` | In the iPhone app, pulling a phone page down from its top |
+| 10706 | CH-1910 | `TWO_NOTICES_ABOUT_THE_SAME_THING_IN` | Two notices about the same thing in a row (Conversation muted, then Notifications back on) |
 
 ## 08 — Permission / authorization
 
@@ -185,7 +186,7 @@ never by the frame; the pages name their own gates.
 | 10801 | — | `CLUBHOUSE_GATE` | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 | — | `ROLE_SCOPED_NAV` | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 | — | `TEAM_SWITCH_IS_A_HEAD_COACHS` | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
-| 10804 | CH-1910 | `IN_THE_IPHONE_APP_ONCE_A_LAUNCH` | In the iPhone app, once a launch at most, while iOS has not asked about push and the person has not answered this ask in either UI (the stored answer is shared with the current app's ask): a page has held for 4 seconds, nothing else is open or focused, and it is not round entry, onboarding or Settings |
+| 10804 | CH-1911 | `IN_THE_IPHONE_APP_ONCE_A_LAUNCH` | In the iPhone app, once a launch at most, while iOS has not asked about push and the person has not answered this ask in either UI (the stored answer is shared with the current app's ask): a page has held for 4 seconds, nothing else is open or focused, and it is not round entry, onboarding or Settings |
 
 ## 09 — Success
 
@@ -353,6 +354,7 @@ reaching 44 by 44, the search field included (11801 to 11815).
 | 11823 | CH-1841 | `THE_ASK_SHEET_IS_COACHHELMS_ASK_OVER` | The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard |
 | 11824 | CH-1842 | `THE_SHEET_NAMES_WHAT_THE_COACH_IS` | The sheet names what the coach is looking at (“Looking at: Stats · Jonah Okafor”, from the page's trail or the navigation); a page about one player (`?player=`) also hands the chat that player as its context chip |
 | 11825 | CH-1816 | `ON_THE_PHONE_THE_SECTIONS_NAME_IN` | On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls="ch-strip"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section |
+| 11826 | CH-1817 | `A_TOAST_IS_CLOSED_WITHOUT_A_FINGER` | A toast is closed without a finger: on a device with a mouse (`hover: hover`) it has a ghost Dismiss X ("Dismiss notification"), and Esc closes it while focus is inside it. Focus goes back where it was before it came into the toast; inside an open dialog (CH-1812) Esc closes only the toast. Closing it counts as letting it run out: held work (a calendar move, CH-6015) is written |
 
 ## 19 — Responsive layout
 

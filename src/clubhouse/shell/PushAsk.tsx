@@ -16,7 +16,7 @@ const WHY: Record<'coach' | 'player', string> = {
   coach: 'Know when a player posts a round, messages you or answers an event, even with GolfHelm closed.',
 };
 
-/** The ask itself (CH-1910): the shell's sheet, with Not now and Turn on. The preview draws it open. */
+/** The ask itself (CH-1911): the shell's sheet, with Not now and Turn on. The preview draws it open. */
 export function PushAskSheet({ open, role, asking, onTurnOn, onNotNow }: { open: boolean; role: 'coach' | 'player'; asking: boolean; onTurnOn: () => void; onNotNow: () => void }) {
   return (
     <Modal
@@ -24,7 +24,7 @@ export function PushAskSheet({ open, role, asking, onTurnOn, onNotNow }: { open:
       onClose={onNotNow}
       width={420}
       icon={Bell}
-      code="CH-1910"
+      code="CH-1911"
       title="Turn on notifications"
       description={`${WHY[role]} You can change this in Settings, under Notifications.`}
       footer={

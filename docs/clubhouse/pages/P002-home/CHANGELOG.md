@@ -1,5 +1,435 @@
 # P002 — Home: changelog
 
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (home.css)
+
+- Fixed sizes that were left in pixels (the round-form and headline figures, the leg values, the day and since figures, the next-up label) now follow the iPhone's text size. The score tile, the chart axis and value labels keep their size on purpose.
+- Radii on the 5, 7, 10, 14, 20 scale.
+- The "no events" chip has a 44px reach on the phone; the Player home asks row and next-up card tint on hover; the form and spark figures use tabular numerals.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — Leaderboard fades its clipped edge
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The leaderboard table, when it is wider than its column, fades only the edge that is hiding something (`data-start` / `data-end`); nothing fades at rest.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — First-run Home draws the week; the latest round's long names stay on the card
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-2302, CH-2304, CH-2305, CH-2307, CH-2308, CH-2312, CH-2313
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Coach and player first-run pages, the no-team pages, the leaderboard's empties and the latest-round empty draw the shape of what will fill them (time rows, portrait rows) under the sentence. The coach copy says the page fills itself from replies, posted rounds and the leaderboard.
+- The latest round's player name ends in an ellipsis rather than pushing the score off the card (`.ch-h-round__name`).
+- The compact in-card empties (Today, Later today, Up next) keep their one-line form.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/home?state=empty` and `home-player?state=empty` (viewed as contact sheets and crops). The latest round's long-name ellipsis was checked on desktop with a name injected in the browser; Home was not captured at a width that forces the ellipsis.
+
+## 2026-10-18 — Wave 10: the first run and the empty team
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-2302 CH-2304 CH-2305 CH-2308 CH-2312
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- The coach's first run (CH-2308) rests on the people, not the calendar: no
+  players and no rounds, events or not. Adding the first event no longer
+  drops Invite players for the full page of empty blocks; the week sits above
+  the first steps (the week pane on desktop, the week strip on the phone), and
+  the body drops "and your first event" once there is one.
+- CH-2308's secondary is "New event", the verb used everywhere else.
+- CH-2304 has Invite players (Roster's invite sheet) as a safety net, and its
+  copy is true: "Share your team code from Roster; players appear here as
+  they join." (players who use the code or link join right away).
+- A coach with players and no round reads it once: the leaderboard's CH-2305
+  ("No 18-hole rounds posted yet this season.", the latest round's wording
+  with the length kept, since both read 18-hole rounds only) carries it, and
+  the latest round's pane steps aside, the week taking the sheet
+  (`.ch-h-sheet.is-solo`). Desktop only; the phone has no leaderboard.
+- A player with the team's events but no round (CH-2312) keeps the head with
+  Start a round, Up next and the week, and one "Welcome to the team" with Add
+  classes stands in for Your latest round, Scoring and Your game, which said
+  "No rounds posted yet" three ways (desktop and phone). The page empty state
+  stays for a player with nothing on the calendar.
+- Preview: `home?state=eventsonly`, `home?state=norounds` and
+  `home-player?state=norounds`.
+
+## 2026-10-18 — Wave 8: premium details on Home
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (the week's event types, already read)
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- A competition day in the week strips (desktop, coach phone, player phone)
+  carries its event type's own calendar icon (`TYPE_ICON`): Target for a
+  qualifier, Trophy for a tournament. It was a Trophy on the coach phone and
+  a Flag (Practice's icon) elsewhere. Week days carry `competitionType`; a
+  tournament outranks a qualifier on the same day.
+- Dark: the coins in the coach phone's Next up card keep the day's neutral,
+  so they no longer sink into the night green.
+- The team scoring figure (phone 56px, desktop 64px) sets its decimal point
+  in `.ch-num__pt` (`ui/point-span.tsx`, 0.06em each side) and the phone's
+  tracks at -0.035em, so "73.4" no longer reads "734".
+- Desktop, light: the New event key's "N" chip inherits the primary
+  button's ivory chip (the green-on-green override is gone).
+- Dark phone Home: theme-color and the html background take the hero bar's
+  own colour (`--ch-frame`), not green-800 under a darker bar.
+- A press on the coach phone's Next up card deepens its green (opacity of a
+  layer under the words), as the player's Up next does.
+- The player's "Open recap" / "My stats" link ends on the card's edge
+  (`.ch-btn--flush-end`).
+
+## 2026-10-18 — Wave 7: player Home privacy, replies and coach asks
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (own attendance rows, Team Hub's player reads)
+Held items:     works before and after 20261017102000 (HELD.md)
+```
+
+### Fixed (2026-10-18, meeting privacy)
+
+- Decision B: a player's week (day counts, agenda, Today, Up next) holds a
+  meeting only when they are on its invite list (their own attendance row,
+  read before and after migration 20261017102000). Up next moves on to the
+  next event they can see. When their own replies don't load, D2-8 decides
+  from the counts; when that fails too, no meeting is shown (fail closed;
+  `home.ownReplies` and `home.meetingInvites` are logged).
+
+### Changed (2026-10-18, player Home)
+
+- "From your coach" under the hero: replies owed, posts to acknowledge and
+  tasks due within a week, counted as Team Hub lists them; it opens Team Hub
+  and hides when nothing waits or a read fails (`loadPlayerAsks`).
+- Up next says "You're going" or "Reply needed" from the player's own reply.
+- "Start a round" replaces "Post a round"; "Your latest round" replaces "My
+  latest round"; a clean sweep reads "Your last ten rounds were all 71 or
+  better."
+- Preview: the player and coach weeks' weekdays are their dates' own (Wed 14
+  Oct; the Pinehurst qualifier is Friday 16).
+- P002 CONTRACT, PAGE, DESIGN and the bridge contracts say "Start a round"
+  and "Your latest round".
+
+## 2026-10-18 — Wave 5: Start a round icons
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Start a round)
+
+- The player's first-run Home (CH-2312) draws a flag over "Welcome to the
+  team" and a plus on Start a round, as Rounds does.
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- A section's Try again reads "Trying again…" while it runs (CH-2402).
+
+## 2026-10-18 — Wave 4: phone text follows Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type pass)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- Phone text in `home.css` (coach and player Home: greeting, day card, Later
+  today, form labels, week strip, latest rounds, Your game) moves from fixed
+  px to `calc(N * var(--ch-type-k))`, so it grows with the iPhone's Text Size
+  (to XXL). The figures stay fixed on purpose: the form figure and its delta,
+  the form strip values, the score tiles (46px), the countdown digits, the
+  game figures, the chart's axis and value text. Desktop-only rules are
+  untouched.
+- Phone Latest rounds: the dot between course and date is drawn by the
+  stylesheet (`.ch-hm-rd__when::before`), not the date's text. Above the
+  default Text Size the course takes its own line in full and the date the
+  line under it, without the dot; at the default the row draws as before (one
+  line, the course gives way with an ellipsis).
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): every Home preview state is
+  pixel-identical to before at the default size. At `--ch-type-scale` 1.353
+  (XXL) this sheet's change takes unscaled text from 81 to 21 elements on
+  `home` and 196 to 113 on `home-player` (the rest: the fixed figures above,
+  the scorecard grid, and shared avatars, bell and buttons); no horizontal
+  overflow, no overlaps. Latest rounds at XXL: "Oakmont CC" in full, "Sun 12
+  Oct" under it (it was "Oakm… · Sun 12 Oct"); the default and 1.059 draw no
+  clipped course.
+
+## 2026-10-18 — Wave 3 accessibility: day card focus rings
+
+```text
+Design package: none (wave-3 accessibility review, items 2)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- Phone: the day card's open link and its two actions draw their own ivory
+  focus rings on the green. The shared `.ch-root :focus-visible` ring used to
+  win over them (same weight, loaded later) and drew a 2px green ring on green
+  (1.55:1); the rules now carry `.ch-root`, so the ivory rings (10.5–11:1)
+  show.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- WebKit (Playwright, dev preview, 390, light and dark): keyboard focus on the
+  day card's link draws the inset ivory ring and no outline; on an action an
+  ivory 2px outline, 11.0:1 light and 10.5:1 dark (was 1.55 and 5.28).
+
+## 2026-10-18 — Wave 3: the head on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. Home's date line is 4px shorter than the
+  eyebrow, so its top adds 4px (the loaded, loading and first-run heads alike).
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: a readable chosen window, one word for replies
+
+```text
+Design package: none (wave-3 design review, items 1, 3, 12)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, scoring switch and reply counts)
+
+- Player Home phone, Scoring: the chosen window ("Last 10") keeps the
+  switch's own ivory ink on the green chip; the quieter ink-600 now applies
+  only to the options off the chip (`home.css`).
+- An agenda row that asks for replies reads "5 of 6 going", as the day card
+  does, where it said "confirmed" (`model.ts` `confirmedLine`).
+- The latest round's flag (desktop and phone) is drawn at the Clubhouse
+  stroke through `Icon` (`LatestRound.tsx`, `PlayerHomePhone.tsx`).
+
+### Verification (2026-10-18, scoring switch and reply counts)
+
+- WebKit at 390, the chosen segment's ink against the chip's gradient where
+  the text sits (25 to 75% down): light 6.8:1 or more, dark 4.8:1 or more
+  (the chip's top edge is 4.4:1 in dark, above the text).
+- `npm run test:file` on the Home, Player Home, logic and attendance tests.
+- The catalog rows (CH-2209, CH-1304), the contract and Bridge 20804
+  (`config/clubhouse/bridge-contracts.json`, then `registry.mjs sync`) say
+  "going" too.
+
+## 2026-10-18 — Polish: Home loads in the reader's shape, names on one line
+
+```text
+Design package: none (wave-2 states review rows 1, 6, 7, 10, 13)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading and long names)
+
+- Desktop skeleton (CH-2401): a coach's head is followed by the team scoring
+  form's band on its green stage (bars only; the plot is left empty), so the
+  sheet lands where its bars were. A player's head drops the coach's brief
+  (`SkeletonDeskHead.tsx`, `home.css`).
+- Phone skeleton: the coach's Up next card is the day card's 238px, with bars
+  for the invitees and the action, and the first section sits 12px under the
+  hero, as loaded (`SkeletonPhoneHero.tsx`, `home.css`).
+- Phone Latest rounds: a long name keeps to one line with an ellipsis instead
+  of wrapping to three lines, and the course gives way to the date: a long
+  course ends in an ellipsis and the date keeps its place (`HomePhone.tsx`).
+- Desktop leaderboard: a name keeps to one line. On the narrowest desktop
+  canvas (a window just over 820px) the board drops its Last 7 rounds drawing,
+  so the name and form line fit where they wrapped to three lines.
+
+### Verification (2026-10-18, loading and long names)
+
+- WebKit (Playwright, dev server, preview fixtures), skeleton top against
+  loaded top: coach sheet at 1280 497 vs 499 (was 303 vs 499); player sheet
+  at 1280 254 vs 256 (was 303 vs 256); phone Up next 238 vs 238 tall (was
+  172) and the first section 516 vs 517 (coach) and 444 vs 445 (player).
+- Leaderboard rows are 64px at 821, 900 and 1000 with the preview's names and
+  with long ones (the preview's names made 81-99px rows at 821 before); phone
+  Latest rounds rows are 70px with long names.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: a way out of no team, one notice sentence
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- No team (CH-2307, CH-2313): the page empty offers "Open team settings", as
+  Classes and Recruiting do. A coach goes to Team, a player to Golf profile,
+  where joining a team lives (CH-8302).
+- The leaderboard and latest round notices end "Try again; the error has been
+  reported.", the sentence every other notice uses.
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
+## 2026-10-17 — Polish: a countdown in two units, greens in points, no seam
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Player Home's countdown shows its two largest units, the leading one never
+  zero-padded: "1d 18h" a day or more out, "18h 02m" inside a day, and the
+  seconds only inside the last hour ("4m 09s"), where it was "01d 18h 02m 00s"
+  for an event days away (owner item E). The timer's name follows: "Starts in
+  1 day and 18 hours" (`Countdown.tsx`, the well's two columns in `home.css`).
+- Coach Home's form strip: the greens change reads "+3 pts" beside "61%", as
+  it is a change in percentage points (`TeamForm.tsx`, `HomePhone.tsx`).
+- Phone: Home paints no flat fill of its own, so the canvas's parchment and
+  light carry to the tab bar and a short page (a failed load) has no seam
+  where its content ends (`home.css`).
+- Tabular figures restored (review row 18): 39 rules in `home.css` that set
+  `font` on a figure (`.ch-num` or inside one: week days, agenda times,
+  leaderboard, rail, form strip, countdown, player figures) now set
+  `font-variant-numeric: tabular-nums` after it, since the shorthand reset what
+  `.ch-num` gives. Hero numerals of 40px and over keep proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Wiring checked against production
 
 One change: the coach first run's Invite players (desktop and phone) links

@@ -497,7 +497,7 @@ describe('Recruiting · film and file drop · the page', () => {
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     fireEvent.drop(section(), drag([film()]));
     await user.click(within(dlg()).getByRole('button', { name: 'Upload' }));
-    await waitFor(() => expect(code('CH-14404')?.textContent).toBe('Uploading 42%'));
+    await waitFor(() => expect(code('CH-14404')?.textContent).toBe('Uploading… 42%'));
     const bar = within(dlg()).getByRole('progressbar', { name: 'Upload progress' });
     expect(bar.getAttribute('aria-valuenow')).toBe('42');
     expect(code('CH-14407')?.textContent).toMatch(/Keep this page open until it finishes/);
@@ -515,7 +515,7 @@ describe('Recruiting · film and file drop · the page', () => {
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     fireEvent.drop(section(), drag([pdf()]));
     await user.click(within(dlg()).getByRole('button', { name: 'Upload' }));
-    expect(code('CH-14404')?.textContent).toBe('Uploading');
+    expect(code('CH-14404')?.textContent).toBe('Uploading…');
     expect(within(dlg()).queryByRole('progressbar')).toBeNull();
     await act(async () => gate.resolve({ success: true, data: { id: 'd-new' } }));
   });

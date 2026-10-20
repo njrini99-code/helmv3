@@ -9,6 +9,8 @@ import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
+import { DateField } from '../../ui/DateField';
+import { TimeField } from '../../ui/TimeField';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
@@ -535,7 +537,7 @@ export function EventEditor({
             <Button variant="ghost" onClick={requestClose}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={save.pending} onClick={() => void submit()}>
+            <Button variant="primary" busy={save.pending} onClick={() => void submit()}>
               {save.pending ? (base ? 'Saving…' : 'Publishing…') : primary}
             </Button>
 
@@ -589,9 +591,9 @@ export function EventEditor({
           <div>
             <span className="ch-ed__lbl">When</span>
             <div className="ch-ed__row">
-              <input className="ch-input" type="date" aria-label="Date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
-              <input className="ch-input" type="time" aria-label="Start time" step={900} disabled={allDay} value={toHHMM(win[0])} onChange={(e) => e.target.value && setWin([snap(fromHHMM(e.target.value)), multiTimed ? win[1] : snap(fromHHMM(e.target.value)) + (win[1] - win[0])])} />
-              <input className="ch-input" type="time" aria-label="End time" step={900} disabled={allDay} value={toHHMM(win[1])} aria-invalid={touched && invalidTime} onChange={(e) => e.target.value && setWin([win[0], snap(fromHHMM(e.target.value))])} />
+              <DateField label="Date" row value={date} onChange={(v) => v && setDate(v)} />
+              <TimeField label="Start time" disabled={allDay} value={toHHMM(win[0])} onChange={(v) => v && setWin([snap(fromHHMM(v)), multiTimed ? win[1] : snap(fromHHMM(v)) + (win[1] - win[0])])} />
+              <TimeField label="End time" disabled={allDay} min={!multiTimed && !needsEnd ? toHHMM(win[0] + 0.25) : undefined} value={toHHMM(win[1])} aria-invalid={touched && invalidTime} onChange={(v) => v && setWin([win[0], snap(fromHHMM(v))])} />
             </div>
             {!allDay && (
               <p className={'ch-field__help' + (touched && invalidTime ? ' is-error' : '')} data-ch-code={touched && invalidTime ? 'CH-6102' : undefined}>
@@ -618,10 +620,10 @@ export function EventEditor({
                 />
               )}
               {!base && repeat !== 'none' && (
-                <label className="ch-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <div className="ch-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <span className="ch-field__label">Until</span>
-                  <input className="ch-input" type="date" value={until} min={date} onChange={(e) => e.target.value && setUntil(e.target.value)} />
-                </label>
+                  <DateField label="Until" value={until} min={date} onChange={(v) => v && setUntil(v)} />
+                </div>
               )}
             </div>
             {series && (
@@ -822,7 +824,7 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
           <Button
             variant="danger"
             feel="warning"
-            disabled={cancel.pending}
+            busy={cancel.pending}
             onClick={() => void cancel.run()}
           >
             {cancel.pending ? 'Cancelling…' : 'Cancel event'}
@@ -876,7 +878,7 @@ export function DeleteEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
           <Button variant="ghost" onClick={onClose}>
             Keep event
           </Button>
-          <Button variant="danger" feel="warning" disabled={remove.pending} onClick={() => void remove.run()}>
+          <Button variant="danger" feel="warning" busy={remove.pending} onClick={() => void remove.run()}>
             {remove.pending ? 'Deleting…' : 'Delete permanently'}
           </Button>
         </>
@@ -1061,7 +1063,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                       <Button size="sm" variant="ghost" onClick={() => setAsking(null)}>
                         Keep link
                       </Button>
-                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} disabled={busy} onClick={() => confirm(r.type, asking.kind)}>
+                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} busy={busy} onClick={() => confirm(r.type, asking.kind)}>
                         {ask.go}
                       </Button>
                     </div>

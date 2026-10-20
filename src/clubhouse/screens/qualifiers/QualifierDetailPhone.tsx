@@ -18,6 +18,7 @@ import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { bubbleNote, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
+import { PrintHead } from './PrintHead';
 import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
@@ -101,6 +102,7 @@ export function QualifierDetailPhone({
 
   return (
     <main className="ch-qfm" aria-label={data.name}>
+      <PrintHead data={data} />
       <PhoneTop
         heading={false}
         title="Qualifier"
@@ -222,7 +224,7 @@ export function QualifierDetailPhone({
                 });
               }}
             >
-              {reopenPending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
+              {reopenPending ? <span data-ch-code="CH-09406">Reopening…</span> : 'Reopen qualifier'}
             </Button>
           )}
         </div>
@@ -323,7 +325,7 @@ function Board({
               <Pos position={r.position} tied={r.tied} move={r.move} />
               <span className="ch-qfm-lb__n">
                 <b>
-                  {r.name}
+                  <span className="ch-qfm-lb__nm">{r.name}</span>
                   {me && <span className="ch-qf-you">You</span>}
                 </b>
                 {(r.state || note) && (
@@ -345,6 +347,7 @@ function Board({
               {canOpen(r) ? (
                 <button
                   type="button"
+                  data-print-visible=""
                   className={'ch-qfm-lb__row' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
                   data-state={r.state ?? undefined}
                   aria-label={`${label}. Show ${me ? 'your' : 'their'} rounds`}
@@ -378,7 +381,9 @@ function Board({
             <div className={'ch-qfm-lb__row is-static is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')}>
               <Pos position={null} tied={false} move={null} />
               <span className="ch-qfm-lb__n">
-                <b>{r.name}</b>
+                <b>
+                  <span className="ch-qfm-lb__nm">{r.name}</span>
+                </b>
                 <span className="ch-qfm-lb__sub">No rounds submitted</span>
               </span>
               <span className="ch-qf-dash">—</span>

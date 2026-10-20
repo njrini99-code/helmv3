@@ -15,7 +15,7 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { moveOrder, orderToPriorities, PRIORITY_LABEL, priorityOrder, type ChCoachHelmSettings, type ChSettingsData, type ChSettingsWrites, type PriorityKey } from './model';
 import { useCoachHelmPower } from './hooks';
-import { Card, ReadFailed, Row, saveFailureBody, SettingSwitch, useWarnOnOpen } from './parts';
+import { Card, ReadFailed, Row, saveFailureBody, SavedMark, SettingSwitch, useSavedKeys, useWarnOnOpen } from './parts';
 
 export type Phil = CoachPhilosophy & { id: string | null };
 
@@ -35,6 +35,8 @@ export function CoachHelmSection({ data, writes }: { data: ChSettingsData; write
 export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
   const [p, setP] = useState(initial);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  // Which fields just saved, for the quiet "Saved" by their row (SavedMark).
+  const { saved, mark, any } = useSavedKeys();
   const idRef = useRef(initial.id);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const timers = useRef(new Map<string, number>());
@@ -93,8 +95,9 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
         stopSlow();
       }
       inflight.current -= 1;
-      // An autosave that lands is silent (D-70); "All changes saved" says it.
+      // An autosave that lands is silent (D-70); the row says Saved.
       if (ok) {
+        mark(...Object.keys(patch));
         if (inflight.current === 0) setStatus('saved');
         return;
       }
@@ -126,29 +129,25 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
     waiting.current.set(key, run);
     t.set(key, window.setTimeout(run, 600));
   };
-  return { p, change, status };
+  return { p, change, status, saved, any };
 }
 
 function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writes: ChSettingsWrites }) {
-  const { p, change, status } = usePhilosophy(initial.philosophy, writes);
+  const { p, change, saved, any } = usePhilosophy(initial.philosophy, writes);
   const floor = confidenceFloorForSensitivity(p.alertSensitivity);
   const alertsOn = ALERT_GROUPS.reduce((n, g) => n + g.alerts.filter((a) => p[a.key as keyof CoachPhilosophy]).length, 0);
   const alertsTotal = ALERT_GROUPS.reduce((n, g) => n + g.alerts.length, 0);
-  const statusText = status === 'saving' ? 'Saving…' : status === 'saved' ? 'All changes saved' : status === 'failed' ? "A change didn’t save" : 'Changes save as you make them';
 
   return (
     <>
-      <p className={'ch-set-autosave' + (status === 'failed' ? ' is-failed' : '')} aria-live="polite" data-ch-code="CH-8405">
-        {statusText}
-      </p>
       <PowerCard initial={initial} writes={writes} />
 
-      <Card id="set-priorities" title="What matters most" description="CoachHelm weighs player ratings and needs-attention flags in this order.">
+      <Card id="set-priorities" title="What matters most" description="CoachHelm weighs player ratings and needs-attention flags in this order." aside={<SavedMark show={any(...Object.keys(PRIORITY_LABEL))} />}>
         <Priorities p={p} onChange={(order) => change(orderToPriorities(order))} />
       </Card>
 
-      <Card id="set-sensitivity" title="How readily CoachHelm speaks up" description="The preset sets a confidence floor. The thresholds are the numbers that trip each kind of alert.">
-        <Row label="Alert sensitivity" help={`Needs at least ${Math.round(floor * 100)}% confidence.`}>
+      <Card id="set-sensitivity" title="How readily CoachHelm speaks up" description="The preset sets a confidence floor. The thresholds are the numbers that trip each kind of alert." aside={<SavedMark show={any('declineThreshold', 'pressureGapThreshold', 'bubbleZoneRange')} />}>
+        <Row label="Alert sensitivity" saved={saved.has('alertSensitivity')} help={`Needs at least ${Math.round(floor * 100)}% confidence.`}>
           <Segmented
             label="Alert sensitivity"
             size="sm"
@@ -197,7 +196,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
               const k = a.key as keyof CoachPhilosophy;
               const label = a.label.replace('Hot/cold', 'Hot and cold');
               return (
-                <Row key={a.key} label={label}>
+                <Row key={a.key} label={label} saved={saved.has(a.key)}>
                   <SettingSwitch label={label} hideLabel checked={!!p[k]} onChange={(v) => change({ [k]: v } as Partial<CoachPhilosophy>)} />
                 </Row>
               );
@@ -206,7 +205,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
         ))}
       </Card>
 
-      <Card id="set-signal" title="Signal controls" description="How much evidence CoachHelm needs, and how alerts reach you.">
+      <Card id="set-signal" title="Signal controls" description="How much evidence CoachHelm needs, and how alerts reach you." aside={<SavedMark show={any('minInsightConfidence', 'minRoundsForSignal')} />}>
         <div className="ch-set-sliders">
           <Slider
             label="Minimum confidence"
@@ -229,7 +228,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
             onChange={(v) => change({ minRoundsForSignal: v }, { debounce: 'minRoundsForSignal' })}
           />
         </div>
-        <Row label="Alert delivery">
+        <Row label="Alert delivery" saved={saved.has('alertDigest')}>
           <Segmented
             label="Alert delivery"
             size="sm"
@@ -244,7 +243,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
         </Row>
       </Card>
 
-      <Card id="set-windows" title="Analysis windows" description="How far back CoachHelm and Stats look.">
+      <Card id="set-windows" title="Analysis windows" description="How far back CoachHelm and Stats look." aside={<SavedMark show={any('minHolePlaysForRanking', 'patternLookbackDays')} />}>
         <div className="ch-set-sliders">
           <Slider
             label="Hole ranking"
@@ -263,7 +262,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
             onChange={(v) => change({ patternLookbackDays: v }, { debounce: 'patternLookbackDays' })}
           />
         </div>
-        <Row label="Stats comparison" help={`Stats compares the last ${p.statsBenchmarkWindowDays} days with the ${p.statsBenchmarkWindowDays} before them.`}>
+        <Row label="Stats comparison" saved={saved.has('statsBenchmarkWindowDays')} help={`Stats compares the last ${p.statsBenchmarkWindowDays} days with the ${p.statsBenchmarkWindowDays} before them.`}>
           <Segmented
             label="Stats comparison window"
             size="sm"
@@ -275,13 +274,13 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
       </Card>
 
       <Card id="set-display" title="Display" description="What CoachHelm shows on your dashboards. The strokes-gained baseline follows your team: the Tour for men’s teams, the women’s tour for women’s.">
-        <Row label="Strokes gained">
+        <Row label="Strokes gained" saved={saved.has('showStrokesGained')}>
           <SettingSwitch label="Show strokes gained" hideLabel checked={p.showStrokesGained} onChange={(v) => change({ showStrokesGained: v })} />
         </Row>
-        <Row label="Advanced statistics">
+        <Row label="Advanced statistics" saved={saved.has('showAdvancedStats')}>
           <SettingSwitch label="Show advanced statistics" hideLabel checked={p.showAdvancedStats} onChange={(v) => change({ showAdvancedStats: v })} />
         </Row>
-        <Row label="Insight detail">
+        <Row label="Insight detail" saved={saved.has('insightVerbosity')}>
           <Segmented
             label="Insight detail"
             size="sm"
@@ -329,7 +328,7 @@ function Priorities({ p, onChange }: { p: Phil; onChange: (order: PriorityKey[])
 }
 
 function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: ChSettingsWrites }) {
-  const { coach, team, pending, setC, setTeamOn } = useCoachHelmPower(initial, writes);
+  const { coach, team, pending, saved, setC, setTeamOn } = useCoachHelmPower(initial, writes);
   const [confirmOff, setConfirmOff] = useState(false);
   useWarnOnOpen(confirmOff);
   return (
@@ -339,6 +338,7 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
           label="For the whole team"
           help={team.isHeadCoach ? (team.enabled ? 'On for every coach on this team.' : 'Paused for everyone on this team.') : 'Only the head coach can change this.'}
           dim={!team.isHeadCoach}
+          saved={saved.has('team')}
         >
           <SettingSwitch
             label="CoachHelm for the whole team"
@@ -350,7 +350,7 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
           />
         </Row>
       )}
-      <Row label="On your dashboards" help={coach.enabled ? 'Insights, predictions and patterns appear on your pages.' : 'Hidden on your pages. Your settings below are kept.'}>
+      <Row label="On your dashboards" saved={saved.has('enabled')} help={coach.enabled ? 'Insights, predictions and patterns appear on your pages.' : 'Hidden on your pages. Your settings below are kept.'}>
         <SettingSwitch
           label="CoachHelm on your dashboards"
           hideLabel
@@ -361,13 +361,13 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
       </Row>
       {coach.enabled && (
         <>
-          <Row label="Insights" help="Coaching notes on what changed and why.">
+          <Row label="Insights" saved={saved.has('showInsights')} help="Coaching notes on what changed and why.">
             <SettingSwitch label="Insights" hideLabel checked={coach.showInsights} busy={pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn’t change insights")} />
           </Row>
-          <Row label="Predictions" help="Where each player’s scoring is heading.">
+          <Row label="Predictions" saved={saved.has('showPredictions')} help="Where each player’s scoring is heading.">
             <SettingSwitch label="Predictions" hideLabel checked={coach.showPredictions} busy={pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn’t change predictions")} />
           </Row>
-          <Row label="Patterns" help="Leaks and habits that repeat across rounds.">
+          <Row label="Patterns" saved={saved.has('showPatterns')} help="Leaks and habits that repeat across rounds.">
             <SettingSwitch label="Patterns" hideLabel checked={coach.showPatterns} busy={pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn’t change patterns")} />
           </Row>
         </>

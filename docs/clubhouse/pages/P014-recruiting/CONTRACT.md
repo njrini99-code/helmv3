@@ -35,7 +35,7 @@ it changes no schema.
 
 Status: DEFINED
 
-Recruiting opens final on first paint, read on the server in one pass: the header with Add prospect and the recruiting calendar line (CH-14808), the pipeline with every stage's count (the share of the list is no longer drawn, P014 finding #4), the list by recently updated, and the first prospect's panel (140101, CH-14904). While the next-step columns exist on golf_recruits (migration 20261008120000, written and not applied on 2026-10-08), the table adds a Next step column, the panel a Next step part (CH-14307), the phone rows a dated plate for a due step, the sort "Next step due", and the pipeline head "n visits this month · n decisions due"; until then all of it is hidden and nothing names the columns in a read or a write. On a phone at 820px and below it is the phone build (141901, CH-14914). The route draws the Clubhouse page only for a coach with the Clubhouse on; everyone else keeps the existing page. From the shell, the frame opens on its own (10102).
+Recruiting opens final on first paint, read on the server in one pass: the header with Add prospect and the recruiting calendar line (CH-14808), the pipeline with every stage's count (the share of the list is no longer drawn, P014 finding #4), the list by recently updated, and the first prospect's panel (140101, CH-14904). While the next-step columns exist on golf_recruits (migration 20261008120000, written and not applied on 2026-10-08), the table adds a Next step column, the panel a Next step part (CH-14307), the phone rows a dated plate for a due step (every step while sorted by Next step due, and under the name on a desktop list too narrow for the column; a step whose day has passed reads "Overdue"), the sort "Next step due" (a step with no day after the dated ones), and the pipeline head "n visits this month · n decisions due" (a committed prospect's decision is not counted); until then all of it is hidden and nothing names the columns in a read or a write. On a phone at 820px and below it is the phone build (141901, CH-14914). The route draws the Clubhouse page only for a coach with the Clubhouse on; everyone else keeps the existing page. From the shell, the frame opens on its own (10102).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -155,7 +155,7 @@ Offline, no write is sent: the shell's toast names what did not happen ("Couldn'
 | 140703 | CH-14916 | `AN_UPLOAD_IS_REPEATED` | An upload is repeated |
 | 140704 | CH-14917 | `A_FILE_IS_DRAGGED_OVER_A_PROSPECTS` | A file is dragged over a prospect's documents (desktop) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -168,7 +168,7 @@ Recruiting is for coaches. A player who opens it is sent Home before the page dr
 | 140801 | CH-14902 | `A_PLAYER_OPENS_RECRUITING` | A player opens Recruiting |
 | 140802 | CH-14903 | `THE_SERVER_REFUSES_A_WRITE_BECAUSE_THE` | The server refuses a write because the caller is not the team's coach |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1910.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -317,7 +317,7 @@ CH-1842, 11825 CH-1816.
 | 141807 | CH-14807 | `EMAIL_AND_CALL_FOR_A_DIVISION_I` | Email and Call for a Division I prospect before June 15 of their sophomore year |
 | 141808 | CH-14808 | `THE_RECRUITING_CALENDAR_LINE` | The recruiting calendar line |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

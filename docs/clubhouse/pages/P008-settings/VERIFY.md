@@ -1,5 +1,14 @@
 # P008 — Settings: verification
 
+## 2026-10-19 — Save bar, per-row Saved, measure, danger zone (lane L7)
+
+Source and emulated-browser evidence only; no physical-device or owner acceptance.
+
+- Tests (exit 0): `settings-save-bar.test.tsx` (9), `settings.test.tsx` (201), `settings-staff.test.tsx`, `settings-server.test.tsx`, `settings-distance-units.test.tsx`, `settings-philosophy-save.test.tsx`, `wiring-p008-settings.test.tsx`, plus `shell-reach-css`, `course-location`, `popup-layout`, `native`, `logic`, `dialog-lifetime`, `dark-ink-guard`, `audit-a11y-motion` and the motion tests.
+- Browser (WebKit, headless, reduced motion, dev server): 1280 and 390, light and dark, of account, notifications, team, CoachHelm and preferences, the player's account and golf sections, a dirty profile and a dirty team card with the bar at the foot of the view, a CoachHelm switch and a notifications switch saying Saved in their rows, and a saved team card. Dark is the stored golf theme plus `data-fw-theme="dark"` on the root.
+- Measured in WebKit: the reorder arrows (30px) and the setting segments (26px) carry a 44px hit area (`::after`), and the arrows sit 14px apart.
+- Not verified: a physical iPhone, the native app's keyboard with the bar, VoiceOver reading of the row Saved region, Cmd+S in Safari's own Save dialog (the handler prevents it inside a card; only the unit test exercises it).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

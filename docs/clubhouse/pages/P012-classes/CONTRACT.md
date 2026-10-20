@@ -135,7 +135,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 120702 | CH-12902 | `A_READ_IS_SLOW` | A read is slow |
 | 120703 | — | `WRITES_REFUSE_OFFLINE` | Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device. |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -149,7 +149,7 @@ Who may open the page: a player with `golf_clubhouse_ui` on for the player role 
 | 120802 | — | `A_PLAYER_CHANGES_ONLY_THEIR_OWN_CLASSES` | Every read and write the page makes is limited to the player's own rows: the classes are read with the session's player id, an edit updates and a remove deletes by the class's id and that player id, and a new class carries the player's id and team id. Row-level security is the gate that counts: the baseline policies let only the owning player insert, update or delete a class and let its player and an active coach of the team read it, and teammates cannot (read in the baseline migration; the policies were not run for this page). |
 | 120803 | — | `SERVER_ACTIONS_ARE_THE_GATE` | The calendar actions check the caller again, whatever the screen shows. syncClassToCalendar refuses a caller who is not signed in, whose player profile is not the player named, who is not a member of the team, or whose class row is not theirs. removeClassFromCalendar refuses a caller with no player profile, a team they are not on and a class that another player owns (looked up with the admin client on purpose, so a row the policies hide is not mistaken for an absent one), and cleans up an orphaned class's events only on the caller's own teams. Read in this pass, not run: the tests replace both actions, so no test here forces a refusal. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1910.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -179,6 +179,7 @@ Removing a class asks first, with the warning haptic before the question, and sa
 | 121101 | CH-12501 | `REMOVE_CLASS` | Remove class |
 | 121102 | CH-12502 | `CANCEL_OR_CLOSE_A_FORM_THAT_HAS` | Cancel or close a form that has changes |
 | 121103 | CH-12503 | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
+| 121104 | CH-12504 | `START_OVER_IN_THE_IMPORT_REVIEW_ONCE` | Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once) |
 
 ## 12 — State preservation
 
@@ -277,7 +278,7 @@ CH-1842, 11825 CH-1816.
 | 121805 | CH-12805 | `THE_IMPORTS_DROP_ZONE` | The import's drop zone |
 | 121806 | — | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

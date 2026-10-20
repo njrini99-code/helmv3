@@ -149,15 +149,18 @@ export function matchesQuery(p: ChProspect, query: string): boolean {
   return [p.name, p.hometown, p.state, p.email, p.notes].some((v) => (v ?? '').toLowerCase().includes(q));
 }
 
+const nextSortKey = (p: ChProspect) => p.nextStepDate ?? (p.nextStepLabel?.trim() ? '9999-12-30' : '9999-12-31');
+
 export function sortProspects(list: readonly ChProspect[], sort: ChSort): ChProspect[] {
   return [...list].sort((a, b) => {
     if (sort === 'name') return a.name.localeCompare(b.name);
     // A prospect with no class year goes last.
     if (sort === 'class') return (a.classYear ?? 9999) - (b.classYear ?? 9999);
-    // The soonest next step first; a prospect with none goes last, then most recently updated.
+    // The soonest next step first; a step with a label and no day after every dated one; a prospect with none goes
+    // last; then most recently updated.
     if (sort === 'next') {
-      const x = a.nextStepDate ?? '9999-12-31';
-      const y = b.nextStepDate ?? '9999-12-31';
+      const x = nextSortKey(a);
+      const y = nextSortKey(b);
       if (x !== y) return x < y ? -1 : 1;
     }
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -348,9 +351,15 @@ export function isNextStepDue(p: Pick<ChProspect, 'nextStepDate'>, now: Date, tz
   return !!p.nextStepDate && p.nextStepDate <= addDays(todayKey(now, tz), NEXT_STEP_DUE_DAYS);
 }
 
+/** A step is late (overdue) when its day is before today; today's step is due, not late. */
+export function isNextStepLate(p: Pick<ChProspect, 'nextStepDate'>, now: Date, tz?: string): boolean {
+  return !!p.nextStepDate && p.nextStepDate < todayKey(now, tz);
+}
+
 /**
  * The pipeline head's count: visits dated this calendar month, and decisions due (dated by the end of this month,
- * including any already past). Null when there is nothing to count, so the head says nothing rather than "0 visits".
+ * including any already past) for a prospect not yet committed: a committed prospect has decided. Null when there is
+ * nothing to count, so the head says nothing rather than "0 visits".
  */
 export function nextStepSummary(list: readonly ChProspect[], now: Date, tz?: string): string | null {
   const today = todayKey(now, tz);
@@ -361,7 +370,7 @@ export function nextStepSummary(list: readonly ChProspect[], now: Date, tz?: str
     if (!p.nextStepDate) continue;
     const kind = nextStepKind(p.nextStepLabel);
     if (kind === 'visit' && p.nextStepDate.slice(0, 7) === month) visits += 1;
-    if (kind === 'decision' && p.nextStepDate.slice(0, 7) <= month) decisions += 1;
+    if (kind === 'decision' && p.stage !== 'committed' && p.nextStepDate.slice(0, 7) <= month) decisions += 1;
   }
   const parts = [
     visits ? `${visits} ${visits === 1 ? 'visit' : 'visits'} this month` : null,

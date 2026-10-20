@@ -5,6 +5,8 @@ import { ChevronLeft } from 'lucide-react';
 import { haptic } from '../lib/haptics';
 import { CH_RAIL_COOKIE } from '../lib/rail-cookie';
 import { Icon } from '../ui/Icon';
+import { Tooltip } from '../ui/Tooltip';
+import { isApple, modKey } from './command/shortcuts';
 
 /** Remembers the fold for the next load (read on the server by railHint, so a reload draws the rail first). */
 function rememberFold(folded: boolean): void {
@@ -35,17 +37,22 @@ export function RailToggle({ folded, onFold }: { folded: boolean; onFold: (folde
     return () => window.removeEventListener('keydown', onKey);
   }, [toggle]);
 
+  // Only drawn once the tip is up, which is on the client: the key is the platform's own (the Command key on a Mac).
+  const mod = modKey(isApple(typeof navigator === 'undefined' ? undefined : navigator));
+  const label = folded ? 'Expand sidebar' : 'Collapse sidebar';
   return (
-    <button
-      type="button"
-      className="ch-railtoggle"
-      aria-controls="ch-sidebar"
-      aria-expanded={!folded}
-      aria-label={folded ? 'Expand sidebar' : 'Collapse sidebar'}
-      aria-keyshortcuts="Meta+Backslash Control+Backslash"
-      onClick={toggle}
-    >
-      <Icon icon={ChevronLeft} size={13} />
-    </button>
+    <Tooltip label={label} shortcut={[mod, '\\']}>
+      <button
+        type="button"
+        className="ch-railtoggle"
+        aria-controls="ch-sidebar"
+        aria-expanded={!folded}
+        aria-label={label}
+        aria-keyshortcuts="Meta+Backslash Control+Backslash"
+        onClick={toggle}
+      >
+        <Icon icon={ChevronLeft} size={13} />
+      </button>
+    </Tooltip>
   );
 }
