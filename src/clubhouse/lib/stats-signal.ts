@@ -10,6 +10,9 @@
 /** Production's within-player standard deviation of a round (players with five or more rounds): the fallback while a player has too few rounds to measure their own. */
 export const POOLED_SD = { sg: 3.8, score: 3.6 } as const;
 
+/** The figures with a pooled spread to fall back on. */
+export type SpreadKind = keyof typeof POOLED_SD;
+
 /** Rounds in each window a player needs before their own spread replaces the pooled one. */
 export const OWN_SD_MIN_ROUNDS = 5;
 
@@ -87,6 +90,45 @@ export function spreadFor(values: number[], kind: keyof typeof POOLED_SD): numbe
 export function diffSe(seA: number | null, seB: number | null): number | null {
   if (seA == null || seB == null) return null;
   return Math.sqrt(seA ** 2 + seB ** 2);
+}
+
+/**
+ * The standard error of a window's mean from its round values (per 18 holes for a per-round figure). A score or strokes gained
+ * window takes the player's own spread from five rounds and the pooled one below that (`spreadFor`); a figure with no pooled
+ * spread (greens, putts, scrambling, birdies) has one only once five rounds can measure it, and none before: an unmeasured
+ * change is never painted. `n` is the rounds the mean rests on (whole rounds: a nine-hole round is half); it defaults to the
+ * count of values.
+ */
+export function meanSe(values: number[], kind: SpreadKind | null, n: number = values.length): number | null {
+  if (!values.length) return null;
+  if (kind) return standardError(spreadFor(values, kind), n);
+  const own = values.length >= OWN_SD_MIN_ROUNDS ? sampleSd(values) : null;
+  return own != null && own > MIN_OWN_SD ? standardError(own, n) : null;
+}
+
+/** The standard error of the difference of two windows' means (the current one and the one it is set against). */
+export function changeSe(
+  current: number[],
+  previous: number[],
+  kind: SpreadKind | null,
+  nCurrent: number = current.length,
+  nPrevious: number = previous.length,
+): number | null {
+  return diffSe(meanSe(current, kind, nCurrent), meanSe(previous, kind, nPrevious));
+}
+
+/**
+ * A short run of scores (oldest first) split in half: the newer half's mean less the older half's, and that change's standard
+ * error. The split is the form line's and `summarizeWindow`'s own (`formChange`): with an odd count the middle score is in
+ * neither half. Null under three scores.
+ */
+export function halvesChange(trend: number[]): { delta: number; se: number | null } | null {
+  if (trend.length < 3) return null;
+  const half = Math.floor(trend.length / 2);
+  const newer = trend.slice(trend.length - half);
+  const older = trend.slice(0, half);
+  const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  return { delta: m(newer) - m(older), se: changeSe(newer, older, 'score') };
 }
 
 export type DeltaTone = '' | 'is-gain' | 'is-loss';

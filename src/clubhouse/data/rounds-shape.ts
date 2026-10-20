@@ -1,4 +1,4 @@
-import { isScoreCountable } from './round-scope';
+import { isScoreCountable, isTotalOnlyCountable, recordedPutts } from './round-scope';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 
 /**
@@ -28,7 +28,10 @@ export interface ChLibraryRound {
   inn: number | null;
   fairways: { hit: number; of: number } | null;
   greens: { hit: number; of: number } | null;
+  /** The round's putts; null when none were recorded (a round written 0 putts, `recordedPutts`). */
   putts: number | null;
+  /** Posted as an 18-hole total without its holes (Q-123): a score, and nothing hole-level (the season's putts leave it out). */
+  totalOnly?: boolean;
   /** Counts toward the score figures (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123). */
   countable: boolean;
 }
@@ -65,6 +68,7 @@ export interface ChRoundsSeason {
   avg: number | null;
   toPar: number | null;
   best: { score: number; toPar: number | null; course: string; date: string } | null;
+  /** Putts per round on Stats' basis (`cachedPutts`): the 18-hole rounds with their holes and putts recorded; a round written 0 putts has none. */
   putts: number | null;
   /** Greens in regulation, percent of greens played. */
   girPct: number | null;
@@ -156,7 +160,8 @@ export function toLibraryRound(raw: ChRoundListRow): ChLibraryRound | null {
     inn: holes === 18 ? r.back_nine : null,
     fairways: r.total_fairways ? { hit: r.total_fairways_hit ?? 0, of: r.total_fairways } : null,
     greens: r.total_gir_possible ? { hit: r.total_gir ?? 0, of: r.total_gir_possible } : null,
-    putts: r.total_putts,
+    putts: recordedPutts(r.total_putts),
+    ...(isTotalOnlyCountable(r) ? { totalOnly: true } : {}),
     countable: isScoreCountable(r),
   };
 }
@@ -175,7 +180,7 @@ export function seasonFrom(list: ChLibraryRound[], since: string): ChRoundsSeaso
     avg: mean(s.map((r) => r.score)),
     toPar: mean(nums((r) => r.toPar)),
     best: best ? { score: best.score, toPar: best.toPar, course: best.course, date: best.date } : null,
-    putts: mean(nums((r) => r.putts)),
+    putts: mean(nums((r) => (r.totalOnly ? null : r.putts))),
     girPct: of ? (hit / of) * 100 : null,
     girPer18: of ? (hit / of) * 18 : null,
     ribbon: withPar

@@ -561,12 +561,14 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(hero.querySelector('.ch-stm-hero__v')!.textContent).toBe('73.6');
     // Drawn against par, as the stat line's gauge drew it (no bare numbers).
     expect(hero.querySelector('.ch-stm-hero__par')!.textContent).toBe('+1.6 to par');
-    expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 vs previous 10');
-    // Scoring down 0.9 is better (green); putts up 0.3 is worse (amber).
+    // A change is green or amber only when it clears its standard error (stats visuals Q4): scoring down 0.9 against 0.76 is
+    // better (green), greens up 3 against 2.4 too; putts up 0.3 against 0.42 and scrambling up 4 against 5.6 are no clear change.
+    expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 Better than previous 10');
     expect(hero.querySelector('.ch-stm-hero__c b')!.className).toMatch(/ch-gain/);
     const rows = [...document.querySelectorAll('.ch-stm-figrow')];
     expect(rows.map((r) => r.querySelector('dt > span')!.textContent)).toEqual(['Greens in regulation', 'Putts per round', 'Scrambling']);
-    expect(rows[1]!.querySelector('.ch-stm-figrow__d')!.className).toMatch(/ch-loss/);
+    expect(rows.map((r) => r.querySelector('.ch-stm-figrow__d')!.className.match(/ch-(gain|loss)/)?.[0] ?? null)).toEqual(['ch-gain', null, null]);
+    expect(rows.map((r) => r.querySelector('.ch-stm-figrow__d')!.textContent)).toEqual(['+3', '+0.3', '+4']);
     // No bare numbers: each figure says what it is read against where the data has a reference (the Tour's greens, 36 putts).
     expect(rows.map((r) => r.querySelector('.ch-stm-figrow__ref')?.textContent ?? null)).toEqual(['Tour average 66%', 'Two putts a green is 36', null]);
     for (const h of ['Scoring trend', 'The round', 'Strokes gained by leg', 'Players', 'Team putting']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
