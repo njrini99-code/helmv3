@@ -14313,6 +14313,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/delivery/__tests__/pinned-reads.test.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/delivery/pinned-reads.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/follow-up-eligibility-loader.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -19795,7 +19805,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
-          "anchor": "src/app/golf/actions/insight-delivery-pinned"
+          "anchor": "src/lib/coachhelm/delivery/pinned-reads"
         },
         {
           "kind": "import_graph",
