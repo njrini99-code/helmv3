@@ -1,5 +1,21 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-20 — No visible change (stats visuals 5)
+
+```text
+Design package: none (stats visuals plan, piece 5; the entry is in P004)
+PR/commit:      uncommitted (local/stats-pr5-rank)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the player page. `stats.css`, which this page shares with the
+  team page, gained the `.ch-sv-tr` block for the team's ranked dot plot.
+
 ## 2026-10-20 — Scoring mix bar (stats visuals 6)
 
 ```text
