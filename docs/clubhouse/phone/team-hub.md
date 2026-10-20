@@ -19,7 +19,7 @@ The route is `/golf/dashboard/team-hub` for both roles. Today a coach there gets
 
 ## Header and tabs
 
-Coach view / Player view pill, "Team Hub", the team and season. A coach's one primary action is New announcement. Tabs: Home, Announcements, Travel, Documents, and Tasks (coach). `?tab=` opens a tab (the legacy `?tab=` redirects stay for Fairway users only).
+The coach's Coach view pill (a player has none, wave 7), "Team Hub", the team and season. A coach's one primary action is New announcement. Tabs: Home, Announcements, Travel, Documents, and Tasks (coach). `?tab=` opens a tab (the legacy `?tab=` redirects stay for Fairway users only).
 
 ## Board to data
 

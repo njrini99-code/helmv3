@@ -845,16 +845,29 @@ async function regenerateJoinCodeImpl(
 
   const newJoinCode = generateJoinCode();
 
-  // Update join code
-  const { error: updateError } = await supabase
+  // Update join code. An UPDATE that RLS filters to zero rows is not an error,
+  // so the saved row is read back: without it the coach was shown a code that
+  // was never stored, and players typing it were refused. RETURNING is
+  // readable here: golf_teams_update_coach and golf_teams_select both rest on
+  // is_golf_team_coach(id).
+  const { data: updatedRows, error: updateError } = await supabase
     .from('golf_teams')
     .update({
       join_code: newJoinCode,
       updated_at: new Date().toISOString()
     })
-    .eq('id', teamId);
+    .eq('id', teamId)
+    .select('id');
 
   if (updateError) {
+    return { success: false, error: 'Failed to regenerate join code. Please try again.' };
+  }
+
+  if (updatedRows?.length !== 1) {
+    await logServerError(
+      `[regenerateJoinCode] update saved ${updatedRows?.length ?? 0} rows for team ${teamId}; new code not stored`,
+      { action: 'teams.regenerateJoinCode', featureArea: 'teams' },
+    );
     return { success: false, error: 'Failed to regenerate join code. Please try again.' };
   }
 
@@ -1282,11 +1295,29 @@ async function acceptJoinRequestImpl(
   // thrown away. And a guard that cannot run must not be treated as a guard
   // that passed: the safe answer is to decline the approval and let the coach
   // retry, not to approve on the strength of a read that did not happen.
-  const { data: existingMembership, error: existingMembershipError } = await supabase
-    .from('golf_team_members')
-    .select('team_id')
-    .eq('player_id', request.player_id)
-    .maybeSingle();
+  //
+  // ADMIN client, scoped to the request's player_id (read server-side above,
+  // never from the caller). Under the coach's session RLS only shows the
+  // coach their OWN team's golf_team_members rows, so a player rostered on
+  // ANOTHER team read as "not on any team" and was approved onto a second
+  // one (P003). `.limit(1)` rather than `.maybeSingle()`: one row is enough to
+  // refuse, and a player with two rows elsewhere must get the same refusal,
+  // not a multiple-rows error.
+  let existingMemberships: Array<{ team_id: string }> | null = null;
+  let existingMembershipError: unknown;
+  try {
+    const res = await createAdminClient()
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', request.player_id)
+      .limit(1);
+    existingMemberships = res.data;
+    existingMembershipError = res.error;
+  } catch (err) {
+    // No service-role client (missing key) is a guard that cannot run.
+    existingMembershipError = err;
+  }
+  const existingMembership = existingMemberships?.[0] ?? null;
 
   if (existingMembershipError) {
     await logServerError(

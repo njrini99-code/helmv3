@@ -46,8 +46,8 @@ vi.mock('../screens/coachhelm/chat/Thread', () => ({
   },
 }));
 vi.mock('../screens/coachhelm/chat/EvidencePanel', () => ({
-  AskEvidencePanel: (p: { focus: { label: string }; phone: boolean; onClose: () => void }) => (
-    <div data-testid="evidence" data-phone={String(p.phone)}>
+  AskEvidencePanel: (p: { focus: { label: string }; phone: boolean; onClose: () => void; open?: boolean }) => (
+    <div data-testid="evidence" data-phone={String(p.phone)} data-open={String(p.open ?? true)}>
       {p.focus.label}
       <button type="button" onClick={p.onClose}>
         stub close evidence
@@ -359,6 +359,21 @@ describe('the composer', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
     expect(box().value).toBe('@');
     expect(chat.calls.send).not.toHaveBeenCalled();
+  });
+
+  it('Escape takes back the @ the Players chip put in the text, never one the coach typed', async () => {
+    show();
+    await userEvent.type(box(), 'Compare');
+    await userEvent.click(screen.getByRole('button', { name: /Players/ }));
+    expect(box().value).toBe('Compare @');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box().value).toBe('Compare');
+    await userEvent.type(box(), ' @');
+    expect(picker()).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box().value).toBe('Compare @');
   });
 
   it('CH-13821 a roster with nobody says so instead of drawing an empty list', async () => {
@@ -773,7 +788,7 @@ describe('the container', () => {
 
   it('hands the thread the failed answer as a sentence with what to offer, by the rule of the stream route', () => {
     const cases: Array<[unknown, { message: string; recovery: string }]> = [
-      [{ statusCode: 429, responseBody: JSON.stringify({ error: 'Too many requests. Please slow down.' }) }, { message: "You're asking quickly. Wait a moment, then try again.", recovery: 'retry' }],
+      [{ statusCode: 429, responseBody: JSON.stringify({ error: 'Too many requests. Please slow down.' }) }, { message: "Too many questions in a row. Give it a few seconds and try again.", recovery: 'retry' }],
       [{ statusCode: 429, responseBody: JSON.stringify({ error: 'You have reached today’s analysis limit for your program. It resets tomorrow.', reason: 'gated' }) }, { message: 'You have reached today’s analysis limit for your program. It resets tomorrow.', recovery: 'none' }],
       [{ statusCode: 404, responseBody: JSON.stringify({ error: 'Conversation not found' }) }, { message: "That conversation isn't available. Start a new chat.", recovery: 'new-chat' }],
       [new TypeError('Failed to fetch'), { message: 'Something went wrong while answering. Try again.', recovery: 'retry' }],
@@ -822,7 +837,9 @@ describe('the container', () => {
     expect(screen.getByTestId('evidence')).toHaveAttribute('data-phone', 'true');
     expect(document.querySelector('dialog[open]')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'stub close evidence' }));
-    expect(screen.queryByTestId('evidence')).toBeNull();
+    // Closed, the sheet stays mounted with open={false} so it slides out (audit A-18), still showing what it showed.
+    expect(screen.getByTestId('evidence')).toHaveAttribute('data-open', 'false');
+    expect(screen.getByTestId('evidence')).toHaveTextContent('Jonah Okafor');
   });
 });
 
@@ -843,10 +860,10 @@ describe('CH-13225 a section that crashes leaves the rest of the page usable', (
 });
 
 describe('the states that stand in for the thread', () => {
-  it('CH-13321 an empty roster is the first-run page with Open roster, the sub-tab strip, and no composer', () => {
+  it('CH-13321 an empty roster is the first-run page with Invite players, the sub-tab strip, and no composer', () => {
     show({ status: 'noRoster', teamName: 'Finley University' });
     expect(code('CH-13321')?.textContent).toMatch(/Add players to ask CoachHelm.*CoachHelm answers from your players’ rounds, stats and schedule\. Once your roster is in, ask about anyone on it\./);
-    expect(screen.getByRole('link', { name: 'Open roster' })).toHaveAttribute('href', '/golf/dashboard/roster');
+    expect(screen.getByRole('link', { name: 'Invite players' })).toHaveAttribute('href', '/golf/dashboard/roster?invite=1');
     expect(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();
   });

@@ -1,10 +1,11 @@
-import { CalendarDays, Flag } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ChAgendaRow, ChCoachHome } from '../../data/home';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { EmptyState } from '../../ui/States';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { TYPE_ICON } from '../calendar/type-icon';
 
 /** What the dots under a day say to a screen reader. */
 export function dayLabel(count: number, competition: boolean): string {
@@ -45,7 +46,7 @@ export function Week({ week, between, covered = false }: { week: ChCoachHome['we
                 <span className="ch-h-day__n ch-num">{d.dayOfMonth}</span>
                 <span className="ch-h-day__m" aria-hidden="true">
                   {d.hasCompetition ? (
-                    <Icon icon={Flag} size={11} />
+                    <Icon icon={TYPE_ICON[d.competitionType ?? 'tournament']} size={11} />
                   ) : (
                     Array.from({ length: Math.min(d.eventCount, 4) }, (_, i) => <i key={i} />)
                   )}

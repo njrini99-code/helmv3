@@ -139,7 +139,7 @@ beforeEach(() => {
 });
 
 describe('Team stats under a filter', () => {
-  it('"Last 10" is the ten newest MATCHING rounds, and "vs. previous 10" is the ten matching rounds before them', async () => {
+  it('"Last 10" is the ten newest MATCHING rounds, and "vs previous 10" is the ten matching rounds before them', async () => {
     tables.current = teamTables(mixed());
     const all = await teamLoad(filterFor('last10'));
     // Unfiltered, the ten newest are the practice rounds.
@@ -149,7 +149,7 @@ describe('Team stats under a filter', () => {
     expect(scoringAvg(d).value).toBe(70);
     // 70 now against 74 before, both tournaments; the practice rounds take no part.
     expect(scoringAvg(d).delta).toBe(-4);
-    expect(scoringAvg(d).context).toBe('vs. previous 10');
+    expect(scoringAvg(d).context).toBe('vs previous 10');
     expect(d.grid.find((g) => g.id === 'p1')!.rounds).toBe(10);
     // The player grid reads the same rounds: their tournament scoring, not the practice rounds' 90.
     expect(d.grid.find((g) => g.id === 'p1')!.avg).toBe(70);
@@ -421,7 +421,7 @@ describe('nine- and eighteen-hole rounds', () => {
     expect(eight.change).toBeCloseTo(0.8, 10);
   });
 
-  it('"vs. previous 10" needs three whole earlier rounds: four nine-hole rounds before the ten are two, six are three', async () => {
+  it('"vs previous 10" needs three whole earlier rounds: four nine-hole rounds before the ten are two, six are three', async () => {
     const mk = (older: number) => [
       ...Array.from({ length: 10 }, (_, i) => shortR(`c${i}`, 'p1', inSeason(40 - i), { total_score: 36 })),
       ...Array.from({ length: older }, (_, i) => shortR(`o${i}`, 'p1', inSeason(20 - i), { total_score: 40 })),
@@ -434,7 +434,7 @@ describe('nine- and eighteen-hole rounds', () => {
     teamOf(mk(6));
     const three = fig(await teamLoad(holes('9', 'last10')), 'Scoring average');
     expect(three.delta).toBe(72 - 80);
-    expect(three.context).toBe('vs. previous 10');
+    expect(three.context).toBe('vs previous 10');
   });
 
   it('a round with no score is no round: not counted, not listed, on either page', async () => {
@@ -449,7 +449,7 @@ describe('nine- and eighteen-hole rounds', () => {
     expect(p.rounds.map((r) => r.id)).not.toContain('p1none');
   });
 
-  it('"vs. previous 10" strokes gained needs three whole earlier rounds WITH shots: six 9-hole rounds, four of them with shots, are two', async () => {
+  it('"vs previous 10" strokes gained needs three whole earlier rounds WITH shots: six 9-hole rounds, four of them with shots, are two', async () => {
     const mk = (withShots: number) => [
       ...Array.from({ length: 10 }, (_, i) => shortR(`c${i}`, 'p1', inSeason(40 - i), { strokes_gained_total: 0.5 })),
       ...Array.from({ length: 6 }, (_, i) => shortR(`o${i}`, 'p1', inSeason(20 - i), { strokes_gained_total: i < withShots ? 0.2 : null })),

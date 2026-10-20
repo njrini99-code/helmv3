@@ -77,6 +77,12 @@ still use `getPlayerStatsDashboardBundle`.
 
 ## Business Rules
 
+- Player Stats rounds Fairways, GIR, Scrambling and Sand saves once, from their
+  hit and attempt counts (`withExactHeadlineRates`; 61.46% shows 61%, not 62%)
+  (2026-10-17). Per-par splits, putt bands, 30-day deltas and the
+  cached stat tiles still round twice. Team strokes gained averages each
+  round's SG, so a 9-hole round counts as a full round (open; recommended: per
+  18 holes, changed in TS and the `sg_*_per_round` function together).
 - Round and shot data remain the source of truth; cached stats are derived.
 - Test data (OD-03, 2026-09-27): rounds with `golf_rounds.is_test = true` are
   QA/demo rows. Every player- and coach-facing stats read in `stats-data.ts`,

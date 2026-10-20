@@ -13,6 +13,7 @@ import { haptic } from '../lib/haptics';
 import { chSpring, chTween } from '../lib/motion';
 import { chThrownExit, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { OverlayScrollLock } from '../lib/overlay-scroll';
+import { usePaintedAfter } from '../lib/use-painted';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import type { ChRole } from './nav';
 import { focusSectionTitle, useSectionSwitch } from './section-switch';
@@ -32,7 +33,8 @@ export function AccountSheet({
 }: {
   pathname: string;
   role: ChRole;
-  user?: { name: string; teamName?: string | null };
+  /** headCoach: the coach is the team's head coach, so the line says "Head coach" (ChShellData.viewerIsHeadCoach). */
+  user?: { name: string; teamName?: string | null; headCoach?: boolean };
   /** The coach's teams when they can switch among them: the More sheet lists them under who they are. */
   teamSwitch?: ChTeamSwitch | null;
 }) {
@@ -57,6 +59,7 @@ export function AccountSheet({
   const setMoreOpen = useCallback((open: boolean) => sw?.setAccountOpen(open), [sw]);
 
   const sheet = useRef<HTMLDivElement>(null);
+  const painted = usePaintedAfter(moreOpen);
   const scrim = useRef<HTMLDivElement>(null);
   const closeMore = useCallback(() => setMoreOpen(false), [setMoreOpen]);
   // A row that navigates (native-feel audit 2026-10-08, P0-3): the sheet and its scrim leave at once, in the tap, before
@@ -71,17 +74,20 @@ export function AccountSheet({
   const drag = useSheetDrag(sheet, closeMore, { enabled: !reduced });
   // CH-1602: More rises on the smooth spring and leaves on it too, at the speed it was thrown when swiped shut (CH-1611),
   // ending as it leaves sight. Read as the exit begins, since the sheet's props are fixed once it is removed.
+  // A transform string, not framer's `y`: Motion hands transform and opacity to the compositor (WAAPI), so the sheet
+  // keeps moving while the page under it is busy (owner, 2026-10-15: "All transitions need fixed. All popups").
   const sheetMotion = {
-    shown: { y: 0, opacity: 1, transition: chSpring('smooth', reduced) },
-    gone: (_custom: unknown, current: { y?: unknown }) => {
+    shown: { transform: 'translateY(0%)', opacity: 1, transition: chSpring('smooth', reduced) },
+    gone: () => {
       if (jumped.current) return { opacity: 0, transition: { duration: 0 } };
-      if (reduced) return { y: 0, opacity: 0, transition: { duration: 0 } };
-      const travel = sheet.current?.offsetHeight ?? 0;
-      if (!travel) return { y: '100%', transition: chTween('base') };
+      if (reduced) return { transform: 'translateY(0%)', opacity: 0, transition: { duration: 0 } };
+      const el = sheet.current;
+      const travel = el?.offsetHeight ?? 0;
+      if (!el || !travel) return { transform: 'translateY(100%)', transition: chTween('base') };
       // From where it is now (mid rise, when closed early), plus the frame a throw has already carried it.
-      const from = typeof current?.y === 'number' ? current.y : 0;
-      const out = chThrownExit(takeSheetFling(sheet.current, { peek: true }), travel - from);
-      return { y: [from + out.lead, travel], transition: { duration: out.ms / 1000, ease: out.ease } };
+      const from = new DOMMatrixReadOnly(getComputedStyle(el).transform).m42 || 0;
+      const out = chThrownExit(takeSheetFling(el, { peek: true }), travel - from);
+      return { transform: [`translateY(${from + out.lead}px)`, `translateY(${travel}px)`], transition: { duration: out.ms / 1000, ease: out.ease } };
     },
   };
 
@@ -149,7 +155,7 @@ export function AccountSheet({
               key="scrim"
               className="ch-scrim"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              animate={painted ? { opacity: 1 } : undefined}
               exit={{ opacity: 0 }}
               transition={reduced ? { duration: 0 } : chTween('base')}
               onClick={() => setMoreOpen(false)}
@@ -165,9 +171,10 @@ export function AccountSheet({
               aria-modal="true"
               aria-label="Account"
               className="ch-more"
-              initial={reduced ? { opacity: 0 } : { y: '100%' }}
+              initial={reduced ? { opacity: 0 } : { transform: 'translateY(100%)' }}
               variants={sheetMotion}
-              animate="shown"
+              // Rises once its first frame is on screen (lib/use-painted.ts).
+              animate={painted ? 'shown' : undefined}
               exit="gone"
               onAnimationComplete={(done) => {
                 if (done === 'shown') shield();
@@ -186,7 +193,7 @@ export function AccountSheet({
                   <Avatar name={user.name} size={44} />
                   <span className="ch-more__me-t">
                     <b>{user.name}</b>{' '}
-                    <em>{[role === 'coach' ? 'Coach' : 'Player', user.teamName].filter(Boolean).join(' · ')}</em>
+                    <em>{[role === 'coach' ? (user.headCoach ? 'Head coach' : 'Coach') : 'Player', user.teamName].filter(Boolean).join(' · ')}</em>
                   </span>
                   <Icon icon={ChevronRight} size={16} />
                 </Link>

@@ -211,7 +211,8 @@ describe('Round entry: useAction options (CH-1903, CH-11007)', () => {
     const user = shown({ success: false, error: 'Nope.' }, { retry: false });
     await user.click(screen.getByRole('button', { name: 'run' }));
     await waitFor(() => expect(code('CH-11007')).not.toBeNull());
-    expect(within(code('CH-11007')!).queryByRole('button')).toBeNull();
+    // No action: its only button is the mouse's Dismiss.
+    expect(within(code('CH-11007')!).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Dismiss notification']);
   });
 
   it('retry names the action', async () => {
@@ -296,6 +297,22 @@ describe('Round entry: useAction options (CH-1903, CH-11007)', () => {
 describe('Round entry: setup over the course library and the engine (ChSetupPorts)', () => {
   const course = (id: string, name: string, city = 'Chapel Hill', state = 'NC') => ({ id, name, city, state, total_par: 72 });
 
+  it("a course card's photo is the uploaded one, else the bundled photo of the real course, else none (the picker's scene)", async () => {
+    mocks.listCoursesStrict.mockResolvedValue([
+      { ...course('u', 'Uploaded GC'), image_url: 'https://example.test/u.webp' },
+      course('p', 'Pebble Beach Golf Links'),
+      course('n', 'Nowhere Muni'),
+    ]);
+    mocks.getRecentlyPlayedCourses.mockResolvedValue([]);
+    mocks.getTeamSavedCourses.mockResolvedValue([]);
+    const r = await listCoursesRead();
+    expect(r.ok && r.data.map((c) => [c.id, c.image])).toEqual([
+      ['u', 'https://example.test/u.webp'],
+      ['p', '/courses/real/pebble-beach.webp'],
+      ['n', null],
+    ]);
+  });
+
   it('CH-11510 the library is grouped recent, then team, then the rest, each course once', async () => {
     mocks.listCoursesStrict.mockResolvedValue([course('a', 'Alpha'), course('b', 'Beta'), course('c', 'Gamma', 'Durham', '')]);
     mocks.getRecentlyPlayedCourses.mockResolvedValue([course('b', 'Beta')]);
@@ -304,9 +321,10 @@ describe('Round entry: setup over the course library and the engine (ChSetupPort
     expect(r).toEqual({
       ok: true,
       data: [
-        { id: 'b', name: 'Beta', place: 'Chapel Hill, NC', par: 72, teeCount: null, group: 'recent', lastPlayed: null },
-        { id: 'a', name: 'Alpha', place: 'Chapel Hill, NC', par: 72, teeCount: null, group: 'team', lastPlayed: null },
-        { id: 'c', name: 'Gamma', place: 'Durham', par: 72, teeCount: null, group: 'library', lastPlayed: null },
+        { id: 'b', name: 'Beta', place: 'Chapel Hill, NC', city: 'Chapel Hill', state: 'NC', par: 72, teeCount: null, group: 'recent', lastPlayed: null, image: null },
+        { id: 'a', name: 'Alpha', place: 'Chapel Hill, NC', city: 'Chapel Hill', state: 'NC', par: 72, teeCount: null, group: 'team', lastPlayed: null, image: null },
+        // A course with no state keeps its city as the city, and no state (the start saves these two, 112402).
+        { id: 'c', name: 'Gamma', place: 'Durham', city: 'Durham', state: null, par: 72, teeCount: null, group: 'library', lastPlayed: null, image: null },
       ],
     });
   });
@@ -345,12 +363,18 @@ describe('Round entry: setup over the course library and the engine (ChSetupPort
     const q = (id: string, over = {}) => ({ id, name: `Q ${id}`, status: 'in_progress', numRounds: 3, roundsCompleted: 0, courseName: 'Finley GC', ...over });
     mocks.getPlayerQualifiers.mockResolvedValue({ success: true, data: [q('open'), q('closed', { status: 'completed' }), q('full', { roundsCompleted: 3 }), q('active'), q('gone')] });
     mocks.getNextQualifierRoundNumber.mockImplementation(async (id: string) =>
-      id === 'active' ? { success: true, data: { nextRoundNumber: 1, availableRounds: [1], activeRoundId: 'r-9' } } : id === 'gone' ? { success: false, error: 'x' } : { success: true, data: { nextRoundNumber: 2, availableRounds: [2, 3] } },
+      id === 'active'
+        ? { success: true, data: { nextRoundNumber: 1, availableRounds: [1], activeRoundId: 'r-9' } }
+        : id === 'gone'
+          ? { success: false, error: 'x' }
+          : id === 'full'
+            ? { success: false, code: 'qualifier_round_limit_reached', error: 'This qualifier is still open, but your coach configured 3 rounds.' }
+            : { success: true, data: { nextRoundNumber: 2, availableRounds: [2, 3] } },
     );
     const list = (await loadSetupQualifiers())!;
     expect(list.map((x) => x.id)).toEqual(['open', 'full', 'active', 'gone']);
     expect(list[0]).toMatchObject({ nextRound: 2, rounds: 3, completed: 0, blocked: null, courseName: 'Finley GC', teeId: null });
-    expect(list[1]).toMatchObject({ nextRound: null, blocked: 'All 3 rounds are in; your coach is selecting.' });
+    expect(list[1]).toMatchObject({ nextRound: null, blocked: 'All 3 rounds are in. Ask your coach to add a round if you need another.' });
     expect(list[2]).toMatchObject({ nextRound: null, blocked: 'A round is already in progress. Continue it from Rounds.' });
     expect(list[3]!.nextRound).toBeNull();
     mocks.getPlayerQualifiers.mockResolvedValue({ success: false, error: 'nope' });
@@ -560,9 +584,9 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
     view.again(fakeSession({ submitting: true, completedRoundId: 'r-77' }));
     act(() => void vi.advanceTimersByTime(POSTED_OPEN_MS + 10));
     expect(mocks.router.push).toHaveBeenCalledTimes(1);
-    expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds/r-77');
+    expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds/r-77?just=submitted');
     expect(mocks.haptic.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
-    expect(screen.getByRole('link', { name: /View round review/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/r-77');
+    expect(screen.getByRole('link', { name: /View round review/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/r-77?just=submitted');
   });
 
   it('CH-11909 saving for over 15 seconds says it is slow and names the way out; a quicker one says nothing', () => {
@@ -579,7 +603,7 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
     const s = fakeSession({ submitting: true, error: 'The server said no.' });
     runtime(s);
     const user = userEvent.setup();
-    expect(code('CH-11005')).toHaveTextContent('The round didn’t submit');
+    expect(code('CH-11005')).toHaveTextContent('The round didn’t post');
     await user.click(screen.getByRole('button', { name: 'Go back' }));
     expect(s.submitGoBack).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
@@ -589,7 +613,7 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
   it('CH-11910 every hole is in but the finish sheet is closed: a note offers it again', async () => {
     const s = fakeSession({ pendingFinalStats: [], showFinishConfirm: false });
     runtime(s);
-    await userEvent.setup().click(within(code('CH-11910')!).getByRole('button', { name: 'Review and submit' }));
+    await userEvent.setup().click(within(code('CH-11910')!).getByRole('button', { name: 'Review and post' }));
     expect(s.setShowFinishConfirm).toHaveBeenCalledWith(true);
     runtime(fakeSession({ pendingFinalStats: [], showFinishConfirm: true }));
     expect(document.querySelectorAll('[data-ch-code="CH-11910"]')).toHaveLength(1);

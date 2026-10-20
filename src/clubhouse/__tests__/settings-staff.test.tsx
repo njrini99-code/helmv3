@@ -165,11 +165,18 @@ describe('Settings · Team · CH-8026 CH-8027 approving and declining (D1)', () 
     expect(approve).toHaveBeenLastCalledWith('avery');
   });
 
-  it('Decline calls decline with the coach and tells who was declined', async () => {
+  it('CH-8511 Decline asks first: Keep request leaves it, Decline calls decline with the coach and tells who was declined', async () => {
     const { user, staff } = show();
     const requests = await card('Assistant coach requests');
     vi.mocked(staff!.pending).mockResolvedValue({ success: true, data: [] });
     await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    const ask = await screen.findByRole('dialog', { name: 'Decline Avery Lee?' });
+    expect(ask.getAttribute('data-ch-code')).toBe('CH-8511');
+    await user.click(within(ask).getByRole('button', { name: 'Keep request' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Decline Avery Lee?' })).toBeNull());
+    expect(staff!.decline).not.toHaveBeenCalled();
+    await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Decline Avery Lee?' })).getByRole('button', { name: 'Decline' }));
 
     await waitFor(() => expect(staff!.decline).toHaveBeenCalledWith('avery'));
     expect(staff!.approve).not.toHaveBeenCalled();
@@ -181,6 +188,7 @@ describe('Settings · Team · CH-8026 CH-8027 approving and declining (D1)', () 
     const { user } = show(staffWrites({ decline: vi.fn(() => refused('We could not decline that request.')) }));
     const requests = await card('Assistant coach requests');
     await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Decline Avery Lee?' })).getByRole('button', { name: 'Decline' }));
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Couldn’t decline Avery Lee/);
     expect(alert.textContent).toMatch(/could not decline that request/);
@@ -375,6 +383,10 @@ describe('Settings · phone · Team · coaching staff (D1)', () => {
     const { user } = await openTeam(staffWrites({ decline: vi.fn(() => refused('We could not decline that request.')) }));
     const requests = await group('Assistant coach requests · 1');
     await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    // The phone asks in an action sheet (CH-8511), with Keep request as its cancel.
+    const ask = await screen.findByRole('alertdialog', { name: 'Decline Avery Lee?' });
+    expect(within(ask).getByRole('button', { name: 'Keep request' })).toBeTruthy();
+    await user.click(within(ask).getByRole('button', { name: 'Decline' }));
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Couldn’t decline Avery Lee/);
   });

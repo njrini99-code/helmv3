@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { ChResult, ChSetupPorts } from '../screens/rounds/setup/shape';
 import { RoundSetup } from '../screens/rounds/setup/RoundSetup';
 import { PREVIEW_SETUP_COURSES, PREVIEW_SETUP_QUALIFIERS, PREVIEW_SETUP_TEES, PREVIEW_SETUP_TODAY, previewTeeHoles } from './fixtures-setup';
@@ -13,10 +13,11 @@ const failed = (what: string): ChResult<never> => ({ ok: false, error: `Preview:
  * Round setup with fake ports for the dev preview. `?state=` failcourses |
  * failtees | failholes | failstart make that read or the start fail;
  * noqualifiers and qualifiersfailed change the qualifier list. Start opens
- * the tracking preview. Nothing reaches the server.
+ * the tracking preview. `?qualifier=` opens on that qualifier, as the live page does. Nothing reaches the server.
  */
 export function PreviewSetup({ state }: { state?: string }) {
   const router = useRouter();
+  const preselect = useSearchParams().get('qualifier');
   const ports = useMemo<ChSetupPorts>(
     () => ({
       listCourses: () => wait(state === 'failcourses' ? failed('the course library') : { ok: true, data: PREVIEW_SETUP_COURSES }),
@@ -27,5 +28,5 @@ export function PreviewSetup({ state }: { state?: string }) {
     [state],
   );
   const qualifiers = state === 'noqualifiers' ? [] : state === 'qualifiersfailed' ? null : PREVIEW_SETUP_QUALIFIERS;
-  return <RoundSetup ports={ports} qualifiers={qualifiers} today={PREVIEW_SETUP_TODAY} backHref="/clubhouse-preview/rounds" onStarted={() => router.push('/clubhouse-preview/track')} />;
+  return <RoundSetup ports={ports} qualifiers={qualifiers} today={PREVIEW_SETUP_TODAY} backHref="/clubhouse-preview/rounds" preselectQualifierId={preselect} onStarted={() => router.push('/clubhouse-preview/track')} />;
 }

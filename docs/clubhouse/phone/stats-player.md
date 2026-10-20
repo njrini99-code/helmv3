@@ -28,7 +28,7 @@ Below the board, from the desktop's other tabs, because a phone has no tabs for 
 
 ## Differences from the board (Q-68)
 
-- **Trend figure**: the board prints a phrase ("Down 1.2"); the phone prints the signed change, coloured, labelled "Newer rounds".
+- **Trend figure**: the board prints a phrase ("Down 1.2"); the phone prints the change in words, coloured ("2.1 higher", "2.1 lower", "level"), over the halves compared ("Newest 5 vs first 5"; wave 7).
 - **Coach comparison table** (desktop Overview's "Jonah vs. team") isn't on the phone; the three figures and the team average under Scoring avg carry the headline.
 - **Previous / next player** isn't on the phone; back to Team and choose the next row.
 - **Rounds and Development** are added under the board's content (above).

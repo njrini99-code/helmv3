@@ -29,7 +29,7 @@
   height: 36px;
   padding: 0 12px;
   border-radius: var(--ch-radius-md);
-  font: 500 13.5px/1 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
 }
@@ -74,7 +74,7 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font: 500 14px/1.2 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -94,7 +94,7 @@
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-head__btn.is-accent {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 @media (hover: hover) {
   .ch-ask-head__btn:hover {
@@ -114,7 +114,7 @@
 }
 .ch-ask-foot {
   margin: 0;
-  font: 400 12px/1.4 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-align: center;
 }
@@ -206,7 +206,7 @@
   padding: 0 4px 0 8px;
 }
 .ch-ask-hist__head b {
-  font: 600 15px/1.2 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   letter-spacing: -0.01em;
 }
 .ch-ask-hist__iconbtn {
@@ -223,7 +223,7 @@
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-hist__iconbtn.is-accent {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 @media (hover: hover) {
   .ch-ask-hist__iconbtn:hover {
@@ -238,15 +238,21 @@
   height: 42px;
   padding: 0 12px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
-  font: 500 14px/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
 .ch-ask-hist__new svg {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
+}
+@media (hover: hover) {
+  /* The ledger's row tint over the key's own face, so it stays a key on the rail. */
+  .ch-ask-hist__new:hover {
+    background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-bg-surface);
+  }
 }
 .ch-ask-hist__scroll {
   flex: 1;
@@ -265,17 +271,17 @@
 .ch-ask-hist__group {
   margin: 0;
   padding: 10px 10px 6px;
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* A block, not a flex row: an ellipsis on a flex container cuts a long title mid-letter. The line height centres it. */
 .ch-ask-hist__row {
-  display: flex;
-  align-items: center;
+  display: block;
   height: 36px;
   padding: 0 10px;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
-  font: 400 14px/1.2 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/36px var(--ch-font-sans);
   color: var(--ch-text-primary);
   text-decoration: none;
   text-overflow: ellipsis;
@@ -291,10 +297,14 @@
   background: var(--ch-bg-inset);
   font-weight: 500;
 }
+/* Inset: the history scroller clips a ring drawn outside the row. */
+.ch-ask-hist__row:focus-visible {
+  outline-offset: -2px;
+}
 .ch-ask-hist__nomatch {
   margin: 0;
   padding: 10px;
-  font: 400 13.5px/1.4 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-ask-hist__empty {
@@ -303,12 +313,12 @@
   align-items: center;
   gap: 8px;
   padding: 48px 20px;
-  font: 400 13.5px/1.45 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-align: center;
 }
 .ch-ask-hist__empty b {
-  font: 600 16px/1.2 var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ask-hist__emptyic {
@@ -316,7 +326,7 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-inset);
   color: var(--ch-text-secondary);
 }
@@ -328,8 +338,8 @@
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
-  font: 600 14px/1 var(--ch-font-sans);
-  color: var(--ch-accent);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-green-600);
   cursor: pointer;
 }
 
@@ -358,7 +368,7 @@
 }
 .ch-ask-greet p {
   margin: 0;
-  font: 400 15px/1.45 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-ask-pills {
@@ -377,7 +387,7 @@
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
-  font: 400 13.5px/1.2 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   cursor: pointer;
   transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -404,10 +414,10 @@
 }
 .ch-ask-find__top h3 {
   margin: 0;
-  font: 600 13px/1.2 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-ask-find__cov {
-  font: 400 12.5px/1.4 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-align: right;
 }
@@ -433,7 +443,7 @@
   width: 100%;
   padding: 16px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-page);
   color: var(--ch-text-primary);
   text-align: left;
@@ -448,25 +458,25 @@
   }
 }
 .ch-ask-find__cat {
-  font: 600 12px/1.2 var(--ch-font-sans);
-  color: var(--ch-accent);
+  font: 600 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-green-600);
 }
 .ch-ask-find__head {
-  font: 500 15px/1.35 var(--ch-font-sans);
+  font: 500 calc(15 * var(--ch-type-k))/1.35 var(--ch-font-sans);
 }
 .ch-ask-find__ev {
-  font: 400 13px/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-ask-find__q {
   margin-top: auto;
-  font: 500 13px/1.35 var(--ch-font-sans);
-  color: var(--ch-accent);
+  font: 500 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  color: var(--ch-green-600);
 }
 .ch-ask-find__link {
   align-self: flex-start;
   padding: 2px 4px;
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -476,7 +486,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-page);
 }
 .ch-ask-nothing__ic {
@@ -493,11 +503,11 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font: 400 13.5px/1.45 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-ask-nothing__t b {
-  font: 600 14.5px/1.3 var(--ch-font-sans);
+  font: 600 calc(14.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 
@@ -526,7 +536,7 @@
 }
 .ch-ask-state__alt {
   margin: 0;
-  font: 400 13.5px/1.4 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-align: center;
 }
@@ -535,7 +545,7 @@
   border: 0;
   background: none;
   font: inherit;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -578,7 +588,7 @@
   outline: 0;
   background: none;
   resize: none;
-  font: 400 16px/1.5 var(--ch-font-sans);
+  font: 400 calc(16 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ask-cmp__ta::placeholder {
@@ -621,13 +631,20 @@
   border-radius: 999px;
   background: none;
   box-shadow: 0 0 0 1px var(--ch-border-control);
-  font: 500 13.5px/1 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   cursor: pointer;
 }
 .ch-ask-cmp__chip.is-set {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   box-shadow: 0 0 0 1px var(--ch-green-ring);
+}
+@media (hover: hover) {
+  .ch-ask-cmp__chip:not(.is-set):hover,
+  .ch-ask-cmp__round:hover {
+    box-shadow: 0 0 0 1px var(--ch-border-strong);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-ask-cmp__send {
   display: grid;
@@ -652,7 +669,7 @@
 }
 .ch-ask-cmp__note {
   margin: 8px 0 0;
-  font: 400 12.5px/1.4 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-align: center;
 }
@@ -675,7 +692,7 @@
   min-width: 0;
   min-height: 36px;
   padding: 7px 6px;
-  font-size: 15.5px;
+  font-size: calc(15.5 * var(--ch-type-k));
 }
 .ch-ask-cmp.is-dock .ch-ask-cmp__round:not(.is-quiet),
 .ch-ask-cmp.is-phone .ch-ask-cmp__round:not(.is-quiet) {
@@ -745,7 +762,7 @@
 /* Group headings: the quiet word over each kind of row, in sentence case. */
 .ch-ask-pick [cmdk-group-heading] {
   padding: 10px 10px 4px;
-  font: 500 12.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-ask-pick [cmdk-group] + [cmdk-group] {
@@ -760,7 +777,7 @@
   min-height: 44px;
   padding: 0 10px;
   border-radius: var(--ch-radius-md);
-  font: 400 14.5px/1.25 var(--ch-font-sans);
+  font: 400 calc(14.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
   user-select: none;
@@ -796,7 +813,7 @@
   align-items: center;
   min-height: 44px;
   padding: 0 10px;
-  font: 400 13.5px/1.4 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 
@@ -859,7 +876,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
 }
 .ch-ask-drawer .ch-ask-hist__head b {
-  font-size: 20px;
+  font-size: calc(20 * var(--ch-type-k));
   letter-spacing: -0.02em;
 }
 .ch-ask-drawer .ch-ask-hist__iconbtn {
@@ -868,10 +885,11 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 }
 .ch-ask-drawer .ch-ask-hist__row {
   min-height: 44px;
-  font-size: 16px;
+  font-size: calc(16 * var(--ch-type-k));
+  line-height: 44px;
 }
 .ch-ask-drawer .ch-ask-hist__group {
-  font-size: 12.5px;
+  font-size: calc(12.5 * var(--ch-type-k));
 }
 
 @media (max-width: 820px) {
@@ -925,7 +943,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-cmp.is-dock .ch-ask-cmp__ta,
   .ch-ask-cmp.is-phone .ch-ask-cmp__ta {
-    font-size: 16px;
+    font-size: max(16px, calc(16 * var(--ch-type-k)));
   }
   /* On the phone the picker is a compact list docked above the composer, sized to what the keyboard leaves: about four
      and a half rows, so the cut row says it scrolls, and never taller than two fifths of the space above the keyboard
@@ -935,7 +953,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     padding: 4px 6px;
   }
   .ch-ask-cmp.is-phone .ch-ask-pick__row {
-    font-size: 16px;
+    font-size: calc(16 * var(--ch-type-k));
   }
   /* The new chat on the phone (the cardless pass, 2026-10-08): the opener and its question rows sit together at the
      foot of the screen, just above the composer the screen pins, so the thumb finds all three in one place and nothing
@@ -955,13 +973,13 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-greet h2 {
     max-width: 15em;
-    font-size: 28px;
+    font-size: calc(28 * var(--ch-type-k));
     line-height: 1.12;
     letter-spacing: -0.024em;
   }
   .ch-ask-greet p {
     max-width: 34em;
-    font-size: 14.5px;
+    font-size: calc(14.5 * var(--ch-type-k));
     color: var(--ch-text-tertiary);
   }
   .ch-ask-nothing {
@@ -1007,18 +1025,18 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     outline-offset: -2px;
   }
   .ch-ask-card b {
-    font: 600 15.5px/1.25 var(--ch-font-sans);
+    font: 600 calc(15.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
     color: var(--ch-green-700);
   }
   .ch-ask-card span {
-    font: 400 13px/1.35 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-ask-ph__title {
     min-width: 0;
     overflow: hidden;
-    font: 600 16px/1 var(--ch-font-sans);
+    font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1123,4 +1141,100 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 }
 :where(html[data-fw-theme='dark']) .ch-ask-cmp__send:disabled {
   color: var(--ch-ink-400);
+}
+
+/* Full contrast (owner, 2026-10-16: "more contrast on this and the other ones"): the screen steps its ink up a grade
+   (secondary copy reads as body, tertiary as secondary) and takes the Increase Contrast rules and borders. Light only. */
+html:not([data-fw-theme='dark']) .ch-ask {
+  /* The mid inks a grade darker too, for the copy that names them directly (a locked measure, a quiet caption). */
+  --ch-ink-700: #1c1b18;
+  --ch-ink-600: #2b2a26;
+  --ch-ink-500: #3a3833;
+  --ch-ink-400: #55524b;
+  --ch-ink-300: #7c786f;
+  --ch-text-primary: var(--ch-ink-950);
+  --ch-text-secondary: var(--ch-ink-900);
+  --ch-text-tertiary: var(--ch-ink-700);
+  --ch-border-hairline: rgb(28 25 18 / 0.16);
+  --ch-border-subtle: rgb(28 25 18 / 0.22);
+  --ch-border-control: rgb(28 25 18 / 0.34);
+  --ch-border-strong: rgb(28 25 18 / 0.5);
+  --ch-ledger-rule: rgb(28 25 18 / 0.26);
+  --ch-ledger-rule-soft: rgb(28 25 18 / 0.16);
+  --ch-ledger-rule-double: 3px double rgb(28 25 18 / 0.36);
+  --ch-ledger-ink: var(--ch-green-900);
+  --ch-ledger-eyebrow: var(--ch-text-secondary);
+  --ch-champagne-rule: rgb(28 25 18 / 0.2);
+}
+
+/* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
+@media (max-width: 820px) {
+  .ch-ask-head__btn,
+  .ch-ask-hist__iconbtn,
+  .ch-ask-pill,
+  .ch-ask-cmp__chip {
+    position: relative;
+  }
+  .ch-ask-head__btn::after,
+  .ch-ask-hist__iconbtn::after,
+  .ch-ask-pill::after,
+  .ch-ask-cmp__chip::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+  /* The history rows clip their own overflow, so their reach is drawn rather than borrowed. */
+  .ch-ask-hist__row {
+    height: 44px;
+    line-height: 44px;
+  }
+}
+
+/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
+@media (hover: hover) {
+  .ch-ask-find__link:hover {
+    color: var(--ch-text-primary);
+  }
+}
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   Ask was laid out for a canvas of 1000px and more: the chats panel is 280px and the evidence panel 380px. On an iPad
+   the canvas is 618px (portrait, sidebar open) to 1116px, so the conversation was left a 300px column in which the three
+   "Since you were last here" cards ran a word to a line. The cards now take as many columns as the page can hold, and
+   on a narrow canvas the chats panel narrows to 216px and the evidence panel lays over the conversation's right edge, as a side sheet, instead of taking a
+   third column from it. The container is the canvas (shell.css). */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  .ch-ask-find__grid {
+    grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
+  }
+  @container (max-width: 780px) {
+    /* The chats panel gives up 64px to the conversation, whose composer needs about 330px to keep its send key. */
+    .ch-ask-body.has-panel,
+    .ch-ask-body.has-panel.has-evidence {
+      grid-template-columns: 216px minmax(0, 1fr);
+    }
+    .ch-ask-hist > * {
+      min-width: 192px;
+    }
+    /* The title and its coverage note share a line in a 350px column, and the title lost: it wrapped to three lines. */
+    .ch-ask-find__top {
+      flex-wrap: wrap;
+      row-gap: 2px;
+    }
+    .ch-ask-find__cov {
+      text-align: left;
+    }
+    .ch-ask-body.has-evidence {
+      position: relative;
+      grid-template-columns: 0 minmax(0, 1fr);
+    }
+    .ch-ask-body.has-evidence > .ch-ask-ev {
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: 0;
+      z-index: 2;
+      width: min(380px, 92%);
+      box-shadow: var(--ch-elevation-floating);
+    }
+  }
 }

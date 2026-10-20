@@ -39,6 +39,8 @@ import { shouldEmit } from '@/lib/admin/emit-throttle';
  * `release` now instead of the old `deploymentId` field.
  */
 const READINESS_QUERY_TIMEOUT_MS = 2_500;
+/** A timed-out first read gets one more attempt; see the loop in GET. */
+const READINESS_MAX_ATTEMPTS = 2;
 const DEGRADED_LOG_THROTTLE_KEY = 'api.health.degraded';
 const DEGRADED_LOG_THROTTLE_WINDOW_MS = 60_000;
 
@@ -67,27 +69,43 @@ export async function GET() {
   let createClientMs: number | undefined;
   let queryStartedAt: number | undefined;
 
-  try {
-    const supabase = await createClient();
-    createClientMs = Date.now() - startedAt;
-    queryStartedAt = Date.now();
-    const { error } = await supabase
-      .from('users')
-      .select('id')
-      .limit(1)
-      .abortSignal(AbortSignal.timeout(READINESS_QUERY_TIMEOUT_MS));
+  // One more attempt, on a fresh request, when (and only when) the first one timed out. 5725d96a regressed on
+  // 2026-10-14 on WARM instances (uptime 15-72 min, createClientMs 0-9): Supabase's edge logs show each failing
+  // probe either never reached PostgREST or reached it seconds late and was answered 200, while db_health_samples
+  // showed an idle database. That is one stalled connection from the instance, not the database being down — and
+  // a readiness probe exists to report the database. Two timeouts in a row still read as degraded. A PostgREST
+  // error is not retried: the database answered, and the answer was no.
+  let attempts = 0;
+  while (attempts < READINESS_MAX_ATTEMPTS) {
+    attempts += 1;
+    database = 'ok';
+    status = 'healthy';
+    errorDetail = undefined;
+    failureKind = undefined;
+    try {
+      const attemptStartedAt = Date.now();
+      const supabase = await createClient();
+      createClientMs = Date.now() - attemptStartedAt;
+      queryStartedAt = Date.now();
+      const { error } = await supabase
+        .from('users')
+        .select('id')
+        .limit(1)
+        .abortSignal(AbortSignal.timeout(READINESS_QUERY_TIMEOUT_MS));
 
-    if (error) {
+      if (error) {
+        database = 'error';
+        status = 'degraded';
+        errorDetail = error.message;
+        failureKind = isTimeoutMessage(error.message) ? 'timeout' : 'error';
+      }
+    } catch (err) {
       database = 'error';
       status = 'degraded';
-      errorDetail = error.message;
-      failureKind = isTimeoutMessage(error.message) ? 'timeout' : 'error';
+      errorDetail = err instanceof Error ? err.message : String(err);
+      failureKind = isTimeoutError(err) ? 'timeout' : 'error';
     }
-  } catch (err) {
-    database = 'error';
-    status = 'degraded';
-    errorDetail = err instanceof Error ? err.message : String(err);
-    failureKind = isTimeoutError(err) ? 'timeout' : 'error';
+    if (failureKind !== 'timeout') break;
   }
   const queryMs = queryStartedAt === undefined ? null : Date.now() - queryStartedAt;
 
@@ -111,6 +129,7 @@ export async function GET() {
             queryTimeoutMs: READINESS_QUERY_TIMEOUT_MS,
             createClientMs: createClientMs ?? null,
             queryMs,
+            attempts,
             instanceUptimeMs: Math.round(process.uptime() * 1000),
           },
         },

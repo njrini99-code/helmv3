@@ -68,6 +68,8 @@ export function Menu({
       // Native fields may horizontally scroll their text on blur without moving the anchor.
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea, select')) return;
       if (list.current && e.target instanceof Node && list.current.contains(e.target)) return;
+      // A scroll that closes the list while focus is in it would drop focus to <body>: hand it back to the trigger.
+      if (list.current?.contains(document.activeElement)) btn.current?.focus({ preventScroll: true });
       close(false);
     };
     const keyboardChanges = new MutationObserver(place);
@@ -98,22 +100,16 @@ export function Menu({
     };
   }, [open, close]);
 
-  const onKey = (e: React.KeyboardEvent) => {
-    const els = Array.from(list.current?.querySelectorAll<HTMLElement>('[role="menuitem"],[role="menuitemradio"]') ?? []);
-    const i = els.indexOf(document.activeElement as HTMLElement);
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      close();
-    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      els[(i + (e.key === 'ArrowDown' ? 1 : -1) + els.length) % els.length]?.focus();
-    } else if (e.key === 'Home' || e.key === 'End') {
-      e.preventDefault();
-      els[e.key === 'Home' ? 0 : els.length - 1]?.focus();
-    } else if (e.key === 'Tab') {
-      close(false);
-    }
-  };
+  const onKey = (e: React.KeyboardEvent) =>
+    menuKeyDown(e, list.current, {
+      onEscape: () => close(),
+      // The list is portaled to the end of the page, so Tab from it fell to <body> as it closed (audit A-27): put focus
+      // back on the trigger first, and the key's own move carries on from there in the page's order.
+      onTab: () => {
+        btn.current?.focus({ preventScroll: true });
+        close(false);
+      },
+    });
 
   return (
     <>
@@ -144,46 +140,81 @@ export function Menu({
                 transition={chTween('quick', reduced)}
                 onKeyDown={onKey}
               >
-                {items.map((it, i) => {
-                  if (it.kind === 'separator') return <div key={`s${i}`} className="ch-menu__sep" role="separator" />;
-                  const content = (
-                    <>
-                      {it.icon && <Icon icon={it.icon} size={15} />}
-                      <span>{it.label}</span>
-                    </>
-                  );
-                  const cls = 'ch-menu__item' + (it.danger ? ' is-danger' : '');
-                  const role = it.checked !== undefined ? 'menuitemradio' : 'menuitem';
-                  if (it.href) {
-                    return (
-                      <Link key={it.label} href={it.href} role={role} aria-checked={it.checked} className={cls} tabIndex={i === items.findIndex((item) => item.kind !== 'separator') ? 0 : -1} onClick={() => close(false)}>
-                        {content}
-                      </Link>
-                    );
-                  }
-                  return (
-                    <button
-                      key={it.label}
-                      type="button"
-                      role={role}
-                      aria-checked={it.checked}
-                      className={cls}
-                      tabIndex={i === items.findIndex((item) => item.kind !== 'separator') ? 0 : -1}
-                      onClick={() => {
-                        haptic('select');
-                        close();
-                        it.onSelect?.();
-                      }}
-                    >
-                      {content}
-                    </button>
-                  );
-                })}
+                <MenuItems items={items} onClose={close} />
               </m.div>
             )}
           </AnimatePresence>,
           btn.current?.closest('dialog[open]') ?? document.querySelector('.ch-root') ?? document.body,
         )}
+    </>
+  );
+}
+
+/** The keys a menu list answers to: arrows, Home and End move between rows, Escape and Tab hand back to the opener. */
+export function menuKeyDown(e: React.KeyboardEvent, list: HTMLElement | null, on: { onEscape: () => void; onTab: () => void }): void {
+  const els = Array.from(list?.querySelectorAll<HTMLElement>('[role="menuitem"],[role="menuitemradio"]') ?? []);
+  const i = els.indexOf(document.activeElement as HTMLElement);
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    on.onEscape();
+  } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    els[(i + (e.key === 'ArrowDown' ? 1 : -1) + els.length) % els.length]?.focus();
+  } else if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault();
+    els[e.key === 'Home' ? 0 : els.length - 1]?.focus();
+  } else if (e.key === 'Tab') {
+    on.onTab();
+  }
+}
+
+/**
+ * The rows of a menu, shared by the button's Menu and the right-click ContextMenu so they cannot drift: a link closes the
+ * list without taking focus (the page is changing), a button closes it, gives focus back and runs its action.
+ */
+export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (focus?: boolean) => void }) {
+  const first = items.findIndex((item) => item.kind !== 'separator');
+  return (
+    <>
+      {items.map((it, i) => {
+        if (it.kind === 'separator') return <div key={`s${i}`} className="ch-menu__sep" role="separator" />;
+        const content = (
+          <>
+            {it.icon && <Icon icon={it.icon} size={15} />}
+            <span>{it.label}</span>
+          </>
+        );
+        const cls = 'ch-menu__item' + (it.danger ? ' is-danger' : '');
+        const role = it.checked !== undefined ? 'menuitemradio' : 'menuitem';
+        if (it.href) {
+          return (
+            <Link key={it.label} href={it.href} role={role} aria-checked={it.checked} className={cls} tabIndex={i === first ? 0 : -1} onClick={() => {
+              // A link item can also note something as it opens (the rounds library notes the round, so the review's Back is a step back).
+              it.onSelect?.();
+              onClose(false);
+            }}>
+              {content}
+            </Link>
+          );
+        }
+        return (
+          <button
+            key={it.label}
+            type="button"
+            role={role}
+            aria-checked={it.checked}
+            className={cls}
+            tabIndex={i === first ? 0 : -1}
+            onClick={() => {
+              haptic('select');
+              onClose();
+              it.onSelect?.();
+            }}
+          >
+            {content}
+          </button>
+        );
+      })}
     </>
   );
 }

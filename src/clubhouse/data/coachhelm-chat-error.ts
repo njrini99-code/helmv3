@@ -34,7 +34,7 @@ export interface ChatErrorNotice {
   recovery: ChatErrorRecovery;
 }
 
-export const CHAT_ERROR_RATE_LIMIT = "You're asking quickly. Wait a moment, then try again.";
+export const CHAT_ERROR_RATE_LIMIT = 'Too many questions in a row. Give it a few seconds and try again.';
 export const CHAT_ERROR_CONVERSATION_GONE = "That conversation isn't available. Start a new chat.";
 export const CHAT_ERROR_SIGNED_OUT = 'Your session ended. Sign in again, then retry.';
 export const CHAT_ERROR_NOT_A_COACH = 'Ask CoachHelm is for coaches.';

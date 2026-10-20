@@ -11,6 +11,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTravel } from '@/components/fairway/pages/travel';
 import { ViewHeader, Surface, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 
 export const metadata: Metadata = {
   title: 'Travel',
@@ -134,11 +135,19 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
   );
   const eventTitleById = new Map<string, string>();
   if (linkedEventIds.length > 0) {
-    const { data: linkedEvents } = await supabase
+    const { data: linkedRows } = await supabase
       .from('golf_events')
-      .select('id, title')
+      .select('id, title, event_type')
       .in('id', linkedEventIds);
-    for (const ev of linkedEvents || []) {
+    // A trip linked to a meeting the player is not invited to shows no
+    // "Linked to" title (meeting-visibility.ts). Coaches are unchanged.
+    const linkedEvents = isCoach
+      ? linkedRows ?? []
+      : await filterMeetingsForPlayer(supabase, linkedRows ?? [], player?.id, {
+          action: 'golf.travelPage.meetingInvites',
+          featureArea: 'travel',
+        });
+    for (const ev of linkedEvents) {
       if (ev.id) eventTitleById.set(ev.id, ev.title || '');
     }
   }

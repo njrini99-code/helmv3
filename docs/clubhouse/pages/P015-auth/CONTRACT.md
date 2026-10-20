@@ -47,6 +47,12 @@ The welcome draws its frame and the painted course at once and streams the greet
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 150201 | CH-15401 | `THE_WELCOME_IS_READING_WHO_YOU_ARE` | The welcome is reading who you are and what is new |
+| 150203 | CH-15430 | `THE_RESET_LINK_IS_BEING_CHECKED` | The reset link is being checked |
+| 150204 | CH-15431 | `SAVING_THE_NEW_PASSWORD` | Saving the new password |
+| 150205 | CH-15432 | `JOINING_A_TEAM` | Joining a team |
+| 150206 | CH-15433 | `A_STAFF_INVITATION_IS_READING_THE_SESSION` | A staff invitation is reading the session, or the accept or sign-up is in flight |
+| 150207 | CH-15435 | `THE_DEMO_IS_CHECKING_WHO_IS_SIGNED` | The demo is checking who is signed in, or entering |
+| 150208 | CH-15436 | `A_TEAM_CODE_IS_BEING_TAKEN_TO` | A team code is being taken to its team |
 
 ## 03 — Background loading / refresh
 
@@ -94,6 +100,14 @@ today's page does; editing clears it.
 | 150502 | CH-15110 | `SIGN_UP_THE_TEAM_CODE_MATCHES_NO` | Sign up: the team code matches no team (or the gate is throttled, which the server reports the same way on purpose, Q-99) |
 | 150503 | CH-15120 | `RESET_PASSWORD_SEND_WITH_NO_ADDRESS` | Reset password: Send with no address |
 | 150504 | CH-15121 | `RESET_PASSWORD_AN_ADDRESS_THAT_IS_NOT` | Reset password: an address that is not one |
+| 150505 | CH-15130 | `RESET_PASSWORD_SAVE_WITH_NO_NEW_PASSWORD` | Reset password: Save with no new password |
+| 150506 | CH-15131 | `RESET_PASSWORD_A_RULE_IS_MISSING` | Reset password: a rule is missing |
+| 150507 | CH-15132 | `RESET_PASSWORD_THE_CONFIRMATION_IS_EMPTY` | Reset password: the confirmation is empty |
+| 150508 | CH-15133 | `RESET_PASSWORD_THE_TWO_BOXES_DIFFER` | Reset password: the two boxes differ |
+| 150509 | CH-15140 | `JOIN_A_TEAM_CONTINUE_WITH_NO_CODE` | Join a team: Continue with no code |
+| 150510 | CH-15141 | `JOIN_A_TEAM_FEWER_THAN_FOUR_CHARACTERS` | Join a team: fewer than four characters |
+| 150511 | CH-15142 | `STAFF_INVITATION_THE_ACCOUNT_FORM_IS_MISSING` | Staff invitation: the account form is missing something |
+| 150512 | CH-15143 | `DEMO_ENTRY_AND_THE_NEW_COACHS_QUESTIONS` | Demo entry and the new coach's questions: an answer is missing |
 
 ## 06 — Server / system error
 
@@ -123,6 +137,13 @@ that throws and is logged (CH-15021), says so and can be sent again.
 | 150612 | CH-15201 | `THE_WELCOMES_NOTIFICATIONS_READ_FAILS` | The welcome's notifications read fails |
 | 150613 | CH-15020 | `RESET_PASSWORD_THE_SERVER_REFUSES_THE_REQUEST` | Reset password: the server refuses the request in its own words |
 | 150614 | CH-15021 | `RESET_PASSWORD_ANYTHING_ELSE_THROWS` | Reset password: anything else throws (the request never reached the server) |
+| 150615 | CH-15030 | `RESET_PASSWORD_THE_SERVER_REFUSES_THE_NEW` | Reset password (the link's page): the server refuses the new password itself (the one already in use, or too easy to guess) |
+| 150616 | CH-15031 | `RESET_PASSWORD_SAVE_FAILS_FOR_A_REASON` | Reset password: Save fails for a reason that is not about the password (too many tries, no connection, anything else) |
+| 150617 | CH-15032 | `JOIN_A_TEAM_THE_SERVER_REFUSES_THE` | Join a team: the server refuses the join (a code that no longer matches, or anything the validator words) |
+| 150618 | CH-15033 | `JOIN_A_TEAM_THE_REQUEST_NEVER_REACHED` | Join a team: the request never reached the server |
+| 150619 | CH-15034 | `STAFF_INVITATION_THE_SERVER_REFUSES_THE_ACCOUNT` | Staff invitation: the server refuses the account or the accept for any reason but the wrong account (CH-15944) |
+| 150620 | CH-15035 | `NEW_COACH_THE_PROGRAM_COULD_NOT_BE` | New coach: the program could not be made (the action rolls the organization, team and coach back together) |
+| 150621 | CH-15036 | `DEMO_ENTRY_THE_SERVER_REFUSES_OR_THE` | Demo entry: the server refuses (a rate limit, anything `enterDemo` words) or the request fails |
 
 ## 07 — Network / offline
 
@@ -133,6 +154,32 @@ A sign-in that cannot reach the server says so (CH-15004).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 150701 | CH-15004 | `THE_SERVER_CANNOT_BE_REACHED` | The server cannot be reached |
+| 150705 | CH-15930 | `THE_RESET_LINK_IS_SPENT_EXPIRED_OR` | The reset link is spent, expired or has no token (or the session ran out between the check and Save) |
+| 150706 | CH-15931 | `THE_RESET_LINK_WAS_OPENED_ON_A` | The reset link was opened on a device signed in as someone else |
+| 150707 | CH-15932 | `THE_PASSWORD_IS_SAVED` | The password is saved |
+| 150708 | CH-15933 | `GOLF_JOIN` | `/golf/join` |
+| 150709 | CH-15934 | `GOLF_JOIN_CODE_WITH_A_CODE_THAT` | `/golf/join/[code]` with a code that names a team |
+| 150710 | CH-15935 | `A_CODE_THAT_NAMES_NO_TEAM` | A code that names no team |
+| 150711 | CH-15936 | `THE_PLAYER_IS_ALREADY_ON_THIS_TEAM` | The player is already on this team |
+| 150712 | CH-15937 | `THE_JOIN_LANDS` | The join lands |
+| 150713 | CH-15938 | `THE_WRONG_PERSON_IS_SIGNED_IN` | The wrong person is signed in (a link opened on someone else's browser) |
+| 150714 | CH-15939 | `THE_PLAYER_IS_ON_ANOTHER_TEAM` | The player is on another team |
+| 150715 | CH-15940 | `A_STAFF_INVITATION_THAT_IS_NOT_VALID` | A staff invitation that is not valid |
+| 150716 | CH-15941 | `A_VALID_INVITATION_SIGNED_IN` | A valid invitation, signed in |
+| 150717 | CH-15943 | `NOT_YOU_ON_THE_INVITATION` | "Not you?" on the invitation |
+| 150718 | CH-15944 | `THE_SIGNED_IN_ACCOUNT_ALREADY_BELONGS_TO` | The signed-in account already belongs to another program |
+| 150719 | CH-15945 | `A_VALID_INVITATION_SIGNED_OUT` | A valid invitation, signed out |
+| 150720 | CH-15946 | `THE_STAFF_INVITATION_LANDS` | The staff invitation lands |
+| 150721 | CH-15950 | `A_NEW_COACHS_PROGRAM_IS_MADE` | A new coach's program is made |
+| 150722 | CH-15951 | `THE_CODE_COULD_NOT_BE_COPIED` | The code could not be copied |
+| 150723 | CH-15952 | `WHO_MAY_SEE_THE_NEW_PROGRAM_QUESTIONS` | Who may see the new-program questions |
+| 150724 | CH-15953 | `THE_NEW_PROGRAM_QUESTIONS_ARE_CHECKING_THE` | The new-program questions are checking the account |
+| 150725 | CH-15960 | `GOLF_COACH_PENDING` | `/golf/coach/pending` |
+| 150726 | CH-15961 | `CHECK_AGAIN` | Check again |
+| 150727 | CH-15962 | `SIGN_OUT_FAILS` | Sign out fails |
+| 150728 | CH-15970 | `GOLF_DEMO` | `/golf/demo` |
+| 150729 | CH-15971 | `THE_DEMO_IS_OPENED_BY_SOMEONE_ALREADY` | The demo is opened by someone already signed in |
+| 150730 | CH-15972 | `MESSAGE_DEMO_SESSION_EXPIRED` | `?message=demo_session_expired` |
 
 ## 08 — Permission / authorization
 

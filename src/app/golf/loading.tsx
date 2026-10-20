@@ -21,8 +21,11 @@ import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
  * what is INSIDE the chrome, never the chrome itself.
  *
  * Blast radius: this also covers `/golf` (a redirect page), `/golf/admin/**`
- * while its own async layout resolves, and `/golf/(auth)/demo`. Every auth,
- * onboarding and join route has its own closer `loading.tsx` and is unaffected.
+ * while its own async layout resolves, and `/golf/(auth)/demo`. A route's own
+ * `loading.tsx` sits inside that route's layout, so it does not cover an async
+ * layout: with the Clubhouse front door on, a layout that awaits (welcome's)
+ * paints this skeleton on a client navigation. The Clubhouse sign in reads
+ * nothing from the request for that reason (`ClubhouseSignInRoute`).
  * Admin gets dashboard-shaped content for a moment rather than admin-shaped —
  * strictly better than the retired cream skeleton it replaces, and admin is
  * internal-only.
@@ -33,23 +36,23 @@ export default function GolfLoading() {
   // never disagrees with the page: with a team allowlist (HELM_CLUBHOUSE_TEAMS) the team is not known yet either,
   // and guessing would flash one UI and then swap to the other, so that case paints a neutral frame.
   const frame = clubhouseLoadingFrame();
-  if (frame === 'clubhouse') {
-    return (
-      <ClubhouseShellSkeleton>
-        <HomeSkeleton />
-      </ClubhouseShellSkeleton>
-    );
-  }
-  if (frame === 'neutral') {
-    return (
-      <div className="min-h-dvh" role="status" aria-busy="true" aria-live="polite" data-loading-frame="neutral">
-        <span className="sr-only">Loading</span>
-      </div>
-    );
-  }
+  // `data-ch-boot-skeleton`: a hard load of the Clubhouse sign in hides this fallback until its own markup is swapped
+  // in (SkyScript's front-door boot), so it never opens on a dashboard skeleton.
   return (
-    <FairwayShellSkeleton>
-      <FairwayDashboardSkeleton />
-    </FairwayShellSkeleton>
+    <div data-ch-boot-skeleton="" style={{ display: 'contents' }}>
+      {frame === 'clubhouse' ? (
+        <ClubhouseShellSkeleton>
+          <HomeSkeleton />
+        </ClubhouseShellSkeleton>
+      ) : frame === 'neutral' ? (
+        <div className="min-h-dvh" role="status" aria-busy="true" aria-live="polite" data-loading-frame="neutral">
+          <span className="sr-only">Loading</span>
+        </div>
+      ) : (
+        <FairwayShellSkeleton>
+          <FairwayDashboardSkeleton />
+        </FairwayShellSkeleton>
+      )}
+    </div>
   );
 }

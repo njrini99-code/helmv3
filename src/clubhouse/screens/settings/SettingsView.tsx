@@ -13,7 +13,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
 import { keepSaved } from './live';
-import { SECTIONS, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from './model';
+import { SECTIONS, viewerRoleLabel, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from './model';
 import { DirtyContext, useUnsavedGuard } from './parts';
 import { AccountSection } from './Account';
 import { NotificationsSection } from './Notifications';
@@ -80,6 +80,12 @@ export function SettingsView({
   const writes = useMemo(() => keepSaved(raw, setData), [raw]);
   const sections = SECTIONS[data.role];
   const [section, setSection] = useState<ChSettingsSection>(initialSection);
+  // A new ?section= on the same page re-renders without remounting: the section follows the address (2026-10-14).
+  const [seenSection, setSeenSection] = useState(initialSection);
+  if (seenSection !== initialSection) {
+    setSeenSection(initialSection);
+    setSection(initialSection);
+  }
   const [ask, setAsk] = useState<ChSettingsSection | null>(null);
   const sectionRail = useRef<HTMLElement>(null);
   const focusRevealFrame = useRef<number | null>(null);
@@ -147,7 +153,7 @@ export function SettingsView({
         <header className="ch-set-head" data-canopy-head="">
           <h1 className="ch-display">Settings</h1>
           <p>
-            {data.role === 'coach' ? 'Coach' : 'Player'}
+            {viewerRoleLabel(data)}
             {data.teamName ? ` · ${data.teamName}` : ''}
             {data.email ? ` · ${data.email}` : ''}
           </p>

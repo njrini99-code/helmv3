@@ -14,7 +14,7 @@ import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
 import { loadClubhouseShell } from '@/clubhouse/data/shell';
-import { phoneHint } from '@/clubhouse/lib/phone-hint';
+import { phoneHint, railHint } from '@/clubhouse/lib/phone-hint';
 
 /**
  * Golf Dashboard Layout — SERVER COMPONENT
@@ -293,9 +293,9 @@ export default async function GolfDashboardLayout({
   // Clubhouse (golf_clubhouse_ui): the from-scratch coach UI. A separate tree,
   // never layered on Fairway; see docs/clubhouse/PROGRESS.md.
   if ((await isClubhouseFor(userData.role))) {
-    const [shell, phone] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint()]);
+    const [shell, phone, folded] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint(), railHint()]);
     return (
-      <ClubhouseShell userData={userData} shell={shell} phone={phone}>
+      <ClubhouseShell userData={userData} shell={shell} phone={phone} folded={folded}>
         {children}
       </ClubhouseShell>
     );

@@ -1,9 +1,13 @@
+import { isClubhouseFrontDoor } from '@/clubhouse/gate';
+import { GateLoading } from '@/clubhouse/screens/auth/GateLoading';
 import { Skeleton, SkeletonText } from '@/components/fairway';
 
 /**
  * Route fallback shaped like the page: one centred card with a title, two paragraphs and two actions (STATE-X1).
  */
 export default function Loading() {
+  // golf_clubhouse_front_door: the same loading boundary, drawn in the sign-in room.
+  if (isClubhouseFrontDoor()) return <GateLoading label="Waiting for approval" title="Waiting for approval" line="Checking your request…" say={{ title: 'Almost on the team.', line: 'Your head coach has your request' }} />;
   return (
     <main aria-busy="true" aria-label="Loading" className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-16">
       <div className="rounded-fw-lg border border-border-subtle bg-surface p-8">

@@ -55,4 +55,21 @@ describe('RouteFrame scroll', () => {
     vi.useRealTimers();
     expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
   });
+
+  it('a screen picked by the query (Stats ?player=) is its own place: Back to the team list returns to where it was (Simulator, 2026-10-14)', () => {
+    const at = (player: string) => (
+      <RouteFrame routeKey={'/stats\u0000t1'} scrollKey={`/stats\u0000t1\u0000${player}`}>
+        <main>{player || 'team'}</main>
+      </RouteFrame>
+    );
+    const view = render(at(''), { container: canvas });
+    scrollCanvas(520);
+    view.rerender(at('p1'));
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    view.rerender(at(''));
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520, behavior: 'instant' });
+  });
 });

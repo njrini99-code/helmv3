@@ -127,6 +127,12 @@ export async function getEventDocuments(
 /**
  * Attach an existing team document to an event. Idempotent — the composite
  * primary key (event_id, document_id) means a duplicate attach is a no-op.
+ *
+ * The write is INSERT ... ON CONFLICT DO NOTHING (ignoreDuplicates: true), not
+ * DO UPDATE: golf_event_documents has INSERT/SELECT/DELETE policies and no
+ * UPDATE policy, so DO UPDATE was refused on a retry, an Undo or a double
+ * attach and the coach saw "Couldn't attach" for a file that was attached
+ * (P006). A re-attach keeps the existing row's note and attached_by.
  */
 async function attachDocumentToEventImpl(
   eventId: string,
@@ -173,7 +179,7 @@ async function attachDocumentToEventImpl(
           attached_by: coach?.id ?? null,
           note: note ?? null,
         },
-        { onConflict: 'event_id,document_id', ignoreDuplicates: false },
+        { onConflict: 'event_id,document_id', ignoreDuplicates: true },
       );
 
     if (error) {

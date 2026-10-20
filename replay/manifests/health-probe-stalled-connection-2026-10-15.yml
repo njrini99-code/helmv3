@@ -1,0 +1,29 @@
+schema_version: 1
+replay_id: health-probe-stalled-connection-2026-10-15
+incident_id: memory/incidents/observability_supabase/INC-2026-10-15-health-probe-stalled-connection.md
+feature_id: observability_supabase
+title: >-
+  /api/health reported the database degraded when one readiness read stalled on
+  the instance's connection to Supabase; a timed-out read now gets one more
+  attempt on a fresh request, and only two timeouts in a row read as degraded.
+bad_version: ecd16beea58429ed3bdfc226643516a3e3dd1fa9
+fixed_version: 136a75dbcd92eb0772573572f65b29e612c79095
+fixture:
+  - source: route.test.ts
+    target: src/app/api/health/route.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/app/api/health/route.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic query outcomes; no production rows, PII, tokens or logs. The
+    production timings are described in the incident file only.
+source_incident_status: fixed
+created_at: "2026-10-15"
+notes: >-
+  On bad_version a single timeout returns 503 (expected 200 after a good second
+  read) and the degraded row carries no attempts count.

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Icon } from './Icon';
 
 /**
  * The Ledger's building blocks (owner, 2026-10-08: "too cardy, build components"; the Coach Home "Mobile clubhouse
@@ -65,7 +66,7 @@ export function LedgerRow({
         {meta != null && <span className="ch-lgr__meta">{meta}</span>}
       </span>
       {trail != null && <span className="ch-lgr__trail ch-num">{trail}</span>}
-      {(href || onClick) && <ChevronRight className="ch-lgr__go" size={16} aria-hidden="true" />}
+      {(href || onClick) && <Icon icon={ChevronRight} className="ch-lgr__go" size={16} />}
     </>
   );
   const cls = cx('ch-lgr__row' + (current ? ' is-current' : '') + (href || onClick ? ' is-link' : ''), className);

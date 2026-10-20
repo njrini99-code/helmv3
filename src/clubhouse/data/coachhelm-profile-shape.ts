@@ -5,6 +5,7 @@ import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { GENOME_WINDOW_DAYS, type DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import { formatSigned } from '../lib/format';
+import type { ChInsight } from './coachhelm-shape';
 
 /**
  * The player's Game profile (Clubhouse P013, `?view=profile`): the genome the Fairway page's profile drill reads
@@ -92,6 +93,11 @@ export interface ChProfile {
   measures: ChMeasure[];
   /** How many are ready. */
   ready: number;
+  /**
+   * What CoachHelm's insights say about this player, ranked as the Board ranks them (owner, 2026-10-16: the profile reads the
+   * actual CoachHelm output, not only the genome). `error`: the read failed, never "nothing to say"; absent when not read.
+   */
+  sees?: { list: ChInsight[]; error: boolean };
 }
 
 interface MeasureCopy {

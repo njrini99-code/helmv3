@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -97,6 +97,16 @@ describe('112401 Rounds library, on screen', () => {
     expect(screen.queryByRole('link', { name: /Sep 26, Finley GC/ })).toBeNull();
   });
 
+  it('CH-11304 one primary for one action: with no round in progress the idle card carries Start a round, so the head has no New round', () => {
+    show(PREVIEW_ROUNDS_IDLE);
+    expect(screen.queryByRole('link', { name: 'New round' })).toBeNull();
+    expect(screen.getByRole('link', { name: /Start a round/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    cleanup();
+    // The check for a round in progress failed: that card is a notice with no Start, so the head keeps New round.
+    show(PREVIEW_ROUNDS_UNFINISHED_FAILED);
+    expect(screen.getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+  });
+
   it('CH-11703 New round, and Continue at the next hole with the press haptic', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS);
@@ -138,20 +148,20 @@ describe('112401 Rounds library, on screen', () => {
     expect(document.querySelector('.ch-rd-unf__f > span')!.textContent).toBe('−1 through 2');
   });
 
-  it('110106 a round with every hole scored reads Ready to submit, and its link says Submit round', () => {
+  it('110106 a round with every hole scored reads Ready to post, and its link says Post round', () => {
     const done = PREVIEW_ROUNDS_MANY.unfinished.list[2]!;
     show({ ...PREVIEW_ROUNDS_MANY, unfinished: { list: [done], error: false } });
-    expect(screen.getByText('Ready to submit')).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Submit round/ }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
+    expect(screen.getByText('Ready to post')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Post round/ }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
     expect(document.querySelector('.ch-rd-strip .is-next')).toBeNull();
   });
 
-  it('110106 more than one unfinished round: the newest in the card, the rest listed with Continue or Submit', () => {
+  it('110106 more than one unfinished round: the newest in the card, the rest listed with Continue or Post', () => {
     show(PREVIEW_ROUNDS_MANY);
     const more = screen.getByRole('region', { name: '2 more unfinished rounds' });
     expect(within(more).getByText('Oct 2 · not started')).toBeTruthy();
     expect(within(more).getByText('Sep 29 · through 18')).toBeTruthy();
-    expect(within(more).getByRole('link', { name: 'Submit' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
+    expect(within(more).getByRole('link', { name: 'Post' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
     expect(within(more).getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[1]!.id}`);
   });
 
@@ -208,7 +218,8 @@ describe('112401 Rounds library, on screen', () => {
 
   it('110107 CH-11302 rounds posted but no countable 18-hole round this season: the season card says how it fills; the round still lists', async () => {
     show(PREVIEW_ROUNDS_NO_SEASON);
-    await expectCode('CH-11302', /Your season starts with your first 18-hole round/);
+    // A non-breaking hyphen (U+2011), so the headline never breaks "18- / hole".
+    await expectCode('CH-11302', /Your season starts with your first 18\u2011hole round/);
     const row = screen.getByRole('link', { name: 'Sep 9, Finley GC, 38 (+2)' });
     expect(within(row).getByText('Holes').nextSibling!.textContent).toBe('9');
     expect(screen.getByText('Since August 1')).toBeTruthy();
@@ -228,9 +239,9 @@ describe('112401 Rounds library, on screen', () => {
   it('110108 groups by month (newest first) or by course, each with its count and low', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_IDLE);
-    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['September 2026', 'August 2026']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['September 2026', 'August 2026']);
     await user.click(screen.getByRole('radio', { name: 'By course' }));
-    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Finley GC', 'Hope Valley CC', 'Old Chatham GC', 'Carolina GC']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Finley GC', 'Hope Valley CC', 'Old Chatham GC', 'Carolina GC']);
     const finley = screen.getByRole('region', { name: 'Finley GC' });
     expect(within(finley).getByText(/rounds$/).textContent).toBe('5 rounds');
     // P011-D2: the low is an 18-hole figure, like the average (Finley's nine-hole 38 is not its low).
@@ -279,11 +290,12 @@ describe('112401 Rounds library, on screen', () => {
   it('111811 the season figures: average, to par, best, putts and greens from countable 18-hole rounds', () => {
     show(PREVIEW_ROUNDS_IDLE);
     const season = screen.getByRole('region', { name: 'Season scoring' });
-    expect(within(season).getByText('73.4')).toBeTruthy();
+    // The figure's decimal point is its own span (withPointSpan), so the figure is read as one text.
+    expect(season.querySelector('.ch-rd-season__big b')!.textContent).toBe('73.4');
     expect(within(season).getByText('avg · +1.9 to par')).toBeTruthy();
     expect(within(season).getByText('Best').nextSibling!.textContent).toBe('69');
     // P011-D16: the whole course name, not its first word.
-    expect(within(season).getByText('Carolina GC').parentElement!.textContent).toBe('Carolina GC · Aug 18');
+    expect(within(season).getByText('Carolina GC').parentElement!.textContent).toBe('Carolina GC\u00a0· Aug 18');
     expect(within(season).getByText('GIR').nextSibling!.textContent).toBe('62%');
   });
 });
@@ -336,23 +348,23 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
     expect(within(more).queryByText(/not started/)).toBeNull();
   });
 
-  it('CH-11215 a finished round whose "already posted" check could not run is not offered Submit', async () => {
+  it('CH-11215 a finished round whose "already posted" check could not run is not offered Post round', async () => {
     const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
     const finished = { ...PREVIEW_UNFINISHED, played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [finished], error: false } });
     await expectCode('CH-11215', /Couldn’t check whether this round was already posted/);
-    expect(screen.queryByRole('link', { name: /Submit/ })).toBeNull();
-    expect(screen.queryByText('Ready to submit')).toBeNull();
+    expect(screen.queryByRole('link', { name: /Post/ })).toBeNull();
+    expect(screen.queryByText('Ready to post')).toBeNull();
     expect(screen.getByRole('link', { name: 'Continue' })).toBeTruthy();
   });
 
-  it('CH-11215 a finished round in the more-unfinished list says its posted check failed, and is Continue, never Submit', () => {
+  it('CH-11215 a finished round in the more-unfinished list says its posted check failed, and is Continue, never Post', () => {
     const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
     const finished = { ...PREVIEW_UNFINISHED, id: 'a0000000-0000-4000-8000-000000000043', course: 'Governors Club', played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [PREVIEW_UNFINISHED, finished], error: false } });
     const more = screen.getByRole('region', { name: '1 more unfinished round' });
     expect(within(more).getByText(/through 18 · couldn’t check if posted/)).toBeTruthy();
-    expect(within(more).queryByRole('link', { name: 'Submit' })).toBeNull();
+    expect(within(more).queryByRole('link', { name: 'Post' })).toBeNull();
     expect(within(more).getByRole('link', { name: 'Continue' })).toBeTruthy();
   });
 
@@ -636,6 +648,13 @@ describe('Rounds route', () => {
     render(<RoundsSkeleton />);
     await expectCode('CH-11401');
     expect(screen.getByRole('main', { name: 'Loading your rounds' }).getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('CH-11401 the desktop skeleton draws the season pane with its vs-par stage, and the first month under its heading (2026-10-18)', () => {
+    render(<RoundsSkeleton />);
+    const desk = code('CH-11401')!.querySelector('.ch-rd-sk-desk')!;
+    expect(desk.querySelector('.ch-rd-hero > .ch-rd-sk-pane > .ch-rd-sk-stage')).not.toBeNull();
+    expect(desk.querySelector('.ch-rd-grp > .ch-rd-grp__h + .ch-rd-book')).not.toBeNull();
   });
 
   it('the fixture in progress is the board’s: Finley GC, Blue, holes 1 to 3', () => {

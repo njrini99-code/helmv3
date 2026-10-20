@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronDown, Flag } from 'lucide-react';
+import { Check, ChevronDown, Flag, Pencil } from 'lucide-react';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import { frontierIndex, playedBefore } from '@/lib/golf/round-session/play-order';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
@@ -11,7 +11,8 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
 import { centerLine, holeShape, plotShots, pointAlong, ringRadius, type ChHoleFrame } from './hole-geometry';
-import { distanceText, RESULT_LABEL, roundSoFar, shotLine, shotTitle } from './labels';
+import { distanceText, roundSoFar, shotFinish, shotLine, shotTitle } from './labels';
+import { useHScroll } from '../../../ui/use-hscroll';
 
 /** A one-of-several choice (radiogroup, CH-11806: named for what it chooses). A `rare` option is drawn quieter; `note` is its small second line. */
 export function Seg<T extends string>({
@@ -86,6 +87,7 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
   const soFar = roundSoFar(holes);
   const reduced = useChReducedMotion();
   const stripRef = useRef<HTMLDivElement>(null);
+  const stripEdges = useHScroll<HTMLDivElement>(stripRef);
   const placedRef = useRef(false);
   // A strip wider than the screen (18 holes, a round resumed on the back nine) brings the current hole to the middle:
   // placed before the first paint (a layout effect, so a round resumed on the back nine never flashes hole 1), eased
@@ -101,7 +103,7 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
     else strip.scrollLeft = left;
   }, [current, reduced]);
   return (
-    <div ref={stripRef} className="ch-rt-strip" style={{ ['--ch-rt-holes' as string]: holes.length }}>
+    <div ref={stripEdges} className="ch-hscroll ch-rt-strip" style={{ ['--ch-rt-holes' as string]: holes.length }}>
       {holes.map((h, i) => {
         const score = h.score;
         const cls = 'ch-rt-strip__h' + (i === current ? ' is-cur' : '') + (score != null ? ' is-done' : '') + (score != null && score < h.par ? ' is-under' : '');
@@ -238,7 +240,7 @@ export function HoleMap({
       <circle cx={s.pin.x} cy={s.pin.y} r="2.4" className="ch-rt-map__cup" />
       {labels &&
         plotted
-          .filter((p) => Math.hypot(p.to.x - p.from.x, p.to.y - p.from.y) > 70)
+          .filter((p) => (p.to.x - p.from.x) ** 2 + (p.to.y - p.from.y) ** 2 > 70 * 70)
           .map((p) => {
             const text = mapLabel(p.shot, labels);
             const w = text.length * 6.6 + 20;
@@ -284,11 +286,34 @@ export function HoleMap({
  * the rows show at once (hidden from a screen reader while folded) and the
  * chevron turns (base, ease-out); it doesn't turn with reduced motion.
  */
-export function ShotLog({ shots, pref }: { shots: ShotRecord[]; pref: DistancePreference }) {
+export function ShotLog({
+  shots,
+  pref,
+  onEdit,
+  editDisabled = false,
+  saved = null,
+}: {
+  shots: ShotRecord[];
+  pref: DistancePreference;
+  /**
+   * CH-11505 mid-hole: a recorded shot in the open log is tapped to change or delete it (useShotTracking's
+   * handleEditShot), as Fairway's shot pills do before the hole is holed. Without it the rows are read-only.
+   */
+  onEdit?: (shot: ShotRecord) => void;
+  /** While an undo or the hole's save runs, the rows can't be opened. */
+  editDisabled?: boolean;
+  /** The hole before this one has just saved ("Hole 4 saved · Birdie"): said here, in place of "No shots yet", for a few seconds. */
+  saved?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const bodyId = useId();
   if (!shots.length)
-    return (
+    return saved ? (
+      <div className="ch-rt-log is-empty is-saved" role="status">
+        <Icon icon={Check} size={14} />
+        {saved}
+      </div>
+    ) : (
       <div className="ch-rt-log is-empty" data-ch-code="CH-11308">
         <Icon icon={Flag} size={14} />
         No shots yet on this hole
@@ -296,9 +321,7 @@ export function ShotLog({ shots, pref }: { shots: ShotRecord[]; pref: DistancePr
     );
   const last = shots[shots.length - 1]!;
   const penalties = shots.filter((s) => s.isPenalty).length;
-  const lastText = last.isPenalty
-    ? shotTitle(last)
-    : `${shotTitle(last)} → ${RESULT_LABEL[last.result]}${last.result !== 'hole' ? `, ${distanceText(last.distanceToHoleAfter, last.distanceUnitAfter, pref)}` : ''}`;
+  const lastText = last.isPenalty ? shotTitle(last) : `${shotTitle(last)} → ${shotFinish(last, pref)}`;
   return (
     <div className={'ch-rt-log' + (open ? ' is-open' : '')}>
       <button type="button" className="ch-rt-log__h" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
@@ -320,18 +343,38 @@ export function ShotLog({ shots, pref }: { shots: ShotRecord[]; pref: DistancePr
       </button>
       <div className="ch-rt-log__b" id={bodyId} hidden={!open}>
         <ol>
-          {shots.map((s, i) => (
-            <li key={i} className="ch-rt-log__r">
-              <span className={'ch-rt-log__n ' + lieClass(s)} aria-hidden="true">
-                {s.isPenalty ? 'P' : s.shotNumber}
-              </span>
-              <span className="ch-rt-log__rb">
-                <b>{shotTitle(s)}</b>
-                <em>{shotLine(s, pref)}</em>
-              </span>
-              {s.isPenalty && <strong>+1</strong>}
-            </li>
-          ))}
+          {shots.map((s, i) => {
+            const row = (
+              <>
+                <span className={'ch-rt-log__n ' + lieClass(s)} aria-hidden="true">
+                  {s.isPenalty ? 'P' : s.shotNumber}
+                </span>
+                <span className="ch-rt-log__rb">
+                  <b>{shotTitle(s)}</b>
+                  <em>{shotLine(s, pref)}</em>
+                </span>
+                {s.isPenalty && <strong>+1</strong>}
+              </>
+            );
+            return onEdit ? (
+              <li key={s.id ?? `${s.shotNumber}-${i}`}>
+                <button
+                  type="button"
+                  className="ch-rt-log__r ch-rt-log__r--btn"
+                  disabled={editDisabled}
+                  aria-label={`Change shot ${s.shotNumber}: ${shotTitle(s)}, ${shotLine(s, pref)}`}
+                  onClick={() => onEdit(s)}
+                >
+                  {row}
+                  <Icon icon={Pencil} size={14} className="ch-rt-log__pen" />
+                </button>
+              </li>
+            ) : (
+              <li key={i} className="ch-rt-log__r">
+                {row}
+              </li>
+            );
+          })}
         </ol>
       </div>
     </div>

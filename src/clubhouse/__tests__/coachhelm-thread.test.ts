@@ -200,7 +200,7 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
       ['Level', '81%', 'of 44', 'good'],
       ['Downhill', '58%', 'of 31', 'loss'],
     ]);
-    expect(b.table.columns).toEqual(['Range', 'Make rate from 4 to 6 feet, by slope', 'Sample']);
+    expect(b.table.columns).toEqual(['Range', 'Rate', 'Sample']);
     expect(b.source).toBe('126 attempts · Sep 1 to Sep 29 · computed Sep 29');
   });
   it('three players on one metric are a ranking; two players are a comparison table', () => {
@@ -223,6 +223,21 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
     const [t] = evidenceBlocks({ ...ASK_EV_JONAH, measurements: [] });
     expect(t?.kind).toBe('trend');
     if (t?.kind === 'trend') expect(t.reference?.label).toBe('Average');
+  });
+  it("a rate's trend averages by its sample, as the panel's made count does, and is titled for its player", () => {
+    const [t] = evidenceBlocks({ ...ASK_EV_JONAH, measurements: [] });
+    if (t?.kind !== 'trend') throw new Error('not a trend');
+    // 1 + 0 + 1 + 1 + 0 made of 2, 1, 2, 2, 2 putts: 3 of 9, never the 30% of the five rounds' rates averaged plainly.
+    expect(t.reference?.value).toBeCloseTo(100 / 3, 5);
+    expect(t.title).toBe('Make rate by round, Jonah Okafor');
+    expect(t.table.columns).toEqual(['Round', 'Rate', 'Sample']);
+    // A series with no samples is averaged plainly; a count keeps its metric as the column.
+    const s = ASK_EV_JONAH.series[0]!;
+    const bare = { ...s, unit: 'count' as const, points: s.points.map((p) => ({ ...p, sample_size: 0 })) };
+    const [c] = evidenceBlocks({ ...ASK_EV_JONAH, measurements: [], series: [bare] });
+    if (c?.kind !== 'trend') throw new Error('not a trend');
+    expect(c.reference?.value).toBeCloseTo(30, 5);
+    expect(c.table.columns[1]).toBe(s.metric_label);
   });
   it('strokes gained by leg is a diverging chart; a true minus and a plus', () => {
     const sg = { ...ASK_EV_PARTIAL, coverage: 'complete' as const, coverage_note: null, measurements: [

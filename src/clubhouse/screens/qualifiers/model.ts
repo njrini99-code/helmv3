@@ -2,12 +2,19 @@
  * Qualifiers, pure logic shared by the loader, the screens, the preview and
  * the tests. Nothing here reads the database or the clock.
  *
+ * Which rounds count (P009 parity, 2026-10-17): a round linked to the
+ * qualifier by `qualifier_id` (never by date), completed, not a test, with a
+ * total and a to-par; a second round in one numbered slot counts once. The
+ * player must be entered. This is the round set production commits the squad
+ * from (`loadQualifyingWorkspace`), so the board shows what confirm writes.
+ *
  * Ranking (D-33): players with a scored round first, then the shared order
  * in src/lib/coachhelm/v3/qualifying/ranking.ts (to par, strokes, more
  * rounds, name), the same order the selection workspace and the squad
  * confirmation use. Two scored players tie only when to par and total
- * strokes both match; ties share a position shown with a T. The legacy
- * getQualifierLeaderboard RPC orders differently and is not this rule.
+ * strokes both match; ties share a position shown with a T. Fairway's live
+ * leaderboard uses the same round set and order since 2026-10-17
+ * (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
  */
 
 import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
@@ -26,6 +33,46 @@ export interface ChQRound {
   date: string;
   course: string | null;
   holesPlayed: number | null;
+  /**
+   * False when the round has no stored qualifier_round_number: it is drawn as round 1 but is never taken for a second
+   * round in slot 1, so it still counts (as the selection workspace counts it). Left out, the number is the stored one.
+   */
+  numbered?: boolean;
+}
+
+/** The columns of a golf_rounds row the board reads. */
+export interface ChQRoundRow {
+  id: string;
+  player_id: string;
+  qualifier_round_number: number | null;
+  total_score: number | null;
+  score_to_par: number | null;
+  round_date: string;
+  course_name: string | null;
+  holes_played: number | null;
+  /** When read, a round counts only if completed and not a test (the loader also filters on both). */
+  status?: string | null;
+  is_test?: boolean | null;
+}
+
+/** Whether a read round row may count on the board: completed and not a test. The rounds read filters on the same two. */
+export function countsOnBoard(r: Pick<ChQRoundRow, 'status' | 'is_test'>): boolean {
+  return (r.status === undefined || r.status === 'completed') && r.is_test !== true;
+}
+
+/** A read round row as the board's round. */
+export function roundOfRow(r: ChQRoundRow): ChQRound {
+  return {
+    id: r.id,
+    playerId: r.player_id,
+    number: r.qualifier_round_number ?? 1,
+    total: r.total_score,
+    toPar: r.score_to_par,
+    date: r.round_date,
+    course: r.course_name,
+    holesPlayed: r.holes_played,
+    ...(r.qualifier_round_number == null ? { numbered: false } : {}),
+  };
 }
 
 export interface ChQHole {
@@ -73,6 +120,13 @@ export interface ChQBoard {
   submitted: number;
 }
 
+/** The first scheduled round with no score in (the one a player plays next), or null when every round is in. */
+export function nextRoundNumber(rounds: ReadonlyArray<{ number: number }>, numRounds: number): number | null {
+  const played = new Set(rounds.map((r) => r.number));
+  for (let n = 1; n <= numRounds; n++) if (!played.has(n)) return n;
+  return null;
+}
+
 /** "T3", "4", or a dash for someone with no round in. */
 export function positionLabel(row: Pick<ChQRow, 'position' | 'tied'>): string {
   if (row.position == null) return '—';
@@ -103,10 +157,13 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[
     // A completed round without a total is unknown, not a free zero: it neither counts as played nor adds to the
     // sums, the same rule as the stored entry aggregate (updateQualifierEntryStats).
     // A total without a to-par is unknown too (it would otherwise count as even), and a second round in the same
-    // qualifier round counts once: the first listed stands (audit §11.2, §11.3).
+    // qualifier round counts once: the first listed stands (audit §11.2, §11.3). A round with no stored number is in
+    // no slot, so it is never the second one (the selection workspace counts it too).
     const seen = new Set<number>();
     const withScore = rounds.filter((r) => {
-      if (r.total == null || r.toPar == null || seen.has(r.number)) return false;
+      if (r.total == null || r.toPar == null) return false;
+      if (r.numbered === false) return true;
+      if (seen.has(r.number)) return false;
       seen.add(r.number);
       return true;
     });
@@ -207,7 +264,9 @@ export function buildBoard(input: {
     if (confirmed) row.state = confirmed.get(row.playerId) === 'coach_pick' ? 'pick' : confirmed.has(row.playerId) ? 'selected' : null;
     else if (tied(row)) row.state = 'tie';
     else if (input.status === 'completed') row.state = i < topScore ? 'qualified' : null;
-    else row.state = i < topScore ? 'qualifying' : i <= squad && row.played >= minBubble ? 'bubble' : null;
+    // The Bubble is inside the squad: the places below the line on score, down to the travel cut (production's tiers
+    // and DESIGN.md). The first player out was marked too until 2026-10-17, below the travel cut the board draws.
+    else row.state = i < topScore ? 'qualifying' : i < squad && row.played >= minBubble ? 'bubble' : null;
   });
 
   return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0) };
@@ -278,7 +337,7 @@ export const STATE_LABEL: Record<Exclude<ChQRowState, null>, { tone: 'positive' 
 export const STATUS_LABEL: Record<ChQStatus, { tone: 'accent' | 'warning' | 'neutral'; label: string }> = {
   in_progress: { tone: 'accent', label: 'Live' },
   upcoming: { tone: 'warning', label: 'Upcoming' },
-  completed: { tone: 'neutral', label: 'Completed' },
+  completed: { tone: 'neutral', label: 'Concluded' },
 };
 
 export function ctaLabel(status: ChQStatus): string {
@@ -287,7 +346,7 @@ export function ctaLabel(status: ChQStatus): string {
 
 /** The list's lede, by who reads it. The list and its skeleton say the same sentence, so the skeleton's lines wrap where the page's do. */
 export function listLede(coach: boolean, mode: 'all' | 'mine'): string {
-  if (coach) return 'Run head-to-head qualifiers to decide who plays this week.';
+  if (coach) return 'Rank players over counted rounds and pick who travels.';
   return mode === 'mine' ? 'The qualifiers you’re entered in, and where you stand.' : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
 }
 
@@ -327,9 +386,13 @@ const asDate = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00Z`);
 export function dayLabel(d: string): string {
   return DAY.format(asDate(d));
 }
-/** "Sep 22, 2026 – Oct 1, 2026", or one date when it starts and ends the same day. */
+/**
+ * "Sep 22 – Oct 1, 2026", the year said once; "Dec 28, 2026 – Jan 3, 2027" across a new year; one date when it starts
+ * and ends the same day. Built by hand rather than with formatRange, whose spacing differs between engines.
+ */
 export function rangeLabel(start: string, end: string | null): string {
-  return !end || end === start ? DAY_YEAR.format(asDate(start)) : `${DAY_YEAR.format(asDate(start))} – ${DAY_YEAR.format(asDate(end))}`;
+  if (!end || end === start) return DAY_YEAR.format(asDate(start));
+  return `${yearOf(start) === yearOf(end) ? dayLabel(start) : DAY_YEAR.format(asDate(start))} – ${DAY_YEAR.format(asDate(end))}`;
 }
 /** "Sep 22 – Oct 1" without the year, for the facts strip. */
 export function shortRange(start: string, end: string | null): string {
@@ -356,13 +419,21 @@ export const FORM_HELP = {
  * What Manage selections is waiting for, by stage (0 standings, 1 picks, 2 confirmed). Its skeleton draws the standings
  * stage's sentence, the commonest way in, so the note's lines wrap where the page's do.
  */
-export function stageNoteText(stage: 0 | 1 | 2, o: { topN: number; picks: number; picksReady?: boolean; nobody?: boolean; tie?: number }): string {
-  const { topN, picks, picksReady = false, nobody = false, tie = 0 } = o;
+export function stageNoteText(
+  stage: 0 | 1 | 2,
+  o: { topN: number; picks: number; made?: number; reasons?: number; picksReady?: boolean; nobody?: boolean; tie?: number },
+): string {
+  // At stage 1 the note counts down (wave-6 #11): `picks` is the picks still to make, `made` those made, `reasons` those made without one.
+  const { topN, picks, made = 0, reasons = 0, picksReady = false, nobody = false, tie = 0 } = o;
   if (stage === 1 && tie > 0) return `Players are level at the last place on score. Give ${plural(tie, 'more place', 'more places')} to confirm the squad.`;
   if (stage === 0) return `Start selecting when the standings are where you want them.${picks ? ` Then choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason.` : ''} The top ${topN} on score are set when you confirm.`;
   if (stage === 1) {
     if (nobody) return 'Nobody has a score in and no pick is made yet, so there is no squad to confirm.';
-    return picksReady ? 'Every pick is made. Confirm the squad to tell the players.' : `Choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason, to confirm the squad.`;
+    if (picksReady) return 'Every pick is made. Confirm the squad to tell the players.';
+    const missing = reasons === 1 ? 'the missing reason' : `the ${reasons} missing reasons`;
+    if (!picks) return `Every pick is chosen. Add ${missing}, then confirm the squad.`;
+    const what = made ? plural(picks, 'more coach’s pick', 'more coach’s picks') : plural(picks, 'coach’s pick', 'coach’s picks');
+    return `Choose ${what}, ${picks === 1 ? 'with a reason' : 'each with a reason'}, to confirm the squad.${reasons ? ` Add ${missing} too.` : ''}`;
   }
   return 'The squad is confirmed, and every entrant has been told whether they made it.';
 }

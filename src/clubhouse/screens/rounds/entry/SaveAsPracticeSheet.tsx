@@ -12,7 +12,7 @@ export const QUALIFIER_CLOSED_REASON = 'This qualifier has already been complete
 
 /**
  * CH-11516: a round that can't be submitted to its qualifier, with a way out.
- * Open this, and not the generic "The round didn't submit" (CH-11005), only
+ * Open this, and not the generic "The round didn’t post" (CH-11005), only
  * when the submit was refused because the coach closed the qualifier the round
  * was entered in. The exact legacy condition (`isQualifierClosedError` in
  * `src/lib/golf/round-missing-recovery.ts`, set as `qualifierClosed` in both

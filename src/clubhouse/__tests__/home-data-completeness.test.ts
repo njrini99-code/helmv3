@@ -25,11 +25,22 @@ describe('Home calendar completeness', () => {
   it.each(['America/New_York', 'America/Los_Angeles', 'Pacific/Kiritimati'])('keeps an all-day Friday on Friday in %s', async (tz) => {
     const week = await load([event('Fall Invitational', '2026-10-02T00:00:00Z')], tz);
     expect(week.next).toMatchObject({ id: 'Fall Invitational', date: '2026-10-02', allDay: true });
-    expect(week.week.days.find((d) => d.date === '2026-10-02')).toMatchObject({ eventCount: 1, hasCompetition: true });
+    expect(week.week.days.find((d) => d.date === '2026-10-02')).toMatchObject({ eventCount: 1, hasCompetition: true, competitionType: 'tournament' });
     expect(week.week.days.find((d) => d.date === '2026-10-01')?.eventCount).toBe(0);
     // In Kiritimati it is already Friday, so the summary correctly says today.
     expect(week.nextCompetition?.when).toBe(tz === 'Pacific/Kiritimati' ? 'today' : 'Friday');
     if (tz !== 'Pacific/Kiritimati') expect(week.weekNote).toEqual({ weekday: 'Friday', title: 'Fall Invitational' });
+  });
+
+  it('marks a competition day with its type, a tournament over a qualifier on the same day', async () => {
+    const week = await load([
+      { ...event('Qualifier', '2026-10-02T00:00:00Z'), event_type: 'qualifier' },
+      event('Invitational', '2026-10-02T00:00:00Z'),
+      { ...event('Q2', '2026-10-03T00:00:00Z'), event_type: 'qualifier' },
+      { ...event('Range', '2026-10-01T00:00:00Z'), event_type: 'practice' },
+    ]);
+    const day = (date: string) => week.week.days.find((d) => d.date === date)?.competitionType;
+    expect([day('2026-10-02'), day('2026-10-03'), day('2026-10-01')]).toEqual(['tournament', 'qualifier', null]);
   });
 
   it('keeps a single-day event up next for the whole team-local day, including after its stored UTC midnight', async () => {

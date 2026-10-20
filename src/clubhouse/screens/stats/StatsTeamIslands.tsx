@@ -1,6 +1,7 @@
 'use client';
 
 import { useHeroTone } from '../../ui/PageHero';
+import { withPointSpan } from '../../ui/point-span';
 import { ArrowDownRight, ArrowUpRight, CalendarRange, Download, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useId, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
@@ -19,6 +20,7 @@ import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
+import { usePrinting } from './PrintHead';
 import { useChSessionState } from '../../lib/session-state';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
@@ -61,9 +63,19 @@ export function useShownWindow(): ChWindow {
   return useContext(GoFilter).shown;
 }
 
+/**
+ * The phone's window switch, reading the frame itself: a tap moves the pill at once and re-renders only this, not the
+ * whole page (the page re-rendered every chart in the click, 40ms in the Simulator audit, 2026-10-14).
+ */
+export function PhoneWindowSwitch({ custom }: { custom: boolean }) {
+  const go = useGoWindow();
+  return <WindowSwitch value={useShownWindow()} onChange={go} custom={custom} />;
+}
+
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
 export function StatsTeamFrame({ filter: current, phone, children }: { filter: ChFilter; phone?: ReactNode; children: ReactNode }) {
-  const isPhone = useChPhone() && phone != null;
+  const printing = usePrinting();
+  const isPhone = useChPhone() && phone != null && !printing;
   const tone = useHeroTone();
   const router = useRouter();
   const toast = useToast();
@@ -133,7 +145,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
       <WindowSwitch value={useShownWindow()} onChange={go} custom={hasRange(filter)} />
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
-        <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)}>
+        <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)} className="ch-btn--flush-end">
           Export
         </Button>
       )}
@@ -224,8 +236,9 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const all = [...team, ...lines.flatMap((l) => l.v)].filter((v): v is number => v != null);
   const w = 900;
   const h = 300;
-  const padL = 38;
-  const padR = 16;
+  // Room for a tick such as −1.5, and for half the last week's date, at the chart's tick size (stats.css `.ch-sgt__svg .ch-tick`).
+  const padL = 46;
+  const padR = 28;
   const padT = 16;
   const padB = 28;
   // Par is what the window's rounds were played against (the average score less the average to par), not a number written here.
@@ -322,6 +335,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     setScrub(best);
   };
   const yRef = ref != null ? y(ref) : null;
+  // A team ending on the reference puts its end figure where the reference's label sits: the label moves to the left end.
+  const refLabelLeft = yRef != null && tLast != null && Math.abs(y(tLast.v) - yRef) < 16;
   // The wash reaches full strength at the team's furthest week from the reference, so it reads at any scale.
   const reach = (side: 'up' | 'down') => {
     const ys = team.flatMap((v) => (v == null ? [] : [y(v)]));
@@ -337,7 +352,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           <span className="ch-sgt__row">
             <b className={'ch-sgt__n ch-num' + (!isSg || leadValue == null ? '' : leadValue >= 0 ? ' ch-gain' : ' ch-loss')}>
               <Swap swapKey={`${lens}${leadText}`} inline>
-                {leadText}
+                {withPointSpan(leadText)}
               </Swap>
             </b>
             {lead?.delta == null && lead?.context && (
@@ -464,7 +479,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                 <g key={t}>
                   <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke="var(--ch-ivory-200)" strokeOpacity={0.7} />
                   <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
-                    {isSg ? (t > 0 ? `+${t}` : t === 0 ? '0' : `−${Math.abs(t)}`) : t}
+                    {isSg ? formatSigned(t, Number.isInteger(t) ? 0 : 1) : t}
                   </text>
                 </g>
               ))}
@@ -483,7 +498,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {yRef != null && (
                 <g aria-hidden="true">
                   <line x1={padL} x2={w - padR} y1={yRef} y2={yRef} stroke="var(--ch-champagne-500)" strokeDasharray="4 4" />
-                  <text x={w - padR} y={yRef - 7} textAnchor="end" className="ch-tick ch-sgt__reflab">
+                  <text x={refLabelLeft ? padL : w - padR} y={yRef - 7} textAnchor={refLabelLeft ? 'start' : 'end'} className="ch-tick ch-sgt__reflab">
                     {isSg ? baseline.noun.charAt(0).toUpperCase() + baseline.noun.slice(1) : 'Par'}
                   </text>
                 </g>
@@ -526,7 +541,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                 <g aria-hidden="true" className="ch-sgt__scrub">
                   <line x1={x(scrub)} x2={x(scrub)} y1={padT} y2={h - padB} />
                   <circle cx={x(scrub)} cy={y(team[scrub]!)} r={5} />
-                  <text x={Math.min(Math.max(x(scrub), padL + 44), w - padR - 44)} y={padT - 3} textAnchor="middle">
+                  <text x={Math.min(Math.max(x(scrub), padL + 54), w - padR - 54)} y={padT - 3} textAnchor="middle">
                     {data.weeks[scrub]} · {fmt(team[scrub]!)}
                   </text>
                 </g>

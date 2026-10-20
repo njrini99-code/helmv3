@@ -1,16 +1,16 @@
 import { SECTIONS as SETTINGS_SECTIONS } from '../screens/settings/model';
 import {
   BarChart3,
+  BrainCircuit,
   CalendarDays,
+  ClipboardList,
   Flag,
   GraduationCap,
   House,
-  Medal,
   MessageSquare,
   Settings,
-  Sparkles,
+  Trophy,
   Users,
-  UsersRound,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -36,14 +36,15 @@ export interface ChNavItem {
  */
 export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
-  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
+  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: BrainCircuit },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
-  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  // Team Hub sits under Team, with the roster (owner, 2026-10-16).
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, section: 'Team' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
-  { id: 'recruiting', label: 'Recruiting', href: '/golf/dashboard/recruiting', icon: GraduationCap, section: 'Team' },
   { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
-  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'Team' },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Trophy, section: 'Team' },
+  { id: 'recruiting', label: 'Recruiting', href: '/golf/dashboard/recruiting', icon: GraduationCap, section: 'Team' },
 ];
 
 /**
@@ -56,14 +57,15 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
  */
 export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
-  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
+  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: BrainCircuit },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
-  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound, badge: 'hub' },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  // Team Hub sits under Team, with the roster (owner, 2026-10-16).
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, badge: 'hub', section: 'Team' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team' },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Trophy, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'My game' },
   { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'My game' },
-  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'My game' },
   { id: 'classes', label: 'Classes', href: '/golf/dashboard/classes', icon: GraduationCap, section: 'School' },
 ];
 
@@ -182,6 +184,28 @@ const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i],
   player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i],
 };
+
+/**
+ * Old addresses whose screen Clubhouse moved: their route redirects from its layout or page (routes/alias.ts). Under
+ * the dashboard's loading boundary that redirect arrives in the stream and fires only when the segment renders, so the
+ * frame renders it (hidden) behind the not-rebuilt page instead of dropping it. A guard test keeps this list in step
+ * with every route that calls redirectToClubhouse.
+ */
+export const CH_ALIASED_ROUTES: readonly RegExp[] = [
+  /^\/golf\/dashboard\/(whats-new|tasks|intelligence|courses|announcements|team|documents|travel)$/,
+  /^\/golf\/dashboard\/roster\/[^/]+$/,
+  /^\/golf\/dashboard\/players\/[^/]+$/,
+  /^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+|genome\/compare|genome\/[^/]+)$/,
+  /^\/golf\/dashboard\/rounds\/[^/]+\/review$/,
+  // Rebuilt for one role and moved for the other (a coach's Rounds to Team stats and My qualifiers to Qualifiers, a
+  // player's Team stats to their Stats): the segment must render for its redirect to run.
+  /^\/golf\/dashboard\/(rounds|my-qualifiers|stats\/team)$/,
+];
+
+export function isAliased(pathname: string): boolean {
+  const path = pathname.replace(/\/$/, '');
+  return CH_ALIASED_ROUTES.some((re) => re.test(path));
+}
 
 export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {
   const path = pathname.replace(/\/$/, '') || '/';

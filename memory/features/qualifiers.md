@@ -78,9 +78,10 @@ Player enters a qualifier round
   -> updateQualifierEntryStats() reads completed linked rounds and verifies its
      privileged aggregate write affected the entrant row
 
-Leaderboard reads qualifier
-  -> getQualifierLeaderboard()
-  -> aggregate score, to-par, rounds completed, ties, and position
+Leaderboard reads qualifier (FairwayQualifierLeaderboard)
+  -> useQualifierRealtime(): entries + counted golf_rounds (completed, not test)
+  -> compareStandings / sameStanding (src/lib/coachhelm/v3/qualifying/ranking.ts)
+  -> position, T ties, tiers and "Tie at cut"
 ```
 
 ## Business Rules
@@ -163,6 +164,22 @@ Leaderboard reads qualifier
   the error says the details WERE saved and asks for another save to retry
   the courses. An empty or zero "Rounds" value blocks the save with an inline
   field error. Test: `__tests__/FairwayEditQualifier.save.test.tsx`.
+  Clearing a round's course sends that round as an empty row (only when it
+  had a stored course), because `setQualifierRoundCourses` keeps every round
+  it is not sent; a stored empty row reads back as no course.
+- Fairway live leaderboard (P009 parity, 2026-10-17): the same round set and
+  order as the selection workspace and Clubhouse. A round counts when it is
+  linked by `qualifier_id`, completed, not `is_test`, with a total and a
+  to-par; a second round in one numbered slot counts once (first by id). The
+  stored entry aggregate is never a fallback. Order is `compareStandings` (to
+  par, strokes, more rounds, name); T ties need to par AND strokes level and
+  every tied row carries the T (1, T2, T2, 4); players level across the last
+  place on score are "Tie at cut" (Q-114), never in/out by row order. Still
+  different from Clubhouse: the average counts every round, and the Bubble has
+  no ⌈rounds ÷ 2⌉ gate. Test:
+  `src/components/fairway/pages/qualifiers/__tests__/standings-parity.test.tsx`.
+- Squad size is 1 to 12 in the New form and `createGolfQualifier`'s schema,
+  the database's check constraint on `golf_qualifiers.selection_slots_total` (1 to 12).
 
 ## Clubhouse surfaces
 

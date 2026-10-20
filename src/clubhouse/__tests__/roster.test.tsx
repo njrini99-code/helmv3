@@ -197,13 +197,13 @@ describe('Roster · saves that fail', () => {
     url.createObjectURL = prev;
   });
 
-  it('CH-3006 copying the join code fails: copy it by hand', async () => {
+  it('CH-3006 copying the team code fails: copy it by hand', async () => {
     const user = userEvent.setup();
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
     wrap(roster());
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
     await user.click((await screen.findAllByRole('button', { name: 'Copy' }))[0]!);
-    await expectCode('CH-3006', /Couldn’t copy the join code/);
+    await expectCode('CH-3006', /Couldn’t copy the team code/);
   });
 });
 
@@ -227,7 +227,7 @@ describe('Roster · player status (Active / Inactive)', () => {
     expect(code('CH-3502')!.textContent).toMatch(/stay on the team with their account and stats/);
     await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
     expect(actions.status).toHaveBeenCalledWith(theo.id, 'inactive');
-    await expectCode('CH-3404', /Saving/);
+    await expectCode('CH-3404', /Saving…/);
     expect((code('CH-3404')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
     await act(async () => settle({ success: false, error: 'Failed to update player status' }));
     await expectCode('CH-3008', /Couldn’t mark Theo Marchetti inactive/);
@@ -339,7 +339,7 @@ describe('Roster · reads that fail', () => {
     const user = userEvent.setup();
     wrap(roster({ teamError: true, joinCode: null }));
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
-    await expectCode('CH-3207', /The join code didn’t load/);
+    await expectCode('CH-3207', /The team code didn’t load/);
     expect(code('CH-3304')).toBeNull();
   });
 
@@ -372,12 +372,47 @@ describe('Roster · empty', () => {
   it('CH-3301 no players yet: the v2 page empty state, invite first and copy the team code second', () => {
     wrap(roster({ players: [], requests: [] }));
     const el = code('CH-3301') as HTMLElement;
-    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(el.classList.contains('ch-es--page')).toBe(true);
+    expect(el.getAttribute('data-ch-state')).toBe('first-run');
+    expect(el.querySelector('.ch-es-shape--people')).not.toBeNull();
     expect(within(el).getByRole('heading', { level: 2, name: 'No players yet' })).toBeTruthy();
     const buttons = within(el).getAllByRole('button').map((b) => b.textContent);
     expect(buttons).toEqual(['Invite players', 'Copy team code']);
     // One primary per screen: the header's Invite players steps aside.
     expect(screen.getAllByRole('button', { name: 'Invite players' })).toHaveLength(1);
+    // Wave 10 (A): a code or link join is instant, so the coach is not told they approve it.
+    expect(el.textContent).toMatch(/Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here\./);
+    expect(el.textContent).not.toMatch(/approve/);
+    // Wave 10 (B): with nobody on the roster the head drops its 0 counts; the team and season stay.
+    expect(document.querySelector('.ch-rs-head p')).toBeNull();
+    expect(document.querySelector('.ch-rs-team__name')!.textContent).toBeTruthy();
+  });
+
+  it('wave 10 the invite sheet names the team code and invite link, and says which joins are instant', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByText('Team code')).toBeTruthy();
+    expect(within(sheet).getByText(/open the invite link join .* right away\. Players already on GolfHelm who enter the code in Settings send a request you approve\./)).toBeTruthy();
+    expect(within(sheet).getByText('Players who open it join right away, after making an account if they need one.')).toBeTruthy();
+    expect(within(sheet).queryByText(/Join code|join request/)).toBeNull();
+  });
+
+  it('wave 10 the invite link field shows the link without its scheme, ending in the code; Copy sends the full URL', async () => {
+    const user = userEvent.setup();
+    delete (navigator as { share?: unknown }).share;
+    const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    wrap(roster());
+    await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
+    const field = (await screen.findByLabelText('Invite link')) as HTMLInputElement;
+    expect(field.value).toBe(`${window.location.host}/golf/join/FINLEY-26`);
+    expect(field.value).not.toMatch(/^https?:/);
+    const sheet = screen.getByRole('dialog');
+    const copies = within(sheet).getAllByRole('button', { name: 'Copy' });
+    await user.click(copies[copies.length - 1]!);
+    expect(write).toHaveBeenCalledWith(`${window.location.origin}/golf/join/FINLEY-26`);
+    expect(await screen.findByText('Invite link copied')).toBeTruthy();
   });
 
   it('CH-3302 a search with no match offers Show everyone', async () => {
@@ -396,11 +431,11 @@ describe('Roster · empty', () => {
     await expectCode('CH-3303', /No inactive players/);
   });
 
-  it('CH-3304 no join code yet: a way to make one', async () => {
+  it('CH-3304 no team code yet: a way to make one', async () => {
     const user = userEvent.setup();
     wrap(roster({ joinCode: null }));
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
-    await expectCode('CH-3304', /no join code yet/);
+    await expectCode('CH-3304', /no team code yet/);
     expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
   });
 
@@ -416,9 +451,10 @@ describe('Roster · empty', () => {
     vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
     render(<>{await ClubhouseRosterRoute()}</>);
     const el = code('CH-3306') as HTMLElement;
-    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(el.classList.contains('ch-es--page')).toBe(true);
     expect(within(el).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/Your players appear here once your team is set up/);
+    expect(within(el).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
     expect(el.textContent).not.toMatch(/Home/);
     expect(code('CH-2307')).toBeNull();
     // Not `.ch-rs`, which the stylesheet hides under 820px until the phone view takes over.
@@ -449,13 +485,20 @@ describe('Roster · loading, haptics, accessibility', () => {
     expect(code('CH-3401')!.getAttribute('aria-busy')).toBe('true');
   });
 
+  it('CH-3401 the desktop skeleton draws the head\'s two actions and where the team sits before the toolbar (2026-10-18)', () => {
+    render(<RosterSkeleton />);
+    const desk = code('CH-3401')!.querySelector('.ch-rs-skel-desk')!;
+    expect(desk.querySelector('.ch-rs-head .ch-rs-head__act')!.children).toHaveLength(2);
+    expect([...desk.children].map((c) => c.className.split(' ')[0])).toEqual(['ch-rs-head', 'ch-rs-sp', 'ch-rs-bar', 'ch-rs-faces']);
+  });
+
   it('CH-3402 removing shows its progress and cannot be pressed twice', async () => {
     const user = userEvent.setup();
     actions.remove.mockImplementation(() => new Promise(() => {}));
     wrap(roster());
     await openRemove(user);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
-    await expectCode('CH-3402', /Removing/);
+    await expectCode('CH-3402', /Removing…/);
     expect((code('CH-3402')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -625,6 +668,15 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     phone(roster({ players: [], requests: [] }));
     const el = code('CH-3301') as HTMLElement;
     expect(within(el).getAllByRole('button').map((b) => b.textContent)).toEqual(['Invite players', 'Copy team code']);
+    // Wave 10 (C): the top bar's invite icon steps aside while the empty state carries the primary.
+    expect(screen.getAllByRole('button', { name: 'Invite players' })).toHaveLength(1);
+    // Wave 10 (B): the kicker drops "0 active".
+    expect(document.querySelector('.ch-rsm-kicker')!.textContent).not.toMatch(/active/);
+  });
+
+  it('wave 10 (C) the phone top bar keeps its invite icon when the roster failed to load', () => {
+    phone(roster({ players: [], playersError: true }));
+    expect(screen.getByRole('button', { name: 'Invite players' })).toBeTruthy();
   });
 
   it('30101 CH-3701 the phone opens on the list: active players by average, then Inactive; SG and Name (by last name, D-59) re-sort with a tick', async () => {
@@ -735,7 +787,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     await user.click(screen.getByRole('button', { name: /2 join requests/ }));
     const sheet = await screen.findByRole('dialog', { name: 'Join requests' });
     await user.click(within(sheet).getByRole('button', { name: 'Approve all 2' }));
-    await expectCode('CH-3403', /Approving/);
+    await expectCode('CH-3403', /Approving…/);
     expect((code('CH-3403')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
     act(() => finish());
     await waitFor(() => expect(actions.accept).toHaveBeenCalledTimes(2));
@@ -869,7 +921,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     expect(await screen.findByText('Couldn’t remove Theo Marchetti: you’re offline')).toBeTruthy();
     expect(screen.getByRole('button', { name: `Actions for ${theo.name}` })).toBeTruthy();
     expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(true);
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Keep Theo' }));
     // Approve all is refused the same way.
     const { result } = renderHook(() => useJoinRequests('Varsity', PREVIEW_ROSTER.requests), {
       wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,

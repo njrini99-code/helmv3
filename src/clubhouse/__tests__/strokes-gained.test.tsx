@@ -47,6 +47,7 @@ import { PREVIEW_PLAYER_HOME } from '../preview/fixtures-player-home';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_ROUND } from '../preview/fixtures-round-review';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
+
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const ROOT = { className: 'ch-root', 'data-ui': 'clubhouse' } as const;
 function shell(node: React.ReactNode) {
@@ -423,7 +424,7 @@ describe('team loader', () => {
     // Ten newest at +2, five before them at +0.5: the change is +1.5.
     tables.current = teamTables('men', [...many(10, 2, 1), ...many(5, 0.5, 11)]);
     const last10 = await loadTeamStats({ teamId: 't1', window: 'last10' });
-    expect(last10.figures[0]).toMatchObject({ delta: 1.5, context: 'vs. previous 10' });
+    expect(last10.figures[0]).toMatchObject({ delta: 1.5, context: 'vs previous 10' });
     expect(last10.figures[0]!.state).toBeUndefined();
     // Ten rounds and nothing before them.
     tables.current = teamTables('men', many(10, 2, 1));
@@ -441,7 +442,7 @@ describe('team loader', () => {
 
 describe('the change against the previous window', () => {
   it('a change, or the honest reason; nothing to say for the season or for no strokes gained', () => {
-    expect(sgChange(1, 0.4, 'last10', 12)).toEqual({ delta: 0.6, context: 'vs. previous 10' });
+    expect(sgChange(1, 0.4, 'last10', 12)).toEqual({ delta: 0.6, context: 'vs previous 10' });
     expect(sgChange(1, null, 'last10', 0)).toEqual({ delta: null, context: 'No earlier rounds' });
     expect(sgChange(1, null, 'last10', 2)).toEqual({ delta: null, context: 'Too few earlier rounds with shots' });
     expect(sgChange(1, null, 'season', 40)).toEqual({ delta: null, context: '' });
@@ -517,7 +518,7 @@ describe('player loader', () => {
   it('CH-5310 the change against the previous 10: a value with three earlier rounds with shots, or why there is none', async () => {
     const at = (n: number, sg: number, from: number) => Array.from({ length: n }, (_, i) => rnd(`c${from}${i}`, 'p1', from + i, sg, [sg, 0, 0, 0]));
     tables.current = profileTables([...at(10, 2, 1), ...at(5, 0.5, 11)]);
-    expect((await load('coach'))!.sgChange).toEqual({ delta: 1.5, context: 'vs. previous 10' });
+    expect((await load('coach'))!.sgChange).toEqual({ delta: 1.5, context: 'vs previous 10' });
     tables.current = profileTables(at(10, 2, 1));
     expect((await load('coach'))!.sgChange).toEqual({ delta: null, context: 'No earlier rounds' });
     tables.current = profileTables([...at(10, 2, 1), ...at(2, 0.5, 11)]);
@@ -556,7 +557,7 @@ describe('player profile · desktop', () => {
     const chip = hero.querySelector('.ch-delta')!;
     expect(chip.textContent).toBe('−1.3');
     expect(chip.className).toContain('is-bad');
-    expect(hero.textContent).toContain('vs. previous 10');
+    expect(hero.textContent).toContain('vs previous 10');
   });
 
   it('CH-5310 no earlier rounds: the hero says so instead of a chip', () => {
@@ -696,7 +697,7 @@ describe('player profile · phone', () => {
     const change = footer.querySelector('.ch-sgchg')!;
     expect(change.querySelector('.ch-delta')!.textContent).toBe('−1.3');
     // P005-D6: away from the SG figure, the chip names what it measures.
-    expect(change.lastElementChild!.textContent).toBe('SG a round vs. previous 10');
+    expect(change.lastElementChild!.textContent).toBe('SG a round vs previous 10');
     const rows = [...document.querySelectorAll('.ch-spm-round')];
     expect(rows[0]!.querySelector('.ch-loss')!.textContent).toBe('−1.1 SG');
     expect(rows[1]!.querySelector('.ch-gain')!.textContent).toBe('+0.6 SG');
@@ -905,8 +906,8 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     const band = (label: string, made: number, attempts: number, bench: number | null) => ({ label, made, attempts, bench });
     expect(puttingNote([band('3–5 ft', 5, 5, 90)])).toBe('Bands grade against the Tour once they have 10 or more putts.');
     expect(puttingNote([band('3–5 ft', 18, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('Every graded band is at or above the Tour make rate.');
-    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('3 to 5 feet is the only band below the Tour make rate.');
-    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 4, 20, 50)])).toBe('2 bands are below the Tour make rate: 3–5 ft, 5–10 ft.');
+    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('3 to 5\u00a0feet is the only band below the Tour make rate.');
+    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 4, 20, 50)])).toBe('2 bands are below the Tour make rate: 3–5\u00a0ft, 5–10\u00a0ft.');
   });
 
   it('Home says Tour on the benchmark mark of a part of the game', () => {

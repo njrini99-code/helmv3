@@ -1,17 +1,18 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { classIdFromDescription, isClassEvent, stripClassTag } from '@/lib/calendar/class-events';
 import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurrence';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
+import { loadAttendanceCounts } from './attendance-counts';
 import {
   addDays,
   expandBusyDates,
   hhmmToHour,
   monthCells,
+  playerSeesMeeting,
   type ChCalEvent,
   type ChCalPerson,
   type ChCalType,
@@ -177,15 +178,31 @@ export async function loadCalendar(input: {
   // Pad the instant bounds by a day on each side; rows are bucketed by their zoned date below.
   const fromIso = `${addDays(range.from, -1)}T00:00:00Z`;
   const toIso = `${addDays(range.to, 2)}T00:00:00Z`;
+  // Every event that OVERLAPS the window: it starts before the window ends, and ends on or after its start (or, with no
+  // end, starts inside it). A tournament that began the day before the window still holds the window's first days; a
+  // read by start alone left it out (as Fairway's still does, page.tsx).
+  const overlapsWindow = `end_time.gte.${fromIso},start_time.gte.${fromIso}`;
 
+  // RSVPs are read beside the events (audit A-03: they waited for the event ids, a third round trip on every load), by
+  // the same team and window through the event they belong to; the rows of events that aren't shown are dropped below.
+  const attendanceRead = fetchAllRowsResult((from, to) =>
+    supabase
+      .from('golf_event_attendance')
+      .select('id, event_id, player_id, status, notified_at, golf_events!inner(id)')
+      .eq('golf_events.team_id', input.teamId)
+      .lt('golf_events.start_time', toIso)
+      .or(overlapsWindow, { referencedTable: 'golf_events' })
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
   const [eventsRes, classesRes, busyRes, everRes] = await Promise.all([
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
-        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp')
+        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp, rsvp_deadline')
         .eq('team_id', input.teamId)
-        .gte('start_time', fromIso)
         .lt('start_time', toIso)
+        .or(overlapsWindow)
         .order('start_time', { ascending: true })
         .order('id', { ascending: true })
         .range(from, to),
@@ -216,24 +233,51 @@ export async function loadCalendar(input: {
 
   const rsvp = new Map<string, Record<string, ChRsvp>>();
   const invited = new Map<string, string[]>();
+  /** Rows the coach's invitation wrote (`notified_at`, sendEventInvitations); a player's own reply to an open event has none. */
+  const coachInvited = new Map<string, number>();
   let rsvpError = false;
-  for (const chunk of chunkIds(ids)) {
-    // 200 events x a full roster passes PostgREST's 1,000-row cap: page every chunk.
-    const { data, error } = await fetchAllRowsResult((from, to) =>
-      supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', chunk).order('id', { ascending: true }).range(from, to),
-    );
-    if (error) {
-      chLogServer('calendar', 'attendance', error, 'calendar');
-      rsvpError = true;
-      break;
-    }
-    for (const a of data ?? []) {
+  const shown = new Set(ids);
+  // A player's attendance read returns only their own rows once migration 20261017102000 is applied, so the counts are
+  // read beside the rows: they tell a player that an event asking for replies invites no one, so the whole team may reply
+  // (production allows it: golf_event_attendance_insert_self), and, only when the rows failed, whether a meeting invites
+  // anyone at all (D2-8, below). Until that function exists (`missing`) the rows answer both, as before.
+  const meetingIds = input.role === 'player' ? rows.filter((r) => !isClassEvent(r) && (r.event_type === 'meeting' || r.requires_rsvp === true)).map((r) => r.id) : [];
+  // Paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's 1,000-row cap.
+  const [{ data: attendance, error: attendanceError }, meetingCounts] = await Promise.all([
+    attendanceRead,
+    meetingIds.length ? loadAttendanceCounts(supabase, meetingIds) : null,
+  ]);
+  if (meetingCounts?.kind === 'error') chLogServer('calendar', 'meetingInvites', meetingCounts.error, 'calendar');
+  if (attendanceError) {
+    chLogServer('calendar', 'attendance', attendanceError, 'calendar');
+    rsvpError = true;
+  } else {
+    for (const a of attendance ?? []) {
+      if (!shown.has(a.event_id)) continue;
       const r = rsvp.get(a.event_id) ?? {};
       r[a.player_id] = rsvpOf(a.status);
       rsvp.set(a.event_id, r);
       invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
+      if (a.notified_at) coachInvited.set(a.event_id, (coachInvited.get(a.event_id) ?? 0) + 1);
     }
   }
+
+  /** How many a meeting invites, for D2-8; null when that couldn't be read (never hides a meeting). */
+  const invitedCount = (id: string): number | null => {
+    if (meetingCounts?.kind === 'ok') return meetingCounts.byEvent.get(id)?.invited ?? 0;
+    if (meetingCounts?.kind === 'error' || rsvpError) return null;
+    return invited.get(id)?.length ?? 0;
+  };
+  /**
+   * Did the coach invite no one to this event? Then it is the team's, and any player may reply. A player's own reply
+   * (no `notified_at`) doesn't make it an invite list: from the rows, and from the count function's `coach_invited`.
+   * Never open when it couldn't be read.
+   */
+  const openToTeam = (id: string): boolean => {
+    if (meetingCounts?.kind === 'ok') return (meetingCounts.byEvent.get(id)?.coachInvited ?? 0) === 0;
+    if (meetingCounts?.kind === 'error' || rsvpError) return false;
+    return (coachInvited.get(id) ?? 0) === 0;
+  };
 
   const events: ChCalEvent[] = [];
   for (const r of rows) {
@@ -263,9 +307,11 @@ export async function loadCalendar(input: {
     const invitees = invited.get(r.id) ?? [];
     const replies = rsvp.get(r.id) ?? {};
     const me = input.role === 'player' ? input.viewerPlayerId : null;
-    // D2-8 (owner, 2026-10-08): a meeting with no invitees is the coach's own (a parent call, a staff meeting); players
-    // never see it. Only once the invite list has loaded: a failed read must not hide the team's meetings.
-    if (input.role === 'player' && !rsvpError && r.event_type === 'meeting' && !invitees.length) continue;
+    // Decision B (owner, wave 7): a player sees a meeting only when they are on its invite list, their own row in the
+    // attendance read (which returns it before and after migration 20261017102000), so a 1:1 or a captains' meeting
+    // never shows its title or room to the rest of the team. Only when that read failed does D2-8 decide (a meeting
+    // nobody is invited to is the coach's own); when the count failed too, no meeting is shown (fail closed).
+    if (input.role === 'player' && r.event_type === 'meeting' && !playerSeesMeeting(rsvpError ? null : !!me && invitees.includes(me), invitedCount(r.id))) continue;
     const base = {
       id: r.id,
       type,
@@ -277,6 +323,8 @@ export async function loadCalendar(input: {
       rsvp: input.role === 'coach' ? replies : me && replies[me] ? { [me]: replies[me] } : {},
       // Owner, 2026-10-08: replies are off unless the coach turned them on; null (older rows) reads as off.
       rsvpRequired: !cls && r.requires_rsvp === true,
+      rsvpDeadline: cls ? null : (r.rsvp_deadline ?? null),
+      openReply: !cls && r.requires_rsvp === true && input.role === 'player' && openToTeam(r.id),
       owner,
       busyOnly: false,
       instructor: klass?.instructor ?? null,
@@ -290,14 +338,27 @@ export async function loadCalendar(input: {
       // All-day rows are stored as UTC-midnight dates: read the date part, never zone it.
       const s = r.start_time.slice(0, 10);
       const e = (r.end_time ?? r.start_time).slice(0, 10);
-      for (let d = s, n = 0; d <= e && n < 31; d = addDays(d, 1), n++) {
-        if (d < range.from || d > range.to) continue;
+      for (let d = s < range.from ? range.from : s, n = 0; d <= e && n < 62; d = addDays(d, 1), n++) {
+        if (d > range.to) break;
         events.push({ ...base, date: d, start: null, end: null, allDay: true, span: s === e ? null : { from: s, to: e } });
       }
       continue;
     }
     const a = zoned(r.start_time, timezone);
     const b = r.end_time ? zoned(r.end_time, timezone) : { date: a.date, hour: a.hour + 1 };
+    // A timed event that runs past midnight (a tournament from Friday 7 AM to Sunday 4:30 PM, an overnight trip) is on
+    // every day it covers, as production's calendar places it (eventDaySpan): its start to midnight, then whole days,
+    // then midnight to its end. One that ends at midnight exactly holds nothing of the next day.
+    const last = b.date > a.date && b.hour === 0 ? addDays(b.date, -1) : b.date;
+    if (last > a.date) {
+      const end = b.date === last ? b.hour : 24;
+      const span = { from: a.date, to: last, start: a.hour, end };
+      for (let d = a.date < range.from ? range.from : a.date, n = 0; d <= last && n < 62; d = addDays(d, 1), n++) {
+        if (d > range.to) break;
+        events.push({ ...base, date: d, start: d === a.date ? a.hour : 0, end: d === last ? end : 24, allDay: false, span });
+      }
+      continue;
+    }
     const end = b.date === a.date ? Math.max(b.hour, a.hour + 0.25) : 24;
     if (a.date < range.from || a.date > range.to) continue;
     events.push({ ...base, date: a.date, start: a.hour, end, allDay: false, span: null });

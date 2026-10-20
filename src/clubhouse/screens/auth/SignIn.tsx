@@ -2,7 +2,7 @@
 
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
@@ -15,49 +15,9 @@ import { SignInForm, type SignInPreview } from './SignInForm';
 import type { loginAction, requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { isDarkSky, paperTint } from './scene-sky';
 import { useGlide, type Glider } from './use-glide';
+import { useKeyboardLift } from './use-keyboard-lift';
 import { useSkyHour } from './use-hour';
 import { useQueryParam } from './use-query-param';
-
-/**
- * The phone sheet over the keyboard (auth.css, `data-kb` on the frame): while a field in the panel is typed in, the sheet
- * rises to just under the status bar, so the fields and Sign in sit above the keyboard, and it settles back when the
- * keyboard goes. It is set as the finger lands on a field, before the field takes focus, so iOS finds the field already
- * in view and never pans the page under the sheet. A touch screen at phone width only.
- */
-function useKeyboardLift(panel: RefObject<HTMLElement | null>): void {
-  useEffect(() => {
-    const el = panel.current;
-    const root = el?.closest<HTMLElement>('.ch-au');
-    if (!el || !root || !window.matchMedia?.('(max-width: 820px) and (pointer: coarse)').matches) return;
-    const typing = (t: EventTarget | null) => t instanceof HTMLInputElement && el.contains(t);
-    let settle = 0;
-    // Settles back once no field has focus: moving from Email to Password blurs one and focuses the other in a turn, and
-    // a finger that landed on a field but scrolled instead never focuses it.
-    const check = (ms: number) => {
-      window.clearTimeout(settle);
-      settle = window.setTimeout(() => {
-        if (!typing(document.activeElement) && root.dataset.kb === 'up') root.dataset.kb = 'down';
-      }, ms);
-    };
-    const up = (e: Event) => {
-      if (!typing(e.target)) return;
-      window.clearTimeout(settle);
-      root.dataset.kb = 'up';
-      if (e.type === 'pointerdown') check(800);
-    };
-    const out = () => check(60);
-    el.addEventListener('pointerdown', up, true);
-    el.addEventListener('focusin', up);
-    el.addEventListener('focusout', out);
-    return () => {
-      window.clearTimeout(settle);
-      el.removeEventListener('pointerdown', up, true);
-      el.removeEventListener('focusin', up);
-      el.removeEventListener('focusout', out);
-      delete root.dataset.kb;
-    };
-  }, [panel]);
-}
 
 /**
  * /golf/login in Clubhouse: the painted course on the left and the form on the

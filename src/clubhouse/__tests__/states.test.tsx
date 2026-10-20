@@ -51,7 +51,7 @@ describe('Titles are headlines', () => {
   });
 
   it('the shared state files write their own copy with curly apostrophes', () => {
-    for (const file of ['ui/States.tsx', 'ui/Notices.tsx', 'ui/RefreshNotice.tsx', 'ui/Retry.tsx', 'ui/SectionBoundary.tsx']) {
+    for (const file of ['ui/States.tsx', 'ui/EmptyShape.tsx', 'ui/Notices.tsx', 'ui/RefreshNotice.tsx', 'ui/Retry.tsx', 'ui/SectionBoundary.tsx']) {
       const src = readFileSync(join(root, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
       expect(src, file).not.toMatch(/[A-Za-z]'[A-Za-z]/);
       expect(src, file).not.toContain('&apos;');
@@ -150,6 +150,94 @@ describe('CH-1211 a page whose one read failed is the page empty in the danger t
     expect(quiet.className).toBe('ch-empty-page');
     expect(quiet.getAttribute('role')).toBeNull();
     expect(quiet.querySelector('.ch-empty-page__a')).toBeNull();
+  });
+});
+
+describe('The waiting form: four states that read differently', () => {
+  const uiCss = readFileSync(join(root, 'styles/ui.css'), 'utf8');
+
+  it('without a shape or a kind the state renders exactly as before', () => {
+    const { container } = render(<EmptyState code="CH-10303" icon={Users} title="No trips planned." />);
+    expect(container.querySelector('[data-ch-code="CH-10303"]')!.className).toBe('ch-empty ch-empty--icon');
+    expect(container.querySelector('.ch-es, .ch-es-shape')).toBeNull();
+  });
+
+  it('first-run: the sentence takes the first row\u2019s place and the shape is drawn under it, decorative and empty', () => {
+    const { container } = render(
+      <EmptyState size="page" code="CH-10304" shape="people" title="No players yet." body="Players join with your team code." action={<button type="button">Invite players</button>} />,
+    );
+    const el = container.querySelector('[data-ch-code="CH-10304"]')!;
+    expect(el.className).toBe('ch-es ch-es--page ch-es--first-run ch-es--shaped');
+    expect(el.getAttribute('data-ch-state')).toBe('first-run');
+    expect(screen.getByRole('heading', { level: 2, name: 'No players yet' }).className).toBe('ch-es__title');
+    const shape = el.querySelector('.ch-es-shape--people')!;
+    expect(shape.getAttribute('aria-hidden')).toBe('true');
+    expect(shape.children).toHaveLength(4);
+    expect(shape.textContent).toBe('');
+    // The copy comes first, so no rule can run through it.
+    expect(el.firstElementChild!.className).toBe('ch-es__copy');
+    expect(el.lastElementChild).toBe(shape);
+    expect(within(el as HTMLElement).getByRole('button', { name: 'Invite players' })).toBeInTheDocument();
+    expect(el.querySelector('.ch-empty-page__ic, .ch-sheet')).toBeNull();
+  });
+
+  it('a shape counts its own rows or lanes, and each kind has its own geometry', () => {
+    const { container } = render(<EmptyState code="CH-10305" shape="columns" title="Nothing on the board." />);
+    expect(container.querySelectorAll('.ch-es-shape--columns > .ch-es-shape__u')).toHaveLength(4);
+    expect(container.querySelector('.ch-es-shape--columns')!.getAttribute('style')).toContain('--ch-es-n: 4');
+    render(<EmptyState code="CH-10306" shape="rows" shapeCount={2} title="Nothing posted." />);
+    expect(document.querySelectorAll('[data-ch-code="CH-10306"] .ch-es-shape__u')).toHaveLength(2);
+  });
+
+  it('compact stays one line: no shape is drawn', () => {
+    const { container } = render(<EmptyState compact shape="rows" code="CH-10307" title="No rounds yet." />);
+    const el = container.querySelector('[data-ch-code="CH-10307"]')!;
+    expect(el.className).toContain('ch-es--line');
+    expect(el.querySelector('.ch-es-shape')).toBeNull();
+  });
+
+  it('filtered names the filter, draws no shape and offers the one way out', async () => {
+    const onClear = vi.fn();
+    const { container } = render(
+      <EmptyState kind="filtered" code="CH-10308" title="No rounds at Oakmont CC in the last 10." action={<button type="button" onClick={onClear}>Clear filter</button>} />,
+    );
+    const el = container.querySelector('[data-ch-code="CH-10308"]')!;
+    expect(el.getAttribute('data-ch-state')).toBe('filtered');
+    expect(el.querySelector('.ch-es__glyph svg')).not.toBeNull();
+    expect(el.querySelector('.ch-es-shape')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
+    expect(onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('restricted shows a lock and no action, and is told apart from filtered', () => {
+    const { container } = render(<EmptyState kind="restricted" code="CH-10309" title="Only coaches can see this." body="Ask your coach to share it." />);
+    const el = container.querySelector('[data-ch-code="CH-10309"]')!;
+    expect(el.getAttribute('data-ch-state')).toBe('restricted');
+    expect(el.querySelector('.ch-es__glyph svg')).not.toBeNull();
+    expect(el.querySelector('.ch-es__a')).toBeNull();
+    expect(el.querySelector('.ch-es-shape')).toBeNull();
+  });
+
+  it('the danger tone is never drawn as the waiting form: a failed read keeps the alert and Try again', () => {
+    render(<EmptyState size="page" tone="danger" shape="people" kind="first-run" code="CH-10310" title="Players didn\u2019t load." />);
+    const el = screen.getByRole('alert');
+    expect(el.className).toBe('ch-empty-page ch-empty-page--danger');
+    expect(el.querySelector('.ch-es-shape')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+
+  it('renders on the server', () => {
+    const html = renderToString(<EmptyState size="page" shape="chart" title="No trend yet." />);
+    expect(html).toContain('ch-es-shape--chart');
+  });
+
+  it('the shape is hairlines only: no fill, no bar, no motion, no dimmed text', () => {
+    const block = uiCss.slice(uiCss.indexOf('The page is waiting, not missing'));
+    expect(block).not.toMatch(/\banimation\b|\btransition\b|\bopacity\b/);
+    expect(block).not.toMatch(/background(?:-color)?:\s*(?:#|rgb|var\(--ch-skel)/);
+    expect(block).not.toMatch(/italic|uppercase|letter-spacing:\s*0\.\d/);
+    // Only the shape layer is masked, never a box that contains the copy.
+    expect(block.slice(0, block.indexOf('.ch-es-shape {'))).not.toContain('mask-image');
   });
 });
 

@@ -2,7 +2,6 @@
 
 import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
-import { m } from 'motion/react';
 import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
@@ -23,7 +22,7 @@ import { useDelayedToast, useToast } from '../../ui/Toast';
 import { CH_SLOW_SAVE_AFTER, isOffline, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { chTween } from '../../lib/motion';
+import { useSlidePlate } from '../../lib/slide-plate';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
@@ -43,6 +42,7 @@ import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
 import { PlayerStage } from './PlayerStage';
+import { PrintHead, usePrinting } from './PrintHead';
 import { OverviewZones } from './OverviewZones';
 import { Zone, ZoneBig as Big, Zones } from '../../ui/Zone';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
@@ -68,7 +68,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const toast = useToast();
   const delayedToast = useDelayedToast();
   const reduced = useChReducedMotion();
-  const phone = useChPhone();
+  const printing = usePrinting();
+  const phone = useChPhone() && !printing;
   // The tab comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1); an address that names one (Roster's "All N" opens
   // `?tab=rounds`, D-53) wins until a tab is chosen.
   const [keptTab, setKeptTab] = useChSessionState<Tab>('profile-tab', 'overview');
@@ -157,6 +158,9 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
     pickTab,
     (t) => `tab-${t}`,
   );
+  // The underline slides from the tab it left on the compositor (lib/slide-plate.ts), not Motion's layoutId.
+  const tabsRef = useRef<HTMLDivElement>(null);
+  useSlidePlate(tabsRef, '[aria-selected="true"] > .ch-tab-t__bar', phone ? null : tab, { reduced, tween: 'base' });
 
   const sheet = coach && coachId && <FocusAreaSheet open={focusOpen} onClose={() => setFocusOpen(false)} playerId={data.id} coachId={coachId} first={first} />;
 
@@ -188,6 +192,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   return (
     <>
       <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
+        <PrintHead subject={`${data.name} · Player stats`} />
         {coach && (
           <div className="ch-st-back">
             <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
@@ -255,7 +260,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
         </section>
 
         <div className="ch-pf-tabs">
-          <div className="ch-tabs" role="tablist" aria-label="Profile sections">
+          <div ref={tabsRef} className="ch-tabs" role="tablist" aria-label="Profile sections">
             {tabs.map(([t, l, n]) => (
               <button
                 key={t}
@@ -263,7 +268,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                 role="tab"
                 id={`tab-${t}`}
                 aria-selected={tab === t}
-                aria-controls={`panel-${t}`}
+                aria-controls={t === shownTab ? `panel-${t}` : undefined}
                 tabIndex={tab === t ? 0 : -1}
                 className="ch-tab-t"
                 onClick={() => pickTab(t)}
@@ -271,7 +276,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
               >
                 {l}
                 {n != null && <span className="ch-tab-t__n ch-num">{n}</span>}
-                {tab === t && <m.span className="ch-tab-t__bar" layoutId={reduced ? undefined : 'pf-tab'} transition={chTween('base', reduced)} />}
+                {tab === t && <span className="ch-tab-t__bar" aria-hidden="true" />}
               </button>
             ))}
           </div>
@@ -372,7 +377,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 /** Memoised: the seven zones are the page's heaviest read, and the tab's own state (the focus sheet, a transition) must not recompute them. */
 const Overview = memo(function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const first = data.firstName;
-  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
+  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, course: r.course, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   // Seven zones, one per stat area; the last holds the scoring-form ribbon. Every figure is read from the profile (see OverviewZones).
   return (
     <OverviewZones
@@ -380,7 +385,7 @@ const Overview = memo(function Overview({ data, coach }: { data: ChPlayerProfile
       coach={coach}
       ribbon={
         <PlayerStage
-          rounds={trendRounds.map((r) => ({ label: r.label, score: r.score, toPar: r.toPar, holes: r.holes }))}
+          rounds={trendRounds.map((r) => ({ label: r.label, course: r.course, score: r.score, toPar: r.toPar, holes: r.holes }))}
           first={first}
           coach={coach}
           teamAvg={data.teamAvg}
@@ -406,8 +411,8 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
               <span role="columnheader">Date</span>
               <span role="columnheader" className="r">Score</span>
               <span role="columnheader" className="r">To par</span>
-              <span role="columnheader" className="r">GIR</span>
-              <span role="columnheader" className="r">Putts</span>
+              <span role="columnheader" className="r ch-tr__x">GIR</span>
+              <span role="columnheader" className="r ch-tr__x">Putts</span>
               <span role="columnheader" className="r">SG total</span>
               {LEGS_LIST.map((l) => (
                 <span key={l} role="columnheader" className="r">
@@ -422,11 +427,13 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                   {(() => {
                     const href = rebuiltHref(`/golf/dashboard/rounds/${r.id}`, role);
                     return href ? (
-                      <Link href={href} className="ch-tr__link" aria-label={`${r.course}, ${r.date}: open the round`}>
+                      <Link href={href} className="ch-tr__link ch-tr__name" title={r.course} aria-label={`${r.course}, ${r.date}: open the round`}>
                         {r.course}
                       </Link>
                     ) : (
-                      r.course
+                      <span className="ch-tr__name" title={r.course}>
+                        {r.course}
+                      </span>
                     );
                   })()}
                   {r.holes === 9 && <em className="ch-gx-type">9 holes</em>}
@@ -435,8 +442,8 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                 <span role="cell" className="ch-n2">{r.date}</span>
                 <span role="cell" className="r ch-num ch-n">{r.score}</span>
                 <span role="cell" className={'r ch-num ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-                <span role="cell" className="r ch-num ch-n2">{r.gir ?? NO_DATA}</span>
-                <span role="cell" className="r ch-num ch-n2">{r.putts ?? NO_DATA}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.gir ?? NO_DATA}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.putts ?? NO_DATA}</span>
                 <span role="cell" className={'r ch-num ch-n2' + (r.sg == null ? '' : r.sg >= 0 ? ' ch-gain' : ' ch-loss')}>{formatSigned(r.sg)}</span>
                 {r.sgLegs.map((v, i) => (
                   <span key={i} role="cell" className={'r ch-num ch-n2' + (v == null ? '' : v >= 0 ? ' ch-gain' : ' ch-loss')}>
@@ -652,7 +659,7 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
             Cancel
           </Button>
           <Button variant="primary" disabled={save.pending} feel={null} onClick={() => void submit()}>
-            {save.pending ? <span data-ch-code="CH-5401">Adding</span> : 'Propose focus area'}
+            {save.pending ? <span data-ch-code="CH-5401">Adding…</span> : 'Propose focus area'}
           </Button>
         </>
       }

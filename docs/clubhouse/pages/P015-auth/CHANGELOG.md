@@ -1,5 +1,387 @@
 # P015 — Auth: changelog
 
+## 2026-10-19 — The new-coach guard reads its errors
+
+```text
+Design package: none (CI ratchets)
+PR/commit:      #2210
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- screens/onboard/coach-guard.ts binds `error` on its coach and player row
+  reads. A failed read keeps the person on the new-coach page (an unread
+  coach row counts as present, an unread player row as absent), so a
+  failure never sends a coach to the player dashboard.
+- The join code slots and the team plate take their depth from
+  `--ch-elevation-control` (clubhouse:css shadow-token).
+
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (auth.css, onboard.css)
+
+- Titles, labels, buttons, the legal and fine print, and the sign-up headings, subtitles, tiles and handicap value follow the iPhone's text size. Form fields keep the iOS 16px floor and grow above it. The crest letter, member-card avatar and handicap scale marks keep their size.
+- Radii on the 5, 7, 10, 14, 20 scale.
+- The handicap slider's touch area is 44px tall; the layout below it does not move.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — Sign-in and onboarding use the shared spinner and tooltips
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The sign-in and gate keys' working ring, the gate's checking line and the onboarding code and photo rings are the shared `Spinner`; Continue and the code step's Continue are busy while they check instead of disabled. `.ch-au-spin`, `.ch-ox-spin` in `auth.css` and `onboard.css` are no longer used.
+- The show/hide password buttons and the handicap Lower / Higher steppers show their name on hover and focus.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — The welcome's name no longer shows as a dash under the greeting
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-15803
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- While the name rose out of its clipped line, the cap bar of the first letter crossed the clip first, so a still taken in that half second showed "Good morning," over a dash. The name now also fades in, a beat behind its rise (`welcomeName`). Timing of the rise is unchanged; reduced motion is unchanged.
+
+### Why
+
+- The greeting is the first thing the owner sees after signing in; a half-drawn name read as a missing one.
+
+### Verification
+
+- `auth.test.tsx`; frames captured at about 100 ms steps on `/clubhouse-preview/auth?screen=welcome&state=player` on the phone.
+
+## 2026-10-19 — The front door's other ways in
+
+```text
+Design package: none (no owner board; phone drafts in docs/clubhouse/phone/: reset-password, join-team, staff-invite, coach-onboarding, coach-pending, demo-entry)
+PR/commit:      667ce28 (agent/clubhouse-complete, lane L5)
+Contract IDs:   CH-15030 to CH-15036, CH-15130 to CH-15133, CH-15140 to CH-15143, CH-15430 to CH-15436, CH-15930 to CH-15972 (47 in all)
+Actions:        none new: requestPasswordResetAction, processGolfTeamInvitation, previewStaffInvite, redeemStaffInvite, signupWithStaffInviteAction, completeCoachOnboarding, getGolfCoachEntry and enterDemo, each called as today's page calls it; the Supabase verifyOtp, updateUser and signOut({ scope: 'others' }) of today's reset page
+Data impact:    none
+Held items:     the head coach's name on the join confirm (the team lookup returns none); Fairway's error.tsx boundaries on the join, coach and staff routes
+```
+
+### Changed
+
+- Every way into the app that was still drawn by Fairway has a Clubhouse screen behind `golf_clubhouse_front_door`
+  (off in production): the page the reset email opens (`/golf/reset-password`), a team code (`/golf/join`) and its
+  confirm (`/golf/join/[code]`), a staff invitation (`/golf/staff/join/[token]`), a new head coach's questions
+  (`/golf/coach`), waiting for approval (`/golf/coach/pending`) and the demo (`/golf/demo`). The flag chooses the page
+  that is drawn; every read, redirect and action sits above or behind both. Flag off, all seven render as before.
+- Reset, join, the staff invitation, waiting and the demo sit in sign in's own room (`GateFrame`: the same course, lockup, panel and
+  field anatomy), so moving from sign in to any of them is the same place. The coach's questions are a fourth path of
+  sign up's flow (`cprogram`, `cprofile`, `cdone`), so they have its rail, its pane and a member card that fills in with
+  the program.
+- Reset password: the link is verified once (a development double effect cannot spend it); the four rules and four bars
+  tick off as the password is typed; a spent link asks for a new one on the same page; if someone else was signed in on
+  the device the page says the link replaced them.
+- Team code: one box per character over one real input (paste fills all, upper case, the one-time-code suggestion, a
+  pasted invite link gives up its code), eight boxes and a dash, ten for an older team's longer code. The confirm shows
+  the team and who is joining before anything is joined, with "Not you?" for a link opened on the wrong browser.
+- Staff invitation: signed in is one button, signed out makes the account here; the wrong account (already in another
+  program) is a warning with "Switch account"; an account made whose staff row did not land goes to Accept with the reason.
+- Waiting for approval: says who approves, looks again by itself once a minute and when the tab comes back, and Sign out
+  really signs out (today's link only goes to sign in).
+- New coach: the questions are today's three screens (program, profile, code) with `completeCoachOnboarding`; the code
+  can be copied as a code or as an invite link (`/golf/join/<code>`); the draft is kept apart from sign up's.
+- Loading boundaries for join, the staff invitation, waiting and the coach's questions draw in the sign-in room when the
+  flag is on, so the step from the last page is never a Fairway skeleton.
+
+### Why
+
+- A person who followed any of those links with the flag on left Clubhouse for Fairway mid-journey, which is the
+  seam the front door exists to remove.
+
+### Verification
+
+- Targeted tests: auth-reset, auth-join, auth-staff, auth-demo-pending, onboard-coach and front-door-routes (see
+  VERIFY.md). WebKit captures at 390 and 1280, light and dark, of every state through `/clubhouse-preview/auth` and
+  `/clubhouse-preview/onboard` (VERIFY.md, Looked at). Not done: a physical iPhone, a real reset email, VoiceOver.
+
+## 2026-10-18 — Wave 10: a way to sign in on the phone, and first-run words
+
+```text
+Design package: none (wave-10 first-run review, rows 12, 13, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-15302
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- Sign up, phone: the top bar's sign-in pill is hidden at 820px and under,
+  so the intro (the invitation and the two choices) ends with "Already a
+  member? Sign in", which keeps the invite's return path. A returning player
+  who taps an invite link can sign in again.
+- Welcome on a first visit (CH-15302): "Messages, posted rounds and RSVPs
+  land here each time you sign in."
+- Done: "Start your first round", and Turn on notifications opens Settings on
+  Notifications. A failed join asks the coach to "resend" the code.
+
+## 2026-10-18 — Wave 5: onboarding count and staff finish
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, onboarding)
+
+- Before the team code is known the rail counts the player's path, so it
+  reads "1 of 5" then "2 of 5"; a staff code shortens it to three.
+- The staff finish says "Go to your dashboard", as the player's does.
+
+## 2026-10-18 — Wave 3: the sign-up legal line names both pages
+
+```text
+Design package: none (wave-3 design review, items 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, legal line)
+
+- Sign-up's legal line links "Terms of service" and "Privacy policy", the names
+  and case Settings uses, where it said "Terms" and "Privacy Policy"
+  (`onboard/Steps.tsx`).
+
+### Verification (2026-10-18, legal line)
+
+- `npm run test:file` on `onboard.test.tsx`.
+- `clubhouse:check`, `typecheck:fast` and eslint pass.
+
+## 2026-10-18 — Polish: Sign in pill hover
+
+```text
+Design package: none (wave-2 interaction review rows 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Onboarding: the Sign in pill steps to the primary key's hover face on
+  desktop hover.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-17 — Polish: Create an account reaches 44px
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- "Create an account" under the sign-in form was a 17px line of text to tap;
+  its hit area now reaches 44px tall without moving it. On the phone the legal
+  links under it keep their own 44px on top where the two meet (`auth.css`).
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
+## 2026-10-17 — Sign in drops its subtitle
+
+Owner: "get rid of the words under sign in". The heading now stands alone
+over the fields ("Coaches and players use the same sign-in. We'll open the
+right clubhouse for you." is gone, and its phone-only `.ch-au-sub__more` rule
+with it). Then "fix the spacing with logo and sign in text": the heading sat
+flush under the lockup (base.css zeroes `.ch-root h1`, which had quietly taken
+its 36px), so on desktop it now has 28px under the logo, written under `.ch-au`
+like the paragraph spacing. The reset and check-your-email headings share it.
+
+## 2026-10-16 — The welcome reads the dashboard in full before Continue
+
+Owner: "look through the login and animation mechanics and fix it". The
+welcome prefetched the dashboard with the default kind, which for a dynamic
+page stops at its loading boundary, so the dashboard was only asked for when
+the fold had landed and the empty frame waited a server render (measured in dev
+Chrome: fold done at 1.0s, frame empty until 1.7s warm and over 2s cold). It now
+prefetches in full (`PrefetchKind.FULL`, as the shell's tab prefetch does)
+while the greeting plays. Next does not prefetch on the dev server, so the gain
+shows in production only; not measured there (no build, owner's call).
+
+## 2026-10-16 — Sign in starts moving sooner
+
+Owner: "right after you click sign in, the animation still stalls for a second".
+Nothing moves until the sign-in answers, and the answer waited on seven network
+round trips one after another. The server's sign-in (`loginAction`,
+`src/app/golf/actions/auth.ts`) now sends the lockout check and the email's rate
+limit together (two round trips before the sign-in, not three; refusals keep
+their order; the IP's limit is still counted only once both pass, so on a shared
+network one person retrying a locked account does not use up everyone else's
+allowance, as review pointed out), and after a successful sign-in reads the role
+and both profiles together with the failed-attempts reset (one round trip, not
+two plus a serial reset). On the client the form starts leaving the moment the
+sign-in lands; the 100ms cookie beat now sits inside the opening's own 430ms
+wait instead of before it. Auth tests pass; not measured end to end here
+(signing in sends real credentials to production, so it was left to the owner).
+
+## 2026-10-16 — Continue hands the wordmark's write to the sidebar
+
+The welcome's own wordmark is back to its original sans lockup; the script
+"Golfhelm" moved to the sidebar's brand (P001), which Continue now asks to
+write itself in once the dashboard is drawn (`markBrandWrite`).
+
+## 2026-10-16 — The welcome tried "Golfhelm" in script, then handed it to the sidebar
+
+Owner, 2026-10-16, after sign in: "a cursive thing of script". The Welcome's
+mark was first drawn as "Golfhelm" in Great Vibes written on by a mask wipe,
+with the wheel turning into place. That version is superseded: the Welcome is
+back to its sans lockup and the script wordmark lives in the sidebar's brand
+(entry above, and P001). What stays from the first attempt is the script font's
+mechanism (`lib/fonts.ts`, `--ch-font-script`, now Norican and preloaded) and
+the shared test setup mocking it (`src/test/setup.tsx`). The script face is an
+owner-requested exception to the doctrine of Instrument Sans for display, body
+and data (`.claude/rules/clubhouse.md`), for the wordmark only.
+
+## 2026-10-16 — Keychain AutoFill keeps the dark field; the sign-in scrolls smoothly
+
+- **AutoFill in dark mode** (`auth.css`, `.ch-au-input`): WebKit paints an
+  autofilled input a light fill with dark ink (a user-agent style), a white bar
+  inside the dark field. An inset shadow of the field's own surface now covers
+  the fill, the ink is ours again, and the fill's colour change is held off
+  where the shadow cannot reach. Not captured: AutoFill cannot be driven in a
+  headless browser, so this is untested against a real Keychain fill.
+- **Smooth wheel** (`AuthFrame` mounts `useSmoothWheelEverywhere`): the sign-in
+  screens scrolled in raw steps. Shared detail: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-16 — Typing, opening and signing in move once, without waiting
+
+Owner, on the phone: "a slight delay with the animation right when you enter
+password", "the transition to the log in page isn't great", and after Sign in.
+Measured in Playwright WebKit (not Safari) at phone size on a local production
+build, 700ms added to each request; the iOS keyboard itself is not in that
+browser, so how the sheet keeps pace with it is not verified on a device.
+
+- **The sheet rises with the keyboard** (SignIn `useKeyboardLift`): it no
+  longer holds its first frame two frames on the way up, and a touch phone no
+  longer scrolls Sign in into view 320ms after Email takes focus (the sheet
+  already puts it above the keyboard; the scroll was a second move). Down still
+  holds its first frame.
+- **Sign in moves the sheet once**: the tap blurs the field and the keyboard
+  goes, but the sheet stays where it is while the attempt runs. It used to drop
+  with the keyboard, wait on the server, then leave: three moves. A refusal puts
+  the cursor back in a field with the sheet still up.
+- **The welcome is asked for 430ms into the opening** (`OPENING_PUSH_MS`), when
+  the sheet is about 95% off the screen, not at its end: it came a full round
+  trip after the sheet had gone, over an empty course.
+- **Log in from the home page** (shared landing header, not Clubhouse): the
+  sign-in is prefetched as the page loads. The tap waited 0.9s on the menu's
+  Log in (two round trips and the sign-in's code); now 0.09 to 0.10s.
+
+## 2026-10-14 — Sheet up: the wordmark reads over the pines
+
+Found in Playwright WebKit on the preview (phone, keyboard lift): with the sheet
+up, the strip of course left above it is pine, and the wordmark kept its
+daylight inks, near-black "Golf" and green "Helm" on dark green. The line over
+the course also rode up with the closing window and crossed the wordmark while
+it faded.
+
+- **The wordmark takes the dark-sky inks with the sheet up** (ivory and mint,
+  as at dusk), and **the line leaves in the first third of the rise**
+  (auth.css). Test: auth-kb-mark.test.ts.
+
+## 2026-10-14 — Log in from the home page: no dashboard skeleton, no sunny course at night
+
+Owner: "Hitting login on home page hot loads the day scene then switches to
+whatever time it actually is. And just clicking login is kinda rough itself."
+Traced on the main preview in WebKit at phone size, night time zone: the tap
+painted the dashboard skeleton for about 0.4s, then the sign in; a direct load
+opened on the daytime still and the night course faded over it.
+
+- **No dashboard skeleton on the way in** (`ClubhouseSignInRoute`): the route
+  awaited the phone hint (a cookie and headers), which made /golf/login
+  dynamic, so a tap on Log in painted the nearest loading boundary,
+  golf/loading.tsx's dashboard skeleton. The route now reads nothing from the
+  request (the course's crop, the hint's only reader here, draws after
+  hydration). Test: auth-server.test.tsx "the sign in route reads nothing from
+  the request".
+- **The still takes the hour's light** (SceneMount `posterWash`): the still is a
+  daytime photo; until the course's chunk draws, a wash of the hour's sky lies
+  over it (clear by day), so the course that fades in is the same time of day.
+  A client navigation knows the hour on its first frame; a cold load learns it
+  at hydration and the wash eases in. Test: auth-scene.test.tsx.
+
+## 2026-10-14 — The sheet rises on focus, so a tap on Password lands
+
+Owner, signing in on the iPhone Simulator: "I couldn't click password, it just
+pulled up."
+
+- **The keyboard lift waits for focus** (SignIn `useKeyboardLift`): the sheet
+  rose on the finger's touch, and iOS focuses the field under the finger as it
+  lifts, so the rising sheet carried Password out from under the tap and nothing
+  took focus. It now rises on `focusin`; moving from Email to Password still
+  keeps it up. Test: auth.test.tsx "phone keyboard lift".
+
 ## 2026-10-13 — Sign in on the phone: standard fields, a plain notice, the sheet over the keyboard
 
 Owner: the phone sign-in had "weird rings", and the focus, sheet and keyboard
@@ -52,32 +434,73 @@ did not line up.
 
 ## 2026-10-08 — premium pass: findings D6, D11
 
-- D6: the welcome card holds its news as rows between hairlines, not bordered, shadowed cards inside a card. A vertical hairline parts them side by side on a wide screen, a horizontal one when stacked. Empty and failed states are a flush notice.
-- D11: the preview's round reads "74 · +2 · Pine Needles", as Home's latest rounds do. The live welcome carries no score.
-- D10 (owner, 2026-10-08): the phone's sign-in fields keep a visible label, small and quiet at the top of each row of the grouped sheet; the focus and error rings take the whole row. The email placeholder is `you@school.edu` on sign in and Forgot password, and the password field has none, since its label names it.
+- D6: the welcome card holds its news as rows between hairlines, not bordered,
+  shadowed cards inside a card. A vertical hairline parts them side by side on a
+  wide screen, a horizontal one when stacked. Empty and failed states are a
+  flush notice.
+- D11: the preview's round reads "74 · +2 · Pine Needles", as Home's latest
+  rounds do. The live welcome carries no score.
+- D10 (owner, 2026-10-08): the phone's sign-in fields keep a visible label,
+  small and quiet at the top of each row of the grouped sheet; the focus and
+  error rings take the whole row. The email placeholder is `you@school.edu` on
+  sign in and Forgot password, and the password field has none, since its label
+  names it.
 
 ## 2026-10-08 — premium pass: Continue keeps honest time, and findings (P015-B3, D4, D5, D7)
 
-- B3: on the phone, where the welcome goes on by itself, a 1px gilt hairline draws across under Continue over the time left (transform only; held still under reduced motion), so the page says it will continue and a tap just goes now.
-- D4: the welcome's date uses Home's style (en-GB, "Tuesday 14 October") in the viewer's own zone, not the browser's locale.
+- B3: on the phone, where the welcome goes on by itself, a 1px gilt hairline
+  draws across under Continue over the time left (transform only; held still
+  under reduced motion), so the page says it will continue and a tap just goes
+  now.
+- D4: the welcome's date uses Home's style (en-GB, "Tuesday 14 October") in the
+  viewer's own zone, not the browser's locale.
 - D5: the member seal reads "Member since 2026", in order.
-- D7: the password meter's empty steps are a visible track (`--ch-border-strong`).
-- Not changed: D8 (the onboarding felt tray inside the paper pane) is an approved material; dropping it is left to the owner.
+- D7: the password meter's empty steps are a visible track
+  (`--ch-border-strong`).
+- Not changed: D8 (the onboarding felt tray inside the paper pane) is an
+  approved material; dropping it is left to the owner.
 
 ## 2026-10-08 — premium pass: solar sky, paper in the room, one refusal anatomy, Sign in always there (P015-A1 to A3, D2, D3)
 
-- A1: the painted course's sky follows the sun, not the clock (`solarSkyHour` in `scene-sky.ts`, `useSkyHour` in `use-hour.ts`): the sun's altitude where the viewer is (their time zone's point from the global light's `lightPlace`, `lib/sun.ts`; no location prompt, no team before sign-in) picks the keyframe hour that shows it, so a December 5:30 pm is dusk and a June 7 pm is still bright. The sky, the type over it (sign in, welcome, onboarding) and the scene read it; the greetings stay on the clock. A preview's fixed `hour` still pins the sky.
-- A2: the sign-in sheet sits in the room: a fine fibre tile (a drawn image, not a live filter) and a wash of the light outside, at most 6% (`paperTint`): none by day, the sky's own ambient at twilight, a warm lamp at night. More contrast drops both. Not built: dithered sky gradients.
-- A3 (D3): a refusal is the shared flush notice (its icon carries the tone, the words the ink; no fill, no ring), and a ring marks only the field the refusal names (an empty field). Wrong credentials name neither field, so neither is ringed; both stay `aria-invalid` and described by the notice.
-- D2 (B1): Sign in is enabled as soon as the page is live and checks the fields when pressed (CH-15101); nothing is sent until both are filled.
+- A1: the painted course's sky follows the sun, not the clock (`solarSkyHour` in
+  `scene-sky.ts`, `useSkyHour` in `use-hour.ts`): the sun's altitude where the
+  viewer is (their time zone's point from the global light's `lightPlace`,
+  `lib/sun.ts`; no location prompt, no team before sign-in) picks the keyframe
+  hour that shows it, so a December 5:30 pm is dusk and a June 7 pm is still
+  bright. The sky, the type over it (sign in, welcome, onboarding) and the scene
+  read it; the greetings stay on the clock. A preview's fixed `hour` still pins
+  the sky.
+- A2: the sign-in sheet sits in the room: a fine fibre tile (a drawn image, not
+  a live filter) and a wash of the light outside, at most 6% (`paperTint`): none
+  by day, the sky's own ambient at twilight, a warm lamp at night. More contrast
+  drops both. Not built: dithered sky gradients.
+- A3 (D3): a refusal is the shared flush notice (its icon carries the tone, the
+  words the ink; no fill, no ring), and a ring marks only the field the refusal
+  names (an empty field). Wrong credentials name neither field, so neither is
+  ringed; both stay `aria-invalid` and described by the notice.
+- D2 (B1): Sign in is enabled as soon as the page is live and checks the fields
+  when pressed (CH-15101); nothing is sent until both are filled.
 
 ## 2026-10-08 — premium pass: opaque onboarding paper (D1)
 
-The onboarding reading surface (`.ch-ox-stage`) is opaque paper on desktop and phone, light and dark: the course no longer shows through the fields and password rules, and the backdrop blur is gone. Glass stays on the step pill and the mark only.
+The onboarding reading surface (`.ch-ox-stage`) is opaque paper on desktop and
+phone, light and dark: the course no longer shows through the fields and
+password rules, and the backdrop blur is gone. Glass stays on the step pill and
+the mark only.
 
 ## 2026-10-08 — dark: Clubhouse at night
 
-Sign in, welcome, sign up and onboarding follow GolfHelm's dark theme ("Clubhouse at night"). The painted course keeps its own clock (veil, say line, the phone's mark and the welcome's keyboard hint follow the hour); the panel, the phone sheet and the welcome's reading scrim are night paper; the lockup ink, link hover, focus and refusal halos, notices and the unlit Sign in key are redrawn for the dark ground; the welcome's name line, which had no colour of its own, takes the primary ink. Sign up's stationery pane, lockup, rail and Sign in pills become dark glass and its literal inks the ramp's own; the felt tray, the green choices, the crest, the member card and the seal stay card stock and felt. Sign up keeps dark only when reached from a dark sign in: ThemeScript does not run on `/golf/signup`, so a hard load there is light. Light mode is unchanged.
+Sign in, welcome, sign up and onboarding follow GolfHelm's dark theme
+("Clubhouse at night"). The painted course keeps its own clock (veil, say line,
+the phone's mark and the welcome's keyboard hint follow the hour); the panel,
+the phone sheet and the welcome's reading scrim are night paper; the lockup ink,
+link hover, focus and refusal halos, notices and the unlit Sign in key are
+redrawn for the dark ground; the welcome's name line, which had no colour of its
+own, takes the primary ink. Sign up's stationery pane, lockup, rail and Sign in
+pills become dark glass and its literal inks the ramp's own; the felt tray, the
+green choices, the crest, the member card and the seal stay card stock and felt.
+Sign up keeps dark only when reached from a dark sign in: ThemeScript does not
+run on `/golf/signup`, so a hard load there is light. Light mode is unchanged.
 
 ## 2026-10-08 — Forgot password lands in the panel; the phone greeting at 50px
 
@@ -230,23 +653,24 @@ Held items:     /golf/reset-password (the email's link) is still today's page
   panel's chrome stay put; the view slides 12px the way the person is going and
   crossfades, and the desktop stage glides to its new centre (CH-15612).
 - The reset form is today's page, redrawn:
-  - The same `requestPasswordResetAction`, which answers alike whether or not the
-    address has an account.
+  - The same `requestPasswordResetAction`, which answers alike whether or not
+    the address has an account.
   - The same trim-and-lowercase, the same refusals for a missing or malformed
     address (CH-15120, CH-15121), cleared by editing.
   - The same words.
   - Send in flight is the lit key with "Sending reset link…" (CH-15420).
-  - A failed request says so, and one that throws is logged (CH-15020, CH-15021).
+  - A failed request says so, and one that throws is logged (CH-15020,
+    CH-15021).
 - Check your email shows the address the link went to, with Back to sign in as
   the one action (CH-15921). The address travels between the views.
 - The URL keeps `?view=forgot`, so the browser's Back returns to sign in and a
-  reload opens the form. The links keep today's page as their href, for a new tab
-  or no JavaScript (CH-15922).
+  reload opens the form. The links keep today's page as their href, for a new
+  tab or no JavaScript (CH-15922).
 - Focus moves with the view: the reset form's Email, or the new heading. The
   leaving view is hidden from assistive technology at once (CH-15820). Haptics:
   light on Send, success when asked for (CH-15720, CH-15721).
-- The panel's paragraph spacing is the board's again. base.css's `.ch-root p
-  { margin: 0 }` had taken the 10px (6px on a phone) from between the heading and
+- The panel's paragraph spacing is the board's again. base.css's `.ch-root p {
+  margin: 0 }` had taken the 10px (6px on a phone) from between the heading and
   the subtitle.
 - Registry: CH-15420, CH-15920, CH-15921 and CH-15922 were first minted in the
   default categories (02 and 07) before their overrides existed. With the lead's
@@ -259,10 +683,10 @@ Held items:     /golf/reset-password (the email's link) is still today's page
 
 ### Why (reset password)
 
-The Clubhouse sign-in sent "Forgot password?" to today's page, a different design
-with a different frame: the one seam left in the front door. The owner chose to
-bring it into the panel; the reset link's own page stays today's because it
-builds the recovery session.
+The Clubhouse sign-in sent "Forgot password?" to today's page, a different
+design with a different frame: the one seam left in the front door. The owner
+chose to bring it into the panel; the reset link's own page stays today's
+because it builds the recovery session.
 
 ### Verification (reset password)
 
@@ -293,16 +717,17 @@ Held items:     forgot and reset password are still today's pages (not Clubhouse
 
 ### Changed (sign in)
 
-- The Sign in key, when off because a field is empty, is an unlit key pressed into
-  the paper (the soft well, its word engraved) instead of the shared 42% fade,
-  which read as a washed-out grey-green. Filling both fields lights it over the
-  quick beat. In flight it stays the lit green (it had faded with the disabled
-  look), and "Sign in" crossfades to "Signing in…" in the same cell (CH-15607).
+- The Sign in key, when off because a field is empty, is an unlit key pressed
+  into the paper (the soft well, its word engraved) instead of the shared 42%
+  fade, which read as a washed-out grey-green. Filling both fields lights it
+  over the quick beat. In flight it stays the lit green (it had faded with the
+  disabled look), and "Sign in" crossfades to "Signing in…" in the same cell
+  (CH-15607).
 - A refusal keeps its place while the next attempt is in flight, at half
-  strength, and the answer replaces it. Before, Sign in cleared it, so the button
-  jumped up under the pointer (38px desktop, 75px phone) and back down on the
-  next refusal. Where a refusal does move things, they glide there on transform
-  only (CH-15608).
+  strength, and the answer replaces it. Before, Sign in cleared it, so the
+  button jumped up under the pointer (38px desktop, 75px phone) and back down on
+  the next refusal. Where a refusal does move things, they glide there on
+  transform only (CH-15608).
 - A refusal about the fields shakes them once, the sign-up code's shake
   (CH-15609). The password eye crossfades between its glyphs (CH-15610). The
   Home link has a pressed tint and its chevron leans back on hover (CH-15611).
@@ -313,7 +738,8 @@ Held items:     forgot and reset password are still today's pages (not Clubhouse
     below.
   - "Good afternoon," holds one line on a phone (the greeting scales between
     40px and 50px).
-  - The welcome's "or press Return" is ink, not secondary grey, over the fairway.
+  - The welcome's "or press Return" is ink, not secondary grey, over the
+    fairway.
   - The legal links end on the footer hairline.
   - The phone's invalid group ring uses the danger token.
 - The waving flags carry their resting shape, so the welcome's course no longer
@@ -323,9 +749,9 @@ Held items:     forgot and reset password are still today's pages (not Clubhouse
 
 ### Why (sign in)
 
-Owner direction (2026-10-07): production-ready, premium, all animations done. The
-team lead's pass on sign in named the disabled key, the motion between states
-and the rough edges.
+Owner direction (2026-10-07): production-ready, premium, all animations done.
+The team lead's pass on sign in named the disabled key, the motion between
+states and the rough edges.
 
 ### Verification (sign in)
 

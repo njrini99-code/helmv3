@@ -5,7 +5,7 @@
 - Surface: `POST /baseball/coach-onboarding` (server actions `completeCoachOnboarding`, `signupAndCompleteCoachOnboarding`) and every Lift Lab invite action
 - Fingerprint: `d9ed17ef` (reliability: `rel:d9ed17ef`, `rel:701e7c24`, `rel:c1e8ed60`)
 - Classification: product defect (R1)
-- Status: fix in PR (desktop health routine, 2026-10-13); verified_in_production pending deploy + 24h proof
+- Status: released: 220fe5bab (#2192) is in production 87bd60345 (release:status, 2026-10-15 00:45Z); no d9ed17ef event in the 24h to then. verified_in_production pending a real coach-onboarding completion
 - First seen: latent since #1872 (`4674b38e1`); first production occurrence 2026-10-13T20:58:46Z
 - Evidence (production, read-only, 2026-10-13T21:50Z): 12 `admin_events` errors 20:58–21:01Z, one real user, statusCode 500; Vercel runtime log `Error: A "use server" file can only export async functions, found object.` digest `874337779@E352`, thrown from the coach-onboarding page's action module graph on `dpl_36khwS4bTrpZjcCKdPFD4bc3B57L` (`86c43bd8`).
 

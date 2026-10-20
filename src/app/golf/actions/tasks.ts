@@ -10,6 +10,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
@@ -169,7 +170,7 @@ async function completeTaskImpl(
       }
     }
 
-    await syncTaskStatusFromAssignments(supabase, taskId);
+    await syncTaskStatusFromAssignments(taskId);
 
     revalidatePath('/golf/dashboard/tasks');
     updateTag(CACHE_TAGS.DASHBOARD);
@@ -192,14 +193,21 @@ async function completeTaskImpl(
  *
  * Best-effort: a failure here must not fail the completion the player just
  * made, so it logs and returns.
+ *
+ * ADMIN client (P010). The caller is a PLAYER, and golf_tasks_update_coach is
+ * is_golf_team_coach(team_id): under the player's session this UPDATE matched
+ * zero rows with no error, so the parent status never moved. The assignments
+ * READ goes through admin too: under the player's session RLS can show only
+ * their own assignment, and rolling up from that alone would close the task
+ * for everyone the moment one player finished. Only call this AFTER the
+ * caller's own assignment write succeeded (that write is what proves they are
+ * assigned). It is scoped to the one task id and writes only status and
+ * completed_at.
  */
-async function syncTaskStatusFromAssignments(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  taskId: string,
-): Promise<void> {
+async function syncTaskStatusFromAssignments(taskId: string): Promise<void> {
   try {
-    const { data: assignments, error } = await supabase
+    const admin = createAdminClient();
+    const { data: assignments, error } = await admin
       .from('golf_task_assignments')
       .select('status')
       .eq('task_id', taskId);
@@ -210,7 +218,7 @@ async function syncTaskStatusFromAssignments(
       (a) => a.status === 'completed',
     );
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await admin
       .from('golf_tasks')
       .update(
         allDone
@@ -292,7 +300,7 @@ async function uncompleteTaskImpl(taskId: string): Promise<ActionResult> {
       return { success: false, error: 'This task is not marked done for you.' };
     }
 
-    await syncTaskStatusFromAssignments(supabase, taskId);
+    await syncTaskStatusFromAssignments(taskId);
 
     revalidatePath('/golf/dashboard/tasks');
     updateTag(CACHE_TAGS.DASHBOARD);

@@ -166,7 +166,8 @@ Only data the app has (the fidelity notes in PROGRESS.md, Q-68):
 - The scoring chart has no Season best marker and no par meta; both wait for season-best and course-par
   data per window.
 - Strokes gained by leg is the design system's StrokesGainedRoute, and the Rounds count is its tab pill.
-- On the phone, the board's trend phrase ("Down 1.2") is the signed change, labelled "Newer rounds".
+- On the phone, the board's trend phrase ("Down 1.2") is the change in words ("1.2 lower"), over the halves it
+  compares ("Newest 5 vs first 5"; wave 7).
 
 ### Strokes gained (2026-09-30)
 
@@ -268,7 +269,7 @@ selected in, the dimensions and what was left out with the counts.
   they are (CH-5324).
 - **Last 10 across seasons (owner, 2026-09-30; Q-122).** "Last 10" is the
   player's ten newest countable rounds in any season (the legacy app's rule)
-  and "vs. previous 10" the ten before them, read from a rolling 12 months
+  and "vs previous 10" the ten before them, read from a rolling 12 months
   back. Season and Qualifiers are this season. "Rounds this season" in the
   hero stays this season whatever the window.
 - **Rounds posted as a total only (owner, 2026-09-30; Q-123).** A round with

@@ -7,7 +7,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
 import { SAVE_COPY, useMembership } from './hooks';
-import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction } from './parts';
+import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 
 /** Golf profile's reads that failed, for its one section notice (shared with GolfPhone). */
 export const golfReadsFailed = (data: ChSettingsData) =>
@@ -22,7 +22,7 @@ export function GolfSection({ data, writes }: { data: ChSettingsData; writes: Ch
   return (
     <>
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
-      {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} title="Golf details" description="Your coaches see these on the roster." covered={covered} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
+      {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} title="Golf details" description="Your coaches and teammates see your handicap and class on the roster." covered={covered} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
       {data.membership?.error ? <ReadFailed what="Your team membership" code="CH-8210" onRetry={writes.refresh} title="Team" description="The team you play for on GolfHelm." covered={covered} /> : data.membership && <MembershipCard m={data.membership.value} writes={writes} />}
     </>
   );
@@ -37,17 +37,8 @@ function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSe
     <Card
       id="set-golf"
       title="Golf details"
-      description="Your coaches see these on the roster."
-      foot={
-        <SaveBar
-          dirty={f.dirty}
-          pending={save.pending}
-          invalid={golfDetailsProblem(f.draft)}
-          savedAt={f.savedAt}
-          onReset={f.reset}
-          onSave={() => void save.run(f.draft)}
-        />
-      }
+      description="Your coaches and teammates see your handicap and class on the roster."
+      save={{ dirty: f.dirty, pending: save.pending, invalid: golfDetailsProblem(f.draft), savedAt: f.savedAt, onReset: f.reset, onSave: () => void save.run(f.draft) }}
     >
       <div className="ch-set-grid">
         <Field id="set-hcp-v" label="Handicap" inputMode="decimal" placeholder="5.2" value={f.draft.handicap} onChange={set('handicap')} />
@@ -65,6 +56,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
   const [code, setCode] = useState('');
   const [note, setNote] = useState('');
   const [leaving, setLeaving] = useState(false);
+  useWarnOnOpen(leaving);
   useReportDirty('join', code.trim() !== '');
   const { requests, leave, join, cancel } = useMembership(m, writes, {
     onLeft: () => setLeaving(false),
@@ -76,40 +68,54 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
 
   if (m.team) {
     return (
-      <Card id="set-membership" title="Team" description="The team you play for on GolfHelm.">
-        <Row label={m.team.name} help={m.team.orgName ?? undefined}>
-          <Button size="sm" variant="ghost" leftIcon={LogOut} onClick={() => setLeaving(true)}>
-            Leave team
-          </Button>
-        </Row>
+      <>
+        <Card id="set-membership" title="Team" description="The team you play for on GolfHelm.">
+          <Row label={m.team.name} help={m.team.orgName ?? undefined}>
+            <span className="ch-set-value">On the roster</span>
+          </Row>
+        </Card>
+        {/* Last in the section, on its own: leaving can't be undone from here (D-42). The confirm is unchanged. */}
+        <Card id="set-leave" title="Danger zone" description="Things that can’t be undone." tone="danger">
+          <Row label="Leave team" help="You come off the roster right away.">
+            <Button size="sm" variant="danger" leftIcon={LogOut} onClick={() => setLeaving(true)}>
+              Leave team
+            </Button>
+          </Row>
+        </Card>
         <Modal
           open={leaving}
           code="CH-8502"
           onClose={() => !leave.pending && setLeaving(false)}
           icon={LogOut}
           title={`Leave ${m.team.name}?`}
-          description="You come off the roster right away. To come back, you’ll need the invite code and your coach’s approval."
+          description="You come off the roster right away. To come back, you’ll need the team code or an invite link from your coach."
           footer={
             <>
               <Button variant="secondary" disabled={leave.pending} onClick={() => setLeaving(false)}>
                 Stay on the team
               </Button>
-              <Button
-                variant="danger"
-                disabled={leave.pending}
-                onClick={() => void leave.run()}
-              >
+              <Button variant="danger" disabled={leave.pending} onClick={() => void leave.run()}>
                 {leave.pending ? 'Leaving…' : 'Leave team'}
               </Button>
             </>
           }
         />
-      </Card>
+      </>
     );
   }
 
   return (
-    <Card id="set-membership" code="CH-8302" title="Join a team" description="Ask your coach for the team’s invite code. They approve your request from their roster.">
+    <Card
+      id="set-membership"
+      code="CH-8302"
+      title="Join a team"
+      description="Ask your coach for the team code. They approve your request from their roster."
+      save={
+        requests.length === 0
+          ? { dirty: code.trim() !== '', pending: join.pending, savedAt: 0, label: 'Ask to join', enterSaves: true, onReset: () => { setCode(''); setNote(''); }, onSave: () => void join.run(code, note) }
+          : undefined
+      }
+    >
       {requests.length > 0 && (
         <div className="ch-set-requests">
           {requests.map((r) => (
@@ -132,23 +138,10 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
         </div>
       )}
       {requests.length === 0 && (
-        <form
-          className="ch-set-grid"
-          noValidate
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!code.trim()) return;
-            await join.run(code, note);
-          }}
-        >
-          <Field id="set-join-code" label="Invite code" autoComplete="off" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
+        <div className="ch-set-grid">
+          <Field id="set-join-code" label="Team code" autoComplete="off" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
           <Field id="set-join-note" label="Note to the coaches" help="Optional." maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
-          <div className="ch-set-span2">
-            <Button type="submit" variant="primary" disabled={!code.trim() || join.pending}>
-              {join.pending ? 'Sending…' : 'Ask to join'}
-            </Button>
-          </div>
-        </form>
+        </div>
       )}
     </Card>
   );

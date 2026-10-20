@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { ChevronRight, Compass, Flag, Play, Target } from 'lucide-react';
+import { ChevronRight, Compass, Flag, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
@@ -128,9 +128,12 @@ function Trend({ i, theme, themesFailed, covered = false }: { i: ChDeepInsight; 
         </ul>
       ) : (
         !themesFailed && (
-          <p className="ch-hd-none" data-ch-code="CH-13383">
-            No trend yet. A read needs a few more rounds behind it before it can say which way it is moving, and this one will show it when it can.
-          </p>
+          <EmptyState
+            compact
+            code="CH-13383"
+            title="No trend yet"
+            body="A read needs a few more rounds behind it before it can say which way it is moving, and this one will show it when it can."
+          />
         )
       )}
     </Section>
@@ -151,11 +154,16 @@ function Rounds({ i, failed, covered = false }: { i: ChDeepInsight; failed: bool
           ))}
         </ol>
       ) : (
-        <p className="ch-hd-none" data-ch-code="CH-13382">
-          {total > 0
-            ? `This read was made from ${total} ${total === 1 ? 'round' : 'rounds'}, but none of them can be listed here. They may be rounds you have since removed.`
-            : 'This read does not name the rounds it was made from. It uses your stats over the window above, so there is no list to show.'}
-        </p>
+        <EmptyState
+          compact
+          code="CH-13382"
+          title={total > 0 ? 'None of the rounds can be listed' : 'No rounds are named'}
+          body={
+            total > 0
+              ? `This read was made from ${total} ${total === 1 ? 'round' : 'rounds'}, but none of them can be listed here. They may be rounds you have since removed.`
+              : 'This read does not name the rounds it was made from. It uses your stats over the window above, so there is no list to show.'
+          }
+        />
       )}
     </Section>
   );
@@ -257,14 +265,19 @@ function Plan({ i, failed, covered = false }: { i: ChDeepInsight; failed: boolea
           {goal && row('goal', Flag, goal.fromThis ? 'Goal made from this' : 'Goal on the same stat', goal.title, goal.word, goal.line, goal.word === 'Active')}
         </ul>
       ) : (
-        <div className="ch-hd-none" data-ch-code="CH-13384">
-          <p>This read is not part of a focus area or a goal yet. Development is where you turn one into a plan.</p>
-          {href && (
-            <Button variant="secondary" size="sm" href={href} rightIcon={Compass} feel="select">
-              Open Development
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          compact
+          code="CH-13384"
+          title="No plan yet"
+          body="This read is not part of a focus area or a goal yet. Development is where you turn one into a plan."
+          action={
+            href ? (
+              <Button variant="secondary" size="sm" href={href} rightIcon={Compass} feel="select">
+                Open Development
+              </Button>
+            ) : undefined
+          }
+        />
       )}
     </Section>
   );
@@ -364,7 +377,15 @@ function Item({ i, on, onPick }: { i: ChDeepInsight; on: boolean; onPick: () => 
           </em>
           <b>{i.base.title}</b>
         </span>
-        <span className="ch-hd-it__v ch-num">{i.base.value}</span>
+        <span className="ch-hd-it__v ch-num">
+          {i.base.value}
+          {i.base.value && i.base.valueUnit && (
+            <>
+              {' '}
+              <small>{i.base.valueUnit}</small>
+            </>
+          )}
+        </span>
         <Icon icon={ChevronRight} size={15} />
       </button>
     </li>
@@ -392,7 +413,7 @@ function Group({ id, title, note, items, pickedId, onPick }: { id: string; title
 function Hero({ d }: { d: ChDeepDive }) {
   const { insights, needs, working, inPlan } = d.counts;
   return (
-    <section className="ch-hd-hero" aria-labelledby="ch-hd-hero-t">
+    <section className="ch-hd-hero ch-scoreboard" aria-labelledby="ch-hd-hero-t">
       <div className="ch-hd-hero__main">
         <span className="ch-hd-hero__k">What CoachHelm has found</span>
         <h2 id="ch-hd-hero-t">
@@ -402,11 +423,11 @@ function Hero({ d }: { d: ChDeepDive }) {
       </div>
       <dl className="ch-hd-hero__f">
         <div className="is-needs">
-          <dt>Need work</dt>
+          <dt>Needs work</dt>
           <dd className="ch-num">{needs}</dd>
         </div>
         <div className="is-working">
-          <dt>Working</dt>
+          <dt>What’s working</dt>
           <dd className="ch-num">{working}</dd>
         </div>
         <div className="is-plan">
@@ -502,7 +523,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
           }
           action={
             startHref ? (
-              <Button variant="primary" leftIcon={Play} href={startHref.href}>
+              <Button variant="primary" leftIcon={Plus} href={startHref.href}>
                 {startHref.label}
               </Button>
             ) : undefined
@@ -517,7 +538,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   const groups = (
     <>
       <Group id="ch-hd-needs" title="Needs work" note="Where CoachHelm sees the most to gain, in the order it ranks them." items={needs} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
-      <Group id="ch-hd-working" title="Working" note="What you do better than the comparison. Keep doing it." items={working} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
+      <Group id="ch-hd-working" title="What’s working" note="What you do better than the comparison. Keep doing it." items={working} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
     </>
   );
 

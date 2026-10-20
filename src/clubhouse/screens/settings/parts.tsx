@@ -11,15 +11,17 @@ import { Switch } from '../../ui/Switch';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chReport, chTrail } from '../../lib/track';
-import { CH_SLOW_SAVE_AFTER, isOffline, useAction, type ActionCopy } from '../../lib/use-action';
+import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline, useAction, type ActionCopy, type ActionResult } from '../../lib/use-action';
+import { isRawBrowserFailure } from '../../lib/friendly-reason';
 import { haptic } from '../../lib/haptics';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import type { ChProblem, ChResult } from './model';
 
 /**
  * A settings card is the design system's Surface: 15px title, caption
- * subtitle, actions on the right, a 16/20 body, and the ivory footer bar
- * (status on the left, Save on the right).
+ * subtitle, actions on the right, a 16/20 body. A card that needs an explicit
+ * save passes `save`: its bar appears under the fields only while there is
+ * something to save (SaveBar), and Cmd/Ctrl+S saves it from anywhere in the card.
  */
 export function Card({
   id,
@@ -27,6 +29,8 @@ export function Card({
   description,
   aside,
   foot,
+  save,
+  tone,
   children,
   code,
 }: {
@@ -37,21 +41,46 @@ export function Card({
   description?: ReactNode;
   aside?: ReactNode;
   foot?: ReactNode;
+  /** The card's explicit save: the inline bar under its fields (SaveBar). */
+  save?: SaveBarProps;
   tone?: 'danger';
   children?: ReactNode;
 }) {
+  const section = useRef<HTMLElement>(null);
+  // Kept current for the listener, which is added once (a listener, not a JSX handler: the section is not a control).
+  const latest = useRef(save);
+  latest.current = save;
+  const keyed = !!save;
+  useEffect(() => {
+    const el = section.current;
+    if (!el || !keyed) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const s = latest.current;
+      if (!s) return;
+      const target = e.target;
+      const inField = target instanceof HTMLInputElement && !!target.closest('.ch-field') && !['checkbox', 'radio', 'file', 'button', 'range'].includes(target.type);
+      const chord = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's';
+      const enter = e.key === 'Enter' && s.enterSaves && inField && !e.shiftKey && !e.isComposing;
+      if (!chord && !enter) return;
+      e.preventDefault();
+      if (s.dirty && !s.pending && !s.invalid) s.onSave();
+    };
+    el.addEventListener('keydown', onKeyDown);
+    return () => el.removeEventListener('keydown', onKeyDown);
+  }, [keyed]);
   return (
-    <section className="ch-surface" aria-labelledby={id ? `${id}-t` : undefined} data-ch-code={code}>
+    <section ref={section} className={'ch-surface' + (tone === 'danger' ? ' is-danger' : '')} aria-labelledby={id ? `${id}-t` : undefined} data-ch-code={code}>
       <div className="ch-surface__head">
         <div style={{ minWidth: 0 }}>
-          <h3 id={id ? `${id}-t` : undefined} className="ch-surface__title">
+          <h2 id={id ? `${id}-t` : undefined} className="ch-surface__title">
             {title}
-          </h3>
+          </h2>
           {description && <div className="ch-surface__sub">{description}</div>}
         </div>
         {aside && <div className="ch-surface__actions">{aside}</div>}
       </div>
       {children && <div className="ch-surface__body ch-set-stackbody">{children}</div>}
+      {save && <SaveBar {...save} />}
       {foot && <div className="ch-surface__foot">{foot}</div>}
     </section>
   );
@@ -62,18 +91,38 @@ export function EmailPaused() {
   return <span data-ch-code="CH-8901">Email is paused for everyone right now.</span>;
 }
 
-/** One setting: label and help on the left, the control on the right (stacks when narrow). */
-export function Row({ label, help, htmlFor, children, dim }: { label: ReactNode; help?: ReactNode; htmlFor?: string; children: ReactNode; dim?: boolean }) {
+/**
+ * The quiet "Saved" beside a setting that saves as it changes. The live region is always there (so the word is
+ * announced when it arrives); the word takes room only inside the label's own line, so nothing around it moves.
+ */
+export function SavedMark({ show }: { show: boolean }) {
+  return (
+    <span className="ch-set-saved" aria-live="polite">
+      {show && (
+        <span className="ch-set-saved__w" data-ch-code="CH-8405">
+          <Icon icon={Check} size={13} />
+          Saved
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** One setting: label and help on the left, the control on the right (stacks when narrow). `saved`: it just saved. */
+export function Row({ label, help, htmlFor, children, dim, saved }: { label: ReactNode; help?: ReactNode; htmlFor?: string; children: ReactNode; dim?: boolean; saved?: boolean }) {
   return (
     <div className={'ch-set-row' + (dim ? ' is-dim' : '')}>
       <div className="ch-set-row__txt">
-        {htmlFor ? (
-          <label htmlFor={htmlFor} className="ch-set-row__l">
-            {label}
-          </label>
-        ) : (
-          <span className="ch-set-row__l">{label}</span>
-        )}
+        <span className="ch-set-row__top">
+          {htmlFor ? (
+            <label htmlFor={htmlFor} className="ch-set-row__l">
+              {label}
+            </label>
+          ) : (
+            <span className="ch-set-row__l">{label}</span>
+          )}
+          {saved !== undefined && <SavedMark show={saved} />}
+        </span>
         {help && <span className="ch-set-row__h">{help}</span>}
       </div>
       <div className="ch-set-row__c">{children}</div>
@@ -112,28 +161,26 @@ export function Field({
   );
 }
 
-/**
- * The footer of an edit card: what's pending, and Save. After a save it
- * confirms for a moment ("Saved") and then settles, so the change reads as
- * done without a lingering banner.
- */
-export function SaveBar({
-  dirty,
-  pending,
-  invalid,
-  onSave,
-  onReset,
-  label = 'Save changes',
-  savedAt,
-}: {
+export interface SaveBarProps {
   dirty: boolean;
   pending: boolean;
   invalid?: ChProblem | null;
   onSave: () => void;
   onReset?: () => void;
   label?: string;
+  /** When the last save landed (useDraft), 0 before any. */
   savedAt: number;
-}) {
+  /** Enter in a text field saves: only for a card whose one job is that send (the email change, asking to join). */
+  enterSaves?: boolean;
+}
+
+/**
+ * The inline save bar of an edit card. It is there only while the card has something to save: "Unsaved changes" with
+ * Discard and Save changes, then "Saving…" on the busy button, then a quiet "Saved" that holds the bar for 1.8s and
+ * lets it go. The bar keeps one height through all three, so the check arriving moves nothing; it rises with the
+ * fields' own beat and sits at the foot of the screen while the card is taller than the view.
+ */
+export function SaveBar({ dirty, pending, invalid, onSave, onReset, label = 'Save changes', savedAt }: SaveBarProps) {
   const reduced = useChReducedMotion();
   const [flash, setFlash] = useState(false);
   useEffect(() => {
@@ -142,37 +189,54 @@ export function SaveBar({
     const t = window.setTimeout(() => setFlash(false), 1800);
     return () => window.clearTimeout(t);
   }, [savedAt]);
+  const open = dirty || pending || flash;
+  const editing = dirty || pending;
   return (
-    <>
-      {/* CH-8602: "Unsaved changes" becomes "Saved" with a check that settles after 1.8s; CH-8803: it is announced. */}
-      <span className="ch-set-status" aria-live="polite" data-ch-code={pending ? 'CH-8402' : undefined}>
-        <AnimatePresence mode="wait" initial={false}>
-          {invalid && dirty ? (
-            <m.span key="inv" className="is-invalid" data-ch-code={invalid.code} initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={chTween('quick', reduced)}>
-              {invalid.text}
-            </m.span>
-          ) : dirty ? (
-            <m.span key="dirty" initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={chTween('quick', reduced)}>
-              <i className="ch-set-dot" aria-hidden />
-              Unsaved changes
-            </m.span>
-          ) : flash ? (
-            <m.span key="saved" className="is-saved" initial={reduced ? false : { opacity: 0, transform: 'translateY(2px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} exit={{ opacity: 0 }} transition={chTween('quick', reduced)}>
-              <Icon icon={Check} size={14} />
-              Saved
-            </m.span>
-          ) : null}
-        </AnimatePresence>
-      </span>
-      {onReset && dirty && !pending && (
-        <Button variant="ghost" size="sm" feel="warning" onClick={onReset}>
-          Discard
-        </Button>
+    <AnimatePresence initial={false}>
+      {open && (
+        <m.div
+          key="bar"
+          className="ch-set-savebar"
+          role="group"
+          aria-label="Save changes"
+          initial={reduced ? false : { opacity: 0, transform: 'translateY(6px)' }}
+          animate={{ opacity: 1, transform: 'translateY(0px)' }}
+          exit={{ opacity: 0 }}
+          transition={chTween('quick', reduced)}
+        >
+          {/* CH-8602: "Unsaved changes" becomes "Saved" with a check that settles after 1.8s; CH-8803: it is announced. */}
+          <span className="ch-set-status" aria-live="polite" data-ch-code={pending ? 'CH-8402' : undefined}>
+            {invalid && dirty ? (
+              <span className="is-invalid" data-ch-code={invalid.code}>
+                {invalid.text}
+              </span>
+            ) : dirty ? (
+              <span>
+                <i className="ch-set-dot" aria-hidden />
+                Unsaved changes
+              </span>
+            ) : flash && !pending ? (
+              <span className="is-saved">
+                <Icon icon={Check} size={14} />
+                Saved
+              </span>
+            ) : null}
+          </span>
+          {editing && (
+            <span className="ch-set-savebar__acts">
+              {onReset && !pending && (
+                <Button variant="ghost" size="sm" feel="warning" onClick={onReset}>
+                  Discard
+                </Button>
+              )}
+              <Button variant="primary" size="sm" busy={pending} disabled={!!invalid} onClick={onSave}>
+                {pending ? 'Saving…' : label}
+              </Button>
+            </span>
+          )}
+        </m.div>
       )}
-      <Button variant="primary" size="sm" disabled={!dirty || pending || !!invalid} onClick={onSave}>
-        {pending ? 'Saving…' : label}
-      </Button>
-    </>
+    </AnimatePresence>
   );
 }
 
@@ -292,6 +356,31 @@ export function useUnsavedGuard(dirty: boolean) {
   return modal;
 }
 
+/** A refusal the server gave no plain reason for (a constraint, a PostgREST code): still not the connection. */
+export const REFUSED_BODY = 'The server didn’t accept the change. The error has been reported.';
+const CONNECTION_BODY = 'Check your connection and try again.';
+
+/**
+ * What the toast under a failed settings save says (VERIFY 2026-10-02, fixed 2026-10-17). Only a save that never got an
+ * answer (a throw, no reason at all, or the browser's own network wording) is told to check the connection. A save the
+ * server refused says why in plain words: a policy or a missing grant ("violates row-level security", "permission
+ * denied", 42501, which friendlyReason drops as technical) is the access line friendlyReason already gives "permission";
+ * an expired token is the session line; a short server sentence passes through; anything else technical is
+ * REFUSED_BODY. `hint` is the card's own next step, which a refusal with no plain reason keeps.
+ */
+export function saveFailureBody(error: string | undefined, hint?: string): string {
+  const e = error?.trim();
+  if (!e || e === 'failed' || isRawBrowserFailure(e)) return hint ?? CONNECTION_BODY;
+  if (/row[- ]level security|permission denied|insufficient privilege|\b42501\b/i.test(e)) return 'Your account doesn’t have access to do this.';
+  if (/\bJWT\b|PGRST30[13]/i.test(e)) return 'Your session ended. Sign in again, then retry.';
+  return friendlyReason(e) ?? hint ?? REFUSED_BODY;
+}
+
+/** useAction's `refine` for a settings save: the failure body by cause (saveFailureBody), shown as written. */
+export function refineSaveFailure<T>(result: ActionResult<T>, copy: ActionCopy): ActionCopy {
+  return result.success ? copy : { ...copy, hint: saveFailureBody(result.error, copy.hint) };
+}
+
 /**
  * useAction for a save whose landing finishes the card: commit the draft, clear
  * the fields, close the dialog, ask for a fresh read. That work runs inside the
@@ -312,6 +401,7 @@ export function useSaveAction<A extends unknown[], T>(
       return r;
     },
     copy,
+    refineSaveFailure,
   );
 }
 
@@ -366,10 +456,44 @@ export interface InstantSave {
   code: string;
 }
 
+/**
+ * The keys of settings that saved a moment ago (1.8s), for the quiet "Saved" by their row (SavedMark). A key saved
+ * again before its time restarts it; the timers go with the section.
+ */
+export function useSavedKeys() {
+  const [saved, setSaved] = useState<ReadonlySet<string>>(new Set());
+  const timers = useRef(new Map<string, number>());
+  useEffect(() => {
+    const t = timers.current;
+    return () => t.forEach((id) => window.clearTimeout(id));
+  }, []);
+  const mark = (...keys: string[]) => {
+    setSaved((s) => new Set([...s, ...keys]));
+    for (const key of keys) {
+      window.clearTimeout(timers.current.get(key));
+      timers.current.set(
+        key,
+        window.setTimeout(() => {
+          timers.current.delete(key);
+          setSaved((s) => {
+            const n = new Set(s);
+            n.delete(key);
+            return n;
+          });
+        }, 1800),
+      );
+    }
+  };
+  /** Any of these just saved (a card-level mark for a group of controls). */
+  const any = (...keys: string[]) => keys.some((k) => saved.has(k));
+  return { saved, mark, any };
+}
+
 export function useInstantSave(surface: string) {
   const toast = useToast();
   const delayedToast = useDelayedToast();
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
+  const { saved, mark } = useSavedKeys();
   const run = async (op: InstantSave): Promise<boolean> => {
     if (isOffline()) {
       // CH-1903: refuse at once while offline, instead of flipping and flipping back.
@@ -395,21 +519,25 @@ export function useInstantSave(surface: string) {
       n.delete(op.key);
       return n;
     });
-    // The control already ticked when it changed (D-70); a save that lands is silent.
-    if (r.success || r.ok) return true;
+    // The control already ticked when it changed (D-70); a save that lands is silent, and says Saved by its row.
+    if (r.success || r.ok) {
+      mark(op.key);
+      return true;
+    }
     op.rollback();
     haptic('error');
     if (r.error) chReport(new Error(r.error), { surface: `settings.${surface}`, action: op.key, severity: 'low' });
     toast({
       tone: 'error',
       title: op.failed,
-      body: 'It is back where it was. Check your connection and try again.',
+      // A refusal says why; only a save that got no answer is told to check the connection.
+      body: `It is back where it was. ${saveFailureBody(r.error)}`,
       action: { label: 'Retry', run: () => void run(op) },
       code: op.code,
     });
     return false;
   };
-  return { run, pending };
+  return { run, pending, saved };
 }
 
 /**
@@ -418,4 +546,15 @@ export function useInstantSave(surface: string) {
  */
 export function SettingSwitch(props: React.ComponentProps<typeof Switch>) {
   return <Switch {...props} busyCode="CH-8403" />;
+}
+
+/**
+ * The warning tick as a confirm for something that cannot be taken back opens (D-70: warning before Remove, Delete,
+ * Discard): Leave team, Make a new code, Reset CoachHelm updates and Turn off CoachHelm on the desktop; the phone's
+ * action sheets already give it (readiness audit, 2026-10-17).
+ */
+export function useWarnOnOpen(open: boolean): void {
+  useEffect(() => {
+    if (open) haptic('warning');
+  }, [open]);
 }

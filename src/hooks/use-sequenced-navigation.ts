@@ -145,23 +145,14 @@ export function useSequencedNavigation({
   // `router.prefetch(href)` with no options is `PrefetchKind.AUTO`, which for a
   // route without per-segment prefetching degrades to
   // `FetchStrategy.LoadingBoundary`. Reaching past that would need
-  // `PrefetchKind.FULL`, and the tempting conclusion is that this is a one-line
-  // omission. It is not, because of what happens on the OTHER side:
-  //
-  //   • the golf dashboard is `export const dynamic = 'force-dynamic'`
-  //   • Next's `experimental.staleTimes.dynamic` defaults to 0
-  //     (node_modules/next/dist/server/config-shared.js), and next.config.mjs
-  //     does not override it
-  //
-  // so a full prefetch would be cached with a stale time of zero, be stale the
-  // instant it landed, and get re-fetched from scratch on navigation anyway.
-  // The only thing gained would be a second complete server render of the
-  // dashboard — roughly a dozen extra DB round trips per sign-in — thrown away.
-  //
-  // Making a full prefetch actually pay off means raising
-  // `experimental.staleTimes.dynamic` app-wide, which trades data freshness on
-  // every dynamic route in every product for this one hand-off. That is a
-  // product decision, not a hook detail.
+  // `PrefetchKind.FULL` (the golf dashboard is `force-dynamic`, and
+  // `staleTimes.dynamic` stays at Next's default of 0). In Next 16 a full
+  // prefetch is kept for `staleTimes.static` (Next's default, 300s), not the
+  // dynamic stale time, so it would be used (the Clubhouse tabs rely on this:
+  // shell/use-prefetch-tabs.ts). It is still not
+  // worth it here: the hand-off is one navigation, and a full prefetch is a
+  // second complete server render of the dashboard (roughly a dozen DB round
+  // trips per sign-in) to save the skeleton on that one arrival.
   useEffect(() => {
     if (!armed) return;
     try {

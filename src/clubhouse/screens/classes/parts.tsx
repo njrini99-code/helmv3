@@ -77,6 +77,7 @@ import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
+import { Spinner } from '../../ui/Spinner';
 import { EmptyState } from '../../ui/States';
 
 /** "3 credits · 5 classes". */
@@ -413,7 +414,7 @@ export function SyncStatus({ failed, syncing, onRetry }: { failed: number; synci
     return (
       <div className="ch-cl-sync" role="status" data-ch-code="CH-12403">
         <span className="ch-cl-sync__st">
-          <span className="ch-cl-sync__sp" aria-hidden="true" />
+          <Spinner size="sm" />
           Adding to your calendar…
         </span>
       </div>

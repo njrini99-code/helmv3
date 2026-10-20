@@ -76,4 +76,5 @@ multi-agent PR review · `/helm-fix-ci` red CI on agent PRs.
 
 Skills: `finish-task` (definition of done and green-gate traps),
 `helm-supabase` (Supabase client and query traps), `helm-sentry` (read-only
-production error investigation).
+production error investigation), `helm-safari-performance` (measuring
+smoothness in Safari, the Simulator and on the iPhone; `scripts/phone/`).

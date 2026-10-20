@@ -11,6 +11,7 @@ const shell = read('shell.css');
 const controls = read('controls.css');
 const ui = read('ui.css');
 const tokens = read('tokens.css');
+const settings = read('settings.css');
 
 /** The bodies of every rule whose selector (or the last selector of its list) is this one, in order. */
 function rules(css: string, selector: string): string[] {
@@ -114,5 +115,21 @@ describe('the phone canvas runs to the bottom edge (section-strip.md: no tab bar
     expect(css).toMatch(/padding-bottom: calc\(env\(safe-area-inset-bottom\) \+ 20px\);/);
     expect(css).not.toMatch(/\.ch-tabbar\b/);
     expect(css).not.toMatch(/body:not\(\.capacitor\) \[data-ui='clubhouse'\]:not\(\[data-phone-notabs\]\)/);
+  });
+
+  it('2026-10-14 audit: theme-proof date values and readable muted and eyebrow inks', () => {
+    // globals.css paints the date/time value warm-900 for Fairway; Clubhouse inherits its field's ink (dark theme).
+    expect(rules(controls, ".ch-input[type='datetime-local']::-webkit-date-and-time-value")[0]).toMatch(/color: inherit;/);
+    expect(tokens).toMatch(/--ch-ledger-eyebrow: #6e6038;/);
+    expect(tokens).toMatch(/--ch-on-green-ink-muted: rgb\(222 214 190 \/ 0\.8\);/);
+    // The hero bar's title stays on the on-green ink in both themes (ivory-100 turns dark in the dark theme).
+    expect(rules(shell, '  .ch-root[data-phone-hero] .ch-topbar__ptitle')[0]).toMatch(/color: var\(--ch-on-green-ink\);/);
+    // The bell's drop stays a scroller when its list is short, so a pan on it never scrolls the page under it.
+    expect(rules(shell, '  .ch-bst__scroll::before')[0]).toMatch(/height: calc\(100% \+ 1px\);/);
+    // A page intro's title and its view switch wrap rather than push the switch off a phone under larger page text.
+    expect(rules(ui, '.ch-intro__row')[0]).toMatch(/flex-wrap: wrap;/);
+    // A phone settings row keeps its label's words whole; its summary ellipsizes first.
+    expect(rules(settings, '  .ch-setm-row__l')[0]).toMatch(/min-width: min-content;/);
+    expect(rules(settings, '  .ch-setm-row__v')[0]).toMatch(/min-width: 0;/);
   });
 });

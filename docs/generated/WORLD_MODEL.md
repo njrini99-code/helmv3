@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 31 features, 69 routes, 75 components, 27 apis, 106 actions, 121 services, 87 tests, 134 tables, 166 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 1092 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 31 features, 69 routes, 75 components, 27 apis, 106 actions, 121 services, 87 tests, 134 tables, 171 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1097 (merged; an edge with more than one evidence kind is a stronger claim).
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
 ---
@@ -100,7 +100,7 @@ Calendar And Events · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 5 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
-- **RPCs:** none
+- **RPCs:** `golf_event_attendance_counts`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
 
@@ -110,7 +110,7 @@ Clubhouse UI (flagged, off in production) · active · criticality medium · own
 
 - **Relations:** 0 doc/structurally-evidenced, 4 import-graph-only (weak)
 - **Tables:** none
-- **RPCs:** none
+- **RPCs:** `golf_event_attendance_counts`
 - **Test surfaces:** 1
 - **Sentry/admin_events signals:** none
 
@@ -170,7 +170,7 @@ Golf Round Lifecycle · active · criticality high · owner product
 
 - **Relations:** 2 doc/structurally-evidenced, 25 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
-- **RPCs:** `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
+- **RPCs:** `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `course_library`, `round_tracking`
 
@@ -230,7 +230,7 @@ Player Hub · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
-- **RPCs:** `get_coach_today_schedule`
+- **RPCs:** `get_coach_today_schedule`, `get_player_hub_events`
 - **Test surfaces:** 1
 - **Sentry/admin_events signals:** `player_hub`
 
@@ -320,7 +320,7 @@ Team Operations · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
 - **Tables:** none
-- **RPCs:** none
+- **RPCs:** `get_player_hub_events`
 - **Test surfaces:** 5
 - **Sentry/admin_events signals:** `coach_dashboard`, `documents`, `task_management`, `travel`
 

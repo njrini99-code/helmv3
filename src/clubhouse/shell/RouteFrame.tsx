@@ -5,6 +5,7 @@ import { CH_DUR, CH_EASE } from '../lib/motion';
 import { useChPress } from '../lib/press';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { markAppRunning, RouteScope } from '../lib/session-state';
+import { chReturning } from '../lib/pop-mark';
 import { canvasScrollNow } from '../lib/smooth-scroll';
 // Registers the Back that iOS animated itself, which turns off the crossfade for that one Back (CH-1908, shell.css).
 import '../lib/ua-pop';
@@ -27,10 +28,6 @@ import { chNavKind, chNavShown } from '../lib/nav-motion';
  */
 /** Where each page was scrolled, by route and team, for Back and Forward (this tab only). */
 const scrolled = new Map<string, { canvas: number; win: number }>();
-/** Set by a Back or Forward (popstate); a navigation that starts within this long of one is a return. */
-const RETURN_WINDOW_MS = 1500;
-let poppedAt = 0;
-if (typeof window !== 'undefined') window.addEventListener('popstate', () => (poppedAt = Date.now()));
 
 /** A route's loading skeleton, as each route's loading.tsx draws it (base.css fades it in by the same mark). */
 const ROUTE_SKELETON = "main[aria-busy='true'][aria-label^='Loading']";
@@ -63,13 +60,21 @@ function useSkeletonReveal(frame: RefObject<HTMLDivElement | null>, routeKey: st
     const since = performance.now();
     // Set in the commit the view transition is capturing, so its keyframes see it.
     // Not on a Back: React commits a Back synchronously, without a view transition to hold the old page in.
-    const hold = chNavKind() === 'fade' && typeof document.startViewTransition === 'function' && Date.now() - poppedAt >= RETURN_WINDOW_MS;
+    const hold = chNavKind() === 'fade' && typeof document.startViewTransition === 'function' && !chReturning();
     if (hold) root.setAttribute(HOLD, '');
     const release = () => root.removeAttribute(HOLD);
     const lapse = hold ? window.setTimeout(release, VT_DONE_MS + 500) : 0;
+    let skeleton = el.querySelector(ROUTE_SKELETON);
     const watch = new MutationObserver((records) => {
-      // Still loading, or a deeper route's skeleton took the first one's place.
-      if (el.querySelector(ROUTE_SKELETON)) return;
+      // Still loading, or a deeper route's skeleton took the first one's place. Once the first has had its turn on
+      // screen, the deeper one is there at once: it mounted under the hold mark too, and waited the hold again at
+      // opacity 0, a blank between two skeletons (WebKit, a section switch on a slow network, 2026-10-15).
+      const now = el.querySelector(ROUTE_SKELETON);
+      if (now) {
+        if (now !== skeleton && performance.now() - since >= VT_DONE_MS && now instanceof HTMLElement) now.style.animation = 'none';
+        skeleton = now;
+        return;
+      }
       watch.disconnect();
       release();
       // Arrived before the skeleton showed, or while the crossfade still runs: the page is simply there.
@@ -95,22 +100,43 @@ function useSkeletonReveal(frame: RefObject<HTMLDivElement | null>, routeKey: st
   }, [frame, routeKey, armed]);
 }
 
-/** Scrolls back to a saved place once the page is tall enough to hold it, or gives up after a second. */
+/**
+ * Scrolls back to a saved place and holds it while the page settles, for up to 1.5 s or until the person scrolls. It
+ * used to stop the first frame it got there, and the page arriving after (a skeleton swapped for content, shorter for a
+ * frame) clamped it back to the top (audit A-31).
+ */
 function restoreScroll(to: { canvas: number; win: number }): () => void {
   const canvas = document.getElementById('ch-canvas');
-  const until = Date.now() + 1000;
+  const until = Date.now() + 1500;
   let frame = 0;
+  let done = false;
+  const stop = () => {
+    done = true;
+    cancelAnimationFrame(frame);
+    for (const type of USER_SCROLL) window.removeEventListener(type, stop, true);
+  };
+  const USER_SCROLL = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+  for (const type of USER_SCROLL) window.addEventListener(type, stop, { capture: true, passive: true });
   const step = () => {
-    canvasScrollNow(to.canvas);
-    window.scrollTo({ top: to.win, behavior: 'instant' });
+    if (done) return;
     const there = (!canvas || Math.abs(canvas.scrollTop - to.canvas) < 2) && Math.abs(window.scrollY - to.win) < 2;
-    if (!there && Date.now() < until) frame = requestAnimationFrame(step);
+    if (!there) {
+      canvasScrollNow(to.canvas);
+      window.scrollTo({ top: to.win, behavior: 'instant' });
+    }
+    if (Date.now() < until) frame = requestAnimationFrame(step);
+    else stop();
   };
   step();
-  return () => cancelAnimationFrame(frame);
+  return stop;
 }
 
-export function RouteFrame({ routeKey, children }: { routeKey: string; children: ReactNode }) {
+/**
+ * `scrollKey` names the screen for scroll memory when the address's query picks the screen (Stats' `?player=`: the team
+ * page and a player's are one route). Back from a player returned the team page to its top (Simulator, 2026-10-14).
+ * Defaults to `routeKey`; it never remounts the route.
+ */
+export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { routeKey: string; scrollKey?: string; children: ReactNode }) {
   const reduced = useChReducedMotion();
   useChPress(!reduced);
   const first = useRef(true);
@@ -136,16 +162,19 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
   }, []);
   // A new page opens at the top (CH-1904); Back or Forward returns to where that page was left (PAGE_PERFORMANCE.md
   // rule 1). Positions are recorded as the coach scrolls, so leaving never has to read a page already swapped out.
-  useEffect(() => {
+  // A layout effect, so the old page stops recording in the commit that swaps it out: as a passive effect it kept
+  // listening for a frame, heard the canvas clamp to the incoming skeleton's height and saved that (0 on desktop,
+  // short on the phone) as where the page was left (audit A-31: Stats → player → Back restored 0/30 desktop).
+  useLayoutEffect(() => {
     const canvas = document.getElementById('ch-canvas');
-    const record = () => scrolled.set(routeKey, { canvas: canvas?.scrollTop ?? 0, win: window.scrollY });
+    const record = () => scrolled.set(scrollKey, { canvas: canvas?.scrollTop ?? 0, win: window.scrollY });
     canvas?.addEventListener('scroll', record, { passive: true });
     window.addEventListener('scroll', record, { passive: true });
     let cancel: (() => void) | undefined;
     if (first.current) first.current = false;
     else {
-      const saved = scrolled.get(routeKey);
-      if (saved && Date.now() - poppedAt < RETURN_WINDOW_MS) cancel = restoreScroll(saved);
+      const saved = scrolled.get(scrollKey);
+      if (saved && chReturning()) cancel = restoreScroll(saved);
       else {
         canvasScrollNow(0);
         window.scrollTo({ top: 0, behavior: 'instant' });
@@ -156,7 +185,7 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
       canvas?.removeEventListener('scroll', record);
       window.removeEventListener('scroll', record);
     };
-  }, [routeKey]);
+  }, [scrollKey]);
 
   const page = (
     <div key={reduced ? routeKey : undefined} ref={frame} id="ch-content" tabIndex={-1} className="ch-frame-route">

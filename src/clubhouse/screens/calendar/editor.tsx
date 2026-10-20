@@ -2,13 +2,15 @@
 
 import { CalendarPlus, Check, Copy, Pencil, RefreshCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { createGolfEvent, deleteGolfEvent, updateGolfEvent } from '@/app/golf/actions/calendar-events';
+import { createGolfEvent, deleteGolfEvent, deleteGolfEventPermanently, updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { createRecurringEvent, deleteRecurringEvent, editRecurringEvent } from '@/app/golf/actions/recurring-events';
 import { createCalendarFeed, deleteCalendarFeed, getCalendarFeeds, regenerateCalendarFeed } from '@/app/golf/actions/calendar-feeds';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
+import { DateField } from '../../ui/DateField';
+import { TimeField } from '../../ui/TimeField';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
@@ -19,6 +21,7 @@ import { friendlyReason, normalise, useAction } from '../../lib/use-action';
 import { newRequestId } from '../../data/recruiting-shape';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
+import { useChPhone } from '../../lib/use-phone';
 import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, seedWindow, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
 import { TYPE_ICON } from './views';
 
@@ -32,8 +35,26 @@ const fromHHMM = (v: string) => {
   return (h ?? 0) + (m ?? 0) / 60;
 };
 const snap = (h: number) => Math.round(h * 4) / 4;
+/** A wall-clock date and HH:MM moved by `minutes`, across midnight when it has to be. */
+function shiftWall(date: string, time: string, minutes: number): { date: string; time: string } {
+  if (!minutes) return { date, time };
+  const total = Math.round(fromHHMM(time) * 60) + minutes;
+  const days = Math.floor(total / 1440);
+  const m = ((total % 1440) + 1440) % 1440;
+  return { date: addDays(date, days), time: `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}` };
+}
 /** Extra days a multi-day all-day event covers after its first: 2 for 16–18 October. */
 const spanDays = (e: ChCalEvent | null | undefined) => (e?.span ? Math.round((Date.parse(`${e.span.to}T12:00:00Z`) - Date.parse(`${e.span.from}T12:00:00Z`)) / 86_400_000) : 0);
+/** A timed event over several days (the loader gives each day's entry the whole run's start and end): any day's entry edits the run. */
+const timedRun = (e: ChCalEvent | null | undefined): e is ChCalEvent & { span: { from: string; to: string; start: number; end: number } } =>
+  !!e && !e.allDay && e.span?.start != null && e.span.end != null;
+/** What the editor opens on for an event: a timed run starts on its first day at its first day's start and ends on its last day at its end. */
+function runOf(e: ChCalEvent): { date: string; win: [number, number]; extra: number } | null {
+  if (!timedRun(e)) return null;
+  // A run that ends at midnight is held as 24:00 on its last day: the editor writes it as 00:00 the day after.
+  const midnight = e.span.end >= 24;
+  return { date: e.span.from, win: [e.span.start, midnight ? 0 : e.span.end], extra: spanDays(e) + (midnight ? 1 : 0) };
+}
 
 type Repeat = 'none' | 'weekly' | 'weekdays';
 type Scope = 'this' | 'thisAndFuture' | 'all';
@@ -68,6 +89,9 @@ function FindTime({
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const grab = useRef<number | null>(null);
+  // The kind of pointer that last pressed a lane. A finger only moves the time once it lifts without scrolling (a click):
+  // moved on the touch, a scroll of the sheet that began on a lane carried the event to wherever the finger landed.
+  const laneTouch = useRef(false);
   const len = win[1] - win[0];
   const pct = (h: number) => ((h - FROM) / (TO - FROM)) * 100;
   const toH = (x: number) => {
@@ -83,6 +107,7 @@ function FindTime({
     }
   };
   const onDown = (e: PointerEvent<HTMLSpanElement>) => {
+    laneTouch.current = false;
     e.preventDefault();
     e.stopPropagation();
     grab.current = toH(e.clientX) - win[0];
@@ -116,11 +141,19 @@ function FindTime({
         {shown.map((pid, i) => (
           <div key={pid} style={{ display: 'contents' }}>
             <span className="ch-lanes__who">{people.get(pid)?.name.split(' ')[0] ?? 'Player'}</span>
+            {/* A pointer shortcut to place the time; the keyboard moves it with the band, the lane's slider. */}
+            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- see above */}
             <div
               className="ch-lane"
               ref={i === 0 ? ref : undefined}
               onPointerDown={(e) => {
                 if ((e.target as HTMLElement).closest('.ch-cal-ft__band')) return;
+                laneTouch.current = e.pointerType === 'touch';
+                if (!laneTouch.current) move(toH(e.clientX) - len / 2);
+              }}
+              onClick={(e) => {
+                if (!laneTouch.current || (e.target as HTMLElement).closest('.ch-cal-ft__band')) return;
+                laneTouch.current = false;
                 move(toH(e.clientX) - len / 2);
               }}
             >
@@ -199,6 +232,7 @@ export function EventEditor({
 }) {
   const base = seed?.event ?? null;
   const open = seed != null;
+  const phone = useChPhone();
   const toast = useToast();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ChCalType>('practice');
@@ -233,13 +267,14 @@ export function EventEditor({
     const { people, today, events, nowHour } = latest.current;
     const e = seed.event;
     const c = seed.copyOf;
+    const run = e ? runOf(e) : c ? runOf(c) : null;
     const init = e
       ? {
           title: e.title,
           type: (e.type === 'class' ? 'practice' : e.type) as ChCalType,
           // Each day of a multi-day event is its own entry; the event starts on the span's first day, not the one clicked.
-          date: e.span?.from ?? e.date,
-          win: (seed.proposal ?? [e.start ?? 8, e.end ?? 17]) as [number, number],
+          date: run?.date ?? e.span?.from ?? e.date,
+          win: (seed.proposal ?? run?.win ?? [e.start ?? 8, e.end ?? 17]) as [number, number],
           allDay: e.allDay,
           loc: e.location ?? '',
           notes: e.notes ?? '',
@@ -251,7 +286,7 @@ export function EventEditor({
             title: c.title,
             type: (c.type === 'class' ? 'practice' : c.type) as ChCalType,
             date: seed.date ?? c.span?.from ?? c.date,
-            win: [c.start ?? 8, c.end ?? 17] as [number, number],
+            win: (run?.win ?? [c.start ?? 8, c.end ?? 17]) as [number, number],
             allDay: c.allDay,
             loc: c.location ?? '',
             notes: c.notes ?? '',
@@ -289,24 +324,35 @@ export function EventEditor({
     setRepeat('none');
     setUntil(addDays(init.date, 56));
     setScope('this');
-    setExtraDays(spanDays(e ?? c));
+    setExtraDays(run?.extra ?? spanDays(e ?? c));
     setTouched(false);
   }, [seed]);
 
-  const clashes = allDay ? [] : invited.filter((pid) => busyFor(events, pid, date, base?.id).some((b) => overlaps(win, [b.start!, b.end!])));
   const moved = !!base && !!seed?.proposal && (seed.proposal[0] !== base.start || seed.proposal[1] !== base.end);
   const series = !!base?.seriesId;
   // An overnight event is loaded ending at 24:00 on its first day. Its stored end is kept unless the coach picks a new one.
   // Its real end isn't loaded, so it can't move with the start: moving the day asks for a new end time instead.
-  const overnight = !!base && !base.allDay && (base.end ?? 0) >= 24 && !allDay && win[1] >= 24;
+  // A timed run over several days (the loader gives its real end) is not one of these: it keeps its days and its end.
+  const isRun = !!(timedRun(base) || timedRun(seed?.copyOf)) && extraDays > 0;
+  const overnight = !!base && !isRun && !base.allDay && (base.end ?? 0) >= 24 && !allDay && win[1] >= 24;
   const keepEnd = overnight && date === base!.date;
   const needsEnd = overnight && !keepEnd;
-  const endDate = allDay && extraDays ? addDays(date, extraDays) : date;
+  /** Timed, over several days: its end is a time on a later day, so it may read earlier than the start. */
+  const multiTimed = isRun && !allDay;
+  const endDate = (allDay || multiTimed) && extraDays ? addDays(date, extraDays) : date;
+  // A run edited without touching its days or times keeps its stored end, as an untouched overnight end is kept: the
+  // end is sent only when the coach changed when it is.
+  const baseRun = base ? runOf(base) : null;
+  const runKept = multiTimed && !!baseRun && date === baseRun.date && win[0] === baseRun.win[0] && win[1] === baseRun.win[1] && extraDays === baseRun.extra;
+  // A run over several days isn't checked against one day's classes, as an all-day event isn't.
+  const clashes = allDay || multiTimed ? [] : invited.filter((pid) => busyFor(events, pid, date, base?.id).some((b) => overlaps(win, [b.start!, b.end!])));
   const primary = !base ? 'Publish event' : moved ? 'Move event' : 'Save changes';
   const invalidTitle = !title.trim();
-  const invalidTime = (!allDay && win[1] <= win[0]) || needsEnd;
+  const invalidTime = (!allDay && !multiTimed && win[1] <= win[0]) || needsEnd;
   const minutes = Math.round((win[1] - win[0]) * 60);
-  const whenLabel = `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} · ${allDay ? 'All day' : `${fmtHour(win[0], false)} – ${fmtHour(win[1])}`}`;
+  const whenLabel = multiTimed
+    ? `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} ${fmtHour(win[0])} – ${dowOf(endDate)} ${dayNum(endDate)} ${monthName(endDate).slice(0, 3)} ${fmtHour(win[1])}`
+    : `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} · ${allDay ? 'All day' : `${fmtHour(win[0], false)} – ${fmtHour(win[1])}`}`;
 
   // One request id per opening of the editor and set of contents: the same form with the same contents sends the
   // same id, whether the toast's Retry replays it or Publish is pressed again, so a reply that was lost after the
@@ -327,6 +373,10 @@ export function EventEditor({
     const startTime = allDay ? undefined : toHHMM(win[0]);
     const endTime = allDay ? undefined : toHHMM(win[1]);
     const tz = offsetMinutesFor(date, startTime ?? '12:00', timezone) ?? undefined;
+    // The server builds the end with the start's offset. A run whose end is on the far side of a clock change (Saturday
+    // 31 October in daylight time to Monday 2 November in standard time) has its end's wall-clock time moved by the
+    // difference, so the stored instant is the time typed on the end's own day.
+    const end = endTime && endDate !== date && tz != null ? shiftWall(endDate, endTime, (offsetMinutesFor(endDate, endTime, timezone) ?? tz) - tz) : { date: endDate, time: endTime };
     if (!base) {
       if (repeat !== 'none') {
         const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
@@ -352,9 +402,9 @@ export function EventEditor({
         title: title.trim(),
         eventType: type as never,
         startDate: date,
-        endDate: endDate !== date ? endDate : undefined,
+        endDate: end.date !== date ? end.date : undefined,
         startTime,
-        endTime,
+        endTime: end.time,
         allDay,
         location: loc.trim() || undefined,
         description: notes.trim() || undefined,
@@ -381,7 +431,7 @@ export function EventEditor({
           // Like notes and place, sent only when the coach changed it, so each event keeps its own otherwise.
           ...(rsvp !== base.rsvpRequired ? { requiresRsvp: rsvp } : {}),
           startDate: date,
-          ...(keepEnd ? {} : { endDate, endTime }),
+          ...(keepEnd || runKept ? {} : { endDate: end.date, endTime: end.time }),
           startTime,
         },
       });
@@ -392,7 +442,7 @@ export function EventEditor({
       title: title.trim(),
       eventType: type as never,
       startDate: date,
-      ...(keepEnd ? {} : { endDate, endTime }),
+      ...(keepEnd || runKept ? {} : { endDate: end.date, endTime: end.time }),
       startTime,
       allDay,
       location: loc.trim(),
@@ -472,6 +522,9 @@ export function EventEditor({
         width={1040}
         icon={base ? Pencil : CalendarPlus}
         title={base ? 'Edit event' : 'New event'}
+        // A-14: a new event starts on its title, so the coach can type at once. An edit keeps the heading first, and the
+        // phone does too, so the sheet doesn't rise with the keyboard over it (as onboarding's autoFocus={!phone}).
+        initialFocus={!base && !phone ? '#ch-ed-title' : undefined}
         description={
           // Only an event that asks for replies notifies anyone (owner, 2026-10-08).
           rsvp ? (base ? 'Changes notify everyone invited.' : 'Invited players get a notification and can reply.') : 'Invited players see it on their calendar.'
@@ -484,7 +537,7 @@ export function EventEditor({
             <Button variant="ghost" onClick={requestClose}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={save.pending} onClick={() => void submit()}>
+            <Button variant="primary" busy={save.pending} onClick={() => void submit()}>
               {save.pending ? (base ? 'Saving…' : 'Publishing…') : primary}
             </Button>
 
@@ -538,13 +591,13 @@ export function EventEditor({
           <div>
             <span className="ch-ed__lbl">When</span>
             <div className="ch-ed__row">
-              <input className="ch-input" type="date" aria-label="Date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
-              <input className="ch-input" type="time" aria-label="Start time" step={900} disabled={allDay} value={toHHMM(win[0])} onChange={(e) => e.target.value && setWin([snap(fromHHMM(e.target.value)), snap(fromHHMM(e.target.value)) + (win[1] - win[0])])} />
-              <input className="ch-input" type="time" aria-label="End time" step={900} disabled={allDay} value={toHHMM(win[1])} aria-invalid={touched && invalidTime} onChange={(e) => e.target.value && setWin([win[0], snap(fromHHMM(e.target.value))])} />
+              <DateField label="Date" row value={date} onChange={(v) => v && setDate(v)} />
+              <TimeField label="Start time" disabled={allDay} value={toHHMM(win[0])} onChange={(v) => v && setWin([snap(fromHHMM(v)), multiTimed ? win[1] : snap(fromHHMM(v)) + (win[1] - win[0])])} />
+              <TimeField label="End time" disabled={allDay} min={!multiTimed && !needsEnd ? toHHMM(win[0] + 0.25) : undefined} value={toHHMM(win[1])} aria-invalid={touched && invalidTime} onChange={(v) => v && setWin([win[0], snap(fromHHMM(v))])} />
             </div>
             {!allDay && (
               <p className={'ch-field__help' + (touched && invalidTime ? ' is-error' : '')} data-ch-code={touched && invalidTime ? 'CH-6102' : undefined}>
-                {needsEnd ? 'This event ran past midnight. Pick an end time for the new day.' : invalidTime ? 'End has to be after the start.' : `${minutes} min`}
+                {needsEnd ? 'This event ran past midnight. Pick an end time for the new day.' : invalidTime ? 'End has to be after the start.' : multiTimed ? `Ends ${dowOf(endDate)} ${dayNum(endDate)} ${monthName(endDate).slice(0, 3)}` : `${minutes} min`}
               </p>
             )}
             <div className="ch-ed__opts">
@@ -567,10 +620,10 @@ export function EventEditor({
                 />
               )}
               {!base && repeat !== 'none' && (
-                <label className="ch-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <div className="ch-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <span className="ch-field__label">Until</span>
-                  <input className="ch-input" type="date" value={until} min={date} onChange={(e) => e.target.value && setUntil(e.target.value)} />
-                </label>
+                  <DateField label="Until" value={until} min={date} onChange={(v) => v && setUntil(v)} />
+                </div>
               )}
             </div>
             {series && (
@@ -651,7 +704,7 @@ export function EventEditor({
               {rsvp ? 'Invited players are notified and reply Going, Maybe or Can’t.' : 'Off: no replies asked and no notification. It still shows on their calendars.'}
             </p>
           </div>
-          {!allDay && invited.length > 0 && (
+          {!allDay && !multiTimed && invited.length > 0 && (
             <div>
               <div className="ch-in__sechead" style={{ marginBottom: 10 }}>
                 <span className="ch-ed__lbl" style={{ margin: 0 }}>
@@ -662,7 +715,7 @@ export function EventEditor({
               <FindTime rows={invited} events={events} date={date} win={win} setWin={setWin} ignoreId={base?.id} people={byId} />
             </div>
           )}
-          <div className={'ch-verify ' + (allDay || !invited.length ? 'is-quiet' : clashes.length ? 'is-warn' : 'is-ok')} role="status">
+          <div className={'ch-verify ' + (allDay || multiTimed || !invited.length ? 'is-quiet' : clashes.length ? 'is-warn' : 'is-ok')} role="status">
             <span className="ch-verify__ic">
               <Icon icon={clashes.length ? TriangleAlert : Check} size={14} />
             </span>
@@ -671,6 +724,8 @@ export function EventEditor({
                 ? 'Invite players to check their schedules.'
                 : allDay
                   ? 'All-day events aren’t checked against classes.'
+                  : multiTimed
+                    ? 'Events over several days aren’t checked against classes.'
                   : clashes.length
                     ? `${clashes.map((p) => byId.get(p)?.name.split(' ')[0]).join(', ')} ${clashes.length > 1 ? 'are' : 'is'} busy at this time.`
                     : 'Everyone invited is free. Checked against classes and team events.'}
@@ -769,7 +824,7 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
           <Button
             variant="danger"
             feel="warning"
-            disabled={cancel.pending}
+            busy={cancel.pending}
             onClick={() => void cancel.run()}
           >
             {cancel.pending ? 'Cancelling…' : 'Cancel event'}
@@ -790,6 +845,45 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
         />
       )}
     </Modal>
+  );
+}
+
+/**
+ * Delete permanently (a cancelled event's menu, coach), as Fairway's EventActionsMenu offers it: `deleteGolfEventPermanently`,
+ * which the server allows only for a cancelled event (or one with no attendance rows), and which erases its replies and
+ * attendance. Asked first (CH-6506), with the warning haptic on the red button (D-70), as Cancel event is.
+ */
+export function DeleteEvent({ event, onClose, onDone }: { event: ChCalEvent | null; onClose: () => void; onDone: () => void }) {
+  // The close and the re-read that follow a landed delete are part of the action, so the toast's Retry does them too.
+  const remove = useAction(
+    'calendar.deleteEvent',
+    async () => {
+      if (!event) return { success: false, error: 'No event' };
+      const res = await deleteGolfEventPermanently(event.id);
+      if (normalise(res).success) onDone();
+      return res;
+    },
+    () => ({ done: `Deleted · ${event?.title ?? 'event'}`, failed: `Couldn’t delete ${event?.title ?? 'the event'}`, code: 'CH-6017' }),
+  );
+  return (
+    <Modal
+      code="CH-6506"
+      open={event != null}
+      onClose={onClose}
+      icon={Trash2}
+      title={`Delete ${event?.title ?? 'this event'} permanently?`}
+      description="Every reply and attendance record for it is erased. This can’t be undone."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Keep event
+          </Button>
+          <Button variant="danger" feel="warning" busy={remove.pending} onClick={() => void remove.run()}>
+            {remove.pending ? 'Deleting…' : 'Delete permanently'}
+          </Button>
+        </>
+      }
+    />
   );
 }
 
@@ -969,7 +1063,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                       <Button size="sm" variant="ghost" onClick={() => setAsking(null)}>
                         Keep link
                       </Button>
-                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} disabled={busy} onClick={() => confirm(r.type, asking.kind)}>
+                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} busy={busy} onClick={() => confirm(r.type, asking.kind)}>
                         {ask.go}
                       </Button>
                     </div>

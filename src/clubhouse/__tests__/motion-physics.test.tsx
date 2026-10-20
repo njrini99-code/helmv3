@@ -419,3 +419,39 @@ describe('CH-1708 scrubbing a slider', () => {
     expect(haptics.hapticScrub).toHaveBeenCalledTimes(4);
   });
 });
+
+describe('A-17 a toast in use by keyboard or mouse keeps its clock stopped', () => {
+  const card = () => screen.getByRole('status').closest('.ch-toast') as HTMLElement;
+  it('focus inside it holds it; leaving starts what was left, never less than 1.5 seconds', () => {
+    vi.useFakeTimers();
+    render(<ToastProvider><Raise /></ToastProvider>);
+    fireEvent.click(screen.getByRole('button', { name: 'Raise' }));
+    act(() => vi.advanceTimersByTime(3500));
+    fireEvent.focus(card());
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(screen.getByText('Saved')).toBeTruthy();
+    fireEvent.blur(card());
+    act(() => vi.advanceTimersByTime(1499));
+    expect(screen.getByText('Saved')).toBeTruthy();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByText('Saved')).toBeNull();
+  });
+  it('a mouse over it holds it (a finger passing over does not); away, it finishes what was left', () => {
+    vi.useFakeTimers();
+    render(<ToastProvider><Raise /></ToastProvider>);
+    fireEvent.click(screen.getByRole('button', { name: 'Raise' }));
+    fireEvent.pointerOver(card(), { pointerType: 'touch' });
+    act(() => vi.advanceTimersByTime(4000));
+    expect(screen.queryByText('Saved')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Raise' }));
+    fireEvent.pointerOver(card(), { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(screen.getByText('Saved')).toBeTruthy();
+    fireEvent.pointerOut(card(), { pointerType: 'mouse', relatedTarget: document.body });
+    // Held from its first moment, so it still has its whole 4 seconds.
+    act(() => vi.advanceTimersByTime(3999));
+    expect(screen.getByText('Saved')).toBeTruthy();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByText('Saved')).toBeNull();
+  });
+});

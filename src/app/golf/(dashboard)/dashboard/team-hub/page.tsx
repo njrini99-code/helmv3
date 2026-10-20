@@ -30,14 +30,14 @@ interface RawAssignment {
 export default async function TeamHubPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; task?: string }>;
+  searchParams: Promise<{ tab?: string; task?: string; trip?: string }>;
 }) {
   // Clubhouse Team Hub (golf_clubhouse_ui): one page for coaches and players,
   // with its own tabs, so `?tab=` opens a tab there instead of redirecting.
-  const { tab: legacyTab, task } = (await searchParams) ?? {};
+  const { tab: legacyTab, task, trip } = (await searchParams) ?? {};
   const chSession = await getGolfSessionProfile();
   if (chSession && (await isClubhouseFor(await getGolfDashboardRole()))) {
-    return <ClubhouseHubRoute tab={legacyTab} task={typeof task === 'string' ? task : undefined} />;
+    return <ClubhouseHubRoute tab={legacyTab} task={typeof task === 'string' ? task : undefined} trip={typeof trip === 'string' ? trip : undefined} />;
   }
 
   // Legacy deep links (Cmd+K / bookmarks): the tabbed hub's /team-hub?tab=X

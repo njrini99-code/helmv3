@@ -117,7 +117,7 @@ describe('CH-13852 View as table', () => {
     await userEvent.click(slope);
     expect(slope.getAttribute('aria-pressed')).toBe('true');
     const table = screen.getByRole('table', { name: 'Make rate from 4 to 6 feet, by slope for Finley University' });
-    expect(within(table).getAllByRole('row').map((r) => r.textContent)).toEqual(['RangeMake rate from 4 to 6 feet, by slopeSample', 'Uphill76%51', 'Level81%44', 'Downhill58%31']);
+    expect(within(table).getAllByRole('row').map((r) => r.textContent)).toEqual(['RangeRateSample', 'Uphill76%51', 'Level81%44', 'Downhill58%31']);
     expect(screen.queryByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' })).toBeNull();
     await userEvent.click(slope);
     expect(screen.queryByRole('table', { name: /by slope/ })).toBeNull();
@@ -152,7 +152,7 @@ describe('CH-13251 a failed answer', () => {
   it('a rate limit reads as a sentence with Try again, and no raw JSON', async () => {
     const { p } = show({ messages: coachAsked, error: ASK_ERRORS.rate });
     const alert = screen.getByRole('alert');
-    expect(within(alert).getByText("You're asking quickly. Wait a moment, then try again.")).toBeTruthy();
+    expect(within(alert).getByText("Too many questions in a row. Give it a few seconds and try again.")).toBeTruthy();
     expect(alert.textContent).not.toMatch(/\{"error"/);
     await userEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
     expect(p.onRetry).toHaveBeenCalledTimes(1);
@@ -287,7 +287,7 @@ describe('CH-13951 the action card', () => {
     expect(within(card).getByText('Needs your OK')).toBeTruthy();
     const facts = Array.from(card.querySelectorAll('dl > div')).map((d) => d.textContent);
     expect(facts).toEqual(['PlayerJonah Okafor', 'FocusDownhill putts, 4 to 6 feet', 'GoalMake 7 of 10 in two practices', 'Review onTue, Oct 14']);
-    expect(within(card).getByText('Will send.').parentElement?.textContent).toBe('Will send. Jonah gets a notification and sees the focus area on his Home.');
+    expect(within(card).getByText('On confirm:').parentElement?.textContent).toBe('On confirm: Jonah gets a notification and sees the focus area on his Home.');
   });
   it('an action that sends nothing says so, and a missing fact says what it will be created without', () => {
     const quiet = { ...ASK_PROPOSAL, notifications: [], missing: ['Location'], facts: [...ASK_PROPOSAL.facts, { label: 'Location', value: '', missing: true }] };
@@ -333,6 +333,21 @@ describe('CH-13951 the action card', () => {
     expect(code('CH-13952')?.textContent).toBe('Cancelled. Nothing was created.');
     expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
   });
+  it('the notifications line is a promise before Confirm and what happened after: sent, still going, or nothing sent', () => {
+    const line = () => screen.getByRole('region', { name: 'Create focus area' }).querySelector('.ch-th-act__note b')?.textContent;
+    const views = [
+      [ASK_MSGS_RECEIPT, 'Sent:'],
+      [ASK_MSGS_CONFIRMED, 'Notifies:'],
+      [ASK_MSGS_RECEIPT_FAILED, 'Nothing was sent.'],
+      [ASK_MSGS_CANCELLED, 'Nothing was sent.'],
+      [ASK_MSGS_ABANDONED, 'Nothing was sent.'],
+    ] as const;
+    for (const [messages, word] of views) {
+      const a = show({ messages });
+      expect(line()).toBe(word);
+      a.unmount();
+    }
+  });
   it('CH-13254 a card the conversation moved past has no buttons and says nothing was created', () => {
     show({ messages: ASK_MSGS_ABANDONED });
     expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
@@ -349,13 +364,13 @@ describe('CH-13951 the action card', () => {
 });
 
 describe('the receipt', () => {
-  it('CH-13953 a created action says what was created, links only to a screen that is rebuilt, and Confirmed is stated once', () => {
+  it('CH-13953 a created action says what was created, links where its screen opens in Clubhouse, and Confirmed is stated once', () => {
     show({ messages: ASK_MSGS_RECEIPT });
     expect(code('CH-13953')).not.toBeNull();
     expect(screen.getByText('Created a focus area for Jonah Okafor on downhill putts.')).toBeTruthy();
-    // Focus areas live in Intelligence, which is not rebuilt: the chip is text, not a dead link.
-    expect(screen.queryByRole('link', { name: /1 focus area/ })).toBeNull();
-    expect(screen.getByText('1 focus area')).toBeTruthy();
+    // The engine links focus areas to Fairway's Intelligence Players view; in Clubhouse that address opens the CoachHelm board
+    // (its alias redirect), so the chip goes there, as production's chip links (P013 wiring pass, 2026-10-17).
+    expect(screen.getByRole('link', { name: /1 focus area/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm');
     expect(screen.getByText('Confirmed.')).toBeTruthy();
   });
   it('a failed action that is not safe to ask again offers no Ask again', () => {

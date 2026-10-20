@@ -29,7 +29,8 @@ import { InlineNotice } from '../../ui/Notices';
 import { PillGroup } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { EmptyRow } from './parts';
+import { Tooltip } from '../../ui/Tooltip';
+import { EmptyRow, SecHeading, type RecSecLevel } from './parts';
 import type { RecInitialUpload } from './ctx';
 import type { ChRecruitingWrites } from './writes';
 
@@ -72,7 +73,7 @@ function stagedForPreview(u: RecInitialUpload): Staged {
  * of the panel still works. Every write goes through `useAction`, and what follows a write (the list, the open dialog)
  * happens inside the action, so a toast's Retry finishes the job as well.
  */
-export function Documents({ prospect, writes, initialUpload }: { prospect: ChProspect; writes: ChRecruitingWrites; initialUpload?: RecInitialUpload }) {
+export function Documents({ prospect, writes, initialUpload, level }: { prospect: ChProspect; writes: ChRecruitingWrites; initialUpload?: RecInitialUpload; level?: RecSecLevel }) {
   const toast = useToast();
   const phone = useChPhone();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -250,7 +251,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
   return (
     <section className={`ch-rec-sec${over ? ' is-drop' : ''}`} aria-label="Documents" data-ch-code={over ? 'CH-14917' : undefined} {...dropProps}>
       <div className="ch-rec-sec__head">
-        <h3>Documents</h3>
+        <SecHeading level={level}>Documents</SecHeading>
         {state.kind !== 'failed' && !(state.kind === 'ready' && docs.length === 0) && (
           <button type="button" className="ch-rec-link" onClick={choose}>
             <Icon icon={Upload} size={15} />
@@ -283,17 +284,19 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
                   <span className="ch-rec-doc__t">{d.title}</span>
                   <span className="ch-rec-tag">{categoryLabel(d.category)}</span>
                 </button>
-                <button
-                  type="button"
-                  className="ch-rec-doc__x"
-                  aria-label={`Remove ${d.title}`}
-                  onClick={() => {
-                    haptic('warning');
-                    setAsking(d);
-                  }}
-                >
-                  <Icon icon={Trash2} size={15} />
-                </button>
+                <Tooltip>
+                  <button
+                    type="button"
+                    className="ch-rec-doc__x"
+                    aria-label={`Remove ${d.title}`}
+                    onClick={() => {
+                      haptic('warning');
+                      setAsking(d);
+                    }}
+                  >
+                    <Icon icon={Trash2} size={15} />
+                  </button>
+                </Tooltip>
               </li>
             ))}
           </ul>
@@ -333,13 +336,13 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
             </Button>
             <Button
               variant="danger"
-              disabled={remove.pending}
+              busy={remove.pending}
               feel="warning"
               onClick={() => {
                 if (asking) void remove.run(asking);
               }}
             >
-              {remove.pending ? <span data-ch-code="CH-14405">Removing</span> : 'Remove document'}
+              {remove.pending ? <span data-ch-code="CH-14405">Removing…</span> : 'Remove document'}
             </Button>
           </>
         }
@@ -393,8 +396,8 @@ function UploadDialog({
             <Button variant="ghost" disabled={busy} onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={busy || !staged} onClick={() => staged && onUpload(staged)}>
-              {busy ? <span data-ch-code="CH-14404">{progress === null ? 'Uploading' : `Uploading ${progress}%`}</span> : 'Upload'}
+            <Button variant="primary" busy={busy} disabled={!staged} onClick={() => staged && onUpload(staged)}>
+              {busy ? <span data-ch-code="CH-14404">{progress === null ? 'Uploading…' : `Uploading… ${progress}%`}</span> : 'Upload'}
             </Button>
           </>
         )

@@ -69,8 +69,8 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
-import { zonedMidnight, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
-import { wallClockInZone } from '@/lib/golf/timezone';
+import { zonedMidnight, DEFAULT_TIMEZONE, getValidTimezone } from '@/lib/calendar/timezone';
+import { offsetMinutesFor, wallClockInZone } from '@/lib/golf/timezone';
 import { computeCommonFreeTime, type FreeWindow } from '@/lib/golf/common-free-time';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
@@ -533,7 +533,19 @@ export function FairwayCalendar({
   const handleSaveEvent = React.useCallback(
     async (data: GolfEventFormData) => {
       setIsSavingEvent(true);
-      const timezoneOffset = new Date().getTimezoneOffset();
+      // The team zone's offset ON THE EVENT'S DATE, not today's device offset: an EDT device saving a November event
+      // (EST) stored it an hour off, and every later edit (dates are always sent) shifted it again. Series also get
+      // the zone itself, so each occurrence takes its own date's offset across the change.
+      const zone = getValidTimezone(teamTimezone ?? DEFAULT_TIMEZONE);
+      const timezoneOffset =
+        offsetMinutesFor(data.startDate, !data.allDay && data.startTime ? data.startTime : '12:00', zone) ??
+        new Date().getTimezoneOffset();
+      // An emptied field on edit is sent as '' (the server stores null) so a coach can clear a location or notes; an
+      // empty field the event never had stays undefined, so a series edit leaves other occurrences' values alone.
+      const clearedLocation = data.location || (editorEvent?.location ? '' : undefined);
+      const clearedDescription = data.description || (editorEvent?.description ? '' : undefined);
+      // The save landed but its invitations did not: the server says so beside `success`.
+      let invitationsError: string | undefined;
       try {
         if (!editorEvent) {
           if (data.recurrence && data.recurrence !== 'none') {
@@ -565,8 +577,10 @@ export function FairwayCalendar({
               allDay: data.allDay,
               attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
               timezoneOffset,
+              timeZone: zone,
             });
             if (!result.success) throw new Error(result.error || 'Failed to create recurring event');
+            invitationsError = result.data?.invitationsError;
           } else {
             const { createGolfEvent } = await import('@/app/golf/actions/calendar-events');
             const result = await createGolfEvent({
@@ -588,6 +602,7 @@ export function FairwayCalendar({
               timezoneOffset,
             } as never);
             if (!result.success) throw new Error(result.error || 'Failed to create event');
+            invitationsError = result.data?.invitationsError;
           }
         } else if (data.editScope && data.editScope !== 'this') {
           const { serializeRecurrenceRule } = await import('@/lib/golf/recurrence');
@@ -597,14 +612,15 @@ export function FairwayCalendar({
             originalStartDate: editorEvent.start_date,
             scope: data.editScope,
             timezoneOffset,
+            timeZone: zone,
             updates: {
               title: data.title,
-              description: data.description || undefined,
+              description: clearedDescription,
               startDate: data.startDate,
               endDate: data.endDate || data.startDate,
               startTime: data.allDay ? undefined : data.startTime || undefined,
               endTime: data.allDay ? undefined : data.endTime || undefined,
-              location: data.location || undefined,
+              location: clearedLocation,
               // Forward a re-patterned series rule when the editor produced one.
               recurrenceRule: data.recurrenceRule
                 ? serializeRecurrenceRule(data.recurrenceRule)
@@ -622,9 +638,9 @@ export function FairwayCalendar({
             startTime: data.allDay ? undefined : data.startTime || undefined,
             endTime: data.allDay ? undefined : data.endTime || undefined,
             allDay: data.allDay,
-            location: data.location || undefined,
+            location: clearedLocation,
             courseName: data.courseName || undefined,
-            description: data.description || undefined,
+            description: clearedDescription,
             isMandatory: data.isMandatory,
             requiresRsvp: data.requiresRsvp,
             rsvpDeadline: data.rsvpDeadline || undefined,
@@ -637,14 +653,20 @@ export function FairwayCalendar({
             timezoneOffset,
           } as never);
           if (!result.success) throw new Error(result.error || 'Failed to update event');
+          invitationsError = result.data?.invitationsError;
         }
         const wasCreate = !editorEvent;
         const isSeriesEdit = !wasCreate && data.editScope != null && data.editScope !== 'this';
         // Visible confirmation of system status (audit P238) — every successful
         // mutation gives one consistent Fairway toast.
-        fairwayToast.success(
-          wasCreate ? 'Event created' : isSeriesEdit ? 'Series updated' : 'Event updated',
-        );
+        const savedLabel = wasCreate ? 'Event created' : isSeriesEdit ? 'Series updated' : 'Event updated';
+        if (invitationsError) {
+          fairwayToast.warning(`${savedLabel} · invitations didn’t go out`, {
+            description: `${invitationsError} Open the event and invite them again.`,
+          });
+        } else {
+          fairwayToast.success(savedLabel);
+        }
         setEditorOpen(false);
         setEditorEvent(null);
         // A newly created event must never silently vanish: if its date falls
@@ -681,7 +703,7 @@ export function FairwayCalendar({
         setIsSavingEvent(false);
       }
     },
-    [editorEvent, router, visibleWindow, refetchVisibleRange],
+    [editorEvent, router, visibleWindow, refetchVisibleRange, teamTimezone],
   );
 
   // Restore (un-cancel) a soft-cancelled event. Flips status back to

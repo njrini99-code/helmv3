@@ -13,13 +13,16 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route `/golf/dashboard/calendar` (coach and player) · code `src/clubhouse/screens/calendar/`, loader
-`src/clubhouse/data/calendar.ts` · tests `src/clubhouse/__tests__/calendar.test.tsx` · preview
-`/clubhouse-preview/calendar` (`?state=empty|failed|partial|loading`, `&view=day|month|agenda`, `&event=`, `&new=1`) and
+Route `/golf/dashboard/calendar` (coach and player) · code
+`src/clubhouse/screens/calendar/`, loader `src/clubhouse/data/calendar.ts` ·
+tests `src/clubhouse/__tests__/calendar.test.tsx` · preview
+`/clubhouse-preview/calendar` (`?state=empty|failed|partial|loading`,
+`&view=day|month|agenda`, `&event=`, `&new=1`) and
 `/clubhouse-preview/calendar-player`.
 
-Every save goes through `useAction` (offline CH-1903, slow CH-1902, commit and error haptics). Removing a
-file is optimistic with Undo, and refuses offline the same way.
+Every save goes through `useAction` (offline CH-1903, slow CH-1902, commit and
+error haptics). Removing a file is optimistic with Undo, and refuses offline the
+same way.
 
 ## 60xx Error toasts
 
@@ -39,7 +42,9 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6012 | Copying an event link fails | "Couldn’t copy the link" + "Your browser blocked the clipboard." Done: "Link copied" | `EventDetail` | calendar.test › CH-6012 |
 | CH-6013 | Making a new calendar-app link fails | "Couldn't make a new Team schedule link" (or "My schedule") + the reason, or "The links below show which one works now." No Retry: the server deletes the old link before it makes the new one, so a failure can leave either state; the links are read again and the row shows what exists. Done: "New Team schedule link ready" and the new link shows | `SubscribeSheet`, `useAction('calendar.regenerateFeed')` → `regenerateCalendarFeed` | calendar-feed-manage.test › CH-6013 |
 | CH-6014 | Removing a calendar-app link fails | "Couldn't remove the Team schedule link" + the reason, or "The link is unchanged. Try again.", Retry; the link stays. Done: "Team schedule link removed" and the row goes back to Create link | `SubscribeSheet`, `useAction('calendar.removeFeed')` → `deleteCalendarFeed` | calendar-feed-manage.test › CH-6014 |
-| CH-6015 | Moving an event by drag or Alt+arrow fails (P006-B3) | "Couldn’t move Travel briefing" + the reason, or "It’s back where it was. Try again in a moment." The block returns to the server's place. Done: "Moved to 4:00 PM" with Undo for the toast's life; the write (and so the invitees' notice) waits until then, and Undo writes nothing. Offline, nothing is held: CH-1903 | `useHeldMoves` in `Calendar`, `TimeGrid` drag → `updateGolfEvent` | calendar.test › CH-6015 |
+| CH-6015 | Moving an event by drag or Alt+arrow fails (P006-B3) | "Couldn’t move Travel briefing" + the reason, or "It’s back where it was. Try again in a moment." The block returns to the server's place. Done: "Moved to 4:00 PM" with Undo for the toast's life; the write (and so the invitees' notice) happens as the toast leaves without Undo (its clock runs out, and it waits while the toast is held, hovered or focused; or it is closed, swiped or pushed out), and Undo writes nothing. Leaving the page, or the next move, writes a waiting move at once; an Undo pressed after that says "Already saved. Drag it back to undo." Offline, nothing is held: CH-1903 | `useHeldMoves` in `Calendar`, `TimeGrid` drag → `updateGolfEvent` | calendar.test › CH-6015 |
+| CH-6016 | Restoring a cancelled event fails | "Couldn’t restore Travel briefing" + the reason, Retry; it stays cancelled. Done: "Restored · Travel briefing" and the page reads again. Event actions › Restore event on a cancelled event, coach only, as Fairway's event menu; not asked first (it destroys nothing) | `Calendar`, `useAction('calendar.restoreEvent')` → `updateGolfEvent` (status confirmed) | calendar.test › CH-6016 |
+| CH-6017 | Deleting a cancelled event permanently fails | "Couldn’t delete Travel briefing" + the reason (the server allows it only for a cancelled event or one with no attendance), Retry; the question stays open. Done: "Deleted · Travel briefing", the panel closes and the page reads again | `DeleteEvent`, `useAction('calendar.deleteEvent')` → `deleteGolfEventPermanently` | calendar.test › CH-6017 |
 
 ## 61xx Validation (nothing is sent; the first problem takes focus; a warning haptic)
 
@@ -54,7 +59,7 @@ file is optimistic with Undo, and refuses offline the same way.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6201 | Team events don't load | "The calendar didn’t load" + "Nothing was changed…" Try again. Never an empty calendar. With another read failed too, only the title stays in the grid's place and CH-1209 carries Try again | `Calendar`; logged `clubhouse.calendar.events` | calendar.test › CH-6201 |
+| CH-6201 | Team events don't load | "The calendar didn’t load" + "Nothing was changed…" Try again. Never an empty calendar. With another read failed too, only the title stays in the grid's place and CH-1209 carries Try again. On the phone, Day keeps its week strip (no counts) and week arrows, and the notice stands where the day's list goes | `Calendar`, `CalendarPhone`; logged `clubhouse.calendar.events` | calendar.test › CH-6201 |
 | CH-6202 | The coach's busy time doesn't load | "Your busy time didn’t load" + "Team events are complete, but your own blocks aren’t shown." Try again. With another read failed too, folded into CH-1209, which names it | `Calendar` | calendar.test › CH-6202 |
 | CH-6203 | Class schedules don't load | Coach: "Class schedules didn’t load" + "…class overlaps may be missing." Player: "Your classes didn’t load". Try again. With another read failed too, folded into CH-1209, which names it | `Calendar` | calendar.test › CH-6203 |
 | CH-6204 | Replies don't load (summary) | "Replies didn’t load" + "Pending replies aren’t counted until they do." Try again. With another read failed too, only the title stays and CH-1209 carries Try again | `Summary` | calendar.test › CH-6204 |
@@ -78,9 +83,9 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6304 | The team has no documents to attach | "Your team has no documents yet. Upload one in Documents, then attach it here." | `FilePicker` | calendar.test › CH-6304 |
 | CH-6305 | An opened event left the loaded range | "This event isn’t in the loaded range anymore. It may have moved or been cancelled." + back to Today | `EventDetail` | calendar.test › CH-6305 |
 | CH-6306 | Nothing needs attention this week | Coach: "No overlaps and no replies waiting." Player: "You’re all caught up." | `Summary` | calendar.test › CH-6306 |
-| CH-6307 | Signed in with no team (coach or player) | The page empty state under the page's framed head ("Calendar"; on the phone the bar carries it): "You aren’t on a team yet" + Coach: "The calendar fills in once your team is set up." Player: "Team events show here once a coach adds you to a team roster." | `CalendarNoTeam`, from the route | calendar.test › CH-6307 |
-| CH-6308 | A day with nothing on it (phone Day view) | Under the day's heading, the flush section line: "Nothing on this day" + Coach: "Tap + to plan something for the team." Player: "Events your coach invites you to show here." | `EmptyState` in `CalendarPhone` | calendar.test › CH-6308 |
-| CH-6309 | A coach whose team has never scheduled anything (D-71) | The page empty state under the page's framed head ("Calendar", no action of its own; on the phone the bar carries it, and the page shows from first paint): "Nothing on the calendar" + "Add practices, qualifiers and trips. Players see them on their calendar, and reply when you require an RSVP." + Create event (the editor). Once anything exists, an empty range keeps CH-6301; a player, or a count that failed, never gets it | `CalendarFirstRun`; the loader's head count of the team's events | calendar.test › CH-6309 |
+| CH-6307 | Signed in with no team (coach or player) | The page empty state under the page's framed head ("Calendar"; on the phone the bar carries it): "You aren’t on a team yet" + Coach: "The calendar fills in once your team is set up." Player: "Team events show here once a coach adds you to a team roster." + Open team settings (a coach's Team, a player's Golf profile) | `CalendarNoTeam`, from the route | calendar.test › CH-6307 |
+| CH-6308 | A day with nothing on it (phone Day view) | Under the day's heading, the flush section line: "Nothing on this day" + Coach: "Plan something for the team." with a New event button (the day's heading drops its count on an empty day). Player: "Events your coach invites you to show here." | `EmptyState` in `CalendarPhone` | calendar.test › CH-6308 |
+| CH-6309 | A coach whose team has never scheduled anything (D-71) | The page empty state under the page's framed head ("Calendar", no action of its own; on the phone the bar carries it, and the page shows from first paint): "Nothing on the calendar" + "Add practices, qualifiers and trips. Players see them on their calendar, and reply when you require an RSVP." + New event (the editor; the verb used everywhere else). Once anything exists, an empty range keeps CH-6301; a player, or a count that failed, never gets it | `CalendarFirstRun`; the loader's head count of the team's events | calendar.test › CH-6309 |
 
 ## 64xx Loading
 
@@ -102,6 +107,7 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6503 | Closing the event editor with changes | "Discard this event?" + "Nothing has been published yet. What you entered is lost." (editing: "Discard your changes?") Keep editing / Discard. Closing untouched just closes | `EventEditor` | calendar.test › CH-6503 |
 | CH-6504 | New link (a calendar-app link) | "Make a new Team schedule link?" + "The current link stops working right away. Anyone who added it to a calendar app stops getting updates until they add the new link." Keep link / Make a new link. Warning haptic as it opens; focus starts on Keep link, so Enter never confirms. Asked in the link's own row, not a second dialog over the sheet | `SubscribeSheet` | calendar-feed-manage.test › CH-6504 |
 | CH-6505 | Remove (a calendar-app link) | "Remove the Team schedule link?" + "The link stops working right away, so calendar apps that use it stop getting updates. You can create a new link any time." Keep link / Remove link (red). Same row, same haptic and focus | `SubscribeSheet` | calendar-feed-manage.test › CH-6505 |
+| CH-6506 | Delete permanently (a cancelled event's menu, coach) | "Delete Travel briefing permanently?" + "Every reply and attendance record for it is erased. This can’t be undone." Keep event / Delete permanently (red, the warning haptic, D-70) | `DeleteEvent` | calendar.test › CH-6506 |
 
 ## 66xx Motion
 

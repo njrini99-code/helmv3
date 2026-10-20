@@ -30,10 +30,13 @@ import {
   type ChWeek,
 } from '../../data/classes-shape';
 import { haptic } from '../../lib/haptics';
+import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Select } from '../../ui/Select';
+import { addMinutes } from '../../ui/date-time';
+import { TimeField } from '../../ui/TimeField';
 
 /**
  * Add or edit a class (classes.jsx `AddClass`; the board's inline card form is
@@ -64,6 +67,7 @@ export function ClassForm({
 }) {
   const uid = useId();
   const id = (f: string) => `${uid}-${f}`;
+  const phone = useChPhone();
   const [was, setWas] = useState(false);
   const [v, setV] = useState<ChClassDraft>(() => draftOf(editing, term.label));
   const [attempted, setAttempted] = useState(false);
@@ -134,6 +138,9 @@ export function ClassForm({
         open={open && !discarding}
         onClose={requestClose}
         title={editing ? 'Edit class' : 'Add a class'}
+        // A new class starts on its course code, so it can be typed at once. An edit keeps the heading first, and the phone
+        // does too, so the sheet doesn't rise with the keyboard over it (as the calendar editor). useId's id needs the attribute form.
+        initialFocus={!editing && !phone ? `[id="${id('code')}"]` : undefined}
         description={windowEnd ? `Repeats weekly until ${shortDay(windowEnd)}, the end of the term.` : 'Repeats weekly for the term.'}
         width={520}
         footer={
@@ -141,8 +148,8 @@ export function ClassForm({
             <Button variant="ghost" onClick={requestClose}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={saving} onClick={submit}>
-              {saving ? (editing ? 'Saving' : 'Adding') : editing ? 'Save changes' : 'Add class'}
+            <Button variant="primary" busy={saving} onClick={submit}>
+              {saving ? (editing ? 'Saving…' : 'Adding…') : editing ? 'Save changes' : 'Add class'}
             </Button>
           </>
         }
@@ -167,7 +174,7 @@ export function ClassForm({
                 className="ch-input"
                 value={v.code}
                 onChange={(e) => set('code', e.target.value.toUpperCase())}
-                placeholder="GEOG 110"
+                placeholder="e.g. GEOG 110"
                 maxLength={20}
                 autoCapitalize="characters"
                 autoComplete="off"
@@ -178,7 +185,7 @@ export function ClassForm({
             </div>
             <div className="ch-field">
               <label htmlFor={id('credits')} className="ch-field__label">
-                Credits
+                Credits <span className="ch-field__opt">Optional</span>
               </label>
               <input
                 id={id('credits')}
@@ -187,7 +194,7 @@ export function ClassForm({
                 onChange={(e) => set('credits', e.target.value)}
                 inputMode="numeric"
                 maxLength={2}
-                placeholder="3"
+                placeholder="e.g. 3"
                 autoComplete="off"
                 {...inv('credits')}
               />
@@ -203,7 +210,7 @@ export function ClassForm({
               className="ch-input"
               value={v.name}
               onChange={(e) => set('name', e.target.value)}
-              placeholder="Global Environmental Change"
+              placeholder="e.g. Global Environmental Change"
               maxLength={120}
               autoComplete="off"
               required
@@ -213,9 +220,9 @@ export function ClassForm({
           </div>
           <div className="ch-field">
             <label htmlFor={id('prof')} className="ch-field__label">
-              Instructor
+              Instructor <span className="ch-field__opt">Optional</span>
             </label>
-            <input id={id('prof')} className="ch-input" value={v.instructor} onChange={(e) => set('instructor', e.target.value)} placeholder="Dr. J. Alvarez" maxLength={80} autoComplete="off" />
+            <input id={id('prof')} className="ch-input" value={v.instructor} onChange={(e) => set('instructor', e.target.value)} placeholder="e.g. Dr. J. Alvarez" maxLength={80} autoComplete="off" />
           </div>
           <div className="ch-field">
             <span className="ch-field__label" id={id('days-l')}>
@@ -245,13 +252,13 @@ export function ClassForm({
               <label htmlFor={id('start')} className="ch-field__label">
                 Starts
               </label>
-              <input id={id('start')} className="ch-input" type="time" value={v.start} onChange={(e) => set('start', e.target.value)} {...inv('time')} />
+              <TimeField id={id('start')} label="Starts" value={v.start} onChange={(t) => set('start', t)} {...inv('time')} />
             </div>
             <div className="ch-field">
               <label htmlFor={id('end')} className="ch-field__label">
                 Ends
               </label>
-              <input id={id('end')} className="ch-input" type="time" value={v.end} onChange={(e) => set('end', e.target.value)} {...inv('time')} />
+              <TimeField id={id('end')} label="Ends" min={addMinutes(v.start, 15)} value={v.end} onChange={(t) => set('end', t)} {...inv('time')} />
             </div>
           </div>
           {err('time')}
@@ -284,15 +291,15 @@ export function ClassForm({
           <div className="ch-cl-2">
             <div className="ch-field">
               <label htmlFor={id('building')} className="ch-field__label">
-                Building
+                Building <span className="ch-field__opt">Optional</span>
               </label>
-              <input id={id('building')} className="ch-input" value={v.building} onChange={(e) => set('building', e.target.value)} placeholder="Carroll Hall" maxLength={80} autoComplete="off" />
+              <input id={id('building')} className="ch-input" value={v.building} onChange={(e) => set('building', e.target.value)} placeholder="e.g. Carroll Hall" maxLength={80} autoComplete="off" />
             </div>
             <div className="ch-field">
               <label htmlFor={id('room')} className="ch-field__label">
-                Room
+                Room <span className="ch-field__opt">Optional</span>
               </label>
-              <input id={id('room')} className="ch-input" value={v.room} onChange={(e) => set('room', e.target.value)} placeholder="111" maxLength={40} autoComplete="off" />
+              <input id={id('room')} className="ch-input" value={v.room} onChange={(e) => set('room', e.target.value)} placeholder="e.g. 111" maxLength={40} autoComplete="off" />
             </div>
           </div>
           <div className="ch-field">
@@ -304,7 +311,7 @@ export function ClassForm({
           </div>
           <div className="ch-field">
             <label htmlFor={id('notes')} className="ch-field__label">
-              Notes
+              Notes <span className="ch-field__opt">Optional</span>
             </label>
             <textarea id={id('notes')} className="ch-textarea" value={v.notes} onChange={(e) => set('notes', e.target.value)} rows={2} maxLength={500} />
           </div>

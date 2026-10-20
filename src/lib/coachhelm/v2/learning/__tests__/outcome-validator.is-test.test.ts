@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn().mockResolvedValue(undefined),
@@ -56,6 +56,20 @@ const prediction: RipePrediction = {
   due_date: '2026-09-25',
   related_round_id: null,
 };
+
+// The validator reads the wall clock: an empty closed window is retired once
+// NO_OUTCOME_GRACE_DAYS (60) past its due date. The fixture is due 2026-09-25,
+// so on a real clock the ungraded case below would read `retired_no_outcome`
+// from 2026-11-25 (the prefetch test's fixtures went off on 2026-10-15). Pin
+// "today" after the due date and inside the grace.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-01T12:00:00Z'));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('gradeableRounds', () => {
   it('drops a countable-looking round flagged is_test', () => {

@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, useIsPresent } from "motion/react";
 import {
   ArrowUp,
   Bell,
   BellOff,
   BarChart3,
+  CalendarDays,
   CalendarPlus,
   Check,
   ChevronRight,
+  Clock,
   Copy,
   FileText,
   Info,
@@ -20,10 +22,12 @@ import {
   SquarePen,
   Trash2,
   UserRound,
+  UserMinus,
   Users,
   X,
 } from "lucide-react";
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -33,6 +37,7 @@ import {
 } from "react";
 import { Avatar } from "../../ui/Avatar";
 import { EmptyState, Skeleton } from "../../ui/States";
+import { RailEmpty } from "./RailEmpty";
 import { Icon } from "../../ui/Icon";
 import { InlineNotice } from "../../ui/Notices";
 import { Modal } from "../../ui/Modal";
@@ -43,19 +48,22 @@ import { Swap } from "../../ui/Swap";
 import { Switch } from "../../ui/Switch";
 import { useToast } from "../../ui/Toast";
 import { haptic } from "../../lib/haptics";
+import { useChReducedMotion } from "../../lib/reduced-motion";
 import { chTrail } from "../../lib/track";
 import { rebuiltHref } from "../../shell/nav";
 import { PhoneScreen } from "../../shell/PhoneScreen";
 import { PhoneTop, usePhoneStackHistory } from "../../shell/phone-chrome";
 import {
   clock,
-  dayLabel,
   filterConvs,
   firstName,
+  groupLacksPlayer,
+  MESSAGE_MAX,
   sectionOf,
   threadItems,
   type ChConv,
   type ChConvFilter,
+  type ChMember,
   type ChMsg,
 } from "./model";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
@@ -66,6 +74,7 @@ import {
   AttachButton,
   AttachChips,
   Bubble,
+  CharsLeft,
   Composer,
   ConvRow,
   DeleteMessageModal,
@@ -73,15 +82,27 @@ import {
   LeaveGroupModal,
   DeleteConversationModal,
   MessageHits,
+  NewDivider,
   REACTIONS,
-  addAttachments,
+  RemoveMemberModal,
+  ThreadBelow,
+  muteLabel,
   personOf,
+  useAddAttachments,
+  useAutosize,
+  useNewDivider,
   type ChMessagesApi,
 } from "./MessagesView";
+import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
+import { useFocusMessage } from "./use-focus-message";
 
 /** What New message hands the thread that opens next: the text and any files picked with it. */
 type FirstMessage = { text: string; files: File[] };
+
+/** A new announcement not yet posted. */
+type AnnDraft = { title: string; body: string; urgent: boolean; ack: boolean };
+const NO_ANN: AnnDraft = { title: "", body: "", urgent: false, ack: true };
 
 /**
  * Messages on the phone: the owner's design (docs/clubhouse/phone/messages.md,
@@ -99,6 +120,10 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
   const [details, setDetails] = useState(false);
   /** The first message written in New message, sent by the thread's composer once the thread opens. */
   const [firstMessage, setFirstMessage] = useState<FirstMessage | null>(null);
+  // What was typed in New message and New announcement outlives Cancel and Esc, until a conversation or a post takes it
+  // (wave 5 #7, as Team Hub's compose).
+  const [newDraft, setNewDraft] = useState<FirstMessage>({ text: "", files: [] });
+  const [annDraft, setAnnDraft] = useState<AnnDraft>(NO_ANN);
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
@@ -186,10 +211,12 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
               setAnnouncing(true);
             }}
             onFirstMessage={setFirstMessage}
+            draft={newDraft}
+            onDraft={setNewDraft}
           />
         )}
         {top === "announce" && (
-          <PhoneAnnouncementForm key="announce" api={api} onCancel={() => setAnnouncing(false)} />
+          <PhoneAnnouncementForm key="announce" api={api} onCancel={() => setAnnouncing(false)} draft={annDraft} onDraft={setAnnDraft} />
         )}
         {top === "thread" && conv && details && (
           <PhoneDetails key={`details-${conv.id}`} api={api} conv={conv} onBack={() => setDetails(false)} />
@@ -219,13 +246,14 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
         <div className="ch-msp-tools">
           <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
           <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
+            {/* The Qualifiers chips: a count is its own figure beside the word (space kept, so it reads "Unread 2"). */}
             {(
               [
-                ["all", "All"],
-                ["unread", `Unread · ${unread}`],
-                ["groups", "Groups"],
-              ] as Array<[ChConvFilter, string]>
-            ).map(([k, l]) => (
+                ["all", "All", null],
+                ["unread", "Unread", unread],
+                ["groups", "Groups", null],
+              ] as Array<[ChConvFilter, string, number | null]>
+            ).map(([k, l, n]) => (
               <button
                 key={k}
                 type="button"
@@ -237,6 +265,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                 }}
               >
                 {l}
+                {n != null && <> <span>{n}</span></>}
               </button>
             ))}
           </div>
@@ -285,7 +314,6 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
       ) : (
         // CH-7606: another filter's list settles in (base in, quick out); typing in Search filters in place.
         <Swap swapKey={filter} className="ch-msp-list">
-          {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
           {sections.map(([k, l]) => {
             const rows = list.filter((c) => sectionOf(c.lastAt, api.now, api.timeZone) === k);
             if (!rows.length) return null;
@@ -300,11 +328,9 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
               </section>
             );
           })}
-          {!list.length && (
-            <div className="ch-ms-empty" data-ch-code="CH-7302">
-              {q.trim() ? `No conversation matches “${q.trim()}”.` : "Nothing unread. You’re caught up."}
-            </div>
-          )}
+          {!list.length && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
+          {/* Messages first; the team's announcements fold under them (owner, 2026-10-16). */}
+          {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
           <MessageHits api={api} q={q} />
         </Swap>
       )}
@@ -356,8 +382,13 @@ function PhoneThread({
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(() => threadItems(api.msgs, api.now, api.timeZone), [api.msgs, api.now, api.timeZone]);
-  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor.
-  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing });
+  const newId = useNewDivider(api, conv);
+  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor. A search hit holds it
+  // (useFocusMessage) until the thread has come to the message and its mark has faded.
+  const focusing = !!api.focusMessageId || (!!api.foundMessageId && api.msgs.some((m) => m.id === api.foundMessageId));
+  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
+  const reducedMotion = useChReducedMotion();
+  useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
   useEffect(() => {
     if (firstMessage) onFirstSent();
     // The composer has taken the first message; nothing else to hand over.
@@ -418,9 +449,7 @@ function PhoneThread({
                 <Skeleton width="38%" height={40} radius={18} />
               </div>
             ) : !api.msgs.length ? (
-              <div className="ch-ms-empty" data-ch-code="CH-7304">
-                No messages yet. Say hello to {conv.group ? "the group" : firstName(conv.title)}.
-              </div>
+              <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
             ) : (
               items.map((it) =>
                 it.kind === "day" ? (
@@ -428,20 +457,22 @@ function PhoneThread({
                     <span>{it.label}</span>
                   </div>
                 ) : (
-                  <Bubble
-                    key={it.key}
-                    api={api}
-                    m={it.m}
-                    first={it.first}
-                    last={it.last}
-                    group={conv.group}
-                    picking={false}
-                    setPicking={() => {}}
-                    onEdit={() => setEditing(it.m)}
-                    onDelete={() => setDeleting(it.m)}
-                    onActions={it.m.deleted ? undefined : () => setActing(it.m)}
-                    onReply={() => reply(it.m)}
-                  />
+                  <Fragment key={it.key}>
+                    {it.m.id === newId && <NewDivider />}
+                    <Bubble
+                      api={api}
+                      m={it.m}
+                      first={it.first}
+                      last={it.last}
+                      group={conv.group}
+                      picking={false}
+                      setPicking={() => {}}
+                      onEdit={() => setEditing(it.m)}
+                      onDelete={() => setDeleting(it.m)}
+                      onActions={it.m.deleted ? undefined : () => setActing(it.m)}
+                      onReply={() => reply(it.m)}
+                    />
+                  </Fragment>
                 ),
               )
             )}
@@ -461,17 +492,14 @@ function PhoneThread({
           </div>
         </div>
       </SectionBoundary>
-      {anchor.unseen > 0 && (
-        <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
-          {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
-        </button>
-      )}
+      <ThreadBelow anchor={anchor} />
       <div ref={composerRef} className="ch-msp-composer">
       <Composer
         key={conv.id}
         api={api}
         conv={conv}
         phone
+        unavailable={api.msgsError}
         initialDraft={firstMessage?.text}
         initialFiles={firstMessage?.files}
         autoSend={!!firstMessage}
@@ -485,7 +513,10 @@ function PhoneThread({
         {acting && (
           <div className="ch-msp-acts">
             <div className="ch-msp-acts__preview" aria-label="Selected message">
-              <span className="ch-ms-msg__t ch-num">{clock(acting.at, api.timeZone)}</span>
+              {/* Whose it is, then when (wave 5 #20): in a group the time alone doesn't say. */}
+              <span className="ch-ms-msg__t ch-num">
+                {acting.mine ? "You" : firstName(personOf(api, acting.senderId)?.name ?? "Member")} · {clock(acting.at, api.timeZone)}
+              </span>
               <p>{acting.text || (acting.hasAttachments ? "Attachment" : "Message")}</p>
             </div>
             <div className="ch-msp-acts__react" role="group" aria-label="Reactions">
@@ -564,19 +595,28 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
   const [leaving, setLeaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [removing, setRemoving] = useState<ChMember | null>(null);
   const [muteBusy, setMuteBusy] = useState(false);
   const titleId = `ch-msp-details-${conv.id}`;
   const mine = conv.creatorId === api.viewer.userId;
   const other = !conv.group ? personOf(api, conv.memberIds[0] ?? "") : undefined;
   const creator = conv.creatorId ? personOf(api, conv.creatorId) : undefined;
-  const calendarHref = coach ? rebuiltHref("/golf/dashboard/calendar?new=1", api.viewer.role) : null;
+  // Schedule opens Calendar's New event, as the desktop thread header does: a direct thread with a player invites that
+  // player alone (`with=`, D-52); a group or a coach's thread invites nobody.
+  const scheduleWith = other?.role === "player" ? other.playerId : null;
+  const calendarHref = coach
+    ? rebuiltHref(`/golf/dashboard/calendar?new=1${scheduleWith ? `&with=${encodeURIComponent(scheduleWith)}` : ""}`, api.viewer.role)
+    : null;
   const statsHref = coach && other?.role === "player" && other.playerId ? rebuiltHref("/golf/dashboard/stats", api.viewer.role) : null;
   const muted = !!api.mute?.muted;
-  // Mute lasts until it is turned off (D-47).
-  const toggleMute = async () => {
+  // The Mute tile offers desktop's three choices (8 hours, a week, until turned back on); muted, it turns notifications
+  // back on. It is the one control: the duplicate switch went (owner decision, wave 5).
+  const [choosing, setChoosing] = useState(false);
+  const setMute = async (on: boolean, hours: number | null) => {
+    setChoosing(false);
     if (!api.mute || muteBusy) return;
     setMuteBusy(true);
-    await api.setMute(!muted, null);
+    await api.setMute(on, hours);
     setMuteBusy(false);
   };
   const tiles = (calendarHref ? 1 : 0) + 1;
@@ -609,9 +649,14 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                   type="button"
                   className="ch-msp-tile"
                   aria-pressed={muted}
+                  aria-haspopup={muted ? undefined : "dialog"}
                   aria-label={muted ? "Muted. Turn notifications back on" : "Mute this conversation"}
                   disabled={!api.mute || muteBusy}
-                  onClick={() => void toggleMute()}
+                  onClick={() => {
+                    if (muted) return void setMute(false, null);
+                    haptic("select");
+                    setChoosing(true);
+                  }}
                 >
                   <Icon icon={muted ? BellOff : Bell} size={18} />
                   <span>{muted ? "Muted" : "Mute"}</span>
@@ -646,6 +691,8 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                       you={mb.userId === api.viewer.userId}
                       sub={[mb.subtitle, mb.userId === conv.creatorId ? "Admin" : null].filter(Boolean).join(" · ")}
                       onMessage={mb.userId === api.viewer.userId ? undefined : () => void message(mb.userId)}
+                      // The creator removes anyone but themselves (removeGolfGroupMember), after a confirm (CH-7504).
+                      onRemove={mine && api.removeMember && mb.userId !== api.viewer.userId ? () => setRemoving(mb) : undefined}
                     />
                   ))
                 )}
@@ -670,45 +717,59 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
 
             <FilesPanel api={api} conv={conv} />
 
-            <Panel>
-              {api.muteError ? (
-                <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again; the error has been reported." onRetry={api.retryMute} />
-              ) : !api.mute ? (
-                <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7407">
-                  <Skeleton height={30} />
-                </div>
-              ) : (
-                <div className="ch-msp-set">
-                  <Switch checked={muted} onChange={() => void toggleMute()} label="Mute notifications" busy={muteBusy} />
-                  {muted && api.mute.until && (
-                    <span className="ch-msp-set__note ch-num">
-                      Until {dayLabel(api.mute.until, api.now, api.timeZone).replace("Today", "today")} · {clock(api.mute.until, api.timeZone)}
-                    </span>
-                  )}
-                </div>
-              )}
-              {conv.group && !mine && (
-                <button type="button" className="ch-msp-danger" onClick={() => setLeaving(true)}>
-                  Leave group
-                </button>
-              )}
-              {api.deleteConversation && (
-                <button type="button" className="ch-msp-danger" onClick={() => setDeleting(true)}>
-                  Delete conversation
-                </button>
-              )}
-            </Panel>
+            {/* With the switch gone it can have nothing to show: then it isn't drawn. */}
+            {(api.muteError || !api.mute || muted || (conv.group && !mine) || api.deleteConversation) && (
+              <Panel>
+                {api.muteError ? (
+                  <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again; the error has been reported." onRetry={api.retryMute} />
+                ) : !api.mute ? (
+                  <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7407">
+                    <Skeleton height={30} />
+                  </div>
+                ) : (
+                  muted && (
+                    <div className="ch-msp-set">
+                      <span className="ch-msp-set__note ch-num">{muteLabel(api.mute, api)}</span>
+                    </div>
+                  )
+                )}
+                {conv.group && !mine && (
+                  <button type="button" className="ch-msp-danger" onClick={() => setLeaving(true)}>
+                    Leave group
+                  </button>
+                )}
+                {api.deleteConversation && (
+                  <button type="button" className="ch-msp-danger" onClick={() => setDeleting(true)}>
+                    Delete conversation
+                  </button>
+                )}
+              </Panel>
+            )}
           </div>
         </SectionBoundary>
       </div>
+      <Modal
+        open={choosing}
+        onClose={() => setChoosing(false)}
+        icon={BellOff}
+        title="Mute this conversation"
+        description="No email, push or bell for it. Unread messages still show here."
+      >
+        <div className="ch-msp-panel">
+          <SheetRow icon={Clock} label="Mute 8 hours" onClick={() => void setMute(true, 8)} />
+          <SheetRow icon={CalendarDays} label="Mute a week" onClick={() => void setMute(true, 24 * 7)} />
+          <SheetRow icon={BellOff} label="Until I turn it on" onClick={() => void setMute(true, null)} />
+        </div>
+      </Modal>
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={() => {}} />
       <DeleteConversationModal api={api} conv={conv} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => {}} />
       {mine && conv.group && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
+      {mine && conv.group && api.removeMember && <RemoveMemberModal api={api} conv={conv} member={removing} onClose={() => setRemoving(null)} />}
     </PhoneScreen>
   );
 }
 
-function PersonRow({ name, sub, you = false, onMessage }: { name: string; sub: string; you?: boolean; onMessage?: () => void }) {
+function PersonRow({ name, sub, you = false, onMessage, onRemove }: { name: string; sub: string; you?: boolean; onMessage?: () => void; onRemove?: () => void }) {
   return (
     <div className="ch-msp-row">
       <Avatar name={name} size={36} />
@@ -719,6 +780,11 @@ function PersonRow({ name, sub, you = false, onMessage }: { name: string; sub: s
         </b>
         {sub && <span>{sub}</span>}
       </span>
+      {onRemove && (
+        <button type="button" className="ch-msp-icon is-remove" aria-label={`Remove ${name}`} onClick={onRemove}>
+          <Icon icon={UserMinus} size={17} />
+        </button>
+      )}
       {onMessage && (
         <button type="button" className="ch-msp-icon" aria-label={`Message ${name}`} onClick={onMessage}>
           <Icon icon={MessageSquare} size={17} />
@@ -741,7 +807,7 @@ function FilesPanel({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
       action={files && files.length > 0 ? <span className="ch-msp-count ch-num">{files.length}</span> : undefined}
     >
       {failed ? (
-        <InlineNotice code="CH-7214" title="Files didn’t load" body="Your messages are fine. Try again; the error has been reported." onRetry={retry} />
+        <InlineNotice code="CH-7214" title="Files didn’t load" body="Your messages are safe. Try again; the error has been reported." onRetry={retry} />
       ) : !files ? (
         <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7409">
           <Skeleton height={36} />
@@ -774,12 +840,17 @@ function PhoneNewMessage({
   onCancel,
   onAnnounce,
   onFirstMessage,
+  draft: kept,
+  onDraft,
 }: {
   api: ChMessagesApi;
   onCancel: () => void;
   onAnnounce: () => void;
   /** Hands the first message to the thread that opens next; null takes it back. */
   onFirstMessage: (first: FirstMessage | null) => void;
+  /** The first message as last left, held by MessagesPhone so Cancel doesn't lose it. */
+  draft: FirstMessage;
+  onDraft: (draft: FirstMessage) => void;
 }) {
   const coach = api.viewer.role === "coach";
   // A prefilled message (prefill.ts) arrives with its people and its group name. Its draft is quoted here and lands in
@@ -788,13 +859,23 @@ function PhoneNewMessage({
   const [to, setTo] = useState<string[]>(() => (seed ? (coach ? seed.to : seed.to.slice(0, 1)) : []));
   const [q, setQ] = useState("");
   const [name, setName] = useState(seed?.title ?? "");
-  const [draft, setDraft] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
+  const draft = kept.text;
+  const files = kept.files;
+  const setDraft = (text: string) => onDraft({ text, files });
+  const setFiles = (next: File[]) => onDraft({ text: draft, files: next });
+  const addFiles = useAddAttachments();
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
   const nameInput = useRef<HTMLInputElement | null>(null);
+  // The first message box grows as the thread's does (wave 5 #4), and toasts sit above it (#1).
+  const box = useRef<HTMLTextAreaElement | null>(null);
+  const footer = useRef<HTMLElement | null>(null);
+  useAutosize(box, draft);
+  useComposerInset(footer);
   const group = coach && to.length > 1;
   const needsName = group && !name.trim();
+  // A coach's group is a team broadcast: with no player in it, it would reach the whole team (groupLacksPlayer).
+  const needsPlayer = group && groupLacksPlayer(api.viewer.role, to, api.directory);
   const people = api.directory.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()));
   const players = api.directory.filter((p) => p.role === "player");
   const coaches = api.directory.filter((p) => p.role === "coach");
@@ -812,10 +893,10 @@ function PhoneNewMessage({
   };
   const go = async () => {
     if (!to.length || busy) return;
-    if (needsName) {
+    if (needsName || needsPlayer) {
       setTouched(true);
       haptic("warning");
-      nameInput.current?.focus();
+      if (needsName) nameInput.current?.focus();
       return;
     }
     setBusy(true);
@@ -827,7 +908,24 @@ function PhoneNewMessage({
     const ok = group ? await api.createGroup(to, name.trim()) : await api.startDirect(to[0]!);
     setBusy(false);
     if (!ok) onFirstMessage(null);
+    // The thread has it now; a failure leaves it here.
+    else onDraft({ text: "", files: [] });
   };
+  // A hardware keyboard's Esc is Cancel (audit A-28): the same pop, history step and focus return as the button. A
+  // dialog or menu open over the screen takes its own Esc first, and a screen already leaving (after Next) ignores it,
+  // so it cannot clear a prefill the new thread is taking.
+  const present = useIsPresent();
+  useEffect(() => {
+    if (!present) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return;
+      if (e.target instanceof Element && e.target.closest("dialog, [role='dialog'], [role='menu']")) return;
+      e.preventDefault();
+      onCancel();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onCancel, present]);
   const who = to.length === 1 ? firstName(personOf(api, to[0]!)?.name ?? "them") : `${to.length} people`;
   return (
     <PhoneScreen labelledBy="ch-msp-new-title" className="ch-msp-new" keyboardAware>
@@ -837,7 +935,7 @@ function PhoneNewMessage({
         titleId="ch-msp-new-title"
         action={
           <PhoneTextAction onClick={() => void go()} disabled={!to.length} busy={busy}>
-            {group ? "Create group" : "Next"}
+            {busy ? "Starting…" : group ? "Create group" : "Next"}
           </PhoneTextAction>
         }
       />
@@ -887,6 +985,11 @@ function PhoneNewMessage({
           {touched && needsName && (
             <p className="ch-field__help is-error" data-ch-code="CH-7104" role="alert">
               Name the group so players know what it’s for.
+            </p>
+          )}
+          {touched && needsPlayer && (
+            <p className="ch-field__help is-error" data-ch-code="CH-7105" role="alert">
+              Choose at least one player. Coaches join the group once it exists.
             </p>
           )}
           {coach && !q && (
@@ -962,18 +1065,21 @@ function PhoneNewMessage({
           {group && <p className="ch-msp-hint ch-num">Messages to {to.length} people start a new group.</p>}
         </div>
       </div>
-      <footer className="ch-ms-comp">
-        <AttachChips files={files} onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))} />
+      <footer ref={footer} className="ch-ms-comp">
+        <AttachChips files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
         <div className="ch-ms-comp__field">
-          <AttachButton phone disabled={!to.length} onPick={(picked) => setFiles((s) => addAttachments(s, picked))} />
+          <AttachButton phone disabled={!to.length} onPick={(picked) => setFiles(addFiles(files, picked))} />
           <textarea
+            ref={box}
             rows={1}
             aria-label={to.length ? `Message ${who}` : "Choose who to message"}
             placeholder={to.length ? `Message ${who}` : "Choose who to message"}
             value={draft}
             disabled={!to.length}
+            maxLength={MESSAGE_MAX}
             onChange={(e) => setDraft(e.target.value)}
-            enterKeyHint="send"
+            // Return adds a line, as in the thread; Send sends.
+            enterKeyHint="enter"
           />
           <button
             type="button"
@@ -985,6 +1091,7 @@ function PhoneNewMessage({
             <Icon icon={ArrowUp} size={17} />
           </button>
         </div>
+        <CharsLeft text={draft} />
       </footer>
     </PhoneScreen>
   );
@@ -992,11 +1099,13 @@ function PhoneNewMessage({
 
 /* New announcement (a coach's, from New message: D-44) */
 
-function PhoneAnnouncementForm({ api, onCancel }: { api: ChMessagesApi; onCancel: () => void }) {
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [urgent, setUrgent] = useState(false);
-  const [ack, setAck] = useState(true);
+function PhoneAnnouncementForm({ api, onCancel, draft, onDraft }: { api: ChMessagesApi; onCancel: () => void; draft: AnnDraft; onDraft: (d: AnnDraft) => void }) {
+  // Held by MessagesPhone, so Cancel keeps it until the post lands (wave 5 #7).
+  const { title, body, urgent, ack } = draft;
+  const setTitle = (v: string) => onDraft({ ...draft, title: v });
+  const setBody = (v: string) => onDraft({ ...draft, body: v });
+  const setUrgent = (v: boolean) => onDraft({ ...draft, urgent: v });
+  const setAck = (v: boolean) => onDraft({ ...draft, ack: v });
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
   const needsTitle = !title.trim();
@@ -1008,8 +1117,9 @@ function PhoneAnnouncementForm({ api, onCancel }: { api: ChMessagesApi; onCancel
       return;
     }
     setBusy(true);
-    await api.createAnnouncement({ title: title.trim(), body: body.trim(), urgent, ack });
+    const ok = await api.createAnnouncement({ title: title.trim(), body: body.trim(), urgent, ack });
     setBusy(false);
+    if (ok) onDraft(NO_ANN);
   };
   return (
     <PhoneScreen labelledBy="ch-msp-announce-title" className="ch-msp-announce" keyboardAware>
@@ -1019,7 +1129,7 @@ function PhoneAnnouncementForm({ api, onCancel }: { api: ChMessagesApi; onCancel
         titleId="ch-msp-announce-title"
         action={
           <PhoneTextAction onClick={() => void post()} busy={busy}>
-            Post
+            {busy ? "Posting…" : "Post"}
           </PhoneTextAction>
         }
       />

@@ -8,7 +8,7 @@ import { coverageLine, generalOpeners } from '@/lib/coachhelm/v3/chat/program-pu
 import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
 import type { ChatMessage, ChatMessageStatus, ChatRole, ToolCallRecord, ToolResultRecord } from '@/lib/coachhelm/v3/chat/types';
 import { chLogServer } from '../lib/track-server';
-import { rebuiltHref } from '../shell/nav';
+import { askLinkHref } from './coachhelm-chat-links';
 import { pulseItemsThatStand, pulseMissing } from './coachhelm-shape';
 import {
   buildAskSuggestions,
@@ -144,7 +144,7 @@ export async function loadAskCoachHelm({ conversationId }: { conversationId?: st
   const roundsFailed = !!pulse?.failed?.includes('rounds');
   const pulseData: ChAskPulse | null = pulse
     ? {
-        findings: pulseToFindings(pulseItemsThatStand(pulse.items, pulse.failed), (href) => rebuiltHref(href, 'coach')),
+        findings: pulseToFindings(pulseItemsThatStand(pulse.items, pulse.failed), askLinkHref),
         coverage: roundsFailed ? null : coverageLine(pulse),
         // Formatted here, in the team's zone: a browser-side format of the same instant disagrees with the server render.
         asOfLabel: new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: ctx.timezone }).format(new Date(pulse.as_of)),

@@ -12,7 +12,7 @@
 }
 .ch-rsu-k {
   display: block;
-  font: 500 13px/1 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-hero-mint);
 }
 
@@ -21,8 +21,8 @@
   position: relative;
   overflow: hidden;
   padding: 22px 28px;
-  border-radius: 22px;
-  color: var(--ch-ivory-100);
+  border-radius: var(--ch-radius-xl);
+  color: var(--ch-on-fill-100);
   background: radial-gradient(70% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
   box-shadow:
     0 0 0 1px var(--ch-green-900),
@@ -36,29 +36,29 @@
   margin-bottom: 14px;
   padding: 0 14px 0 8px;
   border-radius: 999px;
-  font: 500 13.5px/1 var(--ch-font-sans);
-  color: var(--ch-ivory-100);
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-on-fill-100);
   text-decoration: none;
   background: rgb(255 255 255 / 0.08);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
 }
-.ch-rsu-band__back:focus-visible {
+.ch-root .ch-rsu-band__back:focus-visible {
   outline: 2px solid var(--ch-hero-mint);
   outline-offset: 2px;
 }
 .ch-rsu-band h1 {
   margin: 8px 0 6px;
   max-width: 30ch;
-  font: 600 30px/1.08 var(--ch-font-sans);
+  font: 600 calc(30 * var(--ch-type-k))/1.08 var(--ch-font-sans);
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 96;
   text-wrap: balance;
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-rsu-band p {
   margin: 0;
   max-width: 56ch;
-  font: 400 14.5px/1.45 var(--ch-font-sans);
+  font: 400 calc(14.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.72);
 }
 .ch-rsu-spine {
@@ -87,20 +87,21 @@
   --ch-rsu-fill: 60%;
 }
 .ch-rsu-spine em {
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
-  color: rgb(244 241 232 / 0.5);
+  color: var(--ch-on-green-ink-muted);
 }
 .ch-rsu-spine .is-on em,
 .ch-rsu-spine .is-done em {
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-rsu-spine--sm {
   grid-template-columns: repeat(4, 1fr);
   margin: 0 0 16px;
 }
 .ch-rsu-spine--sm i {
-  background: linear-gradient(90deg, var(--ch-green-500) var(--ch-rsu-fill, 0%), rgb(28 25 18 / 0.08) var(--ch-rsu-fill, 0%));
+  height: 3px;
+  background: linear-gradient(90deg, var(--ch-green-600) var(--ch-rsu-fill, 0%), rgb(16 18 14 / 0.08) var(--ch-rsu-fill, 0%));
 }
 .ch-rsu-spine--sm em {
   color: var(--ch-text-tertiary);
@@ -124,7 +125,7 @@
   min-width: 0;
 }
 .ch-rsu-card {
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow:
     0 0 0 1px rgb(28 25 18 / 0.08),
@@ -138,9 +139,9 @@
   gap: 12px;
   padding: 18px 20px 12px;
 }
-.ch-rsu-card__h h3 {
+.ch-rsu-card__h h2 {
   margin: 0 0 4px;
-  font: 600 17px/1.1 var(--ch-font-sans);
+  font: 600 calc(17 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   letter-spacing: -0.015em;
 }
 .ch-rsu-card__h span {
@@ -159,18 +160,18 @@
   justify-content: flex-end;
   gap: 4px;
   padding: 16px 18px;
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 14px, transparent 14px 28px), linear-gradient(160deg, var(--ch-green-600), var(--ch-green-800));
 }
 .ch-rsu-course__band b {
-  font: 600 24px/1.1 var(--ch-font-sans);
+  font: 600 calc(24 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   letter-spacing: -0.025em;
 }
 .ch-rsu-course__band span {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font: 400 13px/1 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.85);
 }
 .ch-rsu-course__f {
@@ -179,7 +180,7 @@
   align-items: center;
   gap: 6px 16px;
   padding: 12px 12px 12px 18px;
-  font: 400 13px/1 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -192,7 +193,7 @@
   gap: 7px;
 }
 .ch-rsu-course__tee b {
-  font: 600 14px/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-rsu-course__empty {
@@ -208,7 +209,7 @@
   gap: 4px;
 }
 .ch-rsu-course__empty b {
-  font: 600 16px/1.2 var(--ch-font-sans);
+  font: 600 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-rsu-course__empty span {
   font: var(--ch-type-caption);
@@ -221,7 +222,7 @@
   display: grid;
   place-items: center;
   border: 1px dashed rgb(21 90 57 / 0.35);
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: #edf4ef;
   color: var(--ch-green-700);
 }
@@ -235,7 +236,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: #edf4ef;
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.18);
 }
@@ -262,12 +263,12 @@
   gap: 3px;
 }
 .ch-rsu-qual__b em {
-  font: 600 11.5px/1 var(--ch-font-sans);
+  font: 600 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-green-700);
 }
 .ch-rsu-qual__b b {
-  font: 600 14.5px/1.2 var(--ch-font-sans);
+  font: 600 calc(14.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-rsu-qual__b span {
   font: var(--ch-type-caption);
@@ -277,9 +278,9 @@
   height: 30px;
   padding: 0 14px;
   border-radius: 999px;
-  font: 600 13px/30px var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/30px var(--ch-font-sans);
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 
 /* Forms */
@@ -296,8 +297,12 @@
 }
 .ch-rsu-field > span,
 .ch-rsu-field > label {
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-ink-600);
+}
+.ch-rsu-field > .ch-rsu-field__hint {
+  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
 }
 .ch-rsu-2 {
   display: grid;
@@ -309,8 +314,8 @@
   box-sizing: border-box;
   height: 44px;
   padding: 0 12px;
-  border-radius: 10px;
-  font: 400 15px/44px var(--ch-font-sans);
+  border-radius: var(--ch-radius-md);
+  font: 400 calc(15 * var(--ch-type-k))/44px var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
   background: var(--ch-ivory-0);
@@ -318,13 +323,15 @@
 }
 .ch-rsu-in--big {
   height: 50px;
-  font-size: 18px;
+  font-size: calc(18 * var(--ch-type-k));
   line-height: 50px;
 }
-.ch-rsu-in:focus-visible {
+/* :focus, not :focus-visible: WebKit never matches :focus-visible on a date field (as .ch-input in controls.css). */
+.ch-rsu-in:focus {
+  outline: none;
   box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.6),
-    0 0 0 4px rgb(28 25 18 / 0.06);
+    0 0 0 1px var(--ch-green-600),
+    0 0 0 4px rgb(21 90 57 / 0.12);
 }
 .ch-rsu-in[aria-invalid='true'] {
   box-shadow: 0 0 0 1.5px var(--ch-danger-600);
@@ -344,20 +351,26 @@
   flex: 1;
   height: 38px;
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   text-align: center;
-  font: 500 13.5px/38px var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/38px var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-rsu-seg button[aria-checked='true'] {
   font-weight: 600;
-  color: var(--ch-green-700);
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  color: var(--ch-seg-on-ink);
+  background: var(--ch-seg-on-bg);
+  box-shadow: var(--ch-seg-on-shadow);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
 }
 .ch-rsu-seg button:disabled {
   cursor: default;
   opacity: 0.45;
+}
+@media (hover: hover) {
+  .ch-rsu-seg button:not([aria-checked='true']):not(:disabled):hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-rsu-seg--sm {
   flex: none;
@@ -365,8 +378,10 @@
 .ch-rsu-seg--sm button {
   height: 30px;
   padding: 0 11px;
-  font-size: 12.5px;
+  font-size: calc(12.5 * var(--ch-type-k));
   line-height: 30px;
+  /* "Front 9" never breaks between its words. */
+  white-space: nowrap;
 }
 .ch-rsu-seg button:focus-visible,
 .ch-rsu-par button:focus-visible,
@@ -392,7 +407,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
 }
@@ -406,10 +421,10 @@
   gap: 3px;
 }
 .ch-rsu-opt b {
-  font: 600 14px/1.2 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-rsu-opt em {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -433,8 +448,8 @@
   gap: 8px;
   margin: 0;
   padding: 12px 14px;
-  border-radius: 12px;
-  font: 400 13.5px/1.4 var(--ch-font-sans);
+  border-radius: var(--ch-radius-md);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-green-700);
   background: #f5f9f6;
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
@@ -444,7 +459,7 @@
   gap: 10px;
   margin: 0;
   padding: 0 4px;
-  font: 400 13px/1.45 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rsu-note svg {
@@ -471,7 +486,7 @@
   grid-auto-columns: 1fr;
   margin: 0 20px 14px;
   padding: 10px 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
@@ -485,7 +500,7 @@
   border-left: 1px solid rgb(28 25 18 / 0.08);
 }
 .ch-rsu-hc__sum dt {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rsu-hc__sum dd {
@@ -521,7 +536,7 @@
 }
 .ch-rsu-hole.is-edited .ch-rsu-hole__n {
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-rsu-par {
   display: flex;
@@ -536,7 +551,7 @@
   cursor: pointer;
   width: 30px;
   height: 30px;
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   text-align: center;
   font: 500 13px/30px var(--ch-font-sans);
   color: var(--ch-text-tertiary);
@@ -562,7 +577,7 @@
   width: 58px;
   height: 34px;
   padding: 0 8px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   text-align: right;
   font: 500 14px/34px var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
@@ -604,18 +619,15 @@
   box-sizing: border-box;
 }
 .ch-rsu-hc--empty .ch-rsu-hc__ghost {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   padding: 0;
   opacity: 0.55;
 }
 .ch-rsu-hc__ghost > .ch-skel {
   height: 34px;
-  border-radius: 8px;
-}
-.ch-rsu-hc__ghost span {
-  display: grid;
-  grid-template-columns: 26px 100px 1fr;
-  gap: 10px;
-  align-items: center;
+  border-radius: var(--ch-radius-sm);
 }
 .ch-rsu-hc__ghost b {
   width: 26px;
@@ -624,17 +636,9 @@
   place-items: center;
   border-radius: 50%;
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   background: var(--ch-bg-subtle);
   color: var(--ch-text-tertiary);
-}
-.ch-rsu-hc__ghost i {
-  height: 10px;
-  border-radius: 5px;
-  background: rgb(28 25 18 / 0.07);
-}
-.ch-rsu-hc__ghost i:last-child {
-  width: 50px;
-  justify-self: end;
 }
 .ch-rsu-hc .ch-notice {
   margin: 18px 20px;
@@ -649,7 +653,7 @@
   align-items: center;
   gap: 14px;
   padding: 10px 10px 10px 18px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(253 252 248 / 0.86);
   backdrop-filter: blur(34px) saturate(170%);
   -webkit-backdrop-filter: blur(34px) saturate(170%);
@@ -663,7 +667,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font: 400 13.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rsu-dock__s b {
@@ -683,7 +687,7 @@
   gap: 8px;
   height: 44px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   color: var(--ch-text-tertiary);
   background: var(--ch-ivory-0);
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.14);
@@ -696,7 +700,7 @@
 .ch-rsu-search input {
   all: unset;
   flex: 1;
-  font: 400 15px/1 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-rsu-psec h4,
@@ -705,7 +709,7 @@
   align-items: center;
   gap: 8px;
   margin: 0 0 8px;
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-ink-700);
 }
 .ch-rsu-psec h4 span {
@@ -714,7 +718,7 @@
 }
 .ch-rsu-plist {
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -748,8 +752,8 @@
   height: 44px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  color: var(--ch-ivory-100);
+  border-radius: var(--ch-radius-md);
+  color: var(--ch-on-fill-100);
   background: linear-gradient(160deg, var(--ch-green-600), var(--ch-green-800));
 }
 .ch-rsu-crs__b {
@@ -760,7 +764,7 @@
   gap: 4px;
 }
 .ch-rsu-crs__b b {
-  font: 600 14.5px/1.2 var(--ch-font-sans);
+  font: 600 calc(14.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-rsu-crs__b span {
   overflow: hidden;
@@ -771,12 +775,243 @@
 }
 .ch-rsu-crs__r {
   white-space: nowrap;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-rsu-chev {
   color: var(--ch-text-tertiary);
 }
+/* The course picker on the desktop (owner, 2026-10-16): landscape, a solid panel in the one window material (controls.css),
+   the photo cards three to a row. */
+@media (min-width: 821px) {
+  /* The material is every window's (controls.css); the picker's title is a size up, as Claude's search dialog's. */
+  .ch-modal[data-ch-code='CH-11510'] .ch-modal__titles h2 {
+    font: 600 22px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  /* Landscape (owner, 2026-10-16): wider than tall, the photo cards two to a row. */
+  .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
+    --ch-modal-max-h: min(680px, calc(100dvh - 48px));
+  }
+  .ch-modal[data-ch-code='CH-11510'] .ch-cpk-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px 14px;
+  }
+  .ch-modal[data-ch-code='CH-11510'] .ch-cpk__media {
+    aspect-ratio: 3 / 2;
+  }
+}
+/* The course picker's cards (owner, 2026-10-16: pictures, premium). The photo on top on its own rounded corners, the
+   name, place and par under it in the page's type on the panel's surface, as a booking app lists places: nothing is
+   printed over the photo, so there is no scrim and no chip. The button is the scroll timeline's subject and the card
+   inside it is what moves, so the fold in (entry) and the fold away (exit) never fight over one transform. */
+.ch-cpk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ch-cpk {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  border-radius: var(--ch-radius-lg);
+}
+.ch-cpk:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 4px;
+}
+.ch-cpk__card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ch-cpk__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-skel-base);
+}
+/* A hairline inside the photo's edge, so a pale sky never bleeds into the panel. */
+.ch-cpk__media::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgb(16 18 14 / 0.08);
+  content: '';
+}
+/* A course without its own photo: a quiet tile with the flag, never a stand-in scene. */
+.ch-cpk__media.is-blank {
+  display: grid;
+  place-items: center;
+  color: rgb(16 18 14 / 0.28);
+  background: linear-gradient(180deg, rgb(16 18 14 / 0.035), rgb(16 18 14 / 0.07));
+}
+html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
+  color: rgb(255 255 255 / 0.28);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.08));
+}
+.ch-cpk__media img,
+.ch-acs__photo canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--ch-dur-reveal) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-cpk:hover .ch-cpk__media img {
+    transform: scale(1.03);
+  }
+}
+/* `scale`, not `transform`: the fold owns the card's transform, and the two compose. */
+.ch-cpk:active .ch-cpk__card {
+  scale: 0.985;
+  transition: scale var(--ch-dur-press) var(--ch-ease);
+}
+.ch-cpk__row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 0 2px;
+}
+.ch-cpk__b {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ch-cpk__b b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  letter-spacing: -0.006em;
+  color: var(--ch-text-primary);
+}
+.ch-cpk__b span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-cpk__meta {
+  flex: none;
+  white-space: nowrap;
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-secondary);
+}
+
+/* Loading: the cards' shape, still (no sweep): a photo's block and the two lines of the name. */
+.ch-cpk.is-skel {
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ch-cpk.is-skel .ch-cpk__b {
+  padding: 0 2px;
+  gap: 6px;
+}
+.ch-cpk.is-skel .ch-cpk__b i {
+  display: block;
+  width: 52%;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--ch-skel-base);
+}
+.ch-cpk.is-skel .ch-cpk__b i + i {
+  width: 30%;
+  height: 10px;
+}
+
+/* The phone: a list to scan with a thumb, as Maps and Photos list places: a small photo (or the flag tile) on the left,
+   the name, place and par beside it, rows on hairlines. Full-width photo cards were a screen each. */
+@media (max-width: 820px) {
+  .ch-cpk-list {
+    gap: 0;
+  }
+  .ch-cpk__card,
+  .ch-cpk.is-skel {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgb(16 18 14 / 0.07);
+  }
+  .ch-cpk__media {
+    flex: none;
+    width: 76px;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--ch-radius-md);
+  }
+  .ch-cpk__row {
+    flex: 1;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    min-width: 0;
+    padding: 0;
+  }
+  /* Past the default text size the name keeps a readable width (none at the default, 141px at XXL) and the date, par
+     and tees wrap under it, instead of squeezing the name to a few letters. */
+  .ch-cpk__row > .ch-cpk__b {
+    min-width: calc((var(--ch-type-k) - 1px) * 400);
+  }
+  .ch-cpk.is-skel .ch-cpk__b {
+    flex: 1;
+  }
+  html[data-fw-theme='dark'] .ch-cpk__card,
+  html[data-fw-theme='dark'] .ch-cpk.is-skel {
+    border-bottom-color: rgb(255 255 255 / 0.08);
+  }
+}
+
+/* The fold: a card coming up from the list's bottom edge unfolds from tilted back; one leaving the top edge folds away
+   over its foot. Scroll-driven, so it is exactly where the scroll is and costs nothing between scrolls. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-ui='clubhouse']:not([data-motion='off']) .ch-cpk:not(.is-skel) {
+      animation: ch-cpk-unfold linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+      transform-origin: 50% 0;
+    }
+    [data-ui='clubhouse']:not([data-motion='off']) .ch-cpk:not(.is-skel) .ch-cpk__card {
+      animation: ch-cpk-fold linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+      transform-origin: 50% 100%;
+    }
+  }
+}
+@keyframes ch-cpk-unfold {
+  from {
+    opacity: 0.3;
+    transform: perspective(900px) rotateX(-32deg) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ch-cpk-fold {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0.25;
+    transform: perspective(900px) rotateX(32deg) scale(0.92);
+  }
+}
+
 .ch-rsu-add {
   all: unset;
   cursor: pointer;
@@ -789,7 +1024,7 @@
   align-items: center;
   padding: 12px 14px;
   border: 1px dashed rgb(28 25 18 / 0.2);
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
 }
 .ch-rsu-add > span {
   grid-row: 1 / 3;
@@ -802,7 +1037,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-rsu-add b {
-  font: 600 14px/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 .ch-rsu-add em {
   font: var(--ch-type-caption);
@@ -817,13 +1052,17 @@
   align-items: center;
   gap: 2px;
   height: 36px;
-  font: 500 15px/1 var(--ch-font-sans);
+  font: 500 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-rsu-tees {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.ch-rsu-tee-wait {
+  display: block;
+  height: 118px;
 }
 .ch-rsu-tee {
   all: unset;
@@ -836,7 +1075,7 @@
   row-gap: 10px;
   align-items: center;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-reading);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -864,7 +1103,7 @@
   gap: 3px;
 }
 .ch-rsu-tee__b b {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 .ch-rsu-tee__b span {
   font: var(--ch-type-caption);
@@ -883,7 +1122,7 @@
 }
 .ch-rsu-tee__y em,
 .ch-rsu-tee__f em {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -891,7 +1130,7 @@
   grid-area: f;
   display: flex;
   gap: 20px;
-  font: 500 13px/1 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
 .ch-rsu-tee__f span {
@@ -913,7 +1152,192 @@
   background: rgb(21 90 57 / 0.4);
 }
 
-/* Add a course */
+/* Add a course (owner, 2026-10-16: "make it look a lot better"): the form on the left and, beside it, the course as
+   the picker will show it, filling in as it is typed. The hole grid takes the whole width. */
+.ch-acs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 36px;
+  align-items: start;
+}
+.ch-acs.is-wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ch-acs__main {
+  min-width: 0;
+}
+.ch-acs__preview {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 18px;
+  border-radius: var(--ch-radius-lg);
+  background: rgb(16 18 14 / 0.035);
+  box-shadow: inset 0 0 0 1px rgb(16 18 14 / 0.06);
+}
+.ch-acs__k {
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-acs__preview .ch-cpk__media {
+  aspect-ratio: 3 / 2;
+}
+.ch-acs__preview .is-empty {
+  color: var(--ch-text-tertiary);
+}
+.ch-acs__tee {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 2px 0;
+  border-top: 1px solid rgb(16 18 14 / 0.07);
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-acs__tee b {
+  flex: 1;
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-acs-sum {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 6px;
+}
+.ch-acs-sum > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid rgb(16 18 14 / 0.07);
+}
+.ch-acs-sum > div:last-child {
+  border-bottom: 1px solid rgb(16 18 14 / 0.07);
+}
+.ch-acs-sum dt {
+  font: 400 calc(13.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-acs-sum dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: 500 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+/* The photo slot: the team's own photo, chosen or dropped here. */
+.ch-acs__photo {
+  cursor: pointer;
+}
+.ch-acs__photo.is-blank {
+  border: 1px dashed rgb(16 18 14 / 0.18);
+}
+.ch-acs__photo.is-blank::after {
+  display: none;
+}
+@media (hover: hover) {
+  .ch-acs__photo.is-blank:hover {
+    border-color: var(--ch-green-600);
+    color: var(--ch-green-700);
+  }
+}
+.ch-acs__photo:focus-within {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 3px;
+}
+.ch-acs__photo-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.ch-acs__photo-add b {
+  margin-top: 4px;
+  font: 600 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-acs__photo-add span {
+  font: 400 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-acs__photo-change {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 5px 9px;
+  border-radius: var(--ch-radius-sm);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: #fff;
+  background: rgb(0 0 0 / 0.55);
+  opacity: 0;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-acs__photo:hover .ch-acs__photo-change,
+.ch-acs__photo:focus-within .ch-acs__photo-change {
+  opacity: 1;
+}
+.ch-acs__photo-remove {
+  all: unset;
+  cursor: pointer;
+  align-self: flex-start;
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-acs__photo-remove:hover {
+  color: var(--ch-text-primary);
+  text-decoration: underline;
+}
+.ch-acs__photo-remove:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 2px;
+}
+.ch-acs__photo-error {
+  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-warning-600);
+}
+.ch-acs__photo-note {
+  font: 400 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+html[data-fw-theme='dark'] .ch-acs__photo.is-blank {
+  border-color: rgb(255 255 255 / 0.18);
+}
+html[data-fw-theme='dark'] .ch-acs__preview {
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
+}
+html[data-fw-theme='dark'] .ch-acs__tee,
+html[data-fw-theme='dark'] .ch-acs-sum > div,
+html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
+  border-color: rgb(255 255 255 / 0.08);
+}
+/* The phone: one column. The card (with its photo slot) follows the form where the course is named and where it is
+   checked over, so a phone can add its photo too; the tee step keeps the sheet to the form. */
+@media (max-width: 820px) {
+  .ch-acs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .ch-acs__preview {
+    position: static;
+  }
+  .ch-acs.is-step-1 .ch-acs__preview {
+    display: none;
+  }
+  /* The card keeps its full-width photo; the picker's phone list draws its photos as thumbnails. */
+  .ch-acs__preview .ch-cpk__media {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--ch-radius-lg);
+  }
+}
+
+/* The tee colours, the chosen one ringed in green with a gap of the panel between, as a colour picker draws it. */
 .ch-rsu-sw {
   display: flex;
   flex-wrap: wrap;
@@ -930,7 +1354,9 @@
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12);
 }
 .ch-rsu-sw button[aria-checked='true'] {
-  box-shadow: 0 0 0 2px var(--ch-green-600);
+  box-shadow:
+    0 0 0 2px #fbfaf6,
+    0 0 0 4px var(--ch-green-600);
 }
 .ch-rsu-sw .ch-rd-tee {
   width: 22px;
@@ -946,8 +1372,8 @@
   align-items: center;
   gap: 14px;
   padding: 16px;
-  border-radius: 14px;
-  color: var(--ch-ivory-100);
+  border-radius: var(--ch-radius-lg);
+  color: var(--ch-on-fill-100);
   background: var(--ch-green-800);
 }
 .ch-rsu-rv__hero > span {
@@ -955,16 +1381,17 @@
   height: 52px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(255 255 255 / 0.08);
   color: var(--ch-hero-mint);
 }
 .ch-rsu-rv__hero b {
   display: block;
-  font: 600 18px/1.2 var(--ch-font-sans);
+  font: 600 calc(18 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-rsu-rv__hero div > span {
-  font: 400 13px/1.3 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: rgb(244 241 232 / 0.75);
 }
 .ch-rsu-rv__tee {
@@ -972,7 +1399,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  font: 400 13px/1 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rsu-rv__tee b {
@@ -984,8 +1411,17 @@
 }
 .ch-rsu-foot-note {
   min-width: 0;
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+/* In a window the body already sets the inset: the form takes none of its own, so its fields line up under the title
+   (they sat 20px further in). */
+.ch-modal .ch-rsu-form {
+  padding: 0;
+  gap: 16px;
+}
+.ch-modal .ch-rsu-spine--sm {
+  margin: 2px 0 22px;
 }
 .ch-modal .ch-rsu-hc {
   box-shadow: none;
@@ -1010,10 +1446,10 @@
 @container chrs (max-width: 640px) {
   .ch-rsu-band {
     padding: 16px 18px;
-    border-radius: 18px;
+    border-radius: var(--ch-radius-xl);
   }
   .ch-rsu-band h1 {
-    font-size: 24px;
+    font-size: calc(24 * var(--ch-type-k));
   }
   .ch-rsu-hc__grid {
     grid-template-columns: minmax(0, 1fr);
@@ -1073,12 +1509,15 @@
   .ch-rsu-band {
     margin: 0 -12px;
     padding-top: calc(env(safe-area-inset-top) + 12px);
-    border-radius: 0 0 22px 22px;
+    border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
   }
-  .ch-rsu-band__back {
+  .ch-rsu-band__back,
+  .ch-rsu-seg button {
     position: relative;
   }
-  .ch-rsu-band__back::after {
+  /* The segments are drawn 38px (30px small) inside the well's 3px; their reach is 44px tall. */
+  .ch-rsu-band__back::after,
+  .ch-rsu-seg button::after {
     content: '';
     position: absolute;
     inset: min(0px, calc(50% - 22px));
@@ -1139,7 +1578,7 @@ html[data-fw-theme='dark'] .ch-rsu-yds input {
   background: var(--ch-bg-inset);
   box-shadow: 0 0 0 1px var(--ch-border-control);
 }
-html[data-fw-theme='dark'] .ch-rsu-in:focus-visible,
+html[data-fw-theme='dark'] .ch-rsu-in:focus,
 html[data-fw-theme='dark'] .ch-rsu-search:focus-within,
 html[data-fw-theme='dark'] .ch-rsu-yds input:focus-visible {
   box-shadow:
@@ -1167,9 +1606,6 @@ html[data-fw-theme='dark'] .ch-rsu-par button[aria-checked='true'] {
   background: var(--ch-ivory-200);
   box-shadow: var(--ch-elevation-control);
 }
-html[data-fw-theme='dark'] .ch-rsu-hc__ghost i {
-  background: rgb(237 231 216 / 0.07);
-}
 html[data-fw-theme='dark'] .ch-rsu-dock {
   background: rgb(27 32 28 / 0.86);
   box-shadow:
@@ -1189,10 +1625,12 @@ html[data-fw-theme='dark'] .ch-rsu-sw button {
   box-shadow: 0 0 0 1px var(--ch-border-control);
 }
 html[data-fw-theme='dark'] .ch-rsu-sw button[aria-checked='true'] {
-  box-shadow: 0 0 0 2px var(--ch-green-600);
+  box-shadow:
+    0 0 0 2px rgb(32 32 30),
+    0 0 0 4px var(--ch-green-600);
 }
 
-html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
+html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   color: var(--ch-text-primary);
 }
 /* A step still to come: 0.5 measured 3.9:1 on the night band; 0.62 holds 4.5:1. */
@@ -1242,10 +1680,10 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     align-items: flex-end;
     padding: 0 0 14px;
   }
-  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-card__h h3,
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-card__h h2,
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__empty b {
     margin: 0 0 4px;
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1284,7 +1722,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     color: var(--ch-text-primary);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__band b {
-    font: 600 26px/1.1 var(--ch-font-sans);
+    font: 600 calc(26 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.028em;
     font-variation-settings: 'wdth' 92;
     color: var(--ch-ledger-ink);
@@ -1398,12 +1836,12 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     border-left-color: var(--ch-ledger-rule-soft);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__sum dd {
-    font-size: 20px;
+    font-size: calc(20 * var(--ch-type-k));
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__sum dd .ch-skel {
     width: 30px;
     height: 20px;
-    border-radius: 5px;
+    border-radius: var(--ch-radius-xs);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__grid {
     padding: 0;
@@ -1423,10 +1861,13 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     text-align: left;
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__ghost {
+    flex-direction: column;
     gap: 0;
     padding: 0;
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__ghost span {
+    display: flex;
+    align-items: center;
     min-height: 52px;
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
   }
@@ -1434,6 +1875,9 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     position: relative;
     height: 36px;
     margin: 8px 0;
+    /* The sheen layer is clipped to the bar; the seam below it (::after) is let through (A-13 sheen, 2026-10-14). */
+    overflow: visible;
+    clip-path: inset(0 0 -9px 0);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__ghost > .ch-skel::after {
     position: absolute;
@@ -1504,7 +1948,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee.is-skel {
     width: 100%;
     margin: 10px 0;
-    border-radius: 8px;
+    border-radius: var(--ch-radius-sm);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs.is-skel {
     min-height: 44px;
@@ -1532,13 +1976,15 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
 @media (max-width: 820px) {
+  .ch-rsu-yds em {
+    font-size: calc(12 * var(--ch-type-k));
+  }
   .ch-rsu-qual__b em,
   .ch-rsu-hc__sum dt,
-  .ch-rsu-yds em,
   .ch-rsu-crs__r,
   .ch-rsu-tee__y em,
   .ch-rsu-tee__f em {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 
@@ -1629,7 +2075,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
   content: '✓';
 }
 .ch-rsu-band .ch-rsu-spine em {
-  font: 500 13px/1 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   white-space: nowrap;
 }
 @container chrs (min-width: 861px) {
@@ -1684,7 +2130,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     box-shadow: inset 0 -3px 0 var(--ch-champagne-500);
   }
   .ch-rsu-course__band b {
-    font-size: 26px;
+    font-size: calc(26 * var(--ch-type-k));
     font-variation-settings: 'wdth' 94;
   }
 }
@@ -1730,10 +2176,11 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
   border-left-color: rgb(176 149 96 / 0.35);
 }
 .ch-rsu-hc__sum dt {
-  font-size: 12px;
+  font-size: calc(12 * var(--ch-type-k));
 }
 .ch-rsu-hc__sum dd {
   font: 600 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-ledger-ink);
@@ -1746,11 +2193,11 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
   padding: 2px 0 8px;
 }
 .ch-rsu-nine__h b {
-  font: 600 15px/1.2 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-rsu-nine__h span {
-  font: 500 12.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1763,7 +2210,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
   /* Each nine is a field-green board: the hole numbers debossed into it, the par keys and the yardage on ivory plates. */
   .ch-rsu-nine {
     padding: 12px 10px 6px;
-    border-radius: 16px;
+    border-radius: var(--ch-radius-lg);
     /* The board is field green in either theme (the ramp's green flips at night), so its inks are written out. */
     background: linear-gradient(180deg, #0f4a2f, #082b1c);
     box-shadow:
@@ -1775,7 +2222,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     padding: 0 4px 10px;
   }
   .ch-rsu-nine__h b {
-    font-size: 16px;
+    font-size: calc(16 * var(--ch-type-k));
     color: #dccda6;
   }
   .ch-rsu-nine__h span {
@@ -1807,7 +2254,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
   .ch-rsu .ch-rsu-nine .ch-rsu-par {
     padding: 2px;
     gap: 1px;
-    border-radius: 9px;
+    border-radius: var(--ch-radius-md);
     background: rgb(0 0 0 / 0.24);
     box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
   }
@@ -1845,11 +2292,12 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     width: 54px;
     height: 30px;
     padding: 0 8px;
-    border-radius: 7px;
+    border-radius: var(--ch-radius-sm);
     background: #f4f1e8;
     box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.12);
     color: #1c1b18;
     font: 600 14px/30px var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-yds input:focus-visible {
@@ -1907,7 +2355,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
 @media (hover: hover) {
   .ch-rsu-crs:hover .ch-rsu-crs__ic {
     background: linear-gradient(160deg, var(--ch-green-600), var(--ch-green-800));
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-rsu-crs:hover .ch-rsu-chev {
     transform: translateX(3px);
@@ -1915,4 +2363,26 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
 }
 .ch-rsu-tee__bar i {
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+}
+
+/* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
+@media (max-width: 820px) {
+  .ch-rsu-par button {
+    position: relative;
+  }
+  .ch-rsu-par button::after {
+    content: '';
+    position: absolute;
+    /* Down the page only: the par keys sit edge to edge. */
+    inset: min(0px, calc(50% - 22px)) 0;
+  }
+}
+
+/* -- W4c tablet tier --------------------------------------------------------------------------------------------------
+   The photo's "Change" label showed only on hover or keyboard focus. A touch screen has neither, so a player on an iPad
+   never saw that the photo could be replaced. Where there is no hover the label is simply there. */
+@media (hover: none) {
+  .ch-acs__photo-change {
+    opacity: 1;
+  }
 }

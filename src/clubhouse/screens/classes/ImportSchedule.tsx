@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, CircleAlert, CloudOff, FileQuestion, FileWarning, FileX, Lightbulb, SearchX, Sparkles, Trash2, Upload, WifiOff, TriangleAlert } from 'lucide-react';
+import { Check, CircleAlert, CloudOff, FileQuestion, FileWarning, FileX, Lightbulb, Pencil, SearchX, Sparkles, Trash2, Upload, WifiOff, TriangleAlert } from 'lucide-react';
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -29,6 +29,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
+import { Tooltip } from '../../ui/Tooltip';
 import { screenFile, type ChReadFail, type ChReadResult, type ChReadSource } from './import-read';
 
 type Step = 'pick' | 'reading' | 'review' | 'error';
@@ -67,6 +68,7 @@ export function ImportSchedule({
   onClose,
   read,
   onImport,
+  onEdit,
   importing,
   imported,
   syncState,
@@ -77,6 +79,8 @@ export function ImportSchedule({
   onClose: () => void;
   read: (source: ChReadSource) => Promise<ChReadResult>;
   onImport: (rows: ChImportRow[]) => unknown;
+  /** Opens an imported class's form, for one that can't be on the calendar yet (the result's chip). */
+  onEdit?: (c: ChClass) => void;
   importing: boolean;
   /** Set once the import has saved: the classes now on the schedule, and the ones skipped as already there. */
   imported: { classes: ChClass[]; skipped: string[] } | null;
@@ -90,6 +94,9 @@ export function ImportSchedule({
   const [tab, setTab] = useState<Tab>('file');
   const [text, setText] = useState('');
   const [rows, setRows] = useState<ChImportRow[]>([]);
+  // How many rows the read found, so Start over asks first once the review has been worked on (CH-12504).
+  const [found, setFound] = useState(0);
+  const [restarting, setRestarting] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [fail, setFail] = useState<{ kind: ChReadFail; message: string } | null>(null);
   const [slow, setSlow] = useState(false);
@@ -117,6 +124,7 @@ export function ImportSchedule({
       setFail(null);
       setSlow(false);
       setPasteEmpty(false);
+      setRestarting(false);
     }
   }
 
@@ -165,6 +173,7 @@ export function ImportSchedule({
     if (token.current !== mine) return;
     if (result.ok) {
       setRows(result.rows);
+      setFound(result.rows.length);
       setWarnings(result.warnings);
       setShown(reduced ? result.rows.length : 0);
       setStep('review');
@@ -202,256 +211,280 @@ export function ImportSchedule({
   const credits = rows.reduce((a, r) => a + (r.credits ?? 0), 0);
   const dayCount = new Set(rows.flatMap((r) => r.days)).size;
   const looks = rows.filter((r) => r.look).length;
+  const startOver = () => {
+    setRestarting(false);
+    setRows([]);
+    setStep('pick');
+  };
+  // A review of a few rows, or one with rows taken off, is work: Start over asks before throwing it away. An empty one has nothing to lose.
+  const askFirst = rows.length > 0 && (rows.length >= 3 || rows.length !== found);
 
   return (
-    <Modal
-      open={open}
-      onClose={close}
-      title={title}
-      description={description}
-      width={620}
-      footer={
-        done ? (
-          <Button variant="primary" onClick={close}>
-            View classes
-          </Button>
-        ) : step === 'review' ? (
-          <>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setRows([]);
-                setStep('pick');
-              }}
-            >
-              Start over
+    <>
+      {/* The sheet steps aside while Start over is asked (one dialog at a time), and comes back as it was. */}
+      <Modal
+        open={open && !restarting}
+        onClose={close}
+        title={title}
+        description={description}
+        width={620}
+        footer={
+          done ? (
+            <Button variant="primary" onClick={close}>
+              View classes
             </Button>
-            <Button variant="primary" leftIcon={Check} disabled={!rows.length || importing} onClick={() => void onImport(rows)}>
-              {importing ? 'Importing' : `Import ${rows.length} ${rows.length === 1 ? 'class' : 'classes'}`}
-            </Button>
-          </>
-        ) : undefined
-      }
-    >
-      <div className="ch-cl-imp">
-        {done ? (
-          <ImportedView imported={imported} syncState={syncState} term={term} week={week} />
-        ) : step === 'reading' && !readingShown ? (
-          // The first beat of a read: nothing yet (delay then minimum), so a quick read never flashes a state.
-          <div className="ch-cl-read is-wait" role="status" aria-label="Reading your schedule" />
-        ) : step === 'reading' ? (
-          // CH-12402: a scan over a page while the schedule is read.
-          <div className="ch-cl-read" role="status" data-ch-code="CH-12402">
-            <div className="ch-cl-read__doc" aria-hidden="true">
-              <span className="ch-cl-read__scan" /* CH-12602: the scan line sweeps the page while it is read */ />
-              {Array.from({ length: 6 }, (_, i) => (
-                <i key={i} style={{ width: `${50 + ((i * 37) % 45)}%` }} />
-              ))}
+          ) : step === 'review' ? (
+            <>
+              <Button variant="ghost" feel={askFirst ? 'warning' : null} onClick={() => (askFirst ? setRestarting(true) : startOver())}>
+                Start over
+              </Button>
+              <Button variant="primary" leftIcon={Check} busy={importing} disabled={!rows.length} onClick={() => void onImport(rows)}>
+                {importing ? 'Importing…' : `Import ${rows.length} ${rows.length === 1 ? 'class' : 'classes'}`}
+              </Button>
+            </>
+          ) : undefined
+        }
+      >
+        <div className="ch-cl-imp">
+          {done ? (
+            <ImportedView imported={imported} syncState={syncState} term={term} week={week} onEdit={onEdit} />
+          ) : step === 'reading' && !readingShown ? (
+            // The first beat of a read: nothing yet (delay then minimum), so a quick read never flashes a state.
+            <div className="ch-cl-read is-wait" role="status" aria-label="Reading your schedule" />
+          ) : step === 'reading' ? (
+            // CH-12402: a scan over a page while the schedule is read.
+            <div className="ch-cl-read" role="status" data-ch-code="CH-12402">
+              <div className="ch-cl-read__doc" aria-hidden="true">
+                <span className="ch-cl-read__scan" /* CH-12602: the scan line sweeps the page while it is read */ />
+                {Array.from({ length: 6 }, (_, i) => (
+                  <i key={i} style={{ width: `${50 + ((i * 37) % 45)}%` }} />
+                ))}
+              </div>
+              <b>Reading your schedule…</b>
+              <span>Finding course codes, days, times and rooms</span>
+              {slow && (
+                <span className="ch-cl-read__slow" data-ch-code="CH-12902">
+                  This is taking longer than usual. Keep this open.
+                </span>
+              )}
             </div>
-            <b>Reading your schedule…</b>
-            <span>Finding course codes, days, times and rooms</span>
-            {slow && (
-              <span className="ch-cl-read__slow" data-ch-code="CH-12902">
-                This is taking longer than usual. Keep this open.
+          ) : step === 'error' && fail ? (
+            <div className="ch-cl-err" role="alert" data-ch-code={FAIL[fail.kind].code}>
+              <span className={'ch-cl-err__ic' + (fail.kind === 'none' ? ' is-quiet' : '')}>
+                <Icon icon={FAIL[fail.kind].icon} size={22} />
               </span>
-            )}
-          </div>
-        ) : step === 'error' && fail ? (
-          <div className="ch-cl-err" role="alert" data-ch-code={FAIL[fail.kind].code}>
-            <span className={'ch-cl-err__ic' + (fail.kind === 'none' ? ' is-quiet' : '')}>
-              <Icon icon={FAIL[fail.kind].icon} size={22} />
-            </span>
-            <b>{FAIL[fail.kind].title}</b>
-            <p>{fail.message}</p>
-            <div className="ch-cl-err__a">
-              {fail.kind === 'offline' && last.current ? (
-                <Button variant="primary" onClick={() => void run(last.current!)}>
-                  Try again
-                </Button>
-              ) : fail.kind === 'notSchedule' || fail.kind === 'tooLarge' || fail.kind === 'unsupported' ? (
+              <b>{FAIL[fail.kind].title}</b>
+              <p>{fail.message}</p>
+              <div className="ch-cl-err__a">
+                {fail.kind === 'offline' && last.current ? (
+                  <Button variant="primary" onClick={() => void run(last.current!)}>
+                    Try again
+                  </Button>
+                ) : fail.kind === 'notSchedule' || fail.kind === 'tooLarge' || fail.kind === 'unsupported' ? (
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      setTab('file');
+                      setStep('pick');
+                    }}
+                  >
+                    Choose another file
+                  </Button>
+                ) : null}
                 <Button
-                  variant="primary"
+                  variant={fail.kind === 'fault' || fail.kind === 'none' ? 'primary' : 'ghost'}
                   onClick={() => {
-                    setTab('file');
+                    setTab('paste');
                     setStep('pick');
                   }}
                 >
-                  Choose another file
+                  {fail.kind === 'none' ? 'Paste text' : 'Paste text instead'}
                 </Button>
-              ) : null}
-              <Button
-                variant={fail.kind === 'fault' || fail.kind === 'none' ? 'primary' : 'ghost'}
-                onClick={() => {
-                  setTab('paste');
-                  setStep('pick');
-                }}
-              >
-                {fail.kind === 'none' ? 'Paste text' : 'Paste text instead'}
-              </Button>
+              </div>
             </div>
-          </div>
-        ) : step === 'review' ? (
-          <>
-            <dl className="ch-cl-rv__sum">
-              {(
-                [
-                  ['Classes', rows.length],
-                  ['Credits', credits],
-                  ['Days a week', dayCount],
-                  ['Need a look', looks],
-                ] as const
-              ).map(([k, n]) => (
-                <div key={k}>
-                  <dt>{k}</dt>
-                  <dd className="ch-num">{n}</dd>
+          ) : step === 'review' ? (
+            <>
+              <dl className="ch-cl-rv__sum">
+                {(
+                  [
+                    ['Classes', rows.length],
+                    ['Credits', credits],
+                    ['Days a week', dayCount],
+                    ['Need a look', looks],
+                  ] as const
+                ).map(([k, n]) => (
+                  <div key={k}>
+                    <dt>{k}</dt>
+                    <dd className="ch-num">{n}</dd>
+                  </div>
+                ))}
+              </dl>
+              {warnings.length > 0 && (
+                <div className="ch-cl-clash" role="status">
+                  <Icon icon={TriangleAlert} size={15} />
+                  <span>
+                    <b>Worth a look</b>
+                    {warnings.join(' ')}
+                  </span>
                 </div>
-              ))}
-            </dl>
-            {warnings.length > 0 && (
-              <div className="ch-cl-clash" role="status">
-                <Icon icon={TriangleAlert} size={15} />
-                <span>
-                  <b>Worth a look</b>
-                  {warnings.join(' ')}
-                </span>
-              </div>
-            )}
-            <p className="ch-cl-rv__line ch-num" role="status">
-              {shown < rows.length ? 'Reading' : 'Read'} {Math.min(shown, rows.length)} {Math.min(shown, rows.length) === 1 ? 'class' : 'classes'}
-              {rows.slice(0, shown).filter((r) => r.look).length > 0 ? ` · ${rows.slice(0, shown).filter((r) => r.look).length} to check` : ''}
-            </p>
-            {rows.length === 0 ? (
-              <EmptyState compact title="Every class was removed" body="Start over to read the schedule again." />
-            ) : (
-              <ul className="ch-cl-rv" aria-label="Classes found">
-                {rows.slice(0, shown).map((r, i) => {
-                  const tab = tabParts({ code: r.code, name: r.name });
-                  const meta = [daysLabel(r.days) || 'No days', timeRange(r.start, r.end) ?? 'No time', [r.building, r.room].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
-                  return (
-                    <li key={r.key} className={'ch-cl-rv__r' + (r.look ? ' is-check' : '')}>
-                      <span className={`ch-cl-rv__tab ch-cl-t-${CH_TONES[i % CH_TONES.length]}`}>
-                        {tab.top}
-                        <b>{tab.bottom}</b>
+              )}
+              <p className="ch-cl-rv__line ch-num" role="status">
+                {shown < rows.length ? 'Reading' : 'Read'} {Math.min(shown, rows.length)} {Math.min(shown, rows.length) === 1 ? 'class' : 'classes'}
+                {rows.slice(0, shown).filter((r) => r.look).length > 0 ? ` · ${rows.slice(0, shown).filter((r) => r.look).length} to check` : ''}
+              </p>
+              {rows.length === 0 ? (
+                <EmptyState compact title="Every class was removed" body="Start over to read the schedule again." />
+              ) : (
+                <ul className="ch-cl-rv" aria-label="Classes found">
+                  {rows.slice(0, shown).map((r, i) => {
+                    const tab = tabParts({ code: r.code, name: r.name });
+                    const meta = [daysLabel(r.days) || 'No days', timeRange(r.start, r.end) ?? 'No time', [r.building, r.room].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+                    return (
+                      <li key={r.key} className={'ch-cl-rv__r' + (r.look ? ' is-check' : '')}>
+                        <span className={`ch-cl-rv__tab ch-cl-t-${CH_TONES[i % CH_TONES.length]}`}>
+                          {tab.top}
+                          <b>{tab.bottom}</b>
+                        </span>
+                        <span className="ch-cl-rv__b">
+                          <b>{r.name}</b>
+                          <span>{meta}</span>
+                          <span className={'ch-cl-rv__tag' + (r.look ? ' is-check' : '')}>{r.look ? (/time/i.test(r.look) ? 'Check the time' : 'Check the days') : 'Read clearly'}</span>
+                          {r.look && (
+                            <em>
+                              <Icon icon={CircleAlert} size={12} />
+                              {r.look}. Add it from the class after importing.
+                            </em>
+                          )}
+                        </span>
+                        <Tooltip>
+                          <button type="button" className="ch-cl-rv__x" aria-label={`Remove ${r.code || r.name}`} onClick={() => setRows((xs) => xs.filter((x) => x.key !== r.key))}>
+                            <Icon icon={Trash2} size={14} />
+                          </button>
+                        </Tooltip>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
+          ) : (
+            <>
+              {/* CH-12705: switching between a file and pasted text is a selection tap (Segmented). */}
+              <Segmented
+                label="How to add your schedule"
+                value={tab}
+                onChange={(t) => {
+                  setTab(t);
+                  setPasteEmpty(false);
+                }}
+                options={[
+                  { value: 'file', label: 'Screenshot or file' },
+                  { value: 'paste', label: 'Paste text' },
+                ]}
+              />
+              {tab === 'file' ? (
+                <>
+                  {/* CH-12805: the drop zone is a real button, so the keyboard opens the file picker too. */}
+                  <button
+                    type="button"
+                    className={'ch-cl-drop' + (over ? ' is-over' : '')}
+                    onClick={() => fileRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setOver(true);
+                    }}
+                    onDragLeave={() => setOver(false)}
+                    onDrop={drop}
+                  >
+                    <span className="ch-cl-drop__art" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                      <span>
+                        <Icon icon={Upload} size={20} />
                       </span>
-                      <span className="ch-cl-rv__b">
-                        <b>{r.name}</b>
-                        <span>{meta}</span>
-                        <span className={'ch-cl-rv__tag' + (r.look ? ' is-check' : '')}>{r.look ? (/time/i.test(r.look) ? 'Check the time' : 'Check the days') : 'Read clearly'}</span>
-                        {r.look && (
-                          <em>
-                            <Icon icon={CircleAlert} size={12} />
-                            {r.look}. Add it from the class after importing.
-                          </em>
-                        )}
-                      </span>
-                      <button type="button" className="ch-cl-rv__x" aria-label={`Remove ${r.code || r.name}`} onClick={() => setRows((xs) => xs.filter((x) => x.key !== r.key))}>
-                        <Icon icon={Trash2} size={14} />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </>
-        ) : (
-          <>
-            {/* CH-12705: switching between a file and pasted text is a selection tap (Segmented). */}
-            <Segmented
-              label="How to add your schedule"
-              value={tab}
-              onChange={(t) => {
-                setTab(t);
-                setPasteEmpty(false);
-              }}
-              options={[
-                { value: 'file', label: 'Screenshot or file' },
-                { value: 'paste', label: 'Paste text' },
-              ]}
-            />
-            {tab === 'file' ? (
-              <>
-                {/* CH-12805: the drop zone is a real button, so the keyboard opens the file picker too. */}
-                <button
-                  type="button"
-                  className={'ch-cl-drop' + (over ? ' is-over' : '')}
-                  onClick={() => fileRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setOver(true);
-                  }}
-                  onDragLeave={() => setOver(false)}
-                  onDrop={drop}
-                >
-                  <span className="ch-cl-drop__art" aria-hidden="true">
-                    <i />
-                    <i />
-                    <i />
-                    <span>
-                      <Icon icon={Upload} size={20} />
                     </span>
-                  </span>
-                  <b>Drop your schedule here</b>
-                  <em>or choose a file · PNG, JPG, WebP, PDF or TXT · up to 12 MB</em>
-                  <span className="ch-cl-drop__tip">
-                    <Icon icon={Lightbulb} size={13} />
-                    Tip: a screenshot of the week view in your student portal reads best.
-                  </span>
-                </button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  hidden
-                  aria-label="Choose a schedule file"
-                  accept="image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,.heic,.heif,.pdf,application/pdf,.txt,text/plain"
-                  onChange={(e) => {
-                    choose(e.target.files);
-                    // The same file can be chosen again after a failure.
-                    e.target.value = '';
-                  }}
-                />
-              </>
-            ) : (
-              <div className="ch-cl-paste">
-                <textarea
-                  className="ch-textarea"
-                  rows={8}
-                  aria-label="Paste your schedule"
-                  aria-invalid={pasteEmpty || undefined}
-                  value={text}
-                  onChange={(e) => {
-                    setText(e.target.value);
-                    setPasteEmpty(false);
-                  }}
-                  // A table copied from a portal (columns separated by tabs) is the layout the reader gets right most often.
-                  placeholder={'Course\tTitle\tDays\tTime\tLocation\nSTAT 201\tProbability and Statistics\tTTh\t9:00AM - 10:15AM\tHanes Hall 120'}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                />
-                {pasteEmpty && (
-                  <span className="ch-field__help is-error" role="alert" data-ch-code="CH-12110">
-                    Paste your schedule text first.
-                  </span>
-                )}
-                <Button
-                  variant="primary"
-                  leftIcon={Sparkles}
-                  onClick={() => {
-                    if (!text.trim()) {
-                      setPasteEmpty(true);
-                      return;
-                    }
-                    void run({ kind: 'text', text });
-                  }}
-                >
-                  Read schedule
-                </Button>
-              </div>
-            )}
+                    <b>Drop your schedule here</b>
+                    <em>or choose a file · PNG, JPG, WebP, PDF or TXT · up to 12 MB</em>
+                    <span className="ch-cl-drop__tip">
+                      <Icon icon={Lightbulb} size={13} />
+                      Tip: a screenshot of the week view in your student portal reads best.
+                    </span>
+                  </button>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    hidden
+                    aria-label="Choose a schedule file"
+                    accept="image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,.heic,.heif,.pdf,application/pdf,.txt,text/plain"
+                    onChange={(e) => {
+                      choose(e.target.files);
+                      // The same file can be chosen again after a failure.
+                      e.target.value = '';
+                    }}
+                  />
+                </>
+              ) : (
+                <div className="ch-cl-paste">
+                  <textarea
+                    className="ch-textarea"
+                    rows={8}
+                    aria-label="Paste your schedule"
+                    aria-invalid={pasteEmpty || undefined}
+                    value={text}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      setPasteEmpty(false);
+                    }}
+                    // A table copied from a portal (columns separated by tabs) is the layout the reader gets right most often.
+                    placeholder={'Course\tTitle\tDays\tTime\tLocation\nSTAT 201\tProbability and Statistics\tTTh\t9:00AM - 10:15AM\tHanes Hall 120'}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                  />
+                  {pasteEmpty && (
+                    <span className="ch-field__help is-error" role="alert" data-ch-code="CH-12110">
+                      Paste your schedule text first.
+                    </span>
+                  )}
+                  <Button
+                    variant="primary"
+                    leftIcon={Sparkles}
+                    onClick={() => {
+                      if (!text.trim()) {
+                        setPasteEmpty(true);
+                        return;
+                      }
+                      void run({ kind: 'text', text });
+                    }}
+                  >
+                    Read schedule
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Modal>
+      <Modal
+        open={open && restarting}
+        onClose={() => setRestarting(false)}
+        icon={TriangleAlert}
+        code="CH-12504"
+        title="Start over?"
+        description={`The ${rows.length === 1 ? 'class' : `${rows.length} classes`} you reviewed ${rows.length === 1 ? 'is' : 'are'} let go, and nothing is imported.`}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRestarting(false)}>
+              Keep reviewing
+            </Button>
+            <Button variant="danger" feel={null} onClick={startOver}>
+              Start over
+            </Button>
           </>
-        )}
-      </div>
-    </Modal>
+        }
+      />
+    </>
   );
 }
 
@@ -460,7 +493,19 @@ export function ImportSchedule({
  * time) and why, and any that overlap the team this week. A class with nothing to put on the calendar is imported and saved all the same,
  * so the result says which ones aren't on it rather than "they're on your calendar".
  */
-function ImportedView({ imported, syncState, term, week }: { imported: { classes: ChClass[]; skipped: string[] }; syncState: 'syncing' | 'failed' | 'ok'; term: ChTerm; week: ChWeek }) {
+function ImportedView({
+  imported,
+  syncState,
+  term,
+  week,
+  onEdit,
+}: {
+  imported: { classes: ChClass[]; skipped: string[] };
+  syncState: 'syncing' | 'failed' | 'ok';
+  term: ChTerm;
+  week: ChWeek;
+  onEdit?: (c: ChClass) => void;
+}) {
   const n = imported.classes.length;
   const skipped = imported.skipped.length;
   if (n === 0) {
@@ -505,11 +550,19 @@ function ImportedView({ imported, syncState, term, week }: { imported: { classes
         {skipped > 0 ? ` ${skipped} already on your schedule and skipped.` : ''}
       </p>
       <div className="ch-cl-ok__chips">
-        {imported.classes.map((c) => (
-          <span key={c.id} className={`ch-cl-t-${c.tone}`}>
-            {c.code || c.name}
-          </span>
-        ))}
+        {/* A class that can't be on the calendar yet is a button to its form, where what's missing is added. */}
+        {imported.classes.map((c) =>
+          onEdit && calendarGap(c) != null ? (
+            <button key={c.id} type="button" className={`ch-cl-t-${c.tone}`} aria-label={`Open ${c.code || c.name} to add what’s missing`} onClick={() => onEdit(c)}>
+              <Icon icon={Pencil} size={12} />
+              {c.code || c.name}
+            </button>
+          ) : (
+            <span key={c.id} className={`ch-cl-t-${c.tone}`}>
+              {c.code || c.name}
+            </span>
+          ),
+        )}
       </div>
       {overlaps.length > 0 && (
         <div className="ch-cl-clash" data-ch-code="CH-12109">

@@ -32,12 +32,25 @@ Team stats opens for the coach's own team on the last 10 rounds per player, with
 Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
 
 - Last 10 is each player's ten newest countable rounds in any season, read
-  from a rolling 12 months back, with "vs. previous 10" the ten before them.
+  from a rolling 12 months back, with "vs previous 10" the ten before them.
   Season and Qualifiers are this season only.
 - A round posted as a total only (18 holes, no nines, no holes) counts in the
   scoring figures, and in no hole-level one (greens, putts, scrambling,
   birdies, strokes gained, the legs, putting). A hole-level card whose round
   count is fewer than the window's says "Hole stats from X of Y rounds".
+
+Parity with production (2026-10-17, `stats-production-parity.test.ts`): on the
+same rounds, every figure is the Fairway Team stats page's (scoring average of
+18-hole rounds, greens, scrambling, putts and birdies pooled over the holes,
+strokes gained per round, rounds counted), checked against that page's own
+code and against every production team's rows (read-only). Birdies are holes
+one under par: an eagle is not a birdie (the card says "Eagles not counted",
+and Season bests' Most birdies counts the same holes). A round with no putt
+recorded has no putts figure (production writes 0 putts for it). The rules
+that differ on purpose: a round posted as a total only counts in scoring
+(Q-123; production counts it nowhere), strokes gained waits for three whole
+rounds (production shows any), and with both lengths in a nine-hole round
+counts half (production averages per round of either length).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -154,7 +167,7 @@ The offline banner (10701) and Try again while offline (10704) are the shell's.
 | 40702 | CH-4902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
 | 40703 | CH-4903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -271,7 +284,7 @@ CH-1842, 11825 CH-1816.
 | 41805 | CH-4805 | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | The phone's scoring line is an image with a written reading ("Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
 | 41806 | CH-4806 | `THE_ROUND_FILTER_THE_FILTER_BUTTON_SAYS` | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

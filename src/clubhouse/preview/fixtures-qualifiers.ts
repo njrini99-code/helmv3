@@ -1,5 +1,5 @@
 import type { ChQDetail, ChQFormData, ChQList, ChQListItem, ChQSelectionData } from '../data/qualifiers';
-import { buildBoard, roundPars, type ChQEntrant, type ChQHole, type ChQRound, type ChQSelection, type ChQSelectionState, type ChQStatus } from '../screens/qualifiers/model';
+import { buildBoard, nextRoundNumber, roundPars, type ChQEntrant, type ChQHole, type ChQRound, type ChQSelection, type ChQSelectionState, type ChQStatus } from '../screens/qualifiers/model';
 
 /**
  * The Qualifiers handoff's sample program (design/handoff/qual-data.js), run
@@ -290,8 +290,24 @@ export function previewList(role: 'coach' | 'player' = 'coach', mode: 'all' | 'm
       entrants: s.entries.length,
       submitted: d.board!.submitted,
       topScore: d.board!.topScore,
-      leaders: d.board!.rows.slice(0, d.board!.topScore + 1).map((r) => ({ playerId: r.playerId, name: r.name, position: (r.tied ? 'T' : '') + r.position, played: r.played, toPar: r.toPar, move: r.move })),
-      mine: role === 'player' ? { entered: !!me, position: me?.position != null ? (me.tied ? 'T' : '') + me.position : null, toPar: me?.toPar ?? null, played: me?.played ?? 0 } : null,
+      leaders: d.board!.rows
+        .slice(0, d.board!.topScore + 1)
+        .map((r) => ({ playerId: r.playerId, name: r.name, position: (r.tied ? 'T' : '') + r.position, played: r.played, toPar: r.toPar, move: r.move, ...(r.playerId === d.viewerPlayerId ? { isYou: true } : {}) })),
+      mine:
+        role === 'player'
+          ? {
+              entered: !!me,
+              position: me?.position != null ? (me.tied ? 'T' : '') + me.position : null,
+              toPar: me?.toPar ?? null,
+              played: me?.played ?? 0,
+              // As the loader: the next round of a live qualifier at its own course, and the squad once it is confirmed.
+              next: (() => {
+                const round = me && s.status === 'in_progress' ? nextRoundNumber(me.rounds, s.numRounds) : null;
+                return round == null ? null : { round, course: s.roundCourses[round - 1]?.[0] ?? s.course };
+              })(),
+              squad: me && s.selectionState === 'selected' ? !!d.selections?.some((x) => x.playerId === me.playerId) : null,
+            }
+          : null,
     };
   });
   const visible = mode === 'mine' ? items.filter((i) => i.mine?.entered) : items;
