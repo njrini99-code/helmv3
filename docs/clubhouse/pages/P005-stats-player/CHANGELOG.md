@@ -1,5 +1,215 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-20 — No visible change (stats visuals 5)
+
+```text
+Design package: none (stats visuals plan, piece 5; the entry is in P004)
+PR/commit:      uncommitted (local/stats-pr5-rank)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the player page. `stats.css`, which this page shares with the
+  team page, gained the `.ch-sv-tr` block for the team's ranked dot plot.
+
+## 2026-10-20 — Scoring mix bar (stats visuals 6)
+
+```text
+Design package: none (stats visuals plan, spec 4.4, decision Q11)
+PR/commit:      uncommitted (local/stats-pr6-mix)
+Contract IDs:   none
+Actions:        none
+Data impact:    profile gains extra.triplePlus (from the existing hole read)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- One scoring mix everywhere: `ScoreMixBar` replaces the Overview's "Every
+  hole, by result" bar (`ch-zmix`), Game detail's "What an average round looks
+  like" (`ScoreMix`, desktop and phone) and the three bars in Outcomes by par
+  (More detail). A 100% bar with par in the middle: going out from it, birdie
+  then eagle or better to the left (under par), bogey then double or worse to
+  the right (over par), with "Under par" and "Over par" under the bar.
+- Each segment at least about 30px wide prints its share; every share is in
+  the key (with the rate a round on the main mix). Shares are whole percents
+  that add up to 100 (largest remainder; a result with holes that rounds to
+  none reads "<1%"). The preview's birdies read 10%, not 11% (10.6% exact).
+- A pointer, a tap or the arrow keys read a result above the bar: "Double
+  or worse · 12 of 180 holes · 7% · 1.2 a round · 3 triple or worse". A tap
+  or a key pins it; only a pin or a key is announced. The key entries pin
+  too, so a sliver (one eagle) is reachable on the phone.
+- A result with no holes draws nothing; the main key reads it as 0%, each
+  par's key leaves it out. Under 30 holes the mix is muted with "Early read ·
+  N holes". The phone's key is a short table, one result a row.
+- Palette as before (red under par; ivory, gray and ink over), with no literal
+  colors: eagle is the new `--ch-score-eagle-fill` token (light and dark),
+  birdie `--ch-chart-flag`, par `--ch-ivory-300`, bogey `--ch-ink-500`, double
+  `--ch-score-double`. Bogey stays gray, not amber (Q11).
+- Data: the profile carries `extra.triplePlus`, counted from the hole read
+  the loader already makes (same rounds as the detail read); null when that
+  read failed. No query, table or migration change.
+
+## 2026-10-20 — Putting by distance (stats visuals 4)
+
+```text
+Design package: none (stats-display-spec.md section 4.3, decision Q9)
+PR/commit:      uncommitted (local/stats-pr4-putt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (same putt rows; no query, table or migration change)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- Make rate by distance is one component, `PuttBands`, on the desktop Overview
+  (zone 6), the desktop Game detail putting section and the phone's Game detail.
+  It replaces the two `MakeCurve` copies (Overview and `charts.tsx`) and the
+  phone's `MakeRows`.
+- Six bands in the Tour's cut (0–3, 3–5, 5–10, 10–15, 15–25, 25+ ft) on equal
+  spacing, and the chart says the spacing is equal and not to scale. The
+  nine-band breakdown (15–20 ft up to 35+ ft) stays in the putting table under
+  More. Each band is a dot on a 0 to 100% axis with a thin Wilson 95% whisker
+  (named once, "Likely range (95%)", in the key), its rate and "made/tried"
+  under it, and the Tour's thin line behind the dots where the Tour publishes a
+  value (none inside 3 feet).
+- A band of 10 to 29 putts is a hollow early read and is not graded against the
+  Tour; under 10 it draws no dot and says "Needs 10 putts in the band" ("Needs
+  10 putts" in the phone's narrow column). From 30 putts a band grades by its
+  dot, green at or above the Tour and amber below; the whisker never grades.
+- A pointer over a band, a tap, or the arrow keys read it in the line above the
+  chart ("5–10 ft · 20 of 51 made, 39% · likely range 27% to 53% · Tour 62%"); a
+  tap or a key pins it and a screen reader hears it then, never on hover. The
+  chart is a focusable group.
+- The putt-read failure notes are unchanged (CH-5211 in Game detail, "The putt
+  read failed, so the curve stops at 20 feet." on the Overview). Without the
+  putt read, Game detail still falls back to the calculator's five bands to 20
+  feet, drawing each rate as kept and printing its count ("33 putts").
+- The panel and zone notes describe the new chart; the old `.ch-mk` styles are
+  gone.
+
+## 2026-10-20 — The trend of rounds is a dot per round (visuals 3)
+
+```text
+Design package: none (stats visuals plan, decisions Q1 Q2 Q8 Q12 Q13)
+PR/commit:      uncommitted (local/stats-pr3-trend)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- The phone's Scoring trend, and a new Round by round chart in the desktop
+  Overview (under Scoring and under Strokes gained), draw every round as a dot,
+  a trailing five-round average through them from the third round (no line
+  before it, a gap rather than a bridge), and a par line for scores or a zero
+  line (the Tour) for strokes gained. Scores plot with the better ones higher;
+  the chart prints its real ticks and says "↑ Lower is better". A nine-hole
+  round is doubled, as everywhere on the page, and the readout says so.
+- A mouse over the plot, a finger dragged sideways (after about 8 px and mostly
+  sideways, so a vertical swipe still scrolls the page), or the arrow keys read
+  a round in the line above: "Sep 23 · Lonnie Poole GC · 73, +1 · 5-round
+  average 74.2". A tap, a key, or the end of a drag pins it, with a vertical
+  guide and a larger dot; a second tap on it, Esc, or a press outside lets go. A
+  pinned round offers "Open round" (44px) where the round review is rebuilt for
+  the viewer, and none where it is not; the line is announced only for a pin or
+  a key, never for a hover.
+- A thin sample is an early read, not a smaller chart: under five scores (eight
+  rounds of shots for strokes gained) the dots are hollow and the note says
+  "Early read · N rounds". Strokes gained by round needs three rounds with
+  shots; under that the panel says "Needs 3 rounds with shots. N so far." One
+  scored round says so and keeps the chart's frame.
+- The phone gains a Strokes gained by round panel under Scoring trend when the
+  window has rounds with shots. The old `ScoreLine` (still used only by tests)
+  and `ScoreBoardTrend` are no longer drawn by any screen.
+- `useChartPin` gains `area`, the pointer behavior for a chart drawn as one
+  surface, with an `inset` for the axis labels (shared piece, see the shared
+  changelog).
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- The strokes gained chip on the hero (desktop) and on the phone Overview is
+  green or amber only when the change against the previous 10 is larger than
+  one standard error of the difference. Otherwise the signed number stays, in
+  neutral ink, with "No clear change vs previous 10". A clear change reads
+  "Better than previous 10" or "Worse than previous 10", never "Improving".
+  The phone chip names its subject: "SG a round · No clear change vs previous
+  10". The standard error is the player's own spread from five rounds, else
+  the pooled 3.8, over whole rounds (a nine-hole round is half).
+- Overview, Where the strokes go: the change line reads "+0.6 · No clear
+  change vs previous 10" in place of "Up 0.6 on the previous 10".
+- The SG gauge (was a fixed ±3) and the Overview strokes gained track (was
+  −3 to +1) take their ends from the data through `sgScale`, always with zero
+  inside. On the preview player the track runs −1 to +1.
+- Tracks that were always green now follow the data: fairways, greens and
+  scrambling against the team or Tour, penalties amber only above the bench,
+  and a track with nothing to compare against is neutral grey.
+- Phone scoring trend: the form line is green or amber only past one
+  standard error, and "No clear change" sits above the halves line otherwise.
+- Phone Game detail now gets the holes filter (it always read "18 holes
+  only"), with a regression test.
+- The rate gauges are neutral with no reference.
+
+## 2026-10-20 — Strokes gained by leg says how sure it is (visuals 1)
+
+```text
+Design package: none (stats visuals plan, decisions Q2 Q3 Q7 Q12 Q13)
+PR/commit:      uncommitted (claude/stats-visuals-ofvosr)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- Strokes gained by leg is interactive on desktop (Overview, Where the strokes
+  go) and on the phone (the Strokes gained panel). A pointer over a leg, a tap,
+  or the arrow keys read it in a line above the bars: "Approach · −1.2 a round ·
+  10 rounds · likely range −1.5 to −0.9 · Team −0.7" (the team only for a
+  coach). A tap or a key pins the leg (a ring on desktop, a wash on the phone),
+  a second tap, Esc or a press outside lets go. A screen reader hears a pinned
+  leg or a key step, never a hover. The chart is now a focusable group, not a
+  flat image.
+- Every bar carries a thin whisker of one standard error, the "likely range". It
+  uses the player's own round-to-round spread once they have five rounds in the
+  window, else the pooled spread of production players (3.8 strokes gained). The
+  bars keep their scale (the widest value or team mark, rounded up); a whisker
+  the rail cuts off draws no cap at that end and the readout carries the number.
+- A thin sample is muted, never hidden and never shrunk. Off the tee, approach
+  and the total show from 3 rounds and are early reads until 8; around the green
+  and putting show from 5 and are early reads until 15. An early read is a
+  hollow bar with no gain or loss color, its figure in neutral ink, and a note
+  under the bars names which legs are early. A leg under its show floor draws no
+  bar and says "Needs 5 rounds" where the bar would be. On the 10-round preview
+  player, around the green and putting read as early reads.
+- The phone's rows are 44px tap targets, and the panel's note counts only the
+  legs it is showing.
+- New shared pieces: `lib/stats-signal.ts` (floors, standard error, the tone of
+  a change, Wilson intervals, a trailing mean, ties in a ranking: the later
+  pieces use them) and `lib/use-chart-pin.ts` (the hover, pin and key behavior
+  every stats chart will share). `SgBars` moved from `charts.tsx` to its own
+  client file, `SgBars.tsx`; `screens/stats/leg-rows.ts` builds the rows for
+  both screens.
+
 ## 2026-10-19 — Player stats: bests two by two, the class year on its own line
 
 ```text

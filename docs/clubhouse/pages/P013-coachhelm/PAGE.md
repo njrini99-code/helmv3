@@ -88,7 +88,9 @@ CoachHelm settings. Both: try a failed section again.
    its reasoning. Coach: the program pulse, then the players most pressing first
    with the chosen player's focus beside them.
 2. Player: Also worth knowing (the other findings), then Working (the
-   strengths). Coach: the count of players with no insight yet.
+   strengths): at most three findings with the focus and one strength, then
+   how many more reads are in the Deep dive. Coach: the count of players with
+   no insight yet.
 3. The header: the role, "CoachHelm", and for a coach how many players have an
    open signal (the board draws one card per player, so it counts players, never
    the rows behind them).

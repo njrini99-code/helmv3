@@ -10,10 +10,10 @@ import { isCountableRound } from '@/lib/golf/round-countable';
 import { getPlayerSignalSettings } from '@/lib/golf/player-signal-settings';
 import { resolveMinerWindows } from '@/lib/coachhelm/v2/mining/pattern-miner';
 import { chLogServer } from '../lib/track-server';
-import { isNote, isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
+import { isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
 import { speak } from './coachhelm-voice';
-import { boardMissing, firstName, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChPulse, type ChPulseResult, type ChTourBaseline } from './coachhelm-shape';
+import { boardMissing, firstName, partitionInsights, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChPulse, type ChPulseResult, type ChTourBaseline } from './coachhelm-shape';
 import { tourForGender } from './stats-common';
 
 export type * from './coachhelm-shape';
@@ -373,17 +373,28 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
 
   // The team gives the tour (Q-88) and the proposals (Q-77); it reads beside the feed.
   const teamRead = playerTeam(supabase, input.playerId);
+  // CH13-21: only what the Board draws is counted as shown, and it knows that only once it has shaped the rows (the focus, up to
+  // NEEDS_MAX reads and WORKING_MAX strengths, no note and no measured zero). Every return below says which ids it drew.
+  let drew: (ids: readonly string[]) => void = () => {};
+  const drawnIds = new Promise<readonly string[]>((resolve) => {
+    drew = resolve;
+  });
   let feed: EvidenceInsight[] = [];
   let threw = false;
   try {
-    // CH13-21: a card that states no finding is not drawn here, so it is not counted as shown.
-    feed = await getInsightsForPlayer(input.playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i) });
+    // includeMore: the Board caps 3 + 1 itself and counts the rest into the Deep dive, so it reads every read
+    // (coachhelm_reads_v1_copy; no effect off).
+    feed = await getInsightsForPlayer(input.playerId, { limit: PLAYER_FEED_LIMIT, drawnLater: () => drawnIds, includeMore: true });
   } catch (err) {
     log('feed', err);
     threw = true;
   }
+  const done = <T,>(page: T, ids: readonly string[] = []): T => {
+    drew(ids);
+    return page;
+  };
 
-  if (threw) return failed;
+  if (threw) return done(failed);
   const team = await teamRead;
   // Without the team there is no telling what was proposed: the page says so, never "nothing proposed".
   const proposalsOf = async (insights: ReadonlyArray<{ id: string; title: string }>): Promise<ChPlayerHelm['proposals']> =>
@@ -391,16 +402,16 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
   if (feed.length === 0) {
     // Empty: a real first run, or a swallowed failure? Rows the player has not dismissed themselves and the feed could draw say it failed.
     const [visible, dismissed] = await Promise.all([loadVisible(supabase, [input.playerId]), loadPlayerDismissed(supabase, input.playerId)]);
-    if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return failed;
+    if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return done(failed);
     const [proposals, rounds, toGo] = await Promise.all([proposalsOf([]), countCountableRounds(supabase, input.playerId), roundsToGo(supabase, input.playerId)]);
-    return { off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo };
+    return done({ off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo });
   }
 
   // A card that states no finding ("no clear preference", "Scoring by par type") is not drawn on the player's board: it has nothing to work on.
   const drawn = feed.filter((i) => kindOf(i, team.tour) !== 'note');
   if (drawn.length === 0) {
     const [proposals, rounds, toGo] = await Promise.all([proposalsOf(feed), countCountableRounds(supabase, input.playerId), roundsToGo(supabase, input.playerId)]);
-    return { off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo };
+    return done({ off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo });
   }
 
   const [drills, proposals, assigned, newest] = await Promise.all([
@@ -416,7 +427,9 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
   const list = drawn.map((i) => toChInsight(i, { drillText: drills.texts.get(i.id) ?? null, assigned: assigned.byInsight.get(i.id) ?? null, tour: team.tour, newestRound, viewer: { role: 'player' } }));
   // A read beside the cards that failed leaves them drawn without it, and the board says so (never "not assigned", "not out of date").
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });
-  return { off: null, proposals, insights: { list, error: false }, rounds: null, ...(missing ? { missing } : {}) };
+  const board = partitionInsights(list);
+  const shown = [board.focus, ...board.also, ...board.working].flatMap((i) => (i ? [i.id] : []));
+  return done({ off: null, proposals, insights: { list, error: false }, rounds: null, ...(missing ? { missing } : {}) }, shown);
 }
 
 /**

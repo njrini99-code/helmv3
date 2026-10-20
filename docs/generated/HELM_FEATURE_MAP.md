@@ -58,7 +58,7 @@ is a second thing to keep true.
 **CoachHelm AI** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/coachhelm-ai.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/components/golf/coachhelm/**`, `src/app/api/coachhelm/**`, `src/app/api/cron/coachhelm-calibration/**`, `src/app/api/cron/coachhelm-insight-lifecycle/**` … and 23 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/components/golf/coachhelm/**`, `src/app/api/coachhelm/**`, `src/app/api/cron/coachhelm-calibration/**`, `src/app/api/cron/coachhelm-insight-lifecycle/**` … and 24 more in the registry
 - **Telemetry:** `coachhelm_ai_engine` (coachhelm, high), `insights_management` (coachhelm, med), `coachhelm_analytics` (coachhelm, low), `round_review_ai` (coachhelm, med)
 - **Incidents:** `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md`, `memory/incidents/coachhelm_ai/INC-2026-10-13-recap-style-fallback-logged-as-llm.md`, `memory/incidents/coachhelm_ai/INC-2026-10-15-ask-suggestion-function-prop.md`
 - **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging), `validation-rounds-prefetch-2026-09-26` (verified), `safety-net-coverage-prefetch-2026-09-26` (verified), `calibration-load-dedupe-2026-09-27` (verified), `exposure-returned-transient-retry-2026-09-27` (verified), `roster-cohort-batch-2026-09-28` (verified), `roster-exposure-batch-2026-09-28` (verified), `best-effort-budget-abort-2026-09-30` (verified_in_production), `pattern-miner-starvation-info-2026-10-01` (verified), `safety-net-wake-reads-batched-2026-10-03` (verified), `recap-style-fallback-call-log-2026-10-13` (verified), `ask-suggestion-function-prop-2026-10-15` (verified), `recap-word-limit-rewrite-2026-10-20` (verified)
@@ -201,7 +201,7 @@ is a second thing to keep true.
 **Recruiting HQ** · active · criticality medium · owner product
 
 - **Behaviour:** `memory/features/recruiting.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/recruiting/**`, `src/components/fairway/pages/recruiting/**`, `src/clubhouse/screens/recruiting/**`, `src/clubhouse/data/recruiting.ts`, `src/clubhouse/data/recruiting-shape.ts`, `src/clubhouse/data/recruiting-calendar.ts` … and 11 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/recruiting/**`, `src/components/fairway/pages/recruiting/**`, `src/clubhouse/screens/recruiting/**`, `src/clubhouse/data/recruiting.ts`, `src/clubhouse/data/recruiting-shape.ts`, `src/clubhouse/data/recruiting-calendar.ts` … and 12 more in the registry
 - **Telemetry:** `recruiting_prospect_tracking` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -355,7 +355,7 @@ is a second thing to keep true.
 **Clubhouse UI (flagged, off in production)** · active · criticality medium · owner product
 
 - **Behaviour:** `src/clubhouse/AGENTS.md`
-- **Code:** `src/clubhouse/**`, `src/clubhouse/__tests__/**`
+- **Code:** `src/clubhouse/**`, `src/app/clubhouse-preview/entry/**`, `src/clubhouse/__tests__/**`, `src/app/clubhouse-preview/entry/__tests__/**`
 - **Telemetry:** none. Clubhouse is a flagged alternative UI over the golf features it renders. Telemetry attributes to those features, so a Clubhouse key would double-count.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

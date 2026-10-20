@@ -282,6 +282,14 @@
 .ch-fg__track i.is-loss {
   background: var(--ch-chart-loss);
 }
+/* A rate with no mark to judge it by: neither gain nor loss (stats visuals Q4). */
+/* The phone's scoring trend inside its standard error: "No clear change" on its own line above the halves it compares. */
+.ch-stm-figs__clear {
+  display: block;
+}
+.ch-fg__track i.is-neutral {
+  background: var(--ch-ink-400);
+}
 .ch-fg__track b {
   position: absolute;
   top: -3px;
@@ -1529,58 +1537,6 @@
   color: var(--ch-text-tertiary);
 }
 
-.ch-mix {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.ch-mix__bar {
-  display: flex;
-  height: 34px;
-  overflow: hidden;
-  border-radius: var(--ch-radius-md);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
-}
-.ch-mix__s + .ch-mix__s {
-  box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.7);
-}
-.ch-mix .is-eagle {
-  background: #8e2a20;
-}
-.ch-mix .is-birdie {
-  background: var(--ch-score-under);
-}
-.ch-mix .is-par {
-  background: var(--ch-ivory-200);
-}
-.ch-mix .is-bogey {
-  background: #8f8b81;
-}
-.ch-mix .is-double {
-  background: var(--ch-ink-700);
-}
-.ch-mix__k {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  font: var(--ch-type-caption);
-  color: var(--ch-text-tertiary);
-}
-.ch-mix__k span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.ch-mix__k i {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-.ch-mix__k b {
-  font: 600 13px/1 var(--ch-font-sans);
-  font-variant-numeric: tabular-nums;
-  color: var(--ch-text-primary);
-}
 .ch-par3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1799,28 +1755,6 @@
   background: radial-gradient(circle at 50% 50%, #cbddcc 0 60%, #bfd5c1 61%);
   color: var(--ch-green-700);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.2);
-}
-.ch-mk {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.ch-mk__v {
-  font: 600 11.5px var(--ch-font-sans);
-}
-.ch-mk__v.is-gain {
-  fill: var(--ch-chart-gain);
-}
-.ch-mk__v.is-loss {
-  fill: var(--ch-chart-loss);
-}
-.ch-mk__b {
-  font: 500 11px var(--ch-font-sans);
-  fill: var(--ch-text-secondary);
-}
-.ch-mk__n {
-  font: 400 10px var(--ch-font-sans);
-  fill: var(--ch-text-tertiary);
 }
 .ch-cup {
   display: grid;
@@ -2327,6 +2261,40 @@
     font-weight: 600;
     color: var(--ch-text-primary);
   }
+  /* Stats visuals: the phone's rows are a 44px tap target, a pinned row lifts, an early read is hollow. */
+  .ch-stm-legs:has(.ch-sv-row) {
+    gap: 2px;
+  }
+  .ch-stm-legs > .ch-sv-read {
+    min-height: 44px;
+    margin-bottom: 4px;
+  }
+  .ch-stm-leg.ch-sv-row {
+    min-height: 44px;
+    margin: 0 -6px;
+    padding: 0 6px;
+    border-radius: 10px;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-stm-leg.ch-sv-row[data-pinned] {
+    background: var(--ch-bg-inset);
+  }
+  .ch-stm-leg.is-total.ch-sv-row {
+    padding-top: 0;
+    border-top: 0;
+    box-shadow: 0 -1px 0 var(--ch-border-hairline);
+  }
+  .ch-stm-leg.is-early .ch-stm-leg__v {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  }
+  .ch-stm-leg.is-early b {
+    color: var(--ch-text-secondary);
+  }
+  .ch-stm-leg .ch-sv-needs {
+    left: calc(50% + 8px);
+    font: var(--ch-type-caption);
+  }
   .ch-stm-putt__bar i {
     position: absolute;
     inset: 0 auto 0 0;
@@ -2814,16 +2782,6 @@
 }
 .ch-gx-pm.is-empty > span {
   color: var(--ch-text-secondary);
-}
-.ch-gx-pm .ch-mix__k {
-  gap: 10px 14px;
-}
-.ch-mix__k small {
-  display: block;
-  margin-left: 4px;
-  font: var(--ch-type-caption);
-  font-variant-numeric: tabular-nums;
-  color: var(--ch-text-tertiary);
 }
 .ch-gx-rank {
   display: flex;
@@ -3468,9 +3426,6 @@
 @media (max-width: 820px) {
   .ch-tick,
   .ch-tab-t__n,
-  .ch-mk__v,
-  .ch-mk__b,
-  .ch-mk__n,
   .ch-sf__n {
     font-size: 12px;
   }
@@ -4117,7 +4072,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-gm__ic {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.16);
 }
-:where(html[data-fw-theme='dark']) .ch-mix__bar,
 :where(html[data-fw-theme='dark']) .ch-par3__t,
 :where(html[data-fw-theme='dark']) .ch-lad__col,
 :where(html[data-fw-theme='dark']) .ch-cup__split .is-high,
@@ -4125,20 +4079,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-gx-sec__c,
 :where(html[data-fw-theme='dark']) .ch-gx-pm {
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
-}
-/* The score mix keeps its order by lightness as well as hue: eagle the deep red, birdie the light one, then par, bogey
-   and double stepping up from the card. */
-:where(html[data-fw-theme='dark']) .ch-mix__s + .ch-mix__s {
-  box-shadow: inset 1px 0 0 rgb(17 21 18 / 0.9);
-}
-:where(html[data-fw-theme='dark']) .ch-mix .is-eagle {
-  background: #b0473a;
-}
-:where(html[data-fw-theme='dark']) .ch-mix .is-par {
-  background: var(--ch-ivory-300);
-}
-:where(html[data-fw-theme='dark']) .ch-mix .is-bogey {
-  background: #7a7569;
 }
 :where(html[data-fw-theme='dark']) .ch-fws__z.is-rough {
   background: repeating-linear-gradient(135deg, var(--ch-chart-rough) 0 6px, #2e3529 6px 7px);
@@ -5682,6 +5622,176 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   background: var(--ch-ink-700);
 }
 
+/* Stats visuals (shared signal layer): how sure a stat is. A readout line above the marks, a whisker of one standard error, a
+   hollow muted mark for an early read, and what a stat needs while it has too few. Prefix .ch-sv-. */
+.ch-sv-read {
+  min-height: 22px;
+  margin: 0 0 8px;
+  font: var(--ch-type-body-s);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-read.is-on {
+  color: var(--ch-text-primary);
+}
+.ch-sv-whisk {
+  position: absolute;
+  top: 50%;
+  height: 1px;
+  margin-top: -0.5px;
+  background: var(--ch-text-tertiary);
+  pointer-events: none;
+}
+.ch-sv-whisk::before,
+.ch-sv-whisk::after {
+  position: absolute;
+  top: -3px;
+  width: 1px;
+  height: 7px;
+  background: inherit;
+  content: '';
+}
+.ch-sv-whisk::before {
+  left: 0;
+}
+.ch-sv-whisk::after {
+  right: 0;
+}
+/* A whisker the rail cuts off draws no cap at that end: the readout carries the number. */
+.ch-sv-whisk.is-clip-l::before,
+.ch-sv-whisk.is-clip-r::after {
+  display: none;
+}
+.ch-sv-needs {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 10px);
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-note {
+  margin: 10px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-row {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-lb:focus-visible,
+.ch-stm-legs:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-st[data-canopy] .ch-lb__r.ch-sv-row {
+  margin: 0 -12px;
+  padding: 10px 12px;
+}
+.ch-st[data-canopy] .ch-sv-row[data-active] {
+  background: rgb(176 149 96 / 0.1);
+}
+.ch-st[data-canopy] .ch-sv-row[data-pinned] {
+  box-shadow:
+    inset 0 0 0 1px var(--ch-border-strong),
+    inset 0 -1px 0 var(--ch-ledger-rule-soft);
+}
+/* An early read: hollow, no gain or loss color, a little quieter. */
+.ch-st[data-canopy] .ch-sv-row.is-early .ch-lb__bar {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  opacity: 0.85;
+}
+.ch-st[data-canopy] .ch-sv-row.is-early .ch-lb__v {
+  color: var(--ch-text-secondary);
+}
+
+/* Stats visuals: the trend of rounds (RoundTrend). Dots for rounds, a five-round average, a par or zero line; a pinned round
+   offers Open round. Prefix .ch-sv-rt, .ch-sv-open. */
+.ch-sv-rt:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-stm-chart-hold.ch-sv-rt__hold {
+  aspect-ratio: 340 / 212;
+}
+.ch-sv-rt__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 22px;
+}
+.ch-stm-panel .ch-sv-rt__head {
+  min-height: 44px;
+}
+.ch-sv-rt__head .ch-sv-read {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.ch-sv-open {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 44px;
+  margin: -12px 0 -10px;
+  padding: 0 4px 0 12px;
+  font: var(--ch-type-body-s);
+  font-weight: 600;
+  color: var(--ch-green-600);
+  text-decoration: none;
+}
+.ch-sv-rt__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-sv-rt__grid {
+  stroke: var(--ch-border-hairline);
+  stroke-width: 1;
+}
+.ch-sv-rt__ref {
+  stroke: var(--ch-border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.ch-sv-rt__t {
+  font: 500 10px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  fill: var(--ch-text-tertiary);
+}
+.ch-sv-rt__mean {
+  stroke: var(--ch-text-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-sv-rt__guide {
+  stroke: var(--ch-border-strong);
+  stroke-width: 1;
+}
+.ch-sv-rt__dot {
+  fill: var(--ch-text-tertiary);
+  stroke: var(--ch-bg-surface);
+  stroke-width: 1.5;
+}
+.ch-sv-rt__dot.is-hollow {
+  fill: var(--ch-bg-surface);
+  stroke: var(--ch-text-tertiary);
+}
+.ch-sv-rt__dot.is-active {
+  fill: var(--ch-text-primary);
+  stroke: var(--ch-bg-surface);
+  stroke-width: 2;
+}
+
 /* P005: the player Overview as seven zones (OverviewZones). Each stat area is a band set off by a gold rule, an alternating tint
    and, left, what the stat is with one big reading; right, the picture that fits it. Prefix .ch-z. */
 .ch-st[data-canopy] .ch-znbig.is-good {
@@ -5736,6 +5846,17 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-ztrack__fill.is-bad {
   background: var(--ch-warning-600);
 }
+/* The strokes gained change in the zone's lines: coloured only when it clears its standard error (OverviewZones). */
+.ch-znlines b.ch-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-znlines b.ch-loss {
+  color: var(--ch-chart-loss);
+}
+/* Nothing to judge the figure by (no benchmark): neither gain nor loss (stats visuals Q4). */
+.ch-st[data-canopy] .ch-ztrack__fill.is-neutral {
+  background: var(--ch-ink-400);
+}
 .ch-st[data-canopy] .ch-ztrack__tick {
   position: absolute;
   top: -5px;
@@ -5785,81 +5906,6 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-zlegend i.is-tour {
   background: var(--ch-champagne-500);
-}
-
-/* every hole by result */
-.ch-st[data-canopy] .ch-zmix {
-  display: flex;
-  height: 44px;
-  overflow: hidden;
-  border-radius: 10px;
-  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
-}
-.ch-st[data-canopy] .ch-zmix i {
-  flex: var(--ch-z-n, 0) 1 0;
-  display: grid;
-  place-items: center;
-  min-width: 0;
-  font: 700 13px/1 var(--ch-font-sans, inherit);
-  font-style: normal;
-}
-.ch-st[data-canopy] .ch-zmix .is-eagle,
-.ch-st[data-canopy] .ch-zmixkey i.is-eagle {
-  background: #7f2a21;
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmix .is-birdie,
-.ch-st[data-canopy] .ch-zmixkey i.is-birdie {
-  background: var(--ch-chart-flag);
-  color: #fff;
-}
-/* At night the flag is a salmon that white reads 2.5:1 on; the page's near-black holds 7.3:1. */
-html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmixkey i.is-birdie) {
-  color: var(--ch-bg-page);
-}
-.ch-st[data-canopy] .ch-zmix .is-par,
-.ch-st[data-canopy] .ch-zmixkey i.is-par {
-  background: var(--ch-ivory-300);
-  color: var(--ch-ink-900);
-}
-/* The par swatch is parchment on parchment: a hairline ring keeps it a swatch, not a gap. */
-.ch-st[data-canopy] .ch-zmixkey i.is-par {
-  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
-}
-.ch-st[data-canopy] .ch-zmix .is-bogey,
-.ch-st[data-canopy] .ch-zmixkey i.is-bogey {
-  background: #6f6b62;
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmix .is-double,
-.ch-st[data-canopy] .ch-zmixkey i.is-double {
-  background: #1c1b18;
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmixkey {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-.ch-st[data-canopy] .ch-zmixkey div {
-  display: grid;
-  gap: 3px;
-  font: 500 12.5px/1.2 var(--ch-font-sans, inherit);
-  color: var(--ch-text-tertiary);
-}
-.ch-st[data-canopy] .ch-zmixkey b {
-  font: 700 18px/1 var(--ch-font-sans, inherit);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  color: var(--ch-text-primary);
-}
-.ch-st[data-canopy] .ch-zmixkey i {
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  margin-right: 6px;
-  border-radius: 2px;
 }
 
 /* the fairway strip */
@@ -6322,7 +6368,6 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
 .ch-st[data-canopy] .ch-dv__dot {
   transition: translate var(--ch-dur-base) var(--ch-ease);
 }
-.ch-st[data-canopy] .ch-zmix i,
 .ch-st[data-canopy] .ch-zfw > div {
   transition:
     flex-grow var(--ch-dur-base) var(--ch-ease),
@@ -6337,9 +6382,6 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
   .ch-st[data-canopy] .ch-lb__r:hover,
   .ch-st[data-canopy] .ch-zrow:hover {
     background: rgb(176 149 96 / 0.1);
-  }
-  .ch-st[data-canopy] .ch-zmix i:hover {
-    filter: brightness(1.12);
   }
 }
 
@@ -6461,4 +6503,736 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
       padding: 0 8px;
     }
   }
+}
+
+/* P005: make rate by distance (PuttBands, stats-visuals spec 4.3). The bands on equal spacing, a dot per band on a 0 to 100%
+   axis with a thin Wilson whisker, the Tour's thin line behind the dots, and made/tried under each band. Each band is one
+   column and one hit target (44px or wider): the column tint is the guide to the readout above. The same block draws the
+   desktop Overview and Game detail and, with .is-compact, the phone. Prefix .ch-sv-pb. */
+.ch-sv-pb {
+  --ch-pb-h: 208px;
+  --ch-pb-pad: 10px;
+  --ch-pb-y: 44px;
+  padding: 4px 0 2px;
+}
+.ch-sv-pb.is-compact {
+  --ch-pb-h: 172px;
+  --ch-pb-y: 40px;
+}
+.ch-sv-pb.is-compact > .ch-sv-read {
+  min-height: calc(2 * 1.45em);
+}
+.ch-sv-pb:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-sv-pb__chart {
+  display: grid;
+  grid-template-columns: var(--ch-pb-y) minmax(0, 1fr);
+}
+.ch-sv-pb__y {
+  position: relative;
+  height: calc(var(--ch-pb-h) - 2 * var(--ch-pb-pad));
+  margin-top: var(--ch-pb-pad);
+}
+.ch-sv-pb__y span {
+  position: absolute;
+  top: var(--ch-pb-at);
+  right: 6px;
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb__cols {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+.ch-sv-pb__grid,
+.ch-sv-pb__tour {
+  position: absolute;
+  top: var(--ch-pb-pad);
+  left: 0;
+  width: 100%;
+  height: calc(var(--ch-pb-h) - 2 * var(--ch-pb-pad));
+  pointer-events: none;
+}
+.ch-sv-pb__grid i {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--ch-ledger-rule);
+}
+.ch-sv-pb__tour {
+  overflow: visible;
+}
+.ch-sv-pb__tour polyline {
+  fill: none;
+  stroke: var(--ch-champagne-500);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.ch-sv-pb__col {
+  position: relative;
+  display: grid;
+  grid-template-rows: var(--ch-pb-h) auto;
+  min-width: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-pb__col[data-active] {
+  background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);
+}
+.ch-sv-pb__col[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-pb__mk {
+  position: relative;
+}
+.ch-sv-pb__scale {
+  position: absolute;
+  inset: var(--ch-pb-pad) 0;
+}
+.ch-sv-pb__tick {
+  position: absolute;
+  left: 50%;
+  width: 20px;
+  height: 2px;
+  margin: -1px 0 0 -10px;
+  border-radius: 1px;
+  background: var(--ch-champagne-500);
+  text-decoration: none;
+}
+.ch-sv-pb__whisk {
+  position: absolute;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--ch-text-tertiary);
+}
+.ch-sv-pb__whisk::before,
+.ch-sv-pb__whisk::after {
+  position: absolute;
+  left: -3px;
+  width: 7px;
+  height: 1px;
+  background: inherit;
+  content: '';
+}
+.ch-sv-pb__whisk::before {
+  top: 0;
+}
+.ch-sv-pb__whisk::after {
+  bottom: 0;
+}
+/* A whisker the axis cuts off draws no cap at that end: the readout carries the number. */
+.ch-sv-pb__whisk.is-clip-t::before,
+.ch-sv-pb__whisk.is-clip-b::after {
+  display: none;
+}
+.ch-sv-pb__dot {
+  position: absolute;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+  transition: scale var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-pb__dot.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-sv-pb__dot.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-sv-pb__col[data-active] .ch-sv-pb__dot {
+  scale: 1.25;
+}
+/* An early read: hollow, no gain or loss color, a little quieter. */
+.ch-sv-pb__col.is-early .ch-sv-pb__dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  opacity: 0.85;
+}
+.ch-sv-pb__needs {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  left: 4px;
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  text-align: center;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb__lab {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 1px;
+  padding: 8px 2px 8px;
+  text-align: center;
+}
+.ch-sv-pb__lab span {
+  font: 500 13.5px/1.3 var(--ch-font-sans);
+  white-space: nowrap;
+  color: var(--ch-text-primary);
+}
+.ch-sv-pb__lab b {
+  font: 600 16px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-sv-pb__lab b.ch-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-sv-pb__lab b.ch-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-sv-pb__col.is-early .ch-sv-pb__lab b,
+.ch-sv-pb__col.is-none .ch-sv-pb__lab b {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-pb__lab small {
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb.is-compact .ch-sv-pb__lab span {
+  font-size: 12.5px;
+}
+.ch-sv-pb.is-compact .ch-sv-pb__lab b {
+  font-size: 14px;
+}
+.ch-sv-pb__cap,
+.ch-sv-pb__key {
+  margin: 6px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.ch-sv-pb__key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-sv-pb__kdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+}
+.ch-sv-pb__kline {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ch-champagne-500);
+  text-decoration: none;
+}
+.ch-sv-pb__kwhisk {
+  position: relative;
+  width: 7px;
+  height: 12px;
+  background: linear-gradient(var(--ch-text-tertiary), var(--ch-text-tertiary)) center / 1px 100% no-repeat;
+  box-shadow:
+    inset 0 1px 0 var(--ch-text-tertiary),
+    inset 0 -1px 0 var(--ch-text-tertiary);
+}
+/* Stats visuals, the scoring mix (ScoreMixBar; spec 4.4, decision Q11). One 100% bar of every scored hole by result, par in the
+   middle: going out from it, birdie then eagle or better to the left, bogey then double or worse to the right. Red is under par;
+   par, bogey and double are the scorecard's ivory, gray and ink, every fill a token. A segment prints its share only when it is
+   at least 30px wide (a container query on the segment itself); the key carries every share. Prefix .ch-sv-mix-. */
+.ch-sv-mix {
+  container: ch-sv-mix / inline-size;
+}
+.ch-sv-mix:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-sv-mix .is-eagle {
+  --ch-sv-mix-fill: var(--ch-score-eagle-fill);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+.ch-sv-mix .is-birdie {
+  --ch-sv-mix-fill: var(--ch-chart-flag);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+.ch-sv-mix .is-par {
+  --ch-sv-mix-fill: var(--ch-ivory-300);
+  --ch-sv-mix-ink: var(--ch-ink-900);
+}
+.ch-sv-mix .is-bogey {
+  --ch-sv-mix-fill: var(--ch-ink-500);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+.ch-sv-mix .is-double {
+  --ch-sv-mix-fill: var(--ch-score-double);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+/* At night birdie, bogey and double are the light fills (the salmon, the warm gray, the ivory ink): their numerals take the page's
+   near-black. Eagle stays the deeper red under an ivory numeral. */
+html[data-fw-theme='dark'] .ch-sv-mix .is-birdie,
+html[data-fw-theme='dark'] .ch-sv-mix .is-bogey,
+html[data-fw-theme='dark'] .ch-sv-mix .is-double {
+  --ch-sv-mix-ink: var(--ch-bg-page);
+}
+.ch-sv-mix-bar {
+  display: flex;
+  gap: 2px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.ch-sv-mix-seg {
+  container-type: inline-size;
+  display: grid;
+  flex: 0 1 0;
+  place-items: center;
+  min-width: 2px;
+  background: var(--ch-sv-mix-fill);
+  color: var(--ch-sv-mix-ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+/* Par is parchment on parchment: a hairline keeps its edge. */
+.ch-sv-mix-seg.is-par {
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-sv-mix-seg b {
+  font: 700 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@container (max-width: 29.98px) {
+  .ch-sv-mix-seg b {
+    visibility: hidden;
+  }
+}
+/* A result read under the pointer or pinned stands out; the others step back. */
+.ch-sv-mix[data-has-active] .ch-sv-mix-seg:not([data-active]) {
+  opacity: 0.5;
+}
+.ch-sv-mix-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-mix-key {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin: 8px -8px 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-sv-mix-key li {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-mix-key li[data-active] {
+  background: var(--ch-bg-hover);
+}
+.ch-sv-mix-key li[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-mix-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font: 500 12.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-mix-name i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--ch-sv-mix-fill);
+}
+.ch-sv-mix-key .is-par .ch-sv-mix-name i {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-mix-key b {
+  font: 700 18px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-sv-mix-key small {
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+/* Each par's mix (Game detail, More detail): a slimmer bar, the key as one wrapping line of name and share. */
+.ch-sv-mix.is-compact .ch-sv-read {
+  min-height: 18px;
+  margin-bottom: 6px;
+  font: var(--ch-type-caption);
+}
+.ch-sv-mix.is-compact .ch-sv-mix-bar {
+  height: 28px;
+  border-radius: 8px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-seg b {
+  font-size: 12px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin-top: 6px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-key b {
+  font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+/* An early read (under 30 holes): the bar a step quieter and the shares in secondary ink; the note says why. */
+.ch-sv-mix.is-early .ch-sv-mix-bar {
+  opacity: 0.72;
+}
+.ch-sv-mix.is-early .ch-sv-mix-key b {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-mix-none {
+  margin: 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-tertiary);
+}
+/* A narrow mix (the phone, a half-width panel): the key becomes a short table, one result a row (name, share, a round), and the
+   readout has room to wrap to two lines without moving the bar. */
+@container ch-sv-mix (max-width: 559px) {
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key li {
+    grid-template-columns: minmax(0, 1fr) auto 7.5em;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 36px;
+    align-content: center;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key b {
+    font-size: 15px;
+    text-align: right;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key small {
+    text-align: right;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-name {
+    font-size: 13.5px;
+  }
+  .ch-sv-mix:not(.is-compact) > .ch-sv-read {
+    min-height: calc(2 * 1.45em);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-sv-mix-seg,
+  .ch-sv-mix-key li {
+    transition: none;
+  }
+}
+
+/* P004: who gains and who loses (TeamRank, stats-visuals spec 4.5, decision Q10). A ranked dot plot: one row per player in
+   order of the dot, a rank ("T3" for a tie), the name, a track with the player's mean and a whisker of one standard error, and
+   the value. The team's mean is one dashed line through every row, the grid lines and zero sit behind. Better is right for
+   every figure. Each row is one hit target (44px on the phone); the row tint is the guide to the readout above. Prefix .ch-sv-tr. */
+.ch-sv-tr:not(.is-phone) {
+  padding: 6px 6px 14px;
+  border-radius: 16px;
+  background: var(--ch-ivory-25);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-sv-tr__menu {
+  flex: none;
+}
+.ch-sv-tr__menu .ch-select {
+  width: auto;
+}
+.ch-sv-tr__menu .ch-select select {
+  width: auto;
+  height: 34px;
+}
+.ch-sv-tr__plot {
+  --ch-tr-rank: 40px;
+  --ch-tr-who: 184px;
+  --ch-tr-v: 64px;
+  --ch-tr-row: 30px;
+  --ch-tr-cap: 22px;
+  --ch-tr-axis: 24px;
+  --ch-tr-none-gap: 0px;
+  padding: 0 16px;
+}
+.ch-sv-tr__plot:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-sv-tr__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+}
+.ch-sv-tr__top .ch-sv-read {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.ch-sv-tr__body {
+  position: relative;
+}
+.ch-sv-tr__field {
+  position: absolute;
+  top: var(--ch-tr-cap);
+  right: var(--ch-tr-v);
+  bottom: calc(var(--ch-tr-axis) + var(--ch-tr-none, 0) * var(--ch-tr-row) + var(--ch-tr-none-gap));
+  left: calc(var(--ch-tr-rank) + var(--ch-tr-who));
+  pointer-events: none;
+}
+.ch-sv-tr__grid,
+.ch-sv-tr__mean {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  text-decoration: none;
+}
+.ch-sv-tr__grid {
+  border-left: 1px solid var(--ch-border-hairline);
+}
+.ch-sv-tr__grid.is-zero {
+  border-left-color: var(--ch-border-strong);
+}
+.ch-sv-tr__mean {
+  top: -4px;
+  border-left: 1.5px dashed var(--ch-champagne-500);
+  margin-left: -0.75px;
+}
+.ch-sv-tr__r {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--ch-tr-rank) var(--ch-tr-who) minmax(0, 1fr) var(--ch-tr-v);
+  align-items: center;
+  min-height: var(--ch-tr-row);
+  border-radius: 8px;
+}
+.ch-sv-tr__r.is-cap {
+  min-height: var(--ch-tr-cap);
+}
+.ch-sv-tr__r.is-axis {
+  min-height: var(--ch-tr-axis);
+}
+.ch-sv-tr__body:has(.ch-sv-tr__r.is-none) {
+  --ch-tr-none-gap: 6px;
+}
+.ch-sv-tr__r.is-axis + .ch-sv-tr__r.is-none {
+  margin-top: var(--ch-tr-none-gap);
+}
+.ch-sv-tr__r.ch-sv-row {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-tr__r.ch-sv-row[data-active] {
+  background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);
+}
+.ch-sv-tr__r.ch-sv-row[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-tr__rank {
+  padding-left: 8px;
+  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__who {
+  overflow: hidden;
+  padding-right: 12px;
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ch-text-primary);
+}
+.ch-sv-tr__r.is-none .ch-sv-tr__who {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-tr__track {
+  position: relative;
+  align-self: stretch;
+  min-height: inherit;
+}
+.ch-sv-tr__dot {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+  transition: scale var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-tr__dot.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-sv-tr__dot.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-sv-tr__r[data-active] .ch-sv-tr__dot {
+  scale: 1.3;
+}
+/* An early read: hollow, no gain or loss color, a little quieter. */
+.ch-sv-tr__r.is-early .ch-sv-tr__dot {
+  background: var(--ch-ivory-25);
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+}
+.ch-sv-tr__r.is-early .ch-sv-whisk {
+  opacity: 0.7;
+}
+.ch-sv-tr__needs {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__v {
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--ch-text-primary);
+}
+.ch-sv-tr__r.is-early .ch-sv-tr__v,
+.ch-sv-tr__r.is-none .ch-sv-tr__v {
+  font-weight: 500;
+  color: var(--ch-text-secondary);
+}
+.ch-sv-tr__meanlab,
+.ch-sv-tr__tick {
+  position: absolute;
+  top: 50%;
+  left: var(--ch-tr-at);
+  translate: -50% -50%;
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__meanlab {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-tr__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 10px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-sv-tr__kdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+}
+.ch-sv-tr__kwhisk {
+  width: 14px;
+  height: 7px;
+  background: linear-gradient(var(--ch-text-tertiary), var(--ch-text-tertiary)) center / 100% 1px no-repeat;
+  box-shadow:
+    inset 1px 0 0 var(--ch-text-tertiary),
+    inset -1px 0 0 var(--ch-text-tertiary);
+}
+.ch-sv-tr__kmean {
+  width: 0;
+  height: 12px;
+  border-left: 1.5px dashed var(--ch-champagne-500);
+  text-decoration: none;
+}
+.ch-st[data-canopy] .ch-sv-tr:not(.is-phone) {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-sv-tr .ch-sgt__head {
+  margin-bottom: 10px;
+  padding: 0 0 12px;
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-sv-tr__plot {
+  padding: 0;
+}
+
+/* The phone: an inset panel; rows are 44px tap targets, names shortened ("Theo M."), the track takes what is left. */
+.ch-sv-tr.is-phone .ch-stm-panel__h {
+  align-items: center;
+  padding-right: 4px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__menu select {
+  /* Under 16px, iOS zooms the page when the picker takes focus. */
+  font-size: 16px;
+}
+.ch-sv-tr__inset {
+  padding: 10px 12px 12px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__plot {
+  --ch-tr-rank: 30px;
+  --ch-tr-who: 78px;
+  --ch-tr-v: 46px;
+  --ch-tr-row: 44px;
+  padding: 0;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__top {
+  /* The longest readout (an early read with its range and the team) is three lines at 390: held, so a pin never moves the rows. */
+  min-height: calc(3 * 1.45em + 4px);
+}
+.ch-sv-tr.is-phone .ch-sv-tr__rank {
+  padding-left: 6px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__who {
+  padding-right: 8px;
+  font-size: calc(14 * var(--ch-type-k));
+}
+.ch-sv-tr.is-phone .ch-sv-tr__dot {
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__v {
+  padding-right: 6px;
 }

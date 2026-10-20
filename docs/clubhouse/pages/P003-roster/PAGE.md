@@ -132,8 +132,9 @@ Status:           approved
 
 The sidebar (Team › Roster, with a coach's join requests count; a player's
 Team › Roster has no count) and the More sheet on the phone (D-50, D-66), Home's Full roster link, and the bell's join-request
-notification (its address carries `?tab=requests`, which Roster ignores: the
-requests are the first thing under the header).
+notification (its address carries `?tab=requests`: the phone opens the requests
+sheet, and desktop takes focus to the requests card under the header; the param
+is dropped either way).
 
 ### Exits to
 
