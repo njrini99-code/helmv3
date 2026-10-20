@@ -234,6 +234,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies 20260923100000_round_recap_single_flight_lock to each environment, confirmed via information_schema.columns (ai_narrative) and pg_proc (claim_round_recap_lock / release_round_recap_lock). Once on everywhere and the fallback rate (deterministic vs. LLM-authored) is acceptable, consider promoting to a permanent `release` flag — owner's call, not automatic.",
   },
   {
+    feature_id: "coachhelm_support_v1",
+    owner: "golf/coachhelm",
+    purpose: "After the insight generators write a player's rows for a run, computes each row's support (the gap to the benchmark with a 95% range, a one-sided p and a Benjamini-Hochberg q across every candidate of the run, q <= 0.10), the shrunk estimate and the five-rung claim ladder, and merges them into the row's evidence (support, ladder, what_ladder, ladder_reasons, strokes_shrunk, shrink); writes one golf_coachhelm_run_log row per run; and records rank_factors on golf_insight_exposure. Turning it on changes no title, content, confidence, priority or lifecycle: no surface reads the ladder yet, so coaches and players see nothing different until a renderer PR does. Off: nothing is read or written by this code.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020114500_golf_coachhelm_run_log.sql (HELD.md row; the writer treats the missing table as not available, so order is not a correctness issue) and the support back-test (scripts/coachhelm/support-backtest.ts) meets the 02 §8 acceptance bars. Remove the flag and the isSupportPassEnabled branches once the ladder renderers ship and the pass has run stably for a month.",
+  },
+  {
     feature_id: "coachhelm_team_pool_v1",
     owner: "golf/coachhelm",
     purpose: "Gates the team pool benchmark on v3 CoachHelm reads (v3/team-pool/, run from BaseGenerator.run()). When on, a putt make rate by band, approach green-hit rate by band, bunker up-and-down, par 3/4/5 scoring or penalties-per-round read gets evidence.comparison with the pooled attempts of the player's teammates in the same window as the primary line (\"Team pool 72% (240 putts)\") and the Tour as a further line, and the Clubhouse Deep dive Read and the Fairway evidence panel print that team line. A pool is drawn only when at least 5 rostered players have a countable round in the window and at least 4 teammates (never the player) have 3 or more countable rounds and attempts in the family, with at least 100 pooled attempts; it never names or ranks a teammate. Strokes, standing and the flat comparison fields stay on the Tour. When off, the engine writes exactly what it wrote before.",

@@ -455,6 +455,7 @@ async function generateAlertsImpl(
           includePatterns: true,
           includePredictions: true,
           depth: 'standard',
+          runTrigger: 'manual',
         });
 
         return {

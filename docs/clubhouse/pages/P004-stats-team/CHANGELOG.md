@@ -1,5 +1,24 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-20 — No visible change (stats visuals 4)
+
+```text
+Design package: none (stats visuals piece 4; the page entry is in P005)
+PR/commit:      uncommitted (local/stats-pr4-putt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `MakeCurve` and `MakeRows` left `charts.tsx` for the
+  player profile's `PuttBands.tsx`, and `stats.css` gained the `.ch-sv-pb-*`
+  block and lost the unused `.ch-mk` rules, both files this page shares with the
+  player profile. Team putting (rings on desktop, bars on the phone) is its own
+  component and is unchanged.
+
 ## 2026-10-20 — No visible change (stats visuals 3)
 
 ```text
