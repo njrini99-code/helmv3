@@ -142,6 +142,14 @@ export interface GetInsightsForPlayerOptions {
    */
   drawn?: (insight: EvidenceInsight) => boolean;
   /**
+   * Instead of `drawn`, for a surface that knows what it draws only after it
+   * has shaped the rows (the Clubhouse player Board caps its reads by kind,
+   * freshness and the Tour, which it reads after this call). Called once
+   * with the returned rows; the ones whose ids the promise resolves to are
+   * recorded as shown, in that order. A promise that rejects records nothing.
+   */
+  drawnLater?: (shown: EvidenceInsight[]) => Promise<readonly string[]>;
+  /**
    * CoachHelm Slice 0 (flag `coachhelm_reads_v1_copy`): with the flag on the
    * feed holds each player to 3 open reads + 1 strength. A surface that lists
    * every read (the "More reads" audit, 03 S7; the Clubhouse Deep dive, whose
@@ -781,12 +789,16 @@ async function getInsightsForPlayerImpl(
   const shown = deliverReads(applyPlayerFeedbackOverlay(deduped, feedbackByInsight), plan).slice(0, limit);
   // Record exposure for the EXACT rows returned (post overlay + slice) — a row
   // dropped by the limit or by a player dismissal is never counted as shown.
-  recordExposureForReturned(
-    opts.drawn ? shown.filter(opts.drawn) : shown,
-    'player_feed',
-    null,
-    rankMaps(rankedScored, plan),
-  );
+  const rank = rankMaps(rankedScored, plan);
+  if (opts.drawnLater) {
+    const byId = new Map(shown.map((i) => [i.id, i]));
+    void opts.drawnLater(shown).then(
+      (ids) => recordExposureForReturned(ids.map((id) => byId.get(id)).filter((i): i is EvidenceInsight => !!i), 'player_feed', null, rank),
+      () => undefined,
+    );
+  } else {
+    recordExposureForReturned(opts.drawn ? shown.filter(opts.drawn) : shown, 'player_feed', null, rank);
+  }
   return shown;
 }
 
