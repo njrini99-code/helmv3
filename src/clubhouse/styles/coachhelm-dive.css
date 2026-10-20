@@ -249,6 +249,65 @@
   text-wrap: balance;
   font-variation-settings: 'wdth' 96;
 }
+
+/* The read in four lines (What, Why, Next, When): a label column beside each line, on soft rules, under the title */
+.ch-hd-read {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.ch-hd-read > div {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 14px;
+  padding: 11px 0;
+  border-top: 1px solid var(--ch-ledger-rule-soft);
+}
+.ch-hd-read > div:last-child {
+  padding-bottom: 0;
+}
+.ch-hd-read dt {
+  padding-top: 2px;
+  font: 600 calc(12.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  color: var(--ch-green-700);
+}
+.ch-hd-read dd {
+  margin: 0;
+  max-width: 62ch;
+  font: 400 calc(15 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  color: var(--ch-ink-700);
+  text-wrap: pretty;
+}
+.ch-hd-read dd.is-none {
+  color: var(--ch-text-tertiary);
+}
+.ch-hd-read__lvl {
+  display: inline-block;
+  margin-right: 4px;
+  vertical-align: 1px;
+}
+.ch-hd-read__drill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-hd-read__drill svg {
+  flex: none;
+  color: var(--ch-green-700);
+}
+.ch-hd-read__drill b {
+  font-weight: 600;
+}
+.ch-hd-read__drill em {
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-hd-read__stale {
+  display: block;
+  margin-top: 4px;
+  font: 500 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
 .ch-hd-sec {
   display: flex;
   flex-direction: column;
