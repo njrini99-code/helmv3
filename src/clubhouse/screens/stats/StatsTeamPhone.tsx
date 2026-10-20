@@ -25,6 +25,7 @@ import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
 import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
+import { TeamRank } from './TeamRank';
 import { puttingNote } from './notes';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
@@ -199,6 +200,9 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
                 <>
                   <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
                     <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} onIntent={goLive} />
+                  </SectionBoundary>
+                  <SectionBoundary surface="stats.team.rank" label="Who gains and loses" code="CH-4206">
+                    <TeamRank key={scope} data={data} phone />
                   </SectionBoundary>
                   <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
                     <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />

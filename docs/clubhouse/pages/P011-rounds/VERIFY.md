@@ -430,6 +430,10 @@ before, after, baseline or evidence.
 | `P011__course-picker__player__1440x900__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 1440x900px, browse; synthetic preview fixture (fixtures-setup.ts) |
 | `P011__course-picker__player__390x844__browse__after__0db5a9b.png` | after | 0db5a9b | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
 | `P011__course-picker__player__390x844__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__round-entry__player__390__reload__before__6f8be23.png` | before | 6f8be23 | Round-entry preview, Reload banner, 390x844 light: the preview switches and the banner above the shot screen, the entry card and action bar below the fold; /clubhouse-preview/entry?state=reload, headless Chromium |
+| `P011__round-entry__player__390__error__before__6f8be23.png` | before | 6f8be23 | Round-entry preview, error banner, 390x844 light, same layout as the Reload before; /clubhouse-preview/entry?state=error, headless Chromium |
+| `P011__round-entry__player__390__reload__after__b8920a4.png` | after | b8920a4 | The Reload banner in the shot screen under its top bar, the Shot result card and the action bar on the screen's foot, no choice under the bar; /clubhouse-preview/entry?state=reload, headless Chromium |
+| `P011__round-entry__player__390__error__after__b8920a4.png` | after | b8920a4 | The error banner in the same place, card and bar on the foot; /clubhouse-preview/entry?state=error, headless Chromium |
 | `P011__season-ribbon__player__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | season-ribbon (player), 1440px, default, before: season ribbon, better is up, real ticks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
 | `P011__season-ribbon__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | season-ribbon (player), 1440px, default, after: season ribbon, better is up, real ticks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
 | `P011__season-ribbon__player__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | season-ribbon (player), 390px, default, before: season ribbon on the phone, better is up; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
@@ -544,12 +548,60 @@ case names its Bridge ID in its title. No implementation file changed.
 Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx eslint` on them, exit 0;
 `node scripts/clubhouse/registry.mjs check`, exit 0. The registry now shows 187 IDs, 185 on an element or in code, 2 reserved.
 
-**Still reserved, and why.** 111809 is a script (`clubhouse:a11y`) that needs the dev server and a browser, not a vitest case. 110804 has
-its test, but one of the refusals the contract lists does not happen: asked to discard another player's round in progress, the
-action deletes nothing (the delete is filtered by player) and then answers `{ success: true }`, because its "already removed" probe
-(`round-partial.ts`, after the delete) is also filtered by player and finds nothing. The data is safe; the answer is not the refusal
-the contract describes. It is reachable only with a forged id, since the library lists the player's own rounds.
+**Still reserved, and why.** 111809 is a script (`clubhouse:a11y`) that needs
+the dev server and a browser, not a vitest case. 110804 has its test, but one of
+the refusals the contract lists does not happen: asked to discard another
+player's round in progress, the action deletes nothing (the delete is filtered
+by player) and then answers `{ success: true }`, because its "already removed"
+probe (`round-partial.ts`, after the delete) is also filtered by player and
+finds nothing. The data is safe; the answer is not the refusal the contract
+describes. It is reachable only with a forged id, since the library lists the
+player's own rounds.
 
-**Wording that predates the code.** 112101 describes the library's reads in sequence; the loader now starts the clock, the posted
-rounds and the in-progress rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and 111202's meanings said
-"no test covers this"; they now say where the test is.
+**Wording that predates the code.** 112101 describes the library's reads in
+sequence; the loader now starts the clock, the posted rounds and the in-progress
+rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and
+111202's meanings said "no test covers this"; they now say where the test is.
+
+## 2026-10-20 — Round-entry preview: a Shot result choice under the action bar
+
+`clubhouse:a11y -- rounds` (headless Chromium, reduced motion, 1280x800 and
+390x844, dev server on placeholder env) failed two pages before the fix, in
+light and in dark: at 390x844, `/clubhouse-preview/entry?state=reload` and
+`?state=error`, target-size (serious) on `button[role="radio"]:nth-child(1)`,
+"partially obscured (smallest space is 108.7px by 13px)". The radio is Fairway,
+the first Shot result choice.
+
+Measured in Chromium at 390x844 on 6f8be23 (`?state=reload`): the preview
+switches and the banner took 0 to 265px above the shot screen; `main.ch-rt`
+(min-height 100dvh) ran 265 to 1109; the entry card started at 884, below the
+fold, and the sticky action bar (`.ch-rt-bar`, 80px) could rise only to its
+panel's top, so it sat at 884 to 964 over the card's first row (919 to 965). On
+a real round RoundRuntime draws these banners in RoundTracking's `statusSlot`,
+inside the shot screen, where the hero takes up their height. Before #2202 the
+bar also carried a visible hint line (about 24px taller) and covered that row
+whole, which axe does not report; #2202 moved the hint into the button, and the
+row began to show under the bar.
+
+After b8920a4 (banners in the status slot, the preview switches after the shot
+screen): `main.ch-rt` 0 to 844, card 619 to 764, bar 764 to 844, Fairway 654 to
+700, clear of the bar; the no-banner entry state has the same card and bar.
+
+Both runs are `clubhouse:a11y -- rounds` with `CH_ENGINES=chromium` and
+`CH_MOTION=reduce`:
+
+- `CH_SCHEME=dark`: before (6f8be23) exit 1, 34 ok and 2 with violations
+  (entry reload and error at 390); after (b8920a4) exit 0, 36 clean.
+- `CH_SCHEME=light`: before exit 1, the same 2 of 36; after exit 0, 36
+  clean.
+
+`src/app/clubhouse-preview/entry/__tests__/preview-entry-layout.test.tsx` (3
+cases, jsdom) pins the order the layout depends on: each banner inside
+`main.ch-rt`, ahead of the hole strip and the Shot result group, and the shot
+screen first with the switches after it. It fails on 6f8be23 (3 of 3) and passes
+on b8920a4. jsdom has no layout, so the overlap itself is the axe run's to
+measure. Not run: WebKit, motion on, other widths and heights, an iPhone.
+
+Checks on b8920a4: `npm run check:changed` exit 0 (eslint, tsgo, the new test
+and its related tests), `npm run clubhouse:check` exit 0,
+`clubhouse:shots -- check` exit 0.
