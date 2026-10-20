@@ -9,6 +9,7 @@ import {
   diveLoad,
   PREVIEW_DIVE,
   PREVIEW_DIVE_EMPTY,
+  PREVIEW_DIVE_MANY,
   PREVIEW_DIVE_NO_ROUNDS,
   PREVIEW_DIVE_PARTS_FAILED,
   PREVIEW_DIVE_YOUNG,
@@ -51,7 +52,7 @@ export function PreviewCoachHelmViews({ view, state, insight }: { view?: string;
     if (state === 'loading') return <DiveSkeleton />;
     if (state === 'failed') return <DeepDive load={failed} />;
     if (state === 'off') return <DeepDive load={OFF} />;
-    const data = { young: PREVIEW_DIVE_YOUNG, partsfailed: PREVIEW_DIVE_PARTS_FAILED, empty: PREVIEW_DIVE_EMPTY, norounds: PREVIEW_DIVE_NO_ROUNDS }[state ?? ''] ?? PREVIEW_DIVE;
+    const data = { many: PREVIEW_DIVE_MANY, young: PREVIEW_DIVE_YOUNG, partsfailed: PREVIEW_DIVE_PARTS_FAILED, empty: PREVIEW_DIVE_EMPTY, norounds: PREVIEW_DIVE_NO_ROUNDS }[state ?? ''] ?? PREVIEW_DIVE;
     return <DeepDive load={diveLoad(data)} initialId={insight ?? null} />;
   }
   return null;

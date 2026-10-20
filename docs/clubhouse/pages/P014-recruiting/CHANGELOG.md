@@ -1,5 +1,55 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-20 — A corrected Add after a lost reply adds the prospect once
+
+```text
+Design package: none (2026-10-17 audit, STATUS.md page readiness: "after a lost
+                reply, Add can create the prospect twice")
+PR/commit:      claude/clubhouse-edgecases
+Contract IDs:   CH-14915 (140702) changed
+Actions:        ACT-P014-ADD-PROSPECT
+Data impact:    none (no schema change; createRecruit with a request id only)
+Held items:     none
+```
+
+### Changed
+
+- A repeat whose conditional update matches no row (the prospect was edited
+  between the read and the write) is a failure, not "added", so the page never
+  shows fields that were not saved; its Retry reads the row again and lets the
+  newer edit stand (security review of #2220).
+
+- The Add's request id follows the prospect being added (the first and last
+  name, spacing and capitals aside) instead of the whole form
+  (`screens/recruiting/add-request.ts`). A field corrected after a failed Add
+  (an email, a hometown, the class) is sent under the same id; another name, or
+  another Add after one landed, gets a new one.
+- `createRecruit` with a request id, when the id is already this coach's
+  prospect on this team with this name, writes what was sent this time to that
+  row, conditionally on it being unedited since it was added (`updated_at` still
+  equals `created_at`). An edit made in between stands, and that prospect is
+  still the answer. A failed write is a failure, so Retry tries again under the
+  same id. Names now compare without spacing or capitals; another team's row,
+  another coach's, and a different prospect under the same id are still refused.
+  Without a request id (Fairway) nothing changed.
+
+### Why
+
+- After a reply lost once the server had stored the prospect, editing a field
+  and pressing Add again sent a new id and added the prospect a second time
+  (VERIFY "Found, not fixed").
+
+### Verification
+
+- `src/clubhouse/screens/recruiting/__tests__/add-request.test.ts` (new, 6);
+  `src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts` (new, 5; 3
+  failed before the server change); `recruiting-upload.test.tsx` › CH-14915 a
+  field corrected after a failed Add keeps the id (failed before the page
+  change); `recruiting.test.tsx` and
+  `src/test/golf/actions/recruiting-create.test.ts` unchanged and passing.
+- Not run: a real session against production (an Add whose reply is really
+  lost), `npm run build`.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text
