@@ -53,12 +53,38 @@ that starts at the left edge, the way every iOS push can.
 
 It is read each time a finger lands, because the shell changes it while the page is open.
 
-**Needs the native shell (Swift, not done here).** `GolfBridgeViewController.applySwipeBack()` sets
-`webView.allowsBackForwardNavigationGestures`. It must also tell the page: set `window.__helmNativeSwipe` to
-`allowsBackForwardNavigationGestures` whenever it applies it (`evaluateJavaScript`), and install the current value as a
-`WKUserScript` at document start so a new page begins right. Until then the app keeps its native swipe and the web gesture
-stays off there, exactly as before. A case the native swipe is off for today (a round, a sheet) leaves the page with
-neither gesture, which is what those cases want.
+**The native contract** (`ios/App/App/GolfBridgeViewController.swift`,
+2026-10-20). Without it the app's WKWebView swipe
+(`allowsBackForwardNavigationGestures`) pops over a snapshot of the whole
+WebView, dragging the shell's bars and the status area with the page; with it a
+pushed screen gets the web gesture above.
+
+- **The page asks.** While a `PhoneScreen` that has a chevron Back (disabled or
+  not) is the top screen, it holds the swipe: `claimWebSwipe` (`edge-swipe.ts`)
+  posts `{ webSwipe: true }` to `webkit.messageHandlers.helmNav`, and
+  `{ webSwipe: false }` once no screen holds it. Claims are counted and posted
+  after the commit, so a screen pushed over another (or a covered screen coming
+  back to the top) hands the swipe on in one message. A covered screen, a screen
+  whose Back is a text "Cancel", and every page without a pushed screen post
+  nothing. No bridge (Mobile Safari, the desktop): nothing is posted. The
+  `{ overlayOpen }` message (`NativeSwipeBackBridge`) is unchanged.
+- **The shell answers.** `applySwipeBack()` sets the native gesture to
+  `!(onTrackingRoute || overlayOpen || webHandlesSwipe)`, and every time it
+  applies it, it sets `window.__helmNativeSwipe` to the same value
+  (`evaluateJavaScript`) and installs it as a document-start `WKUserScript`,
+  replacing the previous one, so a new page starts with the right value. A round
+  or an open sheet still turns the native gesture off by itself; the web gesture
+  checks both again on its own, so neither runs there, as before.
+- **Fail-safe: when in doubt the native gesture is on.** Every main-frame load
+  drops the claim as it starts and as it finishes; when it finishes the shell
+  calls `window.__helmWebSwipeResync()`, and the page posts its claim again if a
+  pushed screen is up. A URL outside `/golf/` (where Clubhouse renders) drops it
+  too. A claim therefore never outlives the page that made it, and a page can
+  never be left with no back gesture by a stale one.
+- **Old shells.** A build without this code ignores `webSwipe` (its handler
+  reads only `overlayOpen`) and never sets `window.__helmNativeSwipe`, so the
+  web gesture stays off and the native swipe works exactly as before. A native
+  change ships only with a new App Store build.
 
 ## 2. A push keeps the dock unless it is immersive (NATIVE_FEEL P2-3)
 
@@ -102,7 +128,8 @@ a production build.
 
 ## Open
 
-- Native: `window.__helmNativeSwipe` (above).
+- Native: compile and check the `webSwipe` contract in the Simulator and on an
+  iPhone (section 1), then ship it in an App Store build.
 - `shell/TopBar.tsx` and `shell/nav.ts`: a root-action stand-in for section roots (section 3), and `ChPhonePushedTop.action`
   to replace the title match in `standInAction`.
 - Physical iPhone check: the swipe against Safari's own, haptics, VoiceOver after a swipe pop.

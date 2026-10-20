@@ -312,6 +312,117 @@ describe('the edge swipe on a pushed screen', () => {
   });
 });
 
+describe('in the iOS app a pushed screen holds the swipe for the web gesture (helmNav { webSwipe })', () => {
+  /** The claim is posted once the commit is over (a microtask). */
+  const settle = () => act(async () => {
+    await Promise.resolve();
+  });
+  const bridge = () => {
+    const postMessage = vi.fn();
+    (window as unknown as { webkit: unknown }).webkit = { messageHandlers: { helmNav: { postMessage } } };
+    return postMessage;
+  };
+  const webSwipe = (post: ReturnType<typeof vi.fn>) => post.mock.calls.map(([body]) => (body as { webSwipe?: boolean }).webSwipe);
+
+  it('posts true while the screen is up and false once it has gone', async () => {
+    app.native = true;
+    const post = bridge();
+    const view = render(<Harness exit={exitHold()} onBack={vi.fn()} />);
+    await settle();
+    expect(webSwipe(post)).toEqual([true]);
+    view.unmount();
+    await settle();
+    expect(webSwipe(post)).toEqual([true, false]);
+  });
+
+  it('a PhoneScreen with a chevron Back holds it; covered, it hands it to the screen above', async () => {
+    app.native = true;
+    const post = bridge();
+    const bar = (label: string) => (
+      <button type="button" className="ch-pbar__back">
+        {label}
+      </button>
+    );
+    const view = render(
+      <PhoneChromeProvider>
+        {shell(
+          <PhoneScreen labelledBy="a">
+            {bar('Roster')}
+            <h1 id="a">A</h1>
+          </PhoneScreen>,
+        )}
+      </PhoneChromeProvider>,
+    );
+    await settle();
+    expect(webSwipe(post)).toEqual([true]);
+    view.rerender(
+      <PhoneChromeProvider>
+        {shell(
+          <>
+            <PhoneScreen labelledBy="a" covered>
+              {bar('Roster')}
+              <h1 id="a">A</h1>
+            </PhoneScreen>
+            <PhoneScreen labelledBy="b">
+              {bar('Chat')}
+              <h1 id="b">B</h1>
+            </PhoneScreen>
+          </>,
+        )}
+      </PhoneChromeProvider>,
+    );
+    await settle();
+    // Handed over in one commit: the shell's own swipe never came back on in between.
+    expect(webSwipe(post)).toEqual([true]);
+    view.unmount();
+    await settle();
+    expect(webSwipe(post)).toEqual([true, false]);
+  });
+
+  it('claims nothing outside the app (no bridge), even with Capacitor saying it is native', async () => {
+    app.native = true;
+    const win = window as unknown as { __helmWebSwipeResync?: () => void };
+    delete win.__helmWebSwipeResync;
+    const view = render(<Harness exit={exitHold()} onBack={vi.fn()} />);
+    await settle();
+    // A claim installs the shell's resync hook; with no bridge there was none to make.
+    expect(win.__helmWebSwipeResync).toBeUndefined();
+    view.unmount();
+    await settle();
+    expect(win.__helmWebSwipeResync).toBeUndefined();
+  });
+
+  it('a screen with no chevron Back (a form’s Cancel) leaves the native swipe alone', async () => {
+    app.native = true;
+    const post = bridge();
+    const exit = exitHold();
+    function Form() {
+      const ref = useRef<HTMLElement>(null);
+      useEdgeSwipeBack(ref, { enabled: true, reduced: false, exit });
+      return (
+        <section ref={ref}>
+          <button type="button" className="ch-pbar__back is-text">
+            Cancel
+          </button>
+        </section>
+      );
+    }
+    const view = render(<Form />);
+    await settle();
+    view.unmount();
+    await settle();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('a covered (not enabled) screen does not hold it', async () => {
+    app.native = true;
+    const post = bridge();
+    render(<Harness exit={exitHold()} onBack={vi.fn()} enabled={false} />);
+    await settle();
+    expect(post).not.toHaveBeenCalled();
+  });
+});
+
 /** What the shell reads from the chrome. */
 function Probe() {
   const s = usePhoneChromeState();

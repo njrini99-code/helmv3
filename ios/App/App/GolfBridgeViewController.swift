@@ -11,15 +11,25 @@ class GolfBridgeViewController: CAPBridgeViewController {
     var onNavigateAway: (() -> Void)?
 
     private var urlObservation: NSKeyValueObservation?
+    private var loadingObservation: NSKeyValueObservation?
 
     /// Edge swipe-back (MOT-13, RE-D1) is off while a round is being tracked
     /// (a stray edge swipe must not leave the scorecard mid-hole) and while
     /// the page reports an open sheet or dialog (the swipe would navigate the
     /// page underneath it). The page reports overlays through the `helmNav`
     /// message handler (src/components/golf/NativeSwipeBackBridge.tsx).
+    /// It is also off while a Clubhouse pushed screen runs its own in-page
+    /// edge swipe (`{ webSwipe }`, src/clubhouse/shell/edge-swipe.ts
+    /// claimWebSwipe). Every main-frame load drops that claim and asks the
+    /// page again, so a stale claim cannot leave a page with no back gesture.
+    /// The page reads the result as `window.__helmNativeSwipe`
+    /// (docs/clubhouse/phone/shell-gestures.md).
     private var onTrackingRoute = false
     private var overlayOpen = false
+    private var webHandlesSwipe = false
+    private var installedSwipeFlag: Bool?
     private static let navMessageName = "helmNav"
+    private static let swipeFlagMarker = "/* helm:nativeSwipe */"
 
     /// UserDefaults key holding the CFBundleVersion that last cleared the web cache.
     private static let cacheClearedBuildKey = "HelmWebCacheClearedForBuild"
@@ -56,8 +66,34 @@ class GolfBridgeViewController: CAPBridgeViewController {
         applySwipeBack()
     }
 
+    fileprivate func setWebHandlesSwipe(_ handles: Bool) {
+        webHandlesSwipe = handles
+        applySwipeBack()
+    }
+
     private func applySwipeBack() {
-        webView?.allowsBackForwardNavigationGestures = !(onTrackingRoute || overlayOpen)
+        let nativeSwipe = !(onTrackingRoute || overlayOpen || webHandlesSwipe)
+        webView?.allowsBackForwardNavigationGestures = nativeSwipe
+        // Tell the page now, and install the value for the next page load.
+        webView?.evaluateJavaScript("window.__helmNativeSwipe = \(nativeSwipe);", completionHandler: nil)
+        installSwipeFlagScript(nativeSwipe)
+    }
+
+    /// Replaces the document-start script that sets `window.__helmNativeSwipe`.
+    /// WKUserContentController cannot remove one script, so every script but
+    /// ours (Capacitor's bridge, the viewport fix) is put back in order.
+    private func installSwipeFlagScript(_ nativeSwipe: Bool) {
+        guard installedSwipeFlag != nativeSwipe,
+              let controller = webView?.configuration.userContentController else { return }
+        let kept = controller.userScripts.filter { !$0.source.hasPrefix(Self.swipeFlagMarker) }
+        controller.removeAllUserScripts()
+        for script in kept {
+            controller.addUserScript(script)
+        }
+        let source = "\(Self.swipeFlagMarker) window.__helmNativeSwipe = \(nativeSwipe);"
+        let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        controller.addUserScript(script)
+        installedSwipeFlag = nativeSwipe
     }
 
     /// Round entry: new round and continue round (FairwayDashboardShell
@@ -149,9 +185,30 @@ class GolfBridgeViewController: CAPBridgeViewController {
             webView.configuration.userContentController.addUserScript(userScript)
         }
 
+        // A main-frame load starting or finishing drops the page's swipe claim
+        // (the native swipe comes back on). When it finishes, the new page is
+        // asked to claim again if a pushed screen is up.
+        loadingObservation = webView?.observe(\.isLoading, options: [.new]) { [weak self] webView, _ in
+            guard let self = self else { return }
+            if self.webHandlesSwipe {
+                self.setWebHandlesSwipe(false)
+            }
+            if !webView.isLoading {
+                webView.evaluateJavaScript(
+                    "if (typeof window.__helmWebSwipeResync === 'function') { window.__helmWebSwipeResync(); }",
+                    completionHandler: nil)
+            }
+        }
+
         // Observe the web view's URL to detect navigation away from /golf/
         urlObservation = webView?.observe(\.url, options: [.new]) { [weak self] _, change in
             guard let url = change.newValue??.absoluteString else { return }
+
+            // Clubhouse renders only under /golf/: anywhere else the page cannot
+            // hold the swipe, so the native one comes back.
+            if !url.contains("/golf/") && self?.webHandlesSwipe == true {
+                self?.setWebHandlesSwipe(false)
+            }
 
             // pushState navigations update `url` too, so this follows the SPA.
             let tracking = Self.isTrackingRoute(url)
@@ -182,13 +239,14 @@ class GolfBridgeViewController: CAPBridgeViewController {
 
     deinit {
         urlObservation?.invalidate()
+        loadingObservation?.invalidate()
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: Self.navMessageName)
     }
 }
 
-/// Receives `{ overlayOpen: Bool }` from the page. Holds the controller weakly:
-/// WKUserContentController retains its handlers, so a strong reference would
-/// keep the controller alive forever.
+/// Receives `{ overlayOpen: Bool }` and `{ webSwipe: Bool }` from the page.
+/// Holds the controller weakly: WKUserContentController retains its handlers,
+/// so a strong reference would keep the controller alive forever.
 private final class HelmNavMessageHandler: NSObject, WKScriptMessageHandler {
     private weak var owner: GolfBridgeViewController?
 
@@ -197,8 +255,13 @@ private final class HelmNavMessageHandler: NSObject, WKScriptMessageHandler {
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any], let open = body["overlayOpen"] as? Bool else { return }
-        owner?.setOverlayOpen(open)
+        guard let body = message.body as? [String: Any] else { return }
+        if let open = body["overlayOpen"] as? Bool {
+            owner?.setOverlayOpen(open)
+        }
+        if let handles = body["webSwipe"] as? Bool {
+            owner?.setWebHandlesSwipe(handles)
+        }
     }
 }
 

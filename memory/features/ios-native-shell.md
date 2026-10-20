@@ -113,6 +113,18 @@ offline page. `src/test/proxy-middleware.test.ts` pins the exemption.
   `src/components/golf/NativeSwipeBackBridge.tsx`). Both live in
   `GolfBridgeViewController.swift` (MOT-13, RE-D1); older binaries ignore the
   message. Test: `src/components/golf/__tests__/NativeSwipeBackBridge.test.tsx`.
+- It is also off while a Clubhouse pushed screen runs the in-page edge swipe:
+  the page posts `{ webSwipe: true | false }` on the same `helmNav` handler
+  (`claimWebSwipe`, `src/clubhouse/shell/edge-swipe.ts`), and the shell
+  computes `!(onTrackingRoute || overlayOpen || webHandlesSwipe)`, mirrors it
+  to the page as `window.__helmNativeSwipe` (`evaluateJavaScript`, plus a
+  document-start `WKUserScript` replaced on each change). Every main-frame load
+  (`isLoading` start and finish) and any URL outside `/golf/` drops the claim;
+  on finish the shell calls `window.__helmWebSwipeResync()` so a page with a
+  pushed screen up claims again. Older binaries ignore `webSwipe` and keep the
+  native swipe. Contract: `docs/clubhouse/phone/shell-gestures.md` section 1.
+  Tests: `src/clubhouse/shell/__tests__/edge-swipe.test.tsx`,
+  `phone-shell-gestures.test.tsx`.
 
 ## Tests
 
