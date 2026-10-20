@@ -37,6 +37,7 @@ interface RowOpts {
   standingPga?: number | null;
   sourceInsightIds?: string[];
   compositeRuleId?: string;
+  strokesImpactMethod?: AssembledEvidence['strokes_impact_method'];
   drills?: Array<{ id: string; slug: string; title: string }>;
 }
 
@@ -66,6 +67,7 @@ function row(o: RowOpts): EvidenceInsight {
   }
   if (o.sourceInsightIds) ev.source_insight_ids = o.sourceInsightIds;
   if (o.compositeRuleId) ev.composite_rule_id = o.compositeRuleId;
+  if (o.strokesImpactMethod) ev.strokes_impact_method = o.strokesImpactMethod;
 
   return {
     id: o.id,
@@ -369,6 +371,50 @@ describe('assembleThemes — composite weight + conservation', () => {
     expect(comp.drivers).toHaveLength(1); // still renders the cross-theme link
     // putting leaf preserved at top level with its strokes.
     expect(themeOf(result, 'putting').causes[0]!.strokesSavedPerRound).toBeCloseTo(0.7, 10);
+  });
+
+  test('ctx composite (no leaves, no counterfactual) falls back to its measured strokes_impact', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({
+          id: 'ctx',
+          category: 'short_game',
+          strokesImpact: 0.4,
+          strokesImpactMethod: 'peer_delta',
+          noCounterfactual: true,
+          compositeRuleId: 'closing_hole_fatigue',
+          sourceInsightIds: [],
+        }),
+      ],
+      sgByCategory: {},
+    });
+    const cause = themeOf(result, 'short_game').causes[0]!;
+    expect(cause.strokesSavedPerRound).toBeCloseTo(0.4, 10);
+    expect(cause.tourGapPerRound).toBeCloseTo(0.4, 10);
+    expect(cause.counterfactualSuppressed).toBe(false);
+  });
+
+  test('ctx composite with a rough-estimate strokes_impact carries no stroke figure', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({
+          id: 'ctx',
+          category: 'short_game',
+          strokesImpact: 0.4,
+          strokesImpactMethod: 'rough_estimate',
+          noCounterfactual: true,
+          compositeRuleId: 'short_side_scrambling_chain',
+          sourceInsightIds: [],
+        }),
+      ],
+      sgByCategory: {},
+    });
+    const cause = themeOf(result, 'short_game').causes[0]!;
+    expect(cause.strokesSavedPerRound).toBe(0);
+    expect(cause.tourGapPerRound).toBeNull();
+    expect(cause.counterfactualSuppressed).toBe(true);
   });
 
   test('a leaf claimed by two same-category composites contributes its strokes once', () => {
