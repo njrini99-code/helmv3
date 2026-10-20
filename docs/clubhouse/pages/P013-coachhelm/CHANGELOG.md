@@ -5,7 +5,7 @@
 ```text
 Design package: CoachHelm supercharge, Slice 0 (the Read, output only)
 PR/commit:      see git log (local/coachhelm-read-lines)
-Contract IDs:   130716 (CH-13982) and CH-13903 move onto the Read's lines
+Contract IDs:   130716 (CH-13982: coach only now), CH-13903 (When line)
 Actions:        none
 Data impact:    none (no new read, no engine or generator change)
 Held items:     before and after screenshots (no headless browser here)
@@ -16,11 +16,19 @@ Held items:     before and after screenshots (no headless browser here)
 - The player's Deep dive opens each read with four lines under its title
   (`data/coachhelm-read-shape.ts`, drawn by `Read` in `views/DeepDive.tsx`):
   What (the metric, the value and its sample, the comparison by name, strokes
-  a round only when the row estimates them, the confidence word), Why (the
-  cause with its basis and counts, or "Not traced yet: the record does not say
-  why."), Next (the drill, or the row's own action, or "No drill assigned."
-  for the generators' placeholder) and When ("Through" the newest round in the
-  read, and "Out of date: ..." when a newer round is not in it).
+  a round only when the row estimates them, the confidence word), Why (a cause
+  seen in the shots, marked "Measured in your shots", with its counts; else
+  "Not traced yet: the record does not say why."), Next (the drill, or the
+  row's own action, or "No drill assigned." for the generators' placeholder)
+  and When ("Through" the newest round in the read, and "Out of date: ..."
+  when a newer round is not in it).
+- A player never sees an inferred cause (the owner's default for supercharge
+  open question 3, "hide"): no cause sentence and no "Likely, not measured"
+  marker on the Why line or in "Why CoachHelm thinks so"; the Why line reads
+  "Not traced yet". A coach's rendering (`toChDeepInsight(..., say, 'coach')`)
+  keeps "Likely, not measured" and the cause. The role is the viewer the loader
+  already maps the card for. The generators' stock reason "sample adequate"
+  is no longer drawn; the drivers and their counts still are.
 - Folded, not repeated: the lede under the title (it is the start of the full
   write-up now), the out-of-date note under the title (the When line), the
   cause and its marker in "Why CoachHelm thinks so" (the Why line; the section
@@ -41,8 +49,10 @@ Held items:     before and after screenshots (no headless browser here)
 
 - `coachhelm-read.test.ts` (new): a real cause, no cause, the placeholder
   action, zero and unestimated strokes, a measured `sg_baseline` figure, an
-  out-of-date row, and the same numbers in the coach's and the player's voice.
-  `coachhelm-dive.test.tsx` updated on purpose for the folded parts.
+  out-of-date row, the same numbers in the coach's and the player's voice, and
+  an inferred cause hidden from the player but shown to a coach (an observed
+  one shown to both). `coachhelm-dive.test.tsx` updated on purpose for the
+  folded parts and the hidden hypothesis.
 - Not looked at in a browser: screenshots are still to take.
 
 ## 2026-10-19 — CoachHelm on an iPad: the views head, the Ask cards and the evidence side sheet

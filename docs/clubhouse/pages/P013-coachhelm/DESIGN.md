@@ -264,9 +264,12 @@ read opens with **the Read**, four lines under its title
   round only from the cascade's figure (which names what the gap is closed to)
   or a real `sg_baseline` or `peer_delta` estimate (nothing for a zero or a
   rough estimate, never "0.0 strokes"), and the confidence word.
-- **Why**: the cause marked "Measured in your shots" or "Likely, not measured"
-  (a hypothesis is never read as fact) with the drivers' counts, or "Not traced
-  yet: the record does not say why." when the row states no cause.
+- **Why**: a cause seen in the shots, marked "Measured in your shots", with the
+  drivers' counts; otherwise "Not traced yet: the record does not say why."
+  A player never sees an inferred cause (owner default for supercharge open
+  question 3, "hide"): no cause sentence and no "Likely, not measured" marker,
+  here or in "Why CoachHelm thinks so". A coach's rendering keeps "Likely, not
+  measured" and the cause (the role is the viewer the card is mapped for).
 - **Next**: the attached drill with its length, or the row's own action; the
   generators' placeholder ("Target ... in the next practice block") is "No drill
   assigned."
@@ -274,15 +277,17 @@ read opens with **the Read**, four lines under its title
   end, else its as-of day, else a dash), and "Out of date: a round played ..."
   when a newer round is not in it (CH-13903).
 
-The coach's rendering (through `speak`) has the same numbers in every line. Then
+The coach's rendering (through `speak`) has the same numbers; only the cause
+differs by role. Then
 the read's evidence: what was measured (the number in the colour of what it
 means, the metric, the dates, then the Board's own evidence with its sample and
 confidence word); how it has moved (since it was first seen, the outcome after
 it was worked on, the category's trend in words, and a line of the scores in the
 rounds listed); the rounds behind it (the newest eight of the total it names,
 each a link to its review once that screen is rebuilt); why CoachHelm thinks so
-(the drivers with their counts, why the confidence is what it is, then the full
-write-up, its first sentence included); and where it goes (the focus area or
+(the drivers with their counts, why the confidence is what it is unless it is
+the stock "sample adequate", then the full write-up, its first sentence
+included); and where it goes (the focus area or
 goal made from it, or one on the same stat, linking to Development). Strength
 against needs work follows the Board's doctrine. There is no coach control and
 no write: nothing to assign, dismiss or accept.

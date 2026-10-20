@@ -551,7 +551,8 @@ describe('the Deep dive screen', () => {
     const lines = article().querySelector('.ch-hd-dos__h dl.ch-hd-read')!;
     expect([...lines.querySelectorAll('dt')].map((t) => t.textContent)).toEqual(['What', 'Why', 'Next', 'When']);
     expect(line('What').textContent).toBe('Make rate, downhill vs level, same distance: 23 pts gap (75 putts). Compared with no downhill penalty (your level putts 81%, downhill 58%). Solid read.');
-    expect(line('Why').textContent).toMatch(/^Likely, not measured It looks like a pace-control pattern .* \(31 and 44 counted\)\.$/);
+    // An inferred cause is never the player's (supercharge open question 3, "hide").
+    expect(line('Why').textContent).toBe('Not traced yet: the record does not say why.');
     expect(line('Next').textContent).toMatch(/^Downhill ladder · 12 min · intermediate Rehearse a downhill-only ladder: start 2\sft below the hole/);
     expect(line('When').textContent).toBe('Through Sep 28.');
     // The generator's first sentence is not said twice: the What line says it in numbers, and the write-up keeps it whole.
@@ -648,12 +649,13 @@ describe('the Deep dive screen', () => {
     expect(code('CH-13382')!.textContent).toMatch(/made from 14 rounds, but none of them can be listed here/);
   });
 
-  it('CH-13982 why: a hypothesis is marked "Likely, not measured" and a seen cause "Measured in your shots"; the drivers carry their counts, then the full write-up', async () => {
+  it('CH-13982 why: a hypothesis is never shown to the player (no cause, no "Likely, not measured"); a seen cause is "Measured in your shots"; the drivers carry their counts, then the full write-up', async () => {
     show();
     const part = within(article()).getByRole('region', { name: 'Why CoachHelm thinks so' });
-    expect(code('CH-13982')!.textContent).toBe('Likely, not measured');
-    // The marker heads the cause on the read's Why line; the section keeps what it counted and the write-up.
-    expect(line('Why').contains(code('CH-13982'))).toBe(true);
+    // The owner's decided default (supercharge open question 3, "hide"): the player's Why line is not traced yet.
+    expect(code('CH-13982')).toBeNull();
+    expect(article().textContent).not.toContain('Likely, not measured');
+    expect(line('Why').textContent).toBe('Not traced yet: the record does not say why.');
     expect(part.textContent).not.toContain('pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed (');
     expect(part.textContent).toContain('Downhill make rate, 4-6 ft');
     expect(part.textContent).toContain('31 counted');
@@ -661,6 +663,16 @@ describe('the Deep dive screen', () => {
     expect(within(part).getByText('The full write-up')).toBeTruthy();
     await userEvent.click(within(rail()).getByRole('button', { name: /Penalty strokes/ }));
     expect(code('CH-13982')!.textContent).toBe('Measured in your shots');
+    expect(line('Why').contains(code('CH-13982'))).toBe(true);
+    expect(line('Why').textContent).toContain('Most of them come off the tee with the driver');
+  });
+
+  it('the generators’ stock confidence reason ("sample adequate") is not drawn; the drivers it counted still are', () => {
+    const stock: EvidenceInsight = { ...DIVE_SLOPE, evidence: { ...DIVE_SLOPE.evidence, diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, confidence_reason: 'sample adequate' } } };
+    show(diveLoad({ ...PREVIEW_DIVE, list: [deep(stock, FULL_INPUTS)] }));
+    const part = within(article()).getByRole('region', { name: 'Why CoachHelm thinks so' });
+    expect(part.textContent).not.toMatch(/sample adequate/i);
+    expect(part.textContent).toContain('31 counted');
   });
 
   it('this week’s drill is the Board’s own, on the read’s Next line and nowhere else; the row’s own action stands in when there is no drill', async () => {

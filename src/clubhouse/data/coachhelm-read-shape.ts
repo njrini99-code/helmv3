@@ -1,6 +1,7 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type { ChInsight } from './coachhelm-shape';
+import type { ChViewer } from './coachhelm-voice';
 
 /**
  * The Read (Clubhouse P013, the player's Deep dive): one insight as four fixed lines, What, Why, Next and When, each answering
@@ -10,11 +11,12 @@ import type { ChInsight } from './coachhelm-shape';
  *
  * Voice: the lines are written in the player's second person and every piece goes through `say` (`coachhelm-voice.ts speak`), so a
  * coach's rendering of the same read has the same numbers about the player by first name. No line says "because" or "caused".
+ * Only the cause differs by role: a player never sees an inferred cause (Why reads "Not traced yet"); a coach sees it marked.
  */
 
 /** The cause, in one of two states the record supports today, or not traced. */
 export interface ChReadWhy {
-  /** `observed`: seen in a shot sequence. `hypothesis`: inferred, never to be read as fact. Null: the row states no cause. */
+  /** `observed`: seen in a shot sequence. `hypothesis`: inferred, never to be read as fact (a coach's only). Null: none shown. */
   level: 'observed' | 'hypothesis' | null;
   /** "Measured in your shots", "Likely, not measured"; null when not traced. */
   basis: string | null;
@@ -75,6 +77,11 @@ export interface ChReadInputs {
   newestListed: string | null;
   /** The day the read's window ended ("Oct 1"); null when the row has none. */
   windowEnd: string | null;
+  /**
+   * Whose read it is (`ChViewer.role`, the same viewer the Board's card and `say` were made for). A player never sees an inferred
+   * cause (supercharge open question 3, decided "hide"): their Why line is not traced yet; a coach sees it marked Likely, not measured.
+   */
+  role: ChViewer['role'];
 }
 
 /** The two methods whose `strokes_impact` is an estimate of strokes a round; a rough estimate is a priority seed, not a number to say. */
@@ -137,9 +144,20 @@ function strokesOf(ev: InsightEvidence, closes: ChReadInputs['closes']): ChReadS
   return Number(r) > 0 ? { value: r, anchor: null } : null;
 }
 
-function whyOf(d: ChReadInputs['diagnosis'], say: (t: string) => string): ChReadWhy {
+/** Whether a viewer sees a cause at this level: an observed one everyone does; an inferred one only a coach (players: "hide"). */
+export function causeShown(level: 'observed' | 'hypothesis', role: ChViewer['role']): boolean {
+  return level === 'observed' || role === 'coach';
+}
+
+/** The generators' stock confidence reason ("sample adequate", generator-base.ts buildConfidenceReason) says nothing worth a line. */
+export function meaningfulReason(reason: string | null | undefined): string | null {
+  const r = reason?.trim() ?? '';
+  return r && !/^sample adequate\.?$/i.test(r) ? r : null;
+}
+
+function whyOf(d: ChReadInputs['diagnosis'], role: ChViewer['role'], say: (t: string) => string): ChReadWhy {
   const cause = d?.cause.trim();
-  if (!d || !cause) return { level: null, basis: null, text: NOT_TRACED };
+  if (!d || !cause || !causeShown(d.level, role)) return { level: null, basis: null, text: NOT_TRACED };
   const counts = d.drivers.map((x) => x.n).filter((n): n is number => n != null && n > 0);
   const body = cause.replace(/\.+$/, '');
   return {
@@ -174,7 +192,7 @@ export function toChRead(raw: EvidenceInsight, base: ChInsight, inputs: ChReadIn
       strokes: strokesOf(ev, inputs.closes),
       word: base.evidence.read?.word ?? null,
     },
-    why: whyOf(inputs.diagnosis, say),
+    why: whyOf(inputs.diagnosis, inputs.role, say),
     next: nextOf(base),
     when: {
       through: through ? `Through ${through}` : base.evidence.asOf,

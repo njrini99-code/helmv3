@@ -5,7 +5,7 @@ import { ChevronRight, Compass, Flag, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
-import { readLines } from '../../../data/coachhelm-read-shape';
+import { meaningfulReason, readLines } from '../../../data/coachhelm-read-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
 import { useChSessionState } from '../../../lib/session-state';
@@ -198,10 +198,11 @@ function RoundRow({ r }: { r: ChDiveRound }) {
 }
 
 function Why({ i }: { i: ChDeepInsight }) {
-  // The cause and its basis are the read's Why line, above. Here: what it counted, why the read is as sure as it is, and the
-  // generator's own words in full (its first sentence too, which the read's What line now says in numbers).
+  // The cause and its basis are the read's Why line, above (an inferred one is never the player's). Here: what it counted, why the
+  // read is as sure as it is (not the generators' stock "sample adequate"), and the generator's own words in full (its first
+  // sentence too, which the read's What line now says in numbers).
   const drivers = i.diagnosis?.drivers ?? [];
-  const reason = i.diagnosis?.reason ?? null;
+  const reason = meaningfulReason(i.diagnosis?.reason);
   const full = [i.base.lede, i.base.why].filter(Boolean).join(' ');
   const why = full ? withoutDrill(full, i.base.week?.text) : null;
   const box = drivers.length > 0 || !!reason;

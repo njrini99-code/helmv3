@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { toChDeepInsight } from '../data/coachhelm-dive-shape';
 import { toChInsight } from '../data/coachhelm-map';
-import { readLines, sampleOf, toChRead } from '../data/coachhelm-read-shape';
+import { causeShown, meaningfulReason, readLines, sampleOf, toChRead } from '../data/coachhelm-read-shape';
 import { speak, type ChViewer } from '../data/coachhelm-voice';
 import { penalties, PREVIEW_TOUR } from '../preview/fixtures-coachhelm';
 import { DIVE_BIG, DIVE_BREAK, DIVE_PENALTIES, DIVE_SLOPE, FULL_INPUTS } from '../preview/fixtures-coachhelm-views';
@@ -17,7 +17,7 @@ const DRILL = 'Rehearse a downhill-only ladder: start 2 ft below the hole and ad
 function readOf(raw: EvidenceInsight, viewer: ChViewer = PLAYER, extra: { drillText?: string | null; newestRound?: string | null } = {}) {
   const say = (t: string) => speak(t, viewer);
   const base = toChInsight(raw, { drillText: extra.drillText ?? null, tour: PREVIEW_TOUR, newestRound: extra.newestRound ?? null, viewer });
-  return toChDeepInsight(raw, base, FULL_INPUTS, say).read;
+  return toChDeepInsight(raw, base, FULL_INPUTS, say, viewer.role).read;
 }
 const lines = (raw: EvidenceInsight, viewer: ChViewer = PLAYER, extra: Parameters<typeof readOf>[2] = {}) => readLines(readOf(raw, viewer, extra), 'Tour', (t) => speak(t, viewer));
 const numbers = (t: string) => t.match(/\d+(?:\.\d+)?/g) ?? [];
@@ -91,17 +91,33 @@ describe('the Read: four lines from what the row carries', () => {
     expect(readLines({ ...read, what: { ...read.what, strokes: { value: '1.4', anchor: 'tour' } } }, 'LPGA Tour').what).toContain('Closing the gap to the LPGA Tour is worth about 1.4 strokes a round.');
   });
 
-  it('Why: a cause seen in the shots is said with its basis and its counts', () => {
+  it('Why: a cause seen in the shots is said with its basis and its counts, to the player and to the coach', () => {
     const r = readOf(DIVE_PENALTIES);
     expect(r.why).toEqual({ level: 'observed', basis: 'Measured in your shots', text: 'Most of them come off the tee with the driver, on holes where the trouble is on the right (17 and 6 counted).' });
     expect(lines(DIVE_PENALTIES).why).toBe('Measured in your shots: Most of them come off the tee with the driver, on holes where the trouble is on the right (17 and 6 counted).');
+    expect(lines(DIVE_PENALTIES, COACH).why).toBe('Measured in Jonah’s shots: Most of them come off the tee with the driver, on holes where the trouble is on the right (17 and 6 counted).');
   });
 
-  it('Why: a cause inferred from the numbers is marked Likely, not measured, never as fact', () => {
-    const r = readOf(DIVE_SLOPE);
-    expect(r.why.level).toBe('hypothesis');
-    expect(r.why.basis).toBe('Likely, not measured');
-    expect(r.why.text).toMatch(/\(31 and 44 counted\)\.$/);
+  it('Why: a cause inferred from the numbers is never the player’s: not traced yet for them, Likely, not measured for a coach', () => {
+    // The owner's decided default (supercharge open question 3, "hide").
+    expect(readOf(DIVE_SLOPE).why).toEqual({ level: null, basis: null, text: 'Not traced yet: the record does not say why.' });
+    expect(lines(DIVE_SLOPE).why).toBe('Not traced yet: the record does not say why.');
+    expect(lines(DIVE_SLOPE).why).not.toMatch(/Likely|pace-control/);
+    const coach = readOf(DIVE_SLOPE, COACH);
+    expect(coach.why.level).toBe('hypothesis');
+    expect(coach.why.basis).toBe('Likely, not measured');
+    expect(lines(DIVE_SLOPE, COACH).why).toMatch(/^Likely, not measured: It looks like a pace-control pattern .* \(31 and 44 counted\)\.$/);
+  });
+
+  it('the hide rule and the stock confidence reason, on their own', () => {
+    expect(causeShown('observed', 'player')).toBe(true);
+    expect(causeShown('observed', 'coach')).toBe(true);
+    expect(causeShown('hypothesis', 'coach')).toBe(true);
+    expect(causeShown('hypothesis', 'player')).toBe(false);
+    expect(meaningfulReason('sample adequate')).toBeNull();
+    expect(meaningfulReason(' Sample adequate. ')).toBeNull();
+    expect(meaningfulReason(null)).toBeNull();
+    expect(meaningfulReason('Twenty-one rounds is enough to trust an average this size')).toBe('Twenty-one rounds is enough to trust an average this size');
   });
 
   it('Why: no stated cause is not traced yet, with no mechanism made up', () => {
@@ -142,7 +158,11 @@ describe('the Read: four lines from what the row carries', () => {
       const extra = { drillText: raw === DIVE_SLOPE ? DRILL : null, newestRound: '2026-10-03' };
       const you = lines({ ...raw, metadata: { ...raw.metadata, last_refreshed_at: '2026-09-29' } }, PLAYER, extra);
       const coach = lines({ ...raw, metadata: { ...raw.metadata, last_refreshed_at: '2026-09-29' } }, COACH, extra);
-      for (const k of ['what', 'why', 'next', 'when'] as const) expect(numbers(coach[k])).toEqual(numbers(you[k]));
+      // Only the cause differs by role: an inferred one is the coach's alone, so the player's Why line has none of its counts.
+      const hidden = raw.evidence.diagnosis?.causality_level === 'inferred_hypothesis';
+      const keys: Array<'what' | 'why' | 'next' | 'when'> = hidden ? ['what', 'next', 'when'] : ['what', 'why', 'next', 'when'];
+      for (const k of keys) expect(numbers(coach[k])).toEqual(numbers(you[k]));
+      if (hidden) expect(you.why).toBe('Not traced yet: the record does not say why.');
       expect(Object.values(coach).join(' ')).not.toMatch(/\byou(r)?\b/i);
     }
     expect(lines(DIVE_SLOPE, COACH).what).toContain('Compared with no downhill penalty (Jonah’s level putts 81%, downhill 58%).');
@@ -160,7 +180,7 @@ describe('the Read: four lines from what the row carries', () => {
 
   it('toChRead takes only what it is handed: no diagnosis, no cascade figure, no rounds', () => {
     const base = toChInsight(DIVE_BREAK, { tour: PREVIEW_TOUR, viewer: PLAYER });
-    const r = toChRead(DIVE_BREAK, base, { diagnosis: null, closes: null, newestListed: null, windowEnd: null });
+    const r = toChRead(DIVE_BREAK, base, { diagnosis: null, closes: null, newestListed: null, windowEnd: null, role: 'player' });
     expect(r.when).toEqual({ through: null, stale: null });
     expect(r.why.level).toBeNull();
     expect(r.what.strokes).toBeNull();
