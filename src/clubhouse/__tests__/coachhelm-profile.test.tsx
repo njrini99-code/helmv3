@@ -192,7 +192,8 @@ describe('the Game profile screen', () => {
     show();
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('CoachHelm');
-    expect(screen.getByRole('region', { name: 'Mixed off the tee · thrives on par-3 holes · tendency to miss left.' })).toBeTruthy();
+    // The headline holds a no-break space before each dot (a wrapped line never starts with one); it reads as a space.
+    expect(screen.getByRole('region', { name: (n) => n.replace(/\u00a0/g, ' ') === 'Mixed off the tee · thrives on par-3 holes · tendency to miss left.' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Every measure' })).toBeTruthy();
     expect(screen.getByText('Last 90 days · 14 rounds · Refreshed yesterday').textContent).toBe('Last 90 days\u00a0· 14 rounds\u00a0· Refreshed yesterday');
   });

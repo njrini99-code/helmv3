@@ -637,10 +637,17 @@ function buildCause(
   // counterfactual, but the rule computed a real per-round `strokes_impact`.
   // Fall back to that so the cause carries a number + "Make it a plan" CTA
   // instead of collapsing to a numberless "Tendency" chip (and so its theme,
-  // e.g. Scoring, is sized to a real magnitude rather than 0).
+  // e.g. Scoring, is sized to a real magnitude rather than 0). A rough-estimate
+  // impact (short-side-scrambling-chain) is a heuristic, not a measurement: it
+  // must not become a stroke figure surfaces print as measured ("0.4 strokes/rd
+  // from Tour"), so that composite stays a numberless Tendency.
   const ownImpactPerRound = Math.abs(Number(ev.strokes_impact ?? 0));
   const ctxFallbackStrokes =
-    composite && !ownsLeaves && tourGapPerRound == null && ownImpactPerRound > 0
+    composite &&
+    !ownsLeaves &&
+    tourGapPerRound == null &&
+    ev.strokes_impact_method !== 'rough_estimate' &&
+    ownImpactPerRound > 0
       ? ownImpactPerRound
       : 0;
 

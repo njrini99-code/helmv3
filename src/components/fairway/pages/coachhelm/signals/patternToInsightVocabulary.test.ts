@@ -418,15 +418,69 @@ describe('insightToSignalRow — evidence lines (bug #944 stroke-impact sign/lab
     expect(line?.gloss).toBe('meaningful · costing');
   });
 
-  it('zero strokes_impact stays neutral (no fabricated direction)', () => {
+  // Requirement changed on purpose (2026-10-20): a zero used to print as
+  // "0.00/round · small · neutral". Most families store 0 for "not estimated",
+  // so a zero now draws no line at all (no fabricated zero, no direction).
+  it('zero strokes_impact draws no stroke-impact line (no fabricated zero or direction)', () => {
     const row = insightToSignalRow(
       makeInsight({
         evidence: { strokes_impact: 0, confidence: 0.8, sample_n: 20 } as unknown as InsightEvidence,
       }),
     );
+    expect(row.evidence.find((e) => e.label === 'Stroke impact')).toBeUndefined();
+    expect(row.evidence.map((e) => e.value).join(' ')).not.toContain('0.00');
+  });
+
+  it('a strokes_impact that rounds to 0.00 (0.004) draws no line', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        evidence: { strokes_impact: 0.004, confidence: 0.8, sample_n: 20 } as unknown as InsightEvidence,
+      }),
+    );
+    expect(row.evidence.find((e) => e.label === 'Stroke impact')).toBeUndefined();
+  });
+
+  it('a missing or non-finite strokes_impact draws no line', () => {
+    for (const strokes_impact of [undefined, null, Number.NaN]) {
+      const row = insightToSignalRow(
+        makeInsight({
+          evidence: { strokes_impact, confidence: 0.8, sample_n: 20 } as unknown as InsightEvidence,
+        }),
+      );
+      expect(row.evidence.find((e) => e.label === 'Stroke impact')).toBeUndefined();
+    }
+  });
+
+  it('a real peer_delta figure keeps its plain gloss', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        evidence: {
+          strokes_impact: 0.8,
+          strokes_impact_method: 'peer_delta',
+          confidence: 0.8,
+          sample_n: 20,
+        } as unknown as InsightEvidence,
+      }),
+    );
     const line = row.evidence.find((e) => e.label === 'Stroke impact');
-    expect(line?.value).toBe('0.00/round');
-    expect(line?.gloss).toBe('small · neutral');
+    expect(line?.value).toBe('-0.80/round');
+    expect(line?.gloss).toBe('moderate · costing');
+  });
+
+  it('a rough_estimate figure says so in its gloss', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        evidence: {
+          strokes_impact: 0.35,
+          strokes_impact_method: 'rough_estimate',
+          confidence: 0.8,
+          sample_n: 20,
+        } as unknown as InsightEvidence,
+      }),
+    );
+    const line = row.evidence.find((e) => e.label === 'Stroke impact');
+    expect(line?.value).toBe('-0.35/round');
+    expect(line?.gloss).toBe('small · costing · rough estimate');
   });
 
   it('a raw negative strokes_impact (not currently emitted, handled defensively) reads as a genuine gain', () => {

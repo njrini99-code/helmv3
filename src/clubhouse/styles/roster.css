@@ -53,6 +53,10 @@
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
+/* A reading destination (the bell's `?tab=requests` link focuses it): announced, never drawn as a control. */
+.ch-root .ch-rs-req:focus {
+  outline: none;
+}
 .ch-rs-req__head {
   display: flex;
   flex-wrap: wrap;

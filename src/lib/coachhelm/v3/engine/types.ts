@@ -105,6 +105,19 @@ export interface ComposedContent {
   /** Optional severity, threaded by BaseGenerator into the upsert. Absent →
    *  the DB default 'medium' stands. A generator sets it from its verdict. */
   priority?: InsightPriority;
+  /**
+   * The generator's own verdict framing (PR #2073). With the root-cause flag
+   * on, `strength` / `neutral` rows get no cause (there is no problem to
+   * trace); `leak` rows do. Omitted → derived from `your_value` vs
+   * `comparison_value` when the polarity is trustworthy
+   * (`resolveInsightFraming` in `root-cause.ts`).
+   */
+  framing?: 'leak' | 'strength' | 'neutral';
+  /**
+   * The same title/content for a coach, in neutral third person (PR #2073).
+   * Stored as `evidence.coach_copy`. Omitted → coaches see `title`/`content`.
+   */
+  coach?: { title: string; content: string };
 }
 
 /** Convenience re-exports for generator authors. */

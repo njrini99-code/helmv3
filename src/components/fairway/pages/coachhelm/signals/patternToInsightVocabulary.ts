@@ -291,16 +291,25 @@ function insightEvidenceLines(ev: InsightEvidence | null | undefined): SignalEvi
   // so it renders negative/"costing". A raw negative value is not currently
   // emitted anywhere in the v3 engine, but is handled here as the one case
   // that legitimately reads as a genuine gain, so the sign is never fabricated.
-  if (typeof ev.strokes_impact === 'number' && Number.isFinite(ev.strokes_impact)) {
+  //
+  // No line when the figure prints as 0.00: most families store 0 for "not
+  // estimated" (ranking/score.ts), so "0.00/round · small · neutral" read as a
+  // measured zero. A `rough_estimate` figure says so in its gloss, in the
+  // evidence panel's own words.
+  if (
+    typeof ev.strokes_impact === 'number' &&
+    Number.isFinite(ev.strokes_impact) &&
+    Math.round(Math.abs(ev.strokes_impact) * 100) > 0
+  ) {
     const impact = ev.strokes_impact;
     const magnitude = Math.abs(impact);
     const tier = magnitude >= 1.5 ? 'meaningful' : magnitude >= 0.8 ? 'moderate' : 'small';
     const isCost = impact > 0;
-    const signed = magnitude === 0 ? magnitude.toFixed(2) : `${isCost ? '-' : '+'}${magnitude.toFixed(2)}`;
+    const rough = ev.strokes_impact_method === 'rough_estimate' ? ' · rough estimate' : '';
     lines.push({
       label: 'Stroke impact',
-      value: `${signed}/round`,
-      gloss: `${tier} · ${magnitude === 0 ? 'neutral' : isCost ? 'costing' : 'gained'}`,
+      value: `${isCost ? '-' : '+'}${magnitude.toFixed(2)}/round`,
+      gloss: `${tier} · ${isCost ? 'costing' : 'gained'}${rough}`,
     });
   }
 

@@ -449,9 +449,10 @@ export function buildClaim(
   const end = formatMonthDay(e.window_end);
   const windowText = start && end ? (start === end ? start : `${start}–${end}`) : `last ${e.window_days} days`;
 
+  // A `rough_estimate` figure is not measured: say so after it.
   const weightText =
     Number.isFinite(e.strokes_impact) && e.strokes_impact >= 0.05
-      ? `~${e.strokes_impact.toFixed(1)} strokes/rd vs ${compName}`
+      ? `~${e.strokes_impact.toFixed(1)} strokes/rd vs ${compName}${e.strokes_impact_method === 'rough_estimate' ? ' (rough estimate)' : ''}`
       : null;
 
   const mv = insight.metadata?.movement;

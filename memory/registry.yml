@@ -1344,6 +1344,7 @@ features:
         - src/clubhouse/__tests__/recruiting-upload.test.tsx
         - src/test/golf/actions/recruit-document-upload.test.ts
         - src/test/golf/actions/recruiting-create.test.ts
+        - src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts
     integrations:
       - supabase
       - team_access_control
