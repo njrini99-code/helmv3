@@ -1404,3 +1404,10 @@ main[data-canopy] .ch-hd-it.is-on,
   font-weight: 600;
   color: var(--ch-green-700);
 }
+/* On a phone the head is the green feature card, where the field green vanishes: the category takes the on-green ink. */
+@media (max-width: 820px) {
+  [data-ui='clubhouse'] .ch-hd-dos__h > :first-child,
+  [data-ui='clubhouse'] .ch-hd-dos__h > :first-child span:first-child {
+    color: var(--ch-on-green-ink-muted);
+  }
+}

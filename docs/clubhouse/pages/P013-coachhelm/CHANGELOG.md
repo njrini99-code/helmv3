@@ -58,6 +58,9 @@ Held items:     none
   green dossier head, so they take its on-green inks there
   (`--ch-on-green-ink*`); the first pass used the card inks and was too
   dark to read.
+- The open read's category over its title ("Around the green") was field
+  green on the green phone head, a rule from before this change; it takes the
+  on-green ink there now.
 
 ## 2026-10-20 — The Deep dive stops drawing the placeholder cause
 
