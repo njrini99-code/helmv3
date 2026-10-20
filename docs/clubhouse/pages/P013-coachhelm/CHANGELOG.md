@@ -4,11 +4,11 @@
 
 ```text
 Design package: none (supercharge 03 section 2, 09 and 10; design call)
-PR/commit:      branch local/coachhelm-caps-strokes
+PR/commit:      see git log (claude/coachhelm-board-caps)
 Contract IDs:   130101, 130102 (meaning reworded)
 Actions:        none
 Data impact:    none (read-only; no engine, generator or schema change)
-Held items:     before and after screenshots (owner's Mac)
+Held items:     none
 ```
 
 ### Changed
@@ -54,6 +54,48 @@ Held items:     before and after screenshots (owner's Mac)
   up).
 - `coachhelm.test.tsx`: the Board with nine and three, the button and its
   route, and a measured zero alone.
+- Looked at on a phone (390 px) with the preview fixtures
+  (`?state=many|zero`). The "more reads" button is a small ghost button
+  (30 px), so on touch it keeps a 44 px target (`pointer: coarse`).
+
+## 2026-10-20 — The Deep dive stops drawing the placeholder cause
+
+```text
+Design package: none (CoachHelm supercharge, Slice 0a; recommendation in /mnt/project-files/coachhelm/supercharge)
+PR/commit:      see git log (claude/project-thread-hrav6r)
+Contract IDs:   CH-13982 (the diagnosis block; no id added)
+Actions:        none
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm-dive-shape.ts` `diagnosisFor`: a diagnosis whose cause is
+  the generators' placeholder ("<metric> is off its benchmark. Likely cause
+  inferred from the aggregate, not a measured shot sequence", written by
+  `buildDiagnosis` on every single-metric v3 row) is no diagnosis. The
+  "Likely, not measured" box, its cause line, its "sample adequate" reason
+  and the driver the evidence block already shows are not drawn for it. A
+  measured or hand-written cause draws exactly as before.
+- The placeholder test is `src/lib/coachhelm/reads/placeholder-cause.ts`,
+  shared and pure.
+
+### Why
+
+- A read-only production count on 2026-10-20 found the placeholder on 545 of
+  the 710 visible v3 reads (77%), in two spellings: 314 rows with a full
+  stop and 441 older rows with a dash and a lower-case "likely" (both
+  counts include archived rows). Printed as a diagnosis it taught coaches
+  to skip the why line, and a Deep dive section headed "Why CoachHelm
+  thinks so" held only that sentence.
+
+### Verification
+
+- `placeholder-cause.test.ts` (both production spellings) and
+  `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank, observed and hypothesis cases are
+  unchanged). No screenshot: the card loses one block and no layout rule
+  changed.
 
 ## 2026-10-19 — CoachHelm on an iPad: the views head, the Ask cards and the evidence side sheet
 
