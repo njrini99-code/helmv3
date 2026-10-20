@@ -21,6 +21,15 @@ scope, which the server forks per request; a Sentry failure never changes the
 decision (`__tests__/gate-sentry-tag.test.ts`). The saved search, the alert
 steps and the baseline are in STATUS.md "Monitoring".
 
+## 2026-10-20 — Stats visuals: area scrubbing in the pin hook
+
+- `lib/use-chart-pin.ts`: `useChartPin(count, axis, inset)` returns `area`, the
+  pointer handlers for a chart drawn as one surface: a mouse reads the nearest
+  column, a finger scrubs after about 8 px of mostly sideways travel
+  (`touch-action: pan-y` keeps a vertical swipe scrolling, and a cancel clears),
+  the end of a drag keeps the last column pinned, a tap or click toggles the
+  nearest. First used by the trend of rounds (P005).
+
 ## 2026-10-20 — Honest deltas (stats visuals 2)
 
 - `lib/stats-signal.ts`: `meanSe`, `changeSe` and `halvesChange`, the

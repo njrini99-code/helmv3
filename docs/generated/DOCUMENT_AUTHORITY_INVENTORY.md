@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 333 | 13 | 71 | 92 |
+| `UNKNOWN` | 335 | 13 | 73 | 92 |
 
 ## Files
 
@@ -758,6 +758,8 @@ them would bury everything above.
 | `docs/baseball/stats-architecture.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
 | `docs/clubhouse/CATALOG_TEMPLATE.md` | current | - | - | - | - |
+| `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
+| `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CLICKABLES.md` | current | - | - | - | - |

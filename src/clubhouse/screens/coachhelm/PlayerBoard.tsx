@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
-import { Plus, Sparkles } from 'lucide-react';
-import { partitionInsights, type ChInsight, type ChPlayerHelm } from '../../data/coachhelm-shape';
+import { ArrowRight, Plus, Sparkles } from 'lucide-react';
+import { moreReadsLine, partitionInsights, type ChInsight, type ChPlayerHelm } from '../../data/coachhelm-shape';
 import { PLAYER_HELM_HREF, PLAYER_HELM_VIEWS, type PlayerHelmView } from '../../data/coachhelm-views-shape';
 import { useChSessionState } from '../../lib/session-state';
 import { useChPhone } from '../../lib/use-phone';
@@ -50,7 +50,8 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
   const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v], PLAYER_HELM_VIEWS);
 
   const list = data.insights.list;
-  const { focus, also, working } = useMemo(() => partitionInsights(list, picked?.id), [list, picked]);
+  // At most three reads that need work and one that is working; the rest are counted and are in the Deep dive (NEEDS_MAX).
+  const { focus, also, working, more } = useMemo(() => partitionInsights(list, picked?.id), [list, picked]);
   const gone = picked && focus && focus.id !== picked.id ? picked : null;
   const startHref = coachHelmLinks.startRound();
   // How many rounds CoachHelm still waits for (the miner's floor less the rounds in its window), when known and some are still to come.
@@ -141,7 +142,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
                   code="CH-13303"
                   icon={Sparkles}
                   title="Nothing needs work right now"
-                  body={`CoachHelm found nothing to fix in the rounds you’ve posted. What is working is listed ${phone ? 'below' : 'beside this'}.`}
+                  body={`CoachHelm found nothing to fix in the rounds you’ve posted.${working.length > 0 ? ` What is working is listed ${phone ? 'below' : 'beside this'}.` : ''}`}
                 />
               )}
             </SectionBoundary>
@@ -163,6 +164,11 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
                     <InsightRow key={i.id} ins={i} onPick={() => pick(i)} />
                   ))}
                 </section>
+              )}
+              {more > 0 && (
+                <Button className="ch-hl-more" variant="ghost" size="sm" rightIcon={ArrowRight} feel="select" onClick={() => sw.go('deep-dive')}>
+                  {moreReadsLine(more)}
+                </Button>
               )}
               <p className="ch-hl-note">Reads update as you post rounds. Your coaches see the same insights.</p>
             </SectionBoundary>

@@ -53,6 +53,7 @@ import {
   type LifecycleWriteDecision,
 } from './lifecycle-policy';
 import { getActiveGate, incrementGatedCount } from './gate-context';
+import { carryForwardStamp, evidenceRevisionKey as currentRevisionKey } from './revision-key';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -286,6 +287,8 @@ async function updateExisting(
   teamId: string | null,
   attempt = 0,
 ): Promise<string> {
+  // Slice 0b: an unstamped write (failed round load) keeps the row's stamp.
+  evidence = carryForwardStamp(existing.evidence, evidence);
   const nowIso = new Date().toISOString();
   const existingValue = existing.evidence?.your_value ?? 0;
   const newValue = evidence.your_value;
@@ -324,7 +327,8 @@ async function updateExisting(
   const priorMaturationKeys: readonly string[] = Array.isArray(priorMetadata.maturation_keys)
     ? (priorMetadata.maturation_keys as unknown[]).filter((k): k is string => typeof k === 'string')
     : [];
-  const evidenceRevisionKey = `${evidence.sample_n}|${evidence.window_end}`;
+  // Slice 0b: newest round + window start when the flag is on (revision-key.ts).
+  const evidenceRevisionKey = currentRevisionKey(evidence);
 
   const decision: LifecycleWriteDecision = resolveLifecycleOnWrite({
     existing: existing.lifecycle_state,

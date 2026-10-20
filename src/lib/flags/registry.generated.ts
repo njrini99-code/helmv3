@@ -149,6 +149,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on once golf_coachhelm_coach_weights has accumulated enough post-fix (corrected v2 causality attribution) samples to trust the persisted weights, or remove the coach-weight read entirely if that ranking signal is abandoned.",
   },
   {
+    feature_id: "coachhelm_reads_v1_copy",
+    owner: "golf/coachhelm",
+    purpose: "Gates the CoachHelm Slice 0 output changes. Delivery: overlapping reads fold into one at delivery and each player's feeds hold 3 open reads plus 1 strength. Freshness: a new or refreshed read needs at least 3 countable rounds and its family's attempt floor or it is held back as Watching with a count-down; a new evidence revision is a new newest round in the window (or a moved window), not a changed sample count; empty window dates are filled from the rounds read; and the nightly roster sweep re-analyzes players whose newest countable round is newer than their newest read (deterministic generators only, no LLM). Off until the owner reviews the shorter feeds and the Watching counts.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "When the owner turns production on and the 3 + 1 feeds and the floors have held for an observation window, make fold and cap the only behavior in insight-delivery.ts, delete the legacy branches the freshness part guards (revision-key.ts legacy key, the floor and bounds branches in read-window.ts, the sweep's legacy-only path), and delete this flag in the same change. Turning it off restores the old gates, key and sweep for every later write; reads already archived or matured while it was on stay as they are until their next refresh.",
+  },
+  {
     feature_id: "coachhelm_recap_claim_packet",
     owner: "golf/coachhelm",
     purpose: "Gates whether the round recap's compose() call also receives a typed EvidencePacket (Package 8), engaging claim-validator.ts's wrong-metric/wrong-player/wrong-window/unsupported-cause checks for this one LLM surface, on top of the existing flat numeric scan; default off pending real-world evidence this doesn't over-reject otherwise-good recaps into the deterministic fallback. A recap discarded to the fallback is cached forever (round-recap.ts only ever generates once per round; there is no regenerate path) — this flag must stay off in production until one exists, so a false-positive rejection isn't permanent for that round.",
