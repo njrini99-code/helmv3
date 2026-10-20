@@ -2070,6 +2070,78 @@ Other contract changes in the same pass:
   persists it: the label came from headline keywords, not from the worst SG
   category. Per-category SG lives in the `sg_*` standings.
 
+## Honest root cause (supercharge Slice 2, 2026-10-20)
+
+Behind `coachhelm_root_cause_diagnosis` (OFF). With the flag off, the
+generator writes the P0-05 template diagnosis exactly as before, never loads
+shots, and writes none of the fields below. With it on, a leak read's
+`evidence.diagnosis` comes from `v3/engine/root-cause.ts`, and the row carries
+`evidence.cause` in one of three states:
+
+- `observed_sequence`, "counted": ≥ 10 failing events over ≥ 3 rounds, and
+  one recorded path on ≥ 4 of them, ≥ 30%, in ≥ 2 rounds
+  (`MIN_PATTERN_ROUNDS`; one bad day is not a pattern). Reader level
+  `observed`.
+- `inferred_hypothesis`, "likely from totals": no counted path, but the
+  narrowing's chosen par × length slice has ≥ 10 per arm, a slice rate ≥ 1.25
+  × the rest, and a Newcombe lower bound above zero, Bonferroni-widened over
+  the slices the narrowing tried (family-wise 95%). Reader level
+  `hypothesis`.
+- `not_traced`: neither; `not_traced_reason` says why. Not a cause, so no
+  reader level.
+
+`diagnosis.causality_level` is `observed_sequence` only for a counted cause
+and `inferred_hypothesis` otherwise; readers must look at `cause.state` to
+tell a likely cause from a not-traced one.
+
+- **Likely prints both arms.** `cause.alternatives[0]` holds `arm_a` (the
+  slice) and `arm_b` (the rest) with n, failures and rate, the lift (null when
+  the rest never failed) and the interval. The sentence quotes all of them.
+- **Not traced says why.** `count_down` carries need and have for events and
+  rounds; `data_gap` names the one `golf_shots` field recorded on under 60%
+  of the failures (`miss_direction`, `distance_to_hole_after`) and, as
+  `target_count`, how many of the next failures must carry it: the smallest
+  x with (have + x) / (of + x) ≥ 0.6, since new failures join the population
+  too. It is mirrored in `evidence.data_gap`. `no_leading_path`,
+  `no_shot_path`, `no_window`, `pattern_only` and `load_failed` are the
+  others. None of them is written as a cause, and the "is off its benchmark.
+  Likely cause inferred from the aggregate" placeholder is never written.
+- **Only recorded, unusual paths count.** A path with an unrecorded step
+  (leave distance missing) and a costly-shot path where nothing was costly
+  have no pattern at all, so they count toward neither a path nor the
+  floors. The ordinary putt miss (inside 3 ft, holed next) is not a path.
+- **Tee and opening hole stop at Likely.** `sg_ott` and `opening_hole_delta`
+  carry `maxState: 'inferred_hypothesis'`: a repeated tee or first-hole path
+  is reported as `pattern_only`, never as a counted cause.
+- **Putt actions stay sourced.** Lag pace advice is given only for first
+  putts from 25 ft or more; shorter ranges get a neutral "Practice first
+  putts from …". No start-line advice (unsourced in
+  `docs/v3-research-golf-domain.md`).
+- **No window, no trace.** A read without a stamped window (`window_start`,
+  or `window_days` > 0 with an end) is `no_window`; a zero-day span is not a
+  window. Rolling generators (`tee-strategy`, `approach-miss`, `scrambling`,
+  `warmup-hole`) set `rollingWindowDays`, so the shot load uses that many
+  days ending today rather than their lifetime or last-round stamp. The
+  one-year fallback from #2073 is gone.
+- **`diagnosis.basis`** records what the cause rests on (`shot_sequence`,
+  `hypothesis_policy`, `aggregate_only`), what was checked, and the context
+  narrowing. `basis.sequence.examples` lists up to five holes.
+- **Readers.** `src/lib/coachhelm/reads/cause-state.ts` is the one mapping.
+  Clubhouse's dive returns no diagnosis for a not-traced cause, so its Why
+  section reads "Not traced yet". Fairway's player hub draws a not-traced
+  cause step without a "Likely" marker, and the coach `DiagnosisPanel` (via
+  `EvidencePanel`) shows no causality chip and the sentence alone, with the
+  action under "Next step", never "Likely because" or "Practice focus". A
+  likely cause keeps its Hypothesis chip and its own "Likely from the
+  totals" lead, without a second "Likely because".
+- **Framing.** Only a leak gets a cause. Generators whose verdict is not the
+  sign of `your_value − comparison_value` declare `ComposedContent.framing`
+  (`tee-strategy`, `putt-bias`, `pressure-gap`, `warmup-hole`); the others
+  fall back to comparing the two values by polarity.
+- **`evidence.coach_copy`** (title and content in a coach's third-person
+  voice) is typed and stamped from `ComposedContent.coach`; no generator sets
+  it yet.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
