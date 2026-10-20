@@ -8,6 +8,11 @@ describe('isPlaceholderCause', () => {
     expect(isPlaceholderCause('  Putts made 3-5 ft is off its benchmark.  Likely cause inferred from the aggregate, not a measured shot sequence ')).toBe(true);
   });
 
+  it('matches the older spelling with a dash and a lower-case "likely", which production still holds', () => {
+    expect(isPlaceholderCause('Greens hit from 50-125 yd is off its benchmark \u2014 likely cause inferred from the aggregate, not a measured shot sequence')).toBe(true);
+    expect(isPlaceholderCause('Penalties per Round is off its benchmark \u2013 likely cause inferred from the aggregate, not a measured shot sequence.')).toBe(true);
+  });
+
   it('never matches a stated cause', () => {
     expect(isPlaceholderCause('approach missed → chip to inside 6 ft → 1 putt — 10 of 13 missed greens from 50–125 yd')).toBe(false);
     expect(isPlaceholderCause('It looks like a pace-control pattern rather than a green-reading one')).toBe(false);

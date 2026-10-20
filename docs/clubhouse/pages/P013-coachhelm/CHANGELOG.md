@@ -25,15 +25,17 @@ Held items:     none
 
 ### Why
 
-- A production check on 2026-10-19 counted the placeholder on 420 of 572
-  visible reads. Printed as a diagnosis it taught coaches to skip the why
-  line, and a Deep dive section headed "Why CoachHelm thinks so" held only
-  that sentence.
+- A read-only production count on 2026-10-20 found the placeholder on 545 of
+  the 710 visible v3 reads (77%), in two spellings: 314 rows with a full
+  stop and 441 older rows with a dash and a lower-case "likely" (both
+  counts include archived rows). Printed as a diagnosis it taught coaches
+  to skip the why line, and a Deep dive section headed "Why CoachHelm
+  thinks so" held only that sentence.
 
 ### Verification
 
-- `placeholder-cause.test.ts` and `coachhelm-dive.test.tsx` (a placeholder
-  row gets no diagnosis; the blank, observed and hypothesis cases are
+- `placeholder-cause.test.ts` (both production spellings) and
+  `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank, observed and hypothesis cases are
   unchanged). No screenshot: the card loses one block and no layout rule
   changed.
 
