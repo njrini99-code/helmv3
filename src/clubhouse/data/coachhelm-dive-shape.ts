@@ -8,6 +8,8 @@ import type { AssembledThemes, ThemeNode } from '@/lib/coachhelm/v3/themes/types
 import { formatSigned, formatToPar } from '../lib/format';
 import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
+import { toChRead, type ChRead } from './coachhelm-read-shape';
+import type { ChViewer } from './coachhelm-voice';
 import { stanceOf, type ChBoardMissing, type ChInsight, type ChStance } from './coachhelm-shape';
 import { figure } from './coachhelm-standing-shape';
 
@@ -123,6 +125,8 @@ export interface ChDeepInsight {
   closes: { strokes: string; anchor: 'team' | 'tour' } | null;
   rounds: ChDiveRounds;
   plan: ChDivePlan;
+  /** The read in four lines, What, Why, Next and When, from the fields above and the Board's card (`coachhelm-read-shape.ts`). */
+  read: ChRead;
 }
 
 export interface ChDeepDive {
@@ -330,21 +334,32 @@ function spanOf(ev: InsightEvidence): string | null {
 
 /**
  * One insight in full. `base`: the Board's own mapping of `raw` (`toChInsight`), so the card, its numbers and its words are the Board's;
- * `inputs`: the rounds, focus areas, goals and category reads the loader read beside it.
+ * `inputs`: the rounds, focus areas, goals and category reads the loader read beside it. `say` and `role` are the one viewer `base`
+ * was mapped for: the Deep dive is the player's own (130104), so the role is the player's unless a coach's rendering says otherwise.
  */
-export function toChDeepInsight(raw: EvidenceInsight, base: ChInsight, inputs: Pick<ChDiveInputs, 'rounds' | 'focusAreas' | 'goals' | 'themes'>, say: (t: string) => string = (t) => t): ChDeepInsight {
+export function toChDeepInsight(
+  raw: EvidenceInsight,
+  base: ChInsight,
+  inputs: Pick<ChDiveInputs, 'rounds' | 'focusAreas' | 'goals' | 'themes'>,
+  say: (t: string) => string = (t) => t,
+  role: ChViewer['role'] = 'player',
+): ChDeepInsight {
   const ev = raw.evidence;
+  const diagnosis = diagnosisFor(ev, say);
+  const closes = closesFor(raw, inputs.themes);
+  const rounds = roundsFor(ev, inputs.rounds);
   return {
     base,
     cat: raw.category ?? 'other',
     stance: stanceOf(base),
     measured: { label: base.evidence.label || ev.metric_label, value: base.value, span: spanOf(ev) },
-    diagnosis: diagnosisFor(ev, say),
+    diagnosis,
     movement: movementFor(raw),
     outcome: outcomeFor(raw),
-    closes: closesFor(raw, inputs.themes),
-    rounds: roundsFor(ev, inputs.rounds),
+    closes,
+    rounds,
     plan: planFor(raw, inputs.focusAreas, inputs.goals),
+    read: toChRead(raw, base, { diagnosis, closes, newestListed: rounds.list[0]?.date ?? null, windowEnd: fmtShortDate(ev.window_end || null), role }, say),
   };
 }
 
