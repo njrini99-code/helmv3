@@ -994,6 +994,7 @@ Held items:     none
 ### Verification
 
 - Each new test was run against a deliberate break of the code it guards and failed; VERIFY.md "No data lost".
+
 ## 2026-10-16 — The number pad has a Done key in the app
 
 Release blocker 19. Round entry's number fields (the shot screen's distance,

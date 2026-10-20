@@ -347,6 +347,7 @@ looks vibe coded"; "get rid of the shimmer").
   hand-on to the box around it, the contained overscroll and the dialog edge.
   Not checked with a real wheel in Safari, or on an iPhone (the easing is
   desktop only).
+
 ## 2026-10-16 — Server errors carry ui=clubhouse too
 
 No visible change. Release review blocker 5: only the browser tagged a
@@ -356,6 +357,7 @@ from Fairway's. When `isClubhouseFor` decides Clubhouse for a request
 scope, which the server forks per request; a Sentry failure never changes the
 decision (`__tests__/gate-sentry-tag.test.ts`). The saved search, the alert
 steps and the baseline are in STATUS.md "Monitoring".
+
 ## 2026-10-16 — No serif face is loaded
 
 `lib/fonts.ts` still declared Instrument Serif (normal and italic), so every
@@ -546,6 +548,7 @@ Owner: "Notifications motion was trash". Measured on the Simulator: the first
 open of a visit started on the skeleton and swapped the feed in about 400ms
 into the drop (cards jumped 29px, frames of 30-59ms), and every open took
 827ms, the last 300ms creeping the veil's final few dozen pixels.
+
 - On the phone the feed is read once the page settles (requestIdleCallback),
   so the first open lands on its cards; opening still reads it again.
 - The drop and veil arrive on the reveal spring cut at 1% and rescaled to land

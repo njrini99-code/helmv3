@@ -415,6 +415,7 @@ Held items:     none
   the server answers. No realtime. Email and Call are `mailto:` / `tel:`; the
   no-team page's Open team settings opens Settings' Team section, which is
   rebuilt for a coach.
+
 ## 2026-10-16 — Film is hidden until its migration is applied
 
 Owner default (release blocker 18): recruit film uploads need

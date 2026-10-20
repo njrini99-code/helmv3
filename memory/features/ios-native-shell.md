@@ -52,6 +52,7 @@ uploads): `HelmHapticsPlugin.swift` (Core Haptics signature patterns
 helmCommit/helmReject/helmMilestone; app-local plugin registered in
 `GolfBridgeViewController.capacitorDidLoad`) with the web bridge
 `src/lib/native/helm-haptics.ts` (`playHelmSignature`, preference + capability
+
 + hardware gated, stock-grammar fallback). Pattern curves await the owner's
 physical-device feel pass before any product flow wires them (§13/§72).
 Still planned: badge bridge, notification categories/actions, active-round

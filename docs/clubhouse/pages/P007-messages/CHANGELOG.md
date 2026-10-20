@@ -387,6 +387,7 @@ checked at phone width.
 All, Unread and Groups take the lit green chip every switcher draws
 (`messages.css`); the page's own rule is removed. Shared detail:
 docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — The held-column probe runs once per server instance, not on every load
 
 No visible change (Q8). While migration 20261008160000 is held, every Messages
