@@ -156,9 +156,9 @@ top bar is "Round" with "‹ Rounds" ("‹ Stats" for a coach). A new round and 
 shot screen hide the tab bar (`usePhoneTabsHidden`), with the dock above the
 home indicator and the distance box at 76px; sheets (penalty, change a shot,
 leave this shot, exit, scorecard, round complete, the picker, Add a course) are
-bottom sheets that drag to close. In the app the keyboard keeps the system's Done
-bar for the whole round (`useRoundDoneKey`, 2026-10-20), not yet felt on a device.
-Not yet: an iPhone pass.
+bottom sheets that drag to close. In the app the keyboard keeps the system's
+Done bar for the whole round (`useRoundDoneKey`, 2026-10-20), not yet felt on a
+device. Not yet: an iPhone pass.
 
 **The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe
 coded"; the Coach Home board's round 3, "fewer containers, one feature card").**

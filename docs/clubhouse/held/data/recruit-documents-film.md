@@ -93,14 +93,18 @@ Film already stored stays readable; new film uploads are refused again.
 
 ## UI behavior while held
 
-Film is hidden while the migration is held (owner default, 2026-10-16): `RECRUIT_FILM_ENABLED` in
-`src/clubhouse/data/recruiting-film.ts` is false, so the upload dialog offers no Film category, the picker and the drop
-take no video (a video is refused before sending as "We can't take that file type", CH-14106), and the copy names no film.
-A document already filed as Film keeps its tag. Documents and images up to 25 MB work throughout.
+Film is hidden while the migration is held (owner default, 2026-10-16):
+`RECRUIT_FILM_ENABLED` in `src/clubhouse/data/recruiting-film.ts` is false, so
+the upload dialog offers no Film category, the picker and the drop take no video
+(a video is refused before sending as "We can't take that file type", CH-14106),
+and the copy names no film. A document already filed as Film keeps its tag.
+Documents and images up to 25 MB work throughout.
 
-After the apply, set `RECRUIT_FILM_ENABLED` to true; that one change turns film on (Film category, MP4, MOV and M4V up to
-100 MB, the hint). Built for film, the page still says honestly what Storage refuses: "Storage won't take that file type"
-(CH-14107) or "a file this large" (CH-14108), with nothing added and no Retry.
+After the apply, set `RECRUIT_FILM_ENABLED` to true; that one change turns film
+on (Film category, MP4, MOV and M4V up to 100 MB, the hint). Built for film, the
+page still says honestly what Storage refuses: "Storage won't take that file
+type" (CH-14107) or "a file this large" (CH-14108), with nothing added and no
+Retry.
 
 ## SQL preparation status
 

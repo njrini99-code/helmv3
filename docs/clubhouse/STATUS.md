@@ -279,13 +279,13 @@ a new production deploy.
 
 ## Monitoring
 
-Every Clubhouse error is tagged `ui:clubhouse`: the browser tags the session when
-the shell mounts (`chTagSession`, `src/clubhouse/lib/track.ts`), and the server
-tags the request's isolation scope when `isClubhouseFor` decides Clubhouse
-(`src/clubhouse/gate.ts`, tested in
-`src/clubhouse/__tests__/gate-sentry-tag.test.ts`). Fairway events carry no
-`ui` tag. The server tag reaches production only with the deploy that carries
-it, so take the canary from a build that includes it.
+Every Clubhouse error is tagged `ui:clubhouse`: the browser tags the session
+when the shell mounts (`chTagSession`, `src/clubhouse/lib/track.ts`), and the
+server tags the request's isolation scope when `isClubhouseFor` decides
+Clubhouse (`src/clubhouse/gate.ts`, tested in
+`src/clubhouse/__tests__/gate-sentry-tag.test.ts`). Fairway events carry no `ui`
+tag. The server tag reaches production only with the deploy that carries it, so
+take the canary from a build that includes it.
 
 **The search to save** (Sentry org `helm-xs`, project `javascript-nextjs`):
 
@@ -308,15 +308,15 @@ for the owner). Steps, before the canary deploy:
 
 **Baseline, recorded 2026-10-16 (read only).**
 
-- Sentry, production, the 14 days to about 2026-10-16 21:35 UTC, error events whose
-  transaction is under `/golf/dashboard` (`transaction:*golf/dashboard*` or
-  `*golf/(dashboard)*`, which covers server GET and POST, browser routes and
+- Sentry, production, the 14 days to about 2026-10-16 21:35 UTC, error events
+  whose transaction is under `/golf/dashboard` (`transaction:*golf/dashboard*`
+  or `*golf/(dashboard)*`, which covers server GET and POST, browser routes and
   server components): **386 events, 28 issues, 26 users**. The largest:
   JAVASCRIPT-NEXTJS-Z0 statement timeout (86 events), -XP worst-hole read
   timeouts (79 events, 15 users), -YX AbortError (78), -196 the held-migration
-  trace probe (73; its noise is dropped by #2197, not yet deployed) and -15A
-  the round recap style trace (32 events, 17 users). `ui:clubhouse` in the
-  same 14 days: 0 events.
+  trace probe (73; its noise is dropped by #2197, not yet deployed) and -15A the
+  round recap style trace (32 events, 17 users). `ui:clubhouse` in the same 14
+  days: 0 events.
 - Production database, `golf_rounds` with `status = 'completed'` and no
   `golf_holes` row: **18 of 774 completed rounds** (14 not `is_test`), the
   newest created 2026-09-28; **0 of the 64 completed in the last 14 days**.

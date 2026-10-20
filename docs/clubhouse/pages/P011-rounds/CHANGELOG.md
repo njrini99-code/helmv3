@@ -3,8 +3,9 @@
 ## 2026-10-20 — The number pad has a Done key in the app
 
 ```text
-Design package: none (release blocker 19; no owner board, phone draft docs/clubhouse/phone/rounds.md)
-PR/commit:      see git log (claude/clubhouse-readiness, replayed from draft PR #2207)
+Design package: none (release blocker 19; no owner board; phone draft
+                docs/clubhouse/phone/rounds.md)
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
 Contract IDs:   112001 (wording; status unchanged)
 Actions:        none
 Data impact:    none
@@ -36,15 +37,15 @@ Held items:     none
 
 - `use-done-key.test.tsx` and `capacitor-accessory-bar.test.ts` (pin, release,
   hand-over without flicker, a pin before the plugin loads). Native UIKit, so
-  the iPad tier (CSS, and the app is iPhone-only) and Dynamic Type (`--ch-type-k`)
-  do not touch it. Not yet seen on a device (VERIFY).
+  the iPad tier (CSS, and the app is iPhone-only) and Dynamic Type
+  (`--ch-type-k`) do not touch it. Not yet seen on a device (VERIFY).
 
 ## 2026-10-20 — "No data lost" reaches Exit's Discard and the round engine
 
 ```text
 Design package: none
-PR/commit:      see git log (claude/clubhouse-readiness, replayed from draft PR #2207)
-Contract IDs:   110702, 111201, 111202 (more tests; status unchanged, implemented)
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
+Contract IDs:   110702, 111201, 111202 (more tests; still implemented)
 Actions:        none
 Data impact:    none
 Held items:     none

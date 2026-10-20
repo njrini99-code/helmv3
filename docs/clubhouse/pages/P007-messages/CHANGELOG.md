@@ -1,13 +1,15 @@
 # P007 — Messages: changelog
 
-## 2026-10-20 — The held-column probe runs once per server instance, not on every load
+## 2026-10-20 — The held-column probe runs once per server instance
 
 ```text
 Design package: none
-PR/commit:      see git log (claude/clubhouse-readiness, replayed from draft PR #2207)
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
 Contract IDs:   none changed
-Actions:        canHideGolfConversations, hideGolfConversation (src/app/golf/actions/conversation-hide.ts)
-Data impact:    none (one fewer failing read per Messages load while the column is missing)
+Actions:        canHideGolfConversations, hideGolfConversation
+                (src/app/golf/actions/conversation-hide.ts)
+Data impact:    none (one fewer failing read per load while the column
+                is missing)
 Held items:     20261008160000_golf_conversation_hidden_at.sql (still held)
 ```
 

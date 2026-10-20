@@ -4,7 +4,7 @@
 
 ```text
 Design package: none (owner default, release blocker 18)
-PR/commit:      see git log (claude/clubhouse-readiness, replayed from draft PR #2207)
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
 Contract IDs:   CH-14106, CH-14305 (copy while film is off)
 Actions:        none changed (the server actions are unchanged)
 Data impact:    none

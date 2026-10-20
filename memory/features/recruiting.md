@@ -210,8 +210,9 @@ and one migration (film), written and not applied.
 - `src/clubhouse/__tests__/recruiting.test.tsx` (the Clubhouse screen: rules,
   loader, route and page, every write and its failure, the phone) and
   `recruiting-upload.test.tsx` (film, the file drop, the transfer, an Add that
-  cannot repeat), both with film on; `recruiting-film-off.test.tsx` (the
-  default until the film migration is applied); `src/test/golf/actions/recruit-document-upload.test.ts` and
+  cannot repeat), both with film on; `recruiting-film-off.test.tsx` (the default
+  until the film migration is applied);
+  `src/test/golf/actions/recruit-document-upload.test.ts` and
   `recruiting-create.test.ts` for the server side
 - `src/components/fairway/pages/recruiting/FairwayRecruitingPage.test.tsx`
 - `src/components/fairway/pages/recruiting/FairwayRecruitDocuments.test.tsx`
