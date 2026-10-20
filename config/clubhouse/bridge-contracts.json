@@ -13033,7 +13033,7 @@
     "category": 20,
     "item": 1,
     "name": "SHEETS_CLOSE_ON_ESC_AND_FOCUS_RETURNS",
-    "meaning": "Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. Tested in rounds-contracts.test.tsx: Esc (the dialog's cancel event) closes each of the nine and focus returns to the opener, except Add a course, which returns to the course picker it was opened from. Not built: arrow keys inside the radio groups (each choice is its own Tab stop) and the iOS number pad's Done bar.",
+    "meaning": "Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. Tested in rounds-contracts.test.tsx: Esc (the dialog's cancel event) closes each of the nine and focus returns to the opener, except Add a course, which returns to the course picker it was opened from. In the app the keyboard keeps its Done key for the whole round, setup and sheets included: round entry holds the native accessory bar up (`useRoundDoneKey`; Mobile Safari draws it itself). Not built: arrow keys inside the radio groups (each choice is its own Tab stop).",
     "status": "implemented",
     "where": "src/clubhouse/ui/Modal.tsx#Modal; src/clubhouse/screens/rounds/track/parts.tsx#Seg; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup",
     "tests": [
