@@ -91,34 +91,96 @@ vi.mock('@/lib/golf/recap-season-context', () => ({
 
 import { generateRoundRecap } from '../round-recap';
 
+const SHORT_REPLY =
+  'Sam shot an even-par 72 at Pinehurst No. 2 with 31 putts. Next round, turning 10 greens into more birdie looks is the clear opening.';
+
 describe('generateRoundRecap — a style-rejected model reply is logged as a template fallback (1cd457e7)', () => {
   beforeEach(() => {
     markCallFellBackMock.mockClear();
     logServerEventMock.mockClear();
-    composeMock.mockClear();
+    // mockReset drops any unconsumed mockResolvedValueOnce queue, so one
+    // test's replies can never leak into the next.
+    composeMock.mockReset();
+    composeMock.mockImplementation(async () => ({
+      text: LONG_REPLY,
+      used_llm: true,
+      citations_verified: true,
+      call_log_id: 'call-1',
+      cost_usd: 0.001,
+    }));
   });
 
   it('marks the call row fallback_to_template with the style violations', async () => {
     const result = await generateRoundRecap('round-1');
 
-    expect(composeMock).toHaveBeenCalledTimes(1);
+    // An over-long reply earns one rewrite pass (2026-10-20); this model
+    // overshoots both times, so the player still gets the template.
+    expect(composeMock).toHaveBeenCalledTimes(2);
     // The player gets the template, not the over-long model reply...
     expect(result.recap).not.toBe(LONG_REPLY);
     expect(logServerEventMock).toHaveBeenCalledWith(
       expect.stringContaining('broke style limits'),
       expect.objectContaining({ action: 'generateRoundRecap.style' }),
     );
-    // ...and the call log must say so.
-    expect(markCallFellBackMock).toHaveBeenCalledTimes(1);
+    // ...and the call log must say so, for both discarded replies.
+    expect(markCallFellBackMock).toHaveBeenCalledTimes(2);
     expect(markCallFellBackMock).toHaveBeenCalledWith('call-1', {
       reason: 'style_violation',
       violations: expect.arrayContaining(['too_many_words']),
     });
   });
 
+  it('a reply that only ran long gets one rewrite pass, and a compliant rewrite reaches the player (1cd457e7, 2026-10-20)', async () => {
+    composeMock.mockResolvedValueOnce({
+      text: LONG_REPLY,
+      used_llm: true,
+      citations_verified: true,
+      call_log_id: 'call-long',
+      cost_usd: 0.001,
+    });
+    composeMock.mockResolvedValueOnce({
+      text: SHORT_REPLY,
+      used_llm: true,
+      citations_verified: true,
+      call_log_id: 'call-short',
+      cost_usd: 0.001,
+    });
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(composeMock).toHaveBeenCalledTimes(2);
+    expect(result.recap).toBe(SHORT_REPLY);
+    // Only the discarded first draft is marked; the rewrite was used.
+    expect(markCallFellBackMock).toHaveBeenCalledTimes(1);
+    expect(markCallFellBackMock).toHaveBeenCalledWith('call-long', {
+      reason: 'style_violation',
+      violations: ['too_many_words'],
+    });
+    expect(logServerEventMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('broke style limits'),
+      expect.anything(),
+    );
+  });
+
+  it('a reply that breaks a limit other than length gets no rewrite pass', async () => {
+    composeMock.mockResolvedValueOnce({
+      text: 'Sam shot an even-par 72 at Pinehurst No. 2 with 31 putts — steady work. Next round, more birdie looks.',
+      used_llm: true,
+      citations_verified: true,
+      call_log_id: 'call-dash',
+      cost_usd: 0.001,
+    });
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(composeMock).toHaveBeenCalledTimes(1);
+    expect(result.recap).not.toContain('—');
+    expect(markCallFellBackMock).toHaveBeenCalledTimes(1);
+  });
+
   it('does not touch the call log when the model reply meets the style limits', async () => {
     composeMock.mockResolvedValueOnce({
-      text: 'Sam shot an even-par 72 at Pinehurst No. 2 with 31 putts. Next round, turning 10 greens into more birdie looks is the clear opening.',
+      text: SHORT_REPLY,
       used_llm: true,
       citations_verified: true,
       call_log_id: 'call-2',

@@ -2,7 +2,7 @@
 
 - Feature: `observability_supabase`
 - Surface: `/api/health` readiness probe, `/admin/errors/5725d96a`
-- Status: FIXED on branch `agent/health-20261015-0054` (136a75dbc); awaiting merge and deploy.
+- Status: VERIFIED IN PRODUCTION. Merged in #2197 (d08ebaea3), live since 2026-10-18 14:32Z (dpl_426mj5nN7A42xYLjvr3r73smThK7), 0 occurrences of 5725d96a since; resolved 2026-10-20 by the desktop health routine.
 - Risk: R1. Route-handler logic only. No schema, RLS, grant or data change.
 - Signal: `admin_events` warning `[api.health] Health check degraded: readiness query failed` (5725d96a). Auto-resolved 2026-10-13 07:31Z (rule A, 86c43bd8e), then 5 rows on 2026-10-14 14:09Z–21:48Z, all `failureKind: timeout`, `queryMs` ≈ 2,510 against the 2,500 ms budget.
 

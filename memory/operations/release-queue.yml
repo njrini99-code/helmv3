@@ -572,9 +572,9 @@ items:
       PostgREST, or reached it seconds late and got a 200), and the probe
       reported the database degraded (5725d96a).
     incident_id: memory/incidents/observability_supabase/INC-2026-10-15-health-probe-stalled-connection.md
-    status: verified
+    status: verified_in_production
     risk: R1
-    sha: null
+    sha: d08ebaea342434a398eec13f8bc3d7d42e346398
     pr: 2197
     regression_tests:
       - src/app/api/health/route.test.ts
@@ -595,3 +595,19 @@ items:
       - src/clubhouse/__tests__/coachhelm-ask-shape.test.ts
     queued_for_release: false
     first_seen: '2026-10-01T01:29:10Z'
+  - id: recap-word-limit-rewrite-2026-10-20
+    feature_id: coachhelm_ai
+    root_cause: >-
+      Once the 36-word recap cap was enforced (deploy 2026-10-18), the model
+      overshot it on every round_review call (about 45 words), and
+      generateLLMRecap's only path for too_many_words was the template, so
+      every player got the template recap (Bridge 1cd457e7).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-10-13-recap-style-fallback-logged-as-llm.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-18T14:32:00Z'
