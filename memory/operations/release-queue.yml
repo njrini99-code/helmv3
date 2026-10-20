@@ -605,7 +605,7 @@ items:
     incident_id: memory/incidents/coachhelm_ai/INC-2026-10-13-recap-style-fallback-logged-as-llm.md
     status: verified
     risk: R1
-    sha: null
+    sha: 79fa1aefe097b918d568f036db92d16f06199770
     pr: null
     regression_tests:
       - src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts
