@@ -464,6 +464,12 @@
 .ch-hl-more {
   align-self: flex-start;
 }
+/* A small ghost button is 30px tall; on touch it keeps the 44px target. */
+@media (pointer: coarse) {
+  .ch-hl-more {
+    min-height: 44px;
+  }
+}
 
 /* Player: the focus areas a coach proposed, with Accept and Decline (Q-77) */
 .ch-hl-prop {
