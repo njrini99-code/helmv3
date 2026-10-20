@@ -26,13 +26,14 @@
 -- (the checkpoint anchor for "Show later" and "Under review"), and the time.
 --
 -- WHO READS IT (04 §1.4 "author reads own; coach reads own team's"): the
--- author; a coach on the staff of the row's team or of a team the player is
--- an active member of; super admins. A player reads only rows they wrote
--- (never a coach's correction on their read). anon has no grant.
+-- author; a coach on the staff of a team the player is an active member of
+-- (the row's own team_id grants nothing); super admins. A player reads only
+-- rows they wrote (never a coach's correction on their read). anon has no
+-- grant.
 -- WHO WRITES IT: an authenticated user, as themselves, either a coach on the
 -- staff of a team the player is active on (any kind), or the player on their
--- own read (only 'not_this' and 'confirm'). The insight must belong to that
--- player. No UPDATE or DELETE policy: corrections are append-only; the newest
+-- own read (only 'not_this' and 'confirm', and team_id null or a team the
+-- player is active on). The insight must belong to that player. No UPDATE or DELETE policy: corrections are append-only; the newest
 -- correction by one author on one read is the one that counts.
 --
 -- ROLLBACK: DROP TABLE IF EXISTS public.golf_coachhelm_corrections; the
@@ -111,7 +112,7 @@ on public.golf_coachhelm_corrections (insight_id, created_at desc);
 create index if not exists idx_golf_coachhelm_corrections_player
 on public.golf_coachhelm_corrections (player_id);
 
--- Covers the team_id foreign key (ON DELETE SET NULL scans it) and the policy.
+-- Covers the team_id foreign key (ON DELETE SET NULL scans it).
 create index if not exists idx_golf_coachhelm_corrections_team
 on public.golf_coachhelm_corrections (team_id)
 where team_id is not null;
@@ -131,7 +132,8 @@ for select
 to authenticated
 using (
     author_user_id = (select auth.uid())
-    or (team_id is not null and public.is_golf_team_coach(team_id))
+    -- Coach visibility follows the player's active teams, never the row's
+    -- own team_id, so a row cannot be steered to an unrelated team's staff.
     or exists (
         select 1
         from public.golf_team_members as gtm
@@ -180,6 +182,18 @@ with check (
                 where
                     gp.id = golf_coachhelm_corrections.player_id
                     and gp.user_id = (select auth.uid())
+            )
+            -- A player may only tag a team they are an active member of.
+            and (
+                team_id is null
+                or exists (
+                    select 1
+                    from public.golf_team_members as gtm
+                    where
+                        gtm.player_id = golf_coachhelm_corrections.player_id
+                        and gtm.team_id = golf_coachhelm_corrections.team_id
+                        and gtm.status = 'active'::public.team_member_status
+                )
             )
         )
     )

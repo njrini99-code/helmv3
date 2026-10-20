@@ -9,14 +9,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const h = vi.hoisted(() => ({
   flagsOn: new Set<string>(),
   loadCorrectionWeightsForPlayer: vi.fn(),
+  loadCorrectionWeightsForPlayers: vi.fn(),
 }));
 
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (id: string) => h.flagsOn.has(id) }));
 vi.mock('@/lib/coachhelm/v3/corrections/load-weights', () => ({
   loadCorrectionWeightsForPlayer: h.loadCorrectionWeightsForPlayer,
+  loadCorrectionWeightsForPlayers: h.loadCorrectionWeightsForPlayers,
 }));
 
-import { loadCoachWeightsForPlayer, rankInsights, scoreInsight, type RankableInsight } from '../score';
+import {
+  loadCoachWeightsForPlayer,
+  loadCoachWeightsForPlayers,
+  rankInsights,
+  scoreInsight,
+  type RankableInsight,
+} from '../score';
 
 const PLAYER_ID = 'player-1';
 
@@ -56,6 +64,13 @@ beforeEach(() => {
   h.flagsOn.clear();
   h.loadCorrectionWeightsForPlayer.mockReset();
   h.loadCorrectionWeightsForPlayer.mockResolvedValue({ putt_distance: 0.5, tee_strategy: 1.2 });
+  h.loadCorrectionWeightsForPlayers.mockReset();
+  h.loadCorrectionWeightsForPlayers.mockResolvedValue(
+    new Map([
+      ['player-1', { coachId: 'coach-1', coachUserId: 'u-1', weights: { approach_miss: 0.6, putt_distance: 0.5 } }],
+      ['player-2', { coachId: 'coach-2', coachUserId: 'u-2', weights: {} }],
+    ]),
+  );
 });
 
 describe('loadCoachWeightsForPlayer with coachhelm_corrections_v1 OFF', () => {
@@ -101,5 +116,55 @@ describe('loadCoachWeightsForPlayer with coachhelm_corrections_v1 ON', () => {
     h.loadCorrectionWeightsForPlayer.mockResolvedValue({ approach_miss: 0.6, putt_distance: 0.9 });
     const weights = await loadCoachWeightsForPlayer(outcomeClient(), PLAYER_ID);
     expect(weights).toEqual({ approach_miss: 1.3, putt_distance: 0.9 });
+  });
+});
+
+/** A thenable builder for the batched outcome-weight read. */
+function batchClient(rows: unknown[], fromSpy = vi.fn()) {
+  fromSpy.mockImplementation((table: string) => {
+    if (table !== 'golf_coachhelm_coach_weights') throw new Error(`unexpected table ${table}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const b: any = {};
+    for (const m of ['select', 'in', 'eq', 'gte', 'order', 'range']) b[m] = () => b;
+    b.then = (resolve: (v: unknown) => void) => Promise.resolve(resolve({ data: rows, error: null }));
+    return b;
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return { from: fromSpy } as any;
+}
+
+describe('loadCoachWeightsForPlayers (team feed and roster batch)', () => {
+  it('flag off: an empty map with no read at all', async () => {
+    const fromSpy = vi.fn();
+    const out = await loadCoachWeightsForPlayers({ from: fromSpy } as never, ['player-1', 'player-2']);
+    expect(out.size).toBe(0);
+    expect(fromSpy).not.toHaveBeenCalled();
+    expect(h.loadCorrectionWeightsForPlayers).not.toHaveBeenCalled();
+  });
+
+  it('flag on: W per player from one batched load; neutral players are absent', async () => {
+    h.flagsOn.add('coachhelm_corrections_v1');
+    const fromSpy = vi.fn();
+    const out = await loadCoachWeightsForPlayers({ from: fromSpy } as never, ['player-1', 'player-2']);
+    expect(Object.fromEntries(out)).toEqual({ 'player-1': { approach_miss: 0.6, putt_distance: 0.5 } });
+    expect(h.loadCorrectionWeightsForPlayers).toHaveBeenCalledTimes(1);
+    // Outcome flag off: the outcome table is not read.
+    expect(fromSpy).not.toHaveBeenCalled();
+  });
+
+  it('flag on with the outcome flag: a calibrated outcome weight still wins, per coach', async () => {
+    h.flagsOn.add('coachhelm_corrections_v1');
+    h.flagsOn.add('coachhelm_learned_personalization');
+    const out = await loadCoachWeightsForPlayers(
+      batchClient([
+        { coach_id: 'coach-1', insight_type: 'approach_miss', weight: 1.3, sample_n: 12 },
+        { coach_id: 'coach-2', insight_type: 'tee_strategy', weight: 0.9, sample_n: 15 },
+      ]),
+      ['player-1', 'player-2'],
+    );
+    expect(Object.fromEntries(out)).toEqual({
+      'player-1': { approach_miss: 1.3, putt_distance: 0.5 },
+      'player-2': { tee_strategy: 0.9 },
+    });
   });
 });

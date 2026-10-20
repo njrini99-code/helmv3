@@ -376,11 +376,18 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   (`v3/corrections/coach-weights.ts`, pure) starts at 1.0 per coach x
   `insight_type`, moves -0.1 per Not this and +0.05 per Good read, clamps to
   0.5-1.5 at every step, counts one vote per author per read (the newest),
-  and hands a family off at >= 10 verdicts. W enters ranking in one place,
-  `loadCoachWeightsForPlayer` (`v3/ranking/score.ts`), for the player's
-  primary coach; a calibrated outcome weight still wins for its family. Flag
-  off: no corrections read, weights and ranks unchanged. Players' own
-  surfaces stay neutral because RLS hides a coach's corrections from them.
+  and hands a family off at >= 10 verdicts. W enters ranking through
+  `v3/ranking/score.ts` only: `loadCoachWeightsForPlayer` (per-player feeds)
+  and `loadCoachWeightsForPlayers` (the coach team feed and the roster cards,
+  one batched read per table, applied per player), for each player's primary
+  coach; a calibrated outcome weight still wins for its family. The loader
+  pages a coach's full correction history (`fetchAllRowsResult`), since W is
+  clamped per step and a truncated history would drift. Flag off: no
+  corrections read, weights and ranks unchanged (the batch paths keep `{}`).
+  Players' own surfaces stay neutral because RLS hides a coach's corrections
+  from them. RLS: a coach sees a row only through the player's active teams,
+  never the row's own `team_id`, and a player may only tag `team_id` null or
+  a team they are active on.
   Precision counters (`v3/corrections/precision-counters.ts`, pure): per
   family x rung, `shown` (distinct reads, rung of the newest exposure's
   `rank_factors.ladder`, else `unrated`), `held` / `cleared` /

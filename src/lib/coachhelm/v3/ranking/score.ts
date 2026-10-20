@@ -30,7 +30,12 @@ import { getCounterfactualConfig } from '@/lib/coachhelm/v3/counterfactual/looku
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { isCorrectionsEnabled } from '@/lib/coachhelm/v3/corrections/flag';
 import { mergeCoachWeights } from '@/lib/coachhelm/v3/corrections/coach-weights';
-import { loadCorrectionWeightsForPlayer } from '@/lib/coachhelm/v3/corrections/load-weights';
+import {
+  loadCorrectionWeightsForPlayer,
+  loadCorrectionWeightsForPlayers,
+} from '@/lib/coachhelm/v3/corrections/load-weights';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 
 type Sb = SupabaseClient<Database>;
 
@@ -442,6 +447,76 @@ export async function loadCoachWeightsForPlayer(
   if (!isCorrectionsEnabled()) return outcomeWeights;
   const correctionWeights = await loadCorrectionWeightsForPlayer(sb, player_id);
   return mergeCoachWeights(correctionWeights, outcomeWeights);
+}
+
+/**
+ * Coach weights for many players at once: the coach team feed
+ * (`getInsightsForCoach` without a player) and the roster cards
+ * (`getTopInsightsForPlayers`). Those paths ranked with neutral weights `{}`
+ * before Slice 6a.
+ *
+ * Flag `coachhelm_corrections_v1` off: an empty map with no read, so those
+ * callers keep ranking every player with `{}` (byte-identical). Flag on: per
+ * player, the same merge `loadCoachWeightsForPlayer` makes (W from the
+ * primary coach's corrections, a calibrated outcome weight winning for its
+ * family when `coachhelm_learned_personalization` is on), from one batched
+ * read per table for the whole set. Players whose weights are all neutral are
+ * absent; callers use `map.get(id) ?? {}`. Never throws.
+ */
+export async function loadCoachWeightsForPlayers(
+  sb: Sb,
+  playerIds: readonly string[],
+): Promise<Map<string, CoachWeights>> {
+  const out = new Map<string, CoachWeights>();
+  if (!isCorrectionsEnabled()) return out;
+  const corrections = await loadCorrectionWeightsForPlayers(sb, playerIds);
+  if (corrections.size === 0) return out;
+  const outcomeByCoach = await loadOutcomeWeightsForCoaches(
+    sb,
+    [...new Set([...corrections.values()].map((c) => c.coachId))],
+  );
+  for (const [playerId, c] of corrections) {
+    const merged = mergeCoachWeights(c.weights, outcomeByCoach.get(c.coachId) ?? {});
+    if (Object.keys(merged).length > 0) out.set(playerId, merged);
+  }
+  return out;
+}
+
+/**
+ * Calibrated outcome weights for many coaches (batched twin of
+ * `loadOutcomeCoachWeights`). Off unless `coachhelm_learned_personalization`
+ * is on; a read error yields no outcome weights (W alone), never a throw.
+ */
+async function loadOutcomeWeightsForCoaches(
+  sb: Sb,
+  coachIds: readonly string[],
+): Promise<Map<string, CoachWeights>> {
+  const out = new Map<string, CoachWeights>();
+  if (!isFlagEnabled('coachhelm_learned_personalization') || coachIds.length === 0) return out;
+  try {
+    for (const ids of chunkIds(coachIds)) {
+      const { data, error } = await fetchAllRowsResult((from, to) =>
+        sb
+          .from('golf_coachhelm_coach_weights')
+          .select('coach_id, insight_type, weight, sample_n')
+          .in('coach_id', ids)
+          .eq('intent', 'general')
+          .gte('sample_n', MIN_CALIBRATED_SAMPLES)
+          .order('coach_id', { ascending: true })
+          .order('insight_type', { ascending: true })
+          .range(from, to),
+      );
+      if (error) return new Map();
+      for (const r of data ?? []) {
+        const w = out.get(r.coach_id) ?? {};
+        w[r.insight_type] = Number(r.weight);
+        out.set(r.coach_id, w);
+      }
+    }
+    return out;
+  } catch {
+    return new Map();
+  }
 }
 
 /** The outcome-based weights (golf_coachhelm_coach_weights); see above. */
