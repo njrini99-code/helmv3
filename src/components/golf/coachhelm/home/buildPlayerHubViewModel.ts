@@ -411,7 +411,10 @@ export function buildInsightUnit(
 
   const impact = finite(ev?.strokes_impact);
   if (impact !== null && Math.abs(impact) >= 0.05) {
-    chain.push({ key: 'worth', label: 'What it is worth', text: `About ${fmtUnsigned(impact)} strokes a round` });
+    // A `rough_estimate` figure is not measured: say so, as the evidence
+    // panel's method row does ("Rough estimate").
+    const rough = ev?.strokes_impact_method === 'rough_estimate' ? ' (rough estimate)' : '';
+    chain.push({ key: 'worth', label: 'What it is worth', text: `About ${fmtUnsigned(impact)} strokes a round${rough}` });
   }
 
   const cause = diagnosis?.root_cause?.trim();

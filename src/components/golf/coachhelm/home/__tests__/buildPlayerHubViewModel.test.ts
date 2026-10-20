@@ -296,6 +296,32 @@ describe('buildInsightUnit', () => {
     expect(unit.body).toBe('You make 48% from 3 to 5 feet.');
     expect(unit.drill).toEqual({ title: 'Gate drill', minutes: 15 });
   });
+
+  describe('"What it is worth" (strokes_impact)', () => {
+    const worth = (evidence: Record<string, unknown>) =>
+      buildInsightUnit(insight({}, evidence)).chain.find((s) => s.key === 'worth')?.text;
+
+    it('draws no line for a stored zero, a value that rounds to 0.0, or a missing value', () => {
+      expect(worth({ strokes_impact: 0, strokes_impact_method: 'peer_delta' })).toBeUndefined();
+      expect(worth({ strokes_impact: 0.004 })).toBeUndefined();
+      expect(worth({ strokes_impact: undefined })).toBeUndefined();
+      expect(worth({ strokes_impact: Number.NaN })).toBeUndefined();
+    });
+
+    it('shows the magnitude of a negative value', () => {
+      expect(worth({ strokes_impact: -0.6 })).toBe('About 0.6 strokes a round');
+    });
+
+    it('shows a real peer_delta figure with no estimate qualifier', () => {
+      expect(worth({ strokes_impact: 0.8, strokes_impact_method: 'peer_delta' })).toBe('About 0.8 strokes a round');
+    });
+
+    it('labels a rough_estimate figure as one', () => {
+      expect(worth({ strokes_impact: 0.4, strokes_impact_method: 'rough_estimate' })).toBe(
+        'About 0.4 strokes a round (rough estimate)',
+      );
+    });
+  });
 });
 
 describe('buildLeakMap', () => {

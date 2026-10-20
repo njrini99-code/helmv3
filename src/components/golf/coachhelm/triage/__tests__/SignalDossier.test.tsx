@@ -307,3 +307,74 @@ describe('SignalDossier — related context', () => {
     expect(container.textContent).toContain('12.40 est. strokes');
   });
 });
+
+/**
+ * Zero strokes impact. Most generator families write `strokes_impact = 0` for
+ * "not estimated" (ranking/score.ts), and 364 of 710 live v3 insights carried
+ * it on 2026-10-20. The dossier printed that as "0.00 est. strokes per round".
+ */
+describe('SignalDossier — strokes figure that prints as zero', () => {
+  function renderImpact(strokeImpact: number | null, evidence?: Record<string, unknown>) {
+    const current = makeSignal({ strokeImpact, ...(evidence ? { evidence } : {}) });
+    return render(
+      <SignalDossier {...baseProps()} entry={{ signal: current, group: makeGroup([current]) }} />,
+    ).container;
+  }
+
+  it('draws no impact stat for a stored zero', () => {
+    const container = renderImpact(0, { strokes_impact: 0, strokes_impact_method: 'peer_delta' });
+    expect(container.textContent).not.toContain('est. strokes');
+    expect(container.textContent).not.toContain('0.00');
+    expect(screen.queryByText('Est. impact')).toBeNull();
+  });
+
+  it('draws no impact stat for a value that rounds to 0.00 (0.004)', () => {
+    const container = renderImpact(0.004);
+    expect(container.textContent).not.toContain('est. strokes');
+    expect(container.textContent).not.toContain('0.00');
+  });
+
+  it('draws no impact stat when the value is missing', () => {
+    const container = renderImpact(null);
+    expect(container.textContent).not.toContain('est. strokes');
+  });
+
+  it('shows the magnitude of a negative value', () => {
+    const container = renderImpact(-0.6);
+    expect(container.textContent).toContain('0.60 est. strokes');
+  });
+
+  it('shows a real peer_delta figure', () => {
+    const container = renderImpact(0.8, { strokes_impact: 0.8, strokes_impact_method: 'peer_delta' });
+    expect(container.textContent).toContain('0.80 est. strokes');
+  });
+
+  it('keeps a rough_estimate figure, which the stat already labels as an estimate', () => {
+    const container = renderImpact(0.35, { strokes_impact: 0.35, strokes_impact_method: 'rough_estimate' });
+    expect(screen.getByText('Est. impact')).toBeTruthy();
+    expect(container.textContent).toContain('0.35 est. strokes');
+  });
+
+  it('leaves a roll-up contributor that would print as 0.00 out of the breakdown', () => {
+    const rollup = makeSignal({
+      id: 'team:putts_made_3_5ft_pct',
+      kind: 'team_synthesis',
+      category: 'putts_made_3_5ft_pct',
+      playerId: null,
+      strokeImpact: 1.2,
+      evidence: { metric: 'putts_made_3_5ft_pct', metric_label: 'Putts Made 3-5 ft', players_affected: 2 },
+    });
+    render(
+      <SignalDossier
+        {...baseProps()}
+        entry={{ signal: rollup, group: makeGroup([rollup]) }}
+        rollupContributors={[
+          { signalId: 's-a', playerId: 'p-a', playerName: 'Avery Stone', avatarUrl: null, strokeImpact: 1.2 },
+          { signalId: 's-b', playerId: 'p-b', playerName: 'Blake Moss', avatarUrl: null, strokeImpact: 0.004 },
+        ]}
+      />,
+    );
+    expect(screen.getByText('Avery Stone')).toBeTruthy();
+    expect(screen.queryByText('Blake Moss')).toBeNull();
+  });
+});

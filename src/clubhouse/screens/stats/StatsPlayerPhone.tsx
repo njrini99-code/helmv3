@@ -20,7 +20,9 @@ import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/forma
 import { sgBaseline } from '../../lib/sg';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
-import { FigureGauge, SgBars, SgChangeChip } from './charts';
+import { FigureGauge, SgChangeChip } from './charts';
+import { sgLegRows, type SgLegRow } from './leg-rows';
+import { SgBars } from './SgBars';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
@@ -145,7 +147,21 @@ export function StatsPlayerPhone({
             {/* The season's count, said as such: under it the window (Last 10) counts its own rounds ("5 rounds" over "10 countable rounds", 2026-10-14). */}
             {/* Each part keeps to one line with the dot after it (stats.css): the line breaks only between parts, never
                 "21 rounds this / season", and a wrapped line never starts with a dot. */}
-            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`]
+            {/* The class year has its own line: beside the season count the line always broke after it, leaving "Sophomore ·"
+                alone on the first line (2026-10-19). */}
+            {data.classYear && (
+              <>
+                <span>{data.classYear}</span>
+                {/* The dot still reads and copies between the two; only the line break is drawn. */}
+                {(!failed || data.handicap != null) && (
+                  <>
+                    <span className="ch-sr-only"> · </span>
+                    <br />
+                  </>
+                )}
+              </>
+            )}
+            {[failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`]
               .filter(Boolean)
               .map((part, i, all) => (
                 <Fragment key={i}>
@@ -292,13 +308,9 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
 function StrokesGained({ data }: { data: ChPlayerProfile }) {
   const w = data.win;
   const baseline = sgBaseline(data.tour);
-  const legs = [
-    { label: 'Off the tee', value: w.sgLegs.tee },
-    { label: 'Approach', value: w.sgLegs.approach },
-    { label: 'Around green', value: w.sgLegs.around },
-    { label: 'Putting', value: w.sgLegs.putting },
-  ];
-  const known = legs.filter((l): l is { label: string; value: number } => l.value != null);
+  const rows = sgLegRows(data, data.viewer === 'coach');
+  const legs = rows.filter((l) => !l.total);
+  const known = legs.filter((l): l is SgLegRow & { value: number } => l.value != null);
   if (!known.length && w.sgPerRound == null)
     return (
       <section className="ch-stm-panel ch-stm-panel--bars ch-stm-panel--sg" aria-labelledby="ch-spm-sg">
@@ -322,7 +334,7 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
         <h2 id="ch-spm-sg">Strokes gained</h2>
         <span>Per round · {baseline.vs}</span>
       </div>
-      <SgBars rows={[...legs, { label: 'Total', value: w.sgPerRound, total: true }]} />
+      <SgBars rows={rows} />
       {note && <p className="ch-stm-note">{note}</p>}
     </section>
   );

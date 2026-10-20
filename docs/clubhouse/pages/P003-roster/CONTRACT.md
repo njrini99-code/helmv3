@@ -38,7 +38,8 @@ the join requests and Needs a look above them, all from the server's first
 render (30101). On the phone it is the list screen. A ?player= link opens that
 profile on the phone only, and does nothing on desktop (30102). The bell's
 join-request notice (?tab=requests) opens the phone's requests sheet once when
-a request is waiting (desktop shows the card at the top already), and a
+a request is waiting; on desktop it takes focus to the requests card under the
+header (with none waiting nothing moves), and a
 ?invite=1 link (Home's first-run Invite players) opens the invite sheet once on
 desktop and the phone; each param is dropped, closing the sheet spends it, and
 only the coach's roster reads them (a player's roster and the no-team page

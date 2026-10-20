@@ -317,6 +317,12 @@ before, after, baseline or evidence.
 | `P005__premium-audit__player__390__case-031-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (player), 390px, case-031-chromium-normal; /clubhouse-preview/player; synthetic preview |
 | `P005__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
 | `P005__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P005__strokes-gained-legs__coach__1440__default__before__6f8be23.png` | before | 6f8be23 | strokes-gained-legs (coach), 1440px, default, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__1440__default__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 1440px, default, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__1440__leg-pinned__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 1440px, Putting pinned, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__390__default__before__6f8be23.png` | before | 6f8be23 | strokes-gained-legs (coach), 390px, default, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__390__default__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 390px, default, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__390__leg-pinned__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 390px, Approach pinned, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

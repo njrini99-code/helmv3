@@ -12,7 +12,8 @@
   color: var(--ch-text-primary);
 }
 
-/* The sub-tab strip: Board | Ask at the left, the team at the right */
+/* The sub-tab strip: the team at the left, Board | Ask at the right, where the Board's own header draws the same control, so
+   switching views never moves it (2026-10-19). On the phone the control spans the strip, as on the Board. */
 .ch-ask-top {
   display: flex;
   flex: none;
@@ -21,6 +22,10 @@
   gap: 12px;
   padding: 12px 20px 10px 24px;
   border-bottom: 1px solid var(--ch-border-hairline);
+}
+.ch-ask-top .ch-ask-tabs {
+  order: 1;
+  margin-left: auto;
 }
 .ch-ask-team {
   display: inline-flex;
@@ -901,6 +906,10 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-top {
     padding: 8px 16px;
+  }
+  .ch-ask-top .ch-ask-tabs {
+    flex: 1;
+    margin-left: 0;
   }
   .ch-ask-top .ch-seg,
   .ch-ask-tabs .ch-seg {
