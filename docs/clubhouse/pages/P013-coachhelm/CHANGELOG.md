@@ -1,5 +1,82 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-20 — The Deep dive stops drawing the placeholder cause
+
+```text
+Design package: none (CoachHelm supercharge, Slice 0a; recommendation in /mnt/project-files/coachhelm/supercharge)
+PR/commit:      see git log (claude/project-thread-hrav6r)
+Contract IDs:   CH-13982 (the diagnosis block; no id added)
+Actions:        none
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm-dive-shape.ts` `diagnosisFor`: a diagnosis whose cause is
+  the generators' placeholder ("<metric> is off its benchmark. Likely cause
+  inferred from the aggregate, not a measured shot sequence", written by
+  `buildDiagnosis` on every single-metric v3 row) is no diagnosis. The
+  "Likely, not measured" box, its cause line, its "sample adequate" reason
+  and the driver the evidence block already shows are not drawn for it. A
+  measured or hand-written cause draws exactly as before.
+- The placeholder test is `src/lib/coachhelm/reads/placeholder-cause.ts`,
+  shared and pure.
+
+### Why
+
+- A read-only production count on 2026-10-20 found the placeholder on 545 of
+  the 710 visible v3 reads (77%), in two spellings: 314 rows with a full
+  stop and 441 older rows with a dash and a lower-case "likely" (both
+  counts include archived rows). Printed as a diagnosis it taught coaches
+  to skip the why line, and a Deep dive section headed "Why CoachHelm
+  thinks so" held only that sentence.
+
+### Verification
+
+- `placeholder-cause.test.ts` (both production spellings) and
+  `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank, observed and hypothesis cases are
+  unchanged). No screenshot: the card loses one block and no layout rule
+  changed.
+
+## 2026-10-19 — CoachHelm: no side rails, one place for the view switch
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- No coloured side rails (the owner's standing rule): Standing's projection
+  lines, the early-read lines on Standing and Game profile, the drill card,
+  the phone chat's error notice and the coach board's selected-player
+  stripe. Tone is a dot, a tint or the ink.
+- Ask: Board | Ask sits at the right of its strip, where the Board's header
+  draws it, and spans the strip on the phone, as on the Board.
+- Coach board: the selected player's count is no longer clipped; the
+  gauge's legend sits beside the number instead of "Tour 0.3" at the
+  track's far end, away from its tick.
+- Standing (desktop): the You / Tour / Team key is drawn once per group, on
+  its first row; later rows keep the words for a screen reader.
+- Deep dive: the hero's three count tiles have their gap back.
+- Game profile: on a wide canvas the green board is two columns, headline
+  and what stands out, instead of a half-width panel under the headline; a
+  lone "With a read" heading is drawn only beside "Still filling in"; the
+  headline's dots never start a line.
+- The worth-closing dot takes its chip's gilt; champagne-300 all but
+  vanished on the parchment.
+
+### Verified
+
+WebKit at 390 and 1280 (coach Board and Ask, player Board, Game profile,
+Standing, Deep dive); no sideways scroll at 834 to 1440 in the default,
+empty, early and partial states.
+
 ## 2026-10-19 — CoachHelm on an iPad: the views head, the Ask cards and the evidence side sheet
 
 ```text
