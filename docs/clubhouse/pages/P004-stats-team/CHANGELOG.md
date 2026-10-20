@@ -1,5 +1,31 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-19 — Team stats: putting beside the bests, no top bars
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Team putting and Season bests stay two columns down to an 860px canvas
+  (was 1080px). A 1280 window with the sidebar open is about 950px wide,
+  where the putting rings sat alone with half the row empty.
+- The 3px coloured bar across each figure card's top is gone. The change
+  under the number already says better or worse; a status is a dot or a
+  word. Its own commit, so it reverts cleanly (the owner's call left open on
+  #2202).
+
+### Verified
+
+WebKit at 390, 834, 1024, 1180, 1280 and 1440: no sideways scroll in the
+default, empty, partial and filtered states.
+
 ## 2026-10-19 — Team stats on an iPad: the tape in two rows and a leaderboard that fits
 
 ```text
