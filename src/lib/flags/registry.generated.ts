@@ -132,6 +132,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Once 20260923110000_golf_focus_area_practice_log.sql is applied in every environment and the read/write paths have run in production without incident, flip default to true, then remove this flag and the now-dead off-branches once the write paths no longer need a migration-safety gate.",
   },
   {
+    feature_id: "coachhelm_insight_angles_v1",
+    owner: "golf/coachhelm",
+    purpose: "Runs the five CoachHelm insight-angle generators under src/lib/coachhelm/v3/generators/insight-angles/ (three-putt autopsy, bad-day floor, lie-adjusted approach, tee-miss cost, approach-miss compass) in every analyzePlayer pass. On: each writes at most one golf_coach_insights row per player when its own floors and its one-sided z >= 1.645 gate pass, so coaches and players can see these new reads. Off: the orchestrator call site (insightAngleGenerators) returns no entries, so no angle generator reads or writes anything.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: "2027-01-31",
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "The owner turns it on (development, preview, then production) after reviewing the production reach numbers in the Slice 5a PR. Turning it off stops new angle rows; rows already written stay until the lifecycle cron archives them (archive them by signature prefix v3:three_putt_chain:, v3:bad_day_floor:, v3:lie_approach:, v3:tee_miss_cost:, v3:approach_miss_compass: for an immediate rollback). If coaches keep the angles through one season, remove the flag and the isEnabled() overrides; if rejected, delete the insight-angles directory, its orchestrator call site and its metric aliases, then archive this flag.",
+  },
+  {
     feature_id: "coachhelm_learned_personalization",
     owner: "golf/coachhelm",
     purpose: "Gates whether v3 insight ranking's loadCoachWeightsForPlayer applies stored golf_coachhelm_coach_weights instead of neutral 1.0 defaults; default off because production's weights were computed under v1's broken outcome-attribution math (see score.ts's own docblock), not because of any evidence problem with this flag.",

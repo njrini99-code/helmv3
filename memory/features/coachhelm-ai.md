@@ -454,6 +454,28 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   the data keeps accumulating for whenever an owner flips the flag with
   evidence to support it. Resetting the 4 existing rows (built from the v1
   formula) is a separate owner decision, not made here.
+- **Insight angles (Slice 5a, 2026-10-20) are wired but flagged off.**
+  Five deterministic generators in
+  `src/lib/coachhelm/v3/generators/insight-angles/` (lie approach, bad-day floor, three-putt chain, tee-miss
+  cost, approach-miss compass) join the tier-1 run at one call site,
+  `insightAngleGenerators(playerId)` in `v2/orchestrator.ts`, which returns
+  no entries while `coachhelm_insight_angles_v1` is off (default, every
+  environment). Contract per family lives in `ANGLE_FAMILIES`
+  (`angle-data.ts`): metric, sample unit, floor and per-side floor, round
+  floor, Slice 1 gap kind, impact kind, benchmark and ladder cap, each
+  citing `docs/v3-research-golf-domain.md`. Every row writes
+  `sample_unit`, `rounds_n`, `newest_round_id`, `comparison.primary` and
+  `detail.gap_input` (the Slice 1 `GapInput` shape) over the newest 40
+  countable rounds. Tee-miss cost and fairway exposure are
+  `rough_estimate` (`estimated: true`, worded as a rough estimate, never as
+  a measured saving); the cause stays `inferred_hypothesis`, and counted
+  shot sequences go to `detail.sequence` until the Slice 2 root-cause
+  ladder can read them. No `coach_copy` is written (player voice only)
+  until Slice 2 lands. Turning the flag off stops new rows but does not
+  sweep rows written while it was on; the flag's `cleanup_plan` lists the
+  signature prefixes to archive. Tests:
+  `insight-angles/__tests__/` (`contract.ts` asserts the family contract
+  on every composed row).
 - **v2 coach-alert family (bubble_player, pattern_detected, streak,
   surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
   recurring_weakness, team_trend, scoring_decline) is still live-written,
