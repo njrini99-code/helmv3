@@ -233,10 +233,12 @@
     0 0 0 3px var(--ch-green-600),
     0 2px 6px rgb(0 0 0 / 0.2);
 }
+/* A legend, read left to right beside the player's number; spread to the far edge, "Tour 0.3" sat at the track's end, away
+   from its tick (2026-10-19). */
 .ch-hl-g__lg {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 8px 22px;
   flex-wrap: wrap;
   font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
@@ -420,8 +422,9 @@
 .ch-hl-row__d.is-high {
   background: var(--ch-chart-loss);
 }
+/* Worth closing in the gilt of its chip; the pale champagne-300 all but vanished on the parchment (2026-10-19). */
 .ch-hl-row__d.is-medium {
-  background: var(--ch-champagne-300);
+  background: var(--ch-champagne-500);
 }
 .ch-hl-row__d.is-ok {
   background: var(--ch-green-fill-600);
@@ -1067,9 +1070,10 @@
   .ch-hl[data-canopy] .ch-hl-plist > h2 {
     margin-bottom: 8px;
   }
-  /* The players hang their tint 12px past the column's edge, so the avatars align with the rule. */
+  /* The players hang their tint 12px past the column's left edge, so the avatars align with the rule; not past its right edge,
+     where the list clips and cut the open-signal count in half (2026-10-19). */
   .ch-hl[data-canopy] .ch-hl-pl {
-    margin-inline: -12px;
+    margin-inline: -12px 0;
   }
   @media (hover: hover) {
     .ch-hl[data-canopy] .ch-hl-pl:hover,
@@ -1635,9 +1639,10 @@
     background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-700));
   }
 
-  /* The drill: a gilt rule at its left, in place of a second green; the one action on the page reads as set apart. */
+  /* The drill: set apart by its well and its "This week" mark, never a coloured rule at its edge (the owner's standing rule:
+     no side rails anywhere, 2026-10-19). */
   .ch-hl[data-canopy] .ch-hl-drill {
-    box-shadow: var(--ch-well-soft-shadow), inset 3px 0 0 var(--ch-champagne-500);
+    box-shadow: var(--ch-well-soft-shadow);
   }
   .ch-hl[data-canopy] .ch-hl-drill__k {
     color: var(--ch-green-700);
@@ -1683,21 +1688,8 @@
   .ch-hl[data-canopy] .ch-hl-pl {
     position: relative;
   }
-  .ch-hl[data-canopy] .ch-hl-pl::before {
-    position: absolute;
-    top: 10px;
-    bottom: 10px;
-    left: 0;
-    width: 3px;
-    border-radius: 2px;
-    background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
-    opacity: 0;
-    transition: opacity var(--ch-dur-quick) var(--ch-ease);
-    content: '';
-  }
-  .ch-hl[data-canopy] .ch-hl-pl.is-on::before {
-    opacity: 1;
-  }
+  /* The chosen player is its tint and its filled count; no stripe at the row's edge (the owner's standing rule: selection
+     is a tint, never a side rail, 2026-10-19). */
   .ch-hl[data-canopy] .ch-hl-pl.is-on .ch-hl-pl__c {
     background: linear-gradient(160deg, color-mix(in oklab, var(--ch-green-800) 80%, white), var(--ch-green-800));
     box-shadow: var(--ch-elevation-mark);
