@@ -898,3 +898,40 @@ flags:
       rules for v3 reads and the flag checks once the Cleared / Contradicted
       / Under review lines render in Clubhouse and the step has run stably
       for a month.
+
+  # CoachHelm supercharge Slice 4: the closed loop (prescription fields,
+  # criterion, verdicts). /mnt/project-files/coachhelm/supercharge/
+  # 04-output-specs-and-examples.md §1.3 and Example 11, 03 §4.2-§4.3,
+  # 07 §2 D. Off everywhere until the owner applies the held migration.
+  - feature_id: coachhelm_verdicts_v1
+    owner: golf/coachhelm
+    purpose: >-
+      When a focus area is created from a CoachHelm read, stamps its
+      prescription on golf_player_focus_areas (baseline_n, the shrunk
+      baseline, a measurable criterion, the horizon in attempts,
+      check_after_rounds 3, assigned_by) in a second, best-effort write; and
+      adds a verdict step to the nightly insight-lifecycle cron that, once a
+      focus area reaches its horizon, writes verdict (worked, moved, did not
+      move, got worse) from a one-sided 90% bound against the shrunk
+      baseline, and puts one in-app bell row in front of the area's coach on
+      "got worse" (no push, nothing to the player). Turning it on changes no
+      screen: no surface reads the new columns yet, and status and
+      outcome_status are never written. Off: nothing is read or written by
+      this code and the focus-area create inserts exactly as before.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on only after the owner applies
+      20261020120000_golf_focus_area_prescription.sql (HELD.md row; the code
+      treats the missing columns as not available, so the order is not a
+      correctness issue) and runs npm run test:rls. Remove the flag and its
+      checks once the Layout 5 verdict view ships and the verdict job has run
+      stably for a month.
