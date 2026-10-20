@@ -1923,10 +1923,14 @@
   color: var(--ch-text-secondary);
 }
 
-@container (max-width: 1080px) {
+/* Team putting and Season bests stay side by side down to an 860px canvas (a 1280 window with the sidebar open is about 950):
+   stacked from 1080, the putting rings sat alone with half the row empty beside them (2026-10-19). */
+@container (max-width: 860px) {
   .ch-st-grid2 {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+@container (max-width: 1080px) {
   .ch-pf-hero {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -2675,6 +2679,10 @@
   grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 10px;
   margin: 0;
+}
+/* Four tiles are two by two: auto-fit drew three across and left the fourth alone on its row (2026-10-19). */
+.ch-gx-tiles:has(> :nth-child(4):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .ch-gx-tiles > div {
   display: flex;
@@ -5079,22 +5087,9 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-tp__c + .ch-tp__c {
   box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.34);
 }
-.ch-st[data-canopy] .ch-tp__c::before {
-  position: absolute;
-  top: 0;
-  right: 20px;
-  left: 20px;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: var(--ch-border-strong);
-  content: '';
-}
-.ch-st[data-canopy] .ch-tp__c.is-good::before {
-  background: var(--ch-green-500);
-}
-.ch-st[data-canopy] .ch-tp__c.is-bad::before {
-  background: var(--ch-champagne-500);
-}
+/* No coloured bar across a figure's top: the change under the number already says better or worse in its arrow and ink, and a
+   status is a dot or a word, never a stripe (owner's call left open on #2202; taken in the 2026-10-19 Stats pass, revert this
+   commit to restore the bars). */
 .ch-st[data-canopy] .ch-tp__l {
   padding-right: 52px;
   color: var(--ch-text-primary);
