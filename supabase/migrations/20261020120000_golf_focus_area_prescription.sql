@@ -50,16 +50,22 @@ ADD COLUMN IF NOT EXISTS "verdict" jsonb,
 ADD COLUMN IF NOT EXISTS "drill_ids" uuid[];
 
 ALTER TABLE "public"."golf_player_focus_areas"
+DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_baseline_n_check",
 ADD CONSTRAINT "golf_player_focus_areas_baseline_n_check"
 CHECK (baseline_n IS NULL OR baseline_n >= 0),
+DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_check_after_rounds_check",
 ADD CONSTRAINT "golf_player_focus_areas_check_after_rounds_check"
 CHECK (check_after_rounds IS NULL OR check_after_rounds > 0),
+DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_assigned_by_check",
 ADD CONSTRAINT "golf_player_focus_areas_assigned_by_check"
 CHECK (assigned_by IS NULL OR assigned_by IN ('coach', 'engine', 'player')),
+DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_criterion_object_check",
 ADD CONSTRAINT "golf_player_focus_areas_criterion_object_check"
 CHECK (criterion IS NULL OR jsonb_typeof(criterion) = 'object'),
+DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_horizon_object_check",
 ADD CONSTRAINT "golf_player_focus_areas_horizon_object_check"
 CHECK (horizon IS NULL OR jsonb_typeof(horizon) = 'object'),
+DROP CONSTRAINT IF EXISTS "golf_player_focus_areas_verdict_object_check",
 ADD CONSTRAINT "golf_player_focus_areas_verdict_object_check"
 CHECK (verdict IS NULL OR jsonb_typeof(verdict) = 'object');
 
