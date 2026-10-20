@@ -7780,6 +7780,10 @@
         "ch-hd-r__p",
         "ch-hd-r__s",
         "ch-hd-rail",
+        "ch-hd-read",
+        "ch-hd-read__drill",
+        "ch-hd-read__lvl",
+        "ch-hd-read__stale",
         "ch-hd-rounds",
         "ch-hd-scroll",
         "ch-hd-sec",
@@ -7882,43 +7886,43 @@
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-meas",
-          "line": 276
+          "line": 335
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-meas.is-good",
-          "line": 282
+          "line": 341
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-meas.is-warn",
-          "line": 285
+          "line": 344
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-tr",
-          "line": 322
+          "line": 381
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-tr li.is-good",
-          "line": 343
+          "line": 402
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-tr li.is-warn",
-          "line": 346
+          "line": 405
         },
         {
           "name": "--ch-hd-ink",
           "value": "var(--ch-champagne-300)",
           "scope": ":where(html[data-fw-theme='dark']) .ch-hd-it.is-medium",
-          "line": 1240
+          "line": 1315
         }
       ]
     },
