@@ -2,6 +2,8 @@
 
 <!-- markdownlint-disable MD013 -->
 
+> **Status of this report.** Diagnostic, historical evidence: Playwright WebKit on a `next dev` build of `03e27fab1`, not the current `main`, not a production build and not a real iPhone. A PASS means no violation was found in what was sampled: box 1 compared the press and release curves and the durations of every transition, not every curve; box 2 probed the first press-capable control per viewport, not every tappable. It is not a gate pass, and no PROGRESS.md motion cell is ticked from it. Re-run against the source being qualified before using it for that.
+
 Dev-build evidence from Playwright WebKit against `next dev`, not a production build and not a real iPhone. Timings of loads and transitions in a dev server are slower than production; the durations, curves and the presence or absence of animations are read from the live page (`document.getAnimations()`, computed styles), not by eye. Recordings, per-run JSON and logs stay out of git, in `~/worktrees/helmv3/clubhouse-mac-gates/.helm/scratch/motion/out/` (file names below).
 
 Evidence only: CoachHelm surfaces are not touched in this job, so no code was changed; the probe reads the live page.
