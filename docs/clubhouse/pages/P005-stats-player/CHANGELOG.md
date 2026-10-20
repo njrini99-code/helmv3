@@ -1,5 +1,40 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- The strokes gained chip on the hero (desktop) and on the phone Overview is
+  green or amber only when the change against the previous 10 is larger than
+  one standard error of the difference. Otherwise the signed number stays, in
+  neutral ink, with "No clear change vs previous 10". A clear change reads
+  "Better than previous 10" or "Worse than previous 10", never "Improving".
+  The phone chip names its subject: "SG a round · No clear change vs previous
+  10". The standard error is the player's own spread from five rounds, else
+  the pooled 3.8, over whole rounds (a nine-hole round is half).
+- Overview, Where the strokes go: the change line reads "+0.6 · No clear
+  change vs previous 10" in place of "Up 0.6 on the previous 10".
+- The SG gauge (was a fixed ±3) and the Overview strokes gained track (was
+  −3 to +1) take their ends from the data through `sgScale`, always with zero
+  inside. On the preview player the track runs −1 to +1.
+- Tracks that were always green now follow the data: fairways, greens and
+  scrambling against the team or Tour, penalties amber only above the bench,
+  and a track with nothing to compare against is neutral grey.
+- Phone scoring trend: the form line is green or amber only past one
+  standard error, and "No clear change" sits above the halves line otherwise.
+- Phone Game detail now gets the holes filter (it always read "18 holes
+  only"), with a regression test.
+- The rate gauges are neutral with no reference.
+
 ## 2026-10-20 — Strokes gained by leg says how sure it is (visuals 1)
 
 ```text

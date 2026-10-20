@@ -8,6 +8,7 @@ import { SerifText } from '../../ui/SerifText';
 import { monotonePath } from '../../lib/chart';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgScale, sgShare } from '../../lib/sg';
+import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
 import { EmptyState } from '../../ui/States';
 import { Swap } from '../../ui/Swap';
 
@@ -39,6 +40,8 @@ type FigureItem = {
   value: string;
   unit?: string;
   delta?: number | null;
+  /** The change's standard error: the chip is green or amber only when the change clears it (Q4). */
+  se?: number | null;
   deltaDigits?: number;
   lowerIsBetter?: boolean;
   context: string;
@@ -53,7 +56,7 @@ type FigureItem = {
   n?: number | null;
 };
 
-/** Figure cards with a change chip; the chip colour follows direction and whether lower is better. */
+/** Figure cards with a change chip; the chip is coloured only when the change clears its standard error (`deltaTone`). */
 export function FigureCards({
   items,
   hold = false,
@@ -95,8 +98,7 @@ export function FigureCards({
 
 function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
   const d = it.delta;
-  const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);
-  const good = d != null && !flat && (it.lowerIsBetter ? d < 0 : d > 0);
+  const tone = deltaTone(d, it.se, !!it.lowerIsBetter);
   return (
     <div className={'ch-fg__c' + (lead ? ' ch-fg__c--lead' : '')} data-ch-code={it.code}>
       <span className="ch-fg__l">{it.label}</span>
@@ -109,12 +111,12 @@ function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
       </span>
       <span className="ch-fg__d">
         {d != null && (
-          <span className={`ch-delta ch-num ${flat ? 'is-flat' : good ? 'is-good' : 'is-bad'}`}>
-            <Icon icon={flat ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
+          <span className={`ch-delta ch-num ${deltaClass(tone)}`}>
+            <Icon icon={tone === '' ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
             {formatSigned(d, it.deltaDigits ?? 0)}
           </span>
         )}
-        <span>{it.context}</span>
+        <span>{d != null && it.context === 'vs previous 10' ? deltaWords(d, tone, it.context) : it.context}</span>
       </span>
       {/* The lead draws its gauge before its note, so its gauge sits on the same line as the supporting figures' gauges. */}
       {!lead && it.note && <span className="ch-fg__n">{it.note}</span>}
@@ -126,9 +128,10 @@ function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
 
 /**
  * A figure drawn against the reference its data gives (owner, 2026-10-07: no bare numbers), on one 6px track so the row
- * reads as a set: strokes gained from the Tour's zero (three strokes to an end), the scoring average from par (six), a
- * rate along 0 to 100 with the Tour's mark when there is one, putts on a track to 40 marked at 36 (two on every green),
- * birdies as holes out of 18. Decorative: the value and its words say it.
+ * reads as a set: strokes gained from the Tour's zero (to an end the value itself sets, `sgScale`: whole strokes, never
+ * under one, so nothing clamps), the scoring average from par (six), a rate along 0 to 100 with the Tour's mark when there
+ * is one (green at or above it, amber below, neutral ink with no mark to judge by), putts on a track to 40 marked at 36
+ * (two on every green), birdies as holes out of 18. Decorative: the value and its words say it.
  */
 export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   const pct = (v: number) => `${Math.max(0, Math.min(100, v))}%`;
@@ -145,7 +148,7 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   if (gauge.kind === 'sg' || gauge.kind === 'par') {
     const v = gauge.kind === 'sg' ? n : gauge.toPar;
     if (v == null) return null;
-    const end = gauge.kind === 'sg' ? 3 : 6;
+    const end = gauge.kind === 'sg' ? sgScale([v]) : 6;
     const w = pct((Math.abs(v) / end) * 50);
     // Strokes gained above zero is good; a score above par is not.
     const good = gauge.kind === 'sg' ? v >= 0 : v <= 0;
@@ -174,7 +177,7 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   return (
     <span className="ch-fg__gauge" aria-hidden="true">
       <span className="ch-fg__track">
-        <i className="is-gain" style={{ left: 0, width: pct(n) }} />
+        <i className={gauge.ref == null ? 'is-neutral' : n >= gauge.ref ? 'is-gain' : 'is-loss'} style={{ left: 0, width: pct(n) }} />
         {gauge.ref != null && <b style={{ left: pct(gauge.ref) }} />}
       </span>
       {gauge.ref != null && <em style={{ left: pct(gauge.ref) }}>{gauge.refLabel ?? 'Tour'}</em>}
@@ -182,22 +185,31 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   );
 }
 
+/** The chip class for a change's tone (stats-signal `deltaTone`): green better, amber worse, neutral ink when it is no clear change. */
+export function deltaClass(tone: DeltaTone): 'is-good' | 'is-bad' | 'is-flat' {
+  return tone === 'is-gain' ? 'is-good' : tone === 'is-loss' ? 'is-bad' : 'is-flat';
+}
+
 /**
- * How strokes gained moved against the previous 10 rounds: a small chip (green up, amber down, grey flat)
- * and, where there is nothing to compare, the reason in words ("No earlier rounds").
+ * How strokes gained moved against the previous 10 rounds: the signed change and what it amounts to. Green or amber only when the
+ * change clears its standard error ("Better than previous 10"); otherwise neutral ink and "No clear change vs previous 10", the number
+ * still shown (decision Q4). Where there is nothing to compare, the reason in words ("No earlier rounds"). `subject` names the figure
+ * when the chip sits away from it ("SG a round").
  */
-export function SgChangeChip({ change, code }: { change: ChSgChange; code?: string }) {
+export function SgChangeChip({ change, code, subject }: { change: ChSgChange; code?: string; subject?: string }) {
   const d = change.delta;
-  const flat = d != null && Math.abs(d) < 0.05;
+  const tone = deltaTone(d, change.se, false);
+  const words = d != null ? deltaWords(d, tone, change.context || 'vs previous 10') : change.context;
+  const said = subject ? (words ? `${subject} · ${words}` : subject) : words;
   return (
     <span className="ch-sgchg">
       {d != null && (
-        <span className={`ch-delta ch-num ${flat ? 'is-flat' : d > 0 ? 'is-good' : 'is-bad'}`}>
-          <Icon icon={flat ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
+        <span className={`ch-delta ch-num ${deltaClass(tone)}`}>
+          <Icon icon={tone === '' ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
           {formatSigned(d)}
         </span>
       )}
-      {change.context && <span data-ch-code={d == null ? code : undefined}>{change.context}</span>}
+      {said && <span data-ch-code={d == null ? code : undefined}>{said}</span>}
     </span>
   );
 }

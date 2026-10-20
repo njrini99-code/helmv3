@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  changeSe,
   deltaTone,
   deltaWords,
   diffSe,
   earlyTag,
+  halvesChange,
+  meanSe,
   needsText,
   POOLED_SD,
   rankWithTies,
@@ -58,6 +61,34 @@ describe('spread and standard error', () => {
   it('combines two standard errors as independent', () => {
     expect(diffSe(3, 4)).toBe(5);
     expect(diffSe(3, null)).toBeNull();
+  });
+});
+
+describe('the standard error of a window and of a change', () => {
+  it('reads a score or strokes gained window on the pooled spread under five rounds, the own one from five', () => {
+    expect(meanSe([70, 72, 74], 'score')).toBeCloseTo(POOLED_SD.score / Math.sqrt(3), 10);
+    expect(meanSe([0, 2, 4, 6, 8], 'sg')).toBeCloseTo(sampleSd([0, 2, 4, 6, 8])! / Math.sqrt(5), 10);
+    // Whole rounds: two nine-hole rounds and one eighteen are two rounds.
+    expect(meanSe([1, 2, 3], 'sg', 2)).toBeCloseTo(POOLED_SD.sg / Math.sqrt(2), 10);
+    expect(meanSe([], 'sg')).toBeNull();
+  });
+
+  it('has none for a figure with no pooled spread until five rounds can measure one', () => {
+    expect(meanSe([30, 32, 31, 29], null)).toBeNull();
+    expect(meanSe([30, 32, 31, 29, 33], null)).toBeCloseTo(sampleSd([30, 32, 31, 29, 33])! / Math.sqrt(5), 10);
+    expect(meanSe([30, 30, 30, 30, 30], null)).toBeNull();
+  });
+
+  it('combines the two windows, and has none when either is unmeasured', () => {
+    expect(changeSe([70, 72, 74], [71, 73], 'score')).toBeCloseTo(Math.sqrt(POOLED_SD.score ** 2 / 3 + POOLED_SD.score ** 2 / 2), 10);
+    expect(changeSe([30, 31, 32, 33, 34], [30, 31], null)).toBeNull();
+  });
+
+  it('splits a run of scores into halves as the form line does, the middle one of an odd run in neither', () => {
+    const h = halvesChange([76, 74, 75, 72, 71])!;
+    expect(h.delta).toBeCloseTo((72 + 71) / 2 - (76 + 74) / 2, 10);
+    expect(h.se).toBeCloseTo(Math.sqrt(2 * (POOLED_SD.score ** 2 / 2)), 10);
+    expect(halvesChange([74, 72])).toBeNull();
   });
 });
 
