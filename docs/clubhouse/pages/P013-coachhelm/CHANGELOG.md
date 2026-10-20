@@ -33,6 +33,74 @@ Held items:     none
 - `coachhelm-dive.test.tsx`: not traced gets no diagnosis; counted and
   likely keep `observed` and `hypothesis`. No screenshot: no layout change.
 
+## 2026-10-20 — Deep dive: each read opens with What, Why, Next and When
+
+```text
+Design package: CoachHelm supercharge, Slice 0 (the Read, output only)
+PR/commit:      see git log (claude/coachhelm-read-lines)
+Contract IDs:   130716 (CH-13982: coach only now), CH-13903 (When line)
+Actions:        none
+Data impact:    none (no new read, no engine or generator change)
+Held items:     none
+```
+
+### Changed
+
+- The player's Deep dive opens each read with four lines under its title
+  (`data/coachhelm-read-shape.ts`, drawn by `Read` in `views/DeepDive.tsx`):
+  What (the metric, the value and its sample, the comparison by name, strokes
+  a round only when the row estimates them, the confidence word), Why (a cause
+  seen in the shots, marked "Measured in your shots", with its counts; else
+  "Not traced yet: the record does not say why."), Next (the drill, or the
+  row's own action, or "No drill assigned." for the generators' placeholder)
+  and When ("Through" the newest round in the read, and "Out of date: ..."
+  when a newer round is not in it).
+- A player never sees an inferred cause (the owner's default for supercharge
+  open question 3, "hide"): no cause sentence and no "Likely, not measured"
+  marker on the Why line or in "Why CoachHelm thinks so"; the Why line reads
+  "Not traced yet". A coach's rendering (`toChDeepInsight(..., say, 'coach')`)
+  keeps "Likely, not measured" and the cause. The role is the viewer the loader
+  already maps the card for. The generators' stock reason "sample adequate"
+  is no longer drawn; the drivers and their counts still are.
+- Folded, not repeated: the lede under the title (it is the start of the full
+  write-up now), the out-of-date note under the title (the When line), the
+  cause and its marker in "Why CoachHelm thinks so" (the Why line; the section
+  keeps the drivers, the reason and the write-up), the "This week" block (the
+  Next line) and the stroke sentence under the measured number (the What
+  line, said once).
+- New styles under `.ch-hd-read` in `coachhelm-dive.css`, `--ch-*` tokens only.
+
+### Why
+
+- Supercharge Slice 0: one read is one claim in four fixed lines, from fields
+  that exist today. A zero or unestimated stroke figure is never said, a
+  benchmark always has a name, and a cause the row does not state is "not
+  traced yet", never made up. After PR #2213 the generators' placeholder cause
+  maps to no diagnosis, so those rows read "Not traced yet".
+
+### Verification
+
+- `coachhelm-read.test.ts` (new): a real cause, no cause, the placeholder
+  action, zero and unestimated strokes, a measured `sg_baseline` figure, an
+  out-of-date row, the same numbers in the coach's and the player's voice, and
+  an inferred cause hidden from the player but shown to a coach (an observed
+  one shown to both). `coachhelm-dive.test.tsx` updated on purpose for the
+  folded parts and the hidden hypothesis.
+- Looked at on a phone (390 px) and a desktop width with the preview
+  fixtures (`?state=many|stale|zero`). On a phone the four lines sit in the
+  green dossier head, so they take its on-green inks there
+  (`--ch-on-green-ink*`); the first pass used the card inks and was too
+  dark to read.
+- The open read's category over its title ("Around the green") was field
+  green on the green phone head, a rule from before this change; it takes the
+  on-green ink there now.
+- Review fixes: a count ("18 of 31 putts") is never derived from a sample
+  that counts both arms of a comparison (putt-bias and putt-slope-bias store
+  both sides' putts), and when the Why line is not traced for the viewer the
+  full write-up leaves out the generator's sentences that guess a cause
+  ("consistent with a pace-control pattern"), so a player never reads the
+  cause the Why line holds back.
+
 ## 2026-10-20 — The Deep dive stops drawing the placeholder cause
 
 ```text
@@ -68,9 +136,47 @@ Held items:     none
 ### Verification
 
 - `placeholder-cause.test.ts` (both production spellings) and
-  `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank, observed and hypothesis cases are
-  unchanged). No screenshot: the card loses one block and no layout rule
+  `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank,
+  observed and hypothesis cases are unchanged). No screenshot: the card loses one block and no layout rule
   changed.
+
+## 2026-10-19 — CoachHelm: no side rails, one place for the view switch
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- No coloured side rails (the owner's standing rule): Standing's projection
+  lines, the early-read lines on Standing and Game profile, the drill card,
+  the phone chat's error notice and the coach board's selected-player
+  stripe. Tone is a dot, a tint or the ink.
+- Ask: Board | Ask sits at the right of its strip, where the Board's header
+  draws it, and spans the strip on the phone, as on the Board.
+- Coach board: the selected player's count is no longer clipped; the
+  gauge's legend sits beside the number instead of "Tour 0.3" at the
+  track's far end, away from its tick.
+- Standing (desktop): the You / Tour / Team key is drawn once per group, on
+  its first row; later rows keep the words for a screen reader.
+- Deep dive: the hero's three count tiles have their gap back.
+- Game profile: on a wide canvas the green board is two columns, headline
+  and what stands out, instead of a half-width panel under the headline; a
+  lone "With a read" heading is drawn only beside "Still filling in"; the
+  headline's dots never start a line.
+- The worth-closing dot takes its chip's gilt; champagne-300 all but
+  vanished on the parchment.
+
+### Verified
+
+WebKit at 390 and 1280 (coach Board and Ask, player Board, Game profile,
+Standing, Deep dive); no sideways scroll at 834 to 1440 in the default,
+empty, early and partial states.
 
 ## 2026-10-19 — CoachHelm on an iPad: the views head, the Ask cards and the evidence side sheet
 
