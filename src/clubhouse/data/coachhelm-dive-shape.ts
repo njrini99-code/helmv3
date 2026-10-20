@@ -1,6 +1,7 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import type { InsightEvidence, InsightMovement, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
+import { isPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { AssembledThemes, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
@@ -252,6 +253,9 @@ function diagnosisFor(ev: InsightEvidence, say: (t: string) => string): ChDiveDi
   const d = ev.diagnosis;
   const cause = d?.root_cause?.trim();
   if (!d || !cause) return null;
+  // The generators' "off its benchmark, cause inferred from the aggregate" line states no cause: no diagnosis is drawn rather than a
+  // box that says nothing (and its "sample adequate" reason and the driver the evidence block already shows).
+  if (isPlaceholderCause(cause)) return null;
   return {
     cause: say(cause),
     level: d.causality_level === 'observed_sequence' ? 'observed' : 'hypothesis',
