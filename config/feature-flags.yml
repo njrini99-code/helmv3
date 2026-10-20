@@ -644,11 +644,12 @@ flags:
   # change a live coach or player would see. First use (delivery): turning
   # it on folds overlapping reads into one (driver with penalties,
   # penalties with big numbers, three-putts with 25+ ft putts; the shown
-  # read names the others in one added sentence) and holds every Fairway
-  # insight feed to 3 open reads + 1 strength per player
-  # (src/app/golf/actions/insight-delivery-reads.ts). Off: the feeds are
-  # what they were. Production aggregates behind the numbers are in the PR
-  # that added it.
+  # read names the others in one added sentence), holds the insight feeds
+  # that run deliverReads to 3 open reads + 1 strength per player
+  # (src/app/golf/actions/insight-delivery-reads.ts), and records the rank
+  # factors on exposure rows. Off: the feeds and the exposure rows are what
+  # they were. Production aggregates behind the numbers are in the PR that
+  # added it (#2224).
   - feature_id: coachhelm_reads_v1_copy
     owner: golf/coachhelm
     purpose: >-
@@ -670,6 +671,44 @@ flags:
       When the owner turns production on and the 3 + 1 feeds have held for
       an observation window, make fold and cap the only behavior in
       insight-delivery.ts and delete this flag in the same change.
+
+  # CoachHelm supercharge Slice 2 (honest root cause, ported from PR #2073).
+  # Created OFF on main; turning it on is the owner's call. Independent of
+  # coachhelm_a4_sequence_attribution_surface (the Round Review section).
+  - feature_id: coachhelm_root_cause_diagnosis
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the shot-based root cause on v3 CoachHelm insights
+      (v3/engine/root-cause.ts, run from BaseGenerator.run()). When on, every
+      leak row gets evidence.cause in one of three states: a counted shot
+      sequence (a recorded path on at least 4 of at least 10 failures over 3
+      rounds, at least 30% of them, across at least 2 rounds; never for tee
+      shots or opening holes), likely from the totals (one par x length
+      context with both arms printed, lift at least 1.25, 10 per arm, Newcombe
+      lower bound above 0 after a Bonferroni widening over the slices tried),
+      or not traced (a count-down to the
+      floor, a data gap naming the missing field, or the reason nothing was
+      checked); diagnosis.root_cause is the sentence for that state and the
+      "is off its benchmark" template is never written; strength and neutral
+      rows get no cause. When off, the engine writes exactly what it wrote
+      before this flag existed.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: >-
+      Off: the next analysis run rewrites each row's diagnosis with the old
+      template and drops evidence.cause (the update path replaces evidence).
+    cleanup_plan: >-
+      Remove the flag and the template branch in generator-base.ts once the
+      root cause has run in production for a season without a wording or
+      accuracy complaint; if coaches reject it, turn it off and remove the
+      cause path instead.
 
   # Clubhouse: the from-scratch GolfHelm UI (src/clubhouse/) for coaches and
   # players (isClubhouseFor). Parallel to Fairway, never layered on it.

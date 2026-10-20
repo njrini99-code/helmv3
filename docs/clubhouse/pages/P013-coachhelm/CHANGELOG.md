@@ -33,6 +33,39 @@ Held items:     none
   `coachhelm-dive.test.tsx` check the Board and the Deep dive ask for the
   whole list. No screenshot: nothing is drawn differently.
 
+## 2026-10-20 — A not-traced cause is not drawn as a likely one
+
+```text
+Design package: none (CoachHelm supercharge, Slice 2; 00 open question 3)
+PR/commit:      see git log (claude/coachhelm-root-cause)
+Contract IDs:   CH-13982 (the diagnosis block; no id added)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_root_cause_diagnosis is on)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm-dive-shape.ts` `diagnosisFor`: a row whose
+  `evidence.cause.state` is `not_traced` gets no diagnosis, as the
+  placeholder does. The engine writes that state only with
+  `coachhelm_root_cause_diagnosis` on (off everywhere), so nothing changes
+  today. The mapping of the three cause states onto the existing level:
+  counted (`observed_sequence`) is `observed`; likely from the totals
+  (`inferred_hypothesis`) is `hypothesis`, which a player never sees; not
+  traced is no diagnosis.
+
+### Why
+
+- A not-traced sentence ("Not traced yet. Needs 10 missed greens over 3
+  rounds; 6 so far.") is a count-down or a data gap, not a cause. Drawn in
+  the "Likely, not measured" box it would read as a guess.
+
+### Verification
+
+- `coachhelm-dive.test.tsx`: not traced gets no diagnosis; counted and
+  likely keep `observed` and `hypothesis`. No screenshot: no layout change.
+
 ## 2026-10-20 — Deep dive: each read opens with What, Why, Next and When
 
 ```text

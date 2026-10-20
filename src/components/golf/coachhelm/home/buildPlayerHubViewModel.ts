@@ -35,6 +35,7 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 import { formatValue } from '@/components/golf/coachhelm/insights/format-value';
 import { isImprovement, isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { isNotTracedCause } from '@/lib/coachhelm/reads/cause-state';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Number helpers
@@ -425,7 +426,10 @@ export function buildInsightUnit(
   const genericCause = Boolean(cause && /\bis off its benchmark\b/i.test(cause));
   if (cause && !genericCause) {
     const measured = (diagnosis?.causality_level ?? ev?.causality_level) === 'observed_sequence';
-    chain.push({ key: 'cause', label: 'Why', text: cause, marker: measured ? 'Measured' : 'Likely' });
+    // A not-traced cause (root-cause flag on) is a count-down or a data gap,
+    // not a guess: it reads unmarked rather than as "Likely".
+    const marker = isNotTracedCause(ev) ? undefined : measured ? 'Measured' : 'Likely';
+    chain.push({ key: 'cause', label: 'Why', text: cause, ...(marker ? { marker } : {}) });
   }
 
   const sampleN = finite(ev?.sample_n);
