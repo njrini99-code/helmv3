@@ -126,6 +126,15 @@ describe('assembleBriefEngineInsights', () => {
     expect(putting?.message).not.toMatch(/strokes\/round on the table/);
   });
 
+  test('a rough estimate (evidence.estimated) never reads as strokes on the table', () => {
+    const r = row({ id: 'e1', category: 'tee', strokesSaved: 0.9, content: 'Left misses cost more.' });
+    (r.evidence as unknown as Record<string, unknown>).estimated = true;
+    const driving = assembleBriefEngineInsights([r], CATEGORIES).get('driving');
+    expect(driving?.strokesSavedPerRound).toBeNull();
+    expect(driving?.tone).toBe('neutral');
+    expect(driving?.message).not.toMatch(/strokes\/round on the table/);
+  });
+
   test('an absent counterfactual also falls back to diagnostic framing', () => {
     const rows = [row({ id: 's1', category: 'short_game', noCounterfactual: true })];
     const out = assembleBriefEngineInsights(rows, CATEGORIES);
