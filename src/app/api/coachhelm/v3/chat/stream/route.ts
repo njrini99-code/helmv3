@@ -633,9 +633,9 @@ export async function POST(req: NextRequest) {
         //
         // A Confirm card the coach never answered, followed by a newer
         // question, is a Cancel: see `denyAbandonedApprovals`. Left as it was,
-        // the SDK is handed a tool call with no result and rejects the whole
-        // request ("Tool result is missing for tool call …") for every later
-        // question in the thread.
+        // ai 7.0.37 rejected the whole request ("Tool result is missing for
+        // tool call …") for every later question in the thread; ai 7.0.128
+        // drops the card silently, so the model is never told it was declined.
         messages: await convertToModelMessages(
           denyAbandonedApprovals(uiMessages).map((m) => ({
             ...m,

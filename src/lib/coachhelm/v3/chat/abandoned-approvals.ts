@@ -9,7 +9,9 @@
  * call with no result. The request died with "Tool result is missing for tool
  * call …" before the model was reached, and every later question in the thread
  * died the same way until the card was answered (production, 2026-08-26
- * 18:54:06).
+ * 18:54:06, on ai 7.0.37). On ai 7.0.128 `convertToModelMessages` strips such a
+ * card itself, so the request no longer dies, but the proposal then vanishes
+ * from the prompt with no word of what became of it.
  *
  * A newer user message means the coach moved on. That is a Cancel: nothing is
  * created, and the model is told the action was declined so the conversation

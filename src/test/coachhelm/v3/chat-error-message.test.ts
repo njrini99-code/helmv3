@@ -5,6 +5,7 @@ import {
   CHAT_ERROR_CONVERSATION_GONE,
   CHAT_ERROR_EMPTY,
   CHAT_ERROR_GENERIC,
+  CHAT_ERROR_HELM_OFF,
   CHAT_ERROR_NOT_A_COACH,
   CHAT_ERROR_RATE_LIMIT,
   CHAT_ERROR_SIGNED_OUT,
@@ -101,6 +102,12 @@ describe('CoachHelm chat — what a failed request says', () => {
     const notice = describeChatError(await thrownFor(403, { error: 'This surface is for coaches' }));
     expect(notice).toEqual({ message: CHAT_ERROR_NOT_A_COACH, recovery: 'none' });
     expect(notice.message).toBe('Ask CoachHelm is for coaches.');
+  });
+
+  it('a coach whose team has CoachHelm switched off is told so, not that the surface is for coaches', async () => {
+    const notice = describeChatError(await thrownFor(403, { error: 'CoachHelm is off for your team.' }));
+    expect(notice).toEqual({ message: CHAT_ERROR_HELM_OFF, recovery: 'none' });
+    expect(notice.message).not.toBe(CHAT_ERROR_NOT_A_COACH);
   });
 
   it.each([

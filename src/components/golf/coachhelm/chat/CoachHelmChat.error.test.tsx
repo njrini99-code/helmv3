@@ -114,6 +114,7 @@ describe('CoachHelmChat — a failed answer', () => {
   it.each([
     [401, { error: 'Not signed in' }, 'Your session ended. Sign in again, then retry.'],
     [403, { error: 'This surface is for coaches' }, 'Ask CoachHelm is for coaches.'],
+    [403, { error: 'CoachHelm is off for your team.' }, 'CoachHelm is turned off for your team.'],
     [400, { error: 'Bad request' }, 'Something went wrong while answering. Try again.'],
     [500, { error: 'Internal error' }, 'Something went wrong while answering. Try again.'],
   ])('a %i reads as its sentence', async (status, body, sentence) => {

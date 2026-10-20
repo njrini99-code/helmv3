@@ -1324,6 +1324,8 @@ describe('POST /coachhelm/v3/chat/stream — the CoachHelm gate (CH13-20)', () =
     helmGate.isCoachHelmEnabledForCoach.mockResolvedValueOnce({ effectivelyEnabled: false });
     const res = await POST(makeRequest(baseBody));
     expect(res.status).toBe(403);
+    // The chat maps this exact body to its own sentence (error-message.ts), so a coach is not told Ask is "for coaches".
+    expect(await res.json()).toEqual({ error: 'CoachHelm is off for your team.' });
     expect(mocks.streamText).not.toHaveBeenCalled();
   });
 });

@@ -46,12 +46,15 @@ export const CHAT_ERROR_RATE_LIMIT = "You're asking quickly. Wait a moment, then
 export const CHAT_ERROR_CONVERSATION_GONE = "That conversation isn't available. Start a new chat.";
 export const CHAT_ERROR_SIGNED_OUT = 'Your session ended. Sign in again, then retry.';
 export const CHAT_ERROR_NOT_A_COACH = 'Ask CoachHelm is for coaches.';
+export const CHAT_ERROR_HELM_OFF = 'CoachHelm is turned off for your team.';
 export const CHAT_ERROR_GENERIC = 'Something went wrong while answering. Try again.';
 /** The pre-existing fallback for an error that carries no text at all. */
 export const CHAT_ERROR_EMPTY = 'That answer did not come through.';
 
 /** The body text `route.ts` sends for a conversation id that is not the coach's (or not there). */
 const CONVERSATION_NOT_FOUND = 'Conversation not found';
+/** The body text `route.ts` sends when the CoachHelm gate is off for the coach or the team (CH13-20). */
+const COACHHELM_OFF = 'CoachHelm is off for your team.';
 
 /** The refusal's JSON body, when it is one. Anything else is null, never thrown. */
 function parseRefusalBody(responseBody: unknown): { error?: string; reason?: string } | null {
@@ -93,7 +96,13 @@ function describeRefusal(status: number, responseBody: unknown): ChatErrorNotice
   }
 
   if (status === 401) return { message: CHAT_ERROR_SIGNED_OUT, recovery: 'retry' };
-  if (status === 403) return { message: CHAT_ERROR_NOT_A_COACH, recovery: 'none' };
+  if (status === 403) {
+    // Two different 403s, neither fixed by pressing anything: CoachHelm switched
+    // off for this coach's team (the gate), and a signed-in user who is not a
+    // coach. A coach must not be told the surface is for coaches.
+    if (body?.error === COACHHELM_OFF) return { message: CHAT_ERROR_HELM_OFF, recovery: 'none' };
+    return { message: CHAT_ERROR_NOT_A_COACH, recovery: 'none' };
+  }
 
   // 400, 500 and anything a proxy adds (a 502/504 page is HTML, never for a coach).
   return { message: CHAT_ERROR_GENERIC, recovery: 'retry' };

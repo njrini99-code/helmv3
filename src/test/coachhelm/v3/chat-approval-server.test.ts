@@ -144,15 +144,24 @@ describe('CoachHelm chat — a Confirm card the coach never answered', () => {
     userTurn('u2', 'Actually, how is the team putting?'),
   ];
 
-  it('why the guard exists: the SDK rejects the thread outright, before the model is reached', async () => {
-    // Production, 2026-08-26 18:54:06: the second question after a turn that
-    // carried an announcement proposal died with exactly this message, and the
-    // thread stayed stuck until the card was answered.
+  it('why the guard exists: without it the SDK drops the card silently, so the model never hears it was declined', async () => {
+    // Production, 2026-08-26 18:54:06, on ai 7.0.37: the second question after
+    // a turn that carried an announcement proposal died with "Tool result is
+    // missing for tool call …" before the model was reached, and the thread
+    // stayed stuck until the card was answered. On ai 7.0.128 (the deps bump
+    // on main, #2149) `convertToModelMessages` itself strips an
+    // `approval-requested` part that sits before the last user message, so the
+    // request no longer dies, but the proposal vanishes from the prompt with no
+    // word of what happened to it. The guard is what makes it an explicit
+    // Cancel the model is told about, whatever the SDK version does.
     const { execute, chunks, prompts } = await runThread(abandoned(), { denyAbandoned: false });
 
-    expect(errorOf(chunks)).toMatch(/Tool result is missing/);
-    expect(prompts).toHaveLength(0);
+    expect(errorOf(chunks)).toBe('undefined');
     expect(execute).not.toHaveBeenCalled();
+    expect(prompts).toHaveLength(1);
+    const prompt = JSON.stringify(prompts[0]);
+    expect(prompt).not.toContain('call_1');
+    expect(prompt).not.toContain(ABANDONED_APPROVAL_REASON);
   });
 
   it('a new question under it is answered, nothing is created, and the model is told it was declined', async () => {
