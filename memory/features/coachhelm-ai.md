@@ -131,6 +131,36 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `tone-derivation.ts`): a player at least as good as the comparison is always
   healthy regardless of gap size; only the adverse direction is gated by the 20%
   closeness bar.
+<!-- schema-drift-absent: golf_coachhelm_player_state -->
+- Checkpoint lifecycle (Slice 3, `src/lib/coachhelm/v3/lifecycle/`), behind
+  `coachhelm_recheck_v1` (default off) and the held table
+  `golf_coachhelm_player_state` (migration on HOLD in
+  `supabase/migrations/HELD.md`; not in production). With the flag off the cron and upsert behave
+  as before and the job makes no query; a missing table or corrections table
+  (42P01 / PGRST205) means "not available". With it on, the cron runs
+  `runCheckpointLifecycle` after its age scan and before the rollups:
+  - A player checkpoint is 3 countable rounds since the last one; a family
+    checkpoint is each 20 attempts in one shot family. The first run only
+    sets a baseline.
+  - At a covering checkpoint, weakness `putt_distance` and `par_scoring`
+    reads are rechecked over the newest 15 countable rounds (or 90 days when
+    that has more attempts): Cleared when the point is at or past the
+    benchmark and the 90% bound beats the old point. The record goes on
+    `evidence.recheck`.
+  - Opposing supported reads on one subject pair as Contradicted (newest wins
+    and the older is retired); a driver read plus a penalty read with a
+    counted driver-to-penalty link pair as one strategy item.
+  - A `wrong_cause` or `not_this(wrong)` correction, or a round whose hole sum
+    does not match `total_score`, sets Under review until the next checkpoint.
+  - v3 reads stop using the 30/90-day age rules and archive instead when
+    Cleared for 2 more checkpoints, Contradicted-and-retired, or Out of date
+    for 3 checkpoints (`metadata.archived_by = 'coachhelm-lifecycle'`).
+    `addressed` reads never archive here. The lifecycle state lives in
+    `metadata.coachhelm_lifecycle` and is mirrored onto evidence, because a
+    generator re-emit replaces evidence; upsert does not resurrect a row
+    retired by `engine-recheck` or `engine-contradiction`.
+  - `delivery-shape.ts` turns these into Cleared / Contradicted / Under review
+    lines; no surface renders it yet.
 - Honest-mode confidence (`factors_measured=false`) is `sample_adequacy × freshness` (`honest_v2`); it is a support score, never a probability, and can never rise as evidence ages.
 - Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.
 - Claim honesty (2026-09-12, repair plan Package 2): prose states what was
