@@ -147,8 +147,10 @@ describe('the questions', () => {
     expect(finish).toHaveBeenCalledTimes(2);
     expect(finish.mock.calls[0]![0]).toMatchObject({ org: 'Pine Needles University', division: 'D2', state: 'NC', gender: 'womens' });
     expect(finish.mock.calls[0]!.slice(1)).toEqual(['Maya Reyes', 'Head coach', null]);
-    // The draft is gone once the program exists.
-    expect(window.sessionStorage.getItem(COACH_DRAFT_KEY)).toBeNull();
+    // The draft is gone once the program exists. The clear runs in useFlow's
+    // passive effect after the done screen commits, which a loaded runner can
+    // flush after findByRole has already seen the heading.
+    await waitFor(() => expect(window.sessionStorage.getItem(COACH_DRAFT_KEY)).toBeNull());
   });
 
   it('CH-15143 the profile asks for a first and last name', () => {
