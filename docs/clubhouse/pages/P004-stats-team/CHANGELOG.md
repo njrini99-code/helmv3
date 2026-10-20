@@ -1,5 +1,22 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-20 — No visible change (stats visuals 6)
+
+```text
+Design package: none (stats visuals plan, piece 6; entry in P005)
+PR/commit:      uncommitted (local/stats-pr6-mix)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `stats.css` lost the old scoring mix rules
+  (`ch-mix`, `ch-zmix`) and gained `.ch-sv-mix-*`, and `charts.tsx` lost
+  `ScoreMix`; the team page used neither.
+
 ## 2026-10-20 — No visible change (stats visuals 4)
 
 ```text

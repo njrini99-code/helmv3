@@ -463,6 +463,8 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
       minPlays: 3,
     },
     holesError: false,
+    // Three of the twelve doubles or worse were triples or worse (the scoring mix says so on its double or worse).
+    triplePlus: 3,
     approach: [
       { label: '50-125 yd', value: 26, bench: 18, shots: 55, belowFloor: false, floor: 10, greenHitPct: 62 },
       { label: '125-175 yd', value: 40, bench: 30, shots: 72, belowFloor: false, floor: 10, greenHitPct: 41 },

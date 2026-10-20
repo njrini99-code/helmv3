@@ -11,6 +11,7 @@ import { LegBars } from './LegBars';
 import { RoundTrend } from './RoundTrend';
 import { trendRounds, withValue } from './round-trend';
 import { PuttBands } from './PuttBands';
+import { ScoreMixBar } from './ScoreMixBar';
 import { sgLegBars } from './leg-rows';
 
 /**
@@ -73,15 +74,8 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
 
   // 2 · scoring
   const holesScored = s ? s.totalEagles + s.totalBirdies + s.totalPars + s.totalBogeys + s.totalDoublePlus : 0;
-  const mix = s
-    ? ([
-        ['Eagle', s.totalEagles, s.eaglesPerRound, 'eagle'],
-        ['Birdie', s.totalBirdies, s.birdiesPerRound, 'birdie'],
-        ['Par', s.totalPars, s.parsPerRound, 'par'],
-        ['Bogey', s.totalBogeys, s.bogeysPerRound, 'bogey'],
-        ['Double or worse', s.totalDoublePlus, s.doublePlusPerRound, 'double'],
-      ] as const)
-    : [];
+  const mixCounts = s ? { eagle: s.totalEagles, birdie: s.totalBirdies, par: s.totalPars, bogey: s.totalBogeys, double: s.totalDoublePlus } : null;
+  const mixPer = s ? { eagle: s.eaglesPerRound, birdie: s.birdiesPerRound, par: s.parsPerRound, bogey: s.bogeysPerRound, double: s.doublePlusPerRound } : null;
   const parRows = s
     ? ([3, 4, 5] as const).map((p) => {
         const d = s.scoringByPar[`par${p}` as const];
@@ -236,24 +230,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         {s && holesScored > 0 ? (
           <>
             <Vis title="Every hole, by result" note={`${holesScored} holes over ${s.roundsPlayed} ${s.roundsPlayed === 1 ? 'round' : 'rounds'}.`}>
-              <div className="ch-zmix" role="img" aria-label={mix.map(([l, c]) => `${l} ${c}`).join(', ')}>
-                {mix.map(([l, c, , k]) => (
-                  <i key={l} className={`is-${k}`} style={{ '--ch-z-n': c } as CSSProperties} title={`${l} ${c}`}>
-                    {c / holesScored > 0.08 ? c : null}
-                  </i>
-                ))}
-              </div>
-              <div className="ch-zmixkey">
-                {mix.map(([l, , per, k]) => (
-                  <div key={l}>
-                    <span>
-                      <i className={`is-${k}`} />
-                      {l}
-                    </span>
-                    <b className="ch-num">{fixed(per)}</b>a round
-                  </div>
-                ))}
-              </div>
+              <ScoreMixBar counts={mixCounts!} perRound={mixPer} triple={data.extra.triplePlus} label="Every hole, by result" />
             </Vis>
             <Vis title="Each par against par" note="Average strokes over or under par a hole. The gold tick is the Tour.">
               <ParDots rows={parRows} />
