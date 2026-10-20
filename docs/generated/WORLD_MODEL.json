@@ -578,6 +578,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/app/clubhouse-preview/entry/**",
+        "pattern": "src/app/clubhouse-preview/entry/**",
+        "category": "components"
+      },
+      {
         "id": "components:src/app/golf/(dashboard)/dashboard/my-standing/page.tsx",
         "pattern": "src/app/golf/(dashboard)/dashboard/my-standing/page.tsx",
         "category": "components"
@@ -2283,6 +2288,11 @@
       {
         "id": "tests:src/app/admin/actions/__tests__/sentry-resolve.test.ts",
         "pattern": "src/app/admin/actions/__tests__/sentry-resolve.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/app/clubhouse-preview/entry/__tests__/**",
+        "pattern": "src/app/clubhouse-preview/entry/__tests__/**",
         "category": "tests"
       },
       {
@@ -12571,6 +12581,18 @@
     },
     {
       "source": "clubhouse",
+      "target": "components:src/app/clubhouse-preview/entry/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/clubhouse-preview/entry/**"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
       "target": "components:src/clubhouse/**",
       "kind": "feature_component",
       "evidence": [
@@ -12590,6 +12612,18 @@
           "kind": "rpc_call",
           "path": "src/clubhouse/data/attendance-counts.ts",
           "anchor": "golf_event_attendance_counts"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
+      "target": "tests:src/app/clubhouse-preview/entry/__tests__/**",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/clubhouse-preview/entry/__tests__/**"
         }
       ]
     },
