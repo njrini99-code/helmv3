@@ -122,6 +122,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   - The Clubhouse Deep dive Read and the Fairway `EvidencePanel` print the
     team line (`reads/team-pool-line.ts`). Contract:
     `docs/architecture/coachhelm-evidence-contract.md`.
+  - The support pass shrinks toward that pool (`prior_source: 'team_pool'`)
+    and falls back to its earlier prior when a read has no team line.
 
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are

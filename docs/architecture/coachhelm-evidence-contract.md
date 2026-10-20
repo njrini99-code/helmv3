@@ -2151,13 +2151,13 @@ object itself. With it on, `BaseGenerator.run()` adds
 measures, keyed by insight type and metric (`familyForRead` in
 `v3/team-pool/pool.ts`):
 
-| Read | Pool family | Pool value | `n` counts |
-| --- | --- | --- | --- |
-| `putt_distance` `putts_made_<band>_pct` | putt make % in the band | made / putts | putts |
-| `approach_miss` `approach_proximity_<band>` | green-hit % in the band | greens / approaches | approaches |
-| `scrambling` `scrambling_pct_sand` | `golf_holes.sand_save` | saves / bunker holes | bunker holes |
-| `par_scoring` `scoring_par_<N>` | mean score on par-N holes | strokes / holes | holes |
-| `course_management` `penalty_rate_per_round` | penalty strokes per 18 holes | (strokes / holes) × 18 | rounds |
+| Read (insight type, metric) | Pool value | `n` counts |
+| --- | --- | --- |
+| `putt_distance`, `putts_made_<band>_pct` | made / putts | putts |
+| `approach_miss`, `approach_proximity_<band>` | greens / shots | approaches |
+| `scrambling`, `scrambling_pct_sand` | saves / bunker holes | bunker holes |
+| `par_scoring`, `scoring_par_<N>` | strokes / par-N holes | holes |
+| `course_management`, `penalty_rate_per_round` | penalties / 18 holes | rounds |
 
 The module also pools three-putts per putted hole, GIR and scrambling on
 missed greens, which no single-metric read carries today.
@@ -2194,6 +2194,12 @@ missed greens, which no single-metric read carries today.
   client the generators already use, `.in()` chunked and paged past the
   1,000-row cap, memoised for 5 minutes per team. Any read error is logged
   (`coachhelm.v3.teamPool.load`) and the read keeps its Tour comparison.
+- **Shrink prior.** With the flag on, the support pass
+  (`v3/support/run-pass.ts`) shrinks a read toward its team pool line
+  (`shrink.prior_source: 'team_pool'`, `prior_value` = the pool value, in the
+  row's own scale). A read without the line keeps the prior it had (team
+  standing, cohort or benchmark), and a within-player contrast still shrinks
+  toward no difference. The gap test's benchmark does not change.
 
 ## How to add a new comparison source
 

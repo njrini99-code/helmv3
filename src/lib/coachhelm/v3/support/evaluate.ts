@@ -13,7 +13,7 @@
  *
  * Pure: rows in, plain objects out. The server half is `run-pass.ts`.
  */
-import { buildCandidate, type BenchmarkSource, type SupportCandidate } from './candidate';
+import { buildCandidate, type BenchmarkSource, type CandidateOptions, type SupportCandidate } from './candidate';
 import { computeGap, rangeExcludesZero, type GapResult } from './gap';
 import { assignLadder, LADDER_RUNGS, type LadderRung } from './ladder';
 import { BH_Q, benjaminiHochberg } from './multiplicity';
@@ -144,8 +144,8 @@ function strokesFor(c: SupportCandidate, g: GapResult): number | null {
   return null;
 }
 
-export function evaluatePlayerRun(rows: readonly SupportRow[]): PlayerRunEvaluation {
-  const candidates = rows.map(buildCandidate);
+export function evaluatePlayerRun(rows: readonly SupportRow[], options: CandidateOptions = {}): PlayerRunEvaluation {
+  const candidates = rows.map((row) => buildCandidate(row, options));
   const gaps = candidates.map((c) =>
     c.gapInput ? computeGap(c.gapInput, { allowStrength: c.def.allowStrength }) : null,
   );

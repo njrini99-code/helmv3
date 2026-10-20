@@ -31,6 +31,7 @@ import { isCountableRound } from '@/lib/golf/round-countable';
 import type { Database, Json } from '@/lib/types/database';
 import { evaluatePlayerRun, SUPPORT_VERSION, type RunSummary } from './evaluate';
 import { isSupportPassEnabled } from './flag';
+import { teamPoolEnabled } from '@/lib/coachhelm/v3/team-pool/flag';
 import { buildRunLogRow, writeRunLog, type RunLogWriteResult, type RunTrigger } from './run-log';
 
 export { isSupportPassEnabled, SUPPORT_FLAG } from './flag';
@@ -114,7 +115,8 @@ export async function runSupportPass(opts: SupportPassOptions): Promise<SupportP
       return null;
     }
     const list = rows;
-    const evaluation = evaluatePlayerRun(list);
+    // Slice 7a: shrink toward the team pool (prior_source 'team_pool') when the row carries one and the flag is on.
+    const evaluation = evaluatePlayerRun(list, { teamPoolPrior: teamPoolEnabled() });
 
     let rowsUpdated = 0;
     let rowsSkipped = 0;

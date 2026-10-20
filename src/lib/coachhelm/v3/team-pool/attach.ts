@@ -10,17 +10,12 @@
  */
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { computeTeamPool, familyForRead, poolWindowFor, withTeamComparison } from './pool';
 import { loadTeamPoolPlayers, resolvePlayerTeam } from './loader';
+import { teamPoolEnabled } from './flag';
 
-/** Off until the owner turns it on. */
-export const TEAM_POOL_FLAG = 'coachhelm_team_pool_v1';
-
-export function teamPoolEnabled(): boolean {
-  return isFlagEnabled(TEAM_POOL_FLAG);
-}
+export { TEAM_POOL_FLAG, teamPoolEnabled } from './flag';
 
 export async function attachTeamPool<E extends InsightEvidence>(input: {
   supabase: SupabaseClient;

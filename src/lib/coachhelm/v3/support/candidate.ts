@@ -37,8 +37,11 @@ export interface SupportCandidate {
   /** Raw strokes a round from the row, magnitude; null when never estimated. */
   strokesRaw: number | null;
   benchmark: { source: BenchmarkSource; value: number } | null;
-  /** Shrinkage prior: the team (or cohort) line when it is comparable, else the benchmark. */
-  prior: { source: BenchmarkSource | 'no_difference'; value: number } | null;
+  /**
+   * Shrinkage prior: the team pool when the row carries one and the Slice 7a flag is on (`team_pool`), else the team (or
+   * cohort) line when it is comparable, else the benchmark.
+   */
+  prior: { source: BenchmarkSource | 'team_pool' | 'no_difference'; value: number } | null;
   why: WhyState;
   /** Family cap, lowered for a Tour-only benchmark or an estimated value. */
   cap: LadderRung;
@@ -190,7 +193,27 @@ function readSplitHalf(evidence: Obj): SupportCandidate['splitHalf'] {
   return { gap_old: gapOld, gap_new: gapNew, n_old: nOld, n_new: nNew };
 }
 
-export function buildCandidate(row: { id: string; insight_type: string | null; evidence: unknown }): SupportCandidate {
+/**
+ * The team pool line the row carries (`evidence.comparison.primary`, Slice 7a), in the row's own scale; null when there is
+ * none. Written by the engine only with `coachhelm_team_pool_v1` on.
+ */
+export function teamPoolPriorOf(evidence: Obj): { source: 'team_pool'; value: number } | null {
+  const primary = obj(obj(evidence.comparison)?.primary);
+  if (!primary || primary.source !== 'team_pool') return null;
+  const value = num(primary.value);
+  const n = num(primary.n);
+  return value !== null && n !== null && n > 0 ? { source: 'team_pool', value } : null;
+}
+
+export interface CandidateOptions {
+  /** Slice 7a (`coachhelm_team_pool_v1`): shrink toward the row's team pool when it carries one. */
+  teamPoolPrior?: boolean;
+}
+
+export function buildCandidate(
+  row: { id: string; insight_type: string | null; evidence: unknown },
+  options: CandidateOptions = {},
+): SupportCandidate {
   const evidence = obj(row.evidence) ?? {};
   const detail = obj(evidence.detail);
   const metric = typeof evidence.metric === 'string' ? evidence.metric : '';
@@ -204,7 +227,10 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
   let untestableReason: string | null = def.shape === 'untestable' ? def.untestableReason ?? 'untestable' : null;
   let n = sampleN ?? 0;
   const { benchmark, prior: benchPrior } = benchmarkFor(evidence, def);
-  let prior = benchPrior;
+  // 02 §4: μ is the team pool for the metric when the pool meets its floor
+  // (the line exists only then); otherwise the prior this pass used before.
+  // A within-player contrast still shrinks toward "no difference" (below).
+  let prior: SupportCandidate['prior'] = (options.teamPoolPrior ? teamPoolPriorOf(evidence) : null) ?? benchPrior;
   let usedBenchmark = benchmark;
 
   switch (def.shape) {
