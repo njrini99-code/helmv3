@@ -108,6 +108,11 @@ describe('createRecruit repeated with a corrected field (CH-14915)', () => {
     expect(await createRecruit({ first_name: 'Ellie', last_name: 'Morrow', hometown: 'Dover' }, { requestId: REQUEST })).toEqual({ success: false, error: 'Failed to add recruit' });
   });
 
+  it('a repeat whose conditional update matches no row (edited in between) is a failure, never "added"', async () => {
+    world({ existing: mine, update: { data: [], error: null } });
+    expect(await createRecruit({ first_name: 'Ellie', last_name: 'Morrow', hometown: 'Dover' }, { requestId: REQUEST })).toEqual({ success: false, error: 'Failed to add recruit' });
+  });
+
   it('a different prospect under the same id, or another coach’s, is still refused and nothing is updated', async () => {
     let calls = world({ existing: { ...mine, first_name: 'Owen', last_name: 'Park' } });
     expect(await createRecruit({ first_name: 'Ellie', last_name: 'Morrow' }, { requestId: REQUEST })).toEqual({ success: false, error: 'Failed to add recruit' });

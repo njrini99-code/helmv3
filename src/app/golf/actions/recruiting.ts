@@ -287,7 +287,7 @@ async function createRecruitImpl(
         // the update is conditional on it): an edit made in between, by this coach or another, stands.
         if (existing.updated_at && existing.updated_at === existing.created_at) {
           const { id: _id, team_id: _team, created_by: _by, ...fields } = row;
-          const { error: fixError } = await ctx.supabase
+          const { data: fixed, error: fixError } = await ctx.supabase
             .from('golf_recruits')
             .update(fields)
             .eq('id', requestId)
@@ -302,6 +302,9 @@ async function createRecruitImpl(
             });
             return { success: false, error: 'Failed to add recruit' };
           }
+          // No row matched: it changed between the read and the write. Saying "added" would show fields that were not
+          // saved, so this is a failure; the retry reads the row again and lets the newer edit stand.
+          if (!fixed || fixed.length === 0) return { success: false, error: 'Failed to add recruit' };
         }
         revalidatePath('/golf/dashboard/recruiting');
         return { success: true, data: { id: existing.id } };

@@ -24,7 +24,10 @@ Held items:     none
   drawn for it (`roster.css`), as for headings.
 - The phone already opened the requests sheet (#2201); the desktop handler reads
   the media query, not the first render's guess, so it never spends a phone's
-  param.
+  param. A stale phone-layout hint mounts the phone copy first (which spends
+  the param in its own effect) and corrects a render later, so the desktop
+  screen reads the param while rendering and focuses the card once the layout
+  is desktop and the card is mounted (review of #2220).
 
 ### Why
 

@@ -14,6 +14,11 @@ Held items:     none
 
 ### Changed
 
+- A repeat whose conditional update matches no row (the prospect was edited
+  between the read and the write) is a failure, not "added", so the page never
+  shows fields that were not saved; its Retry reads the row again and lets the
+  newer edit stand (security review of #2220).
+
 - The Add's request id follows the prospect being added (the first and last
   name, spacing and capitals aside) instead of the whole form
   (`screens/recruiting/add-request.ts`). A field corrected after a failed Add
