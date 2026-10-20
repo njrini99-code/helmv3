@@ -1,5 +1,34 @@
 # P011 — Rounds: changelog
 
+## 2026-10-20 — "No data lost" reaches Exit's Discard and the round engine
+
+```text
+Design package: none
+PR/commit:      see git log (claude/clubhouse-readiness, replayed from draft PR #2207)
+Contract IDs:   110702, 111201, 111202 (more tests; status unchanged, implemented)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tests only, no visible or behaviour change. Exit's Discard is forced offline
+  (`round-entry-wiring.test`); a library discard whose request never lands keeps
+  the device copy (`rounds.test`); and the engine both renderers share is driven
+  through a dropped connection on start, on a hole's save and on discard
+  (`use-new-round-session.preservation.test`).
+
+### Why
+
+- Release review blocker 2. `rounds-contracts.test.tsx` covers the screens;
+  these cover the paths it does not reach.
+
+### Verification
+
+- VERIFY.md "No data lost: Exit's Discard offline, and the engine under a
+  dropped connection": each new test failed against a deliberate break.
+
 ## 2026-10-19 — Discarding another player's round says no
 
 ```text
