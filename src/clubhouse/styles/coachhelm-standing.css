@@ -301,11 +301,10 @@
   font: 400 calc(12 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* The projection reads as the row's last line, its gold lead-in carrying the tone; no rule at its edge (no side rails, 2026-10-19). */
 .ch-hs-proj {
   grid-column: 1 / -1;
   margin: 0;
-  padding: 2px 0 2px 14px;
-  border-left: 2px solid var(--ch-champagne-300);
   font: 400 calc(13 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
@@ -533,12 +532,22 @@
     color: var(--ch-on-green-ink-muted);
   }
 
-  /* An early read: one line set off by a gilt rule, not a box. */
+  /* An early read: one line led by a gilt dot, not a box and not a rule at its edge (no side rails, 2026-10-19). */
   .ch-hs-early {
-    padding: 2px 0 2px 12px;
+    padding: 0;
     border-radius: 0;
     background: none;
-    box-shadow: inset 2px 0 0 var(--ch-champagne-300);
+    box-shadow: none;
+  }
+  .ch-hs-early::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--ch-champagne-500);
+    vertical-align: 0.12em;
   }
 
   /* A group: its heading and note under the double rule, its stats as rows. */
@@ -761,4 +770,15 @@ main[data-canopy] .ch-hs-r.is-ahead,
 }
 .ch-hs-r.is-ahead {
   --ch-hs-tone: var(--ch-green-fill-600);
+}
+
+/* The You / Tour / Team key is drawn once per group, on its first row, so it reads as the columns' heads; every later row
+   keeps the words for a screen reader and draws only the numbers under them (2026-10-19: the key repeated on all 19 rows). */
+main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
