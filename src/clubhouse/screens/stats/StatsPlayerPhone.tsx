@@ -19,16 +19,18 @@ import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { deltaTone, halvesChange } from '../../lib/stats-signal';
+import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
 import { FigureGauge, SgChangeChip } from './charts';
 import { sgLegRows, type SgLegRow } from './leg-rows';
 import { SgBars } from './SgBars';
+import { RoundTrend } from './RoundTrend';
+import { trendRounds } from './round-trend';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
-import { ScoreLine } from './StatsTeamPhone';
 import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
@@ -349,35 +351,42 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
 
 function Trend({ data }: { data: ChPlayerProfile }) {
   // Oldest first, every round in the window, a score per 18 holes (a 9-hole score doubled). The phone's one scoring
-  // chart (P005-D1): Score by round is desktop only.
-  const rounds = [...data.rounds].reverse().map((r) => ({ ...r, score: per18(r.score, r.holes) }));
+  // chart (P005-D1): Score by round is desktop only. Each round is a dot; the line is the five-round average from the third.
+  const role = data.viewer === 'coach' ? 'coach' : 'player';
+  const rounds = trendRounds(data.rounds, 'score');
   if (rounds.length === 0) return null;
-  const change = rounds[rounds.length - 1]!.score - rounds[0]!.score;
+  const first = rounds[0]!;
+  const last = rounds[rounds.length - 1]!;
+  const change = last.value! - first.value!;
+  const sgRounds = trendRounds(data.rounds, 'sg');
+  const openHref = (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}`, role);
   return (
-    <section className="ch-stm-panel" aria-labelledby="ch-spm-trend">
-      <div className="ch-stm-panel__h">
-        <h2 id="ch-spm-trend">Scoring trend</h2>
-        <span className="ch-num">
-          {rounds.length} {rounds.length === 1 ? 'round' : 'rounds'}
-          {rounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}
-        </span>
-      </div>
-      {/* A line needs two rounds; with one the panel says what there is instead of vanishing. */}
-      {rounds.length === 1 ? (
-        <div className="ch-stm-chart-hold">
-          <p className="ch-stm-note">
-            One round so far: <span className="ch-num">{rounds[0]!.score}</span> on {rounds[0]!.date}. The trend draws from the second.
-          </p>
+    <>
+      <section className="ch-stm-panel" aria-labelledby="ch-spm-trend">
+        <div className="ch-stm-panel__h">
+          <h2 id="ch-spm-trend">Scoring trend</h2>
+          <span className="ch-num">
+            {rounds.length} {rounds.length === 1 ? 'round' : 'rounds'}
+            {rounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}
+          </span>
         </div>
-      ) : (
-        <ScoreLine
-          values={rounds.map((r) => r.score)}
-          from={rounds[0]!.date}
-          to={rounds[rounds.length - 1]!.date}
-          label={`Scores over the last ${rounds.length} rounds, from ${rounds[0]!.score} to ${rounds[rounds.length - 1]!.score}${change === 0 ? '' : `, ${Math.abs(change)} ${change < 0 ? 'lower' : 'higher'}`}.`}
+        <RoundTrend
+          rounds={rounds}
+          kind="score"
+          openHref={openHref}
+          label={`Scores over the last ${rounds.length} rounds, from ${Math.round(first.value!)} to ${Math.round(last.value!)}${Math.round(change) === 0 ? '' : `, ${Math.abs(Math.round(change))} ${change < 0 ? 'lower' : 'higher'}`}.`}
         />
+      </section>
+      {sgRounds.some((r) => r.value != null) && (
+        <section className="ch-stm-panel" aria-labelledby="ch-spm-sgtrend">
+          <div className="ch-stm-panel__h">
+            <h2 id="ch-spm-sgtrend">Strokes gained by round</h2>
+            <span className="ch-num">Per 18 holes</span>
+          </div>
+          <RoundTrend rounds={sgRounds} kind="sg" openHref={openHref} label="Strokes gained in each round of the window." />
+        </section>
       )}
-    </section>
+    </>
   );
 }
 
