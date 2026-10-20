@@ -2311,6 +2311,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts",
+        "pattern": "src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/golf/actions/__tests__/stats-data.test.ts",
         "pattern": "src/app/golf/actions/__tests__/stats-data.test.ts",
         "category": "tests"
@@ -21311,6 +21316,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/recruiting/**"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "tests:src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts"
         }
       ]
     },

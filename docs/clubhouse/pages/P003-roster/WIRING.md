@@ -121,7 +121,7 @@ rebuilt for the role is not offered:
 | `screens/roster/RosterPeek.tsx` | The desktop panel and `CoachNote` (shared with the phone profile) | 30405, 30501, 30604, 30615, 30616, 31201, 31203, 32001 |
 | `screens/roster/RosterRequests.tsx` | The desktop join requests card | 30610, 31301 |
 | `screens/roster/useJoinRequests.ts` | The requests, optimistic; Approve and Decline; Approve all | 30302, 30602, 30603, 30607, 31301, 31401, 31403 |
-| `screens/roster/RosterPhone.tsx` | The phone list, banner, requests sheet (opened once by the bell's `?tab=requests`) and ⋯ sheet | 30102, 30302, 30401, 30608 to 30610, 31901 |
+| `screens/roster/RosterPhone.tsx` | The phone list, banner, requests sheet (opened once by the bell's `?tab=requests`; on desktop `Roster.tsx` focuses the `RosterRequests` card for it instead) and ⋯ sheet | 30102, 30302, 30401, 30608 to 30610, 31901 |
 | `screens/roster/RosterProfile.tsx` | The phone's pushed profile | 30405, 30609, 31203 |
 | `screens/roster/RosterSkeleton.tsx` | Route skeleton | 30201 |
 | `screens/roster/RosterNoTeam.tsx` | No team (`viewer`: a coach's or a player's words) | CH-3306, CH-3308 |
