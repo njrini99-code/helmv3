@@ -72,6 +72,19 @@ describe('dedupeBySubject — newest evidence wins', () => {
     expect(dedupeBySubject([older, newer]).map((r) => r.id)).toEqual(['newer']);
   });
 
+  it('compares timestamps as instants, not as text', () => {
+    // 01:00 at +02:00 is 23:00 UTC the day before: older, though it sorts later as text.
+    const offset = row('offset', { updated_at: '2026-10-02T01:00:00+02:00' });
+    const utc = row('utc', { updated_at: '2026-10-02T00:00:00.000Z' });
+    expect(dedupeBySubject([offset, utc]).map((r) => r.id)).toEqual(['utc']);
+    expect(dedupeBySubject([utc, offset]).map((r) => r.id)).toEqual(['utc']);
+    // The same instant spelled two ways is a tie, so rank order decides.
+    const a = row('a', { updated_at: '2026-10-02T00:00:00+00:00' });
+    const b = row('b', { updated_at: '2026-10-02T00:00:00.000Z' });
+    expect(dedupeBySubject([a, b]).map((r) => r.id)).toEqual(['a']);
+    expect(dedupeBySubject([b, a]).map((r) => r.id)).toEqual(['b']);
+  });
+
   it('then the later created_at, then rank order', () => {
     const first = row('first', { created_at: '2026-08-01T00:00:00.000Z' });
     const later = row('later', { created_at: '2026-08-20T00:00:00.000Z' });

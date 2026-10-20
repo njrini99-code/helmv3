@@ -195,27 +195,37 @@ export function issueSubjectKey(insight: RankableEvidenceInsight): string {
 }
 
 /** The stored `updated_at`; a mapper's "now" stand-in for a missing one never counts as fresh. */
-function storedUpdatedAt(insight: RankableEvidenceInsight): string {
-  if (insight.source_updated_at !== undefined) return insight.source_updated_at ?? '';
-  return insight.updated_at ?? '';
+function storedUpdatedAt(insight: RankableEvidenceInsight): string | null {
+  if (insight.source_updated_at !== undefined) return insight.source_updated_at;
+  return insight.updated_at ?? null;
+}
+
+/** A timestamp as epoch ms; missing or unparseable is older than any real one. */
+function instant(value: unknown): number {
+  if (typeof value !== 'string' || value === '') return Number.NEGATIVE_INFINITY;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? Number.NEGATIVE_INFINITY : ms;
 }
 
 /**
  * Whether `a` is newer evidence than `b`: the later stored `updated_at`, then
  * the later newest round in the window (`evidence.window_end`), then the later
- * `created_at`. Equal on all three is not newer, so rank order decides.
+ * `created_at`. Compared as instants (`Date.parse`), so `+00:00` and `Z`, or a
+ * date and a timestamp, order by time and not by spelling. Equal on all three
+ * is not newer, so rank order decides.
  */
 function isNewerEvidence(a: RankableEvidenceInsight, b: RankableEvidenceInsight): boolean {
-  const keys = (i: RankableEvidenceInsight): string[] => [
-    storedUpdatedAt(i),
-    typeof i.evidence?.window_end === 'string' ? i.evidence.window_end : '',
-    i.created_at ?? '',
+  const keys = (i: RankableEvidenceInsight): number[] => [
+    instant(storedUpdatedAt(i)),
+    instant(i.evidence?.window_end),
+    instant(i.created_at),
   ];
   const ka = keys(a);
   const kb = keys(b);
   for (let k = 0; k < ka.length; k += 1) {
-    const cmp = (ka[k] ?? '').localeCompare(kb[k] ?? '');
-    if (cmp !== 0) return cmp > 0;
+    const x = ka[k]!;
+    const y = kb[k]!;
+    if (x !== y) return x > y;
   }
   return false;
 }

@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   capReadsPerPlayer,
+  carriesUserState,
   deliverReads,
   foldOverlappingReads,
   foldSentence,
@@ -207,7 +208,7 @@ describe('deliverReads', () => {
     expect(deliverReads(list, { fold: true, cap: false }).map((r) => r.id)).toEqual(['tee', 'f2', 'f3', 'f4']);
   });
 
-  it('never moves or drops a player\'s first read; only a note or a measured zero ahead of it goes', () => {
+  it('keeps a player\'s first read when it is a finding; only a note or a measured zero ahead of it goes', () => {
     const lists = [list, [penalties(), sharp()], [bigNumbers(), laggy(), penalties()]];
     for (const l of lists) {
       expect(deliverReads(l, { fold: true, cap: true })[0]?.id).toBe(l[0]!.id);
@@ -215,5 +216,62 @@ describe('deliverReads', () => {
     }
     expect(deliverReads([inconclusive(), read('x', 'm')], { fold: true, cap: true }).map((r) => r.id)).toEqual(['x']);
     expect(deliverReads([inconclusive(), read('x', 'm')], { fold: true, cap: false }).map((r) => r.id)).toEqual(['tee', 'x']);
+  });
+});
+
+describe('the fold never takes a finding down with its leader (review S1)', () => {
+  const plan = { fold: true, cap: true } as const;
+
+  it('a driver-performing note ahead of a penalties finding: the finding stays and names the note', () => {
+    const out = deliverReads([sharp(), penalties()], plan);
+    expect(out.map((r) => r.id)).toEqual(['pen']);
+    expect(out[0]!.also).toEqual([{ id: 'tee', title: 'Driver is performing: keep it in play', relation: 'opposing' }]);
+  });
+
+  it('a feed-exempt warmup card ahead of the front-9 finding: the finding stays', () => {
+    const warmup = read('warmup', 'opening_hole_delta', { category: 'pressure', insight_type: 'warmup_hole', ev: { feed_exempt: true } });
+    const starter = read('starter', 'opening_hole_delta', { category: 'scoring', insight_type: 'composite' });
+    const out = deliverReads([warmup, starter], plan);
+    expect(out.map((r) => r.id)).toEqual(['starter']);
+    expect(out[0]!.also?.map((a) => a.id)).toEqual(['warmup']);
+  });
+
+  it('a strength, then a penalties strength, then a big-number finding: the finding is not lost to the strength cap', () => {
+    const s1 = strength('s1', 'putts_made_5_10ft_pct');
+    const penStrength = penalties('pen', { priority: 'low', ev: { your_value: 0.2 } });
+    const out = deliverReads([s1, penStrength, bigNumbers()], plan);
+    expect(out.map((r) => r.id)).toEqual(['s1', 'big']);
+    expect(out[1]!.also).toEqual([{ id: 'pen', title: 'Penalty strokes: 0.8 per round', relation: 'opposing' }]);
+  });
+
+  it('within one kind the higher-ranked read stays', () => {
+    expect(deliverReads([penalties(), laggy()], plan).map((r) => r.id)).toEqual(['pen']);
+    expect(deliverReads([laggy(), penalties()], plan).map((r) => r.id)).toEqual(['tee']);
+  });
+});
+
+describe('a read someone acted on never folds (review S2)', () => {
+  it('acknowledged, addressed, rated by the player or behind a live focus area', () => {
+    expect(carriesUserState(penalties('a', { acknowledged_at: '2026-10-02T00:00:00.000Z' }))).toBe(true);
+    expect(carriesUserState(penalties('b', { status: 'acknowledged' }))).toBe(true);
+    expect(carriesUserState(penalties('c', { lifecycle_state: 'addressed' }))).toBe(true);
+    expect(carriesUserState({ ...penalties('d'), player_feedback: { rating: 'helpful', created_at: '2026-10-02T00:00:00.000Z' } })).toBe(true);
+    expect(carriesUserState(penalties('e'), new Set(['e']))).toBe(true);
+    expect(carriesUserState(penalties('f'), new Set(['other']))).toBe(false);
+  });
+
+  it('such a read stays its own card, and so does its partner', () => {
+    const acked = penalties('pen', { acknowledged_at: '2026-10-02T00:00:00.000Z' });
+    expect(deliverReads([laggy(), acked], { fold: true, cap: false }).map((r) => r.id)).toEqual(['tee', 'pen']);
+    const addressedLeader = laggy('tee');
+    const out = deliverReads([{ ...addressedLeader, lifecycle_state: 'addressed' as const }, penalties()], { fold: true, cap: false });
+    expect(out.map((r) => r.id)).toEqual(['tee', 'pen']);
+    expect(out.every((r) => r.also === undefined)).toBe(true);
+  });
+
+  it('a read behind a live focus area (plan.pinned) is not folded into a higher-ranked partner', () => {
+    const list = [laggy(), penalties()];
+    expect(deliverReads(list, { fold: true, cap: false, pinned: new Set(['pen']) }).map((r) => r.id)).toEqual(['tee', 'pen']);
+    expect(deliverReads(list, { fold: true, cap: false, pinned: new Set() }).map((r) => r.id)).toEqual(['tee']);
   });
 });

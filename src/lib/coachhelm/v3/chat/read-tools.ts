@@ -28,6 +28,7 @@ import {
   type RawInsightRowForRanking,
 } from '@/app/golf/actions/insight-delivery-ranking';
 import { deliverReads, READS_V1_FLAG } from '@/app/golf/actions/insight-delivery-reads';
+import { loadPinnedReadIds } from '@/app/golf/actions/insight-delivery-pinned';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
@@ -925,11 +926,14 @@ export async function getPlayerInsights(
     loadActiveGoals(player.id).catch(() => []),
   ]);
   const ranked = await rankEvidenceInsights(rankable, weights, goals, sb);
-  // CoachHelm Slice 0 (flag off by default): the same fold and 3 + 1 cap as
-  // the coach feed (insight-delivery-reads.ts), so the open signals named
-  // here are the ones the feed shows for this player.
+  // CoachHelm Slice 0 (flag off by default): the same fold as the coach feed
+  // (insight-delivery-reads.ts), with the reads a live focus came from kept
+  // unfolded, so a read the chat names is one the feed shows. No 3 + 1 cap:
+  // the coach asked about this player, so the chat lists every read, the way
+  // the feed's `includeMore` does.
   const readsV1 = isFlagEnabled(READS_V1_FLAG);
-  const deduped = deliverReads(dedupeBySubject(collapseParScoring(ranked)), { fold: readsV1, cap: readsV1 });
+  const pinned = readsV1 ? await loadPinnedReadIds(sb, [player.id]).catch(() => new Set<string>()) : undefined;
+  const deduped = deliverReads(dedupeBySubject(collapseParScoring(ranked)), { fold: readsV1, cap: false, pinned });
   const rows = deduped.slice(0, Math.min(Math.max(input.limit, 1), 10));
 
   return {

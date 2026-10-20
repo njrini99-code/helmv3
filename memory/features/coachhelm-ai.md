@@ -232,21 +232,30 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Duplicates, folds and caps at delivery (CoachHelm Slice 0, 2026-10-20).
   `dedupeBySubject` (`insight-delivery-ranking.ts`) keeps the NEWEST copy of
   one read (same subject key, same `insight_type`): stored `updated_at`, then
-  `evidence.window_end`, then `created_at`, at the survivor's own rank
-  position (ported from PR #2073). A row another generator wrote on the
-  same subject still loses to the higher-ranked row, as before. Unflagged:
-  it only changes which of two copies is shown. Behind
-  `coachhelm_reads_v1_copy` (off everywhere), `deliverReads`
+  `evidence.window_end`, then `created_at`, compared as instants, at the
+  survivor's own rank position (ported from PR #2073). A row another
+  generator wrote on the same subject still loses to the higher-ranked row,
+  as before. Unflagged: it only changes which of two copies is shown.
+  Behind `coachhelm_reads_v1_copy` (off everywhere), `deliverReads`
   (`insight-delivery-reads.ts`, pure) runs after collapse, dedupe and the
-  player's dismissals on every Fairway feed, the Hub pick, the round-review
-  takeaway, the roster sweep and the coach chat tool: overlapping reads
-  fold into the higher-ranked one (`FOLD_PAIRS`: driver with penalties,
-  penalties with big numbers, three-putts with 25+ ft putts, and one
-  metric across categories), which names them in `also` and in one added
-  sentence; then each player holds 3 open reads and 1 strength (a note or a
-  measured zero is never an open read; same classification as the
-  Clubhouse Board). `includeMore: true` on `getInsightsForPlayer` skips the
-  cap (the Clubhouse Board caps itself; the Deep dive lists every read).
+  player's dismissals on the player feed, the coach feed and team sweep,
+  the Hub pick, the round-review takeaway, the roster sweep and the coach
+  chat tool: overlapping reads fold into one (`FOLD_PAIRS`: driver with
+  penalties, penalties with big numbers, three-putts with 25+ ft putts, and
+  one metric across categories). The one that stays is the group's
+  highest-ranked finding, else strength, else note; it names the others in
+  `also` and in one added sentence. A read someone acted on (acknowledged,
+  addressed, rated by the player, or the source of a live focus area,
+  `insight-delivery-pinned.ts`) never folds. Then each player holds 3 open
+  reads and 1 strength (a note or a measured zero is never an open read;
+  same classification as the Clubhouse Board). `includeMore: true` on
+  `getInsightsForPlayer` or `getInsightsForCoachWithMeta` skips the cap: the
+  Clubhouse Board (caps itself), the Deep dive, the game Fingerprint and the
+  Scouting report pass it, and the chat tool never caps. With the flag on,
+  exposure rows also record `rank_factors` (the `RankScoreFactors` without
+  the score). Paths that read insights without `deliverReads` are
+  unchanged: `insights-coachhelm.ts` `loadEvidenceBackedInsights`,
+  `signal-groups.ts`, `insights-feed.ts`, `intelligence-dashboard.ts`.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
 - The enable gate (`src/lib/coachhelm/v2/gate.ts`) fails closed: a failed read
   of the coach or player row (LIVE-17), the coach's settings, staffed teams, a

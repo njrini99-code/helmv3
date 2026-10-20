@@ -6,12 +6,13 @@
  * Design: /mnt/project-files/coachhelm/supercharge 00-overview decision 5,
  * 03 section 2.3 (S5, S6, S7, S8) and 2.4, 04 section 2 (Caps) and example 7.
  *
- * Both functions keep the ranked order they are given. The fold never moves
- * or removes a player's first row; the cap removes it only when it states no
- * finding (a note) or is a measured zero, neither of which is a read. Every
- * surface that picks a head (the Hub card, the round-review takeaway, the
- * feeds, the coach chat tool) runs the same `deliverReads`, so they keep
- * agreeing on it with the flag on.
+ * Both functions keep the ranked order they are given. The fold removes a
+ * player's first row only when it is a strength or a note that a lower-ranked
+ * finding of the same story stands for; the cap removes it only when it
+ * states no finding (a note) or is a measured zero, neither of which is a
+ * read. Every surface that picks a head (the Hub card, the round-review
+ * takeaway, the feeds, the coach chat tool) runs the same `deliverReads`, so
+ * they keep agreeing on it with the flag on.
  */
 import { deriveTone, isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
 import type { InsightComparisonSource, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
@@ -37,10 +38,16 @@ export interface FoldedRead {
 
 /** What delivery does to a ranked list. Both off is the list unchanged. */
 export interface ReadsDeliveryPlan {
-  /** Fold overlapping reads into the higher-ranked one (03 S6, 04 ex. 7). */
+  /** Fold overlapping reads into one (03 S6, 04 ex. 7). */
   fold: boolean;
   /** Hold each player to 3 open reads + 1 strength (03 S7, S8). */
   cap: boolean;
+  /**
+   * Ids of reads a live focus area came from (`golf_player_focus_areas`
+   * `from_insight_id`, status proposed, active, in progress or paused). They
+   * are never folded away: someone already acted on them.
+   */
+  pinned?: ReadonlySet<string>;
 }
 
 export type ReadKind = 'finding' | 'strength' | 'note';
@@ -90,7 +97,8 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 export function isMeasuredZeroRead(ev: Pick<InsightEvidence, 'strokes_impact' | 'strokes_impact_method'> | null | undefined): boolean {
   if (ev?.strokes_impact_method !== 'sg_baseline') return false;
   const v = num(ev.strokes_impact);
-  return v != null && Number(Math.abs(v).toFixed(1)) === 0;
+  // Prints as 0.0 at one decimal: |v| rounds to zero tenths.
+  return v != null && Math.round(Math.abs(v) * 10) === 0;
 }
 
 /** A card that states no finding (it is never one of the open reads). */
@@ -149,10 +157,31 @@ function linked(a: string, b: string): boolean {
   return FOLD_PAIRS.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 }
 
-function canFold(ins: RankableEvidenceInsight): boolean {
+/**
+ * Whether a person already acted on the read: the coach acknowledged or
+ * addressed it, the player rated it (`player_feedback`, attached on the
+ * player's own feed), or a live focus area came from it (`pinned`). Folding
+ * such a read away would hide the thing they acted on, so it never folds:
+ * it stays its own card, and a related read stays its own card next to it.
+ */
+export function carriesUserState(
+  ins: RankableEvidenceInsight & { player_feedback?: unknown },
+  pinned?: ReadonlySet<string>,
+): boolean {
+  if (pinned?.has(ins.id)) return true;
+  if (ins.acknowledged_at || ins.status === 'acknowledged') return true;
+  if (ins.lifecycle_state === 'addressed') return true;
+  return ins.player_feedback != null;
+}
+
+function canFold(ins: RankableEvidenceInsight, pinned?: ReadonlySet<string>): boolean {
   if (isMeasuredZeroRead(ins.evidence)) return false;
+  if (carriesUserState(ins, pinned)) return false;
   return !(ins.signature && NO_FINDING_SIGNATURE.test(ins.signature));
 }
+
+/** Which read of a fold group stays: a finding before a strength before a note. */
+const LEAD_ORDER: Record<ReadKind, number> = { finding: 0, strength: 1, note: 2 };
 
 /** Whether the read says the player is doing well (a strength, or driver performing). */
 function saysWell(ins: RankableEvidenceInsight): boolean {
@@ -174,22 +203,29 @@ export function foldSentence(folded: readonly FoldedRead[]): string {
 /**
  * Fold overlapping reads into one (03 S6, 04 example 7). Within one player,
  * reads linked by {@link FOLD_PAIRS} (or sharing a metric across categories)
- * become one read: the highest-ranked one stays, at its own position, and the
- * others leave the list and are named on it (`also`, and one sentence at the
- * end of its text). A folded read that points the other way (one says the
- * player is doing well, the other that they are not) is `opposing`, which is
- * the Contradicted pair of 04 example 7; the net and the hole attribution that
- * example prints need the PR #2073 root-cause slice and are not drawn here.
+ * become one read. The one that stays is the group's highest-ranked finding,
+ * else its highest-ranked strength, else its highest-ranked note, so a fold
+ * never hides a finding behind a card the cap would then hold back (a note is
+ * never an open read; a second strength loses to the player's first). It
+ * stays at its own position; the others leave the list and are named on it
+ * (`also`, and one sentence at the end of its text). A folded read that points
+ * the other way (one says the player is doing well, the other that they are
+ * not) is `opposing`, which is the Contradicted pair of 04 example 7; the net
+ * and the hole attribution that example prints need the PR #2073 root-cause
+ * slice and are not drawn here. A read someone acted on
+ * ({@link carriesUserState}) never folds.
  */
-export function foldOverlappingReads<T extends RankableEvidenceInsight>(ranked: readonly T[]): T[] {
-  // Union-find over the foldable rows, by index in rank order; a group's root
-  // is always its lowest index, so the read that stays is the highest-ranked.
+export function foldOverlappingReads<T extends RankableEvidenceInsight>(
+  ranked: readonly T[],
+  pinned?: ReadonlySet<string>,
+): T[] {
+  // Union-find over the foldable rows, by index in rank order.
   const parent = ranked.map((_, i) => i);
   const find = (i: number): number => {
     while (parent[i] !== i) i = parent[i]!;
     return i;
   };
-  const foldable = ranked.map(canFold);
+  const foldable = ranked.map((ins) => canFold(ins, pinned));
   for (let i = 0; i < ranked.length; i += 1) {
     if (!foldable[i]) continue;
     for (let j = 0; j < i; j += 1) {
@@ -200,11 +236,22 @@ export function foldOverlappingReads<T extends RankableEvidenceInsight>(ranked: 
       if (a !== b) parent[Math.max(a, b)] = Math.min(a, b);
     }
   }
-  // The read each row folds into (its group's highest-ranked member).
+  // Each group's leader: by kind first, then by rank (index) within a kind.
+  const leaderOf = new Map<number, number>();
+  ranked.forEach((ins, i) => {
+    if (!foldable[i]) return;
+    const root = find(i);
+    const current = leaderOf.get(root);
+    if (current === undefined || LEAD_ORDER[readKind(ins)] < LEAD_ORDER[readKind(ranked[current]!)]) {
+      leaderOf.set(root, i);
+    }
+  });
+  // The read each row folds into (its group's leader).
   const into = new Map<T, T>();
   ranked.forEach((ins, i) => {
-    const root = find(i);
-    if (root !== i) into.set(ins, ranked[root]!);
+    if (!foldable[i]) return;
+    const leader = leaderOf.get(find(i))!;
+    if (leader !== i) into.set(ins, ranked[leader]!);
   });
   if (into.size === 0) return [...ranked];
 
@@ -280,6 +327,6 @@ export function capReadsPerPlayer<T extends RankableEvidenceInsight>(
  * a player's own view) their dismissals: fold, then cap, as the plan says.
  */
 export function deliverReads<T extends RankableEvidenceInsight>(ranked: readonly T[], plan: ReadsDeliveryPlan): T[] {
-  const folded = plan.fold ? foldOverlappingReads(ranked) : [...ranked];
+  const folded = plan.fold ? foldOverlappingReads(ranked, plan.pinned) : [...ranked];
   return plan.cap ? capReadsPerPlayer(folded).shown : folded;
 }

@@ -28,6 +28,21 @@
  * instead of asserted.
  */
 
+import type { RankScoreFactors } from '@/lib/coachhelm/v3/ranking/score';
+
+/**
+ * The factors behind a rank score, as `golf_insight_exposure.rank_factors`
+ * stores them (the score itself is `rank_score`). CoachHelm Slice 0 (flag
+ * `coachhelm_reads_v1_copy`): written only while the flag is on.
+ */
+export type ExposureRankFactors = Omit<RankScoreFactors, 'score'>;
+
+/** The factors without the score, ready for `rank_factors`. */
+export function exposureRankFactors(factors: RankScoreFactors): ExposureRankFactors {
+  const { score: _score, ...rest } = factors;
+  return rest;
+}
+
 export interface ExposureRow {
   insight_id: string;
   player_id: string;
@@ -36,6 +51,8 @@ export interface ExposureRow {
   rank_position: number;
   /** Absent — never 0 — when this surface produced no comparable score. */
   rank_score?: number;
+  /** Absent unless the surface passed factors (flag `coachhelm_reads_v1_copy` on). */
+  rank_factors?: ExposureRankFactors;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,12 +111,15 @@ export interface SurfacedInsight {
  * @param scoreById  rank score per insight id. Omit on surfaces that pick a
  *                   single insight without ranking — a fabricated 0 there
  *                   would read as "ranked last" rather than "not ranked".
+ * @param factorsById the factors behind each score, for `rank_factors`. Omit
+ *                   (the default) and no row carries the field.
  */
 export function buildExposureRows(
   insights: readonly SurfacedInsight[],
   surface: string,
   coachId?: string | null,
   scoreById?: ReadonlyMap<string, number>,
+  factorsById?: ReadonlyMap<string, ExposureRankFactors>,
 ): ExposureRow[] {
   if (!Array.isArray(insights) || insights.length === 0) return [];
 
@@ -120,6 +140,8 @@ export function buildExposureRows(
       // score (an insight with no measurable stroke impact) and must not be
       // erased into "unknown".
       if (score !== undefined && Number.isFinite(score)) row.rank_score = score;
+      const factors = factorsById?.get(ins.id);
+      if (factors) row.rank_factors = factors;
       return row;
     });
 }
