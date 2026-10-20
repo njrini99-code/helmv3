@@ -1,5 +1,60 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-20 — Player board: three reads and one strength; no zero strokes
+
+```text
+Design package: none (supercharge 03 section 2, 09 and 10; design call)
+PR/commit:      branch local/coachhelm-caps-strokes
+Contract IDs:   130101, 130102 (meaning reworded)
+Actions:        none
+Data impact:    none (read-only; no engine, generator or schema change)
+Held items:     before and after screenshots (owner's Mac)
+```
+
+### Changed
+
+- The player's Board shows at most three reads that need work (the focus and
+  two in Also worth knowing) and one in What's working, in the feed's own
+  order (`NEEDS_MAX`, `WORKING_MAX` in `coachhelm-shape.ts`; it was five and
+  five, cut with no word of the rest).
+- The reads it leaves out are counted in one ghost button under the lists,
+  "8 more reads in the Deep dive", which opens the Deep dive the way the view
+  switch does. It is not drawn when the Board shows every read. The Deep dive
+  still lists every read.
+- A measured zero (a strokes-gained baseline whose `strokes_impact` prints as
+  0.0: 36 of 95 live `sg_baseline` rows, all approach proximity) is left out
+  of the Board's open reads and counted in that line. Any other zero (a peer
+  delta or rough estimate that was never estimated) keeps its read.
+- The v2 miner's own "Projected impact: ~0.00 strokes per round." sentence
+  in a read's text (the lede or Why we think this) is not drawn when its
+  figure is zero or the row has no estimate (`withoutZeroImpact` in
+  `coachhelm-strokes.ts`, at render; the stored row is untouched). A real
+  figure on a row that carries one ("~0.80 strokes per round played here")
+  stays. Production had no live zero sentence on 2026-10-20 (11 live rows
+  carry the sentence, 0.80 to 3.20).
+- `strokesAtStake` gives a strokes-a-round figure only for a non-zero
+  `sg_baseline` or `peer_delta` value, never "0.0 strokes", for any line
+  that states `strokes_impact`; none on this page did before.
+- CH-13303 names What's working only when that list is drawn.
+- An out-of-date read still sorts after the current ones, so the cap cuts it
+  first; it is counted in the Deep dive line like any other.
+
+### Why
+
+- Production has a median of nine reads a player and up to nineteen; three
+  and one is what a player can hold. 364 of 710 live v3 reads carry a zero
+  `strokes_impact`, and most are legitimate reads with no estimate.
+
+### Verification
+
+- `coachhelm-board-caps.test.ts`: each strokes case (sg_baseline non-zero and
+  zero, peer_delta non-zero and zero, rough estimate, missing), the Projected
+  impact sentence (zero, real, no estimate, in the lede and in Why), and the
+  caps (0, 2, 3 and 9 findings with 0, 1 and 3 strengths; the counts add
+  up).
+- `coachhelm.test.tsx`: the Board with nine and three, the button and its
+  route, and a measured zero alone.
+
 ## 2026-10-19 — CoachHelm on an iPad: the views head, the Ask cards and the evidence side sheet
 
 ```text

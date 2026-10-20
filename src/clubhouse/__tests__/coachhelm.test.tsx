@@ -393,14 +393,15 @@ describe('Which insight leads, and who is most pressing', () => {
     expect(partitionInsights(only)).toMatchObject({ focus: null, also: [], working: only });
   });
 
-  it('the lists and the pulse are capped: five to look at, five working, six pulse rows', () => {
+  it('the lists and the pulse are capped: three that need work (the focus among them), one working, six pulse rows', () => {
     const finding = list[0]!;
     const strength = list[3]!;
     const many = [...Array.from({ length: 9 }, (_, n) => ({ ...finding, id: `f${n}` })), ...Array.from({ length: 8 }, (_, n) => ({ ...strength, id: `s${n}` }))];
-    const { focus, also, working } = partitionInsights(many);
+    const { focus, also, working, more } = partitionInsights(many);
     expect(focus?.id).toBe('f0');
-    expect(also.map((i) => i.id)).toEqual(['f1', 'f2', 'f3', 'f4', 'f5']);
-    expect(working.map((i) => i.id)).toEqual(['s0', 's1', 's2', 's3', 's4']);
+    expect(also.map((i) => i.id)).toEqual(['f1', 'f2']);
+    expect(working.map((i) => i.id)).toEqual(['s0']);
+    expect(more).toBe(13);
     const items = Array.from({ length: 9 }, (_, n) => ({ id: `rsvp-${n}`, headline: 'A headline', evidence: 'Some evidence', tone: 'neutral' as const }));
     expect(pulseRows(items).map((r) => r.id)).toEqual(['rsvp-0', 'rsvp-1', 'rsvp-2', 'rsvp-3', 'rsvp-4', 'rsvp-5']);
   });
@@ -596,6 +597,36 @@ describe('CoachHelm for the player, on screen', () => {
     expect(document.querySelector('.ch-hl-focus')).toBeNull();
     // Nothing else to look at, so that list isn't drawn empty.
     expect(screen.queryByRole('region', { name: 'Also worth knowing' })).toBeNull();
+  });
+
+  it('CH-13303 the only read is a measured zero: nothing needs work, no list is promised, and the read is a tap away in the Deep dive', async () => {
+    const user = userEvent.setup();
+    const zero = { ...PREVIEW_HELM_PLAYER.insights.list[1]!, measuredZero: true };
+    showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list: [zero], error: false } });
+    await expectCode('CH-13303', /^Nothing needs work right now/);
+    expect(code('CH-13303')!.textContent).not.toMatch(/What is working/);
+    router.push.mockClear();
+    await user.click(screen.getByRole('button', { name: '1 more read in the Deep dive' }));
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=deep-dive');
+  });
+
+  it('nine that need work and three working: three and one on the board, and the other eight counted, a tap from the Deep dive', async () => {
+    const user = userEvent.setup();
+    const [finding, , , strength] = PREVIEW_HELM_PLAYER.insights.list;
+    const list = [...Array.from({ length: 9 }, (_, n) => ({ ...finding!, id: `f${n}` })), ...Array.from({ length: 3 }, (_, n) => ({ ...strength!, id: `s${n}` }))];
+    showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list, error: false } });
+    expect(document.querySelectorAll('.ch-hl-focus')).toHaveLength(1);
+    expect(inList('Also worth knowing').getAllByRole('button')).toHaveLength(2);
+    expect(inList('What’s working').getAllByRole('button')).toHaveLength(1);
+    router.push.mockClear();
+    await user.click(screen.getByRole('button', { name: '8 more reads in the Deep dive' }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=deep-dive');
+  });
+
+  it('a board that shows every read says nothing about more', () => {
+    showPlayer(PREVIEW_HELM_PLAYER);
+    expect(screen.queryByRole('button', { name: /more reads? in the Deep dive/ })).toBeNull();
   });
 
   it('CH-13701 on the phone, choosing an insight brings the focus into view; on a wider screen the page stays where it is', async () => {
