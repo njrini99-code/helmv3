@@ -32,7 +32,8 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
 import { isFlagEnabled } from '@/lib/flags';
-import { dedupeExposureRows, exposureDedupeKey, startOfUtcDayIso } from './exposure-rows';
+import { dedupeExposureRows, exposureDedupeKey, startOfUtcDayIso, type RankFactors } from './exposure-rows';
+import type { Json } from '@/lib/types/database';
 import { actionDedupeKey, isActionAlreadyRecorded } from './action-rows';
 
 /**
@@ -197,6 +198,8 @@ export async function recordInsightExposure(
     surface?: string;
     rank_position?: number;
     rank_score?: number;
+    /** Slice 1 (`coachhelm_support_v1`); absent → the column stays NULL as before. */
+    rank_factors?: RankFactors;
   }>,
 ): Promise<void> {
   if (!Array.isArray(rows) || rows.length === 0) return;
@@ -210,6 +213,9 @@ export async function recordInsightExposure(
       surface: r.surface ?? null,
       rank_position: r.rank_position ?? null,
       rank_score: r.rank_score ?? null,
+      // Only present when the flag is on: an absent key keeps the insert
+      // payload byte-identical to the pre-Slice-1 one.
+      ...(r.rank_factors ? { rank_factors: r.rank_factors as unknown as Json } : {}),
     }));
 
     const insightIds = Array.from(new Set(payload.map((r) => r.insight_id)));

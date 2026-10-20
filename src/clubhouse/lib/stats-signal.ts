@@ -32,6 +32,8 @@ export const FLOORS = {
   proximity: { show: 8, early: 25, unit: 'shot' },
   scramble: { show: 10, early: 30, unit: 'chance' },
   miss: { show: 20, early: 50, unit: 'shot' },
+  /** A share of holes (the scoring mix): any scored hole shows; under about 30 holes, under two rounds, it is an early read. */
+  holes: { show: 1, early: 30, unit: 'hole' },
 } as const;
 
 export type FloorKind = keyof typeof FLOORS;
@@ -47,9 +49,9 @@ export function sampleState(kind: FloorKind, n: number | null | undefined): Samp
 
 const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
 
-/** The tag on a muted value: "Early read · 6 rounds". */
-export function earlyTag(n: number): string {
-  return `Early read · ${plural(Math.round(n), 'round')}`;
+/** The tag on a muted value: "Early read · 6 rounds", or in the stat's own unit ("Early read · 24 holes"). */
+export function earlyTag(n: number, unit: string = 'round'): string {
+  return `Early read · ${plural(Math.round(n), unit)}`;
 }
 
 /** What a stat under its show floor needs: "Needs 5 rounds" (the unit follows the stat's own: rounds, putts, shots, chances). */

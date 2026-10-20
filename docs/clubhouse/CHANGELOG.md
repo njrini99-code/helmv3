@@ -1,5 +1,13 @@
 # Clubhouse changelog
 
+## 2026-10-20 — Stats visuals: a hole floor and an eagle fill token
+
+- `lib/stats-signal.ts`: a `holes` floor (shows from 1, early read under 30)
+  and `earlyTag(n, unit)` for a unit other than rounds ("Early read · 24
+  holes"). First used by the scoring mix (P005).
+- `styles/tokens.css`: `--ch-score-eagle-fill` in the light and dark blocks,
+  the deeper red of eagle or better as a fill.
+
 ## 2026-10-20 — No serif face is loaded
 
 `lib/fonts.ts` still declared Instrument Serif (normal and italic), so every
