@@ -129,7 +129,7 @@ Coach Intelligence Triage · active · criticality high · owner product
 CoachHelm AI · active · criticality high · owner product
 
 - **Relations:** 5 doc/structurally-evidenced, 12 import-graph-only (weak)
-- **Tables:** `golf_coachhelm_action_runs`, `golf_coachhelm_corrections`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
+- **Tables:** `golf_coachhelm_action_runs`, `golf_coachhelm_player_state`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
 - **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `coachhelm_ai_engine`, `coachhelm_analytics`, `insights_management`, `round_review_ai`

@@ -574,6 +574,12 @@ CREATE POLICY "golf_coachhelm_settings_insert_coach" ON "public"."golf_coachhelm
    FROM "public"."golf_coaches" "gc"
   WHERE (("gc"."id" = "golf_coachhelm_settings"."coach_id") AND ("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
 
+CREATE POLICY "golf_coachhelm_player_state_select" ON "public"."golf_coachhelm_player_state" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_coachhelm_player_state"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) OR (EXISTS ( SELECT 1
+   FROM "public"."golf_team_members" "gtm"
+  WHERE (("gtm"."player_id" = "golf_coachhelm_player_state"."player_id") AND ("gtm"."status" = 'active'::"public"."team_member_status") AND "public"."is_golf_team_coach"("gtm"."team_id")))) OR ( SELECT "public"."is_super_admin"() AS "is_super_admin")));
+
 CREATE POLICY "golf_coachhelm_settings_select_coach" ON "public"."golf_coachhelm_settings" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."golf_coaches" "gc"
   WHERE (("gc"."id" = "golf_coachhelm_settings"."coach_id") AND ("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));

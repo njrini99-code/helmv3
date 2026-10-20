@@ -103,6 +103,9 @@ ALTER TABLE ONLY "public"."golf_coachhelm_llm_budget"
 ALTER TABLE ONLY "public"."golf_coachhelm_llm_calls"
     ADD CONSTRAINT "golf_coachhelm_llm_calls_pkey" PRIMARY KEY ("id");
 
+ALTER TABLE ONLY "public"."golf_coachhelm_player_state"
+    ADD CONSTRAINT "golf_coachhelm_player_state_pkey" PRIMARY KEY ("player_id");
+
 ALTER TABLE ONLY "public"."golf_coachhelm_settings"
     ADD CONSTRAINT "golf_coachhelm_settings_coach_id_key" UNIQUE ("coach_id");
 
@@ -570,6 +573,12 @@ ALTER TABLE ONLY "public"."golf_coachhelm_llm_calls"
 
 ALTER TABLE ONLY "public"."golf_coachhelm_llm_calls"
     ADD CONSTRAINT "golf_coachhelm_llm_calls_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_coachhelm_player_state"
+    ADD CONSTRAINT "golf_coachhelm_player_state_last_checkpoint_round_id_fkey" FOREIGN KEY ("last_checkpoint_round_id") REFERENCES "public"."golf_rounds"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_coachhelm_player_state"
+    ADD CONSTRAINT "golf_coachhelm_player_state_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
 
 ALTER TABLE ONLY "public"."golf_coachhelm_settings"
     ADD CONSTRAINT "golf_coachhelm_settings_coach_id_fkey" FOREIGN KEY ("coach_id") REFERENCES "public"."golf_coaches"("id") ON DELETE CASCADE;
