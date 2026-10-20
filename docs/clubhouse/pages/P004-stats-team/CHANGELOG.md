@@ -1,5 +1,20 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-20 — No visible change: shared stats files touched by the strokes gained work
+
+```text
+Design package: none (stats visuals plan, piece 1; the page's own entry is in P005)
+PR/commit:      uncommitted (claude/stats-visuals-ofvosr)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. The strokes gained bars moved from `charts.tsx` to `SgBars.tsx` and `stats.css` gained the stats-owned `.ch-sv-*` block, both files this page shares with the player profile. The team page still draws its own leg grid and tabs.
+
 ## 2026-10-19 — Team stats on an iPad: the tape in two rows and a leaderboard that fits
 
 ```text

@@ -335,7 +335,8 @@ describe('Stats player · haptics and accessibility', () => {
 
   it('CH-5803 the strokes gained route and hero figures read as text', () => {
     show(player());
-    const route = screen.getAllByRole('img').find((i) => /Strokes gained per round by leg/.test(i.getAttribute('aria-label') ?? ''))!;
+    // A focusable group now (the arrow keys read each leg), no longer a flat image.
+    const route = screen.getAllByRole('group').find((i) => /Strokes gained per round by leg/.test(i.getAttribute('aria-label') ?? ''))!;
     expect(route.getAttribute('aria-label')).toMatch(/Off the tee .+, Approach .+, Around green .+, Putting .+/);
     const figs = document.querySelector('.ch-pf-hero__figs')!;
     for (const child of figs.children) for (const el of child.children) expect(['DT', 'DD']).toContain(el.tagName);

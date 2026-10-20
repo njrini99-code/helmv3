@@ -1,5 +1,10 @@
 # Clubhouse changelog
 
+## 2026-10-20 — Stats visuals: the signal and pin helpers
+
+- `lib/stats-signal.ts` and `lib/use-chart-pin.ts` (shared, no page owns them): sample floors per stat, standard errors from the player's own or the pooled spread, the tone of a change (color only past one standard error), Wilson intervals, a trailing mean and ties in a ranking; and the one hover, tap-to-pin and arrow-key behavior the stats charts share. First used by strokes gained by leg (P005); the later stats pieces build on them. Decisions are in the project's stats-visuals files.
+- `styles/stats.css`: `.ch-sv-*` (readout line, whisker, hollow early mark, "needs" text), stats-owned.
+
 ## 2026-10-19 — A toast in a dialog no longer covers its Save on desktop
 
 - CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's footer: after Publish, the "Published"
