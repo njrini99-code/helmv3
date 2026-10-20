@@ -1,5 +1,44 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-20 — Putting by distance (stats visuals 4)
+
+```text
+Design package: none (stats-display-spec.md section 4.3, decision Q9)
+PR/commit:      uncommitted (local/stats-pr4-putt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (same putt rows; no query, table or migration change)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- Make rate by distance is one component, `PuttBands`, on the desktop Overview
+  (zone 6), the desktop Game detail putting section and the phone's Game detail.
+  It replaces the two `MakeCurve` copies (Overview and `charts.tsx`) and the
+  phone's `MakeRows`.
+- Six bands in the Tour's cut (0–3, 3–5, 5–10, 10–15, 15–25, 25+ ft) on equal
+  spacing, and the chart says the spacing is equal and not to scale. The
+  nine-band breakdown (15–20 ft up to 35+ ft) stays in the putting table under
+  More. Each band is a dot on a 0 to 100% axis with a thin Wilson 95% whisker
+  (named once, "Likely range (95%)", in the key), its rate and "made/tried"
+  under it, and the Tour's thin line behind the dots where the Tour publishes a
+  value (none inside 3 feet).
+- A band of 10 to 29 putts is a hollow early read and is not graded against the
+  Tour; under 10 it draws no dot and says "Needs 10 putts in the band" ("Needs
+  10 putts" in the phone's narrow column). From 30 putts a band grades by its
+  dot, green at or above the Tour and amber below; the whisker never grades.
+- A pointer over a band, a tap, or the arrow keys read it in the line above the
+  chart ("5–10 ft · 20 of 51 made, 39% · likely range 27% to 53% · Tour 62%"); a
+  tap or a key pins it and a screen reader hears it then, never on hover. The
+  chart is a focusable group.
+- The putt-read failure notes are unchanged (CH-5211 in Game detail, "The putt
+  read failed, so the curve stops at 20 feet." on the Overview). Without the
+  putt read, Game detail still falls back to the calculator's five bands to 20
+  feet, drawing each rate as kept and printing its count ("33 putts").
+- The panel and zone notes describe the new chart; the old `.ch-mk` styles are
+  gone.
+
 ## 2026-10-20 — The trend of rounds is a dot per round (visuals 3)
 
 ```text

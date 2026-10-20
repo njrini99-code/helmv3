@@ -1808,28 +1808,6 @@
   color: var(--ch-green-700);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.2);
 }
-.ch-mk {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.ch-mk__v {
-  font: 600 11.5px var(--ch-font-sans);
-}
-.ch-mk__v.is-gain {
-  fill: var(--ch-chart-gain);
-}
-.ch-mk__v.is-loss {
-  fill: var(--ch-chart-loss);
-}
-.ch-mk__b {
-  font: 500 11px var(--ch-font-sans);
-  fill: var(--ch-text-secondary);
-}
-.ch-mk__n {
-  font: 400 10px var(--ch-font-sans);
-  fill: var(--ch-text-tertiary);
-}
 .ch-cup {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -3510,9 +3488,6 @@
 @media (max-width: 820px) {
   .ch-tick,
   .ch-tab-t__n,
-  .ch-mk__v,
-  .ch-mk__b,
-  .ch-mk__n,
   .ch-sf__n {
     font-size: 12px;
   }
@@ -6684,4 +6659,249 @@ html[data-fw-theme='dark'] .ch-st[data-canopy] :is(.ch-zmix .is-birdie, .ch-zmix
       padding: 0 8px;
     }
   }
+}
+
+/* P005: make rate by distance (PuttBands, stats-visuals spec 4.3). The bands on equal spacing, a dot per band on a 0 to 100%
+   axis with a thin Wilson whisker, the Tour's thin line behind the dots, and made/tried under each band. Each band is one
+   column and one hit target (44px or wider): the column tint is the guide to the readout above. The same block draws the
+   desktop Overview and Game detail and, with .is-compact, the phone. Prefix .ch-sv-pb. */
+.ch-sv-pb {
+  --ch-pb-h: 208px;
+  --ch-pb-pad: 10px;
+  --ch-pb-y: 44px;
+  padding: 4px 0 2px;
+}
+.ch-sv-pb.is-compact {
+  --ch-pb-h: 172px;
+  --ch-pb-y: 40px;
+}
+.ch-sv-pb.is-compact > .ch-sv-read {
+  min-height: calc(2 * 1.45em);
+}
+.ch-sv-pb:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-sv-pb__chart {
+  display: grid;
+  grid-template-columns: var(--ch-pb-y) minmax(0, 1fr);
+}
+.ch-sv-pb__y {
+  position: relative;
+  height: calc(var(--ch-pb-h) - 2 * var(--ch-pb-pad));
+  margin-top: var(--ch-pb-pad);
+}
+.ch-sv-pb__y span {
+  position: absolute;
+  top: var(--ch-pb-at);
+  right: 6px;
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb__cols {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+.ch-sv-pb__grid,
+.ch-sv-pb__tour {
+  position: absolute;
+  top: var(--ch-pb-pad);
+  left: 0;
+  width: 100%;
+  height: calc(var(--ch-pb-h) - 2 * var(--ch-pb-pad));
+  pointer-events: none;
+}
+.ch-sv-pb__grid i {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--ch-ledger-rule);
+}
+.ch-sv-pb__tour {
+  overflow: visible;
+}
+.ch-sv-pb__tour polyline {
+  fill: none;
+  stroke: var(--ch-champagne-500);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.ch-sv-pb__col {
+  position: relative;
+  display: grid;
+  grid-template-rows: var(--ch-pb-h) auto;
+  min-width: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-pb__col[data-active] {
+  background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);
+}
+.ch-sv-pb__col[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-pb__mk {
+  position: relative;
+}
+.ch-sv-pb__scale {
+  position: absolute;
+  inset: var(--ch-pb-pad) 0;
+}
+.ch-sv-pb__tick {
+  position: absolute;
+  left: 50%;
+  width: 20px;
+  height: 2px;
+  margin: -1px 0 0 -10px;
+  border-radius: 1px;
+  background: var(--ch-champagne-500);
+  text-decoration: none;
+}
+.ch-sv-pb__whisk {
+  position: absolute;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--ch-text-tertiary);
+}
+.ch-sv-pb__whisk::before,
+.ch-sv-pb__whisk::after {
+  position: absolute;
+  left: -3px;
+  width: 7px;
+  height: 1px;
+  background: inherit;
+  content: '';
+}
+.ch-sv-pb__whisk::before {
+  top: 0;
+}
+.ch-sv-pb__whisk::after {
+  bottom: 0;
+}
+/* A whisker the axis cuts off draws no cap at that end: the readout carries the number. */
+.ch-sv-pb__whisk.is-clip-t::before,
+.ch-sv-pb__whisk.is-clip-b::after {
+  display: none;
+}
+.ch-sv-pb__dot {
+  position: absolute;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+  transition: scale var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-pb__dot.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-sv-pb__dot.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-sv-pb__col[data-active] .ch-sv-pb__dot {
+  scale: 1.25;
+}
+/* An early read: hollow, no gain or loss color, a little quieter. */
+.ch-sv-pb__col.is-early .ch-sv-pb__dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  opacity: 0.85;
+}
+.ch-sv-pb__needs {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  left: 4px;
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  text-align: center;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb__lab {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 1px;
+  padding: 8px 2px 8px;
+  text-align: center;
+}
+.ch-sv-pb__lab span {
+  font: 500 13.5px/1.3 var(--ch-font-sans);
+  white-space: nowrap;
+  color: var(--ch-text-primary);
+}
+.ch-sv-pb__lab b {
+  font: 600 16px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-sv-pb__lab b.ch-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-sv-pb__lab b.ch-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-sv-pb__col.is-early .ch-sv-pb__lab b,
+.ch-sv-pb__col.is-none .ch-sv-pb__lab b {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-pb__lab small {
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb.is-compact .ch-sv-pb__lab span {
+  font-size: 12.5px;
+}
+.ch-sv-pb.is-compact .ch-sv-pb__lab b {
+  font-size: 14px;
+}
+.ch-sv-pb__cap,
+.ch-sv-pb__key {
+  margin: 6px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.ch-sv-pb__key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-sv-pb__kdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+}
+.ch-sv-pb__kline {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ch-champagne-500);
+  text-decoration: none;
+}
+.ch-sv-pb__kwhisk {
+  position: relative;
+  width: 7px;
+  height: 12px;
+  background: linear-gradient(var(--ch-text-tertiary), var(--ch-text-tertiary)) center / 1px 100% no-repeat;
+  box-shadow:
+    inset 0 1px 0 var(--ch-text-tertiary),
+    inset 0 -1px 0 var(--ch-text-tertiary);
 }
