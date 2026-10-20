@@ -4,9 +4,12 @@ import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { holeCoverage } from '../../data/round-scope';
+import { rebuiltHref } from '../../shell/nav';
 import { Zone, ZoneBig as Big, ZoneBlock as Vis, ZoneNote as Missing, Zones } from '../../ui/Zone';
 import { EmptyState } from '../../ui/States';
 import { LegBars } from './LegBars';
+import { RoundTrend } from './RoundTrend';
+import { trendRounds, withValue } from './round-trend';
 import { sgLegBars } from './leg-rows';
 
 /**
@@ -51,6 +54,9 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
   // 1 · strokes gained
   const legs = sgLegBars(data, coach);
   const sg = w.sgPerRound;
+  const openHref = (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}`, coach ? 'coach' : 'player');
+  const scoreTrend = trendRounds(data.rounds, 'score');
+  const sgTrend = trendRounds(data.rounds, 'sg');
   const sgTeam = coach ? (cmp('SG total')?.team ?? null) : null;
   // The track's ends come from the data (the player's and the team's figure, whole strokes either side of zero, never under one), so
   // no value clamps against a fixed end.
@@ -186,6 +192,11 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
             </div>
           </Vis>
         )}
+        {withValue(sgTrend).length >= 3 && (
+          <Vis title="Round by round" note="Strokes gained in each round, per 18 holes. Zero is the Tour baseline; the line is the five-round average.">
+            <RoundTrend rounds={sgTrend} kind="sg" size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
+          </Vis>
+        )}
       </Zone>
 
       <Zone
@@ -215,6 +226,11 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
           </>
         }
       >
+        {scoreTrend.length > 1 && (
+          <Vis title="Round by round" note="Each round’s score per 18 holes; the line is the five-round average.">
+            <RoundTrend rounds={scoreTrend} kind="score" size="desktop" openHref={openHref} label={`Scores over the last ${scoreTrend.length} rounds.`} />
+          </Vis>
+        )}
         {s && holesScored > 0 ? (
           <>
             <Vis title="Every hole, by result" note={`${holesScored} holes over ${s.roundsPlayed} ${s.roundsPlayed === 1 ? 'round' : 'rounds'}.`}>

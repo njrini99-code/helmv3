@@ -4215,6 +4215,25 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/stats/RoundTrend.tsx",
+      "group": "screens",
+      "exports": [
+        "RoundTrend"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/stats/RoundsExtra.tsx",
       "group": "screens",
       "exports": [
@@ -12679,8 +12698,19 @@
         "ch-stm-trend",
         "ch-sv-needs",
         "ch-sv-note",
+        "ch-sv-open",
         "ch-sv-read",
         "ch-sv-row",
+        "ch-sv-rt",
+        "ch-sv-rt__dot",
+        "ch-sv-rt__grid",
+        "ch-sv-rt__guide",
+        "ch-sv-rt__head",
+        "ch-sv-rt__hold",
+        "ch-sv-rt__mean",
+        "ch-sv-rt__ref",
+        "ch-sv-rt__svg",
+        "ch-sv-rt__t",
         "ch-sv-whisk",
         "ch-tab-t",
         "ch-tab-t__bar",
