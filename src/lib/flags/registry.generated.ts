@@ -234,6 +234,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies 20260923100000_round_recap_single_flight_lock to each environment, confirmed via information_schema.columns (ai_narrative) and pg_proc (claim_round_recap_lock / release_round_recap_lock). Once on everywhere and the fallback rate (deterministic vs. LLM-authored) is acceptable, consider promoting to a permanent `release` flag — owner's call, not automatic.",
   },
   {
+    feature_id: "coachhelm_team_pool_v1",
+    owner: "golf/coachhelm",
+    purpose: "Gates the team pool benchmark on v3 CoachHelm reads (v3/team-pool/, run from BaseGenerator.run()). When on, a putt make rate by band, approach green-hit rate by band, bunker up-and-down, par 3/4/5 scoring or penalties-per-round read gets evidence.comparison with the pooled attempts of the player's teammates in the same window as the primary line (\"Team pool 72% (240 putts)\") and the Tour as a further line, and the Clubhouse Deep dive Read and the Fairway evidence panel print that team line. A pool is drawn only when at least 5 rostered players have a countable round in the window and at least 4 teammates (never the player) have 3 or more countable rounds and attempts in the family, with at least 100 pooled attempts; it never names or ranks a teammate. Strokes, standing and the flat comparison fields stay on the Tour. When off, the engine writes exactly what it wrote before.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: "Off: the next analysis run rewrites each row's evidence without evidence.comparison (the update path replaces evidence), and the surfaces fall back to their Tour wording.",
+    cleanup_plan: "When the owner turns production on and coaches have read team lines for a season without a privacy or accuracy complaint, delete the flag check in team-pool/attach.ts and this entry in the same change; if the team line is rejected, turn it off and remove team-pool/ instead.",
+  },
+  {
     feature_id: "coachhelm_trust_status_exclude_unmeasured_outcomes",
     owner: "golf/coachhelm",
     purpose: "Gates whether getInsightEffectivenessSignals excludes a null-improvement golf_insight_outcome row (an attempted-but-thin-sample attribution) from the `measured`/`worked` trust-status counts instead of counting it as a real measurement. OWNER DECISION (2026-09-23): the owner reviewed the prod diff before enabling — 26 of 68 insights move trust tier with the flag on, all 26 from `needs_validation` to `new_hypothesis` and all 26 driven by a single thin-sample (null-improvement) outcome row; zero insights move into or out of `supported`/`promising`/`underperforming`. Approved to ship enabled.",

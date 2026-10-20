@@ -265,6 +265,52 @@ export interface InsightEvidence {
   /** The one missing field that stops the cause being traced (mirrors
    *  `cause.data_gap`; drives the one-tap capture later). */
   data_gap?: InsightDataGap;
+
+  // Benchmark ladder (CoachHelm supercharge Slice 7a, `04` §1.1), behind the
+  // `coachhelm_team_pool_v1` flag. `primary` is the line the words use (the
+  // team pool when it meets its floor); `lines` keeps the Tour as a further
+  // line. Additive: the flat `comparison_*` fields, the standing block and
+  // the strokes arithmetic stay on the Tour. Absent on every row written with
+  // the flag off.
+  comparison?: InsightComparison;
+}
+
+/** Where one comparison line comes from (`04` §1.1). Only `team_pool` and
+ *  `tour` are written today; the rest are reserved for later slices. */
+export type ComparisonLineSource =
+  | 'team_pool'
+  | 'program_pool'
+  | 'level_anchor'
+  | 'tour'
+  | 'self_best'
+  | 'self_prior'
+  | 'self_other';
+
+export interface ComparisonLine {
+  source: ComparisonLineSource;
+  /** "Team pool", "PGA Tour make % avg". */
+  label: string;
+  /** In the read's own scale (`your_value`'s): a percent as 0-100. */
+  value: number;
+  /** What the line counts (pooled putts, holes, rounds); null for an anchor. */
+  n: number | null;
+  /** The read's value unit (`evidence.unit`). */
+  unit: InsightUnit;
+  /** What `n` counts. */
+  n_unit?: InsightSampleUnit;
+  /** The word for `n` when the unit is not enough ("bunker holes"). */
+  n_noun?: string;
+  /** Teammates pooled (never who): a team_pool line only. */
+  players?: number;
+  /** The days the pool covered (YYYY-MM-DD); a team_pool line only. */
+  window_start?: string | null;
+  window_end?: string;
+  citation?: string;
+}
+
+export interface InsightComparison {
+  primary: ComparisonLine;
+  lines: ComparisonLine[];
 }
 
 export interface InsightCoachCopy {
