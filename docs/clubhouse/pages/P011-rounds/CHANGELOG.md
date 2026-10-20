@@ -1,5 +1,42 @@
 # P011 — Rounds: changelog
 
+## 2026-10-20 — Round-entry preview: banners in the shot screen
+
+```text
+Design package: none (dev preview only; nothing a player sees changes)
+PR/commit:      see git log (claude/clubhouse-a11y-rounds, b8920a4)
+Contract IDs:   111809 (the axe scan)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `/clubhouse-preview/entry` draws its Reload and error banners through
+  RoundTracking's `statusSlot`, inside the shot screen above the hole strip,
+  where RoundRuntime draws them on a real round. Its row of preview switches
+  follows the shot screen instead of leading it. `PreviewTracking` takes a
+  `statusSlot` and passes it on.
+
+### Why
+
+- The banners and switches above the shot screen pushed its full-height phone
+  layout 265px down at 390x844, so the entry card started below the fold and
+  the sticky action bar, which can rise only to the top of its panel, sat over
+  the card's first row of Shot result choices. axe's target-size failed it
+  (Fairway, "partially obscured, 108.7px by 13px") on `?state=reload` and
+  `?state=error`, light and dark. It surfaced after #2202 moved the bar's hint
+  into its button: the shorter bar no longer covered the row whole, which axe
+  does not report.
+
+### Verification
+
+- `clubhouse:a11y -- rounds`, Chromium, reduced motion, 1280 and 390: before,
+  exit 1 with those two pages failing in light and in dark; after, exit 0,
+  36 of 36 clean in each scheme. Measurements, screenshots and the new jsdom
+  test (`preview-entry-layout.test.tsx`) are in VERIFY.md (2026-10-20).
+
 ## 2026-10-19 — Discarding another player's round says no
 
 ```text
