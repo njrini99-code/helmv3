@@ -639,22 +639,28 @@ describe('Recruiting · an Add cannot add a prospect twice', () => {
     expect(ids[2]).toBe(ids[0]);
   });
 
-  it('CH-14915 a changed form is a different prospect and gets its own id; the next Add after a saved one does too', async () => {
+  it('CH-14915 a field corrected after a failed Add keeps the id (the same prospect); another name gets its own; the next Add after a saved one does too', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
-    w.create.mockImplementationOnce(() => fail('Failed to add recruit'));
+    w.create.mockImplementationOnce(() => fail('Failed to add recruit')).mockImplementationOnce(() => fail('Failed to add recruit'));
     wrap(w);
     await fillAndAdd(user, 'Ellie');
     await expectCode('CH-14001');
+    // The reply may have been lost after the server stored Ellie: a corrected hometown is still Ellie, under the same id.
     await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
     await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
     await waitFor(() => expect(w.create).toHaveBeenCalledTimes(2));
+    // Another name is another prospect.
+    await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'ne');
+    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await waitFor(() => expect(w.create).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(dlg()).toBeNull());
     // A second Add with exactly the same contents is another prospect, and gets another id.
-    await fillAndAdd(user, 'Ellie', 'Wilmington');
-    await waitFor(() => expect(w.create).toHaveBeenCalledTimes(3));
-    const [a, b, c] = sent(w);
-    expect(new Set([a, b, c]).size).toBe(3);
+    await fillAndAdd(user, 'Elliene', 'Wilmington');
+    await waitFor(() => expect(w.create).toHaveBeenCalledTimes(4));
+    const [a, b, c, d] = sent(w);
+    expect(b).toBe(a);
+    expect(new Set([a, c, d]).size).toBe(3);
   });
 
   it('CH-14915 the same Add repeated after the server stored it (its answer was the prospect, found again) shows one prospect, not two', async () => {

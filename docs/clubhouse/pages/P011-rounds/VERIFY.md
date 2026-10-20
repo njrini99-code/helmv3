@@ -1,6 +1,7 @@
 # P011 — Rounds: verification
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current release evidence — 2026-10-06
 
 Round library/setup/tracking/review, scorecard and recovery/discard sheets.

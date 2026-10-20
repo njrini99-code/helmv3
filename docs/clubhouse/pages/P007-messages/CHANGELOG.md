@@ -420,6 +420,7 @@ checked at phone width.
 All, Unread and Groups take the lit green chip every switcher draws
 (`messages.css`); the page's own rule is removed. Shared detail:
 docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — Failed server reads are logged; Delete is not lost to them
 
 From the code review of PR #2195. The route swallowed a failure of the
@@ -711,6 +712,7 @@ Clubhouse Animations preference; disabled animation means an immediate jump.
 See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Whole-app release audit
 
 Reconciled page purpose, design acceptance, contract status, wiring and

@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
-| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
+| `GENERATED_TRUTH` | 43 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 333 | 13 | 71 | 92 |
+| `UNKNOWN` | 339 | 13 | 73 | 92 |
 
 ## Files
 
@@ -333,6 +333,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | - |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |
@@ -759,6 +761,8 @@ them would bury everything above.
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
 | `docs/clubhouse/CATALOG_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
+| `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
+| `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CLICKABLES.md` | current | - | - | - | - |
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
@@ -779,6 +783,8 @@ them would bury everything above.
 | `docs/clubhouse/catalog/hub.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/messages.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/qualifiers.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/recruiting.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/recruiting.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/recruiting.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/roster.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/rounds.md` | current | - | - | - | - |
@@ -880,6 +886,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |

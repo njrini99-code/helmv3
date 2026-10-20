@@ -21,6 +21,18 @@ scope, which the server forks per request; a Sentry failure never changes the
 decision (`__tests__/gate-sentry-tag.test.ts`). The saved search, the alert
 steps and the baseline are in STATUS.md "Monitoring".
 
+## 2026-10-20 — Stats visuals: the signal and pin helpers
+
+- `lib/stats-signal.ts` and `lib/use-chart-pin.ts` (shared, no page owns them):
+  sample floors per stat, standard errors from the player's own or the pooled
+  spread, the tone of a change (color only past one standard error), Wilson
+  intervals, a trailing mean and ties in a ranking; and the one hover,
+  tap-to-pin and arrow-key behavior the stats charts share. First used by
+  strokes gained by leg (P005); the later stats pieces build on them. Decisions
+  are in the project's stats-visuals files.
+- `styles/stats.css`: `.ch-sv-*` (readout line, whisker, hollow early mark,
+  "needs" text), stats-owned.
+
 ## 2026-10-19 — A toast in a dialog no longer covers its Save on desktop
 
 - CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's footer: after Publish, the "Published"
@@ -356,6 +368,7 @@ looks vibe coded"; "get rid of the shimmer").
   hand-on to the box around it, the contained overscroll and the dialog edge.
   Not checked with a real wheel in Safari, or on an iPhone (the easing is
   desktop only).
+
 ## 2026-10-16 — The section switcher always shows in the phone's bar
 
 Owner, testing the preview: on Stats the switcher at the top seemed to be gone.

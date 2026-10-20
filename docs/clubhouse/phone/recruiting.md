@@ -1,6 +1,7 @@
 # Phone: Recruiting (coach)
 
 <!-- clubhouse:release-audit:start -->
+
 ## Phone acceptance audit — 2026-10-06
 
 Recruiting list/detail, stage picker, forms and document upload. Check

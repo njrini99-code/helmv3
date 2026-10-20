@@ -1,6 +1,7 @@
 # P011 — Rounds: design handoff
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current implementation audit — 2026-10-06
 
 Check narrow shot controls, nested sheets, keyboard entry, offline

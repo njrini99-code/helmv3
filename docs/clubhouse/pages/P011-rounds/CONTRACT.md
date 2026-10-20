@@ -1,6 +1,7 @@
 # P011 — Rounds: page contract
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current contract audit — 2026-10-06
 
 The manifest reports complete contract coverage and 7 mapped actions. Existing

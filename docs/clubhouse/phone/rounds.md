@@ -1,6 +1,7 @@
 # Design: Rounds (player, desktop and phone)
 
 <!-- clubhouse:release-audit:start -->
+
 ## Phone acceptance audit — 2026-10-06
 
 Round library/setup/tracking/review, scorecard and recovery/discard sheets.

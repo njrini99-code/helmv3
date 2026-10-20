@@ -153,10 +153,12 @@ and one migration (film), written and not applied.
 - Delete asks first and says that notes and documents go with the prospect; it
   does not ask for the name. Removing a document asks too.
 - A new prospect starts at Watched (the boards' Add dialog). An Add carries one
-  request id, kept across Retry, and `createRecruit` inserts under it: a repeat
-  after a lost reply finds the prospect it added (read back as this coach's, on
-  this team, with this name) instead of adding a second. The current page sends
-  no id and is unchanged.
+  request id per prospect being added (the name, spacing and capitals aside),
+  kept across Retry and across a corrected field, and `createRecruit` inserts
+  under it: a repeat after a lost reply finds the prospect it added (read back
+  as this coach's, on this team, with this name) instead of adding a second,
+  and writes the corrected fields to it while nobody has edited it since it was
+  added. The current page sends no id and is unchanged.
 - The upload dialog asks for a title and a category and refuses, before sending,
   a file over its limit (25 MB; film, meaning MP4, MOV or M4V, 100 MB) or of a
   type the bucket does not take. On desktop a file can be dropped on a
