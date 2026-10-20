@@ -439,11 +439,12 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     const trend = () => screen.queryByRole('heading', { level: 2, name: 'Scoring trend' });
     phone(player({ rounds: [first!, second!] }));
     expect(trend()).toBeTruthy();
-    expect(screen.getByRole('img', { name: /Scores over the last 2 rounds/ })).toBeTruthy();
+    // The trend is a focusable group now (the arrow keys read each round), no longer a flat image.
+    expect(screen.getByRole('group', { name: /Scores over the last 2 rounds/ })).toBeTruthy();
     cleanup();
     phone(player({ rounds: [first!] }));
     expect(trend()).toBeTruthy();
-    expect(screen.queryByRole('img', { name: /Scores over/ })).toBeNull();
+    expect(screen.queryByRole('group', { name: /Scores over/ })).toBeNull();
     expect(screen.getByText(/One round so far/).textContent).toBe(`One round so far: ${first!.score} on ${first!.date}. The trend draws from the second.`);
     cleanup();
     phone(player({ rounds: [] }));

@@ -198,6 +198,8 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
       // n is the rate's own denominator (bunker holes), so the base-class
       // floor and the printed sample describe the same thing.
       sampleN: saves.n,
+      // Slice 0b: the rounds behind these bunker holes stamp the window.
+      windowRoundIds: [...new Set(shots.map((s) => s.round_id))],
       playerValue,
       lie: this.lie,
       attempts,

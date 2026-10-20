@@ -3,6 +3,7 @@
 //
 // Supports:
 //   - from(table).select(cols).eq/neq/in/gte/lte/is(...).order(...).limit(n).range(a,b)
+//   - .or('col.eq.x,col.like.v3:%') — flat eq / neq / like / is.null disjunctions
 //   - .single() / .maybeSingle() / awaiting the builder for a list result
 //   - from(table).insert(payload) / .update / .delete / .upsert(payload, {onConflict})
 //     all return a thenable that resolves to { data, error, count } and supports
@@ -141,6 +142,37 @@ class QueryBuilder<T = Row> implements PromiseLike<{ data: T[]; error: unknown }
   }
   not(col: string, _op: string, value: unknown): this {
     this.state.filters.push((row) => row[col] !== value);
+    return this;
+  }
+  // `.or('a.eq.x,b.like.v3:%')` — flat PostgREST disjunctions of eq / neq /
+  // like (with `%` wildcards) / is.null, the shape `applyInsightVisibility`
+  // (V3_ENGINE_FILTER) chains. Anything else throws, so a test never passes
+  // on a filter the fake silently ignored.
+  or(filter: string): this {
+    const { table } = this.state;
+    const clauses = filter.split(',').map((raw) => {
+      const m = /^([^.]+)\.(eq|neq|like|is)\.(.*)$/.exec(raw.trim());
+      if (!m) throw new Error(`fake-supabase: unsupported .or() clause "${raw}"`);
+      const [, col, op, value] = m as unknown as [string, string, string, string];
+      if (op === 'is') {
+        if (value !== 'null') throw new Error(`fake-supabase: unsupported .or() clause "${raw}"`);
+        return (row: Row) => cell(table, row, col) == null;
+      }
+      if (op === 'like') {
+        const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*');
+        const re = new RegExp(`^${escaped}$`);
+        return (row: Row) => {
+          const v = cell(table, row, col);
+          return typeof v === 'string' && re.test(v);
+        };
+      }
+      return (row: Row) => {
+        const v = cell(table, row, col);
+        const same = v != null && String(v) === value;
+        return op === 'eq' ? same : !same;
+      };
+    });
+    this.state.filters.push((row) => clauses.some((c) => c(row)));
     return this;
   }
   order(column: string, opts?: { ascending?: boolean }): this {

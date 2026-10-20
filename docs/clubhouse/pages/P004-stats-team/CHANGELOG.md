@@ -1,5 +1,22 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-20 — No visible change (stats visuals 3)
+
+```text
+Design package: none (stats visuals plan, piece 3; the page's own entry is in P005)
+PR/commit:      uncommitted (local/stats-pr3-trend)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `stats.css` gained the stats-owned `.ch-sv-rt` block
+  and `OverviewZones` and `StatsPlayerPhone` draw the new trend; the team page
+  keeps its own interactive `TeamTrendChart` and `ScoreLine` is not used by it.
+
 ## 2026-10-20 — Honest deltas (stats visuals 2)
 
 ```text
