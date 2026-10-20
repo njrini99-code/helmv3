@@ -434,6 +434,14 @@ before, after, baseline or evidence.
 | `P011__round-entry__player__390__error__before__6f8be23.png` | before | 6f8be23 | Round-entry preview, error banner, 390x844 light, same layout as the Reload before; /clubhouse-preview/entry?state=error, headless Chromium |
 | `P011__round-entry__player__390__reload__after__b8920a4.png` | after | b8920a4 | The Reload banner in the shot screen under its top bar, the Shot result card and the action bar on the screen's foot, no choice under the bar; /clubhouse-preview/entry?state=reload, headless Chromium |
 | `P011__round-entry__player__390__error__after__b8920a4.png` | after | b8920a4 | The error banner in the same place, card and bar on the foot; /clubhouse-preview/entry?state=error, headless Chromium |
+| `P011__season-ribbon__player__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | season-ribbon (player), 1440px, default, before: season ribbon, better is up, real ticks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-ribbon__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | season-ribbon (player), 1440px, default, after: season ribbon, better is up, real ticks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-ribbon__player__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | season-ribbon (player), 390px, default, before: season ribbon on the phone, better is up; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-ribbon__player__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | season-ribbon (player), 390px, default, after: season ribbon on the phone, better is up; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-figures__player__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | season-figures (player), 1440px, default, before: season figures, putts on the recorded basis; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-figures__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | season-figures (player), 1440px, default, after: season figures, putts on the recorded basis; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__month-spark__player__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | month-spark (player), 1440px, default, before: month heads with the flipped month sparks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__month-spark__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | month-spark (player), 1440px, default, after: month heads with the flipped month sparks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 

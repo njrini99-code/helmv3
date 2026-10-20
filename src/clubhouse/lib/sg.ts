@@ -37,9 +37,12 @@ export function sgShare(value: number, scale: number): number {
   return Math.min(1, Math.abs(value) / scale);
 }
 
-/** A grid cell's tint: gain green, loss amber, as strong as the value's share of the scale; no value is a neutral cell. */
+/**
+ * A grid cell's tint: gain green, loss amber, as strong as the value's share of the scale; no value is a neutral cell. The colours
+ * are the chart tokens (`--ch-chart-gain`, `--ch-chart-loss`) mixed toward transparent, so the tint follows the night palette too.
+ */
 export function sgTint(value: number | null, scale: number): string {
   if (value == null) return 'var(--ch-ivory-100)';
-  const alpha = Number((0.06 + sgShare(value, scale) * 0.3).toFixed(3));
-  return value >= 0 ? `rgb(21 90 57 / ${alpha})` : `rgb(154 101 18 / ${alpha})`;
+  const pct = Number(((0.06 + sgShare(value, scale) * 0.3) * 100).toFixed(1));
+  return `color-mix(in srgb, var(${value >= 0 ? '--ch-chart-gain' : '--ch-chart-loss'}) ${pct}%, transparent)`;
 }

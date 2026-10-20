@@ -282,6 +282,14 @@
 .ch-fg__track i.is-loss {
   background: var(--ch-chart-loss);
 }
+/* A rate with no mark to judge it by: neither gain nor loss (stats visuals Q4). */
+/* The phone's scoring trend inside its standard error: "No clear change" on its own line above the halves it compares. */
+.ch-stm-figs__clear {
+  display: block;
+}
+.ch-fg__track i.is-neutral {
+  background: var(--ch-ink-400);
+}
 .ch-fg__track b {
   position: absolute;
   top: -3px;
@@ -5855,6 +5863,17 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-ztrack__fill.is-bad {
   background: var(--ch-warning-600);
+}
+/* The strokes gained change in the zone's lines: coloured only when it clears its standard error (OverviewZones). */
+.ch-znlines b.ch-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-znlines b.ch-loss {
+  color: var(--ch-chart-loss);
+}
+/* Nothing to judge the figure by (no benchmark): neither gain nor loss (stats visuals Q4). */
+.ch-st[data-canopy] .ch-ztrack__fill.is-neutral {
+  background: var(--ch-ink-400);
 }
 .ch-st[data-canopy] .ch-ztrack__tick {
   position: absolute;

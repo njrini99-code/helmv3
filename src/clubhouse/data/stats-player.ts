@@ -28,7 +28,7 @@ import {
 } from './stats-common';
 import { holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions } from './stats-filter';
-import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, type ChWindowSeason } from './stats-weight';
+import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, windowChangeSe, type ChWindowSeason } from './stats-weight';
 import { approachBands, inStatsContext, loadApproachShots, loadHoles, loadSpray, statsActionContext, type ChApproachBand, type ChSpray } from './stats-detail';
 import {
   openingDelta,
@@ -374,7 +374,10 @@ export async function loadPlayerProfile(input: {
 
   // Strokes gained against the previous 10 matching rounds; only the newest-ten cut has one (not a range, not picked rounds).
   const prevList = previousInFilter(mine, f);
-  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f));
+  // The change is painted only when it clears its standard error, from both windows' per-18 rounds with strokes gained (Q4).
+  const sgOf = (r: ChRound) => r.strokes_gained_total;
+  const sgSe = prevList ? windowChangeSe(holeWin, holeRounds(prevList), sgOf, 'sg') : null;
+  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f), sgSe);
   const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench);
   const puttBandsNine = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench, PUTT_BANDS_NINE);
   const approach = approachShots.error || !approachShots.rows.length ? null : approachBands(approachShots.rows, bench);

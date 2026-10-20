@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 333 | 13 | 71 | 92 |
+| `UNKNOWN` | 337 | 13 | 71 | 92 |
 
 ## Files
 
@@ -866,8 +866,12 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
