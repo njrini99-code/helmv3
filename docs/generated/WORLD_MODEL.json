@@ -13969,6 +13969,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-delivery.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/insights-coachhelm.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -14350,6 +14355,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/delivery/__tests__/pinned-reads.test.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/delivery/pinned-reads.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/follow-up-eligibility-loader.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -14437,6 +14452,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery-ranking.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-delivery-reads.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
@@ -14791,6 +14811,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery-ranking.ts",
           "anchor": "src/lib/coachhelm/v3/themes/assemble"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-delivery-reads.ts",
+          "anchor": "src/components/golf/coachhelm/insight-card/tone-derivation"
         },
         {
           "kind": "import_graph",
@@ -19243,6 +19268,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/composite/hole-sequence-loader.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -19912,6 +19942,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
           "anchor": "src/app/golf/actions/insight-delivery-ranking"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
+          "anchor": "src/app/golf/actions/insight-delivery-reads"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
+          "anchor": "src/lib/coachhelm/delivery/pinned-reads"
         },
         {
           "kind": "import_graph",

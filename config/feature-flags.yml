@@ -644,8 +644,9 @@ flags:
   # change a live coach or player would see; whichever of the delivery PR and
   # the freshness PR merges second extends this one entry, never adds a
   # second. Owner: Nick. Delivery (Slice 0): overlapping reads fold into one
-  # and each Fairway insight feed holds 3 open reads + 1 strength per player
-  # (src/app/golf/actions/insight-delivery-reads.ts). Freshness (Slice 0b):
+  # and each insight feed that runs deliverReads holds 3 open reads + 1
+  # strength per player (src/app/golf/actions/insight-delivery-reads.ts).
+  # Freshness (Slice 0b):
   # floors, revision key, displayed window bounds and the freshness sweep
   # (src/lib/coachhelm/v3/engine/read-window.ts, read-floors.ts,
   # sweep-freshness.ts). Writing each read's newest round, rounds and sample
