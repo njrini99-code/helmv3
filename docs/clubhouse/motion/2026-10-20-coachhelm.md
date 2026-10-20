@@ -1,0 +1,85 @@
+# Motion report: P013 CoachHelm, 2026-10-20
+
+Dev-build evidence from Playwright WebKit against `next dev`, not a production build and not a real iPhone. Timings of loads and transitions in a dev server are slower than production; the durations, curves and the presence or absence of animations are read from the live page (`document.getAnimations()`, computed styles), not by eye. Recordings, per-run JSON and logs stay out of git, in `~/worktrees/helmv3/clubhouse-mac-gates/.helm/scratch/motion/out/` (file names below).
+
+Evidence only: CoachHelm surfaces are not touched in this job, so no code was changed; the probe reads the live page.
+
+## Environment
+
+| | |
+| --- | --- |
+| Commit | `03e27fab1` (origin/main at the time, exported with `git archive`) |
+| Build | dev (`next dev`, Turbopack, VERCEL_ENV=development so Clubhouse renders), local Supabase at 127.0.0.1 behind a delaying proxy |
+| Device | Playwright WebKit (Playwright 1.63, headless) on macOS; NOT a real iPhone and not the iOS app |
+| Viewport | 1280 x 800; 390 x 844 (touch, isMobile, DPR 2) |
+| Network | localhost; one extra 500 ms per Supabase call (all of them) during the slow-navigation probe only |
+| Power | Mac on mains, no Low Power Mode setting applies |
+| Data | seeded team "Perf University Golf" (8 players, 114 rounds, 3 courses), roles: coach, player |
+
+## Instruments
+
+| Instrument | State | Used for |
+| --- | --- | --- |
+| Safari MCP | not used | the batch needed scripted, repeatable probes |
+| Web Inspector Timelines | not used | |
+| Simulator | not used | not run at the same time (memory rule) |
+| Real iPhone + Animation Hitches | not used | NOT VERIFIED: haptics and real-device feel |
+| Playwright WebKit | used | `startViewTransition` wrapper (timings and the pseudo-element animations), `document.getAnimations()`, computed styles, held pointer for the press, `prefers-reduced-motion` emulation, Settings > Animations off through its localStorage key, video |
+
+## Scenario
+
+Runs: coach 1280 normal; coach 1280 off; coach 1280 reduced; coach 390 (phone) normal; coach 390 (phone) off; coach 390 (phone) reduced; player 1280 normal; player 1280 off; player 1280 reduced; player 390 (phone) normal; player 390 (phone) off; player 390 (phone) reduced.
+
+For each run: a settled load of the route, then a measured load (rAF probe from document start for 2.2 s), a scan of every transition and animation duration under `[data-ui="clubhouse"]`, `router.refresh()` with a recorder for new animations, a held pointer on the first press-capable control, an attempt to open a sheet from the page's own buttons, then a client navigation to the next section (warm, and again with every Supabase call delayed 500 ms), and on the phone a drill-in to a pushed screen and back. The "reduced" runs use `prefers-reduced-motion: reduce`; the "off" runs set Settings > Animations off before load.
+
+## Before
+
+Measured values, each labelled with what it is:
+
+- **Transitions use only the v2 tokens and curves (D-64)**: 4 normal runs: computed --ch-dur-* tokens, every transition/animation duration on the page (0, 110, 180, 260, 462 ms seen), press and release curves; coachhelm-coach-1280-normal.json, coachhelm-coach-390-normal.json, coachhelm-player-1280-normal.json, coachhelm-player-390-normal.json
+- **Press: every tappable shrinks about 6px and springs back (`useChPress`), nothing scales twice**: a held pointer on the page's first press-capable control (and the shell's when the page has none), WebKit: coach 1280: page control "View roster" 120 px wide, scale 0.96 (4.8 px shrink), 110 ms in, 280 ms spring back, 1 element scaled; coach 390 (phone): shell control "Notifications" 44 px wide, scale 0.96 (1.76 px shrink), 110 ms in, 280 ms spring back, 1 element scaled; player 1280: page control "Development" 120 px wide, scale 0.96 (4.79 px shrink), 110 ms in, 280 ms spring back, 1 element scaled; player 390 (phone): shell control "Notifications" 44 px wide, scale 0.96 (1.76 px shrink), 110 ms in, 280 ms spring back, 1 element scaled. Only controls under 240 px that use .ch-btn or data-ch-press scale (press.ts): rows, links, tabs, cards and switches are not scaled by design and were not probed. coachhelm-coach-1280-normal.json, coachhelm-coach-390-normal.json, coachhelm-player-1280-normal.json, coachhelm-player-390-normal.json
+- **First paint: visible at once, no count-ups, a refresh never animates**: a rAF probe from document start on 4 loads (first content frame 284/256/260/223 ms, opacity 1 on 4), numeric-text watch, and window.next.router.refresh() with every new animation in the page recorded; coachhelm-coach-1280-normal.json, coachhelm-coach-390-normal.json, coachhelm-player-1280-normal.json, coachhelm-player-390-normal.json
+- **Page changes fade through (120 out, 120 gap, 220 in), hold the skeleton 300 ms, one shimmer, pushes and sheets on the 462 ms spring**: fade-through: 8 navigations measured (coach 1280 navWarm to calendar: out 120 ms (delay 300), in 220 ms after 120 ms, total 420 ms; coach 1280 navDelayed to calendar: out 120 ms (delay 300), in 220 ms after 120 ms, total 444 ms; ...) | 300 ms hold: coach 1280 navWarm: skeleton mounted at 123 ms under the hold mark (opacity 0), never visible before the page arrived; coach 1280 navDelayed: skeleton mounted at 2694 ms under the hold mark (opacity 0), first visible 425 ms later; coach 390 (phone) navWarm: skeleton mounted at 101 ms under the hold mark (opacity 0), never visible before the page arrived | skeleton component (design preview ?state=loading, coachhelm 1280, coachhelm 390, coachhelm-player 1280, coachhelm-player 390): 35 shimmering elements, 1900 ms linear, 1 start time | skeleton shimmer: 5 samples, 10 shimmering elements, all 1900 ms linear, 1 distinct start time (one shared sweep); recordings and per-run JSON: coachhelm-coach-1280-normal.json, coachhelm-coach-390-normal.json, coachhelm-player-1280-normal.json, coachhelm-player-390-normal.json
+- **Reduced motion and Animations off remove the rise, the press and the shimmer**: 8 runs (8 clean; press probed in 8, navigations in 16, first paint in 8, skeleton visible and sampled in 9, with zero shimmer animations on it): the press holds scale 1 with no animation, no ch-page view-transition animation has a duration, no non-colour animation runs at first paint; coachhelm-coach-1280-off.json, coachhelm-coach-1280-reduced.json, coachhelm-coach-390-off.json, coachhelm-coach-390-reduced.json, coachhelm-player-1280-off.json, coachhelm-player-1280-reduced.json, coachhelm-player-390-off.json, coachhelm-player-390-reduced.json
+- **Haptics follow v2 (D-70)**: needs a real iPhone: the Taptic Engine cannot be felt or logged in the Simulator or in Playwright WebKit
+
+## Findings
+
+| # | Error | Effect | Confidence | Fix |
+| --- | --- | --- | --- | --- |
+| | none | | | |
+
+
+## How the boxes were read (interpretations the owner should check)
+
+- Desktop dialogs ("New event", "Invite players", "Filter") pop on the base 260 ms `ch-pop` (controls.css); the 462 ms smooth spring is the phone sheet's rise (`ch-rise`). A desktop dialog is therefore judged against 260 ms, a phone sheet against 462 ms.
+- Phone navigations between sections that arrive as a push or a pop slide for 462 ms both ways instead of the 120/120/220 fade-through, and show their skeleton at once (RouteFrame.tsx); they are accepted as designed.
+- "Settles on the spring" is measured by sampling the element's box and opacity every frame and taking the last frame that differs from rest by more than 1 px (0.02 opacity): 380 to 520 ms passes. A spring's tail is under 1 px for the last 30 to 60 ms, so a 462 ms spring reads about 410 to 450 ms.
+- The press is checked against `pressScale()` (a floor of 0.96, never more than about 6 px): a 36 px button shrinks 1.4 px, a 140 px one 5.6 px, both correct; the "about 6 px" in the box is the ceiling, not a target. Only controls under 240 px with .ch-btn or data-ch-press scale.
+- Curves were compared for the press (ease) and the release (spring) only; the other transitions were checked for duration only.
+- First paint: an opacity, transform, translate, scale, rotate, clip-path or filter animation of 100 ms or more running inside the page in the 2.2 s after first content is a failure of "visible at once"; colour, background and box-shadow transitions (hover and state changes) are listed as observations.
+- The skeleton hold is measured on a client navigation in a dev build with every Supabase call delayed 500 ms; in a dev build the first server chunk (and so the skeleton) arrives only after the delayed reads, so the "skeleton mounted under the hold mark at opacity 0, first visible about 430 ms later" numbers prove the hold mechanism, not the production arrival time. Shimmer is also read from the design-preview routes (?state=loading), which draw the same skeleton components.
+- Dev-server setup (local only, nothing committed): the snapshot's next.config.mjs had `turbopack.root` pointed at the parent folder so Turbopack accepts the symlinked node_modules; the dev server was restarted by a supervisor each time something outside the session killed it (about every one to three minutes).
+
+## Fix
+
+None made in this report.
+
+## After
+
+Not applicable: no change was made.
+
+## Gate boxes (docs/clubhouse/CHECKLIST_TEMPLATE.md, ## motion)
+
+| # | Box | Result | Evidence |
+| --- | --- | --- | --- |
+| 1 | Transitions use only the v2 tokens and curves (D-64) | **PASS** | 4 normal runs: computed --ch-dur-* tokens, every transition/animation duration on the page (0, 110, 180, 260, 462 ms seen), press and release curves; coachhelm-coach-1280-normal.json, coachhelm-coach-390-normal.json, coachhelm-player-1280-normal.json, coachhelm-player-390-normal.json |
+| 2 | Press: every tappable shrinks about 6px and springs back (`useChPress`), nothing scales twice | **PASS** | a held pointer on the page's first press-capable control (and the shell's when the page has none), WebKit: coach 1280: page control "View roster" 120 px wide, scale 0.96 (4.8 px shrink), 110 ms in, 280 ms spring back, 1 element scaled; coach 390 (phone): shell control "Notifications" 44 px wide, scale 0.96 (1.76 px shrink), 110 ms in, 280 ms spring back, 1 element scaled; player 1280: page control "Development" 120 px wide, scale 0.96 (4.79 px shrink), 110 ms in, 280 ms spring back, 1 element scaled; player 390 (phone): shell control "Notifications" 44 px wide, scale 0.96 (1.76 px shrink), 110 ms in, 280 ms spring back, 1 element scaled. Only controls under 240 px that use .ch-btn or data-ch-press scale (press.ts): rows, links, tabs, cards and switches are not scaled by design and were not probed. coachhelm-coach-1280-normal.json, coachhelm-coach-390-normal.json, coachhelm-player-1280-no |
+| 3 | First paint: visible at once, no count-ups, a refresh never animates | **PASS** | a rAF probe from document start on 4 loads (first content frame 284/256/260/223 ms, opacity 1 on 4), numeric-text watch, and window.next.router.refresh() with every new animation in the page recorded; coachhelm-coach-1280-normal.json, coachhelm-coach-390-normal.json, coachhelm-player-1280-normal.json, coachhelm-player-390-normal.json |
+| 4 | Page changes fade through (120 out, 120 gap, 220 in), hold the skeleton 300 ms, one shimmer, pushes and sheets on the 462 ms spring | **NOT VERIFIED** | fade-through: 8 navigations measured (coach 1280 navWarm to calendar: out 120 ms (delay 300), in 220 ms after 120 ms, total 420 ms; coach 1280 navDelayed to calendar: out 120 ms (delay 300), in 220 ms after 120 ms, total 444 ms; ...) / 300 ms hold: coach 1280 navWarm: skeleton mounted at 123 ms under the hold mark (opacity 0), never visible before the page arrived; coach 1280 navDelayed: skeleton mounted at 2694 ms under the hold mark (opacity 0), first visible 425 ms later; coach 390 (phone) navWarm: skeleton mounted at 101 ms under the hold mark (opacity 0), never visible before the page arrived / skeleton component (design preview ?state=loading, coachhelm 1280, coachhelm 390, coachhelm-player 1280, coachhelm-player 390): 35 shimmering elements, 1900 ms linear, 1 start time / skeleton shimmer: 5 samples, 10 shimmering elements, all 1900 ms linear, 1 distinct start time (one shared swe Notes: sheets: no page control opened a sheet or dialog in the probe (the shell Ask popover is not counted), so the 462 ms sheet spring is not measured on this page; push and pop: no pushed screen (with a chevron Back) was reachable from this page in the probe; NO PHONE SHEET OR PUSH MEASURED on this page: its sheet or pushed-screen spring (462 ms) is not verified |
+| 5 | Reduced motion and Animations off remove the rise, the press and the shimmer | **PASS** | 8 runs (8 clean; press probed in 8, navigations in 16, first paint in 8, skeleton visible and sampled in 9, with zero shimmer animations on it): the press holds scale 1 with no animation, no ch-page view-transition animation has a duration, no non-colour animation runs at first paint; coachhelm-coach-1280-off.json, coachhelm-coach-1280-reduced.json, coachhelm-coach-390-off.json, coachhelm-coach-390-reduced.json, coachhelm-player-1280-off.json, coachhelm-player-1280-reduced.json, coachhelm-player-390-off.json, coachhelm-player-390-reduced.json |
+| 6 | Haptics follow v2 (D-70) | **NOT VERIFIED** | needs a real iPhone: the Taptic Engine cannot be felt or logged in the Simulator or in Playwright WebKit |
+
+## Verdict
+
+PASS / PASS / PASS / NOT VERIFIED / PASS / NOT VERIFIED (boxes 1 to 6). This page does not yet qualify for ticking the PROGRESS.md motion cell: see the boxes marked FAIL or NOT VERIFIED. Still unverified: haptics, a production build, a real iPhone or the Simulator app, and pull to refresh (native only).
