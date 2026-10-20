@@ -27,6 +27,8 @@ import {
   dedupeBySubject,
   type RawInsightRowForRanking,
 } from '@/app/golf/actions/insight-delivery-ranking';
+import { deliverReads, READS_V1_FLAG } from '@/app/golf/actions/insight-delivery-reads';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import {
@@ -923,7 +925,11 @@ export async function getPlayerInsights(
     loadActiveGoals(player.id).catch(() => []),
   ]);
   const ranked = await rankEvidenceInsights(rankable, weights, goals, sb);
-  const deduped = dedupeBySubject(collapseParScoring(ranked));
+  // CoachHelm Slice 0 (flag off by default): the same fold and 3 + 1 cap as
+  // the coach feed (insight-delivery-reads.ts), so the open signals named
+  // here are the ones the feed shows for this player.
+  const readsV1 = isFlagEnabled(READS_V1_FLAG);
+  const deduped = deliverReads(dedupeBySubject(collapseParScoring(ranked)), { fold: readsV1, cap: readsV1 });
   const rows = deduped.slice(0, Math.min(Math.max(input.limit, 1), 10));
 
   return {

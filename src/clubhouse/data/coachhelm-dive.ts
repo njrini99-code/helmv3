@@ -99,8 +99,9 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     const themesRead = handled(readThemes(playerId));
     let feed: EvidenceInsight[];
     try {
-      // CH13-21: only the cards this page draws count as shown.
-      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i) });
+      // CH13-21: only the cards this page draws count as shown. includeMore: the Deep dive lists every read, the ones past
+      // the Board's 3 + 1 included (coachhelm_reads_v1_copy; no effect with the flag off).
+      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i), includeMore: true });
     } catch (err) {
       log('dive.feed', err);
       return { status: 'failed' };

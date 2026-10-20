@@ -47,6 +47,8 @@ import {
   dedupeBySubject,
   rankEvidenceInsightsScored,
 } from './insight-delivery-ranking';
+import { deliverReads, READS_V1_FLAG, type FoldedRead, type ReadsDeliveryPlan } from './insight-delivery-reads';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import {
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
@@ -117,6 +119,8 @@ export interface EvidenceInsight {
   source_updated_at?: string | null;
   player_feedback?: InsightPlayerFeedback | null;
   drills?: InsightAttachedDrill[];
+  /** Reads folded into this one at delivery (flag `coachhelm_reads_v1_copy`; `insight-delivery-reads.ts`). */
+  also?: FoldedRead[];
 }
 
 /** Shared options for player-scoped listings. */
@@ -132,6 +136,14 @@ export interface GetInsightsForPlayerOptions {
    * Omitted: every returned row counts, as before. A server-side caller only.
    */
   drawn?: (insight: EvidenceInsight) => boolean;
+  /**
+   * CoachHelm Slice 0 (flag `coachhelm_reads_v1_copy`): with the flag on the
+   * feed holds each player to 3 open reads + 1 strength. A surface that lists
+   * every read (the "More reads" audit, 03 S7; the Clubhouse Deep dive, whose
+   * Board caps the same 3 + 1 itself) passes true to get the rest as well.
+   * Overlapping reads fold either way. No effect with the flag off.
+   */
+  includeMore?: boolean;
 }
 
 export interface GetInsightsForCoachOptions {
@@ -335,6 +347,17 @@ function recordExposureForReturned(
 
 /** insight id → rank score, for `recordExposureForReturned`. Not exported:
  *  this file is 'use server', where every export must be an async action. */
+/**
+ * CoachHelm Slice 0 delivery (flag `coachhelm_reads_v1_copy`, off by
+ * default): fold overlapping reads into one and hold each player to 3 open
+ * reads + 1 strength (`insight-delivery-reads.ts`). Off: the lists are what
+ * they were. Read once per call so one response never mixes the two.
+ */
+function readsDeliveryPlan(includeMore = false): ReadsDeliveryPlan {
+  const on = isFlagEnabled(READS_V1_FLAG);
+  return { fold: on, cap: on && !includeMore };
+}
+
 function scoreMap(scored: ReadonlyArray<{ insight: { id: string }; score: number }>): Map<string, number> {
   return new Map(scored.map((r) => [r.insight.id, r.score]));
 }
@@ -389,6 +412,9 @@ async function getTopInsightForPlayerImpl(
   // itself, but is load-bearing now that it ranks a candidate SET (A6).
   const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
   const activeGoals = await loadActiveGoals(playerId).catch(() => []);
+  // The same delivery step as the feed, so the single pick stays the feed's
+  // head with the flag on (a note or a measured zero no longer leads it).
+  const plan = readsDeliveryPlan();
 
   // 1. Urgent-priority first pass. We run it as a separate query so the JSON
   //    ordering below never accidentally starves an urgent row.
@@ -435,7 +461,10 @@ async function getTopInsightForPlayerImpl(
       urgentError.message,
       { action: 'insight-delivery.getTopInsightForPlayer', featureArea: 'insights', playerId },
     ).catch(() => undefined);
-  } else if (urgent && urgent.length > 0) {
+  } else if (urgent && urgent.length > 0 && !plan.fold) {
+    // With the Slice 0 fold on, the ranked pass below decides (it sees the
+    // urgent rows too, ranks them first, and folds a non-urgent partner into
+    // the head the way the feed does); this urgent-only set cannot.
     const urgentInsights = urgent
       .map((row) => mapRowToEvidenceInsight(row as unknown as RawInsightRowWithDrills))
       .filter((r): r is EvidenceInsight => r !== null);
@@ -507,9 +536,9 @@ async function getTopInsightForPlayerImpl(
 
   // P1-09: apply the feedback overlay (hide dismissed, attach state) so the
   // single-pick agrees with the feed, which also overlays.
-  const overlaid = applyPlayerFeedbackOverlay(
-    dedupeBySubject(collapseParScoring(ranked)),
-    await getFeedback(),
+  const overlaid = deliverReads(
+    applyPlayerFeedbackOverlay(dedupeBySubject(collapseParScoring(ranked)), await getFeedback()),
+    plan,
   );
   const top = overlaid[0] ?? null;
   // Only the single insight the Hub signal card actually shows is recorded.
@@ -702,7 +731,13 @@ async function getInsightsForPlayerImpl(
   const feedbackByInsight = await loadPlayerFeedbackByInsight(supabase, playerId).catch(
     () => new Map<string, InsightPlayerFeedback>(),
   );
-  const shown = applyPlayerFeedbackOverlay(deduped, feedbackByInsight).slice(0, limit);
+  // CoachHelm Slice 0 (flag off by default): fold overlapping reads, then
+  // hold the player to 3 open reads + 1 strength, AFTER their dismissals so a
+  // dismissed read never takes a slot, and BEFORE the limit slice.
+  const shown = deliverReads(
+    applyPlayerFeedbackOverlay(deduped, feedbackByInsight),
+    readsDeliveryPlan(opts.includeMore === true),
+  ).slice(0, limit);
   // Record exposure for the EXACT rows returned (post overlay + slice) — a row
   // dropped by the limit or by a player dismissal is never counted as shown.
   recordExposureForReturned(opts.drawn ? shown.filter(opts.drawn) : shown, 'player_feed', null, scoreById);
@@ -916,11 +951,18 @@ async function getInsightsForCoachWithMetaImpl(
   // Keyed by id so it survives collapse + dedupe + slice below, which all
   // preserve ids while reordering and dropping rows.
   const scoreById = scoreMap(rankedScored);
-  const ranked = dedupeBySubject(collapseParScoring(rankedScored.map((r) => r.insight)));
+  // CoachHelm Slice 0 (flag off by default): fold, then 3 open + 1 strength
+  // per player; the team sweep keeps each player's reads in the global order.
+  const ranked = deliverReads(
+    dedupeBySubject(collapseParScoring(rankedScored.map((r) => r.insight))),
+    readsDeliveryPlan(),
+  );
 
   // P058: `total` is the FULL eligible count (post rank + dedupe, pre-slice),
   // so a capped page can honestly disclose "showing N of TOTAL" instead of
-  // silently truncating at the limit.
+  // silently truncating at the limit. With the Slice 0 flag on it counts the
+  // reads delivery keeps (folded and capped): a read past a player's 3 + 1 is
+  // not part of the feed at any page size (03 S7).
   const data_ = ranked.slice(0, limit);
   // Record exposure for the page the coach actually receives (post rank + dedupe
   // + slice). Rows beyond the limit are NOT counted — only what's surfaced is.
@@ -1080,9 +1122,10 @@ async function getTopInsightsForPlayersImpl(
   // a dedup read on `golf_insight_exposure` plus an insert each — which is the
   // N+1 Sentry flagged as JAVASCRIPT-NEXTJS-R2 on /golf/dashboard/stats/team.
   const exposureRows: ReturnType<typeof buildExposureRows> = [];
+  const plan = readsDeliveryPlan();
   for (const [pid, list] of byPlayer) {
     const rankedScored = await rankEvidenceInsightsScored(list, {}, [], supabase);
-    const ranked = dedupeBySubject(collapseParScoring(rankedScored.map((r) => r.insight)));
+    const ranked = deliverReads(dedupeBySubject(collapseParScoring(rankedScored.map((r) => r.insight))), plan);
     const sliced = ranked.slice(0, limit);
     out.set(pid, sliced);
     // Each player's surfaced head insight(s) on the roster card — rank_position
@@ -1222,7 +1265,7 @@ async function getRoundTakeawayInsightImpl(
   const feedbackByInsight = await loadPlayerFeedbackByInsight(supabase, playerId).catch(
     () => new Map<string, InsightPlayerFeedback>(),
   );
-  const overlaid = applyPlayerFeedbackOverlay(deduped, feedbackByInsight);
+  const overlaid = deliverReads(applyPlayerFeedbackOverlay(deduped, feedbackByInsight), readsDeliveryPlan());
 
   const takeaway = overlaid[0] ?? null;
   // Only the single takeaway insight the round-review card shows is recorded.

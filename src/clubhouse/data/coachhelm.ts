@@ -376,8 +376,9 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
   let feed: EvidenceInsight[] = [];
   let threw = false;
   try {
-    // CH13-21: a card that states no finding is not drawn here, so it is not counted as shown.
-    feed = await getInsightsForPlayer(input.playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i) });
+    // CH13-21: a card that states no finding is not drawn here, so it is not counted as shown. includeMore: the Board caps
+    // 3 + 1 itself and counts the rest into the Deep dive, so it reads every read (coachhelm_reads_v1_copy; no effect off).
+    feed = await getInsightsForPlayer(input.playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i), includeMore: true });
   } catch (err) {
     log('feed', err);
     threw = true;
