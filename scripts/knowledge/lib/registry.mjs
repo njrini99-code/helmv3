@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export async function loadRegistry(repoRoot = process.cwd()) {
@@ -159,6 +159,7 @@ export function mapFilesToFeatures(registry, files) {
         criticality: feature.criticality ?? 'medium',
         matchedFiles,
         docs: flattenDocs(feature),
+        docGroups: feature.docs ?? {},
         requiredChecks: feature.review?.required_checks ?? [],
       });
     }
@@ -203,4 +204,77 @@ function escapeRegex(char) {
 
 export function fileExists(repoRoot, path) {
   return existsSync(join(repoRoot, path));
+}
+
+// ---------------------------------------------------------------------------
+// Context-doc selection (used by the UserPromptSubmit router and /context)
+// ---------------------------------------------------------------------------
+
+/** Banner words that mean "do not load this doc as guidance". */
+const RETIRED_STATUS_RE =
+  /(?:^|\n)[>\s]*\**\s*status\s*:?\**\s*:?\s*\**\s*(STALE|HISTORICAL|SUPERSEDED|RETIRED)\b/i;
+
+/**
+ * The retired-ness of a doc, read from its STATUS banner (first 1500 chars).
+ * Returns the banner word (upper-case) or null. Accepts `STATUS: X`,
+ * `> **STATUS: X — ...**` and `**Status:** X`.
+ */
+export function docRetiredStatus(repoRoot, path) {
+  let head;
+  try {
+    head = readFileSync(join(repoRoot, path), 'utf8').slice(0, 1500);
+  } catch {
+    return null;
+  }
+  const m = head.match(RETIRED_STATUS_RE);
+  return m ? m[1].toUpperCase() : null;
+}
+
+const SECONDARY_ORDER = ['flows', 'business_logic', 'ui', 'api', 'data'];
+
+/**
+ * Pick the few docs worth loading for a set of mapped features.
+ *
+ * Order: each matched feature's primary doc (`docs.feature`), strongest match
+ * first (most matched files), then its other non-incident docs, then incident
+ * and ledger docs. Docs whose STATUS banner says STALE / HISTORICAL /
+ * SUPERSEDED / RETIRED, and docs that do not exist, are skipped. At most `max`
+ * (default 3) are returned.
+ */
+export function selectContextDocs(features, repoRoot = process.cwd(), { max = 3 } = {}) {
+  const ranked = [...features].sort(
+    (a, b) => (b.matchedFiles?.length ?? 0) - (a.matchedFiles?.length ?? 0),
+  );
+  const tiers = [[], [], []];
+  for (const f of ranked) {
+    const docs = f.docGroups ?? {};
+    if (typeof docs.feature === 'string') tiers[0].push(docs.feature);
+    for (const key of SECONDARY_ORDER) {
+      const v = docs[key];
+      if (typeof v === 'string') tiers[1].push(v);
+      else if (Array.isArray(v)) tiers[1].push(...v);
+    }
+    for (const [key, v] of Object.entries(docs)) {
+      if (key === 'feature' || SECONDARY_ORDER.includes(key)) continue;
+      if (typeof v === 'string') tiers[2].push(v);
+      else if (Array.isArray(v)) tiers[2].push(...v);
+    }
+    // Registry-flattened docs we have no group for (review.required_docs).
+    tiers[2].push(...(f.docs ?? []));
+  }
+  const seen = new Set();
+  const selected = [];
+  const skipped = [];
+  for (const path of tiers.flat()) {
+    if (seen.has(path)) continue;
+    seen.add(path);
+    if (!fileExists(repoRoot, path)) continue;
+    const status = docRetiredStatus(repoRoot, path);
+    if (status) {
+      skipped.push({ path, status });
+      continue;
+    }
+    if (selected.length < max) selected.push(path);
+  }
+  return { docs: selected, skipped };
 }

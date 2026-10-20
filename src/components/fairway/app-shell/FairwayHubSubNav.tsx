@@ -32,7 +32,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_internal';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
@@ -128,7 +128,7 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
     (e: React.KeyboardEvent) => {
       const count = tabs.length;
       if (count === 0) return;
-      let next: number | null = null;
+      let next: number | null;
       switch (e.key) {
         case 'ArrowRight':
         case 'ArrowDown':

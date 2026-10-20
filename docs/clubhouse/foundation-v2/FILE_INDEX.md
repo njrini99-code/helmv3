@@ -1,0 +1,29 @@
+# File Index
+
+- `01_REPO_AUDIT_AND_RECOMMENDATION.md`
+- `02_AUTHORITY_MODEL.md`
+- `03_DIRECTORY_AND_REGISTRY_ARCHITECTURE.md`
+- `04_PAGE_CONTRACT_AND_BRIDGE_SPEC.md`
+- `05_FRESH_BUILD_RULES.md`
+- `06_DESIGN_TO_IMPLEMENTATION_PIPELINE.md`
+- `07_HELD_FEATURE_AND_MIGRATION_PROTOCOL.md`
+- `08_CI_PROGRESS_AND_VERIFICATION.md`
+- `09_AGENT_MASTER_HANDOFF.md`
+- `PACKAGE_MANIFEST.json`
+- `PHONE_HANDOFF_NOTE.md`
+- `START_HERE.md`
+- `starter-scaffold/PROPOSED_PAGE_NAMESPACE_MAP.md`
+- `starter-scaffold/config/clubhouse/bridge-contracts.example.json`
+- `starter-scaffold/config/clubhouse/bridge-contracts.schema.json`
+- `starter-scaffold/config/clubhouse/bridge-tombstones.example.json`
+- `starter-scaffold/config/clubhouse/pages/P004-messages.example.json`
+- `starter-scaffold/config/clubhouse/registry.schema.json`
+- `starter-scaffold/scripts/clubhouse/check-registry.mjs`
+- `templates/CHANGELOG.md`
+- `templates/CONTRACT.md`
+- `templates/DESIGN.md`
+- `templates/HELD_DATA_PLAN.md`
+- `templates/HELD_FEATURE_PLAN.md`
+- `templates/PAGE.md`
+- `templates/VERIFY.md`
+- `templates/WIRING.md`

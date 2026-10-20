@@ -1,5 +1,9 @@
 # Contract: the Repair stage (`selfheal-repair`)
 
+> **STATUS: STALE — the authority, approval and deploy sections are superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
+>
 > Runner (since 2026-09-23): the **Claude desktop health routine** on the
 > owner's Mac, a scheduled task running every 6h at :47 past 03/09/15/21 UTC
 > (30 minutes after Diagnose). Heartbeat `job_type`: `selfheal-repair`, with
@@ -104,14 +108,19 @@ checkout to prove ancestry), which is why this runner owns it.
 select job_type, status, started_at, metadata
 from public.background_job_logs
 where job_type = 'selfheal-triage'
-  and coalesce(metadata->>'method', '') <> 'claude-code-cloud-session'
-  and coalesce(metadata->>'runner', '') <> 'claude-code-cloud-session'
+  and coalesce(metadata->>'method', '') not like 'claude-code-%'
+  and coalesce(metadata->>'runner', '') not like 'claude-code-%'
+  and coalesce(metadata->>'method', '') not like 'claude-cloud-%'
+  and coalesce(metadata->>'runner', '') not like 'claude-cloud-%'
 order by started_at desc
 limit 1;
 ```
 
-The retired task has tagged itself under `method` (through 2026-09-29) and
-under `runner` (2026-09-30, no `method` key), so the filter checks both.
+The retired task has tagged itself under `method` (through 2026-09-29),
+under `runner` (2026-09-30, no `method` key) and as
+`method = 'claude-code-scheduled-session'` (2026-10-01) and
+`method = 'claude-cloud-session'` (2026-10-08), so the filter checks both keys
+and matches the `claude-code-` and `claude-cloud-` families, not one spelling.
 The filter mirrors `SELFHEAL_STAGES.triage.retiredMethods` in
 `src/lib/admin/selfheal-registry.ts`: the retired Anthropic-hosted cloud task
 still fires daily (~09:05–09:20 UTC, observed 2026-09-25..27) and writes a
@@ -297,15 +306,21 @@ Then, in order:
 
 ---
 
-## STEP 4 — the gate trio, before you push
+## STEP 4 — the gates, before you push
 
-Run all three, in this order, and read the real exit codes:
+Run these one at a time with `HELM_GATE_SLOTS=1`, in this order, and read
+the real exit codes:
 
 ```bash
-npm run preflight   # typecheck, lint, lint:ratchet, the doc + supabase ratchets
-npm test            # the FULL suite — not a subset
-npm run build       # a page/component or 'use server' surface may have changed
+npm run preflight            # typecheck, lint, lint:ratchet, the doc + supabase ratchets
+npm test                     # the FULL suite — not a subset
+npm run check:types-drift    # needs SUPABASE_ACCESS_TOKEN sourced from .env, never echoed
+npm run docs:check
 ```
+
+Run `npm run build` when the repair changes a `'use server'` surface (the
+AGENTS.md "Verification" rule). If the workspace cannot run it, the next
+paragraph says why; report that and let CI's `Next build` job be the gate.
 
 Three things learned the hard way on 2026-08-27, each of which cost a full CI
 cycle:
@@ -330,8 +345,7 @@ cycle:
   Never `run_in_background`, never a trailing `&`, never end a turn
   "waiting for" anything.
 
-**`npm run build` may not be runnable in your workspace, and that is by
-design.** `.worktreeinclude` withholds `.env.local`, so the build fails on
+**`npm run build` may not be runnable in your workspace (no `.env.local`).** `.worktreeinclude` withholds `.env.local`, so the build fails on
 `NEXT_PUBLIC_SUPABASE_URL` before reaching any code path your change touched.
 Do not solve that by copying production env into the worktree. Report the local
 build as *not runnable under the workspace security model*, and let CI's
@@ -377,10 +391,14 @@ The PR body must contain:
 - the analysis's `probableCause`, and whether your own reading **confirmed** or
   **corrected** it — if the analysis was wrong, say so plainly
 - the failing test, and proof it failed before the fix
-- the three gate exit codes
+- every gate exit code
 - anything you deliberately did not fix
 
-**Do not merge. Do not deploy.**
+**Do not deploy.** Merge only as the Hard limits allow: your own non-R3 PR,
+with `npm run pr:land -- <n>`, after every required check on its head commit
+is green and `main` is green. An R3 PR is opened and left for the owner.
+(Until 2026-10-07 this line read "Do not merge", contradicting the
+owner-authorized landing rule above; the Hard limits are the policy.)
 
 **Keep your worktree while the PR is open.** Review comments and CI fixes need
 it, and `scripts/retire-worktrees.sh` — the lifecycle authority since Phase 7A —

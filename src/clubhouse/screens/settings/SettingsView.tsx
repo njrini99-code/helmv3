@@ -1,0 +1,244 @@
+'use client';
+
+import { AnimatePresence, m } from 'motion/react';
+import { Bell, Flag, Settings2, Sparkles, UserRound, Users, type LucideIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
+import { Modal } from '../../ui/Modal';
+import { SectionBoundary } from '../../ui/SectionBoundary';
+import { haptic } from '../../lib/haptics';
+import { CH_ROUTE, chTween } from '../../lib/motion';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useChPhone } from '../../lib/use-phone';
+import { chTrail } from '../../lib/track';
+import { keepSaved } from './live';
+import { SECTIONS, viewerRoleLabel, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from './model';
+import { DirtyContext, useUnsavedGuard } from './parts';
+import { AccountSection } from './Account';
+import { NotificationsSection } from './Notifications';
+import { TeamSection } from './Team';
+import { GolfSection } from './Golf';
+import { CoachHelmSection } from './CoachHelm';
+import { PreferencesSection } from './Preferences';
+import { SettingsPhone } from './phone/SettingsPhone';
+import '../../styles/settings.css';
+import { canvasScrollNow } from '../../lib/smooth-scroll';
+
+const ICON: Record<ChSettingsSection, LucideIcon> = {
+  account: UserRound,
+  notifications: Bell,
+  team: Users,
+  golf: Flag,
+  coachhelm: Sparkles,
+  preferences: Settings2,
+};
+
+/**
+ * Settings: one page, a section rail on the left (a scrolling strip on narrow
+ * canvases), one section at a time on the right. The section lives in the
+ * URL (`?section=`) so every section is linkable, and the old
+ * /settings/notifications and /settings/coaching-intelligence links land on
+ * theirs. Moving away with unsaved edits asks first.
+ *
+ * On a phone (820px or less) it is a different screen, not this page reflowed:
+ * a grouped list that pushes to each section (phone/SettingsPhone, owner
+ * design docs/clubhouse/phone/settings.md), over the same data and writes.
+ *
+ * Feedback it shares with the shell: toasts slide and fade (CH-8605, ToastProvider), a button presses in (useChPress)
+ * while a section or a link row deepens its tint instead (CH-8607), a primary button taps lightly (CH-8706, Button's
+ * default feel), a Save changes that lands gives the success pattern and a failed save the error pattern (CH-8702,
+ * CH-8703, useAction and the instant saves in parts.tsx), and Animations off makes every transition instant (CH-8608,
+ * data-motion and useChReducedMotion).
+ */
+export function SettingsView({
+  data: served,
+  writes: raw,
+  device,
+  initialSection,
+  opened = false,
+  onDeleted,
+}: {
+  data: ChSettingsData;
+  writes: ChSettingsWrites;
+  device: ChDevice;
+  initialSection: ChSettingsSection;
+  /** The address named a section, so the phone opens it pushed (SettingsPhone). */
+  opened?: boolean;
+  onDeleted: () => void;
+}) {
+  const reduced = useChReducedMotion();
+  const phone = useChPhone();
+  // The page's copy of the data: what the server rendered, plus what has been saved since (81204).
+  // A section reads it when it opens; a fresh server read (after a refresh) replaces it.
+  const [data, setData] = useState(served);
+  const [seen, setSeen] = useState(served);
+  if (seen !== served) {
+    setSeen(served);
+    setData(served);
+  }
+  const writes = useMemo(() => keepSaved(raw, setData), [raw]);
+  const sections = SECTIONS[data.role];
+  const [section, setSection] = useState<ChSettingsSection>(initialSection);
+  // A new ?section= on the same page re-renders without remounting: the section follows the address (2026-10-14).
+  const [seenSection, setSeenSection] = useState(initialSection);
+  if (seenSection !== initialSection) {
+    setSeenSection(initialSection);
+    setSection(initialSection);
+  }
+  const [ask, setAsk] = useState<ChSettingsSection | null>(null);
+  const sectionRail = useRef<HTMLElement>(null);
+  const focusRevealFrame = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (focusRevealFrame.current !== null) cancelAnimationFrame(focusRevealFrame.current);
+  }, []);
+  const revealSection = useCallback((button: HTMLButtonElement | null) => {
+    const rail = sectionRail.current;
+    if (!rail || !button || rail.scrollWidth <= rail.clientWidth) return;
+    const bounds = rail.getBoundingClientRect();
+    const item = button.getBoundingClientRect();
+    // Only the rail scrolls: revealing keyboard focus must not move the page
+    // or the form. Four pixels also keep its focus outline inside the clip.
+    const left = bounds.left + 4;
+    const right = bounds.right - 4;
+    const delta = item.left < left ? item.left - left : item.right > right ? item.right - right : 0;
+    if (delta) rail.scrollTo({
+      left: Math.max(0, Math.min(rail.scrollWidth - rail.clientWidth, rail.scrollLeft + delta)),
+      behavior: 'instant',
+    });
+  }, []);
+  useEffect(() => {
+    if (phone) return;
+    const revealCurrent = () => revealSection(sectionRail.current?.querySelector<HTMLButtonElement>('[aria-current="page"]') ?? null);
+    revealCurrent();
+    window.addEventListener('resize', revealCurrent);
+    return () => window.removeEventListener('resize', revealCurrent);
+  }, [phone, section, revealSection]);
+  const dirtyIds = useRef(new Set<string>());
+  const [dirty, setDirty] = useState(false);
+  const report = useCallback((id: string, d: boolean) => {
+    if (d) dirtyIds.current.add(id);
+    else dirtyIds.current.delete(id);
+    setDirty(dirtyIds.current.size > 0);
+  }, []);
+  const guard = useUnsavedGuard(dirty);
+
+  const show = (next: ChSettingsSection) => {
+    if (next === section) return;
+    // CH-8701: a selection tick on picking a section (switches, segments and slider steps tick the same way).
+    haptic('select');
+    chTrail(`settings section ${next}`);
+    setSection(next);
+    const url = new URL(window.location.href);
+    url.pathname = '/golf/dashboard/settings';
+    url.searchParams.set('section', next);
+    window.history.replaceState(null, '', url.pathname + url.search);
+    canvasScrollNow(0);
+  };
+  const go = (next: ChSettingsSection) => (dirty ? setAsk(next) : show(next));
+  const current = sections.find((s) => s.id === section) ?? sections[0]!;
+
+  if (phone) {
+    return (
+      <DirtyContext.Provider value={report}>
+        <SettingsPhone data={data} writes={writes} device={device} initialSection={initialSection} opened={opened} onDeleted={onDeleted} />
+        {guard}
+      </DirtyContext.Provider>
+    );
+  }
+
+  return (
+    <DirtyContext.Provider value={report}>
+      <main className="ch-set" data-canopy="">
+        <header className="ch-set-head" data-canopy-head="">
+          <h1 className="ch-display">Settings</h1>
+          <p>
+            {viewerRoleLabel(data)}
+            {data.teamName ? ` · ${data.teamName}` : ''}
+            {data.email ? ` · ${data.email}` : ''}
+          </p>
+        </header>
+        <div className="ch-set-layout">
+          {/* CH-8801: the section list is a navigation landmark; the open section is marked current. */}
+          <nav ref={sectionRail} className="ch-set-rail" aria-label="Settings sections">
+            {sections.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={'ch-set-rail__i' + (s.id === section ? ' is-on' : '')}
+                aria-current={s.id === section ? 'page' : undefined}
+                onFocus={(event) => {
+                  const button = event.currentTarget;
+                  // WebKit applies its own focus alignment after this event.
+                  // Reveal once that finishes, without moving a later focus.
+                  if (focusRevealFrame.current !== null) cancelAnimationFrame(focusRevealFrame.current);
+                  focusRevealFrame.current = requestAnimationFrame(() => {
+                    focusRevealFrame.current = null;
+                    if (button.isConnected && document.activeElement === button) revealSection(button);
+                  });
+                }}
+                onClick={() => go(s.id)}
+              >
+                <Icon icon={ICON[s.id]} size={16} />
+                <span>
+                  <b>{s.label}</b>
+                  <span>{s.hint}</span>
+                </span>
+              </button>
+            ))}
+          </nav>
+          <div className="ch-set-body">
+            {/* CH-8601: the new section mounts immediately and settles in; the old exits at once. */}
+            <AnimatePresence mode="popLayout" initial={false}>
+              <m.div
+                key={section}
+                className="ch-set-stack"
+                initial={reduced ? false : CH_ROUTE.initial}
+                animate={reduced ? { opacity: 1 } : CH_ROUTE.animate}
+                exit={{ opacity: 0, transition: { duration: 0 } }}
+                transition={chTween('base', reduced)}
+              >
+                <SectionBoundary surface={`settings.${section}`} label={current.label} code="CH-8212">
+                  {section === 'account' && <AccountSection data={data} writes={writes} onDeleted={onDeleted} />}
+                  {section === 'notifications' && <NotificationsSection data={data} writes={writes} device={device} />}
+                  {section === 'team' && <TeamSection data={data} writes={writes} />}
+                  {section === 'golf' && <GolfSection data={data} writes={writes} />}
+                  {section === 'coachhelm' && <CoachHelmSection data={data} writes={writes} />}
+                  {section === 'preferences' && <PreferencesSection device={device} />}
+                </SectionBoundary>
+              </m.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </main>
+      {guard}
+      <Modal
+        open={ask != null}
+        code="CH-8507"
+        onClose={() => setAsk(null)}
+        title="Leave without saving?"
+        description="Your changes in this section haven’t been saved."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setAsk(null)}>
+              Keep editing
+            </Button>
+            <Button
+              variant="danger"
+              feel="warning"
+              onClick={() => {
+                const next = ask;
+                setAsk(null);
+                dirtyIds.current.clear();
+                setDirty(false);
+                if (next) show(next);
+              }}
+            >
+              Discard changes
+            </Button>
+          </>
+        }
+      />
+    </DirtyContext.Provider>
+  );
+}

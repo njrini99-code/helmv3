@@ -2,6 +2,8 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback';
 import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
 import { cn } from '@/lib/utils';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { CoachHelmRouteSkeleton } from '@/clubhouse/screens/coachhelm/CoachHelmSkeleton';
 
 /* ============================================================================
  * Route Suspense fallback for the Player CoachHelm overview
@@ -27,7 +29,7 @@ import { cn } from '@/lib/utils';
 
 const SECTION = 'border-t border-border-subtle pt-6';
 
-export default function CoachHelmLoading() {
+function FairwayCoachHelmLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas font-fw-sans')}>
       <div className="mx-auto w-full max-w-[1440px] px-4 py-5 md:px-6 md:py-6">
@@ -119,4 +121,9 @@ export default function CoachHelmLoading() {
       </div>
     </div>
   );
+}
+
+// Clubhouse CoachHelm (golf_clubhouse_ui) gets its own skeleton, in the signed-in role's shape, inside the Clubhouse shell.
+export default function CoachHelmLoading() {
+  return <ClubhouseSwitch clubhouse={<CoachHelmRouteSkeleton />} fallback={<FairwayCoachHelmLoading />} />;
 }

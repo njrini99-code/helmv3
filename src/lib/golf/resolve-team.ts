@@ -187,12 +187,12 @@ export async function getCoachTeams(
  *
  * SECURITY: always call this before trusting a cookie value.
  */
-export async function validateCoachTeamAccess(
+export async function checkCoachTeamAccess(
   supabase: TypedSupabaseClient,
   coachId: string,
   teamId: string,
   organizationId: string | null | undefined,
-): Promise<boolean> {
+): Promise<'allowed' | 'denied' | 'failed'> {
   // 1. Canonical: explicit staff row for THIS team.
   const { data: staffRow, error: staffRowError } = await supabase
     .from('golf_team_coach_staff')
@@ -213,10 +213,10 @@ export async function validateCoachTeamAccess(
       `staff check failed for coach ${coachId} on team ${teamId}; access denied and the coach will be moved to their default team`,
       staffRowError,
     );
-    return false;
+    return 'failed';
   }
 
-  if (staffRow) return true;
+  if (staffRow) return 'allowed';
 
   // 2. Legacy-only fallback — ONLY when the coach has zero staff rows anywhere.
   //    A staffed coach can never reach a non-staffed sibling team via the org,
@@ -243,7 +243,7 @@ export async function validateCoachTeamAccess(
       `legacy staff check failed for coach ${coachId}; refusing rather than falling back to org-wide access`,
       anyStaffError,
     );
-    return false;
+    return 'failed';
   }
 
   if ((!anyStaff || anyStaff.length === 0) && organizationId) {
@@ -259,13 +259,27 @@ export async function validateCoachTeamAccess(
       `legacy org check failed for coach ${coachId} on team ${teamId}`,
       teamError,
     );
-      return false;
+      return 'failed';
     }
 
-    if (team) return true;
+    if (team) return 'allowed';
   }
 
-  return false;
+  return 'denied';
+}
+
+/**
+ * The boolean form of `checkCoachTeamAccess`: allowed or not. A check that could not run is not allowed (it never
+ * passes an authorization it could not make); callers that must tell "denied" from "could not check" use the
+ * three-way form.
+ */
+export async function validateCoachTeamAccess(
+  supabase: TypedSupabaseClient,
+  coachId: string,
+  teamId: string,
+  organizationId: string | null | undefined,
+): Promise<boolean> {
+  return (await checkCoachTeamAccess(supabase, coachId, teamId, organizationId)) === 'allowed';
 }
 
 /**
@@ -288,22 +302,28 @@ export async function validateCoachTeamAccess(
  * @param cookieTeamId  Value from the `golf_active_team` cookie (may be undefined).
  * @returns The resolved team id, or null when no team can be found.
  */
-export async function resolveCoachActiveTeamId(
+/** Which team a coach is working in: found, genuinely none, or a read failed and no team can honestly be named. */
+export type CoachTeamResolution = { status: 'ok'; teamId: string } | { status: 'none' } | { status: 'failed' };
+
+/**
+ * The cookie-aware resolution, three ways. A read that fails is `failed`, never "none" and never a guess: a failed
+ * cookie check no longer seats the coach on their default team (it showed another team's roster, calendar and
+ * qualifiers as fact, and writes followed it), and a failed default or org read no longer reads as "not on a team".
+ * Clubhouse shows `failed` as a route error with a retry (PAGE_PERFORMANCE.md rule 4).
+ */
+export async function resolveCoachActiveTeam(
   supabase: TypedSupabaseClient,
   organizationId: string | null | undefined,
   coachId: string | null | undefined,
   cookieTeamId: string | null | undefined,
-): Promise<string | null> {
-  // Validate the cookie value when one is present.
+): Promise<CoachTeamResolution> {
   if (cookieTeamId && coachId) {
-    const allowed = await validateCoachTeamAccess(supabase, coachId, cookieTeamId, organizationId);
-    if (allowed) return cookieTeamId;
-    // Invalid / tampered cookie — fall through to default.
+    const access = await checkCoachTeamAccess(supabase, coachId, cookieTeamId, organizationId);
+    if (access === 'allowed') return { status: 'ok', teamId: cookieTeamId };
+    if (access === 'failed') return { status: 'failed' };
+    // Denied: an invalid or tampered cookie falls through to the default.
   }
 
-  // No valid cookie → prefer the coach's own staffed team (the canonical
-  // coach↔team relationship). is_primary first, then the oldest staff row
-  // ("the coach's first team").
   if (coachId) {
     const { data: staffRows, error: staffRowsError } = await supabase
       .from('golf_team_coach_staff')
@@ -312,29 +332,36 @@ export async function resolveCoachActiveTeamId(
       .order('is_primary', { ascending: false })
       .order('created_at', { ascending: true });
 
-    // A failed read here was indistinguishable from "this coach is staffed on
-    // nothing", so control fell to the ORG resolver — which ranks teams by
-    // active-player count. At Shenandoah that is 10 men over 6 women, so the
-    // women's head coach was silently seated on the men's team, saw the wrong
-    // roster and calendar stated as fact, and every create action wrote the
-    // men's team_id.
-    //
-    // Returning null instead sends them to the roster page, which is visible
-    // and recoverable. Guessing a team is neither.
+    // A failed read here was once indistinguishable from "staffed on nothing", which fell to the org resolver and
+    // seated a women's head coach on the men's team. Refuse to guess.
     if (staffRowsError) {
       noteResolveTeamFailure(
-      `default team read failed for coach ${coachId}; refusing to guess a team rather than falling back to the org's member-ranked pick`,
-      staffRowsError,
-    );
-      return null;
+        `default team read failed for coach ${coachId}; refusing to guess a team rather than falling back to the org's member-ranked pick`,
+        staffRowsError,
+      );
+      return { status: 'failed' };
     }
 
     const staffTeamId = staffRows?.[0]?.team_id;
-    if (staffTeamId) return staffTeamId;
+    if (staffTeamId) return { status: 'ok', teamId: staffTeamId };
   }
 
-  // Genuinely no staff rows → original deterministic org-based resolution.
-  return resolveCoachTeamId(supabase, organizationId, coachId);
+  // Genuinely no staff rows: the deterministic org-based resolution.
+  return resolveOrgTeam(supabase, organizationId);
+}
+
+/**
+ * Cookie-aware team resolver, as a team id or null. Null covers both "no team" and "could not tell"; callers that
+ * must tell them apart use `resolveCoachActiveTeam`.
+ */
+export async function resolveCoachActiveTeamId(
+  supabase: TypedSupabaseClient,
+  organizationId: string | null | undefined,
+  coachId: string | null | undefined,
+  cookieTeamId: string | null | undefined,
+): Promise<string | null> {
+  const r = await resolveCoachActiveTeam(supabase, organizationId, coachId, cookieTeamId);
+  return r.status === 'ok' ? r.teamId : null;
 }
 
 /**
@@ -366,7 +393,19 @@ export async function resolveCoachTeamId(
   organizationId: string | null | undefined,
   _coachId?: string | null
 ): Promise<string | null> {
-  if (!organizationId) return null;
+  const r = await resolveOrgTeam(supabase, organizationId);
+  return r.status === 'ok' ? r.teamId : null;
+}
+
+/**
+ * The org-based pick, three ways. A failed teams or member-count read is `failed`: ranking teams on a count that was
+ * never read picks a team by accident.
+ */
+async function resolveOrgTeam(
+  supabase: TypedSupabaseClient,
+  organizationId: string | null | undefined,
+): Promise<CoachTeamResolution> {
+  if (!organizationId) return { status: 'none' };
 
   // NOTE: `.select()` (NOT `.maybeSingle()`) so an org with multiple teams can
   // never throw. We rank in code below.
@@ -375,21 +414,29 @@ export async function resolveCoachTeamId(
     .select('id, created_at')
     .eq('organization_id', organizationId);
 
-  if (error || !teams || teams.length === 0) return null;
+  if (error) {
+    noteResolveTeamFailure(`org teams read failed for organization ${organizationId}`, error);
+    return { status: 'failed' };
+  }
+  if (!teams || teams.length === 0) return { status: 'none' };
 
   // Fast path: a single team needs no ranking — return it even if it has zero
   // active members (a real, empty team must still resolve).
-  if (teams.length === 1) return teams[0]?.id ?? null;
+  if (teams.length === 1) return teams[0]?.id ? { status: 'ok', teamId: teams[0].id } : { status: 'none' };
 
   // Multiple teams: count active members per team. A SEPARATE query (rather than
   // a filtered embed) so that teams with ZERO active members are NOT dropped —
   // they remain eligible and only lose the ranking to teams that have members.
   const teamIds = teams.map((t) => t.id);
-  const { data: members } = await supabase
+  const { data: members, error: membersError } = await supabase
     .from('golf_team_members')
     .select('team_id')
     .in('team_id', teamIds)
     .eq('status', 'active');
+  if (membersError) {
+    noteResolveTeamFailure(`member count read failed for organization ${organizationId}; refusing to rank teams blind`, membersError);
+    return { status: 'failed' };
+  }
 
   const activeCountByTeam = new Map<string, number>();
   for (const m of members ?? []) {
@@ -407,5 +454,5 @@ export async function resolveCoachTeamId(
     return bCreated - aCreated;
   });
 
-  return ranked[0]?.id ?? null;
+  return ranked[0]?.id ? { status: 'ok', teamId: ranked[0].id } : { status: 'none' };
 }

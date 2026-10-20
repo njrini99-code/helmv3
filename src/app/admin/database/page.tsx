@@ -422,7 +422,7 @@ async function PerformancePanel() {
 
 function LockIncidentRowView({ incident }: { incident: LockIncidentRow }) {
   return (
-    <RailRow severity={incident.resolvedAt ? 'ok' : incident.severity === 'critical' ? 'critical' : 'warning'}>
+    <RailRow severity={!incident.active ? 'ok' : incident.severity === 'critical' ? 'critical' : 'warning'}>
       <RowHead
         value={incident.waitMs !== null ? `${(incident.waitMs / 1000).toFixed(1)}s` : undefined}
         valueLabel="lock wait"
@@ -439,7 +439,7 @@ function LockIncidentRowView({ incident }: { incident: LockIncidentRow }) {
         ]}
       />
       <RowFoot meta={<LocalTime iso={incident.detectedAt} />}>
-        {incident.resolvedAt ? <StateChip>resolved</StateChip> : null}
+        {incident.resolvedAt ? <StateChip>resolved</StateChip> : !incident.active ? <StateChip>ended</StateChip> : null}
       </RowFoot>
     </RailRow>
   );
@@ -467,13 +467,13 @@ async function LocksPanel() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
         <StatTile
-          label={result.data.openCountIsFloor ? 'OPEN INCIDENTS (AT LEAST)' : 'OPEN INCIDENTS'}
+          label={result.data.openCountIsFloor ? 'ACTIVE INCIDENTS (AT LEAST)' : 'ACTIVE INCIDENTS'}
           value={result.data.openCount}
           tone={result.data.openCount > 0 ? 'accent' : 'neutral'}
           mono
         />
         <StatTile
-          label={result.data.openCountIsFloor ? 'CRITICAL OPEN (AT LEAST)' : 'CRITICAL OPEN'}
+          label={result.data.openCountIsFloor ? 'CRITICAL ACTIVE (AT LEAST)' : 'CRITICAL ACTIVE'}
           value={result.data.criticalOpenCount}
           tone={result.data.criticalOpenCount > 0 ? 'accent' : 'neutral'}
           mono
@@ -481,8 +481,8 @@ async function LocksPanel() {
       </div>
       {result.data.openCountIsFloor ? (
         <p className="text-xs text-warm-600">
-          The reader hit its page ceiling, so these are lower bounds, not totals. Nothing resolves a lock incident yet,
-          so an open count that reaches the ceiling stays there.
+          Every incident on this page is still active and the reader hit its page ceiling, so these are lower bounds,
+          not totals.
         </p>
       ) : null}
       <ul className="divide-y divide-warm-200/60">
@@ -1513,7 +1513,7 @@ export default async function DatabasePage({
                 <>
                   pg_cron job history and pg_net queue/response health. Counts only — never raw job SQL or response
                   payloads. This is Postgres-level scheduling only (1 job today: purge-admin-event-telemetry) —
-                  application job queues (pgmq, Inngest) live on{' '}
+                  application job queues (pgmq) live on{' '}
                   <Link href="/admin/jobs" className="text-accent-700 underline">
                     Jobs &amp; Integrity →
                   </Link>

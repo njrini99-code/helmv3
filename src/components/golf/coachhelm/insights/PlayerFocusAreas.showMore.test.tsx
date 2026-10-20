@@ -14,14 +14,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { PlayerFocusAreas } from './PlayerFocusAreas';
-import { getPlayerFocusAreas } from '@/app/golf/actions/insights';
+import { getPlayerFocusAreas } from '@/app/golf/actions/insights-player-analysis';
 import type { PlayerFocusArea } from '@/lib/coachhelm/insight-types';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-player-analysis', () => ({
   getPlayerFocusAreas: vi.fn(),
 }));
 

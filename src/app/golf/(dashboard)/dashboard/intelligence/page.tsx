@@ -290,11 +290,16 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const focusAreasWithPlayers: PlayersGridFocusArea[] = (focusAreas || []).map((fa) => ({
     ...fa,
     player: players.find((p) => p.id === fa.player_id) || null,
-    outcome_status: fa.from_insight_id ? (outcomeByInsightId[fa.from_insight_id] ?? null) : null,
-    // Owner decision follow-up (2026-09-23) — the RAW column, unlike
-    // `outcome_status` above which only reflects the SOURCE INSIGHT and
-    // misses areas with no `from_insight_id`. See PlayersGridFocusArea's
-    // doc for why this needs its own field rather than reusing that one.
+    // The area's OWN recorded verdict first, the source insight's as the
+    // fallback (Q-86): an area graded without an insight, or whose insight
+    // credit failed, used to read as ungraded here and kept asking "How did it
+    // go?" while the follow-up logic below already knew it was graded.
+    outcome_status:
+      fa.outcome_status ??
+      (fa.from_insight_id ? (outcomeByInsightId[fa.from_insight_id] ?? null) : null),
+    // Owner decision follow-up (2026-09-23) — the RAW column, read by the
+    // follow-up eligibility logic and by FocusAreaCard (which prefers it over
+    // `outcome_status`).
     recordedOutcomeStatus: fa.outcome_status ?? null,
     progressHistory: progressHistoryOf(fa.progress_notes),
     from_review_round_id: fa.from_review_id ? (roundIdByReviewId[fa.from_review_id] ?? null) : null,
@@ -511,6 +516,8 @@ async function loadPlayersDrillData(
             .select('id, player_id, status, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts, strokes_gained_total, round_date')
             .in('player_id', playerIds)
             .eq('status', 'completed')
+            // Test rounds (QA/demo data, OD-03) never reach a coach's averages.
+            .eq('is_test', false)
             .not('total_score', 'is', null)
             .order('id', { ascending: true })
             .range(from, to),

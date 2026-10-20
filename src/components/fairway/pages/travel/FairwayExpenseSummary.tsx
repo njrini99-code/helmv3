@@ -23,7 +23,7 @@
  * ========================================================================== */
 
 import { useState, useMemo } from 'react';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { IconTrendingUp, IconTrendingDown, IconEdit } from '@/components/icons';
 import { Button, IconButton, fairwayToast } from '@/components/fairway';

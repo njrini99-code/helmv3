@@ -10,7 +10,7 @@
  * reuses the EXACT same plumbing VERBATIM:
  *
  *   • useCoachPhilosophy(coachId)                         — '@/hooks/coachhelm/useCoachPhilosophy'
- *   • getOrCreateTeamCoachHelmSettings / updateTeamCoachHelmSettings — '@/app/golf/actions/insights'
+ *   • getOrCreateTeamCoachHelmSettings / updateTeamCoachHelmSettings — '@/app/golf/actions/insights-coachhelm'
  *   • useGolfUser().teamId (cookie-aware ACTIVE team)     — '@/contexts/golf-user-context'
  *   • THRESHOLD_RANGES                                    — '@/lib/coachhelm/constants'
  *   • the SAME editor widgets (PriorityRanker / SensitivitySlider / ThresholdSlider
@@ -46,7 +46,7 @@ import {
   getTeamCoachHelmAccess,
   updateTeamCoachHelmSettings,
   type TeamCoachHelmSettings,
-} from '@/app/golf/actions/insights';
+} from '@/app/golf/actions/insights-coachhelm';
 import { useGolfUser } from '@/contexts/golf-user-context';
 
 import {

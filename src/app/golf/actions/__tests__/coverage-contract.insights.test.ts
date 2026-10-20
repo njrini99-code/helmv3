@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.shared';
+import {
+  assertAreaFullyWrapped,
+  INSIGHTS_SPLIT_ACTION_FILES,
+} from '@/lib/admin/__tests__/coverage-contract.shared';
 
 /**
  * W15 Batches 8+9 (coachhelm coach surfaces + player/reviews/development) —
@@ -30,7 +33,7 @@ import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.
 describe('coverage-contract — insights.ts (B8/B9 remainder, whole-file assertion)', () => {
   it('every export in insights.ts is wrapped with withAdminObserved({ feature: <its registry key> })', () => {
     expect(() =>
-      assertAreaFullyWrapped(['src/app/golf/actions/insights.ts']),
+      assertAreaFullyWrapped(INSIGHTS_SPLIT_ACTION_FILES),
     ).not.toThrow();
   });
 });

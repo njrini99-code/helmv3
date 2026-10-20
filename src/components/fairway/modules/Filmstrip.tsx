@@ -39,7 +39,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { useReducedMotionGuard, EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';

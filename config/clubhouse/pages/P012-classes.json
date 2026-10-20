@@ -1,0 +1,165 @@
+{
+  "id": "P012",
+  "name": "Classes",
+  "slug": "classes",
+  "bridgeNamespace": 12,
+  "routes": [
+    "/golf/dashboard/classes"
+  ],
+  "roles": [
+    "player"
+  ],
+  "semanticFeatures": [
+    "calendar_events"
+  ],
+  "progressRow": "Classes",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "complete",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md)",
+    "desktop": [
+      "design/handoff/Player - Classes.html",
+      "design/handoff/classes.jsx",
+      "design/handoff/classes.css",
+      "design/handoff/gh-states.jsx"
+    ],
+    "phone": [
+      "design/handoff/Player - Classes - Mobile.html",
+      "design/handoff/classes.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/classes",
+    "loader": "src/clubhouse/data/classes.ts",
+    "route": "src/clubhouse/routes/classes.tsx",
+    "styles": "src/clubhouse/styles/classes.css",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/classes.md",
+  "checklist": "docs/clubhouse/screens/classes.md",
+  "phoneSpec": "docs/clubhouse/phone/classes.md",
+  "actions": [
+    {
+      "id": "ACT-P012-SAVE-CLASS",
+      "label": "Add or edit a class (player)",
+      "component": "src/clubhouse/screens/classes/ClassForm.tsx#ClassForm",
+      "handler": "submit",
+      "service": "src/clubhouse/screens/classes/writes.ts#save",
+      "data": [
+        "golf_player_classes"
+      ],
+      "bridge": {
+        "validation": 120501,
+        "success": 120901,
+        "failure": 120601,
+        "recovery": 121401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/classes.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P012-SYNC-CALENDAR",
+      "label": "Put classes on the team calendar (after a save or an import, and Retry sync)",
+      "component": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView",
+      "handler": "syncClasses",
+      "service": "src/app/golf/actions/calendar-sync.ts#syncClassToCalendar",
+      "data": [
+        "golf_events",
+        "golf_player_classes"
+      ],
+      "bridge": {
+        "loading": 120203,
+        "failure": 120602,
+        "recovery": 121402,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/classes.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P012-REMOVE-CLASS",
+      "label": "Remove a class (player)",
+      "component": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView",
+      "handler": "removeAction",
+      "service": "src/app/golf/actions/calendar-sync.ts#removeClassFromCalendar",
+      "data": [
+        "golf_events",
+        "golf_player_classes"
+      ],
+      "bridge": {
+        "confirm": 121101,
+        "success": 120901,
+        "failure": 120603,
+        "recovery": 121401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/classes.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P012-IMPORT-SCHEDULE",
+      "label": "Import the reviewed schedule (player)",
+      "component": "src/clubhouse/screens/classes/ImportSchedule.tsx#ImportSchedule",
+      "handler": "onImport",
+      "service": "src/clubhouse/screens/classes/writes.ts#importRows",
+      "data": [
+        "golf_player_classes"
+      ],
+      "bridge": {
+        "success": 120902,
+        "failure": 120604,
+        "recovery": 121401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/classes.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P012-READ-SCHEDULE",
+      "label": "Read a screenshot, PDF, TXT file or pasted schedule (player)",
+      "component": "src/clubhouse/screens/classes/ImportSchedule.tsx#ImportSchedule",
+      "handler": "run",
+      "service": "src/app/golf/actions/schedule-image.ts#extractClassesFromScheduleImage",
+      "data": [],
+      "bridge": {
+        "validation": 120510,
+        "loading": 120202,
+        "failure": 120608,
+        "offline": 120701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/classes.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P012-TRY-AGAIN",
+      "label": "Try a failed read again",
+      "component": "src/clubhouse/ui/Notices.tsx#InlineNotice",
+      "handler": "onRetry",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "loadFailed": 120605,
+        "recovery": 121403
+      },
+      "tests": [
+        "src/clubhouse/__tests__/classes.test.tsx"
+      ]
+    }
+  ],
+  "held": []
+}

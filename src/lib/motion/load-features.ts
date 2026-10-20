@@ -8,11 +8,11 @@
  * chunk as the importing file, defeating the whole point of "lazy" motion.
  *
  * The loaders below import from local `./features-min` / `./features-max`
- * wrapper modules instead of `'framer-motion'` directly. Every call site
+ * wrapper modules instead of `'motion/react'` directly. Every call site
  * that uses `<LazyMotion>` also statically imports `{ LazyMotion, m, ... }`
- * from `'framer-motion'` in the same file, and framer-motion's package entry
+ * from `'motion/react'` in the same file, and framer-motion's package entry
  * re-exports `domAnimation`/`domMax` from that identical specifier — so a
- * dynamic `import('framer-motion')` there resolves to a module already
+ * dynamic `import('motion/react')` there resolves to a module already
  * required synchronously and can't be split into its own chunk. Routing
  * through a dedicated file with no synchronous import edge is framer-motion's
  * own documented pattern for making this code-split for real.

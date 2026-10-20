@@ -5,8 +5,7 @@
  * Fairway DataTable (ADDITIVE / Wave 1)
  * ----------------------------------------------------------------------------
  * The warm-premium data table for admin / CRM / roster / stats-team. Headless
- * behavior from @tanstack/react-table v8 (sorting, row selection, column
- * sizing); bespoke calm Fairway styling on top.
+ * behavior from @tanstack/react-table v9 (sorting, row selection); bespoke calm Fairway styling on top.
  *
  * Features
  *  - Column defs via standard TanStack `ColumnDef` (+ optional Fairway `meta`).
@@ -33,12 +32,9 @@
 import * as React from 'react';
 import {
   flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
+  useTable,
   type OnChangeFn,
-  type Row,
+  type RowData,
   type RowSelectionState,
   type SortingState,
   type TableOptions,
@@ -49,7 +45,8 @@ import { Button } from '@/components/ui/button';
 import { alignClass, densityMetrics } from './density';
 import { DataTableSkeleton, DataTableSkeletonCards } from './data-table-skeleton';
 import { DataTableEmpty, DataTableError } from './data-table-states';
-import type { DataTableDensity, DataTableRowAction } from './types';
+import { dataTableFeatures, type DataTableFeatures } from './features';
+import type { ColumnDef, DataTableDensity, DataTableRowAction, Row } from './types';
 
 /* ------------------------------------------------------------------------- */
 /* Sub-parts                                                                  */
@@ -126,7 +123,7 @@ function SortGlyph({ dir }: { dir: false | 'asc' | 'desc' }) {
 }
 
 /** Trailing inline-actions cell. Reveals on hover/focus; always present for keyboard. */
-function RowActions<TData>({
+function RowActions<TData extends RowData>({
   actions,
   row,
 }: {
@@ -188,7 +185,7 @@ function RowActions<TData>({
  * entirely supplied by the caller's `mobileCard` render prop — this wrapper
  * only owns the tap target, hover tint, and focus ring.
  */
-function MobileCardRow<TData>({
+function MobileCardRow<TData extends RowData>({
   row,
   onRowClick,
   children,
@@ -229,7 +226,7 @@ function MobileCardRow<TData>({
 /* Props                                                                      */
 /* ------------------------------------------------------------------------- */
 
-export interface DataTableProps<TData> {
+export interface DataTableProps<TData extends RowData> {
   /** Row data. */
   data: TData[];
   /** Standard TanStack column defs (may carry Fairway `meta`). */
@@ -256,7 +253,7 @@ export interface DataTableProps<TData> {
   /** Selection change handler (controlled). */
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   /** Stable row id resolver (recommended when selecting). */
-  getRowId?: TableOptions<TData>['getRowId'];
+  getRowId?: TableOptions<DataTableFeatures, TData>['getRowId'];
 
   /** Inline trailing actions revealed per row. */
   rowActions?: DataTableRowAction<TData>[];
@@ -306,7 +303,7 @@ export interface DataTableProps<TData> {
 /* Component                                                                  */
 /* ------------------------------------------------------------------------- */
 
-export function DataTable<TData>({
+export function DataTable<TData extends RowData>({
   data,
   columns,
   density = 'comfortable',
@@ -359,7 +356,8 @@ export function DataTable<TData>({
 
   const hasActions = !!rowActions && rowActions.length > 0;
 
-  const table = useReactTable<TData>({
+  const table = useTable<DataTableFeatures, TData>({
+    features: dataTableFeatures,
     data,
     columns,
     state: { sorting, rowSelection },
@@ -368,8 +366,6 @@ export function DataTable<TData>({
     enableSorting,
     enableRowSelection,
     getRowId,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
   const visibleColumnCount = columns.length;
@@ -647,7 +643,10 @@ export function DataTable<TData>({
                       </td>
                     )}
 
-                    {row.getVisibleCells().map((cell) => {
+                    {/* v9: column visibility is an opt-in feature DataTable does not
+                        register, so every column is visible and getAllCells() is
+                        exactly v8's getVisibleCells(). */}
+                    {row.getAllCells().map((cell) => {
                       const meta = cell.column.columnDef.meta;
                       return (
                         <td

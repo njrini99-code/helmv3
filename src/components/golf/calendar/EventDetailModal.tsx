@@ -155,7 +155,7 @@ function normalizeConflictData(raw: WireConflictData): ConflictData {
 }
 
 async function loadGolfCalendarActions() {
-  return import('@/app/golf/actions/golf');
+  return import('@/app/golf/actions/calendar-events');
 }
 
 // Transform conflicts from API format to ConflictWarning format
@@ -366,6 +366,7 @@ export function EventDetailModal({
     rsvpSummary,
     isLoading: rsvpSummaryLoading,
     error: rsvpSummaryError,
+    refetch: refetchRSVPSummary,
   } = useRSVP({ eventId: event?.id, enabled: rsvpEnabled });
   const rsvpParticipants = useMemo(() => (
     rsvpSummary?.attendees.map(attendee => ({
@@ -1432,15 +1433,22 @@ export function EventDetailModal({
           {!isCreating && event?.id && capabilities.rsvpRead && formData.requiresRsvp && (
             <div className="border-t border-warm-200 -mx-6 px-6 pt-4">
               <h4 className="text-sm font-medium text-warm-900 mb-3">RSVP Status</h4>
-              {rsvpSummaryError && (
-                <p className="text-sm text-rose-600 mb-3">{rsvpSummaryError}</p>
+              {/* A failed read is not an empty roster: say so and offer a retry instead of "0 invited". */}
+              {rsvpSummaryError ? (
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <p className="text-sm text-rose-600">{rsvpSummaryError}</p>
+                  <Button type="button" variant="outline" size="sm" onClick={() => void refetchRSVPSummary()}>
+                    Retry
+                  </Button>
+                </div>
+              ) : (
+                <RSVPStatusSection
+                  participants={rsvpParticipants}
+                  totalInvited={rsvpSummary?.total || 0}
+                  onSendReminder={handleSendRosterReminder}
+                  onExport={handleExportRoster}
+                />
               )}
-              <RSVPStatusSection
-                participants={rsvpParticipants}
-                totalInvited={rsvpSummary?.total || 0}
-                onSendReminder={handleSendRosterReminder}
-                onExport={handleExportRoster}
-              />
               {rsvpSummaryLoading && (
                 <p className="text-xs text-warm-500 mt-2">Loading RSVP summary...</p>
               )}

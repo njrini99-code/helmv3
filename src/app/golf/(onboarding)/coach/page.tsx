@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
@@ -25,6 +25,8 @@ import {
 import { StepIndicator, slideVariants, staggerContainer, staggerItem } from '@/components/golf/onboarding/StepIndicator';
 import { completeCoachOnboarding } from '@/app/golf/actions/onboarding';
 import { getGolfCoachEntry } from '@/app/golf/actions/coach-entry';
+import { useClubhouseFrontDoor } from '@/clubhouse/routes/front-door';
+import { CoachOnboard } from '@/clubhouse/screens/onboard/CoachOnboard';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
@@ -74,7 +76,7 @@ function firstMissing(fields: ReadonlyArray<{ id: string; value: string; message
   return errors;
 }
 
-export default function GolfCoachOnboarding() {
+function GolfCoachOnboarding() {
   const prefersReducedMotion = useReducedMotionGuard();
   // Matches the signup gate: one scene per viewport, swapped after hydration.
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -774,4 +776,13 @@ export default function GolfCoachOnboarding() {
       </div>
     </div>
   );
+}
+
+/**
+ * golf_clubhouse_front_door chooses the page that is drawn (coach/layout.tsx hands the flag down): flag off renders
+ * today's wizard untouched; flag on renders Clubhouse's, which makes the same check of who may see it and calls the same
+ * completeCoachOnboarding with the same fields.
+ */
+export default function GolfCoachOnboardingPage() {
+  return useClubhouseFrontDoor() ? <CoachOnboard /> : <GolfCoachOnboarding />;
 }

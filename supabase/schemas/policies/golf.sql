@@ -279,7 +279,7 @@ CREATE POLICY "Users can update their golf notifications" ON "public"."golf_cale
 CREATE POLICY "Users can view attachments in their conversations" ON "public"."golf_message_attachments" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM ("public"."golf_messages" "m"
      JOIN "public"."golf_conversation_participants" "cp" ON (("cp"."conversation_id" = "m"."conversation_id")))
-  WHERE (("m"."id" = "golf_message_attachments"."message_id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
+  WHERE (("m"."id" = "golf_message_attachments"."message_id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("m"."is_deleted" IS NOT TRUE)))));
 
 CREATE POLICY "Users can view relevant review events" ON "public"."golf_review_events" FOR SELECT USING (((EXISTS ( SELECT 1
    FROM (("public"."golf_coaches" "gc"
@@ -686,54 +686,43 @@ CREATE POLICY "practice_sessions_insert_via_focus_area" ON "public"."golf_focus_
    FROM "public"."golf_team_members" "gtm"
   WHERE (("gtm"."player_id" = "golf_focus_area_practice_sessions"."player_id") AND ("gtm"."status" = 'active'::"public"."team_member_status") AND "public"."is_golf_team_coach"("gtm"."team_id"))))))));
 
-CREATE POLICY "golf_holes_delete" ON "public"."golf_holes" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+CREATE POLICY "golf_holes_delete" ON "public"."golf_holes" FOR DELETE TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM ("public"."golf_rounds" "gr"
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-CREATE POLICY "golf_holes_delete_coach" ON "public"."golf_holes" FOR DELETE USING ((EXISTS ( SELECT 1
+  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) OR (EXISTS ( SELECT 1
    FROM "public"."golf_rounds" "gr"
-  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_head_coach"("gr"."team_id")))));
+  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_head_coach"("gr"."team_id"))))));
 
-CREATE POLICY "golf_holes_insert" ON "public"."golf_holes" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+CREATE POLICY "golf_holes_insert" ON "public"."golf_holes" FOR INSERT TO "authenticated" WITH CHECK (((EXISTS ( SELECT 1
    FROM ("public"."golf_rounds" "gr"
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-CREATE POLICY "golf_holes_insert_coach" ON "public"."golf_holes" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) OR (EXISTS ( SELECT 1
    FROM "public"."golf_rounds" "gr"
-  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")))));
+  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id"))))));
 
-CREATE POLICY "golf_holes_select" ON "public"."golf_holes" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."golf_rounds" "gr"
-  WHERE (("gr"."id" = "golf_holes"."round_id") AND ((EXISTS ( SELECT 1
-           FROM "public"."golf_players"
-          WHERE (("golf_players"."id" = "gr"."player_id") AND ("golf_players"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) OR (("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")) OR (("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_player"("gr"."team_id")))))));
+CREATE POLICY "golf_holes_select" ON "public"."golf_holes" FOR SELECT TO "authenticated" USING (("round_id" IN ( SELECT "public"."golf_readable_round_ids"() AS "golf_readable_round_ids")));
 
-CREATE POLICY "golf_holes_select_team" ON "public"."golf_holes" FOR SELECT TO "authenticated" USING (("round_id" IN ( SELECT "gr"."id"
-   FROM "public"."golf_rounds" "gr"
-  WHERE (("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")))));
-
-CREATE POLICY "golf_holes_update" ON "public"."golf_holes" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+CREATE POLICY "golf_holes_update" ON "public"."golf_holes" FOR UPDATE TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM ("public"."golf_rounds" "gr"
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-CREATE POLICY "golf_holes_update_coach" ON "public"."golf_holes" FOR UPDATE USING ((EXISTS ( SELECT 1
+  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) OR (EXISTS ( SELECT 1
    FROM "public"."golf_rounds" "gr"
-  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")))));
-
-CREATE POLICY "golf_holes_update_team" ON "public"."golf_holes" FOR UPDATE TO "authenticated" USING (("round_id" IN ( SELECT "gr"."id"
+  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")))) OR ("round_id" IN ( SELECT "gr"."id"
    FROM ((("public"."golf_rounds" "gr"
      JOIN "public"."golf_team_members" "gtm" ON (("gtm"."player_id" = "gr"."player_id")))
      JOIN "public"."golf_teams" "gt" ON (("gt"."id" = "gtm"."team_id")))
      JOIN "public"."golf_coaches" "gc" ON (("gc"."organization_id" = "gt"."organization_id")))
-  WHERE (("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("gtm"."status" = 'active'::"public"."team_member_status"))))) WITH CHECK (("round_id" IN ( SELECT "gr"."id"
+  WHERE (("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("gtm"."status" = 'active'::"public"."team_member_status")))))) WITH CHECK (((EXISTS ( SELECT 1
+   FROM ("public"."golf_rounds" "gr"
+     JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
+  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) OR (EXISTS ( SELECT 1
+   FROM "public"."golf_rounds" "gr"
+  WHERE (("gr"."id" = "golf_holes"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")))) OR ("round_id" IN ( SELECT "gr"."id"
    FROM ((("public"."golf_rounds" "gr"
      JOIN "public"."golf_team_members" "gtm" ON (("gtm"."player_id" = "gr"."player_id")))
      JOIN "public"."golf_teams" "gt" ON (("gt"."id" = "gtm"."team_id")))
      JOIN "public"."golf_coaches" "gc" ON (("gc"."organization_id" = "gt"."organization_id")))
-  WHERE (("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("gtm"."status" = 'active'::"public"."team_member_status")))));
+  WHERE (("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("gtm"."status" = 'active'::"public"."team_member_status"))))));
 
 CREATE POLICY "golf_insight_action_coach_select_team" ON "public"."golf_insight_action" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."golf_team_members" "gtm"
@@ -883,7 +872,9 @@ CREATE POLICY "golf_qualifier_entries_delete_coach" ON "public"."golf_qualifier_
 
 CREATE POLICY "golf_qualifier_entries_insert_coach" ON "public"."golf_qualifier_entries" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."golf_qualifiers" "q"
-  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id")))));
+  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id") AND (EXISTS ( SELECT 1
+           FROM "public"."golf_team_members" "m"
+          WHERE (("m"."team_id" = "q"."team_id") AND ("m"."player_id" = "golf_qualifier_entries"."player_id") AND ("m"."status" = 'active'::"public"."team_member_status"))))))));
 
 CREATE POLICY "golf_qualifier_entries_select_team" ON "public"."golf_qualifier_entries" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."golf_qualifiers" "q"
@@ -891,7 +882,11 @@ CREATE POLICY "golf_qualifier_entries_select_team" ON "public"."golf_qualifier_e
 
 CREATE POLICY "golf_qualifier_entries_update_coach" ON "public"."golf_qualifier_entries" FOR UPDATE USING ((EXISTS ( SELECT 1
    FROM "public"."golf_qualifiers" "q"
-  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id")))));
+  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."golf_qualifiers" "q"
+  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id") AND (EXISTS ( SELECT 1
+           FROM "public"."golf_team_members" "m"
+          WHERE (("m"."team_id" = "q"."team_id") AND ("m"."player_id" = "golf_qualifier_entries"."player_id") AND ("m"."status" = 'active'::"public"."team_member_status"))))))));
 
 CREATE POLICY "golf_qualifier_round_courses_delete_coach" ON "public"."golf_qualifier_round_courses" FOR DELETE USING ((EXISTS ( SELECT 1
    FROM "public"."golf_qualifiers" "q"
@@ -973,86 +968,61 @@ CREATE POLICY "golf_rounds_update_team" ON "public"."golf_rounds" FOR UPDATE TO 
 
 COMMENT ON POLICY "golf_rounds_update_team" ON "public"."golf_rounds" IS 'Coach may update a round for a player on a team they staff. WITH CHECK also pins the resulting team_id to a team the coach staffs, so a round cannot be moved onto another squad''s books (added 2026-08-08).';
 
-CREATE POLICY "golf_shots_delete" ON "public"."golf_shots" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM ("public"."golf_rounds" "gr"
-     JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-CREATE POLICY "golf_shots_delete_coach" ON "public"."golf_shots" FOR DELETE USING ((EXISTS ( SELECT 1
-   FROM "public"."golf_rounds" "gr"
-  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_head_coach"("gr"."team_id")))));
-
-CREATE POLICY "golf_shots_delete_own" ON "public"."golf_shots" FOR DELETE TO "authenticated" USING ((("hole_id" IN ( SELECT "gh"."id"
+CREATE POLICY "golf_shots_delete" ON "public"."golf_shots" FOR DELETE TO "authenticated" USING ((("hole_id" IN ( SELECT "gh"."id"
    FROM (("public"."golf_holes" "gh"
      JOIN "public"."golf_rounds" "gr" ON (("gr"."id" = "gh"."round_id")))
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
   WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) OR ("round_id" IN ( SELECT "gr"."id"
    FROM ("public"."golf_rounds" "gr"
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-CREATE POLICY "golf_shots_insert" ON "public"."golf_shots" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
-   FROM ("public"."golf_rounds" "gr"
-     JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-CREATE POLICY "golf_shots_insert_coach" ON "public"."golf_shots" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) OR (EXISTS ( SELECT 1
    FROM "public"."golf_rounds" "gr"
-  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")))));
+  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_head_coach"("gr"."team_id"))))));
 
-CREATE POLICY "golf_shots_insert_own" ON "public"."golf_shots" FOR INSERT TO "authenticated" WITH CHECK ((("hole_id" IN ( SELECT "gh"."id"
+CREATE POLICY "golf_shots_insert" ON "public"."golf_shots" FOR INSERT TO "authenticated" WITH CHECK ((("hole_id" IN ( SELECT "gh"."id"
    FROM (("public"."golf_holes" "gh"
      JOIN "public"."golf_rounds" "gr" ON (("gr"."id" = "gh"."round_id")))
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
   WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) OR ("round_id" IN ( SELECT "gr"."id"
    FROM ("public"."golf_rounds" "gr"
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-CREATE POLICY "golf_shots_select" ON "public"."golf_shots" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) OR (EXISTS ( SELECT 1
    FROM "public"."golf_rounds" "gr"
-  WHERE (("gr"."id" = "golf_shots"."round_id") AND ((EXISTS ( SELECT 1
-           FROM "public"."golf_players"
-          WHERE (("golf_players"."id" = "gr"."player_id") AND ("golf_players"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) OR (("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")) OR (("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_player"("gr"."team_id")))))));
+  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id"))))));
 
-CREATE POLICY "golf_shots_update" ON "public"."golf_shots" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM ("public"."golf_rounds" "gr"
-     JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
+CREATE POLICY "golf_shots_select" ON "public"."golf_shots" FOR SELECT TO "authenticated" USING (("round_id" IN ( SELECT "public"."golf_readable_round_ids"() AS "golf_readable_round_ids")));
 
-CREATE POLICY "golf_shots_update_coach" ON "public"."golf_shots" FOR UPDATE USING ((EXISTS ( SELECT 1
-   FROM "public"."golf_rounds" "gr"
-  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")))));
-
-CREATE POLICY "golf_shots_update_own" ON "public"."golf_shots" FOR UPDATE TO "authenticated" USING ((("hole_id" IN ( SELECT "gh"."id"
+CREATE POLICY "golf_shots_update" ON "public"."golf_shots" FOR UPDATE TO "authenticated" USING ((("hole_id" IN ( SELECT "gh"."id"
    FROM (("public"."golf_holes" "gh"
      JOIN "public"."golf_rounds" "gr" ON (("gr"."id" = "gh"."round_id")))
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
   WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) OR ("round_id" IN ( SELECT "gr"."id"
    FROM ("public"."golf_rounds" "gr"
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))) WITH CHECK ((("hole_id" IN ( SELECT "gh"."id"
-   FROM (("public"."golf_holes" "gh"
-     JOIN "public"."golf_rounds" "gr" ON (("gr"."id" = "gh"."round_id")))
-     JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) OR ("round_id" IN ( SELECT "gr"."id"
-   FROM ("public"."golf_rounds" "gr"
-     JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
-  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-CREATE POLICY "golf_shots_update_team" ON "public"."golf_shots" FOR UPDATE TO "authenticated" USING (("hole_id" IN ( SELECT "gh"."id"
+  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) OR (EXISTS ( SELECT 1
+   FROM "public"."golf_rounds" "gr"
+  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")))) OR ("hole_id" IN ( SELECT "gh"."id"
    FROM (((("public"."golf_holes" "gh"
      JOIN "public"."golf_rounds" "gr" ON (("gr"."id" = "gh"."round_id")))
      JOIN "public"."golf_team_members" "gtm" ON (("gtm"."player_id" = "gr"."player_id")))
      JOIN "public"."golf_teams" "gt" ON (("gt"."id" = "gtm"."team_id")))
      JOIN "public"."golf_coaches" "gc" ON (("gc"."organization_id" = "gt"."organization_id")))
-  WHERE (("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("gtm"."status" = 'active'::"public"."team_member_status"))))) WITH CHECK (("hole_id" IN ( SELECT "gh"."id"
+  WHERE (("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("gtm"."status" = 'active'::"public"."team_member_status")))))) WITH CHECK ((("hole_id" IN ( SELECT "gh"."id"
+   FROM (("public"."golf_holes" "gh"
+     JOIN "public"."golf_rounds" "gr" ON (("gr"."id" = "gh"."round_id")))
+     JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
+  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) OR ("round_id" IN ( SELECT "gr"."id"
+   FROM ("public"."golf_rounds" "gr"
+     JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
+  WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) OR (EXISTS ( SELECT 1
+   FROM "public"."golf_rounds" "gr"
+  WHERE (("gr"."id" = "golf_shots"."round_id") AND ("gr"."team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("gr"."team_id")))) OR ("hole_id" IN ( SELECT "gh"."id"
    FROM (((("public"."golf_holes" "gh"
      JOIN "public"."golf_rounds" "gr" ON (("gr"."id" = "gh"."round_id")))
      JOIN "public"."golf_team_members" "gtm" ON (("gtm"."player_id" = "gr"."player_id")))
      JOIN "public"."golf_teams" "gt" ON (("gt"."id" = "gtm"."team_id")))
      JOIN "public"."golf_coaches" "gc" ON (("gc"."organization_id" = "gt"."organization_id")))
-  WHERE (("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("gtm"."status" = 'active'::"public"."team_member_status")))));
+  WHERE (("gc"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("gtm"."status" = 'active'::"public"."team_member_status"))))));
 
 CREATE POLICY "golf_staff_invite_codes_select" ON "public"."golf_staff_invite_codes" FOR SELECT TO "authenticated" USING ("public"."is_golf_team_head_coach"("team_id"));
 

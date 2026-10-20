@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
@@ -8,6 +10,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifiers } from '@/components/fairway/pages/qualifiers/FairwayQualifiers';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 export const metadata: Metadata = {
   title: 'Qualifiers',
@@ -23,6 +26,9 @@ export default async function GolfQualifiersPage() {
   // login redirect costs nothing.
   const [session, supabase] = await Promise.all([getGolfSessionProfile(), createClient()]);
   if (!session) redirect('/golf/login');
+
+  // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) return <ClubhouseQualifiersRoute view="list" />;
 
   const { role, coach, player } = session;
   const isCoach = role === 'coach';

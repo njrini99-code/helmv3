@@ -2,7 +2,7 @@
 
 import { useMemo, type ReactNode } from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { X } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useSafeAreaInsets } from '@/hooks/use-mobile-detection';

@@ -15,7 +15,7 @@ import { render, screen } from '@testing-library/react';
 import type { GolfCourse } from '@/lib/types/golf-course';
 
 vi.mock('@/components/ui/sonner', () => ({ useToast: () => ({ showToast: vi.fn() }) }));
-vi.mock('@/lib/golf/upload-course-image', () => ({ uploadCourseImage: vi.fn() }));
+vi.mock('@/lib/golf/upload-course-image', () => ({ uploadCourseImage: vi.fn(), discardCourseImageUpload: vi.fn(async () => {}) }));
 // Mounted-but-closed children (CourseDetailDrawer, CourseFormDrawer) still
 // import the server-action module at module-eval time, so it must be
 // mocked even though no mutation runs in this test.

@@ -252,7 +252,15 @@ export async function run(ctx) {
       out.push(check('db-observability.TRACEPARENT_CERTIFIED', Status.FAIL, 'TRACEPARENT_CERTIFIED: scripts/db-observability-trace-cert.mjs is missing'));
     } else {
       try {
-        const stdout = execFileSync('node', [certScriptPath, '--json'], { cwd: repoRoot, encoding: 'utf-8', timeout: 15_000 });
+        let stdout;
+        try {
+          stdout = execFileSync('node', [certScriptPath, '--json'], { cwd: repoRoot, encoding: 'utf-8', timeout: 15_000 });
+        } catch (runErr) {
+          // The script exits 1 when a check fails but still prints its JSON
+          // report; only output that does not parse is a crash.
+          if (!runErr?.stdout) throw runErr;
+          stdout = runErr.stdout.toString();
+        }
         const parsed = JSON.parse(stdout);
         out.push(
           parsed.ok

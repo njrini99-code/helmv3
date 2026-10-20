@@ -1,6 +1,8 @@
 <!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Sentry coverage matrix — current state (Phase A)
 
+> **STATUS: HISTORICAL — Phase A measurement at commit 44f4ce183 (2026-09). Mentions of Inngest below describe a system removed on 2026-10-06; current state: `memory/features/admin-platform.md` and `docs/observability/SENTRY_CRON_MONITORS.md` (2026-10-07)**
+
 ## How this table was measured
 
 Read at commit `44f4ce183` (branch `main`), from the canonical checkout

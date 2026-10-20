@@ -9,6 +9,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -18,6 +19,7 @@ import {
   setCoachPick,
   removeCoachPick,
   confirmSelection,
+  chooseTiePlace,
 } from '@/lib/coachhelm/v3/qualifying/service';
 import type { QualifierSelectionState } from '@/lib/coachhelm/v3/qualifying/types';
 import { describeError } from '@/lib/utils/describe-error';
@@ -25,6 +27,8 @@ import { describeError } from '@/lib/utils/describe-error';
 export interface QualifyingActionResult {
   ok: boolean;
   error?: string;
+  /** Confirm only: false when the squad committed but telling the players failed (Q-116). */
+  notified?: boolean;
 }
 
 async function getAuthedCoachContext(qualifier_id: string) {
@@ -189,14 +193,23 @@ async function confirmQualifierSelectionImpl(
     const ctx = await getAuthedCoachContext(qualifier_id);
     if (!ctx.ok) return ctx;
 
-    const r = await confirmSelection(ctx.supabase, {
-      qualifier_id,
-      user_id: ctx.user.id,
-    });
+    // The travel brief goes into the PRIMARY coach's CoachHelm chat (W32),
+    // which only that coach's session may write. An assistant confirming
+    // lost it (P009), so the brief is written with the service role. That is
+    // safe here because getAuthedCoachContext has already verified, via
+    // verifyTeamAccess → coach_id_for_team, that the caller is on
+    // golf_team_coach_staff for this qualifier's team (team_id read
+    // server-side from the qualifier). Everything else in the confirm still
+    // runs under the caller's session and RLS.
+    const r = await confirmSelection(
+      ctx.supabase,
+      { qualifier_id, user_id: ctx.user.id },
+      { briefClient: () => createAdminClient() },
+    );
     if (!r.ok) return r;
 
     pathsToRevalidate(qualifier_id).forEach((p) => revalidatePath(p));
-    return { ok: true };
+    return { ok: true, notified: r.data.notified };
   } catch (err) {
     await logServerError(
       `confirmQualifierSelection failed: ${describeError(err)}`,
@@ -204,6 +217,51 @@ async function confirmQualifierSelectionImpl(
     );
     return { ok: false, error: 'Internal error' };
   }
+}
+
+/**
+ * Q-114: give a place at a tied cut to a level player, or take it back.
+ * Same coach and roster checks as a coach's pick.
+ */
+async function chooseQualifierTiePlaceImpl(
+  qualifier_id: string,
+  player_id: string,
+  give: boolean,
+): Promise<QualifyingActionResult> {
+  try {
+    const ctx = await getAuthedCoachContext(qualifier_id);
+    if (!ctx.ok) return ctx;
+    const roster = await verifyPlayersOnTeam(ctx.team_id, [player_id], ctx.supabase);
+    if (!roster.ok) {
+      return {
+        ok: false,
+        error: roster.reason === 'unavailable'
+          ? "Couldn't confirm your roster just now. Please try again."
+          : 'That player is not on this team',
+      };
+    }
+    const r = await chooseTiePlace(ctx.supabase, { qualifier_id, player_id, user_id: ctx.user.id, give });
+    if (!r.ok) return r;
+    pathsToRevalidate(qualifier_id).forEach((p) => revalidatePath(p));
+    return { ok: true };
+  } catch (err) {
+    await logServerError(`chooseQualifierTiePlace failed: ${describeError(err)}`, { action: 'v3.qualifying.chooseTiePlace' });
+    return { ok: false, error: 'Internal error' };
+  }
+}
+
+const observedChooseQualifierTiePlace = withAdminObserved(
+  'chooseQualifierTiePlace',
+  { sport: 'golf', feature: 'qualifiers' },
+  chooseQualifierTiePlaceImpl,
+);
+
+export async function chooseQualifierTiePlace(
+  qualifier_id: string,
+  player_id: string,
+  give: boolean,
+): Promise<QualifyingActionResult> {
+  return observedChooseQualifierTiePlace(qualifier_id, player_id, give);
 }
 
 const observedConfirmQualifierSelection = withAdminObserved(

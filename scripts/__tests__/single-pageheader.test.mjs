@@ -76,7 +76,7 @@ function countMatches(content, re) {
 }
 
 /**
- * Strip /* … *​/ block comments and // line comments so structural checks
+ * Strip block comments and // line comments so structural checks
  * (<header>, <h1>, sticky/blur markers) don't false-positive on prose that
  * legitimately mentions those tokens inside a doc comment.
  */

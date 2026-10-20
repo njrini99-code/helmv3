@@ -67,6 +67,17 @@ export function UnifiedIncidentQueue({
   presentations,
   genomeByIncident,
   releaseRelationships,
+  /**
+   * What the empty, fully-readable state says. The list this component gets
+   * is already narrowed by the page's lens and filters, so a platform-wide
+   * sentence ("no unresolved incidents") under `?lens=regressions` or
+   * `?sport=baseball` claimed far more than the empty list proved. The page
+   * scopes the sentence to the view it actually rendered.
+   */
+  allClearLabel = 'Nothing in the queue — no unresolved incidents',
+  /** One quiet row instead of the full green block, for when the page already
+   *  leads with an `AllClearBanner` saying the same thing. */
+  quietAllClear = false,
 }: {
   incidents: readonly UnifiedIncident[];
   eventIdsByIncident: Record<string, string[]>;
@@ -80,6 +91,8 @@ export function UnifiedIncidentQueue({
   presentations?: Record<string, IncidentPresentation>;
   genomeByIncident?: ReadonlyMap<string, IncidentGenome>;
   releaseRelationships?: ReadonlyMap<string, ReleaseRelationshipVerdict>;
+  allClearLabel?: string;
+  quietAllClear?: boolean;
 }) {
   const router = useRouter();
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(new Set());
@@ -99,7 +112,7 @@ export function UnifiedIncidentQueue({
 
   if (visible.length === 0) {
     return canClaimAllClear ? (
-      <PanelAllClear label="Nothing in the queue — no unresolved incidents" checkedAt={checkedAt} />
+      <PanelAllClear label={allClearLabel} checkedAt={checkedAt} variant={quietAllClear ? 'inline' : 'block'} />
     ) : (
       <PanelNoData
         label="No incidents found in readable sources"

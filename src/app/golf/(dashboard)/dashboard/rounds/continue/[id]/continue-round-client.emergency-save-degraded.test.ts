@@ -8,10 +8,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(
-  new URL('./continue-round-client.tsx', import.meta.url),
-  'utf8',
-);
+const source = [
+  // The engine moved to use-continue-round-session.ts (ROUNDS_PLAN step 5b); its text comes first, as it did in the component.
+  readFileSync(new URL('../../../../../../../lib/golf/round-session/use-continue-round-session.ts', import.meta.url), 'utf8'),
+  readFileSync(new URL('./continue-round-client.tsx', import.meta.url), 'utf8'),
+].join('\n');
 
 describe('Continue Round — surfaces the emergency-save degraded notice (C5)', () => {
   it('imports the degraded-event name from emergency-save.ts', () => {

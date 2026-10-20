@@ -20,9 +20,24 @@
 
 ## Current State
 
-The golf round lifecycle covers creating a round, saving drafts, continuing in-progress rounds, submitting final scoring and shot detail, generating reviews or recaps, and feeding CoachHelm intelligence after the round.
+The golf round lifecycle covers creating a round, saving drafts, continuing
+in-progress rounds, submitting final scoring and shot detail, generating reviews
+or recaps, and feeding CoachHelm intelligence after the round.
 
-This is one of the highest-risk product areas because a broken write path can lose user-entered golf data, corrupt stats, or feed bad evidence into CoachHelm.
+Both shells run the offline sync engine (`src/lib/offline/sync-engine.ts`) for
+the whole session. Fairway starts it in `OfflineProvider`, and Clubhouse starts
+it in `src/clubhouse/shell/OfflineSync.tsx` (swap audit F-14, 2026-09-30).
+Queued rounds, holes and shots therefore sync on the engine's interval, after a
+reload and on reconnect, not only while a round screen is open. With the
+Clubhouse flag on, `/golf/dashboard/rounds/recover` opens the Clubhouse recovery
+screen. New and Continue round use that destination when submission requires
+recovery. The screen exposes device snapshots with Restore, Retry and explicit
+Discard, rather than sending the player to a library that cannot read them
+(resolved F-02, `docs/clubhouse/SWAP_AUDIT.md`). Source and unit verification
+are recorded there; a physical-device failed-submit journey remains unverified.
+
+This is one of the highest-risk product areas because a broken write path can
+lose user-entered golf data, corrupt stats, or feed bad evidence into CoachHelm.
 
 As of 2026-08-22, partial-save child failures preserve the in-progress parent
 round for retry. A player cannot enter tracking until that parent is committed,
@@ -61,7 +76,8 @@ resync its optimistic-lock token and overwrite the newer server state — both
 round screens now block further writes until the player reloads, with one
 narrow self-healing exception for this device's own unreadable write (a
 background beacon, or — since 2026-09-15 — a foreground save the browser
-killed on phone lock). A round's start date can no longer be set in the future from
+killed on phone lock). A round's start date can no longer be set in the future
+from
 either round-start screen. Full mechanics for both live in
 `memory/features/shot-tracking.md`, since the RPCs and client guards they
 touch are shared with shot tracking, not lifecycle-specific.
@@ -97,7 +113,14 @@ separate `recordWorkflow` calls directly in `golf.ts`.
 
 ### Actions
 
-- `src/app/golf/actions/golf.ts`
+- `src/app/golf/actions/round-submit.ts` (`submitGolfRoundComprehensive`)
+- `src/app/golf/actions/round-partial.ts` (`savePartialRound`,
+  `deleteInProgressRound`)
+- `src/app/golf/actions/saved-courses.ts`,
+  `src/app/golf/actions/golf-action-shared.ts`
+- The former `golf.ts` was split by domain; the older prose in this document
+  that says `golf.ts` means these files (map:
+  `src/app/golf/actions/ACTIONS.md`).
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/round-recap.ts`
 - `src/app/golf/actions/round-review-system.ts`
@@ -143,13 +166,22 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 
 ## Business Rules
 
+- Back-nine start and failed reads (2026-10-17): a 9-hole back-nine start from
+  a saved course writes its hole setup numbered 1..9 (the engine's numbering);
+  the course catalog contribution keeps 10..18. The library banner's Discard
+  marks the round discarded and drops its offline-queue copy, as the round
+  screen does. Continue and round detail offer no qualifier when the
+  taken-rounds or entries read fails, instead of showing every round free.
+  Held `20261017110000` makes `recompute_golf_round_totals` keep unrecorded
+  putts NULL (apply after `20260708141000`).
 - Test rounds (OD-03, 2026-09-27): `golf_rounds.is_test = true` marks a QA or
   demo round. List and aggregate reads (the rounds list, home, recent
   courses) filter `.eq('is_test', false)`; by-id reads (round detail, review,
   continue), writes and the lifecycle guard ignore the flag. Flagging a
   completed round is an owner-approved data write, run as postgres with the
   same transaction-local lifecycle marker the atomic round RPCs set.
-- Do not use DELETE-then-INSERT for save, submit, or sync paths. Use idempotent upserts or a safe stage-and-swap pattern.
+- Do not use DELETE-then-INSERT for save, submit, or sync paths. Use idempotent
+  upserts or a safe stage-and-swap pattern.
 - Child-write failures must preserve the `in_progress` parent round and prior
   durable children so interruption recovery can retry without data loss.
 - A player may begin tracking only after an `in_progress` parent exists in the
@@ -166,20 +198,22 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   use recovery data for scorecard content, but must not let stale client
   metadata change persisted identity. That identity is immutable **to the
   round-tracking path** — it is not immutable outright; see the
-  reclassification rules below, which are the one sanctioned way it changes. A legacy missing qualifier
+  reclassification rules below, which are the one sanctioned way it changes. A
+  legacy missing qualifier
   round number may be filled only after the database verifies the same entrant,
   an open qualifier, and an unused valid number. Continue Round obtains those
   choices from the authenticated server and asks the player to select one at
   final submit; it never invents a qualifier result from a browser backup.
-- Authenticated users must only create or modify rounds they are allowed to own or coach.
-- Round-start validation must accept whatever the course library stores for
-  the course's city and state. The library's `golf_courses.state` is free text
+- Authenticated users must only create or modify rounds they are allowed to own
+  or coach.
+- Round-start validation must accept whatever the course library stores for the
+  course's city and state. The library's `golf_courses.state` is free text
   (Canadian courses carry "Ontario", not "ON") and the tee picker copies it into
   the round verbatim, so both round schemas allow `courseState` up to 100
   characters — the same cap as `courseCity`; the `golf_rounds.course_state`
-  column is `text`. A fresh round's first save carries no holes, so a
-  validation failure on any top-level field is unsalvageable and reaches the
-  player as a bare `retry` ("start round does nothing"). See
+  column is `text`. A fresh round's first save carries no holes, so a validation
+  failure on any top-level field is unsalvageable and reaches the player as a
+  bare `retry` ("start round does nothing"). See
   `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`.
 - Direct database writes cannot create, mutate, or delete a completed round
   or its child shots. Only the postgres-owned SECURITY DEFINER round RPCs may
@@ -200,7 +234,8 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   marks a parked or legacy-failed round stamped analyzed because a later run
   for the same player covered it. Only the code goes in the reason column —
   the player can read their own row — never a message or an exception.
-- Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
+- Draft and submit behavior must preserve partial progress and recover from
+  interrupted sessions.
 - The protected atomic submit RPC is the only live completion writer. On every
   RPC failure, application code must preserve the server/device backups and
   either reconcile a committed result or return the player to retry/recovery;
@@ -229,7 +264,8 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Local recovery UI may appear only when its scorecard or shot data differs
   from the server's persisted progress; a newer timestamp alone is not proof
   of unsaved work.
-- Round review and CoachHelm triggers must use committed round data, not stale draft state.
+- Round review and CoachHelm triggers must use committed round data, not stale
+  draft state.
 - Round-review history/chronology reads by the REVIEWED ROUND's date, never
   by when the review row was generated, and the historical comparison
   baseline used to generate a review ("as played") must exclude rounds
@@ -241,8 +277,10 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   `'published'` in practice — `publishReviewImpl` is the only writer) takes
   precedence, then `patterns_detected.status`, then `shared_with_coach` as a
   last-resort default. Do not re-derive status inline at a new call site.
-- Cache invalidation must include player-facing and coach-facing views that reflect the round.
-- Score, hole, shot, lie, and strokes-gained calculations must stay consistent with `docs/v3-research-golf-domain.md`.
+- Cache invalidation must include player-facing and coach-facing views that
+  reflect the round.
+- Score, hole, shot, lie, and strokes-gained calculations must stay consistent
+  with `docs/v3-research-golf-domain.md`.
 - Completed score history is immutable. Any post-submit derived write must use
   its explicit protected database capability: strokes gained through
   `recalculate_round_strokes_gained`, CoachHelm markers through
@@ -285,7 +323,8 @@ Use `memory/context/golfhelm-database.md` for exact columns.
     - The Rounds dashboard also flags an `in_progress` round whose every hole
       already carries a durable `golf_holes` score with a "Ready to submit"
       pill and a "Finish submitting" CTA instead of "In progress"/"Continue"
-      — same destination, since `continue-round-client.tsx`'s own mount
+      — same destination, since the continue engine's
+      (`use-continue-round-session.ts`) own mount
       effect ("If ALL holes are already scored on mount") already re-opens
       the submit dialog once it independently sees every hole scored. This
       deliberately reads `golf_holes`, not `draft_data.submissionBackup`
@@ -328,6 +367,37 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   this fix has no in-app way to correct its date; only the block on new
   future-dated rounds shipped this date, tracked as an explicit gap here
   rather than silently declared solved.
+
+### Shotgun start (2026-10-10)
+
+- Setup offers "Starting hole" (Clubhouse `RoundSetup`, Fairway
+  `FairwayNewRoundEntry`), default hole 1. It is
+  stored as a POSITION 1..N in the holes the round plays
+  (`setupData.startHole`), because the engine numbers a
+  9-hole round's nine 1..9 (a back nine included). A 9-hole round wraps inside
+  its nine.
+- Only the play order changes. `holes[]`, `completedHoleStats[]` and in-progress
+  shots stay indexed by
+  `hole.number - 1`; scores and shots land on `hole_number` as always.
+  `current_hole` stays the hole NUMBER the
+  player is on, so a resume lands on the right hole with or without the start
+  hole.
+- Rules live in `src/lib/golf/round-session/play-order.ts`
+  (next/previous/last/frontier/position and
+  `decidePostHoleCompleteAction`, shared by both engines). From 6: 6..18, then
+  1..5; finish after the 18th hole
+  played. The finish gate walks every hole (`allHolesScored`), never `.every`
+  over a sparse array.
+- Persistence: `savePartialRound` writes `draft_data.startHole` on every save
+  (draft_data is replaced wholesale, so
+  every writer sends it); `saveRoundDraft` keeps it inside `setupData`. No
+  column, no migration. A completed round
+  loses it when submit rewrites `draft_data`, so the review and stats read holes
+  by number (Out/In, front/back,
+  ScoreFlow, sequence analysis), which is correct for scoring.
+- Navigation (strip, header Prev/Next, swipe, "back to current hole", the
+  unfinished card's next hole) follows play
+  order; the strip and scorecard still read by hole number.
 
 ### Penalty strokes (2026-09-09)
 
@@ -529,10 +599,14 @@ reload (`lieFromShotResult`) restore position from.
 
 ## UI Contract
 
-- New round, continue round, review, loading, error, and recovery routes must all be usable on mobile.
-- Draft/recovery screens must clearly distinguish recoverable local/session state from submitted server state.
-- Submission should make progress and failure states visible enough to prevent duplicate or uncertain submits.
-- Empty states should say whether the player has no rounds, no unfinished rounds, or no review yet.
+- New round, continue round, review, loading, error, and recovery routes must
+  all be usable on mobile.
+- Draft/recovery screens must clearly distinguish recoverable local/session
+  state from submitted server state.
+- Submission should make progress and failure states visible enough to prevent
+  duplicate or uncertain submits.
+- Empty states should say whether the player has no rounds, no unfinished
+  rounds, or no review yet.
 - Continue Round uses the shared Fairway mobile header, scorecard controls,
   buttons, and recovery modal. Its save-and-exit action is secondary; the live
   shot/complete control is the only primary action in the thumb zone.
@@ -553,6 +627,19 @@ reload (`lieFromShotResult`) restore position from.
   remounted an empty form and auto-opened the picker — "it loaded, then reset
   to the course screen" with no message (UNCW, Oviinbyrd GC). Rounds with
   shots are still owned by the emergency-save / recovery path, not this cache.
+- Any golf team member, coach or player, can set the photo of any course from
+  round setup (owner decision 2026-10-16). `attachCourseImage` uploads to the
+  public `course-images` bucket, then `setCourseImageUrl` calls the
+  `golf_set_course_image` RPC (SECURITY DEFINER; it checks active team
+  membership, coach or super admin, that the URL is in this course's folder, and
+  that the course is not soft-deleted, then writes only `image_url`, the
+  last-edited columns and a `golf_course_edit_history` row). Players are still
+  refused every other `golf_courses` write: the UPDATE policy was not widened.
+  If the RPC is missing (PGRST202 or 42883, code deployed before the migration),
+  `setCourseImageUrl` logs a warning and falls back to the old coach-only
+  `updateCourse` path. `removeCourseImage` stays coach-only. Before this, a
+  player's photo went through `updateCourse` and its coach gate, so the upload
+  succeeded and the photo silently never landed.
 - A round-start failure is shown beside the control that started the round.
   On the confirmed-course path that control is `FairwayHoleConfig`'s own
   "Start round" dock, so the parent's error travels down as `submitError`
@@ -577,22 +664,21 @@ reload (`lieFromShotResult`) restore position from.
 
 ## Known Risk Areas
 
-- **Golf player round and shot history is an owner-level absolute
-  constraint: never deletable outside the two protected write paths**
-  (`submit_round_atomic`/`save_partial_round_atomic`, both `SECURITY
-  DEFINER` and self-checking `player_id`; or the player-scoped JS
-  fallback authorized by the player's own delete policies). A confirmed
-  2026-08-19 defect let any `assistant_coach` (not just the head coach)
-  delete a team's entire round/shot history through three role-blind
-  DELETE policies — closed by
+- **Golf player round and shot history is an owner-level absolute constraint:
+  never deletable outside the two protected write paths**
+  (`submit_round_atomic`/`save_partial_round_atomic`, both `SECURITY DEFINER`
+  and self-checking `player_id`; or the player-scoped JS fallback authorized by
+  the player's own delete policies). A confirmed 2026-08-19 defect let any
+  `assistant_coach` (not just the head coach) delete a team's entire round/shot
+  history through three role-blind DELETE policies — closed by
   `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`.
   Any new DELETE/ALL policy on `golf_rounds`/`golf_shots`/`golf_holes`/
   `golf_round_reviews` must use `is_golf_team_head_coach()`, never the
   existence-only `is_golf_team_coach()` — see
-  `memory/context/engineering-methodology.md`'s Row-Level Security
-  section for the verification technique. A decrease in `golf_rounds`,
-  `golf_shots`, `golf_holes`, `golf_players` or `golf_round_reviews` row
-  counts is this class of incident recurring, not a discrepancy.
+  `memory/context/engineering-methodology.md`'s Row-Level Security section for
+  the verification technique. A decrease in `golf_rounds`, `golf_shots`,
+  `golf_holes`, `golf_players` or `golf_round_reviews` row counts is this class
+  of incident recurring, not a discrepancy.
 - Race conditions between save draft, submit, and recovery.
 - Undo, edit, and delete actions share a local single-flight guard. If the
   authorized server lookup confirms a shot is already absent, Undo and Delete
@@ -663,7 +749,8 @@ reload (`lieFromShotResult`) restore position from.
   behavior is byte-for-byte what it was before, only migration
   `20260923080000`'s cheap `ai_recap IS NULL` guard applies). Migration
   `20260923100000` adds `golf_round_recap_locks` — composite PK `(round_id,
-  revision, kind)`, `holder_token`, `expires_at` — plus `claim_round_recap_lock`/
+  revision, kind)`, `holder_token`, `expires_at` — plus
+  `claim_round_recap_lock`/
   `release_round_recap_lock` (service-role only, zero authenticated access —
   unlike `golf_round_recap_provenance`, which authenticated may read). No
   "recap revision" concept exists anywhere in this codebase today (checked
@@ -700,14 +787,16 @@ reload (`lieFromShotResult`) restore position from.
   `20260923100000` in place, so the lock generalization and the narrative's
   `ai_narrative` column apply atomically — no window where one is applied
   without the other.
-- (2026-09-23) New surface: `getRoundReviewNarrative` (`round-review-narrative.ts`),
+- (2026-09-23) New surface: `getRoundReviewNarrative`
+  (`round-review-narrative.ts`),
   a lazily-generated 3-5 sentence LLM paragraph for the Round Review page,
   cached on `golf_round_reviews.ai_narrative` (added in the same
   `20260923100000` migration). Gated end-to-end behind
   `coachhelm_round_review_narrative` (default off) — the flag is checked
   FIRST, before any DB read, RPC, or LLM call, so flag-off is truly zero
   cost. Uses task key `round_review_narrative` (Haiku tier,
-  `FALLBACK_PRIORITY` 4) in `src/lib/coachhelm/v3/llm/round-review-narrative.ts`,
+  `FALLBACK_PRIORITY` 4) in
+  `src/lib/coachhelm/v3/llm/round-review-narrative.ts`,
   deliberately its own composer rather than reusing `composeRoundReview`
   (task `round_review`), which is an ephemeral 80-150 word surface that is
   never persisted — the two must stay independently tunable. Never
@@ -756,7 +845,8 @@ reload (`lieFromShotResult`) restore position from.
 - RLS tests for round and shot ownership.
 - Regression coverage for every explicit completed-round write capability and
   a migration replay/RLS suite for its grants and security boundary.
-- Playwright smoke for new round, continue round, submit/review, and mobile recovery.
+- Playwright smoke for new round, continue round, submit/review, and mobile
+  recovery.
 - `src/app/golf/actions/__tests__/round-review-error-codes.test.ts` — typed
   failure codes and error logging for `generateAndStoreRoundReview`'s
   compute path (2026-09-23).
@@ -779,7 +869,9 @@ across round entry (front/back nine, 9/18 holes) — gained a dark-scope
 accent-green selected thumb and full-contrast inactive labels
 (`src/components/fairway/controls/segmented.tsx`); light mode unchanged.
 The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
-`warm-*` text tokens that rendered unreadable in dark scope. The new-round hole editor's par chips fire the selection detent as of the same date (§32 gap closed by live bridge-log QA).
+`warm-*` text tokens that rendered unreadable in dark scope. The new-round hole
+editor's par chips fire the selection detent as of the same date (§32 gap closed
+by live bridge-log QA).
 
 ## Related Docs
 
@@ -799,7 +891,8 @@ inclusive of the inset), both `FairwayNewRoundEntry`
 step wrappers fold the inset into top padding, and the course-picker close
 control sits below the status bar. The shared `Segmented` control renders an
 accent-green selected thumb in dark scope. Presentation layer only — no
-lifecycle contract change. Ledger: the round-lifecycle file under `memory/ledgers/changes/`
+lifecycle contract change. Ledger: the round-lifecycle file under
+`memory/ledgers/changes/`
 (2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`
 (course picker, tee step, setup band, and scorecard header captures).
 
@@ -818,9 +911,12 @@ close controls have 44px touch targets. Safe-area regression coverage is in
 `e2e/golf-critical-paths.spec.ts` and only inspects the picker without starting
 a round.
 
-New-round completion shows a fixed, non-blocking loading status while its summary/submit chunks
-load. The summary remains mounted after its first finish attempt so closing can complete the shared
-sheet exit. Round-detail distribution segments keep their final layout widths and reveal with
+New-round completion shows a fixed, non-blocking loading status while its
+summary/submit chunks
+load. The summary remains mounted after its first finish attempt so closing can
+complete the shared
+sheet exit. Round-detail distribution segments keep their final layout widths
+and reveal with
 transforms.
 
 ### Continue Round header ownership (2026-09-08)

@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseCalendarRoute } from '@/clubhouse/routes/calendar';
 import { FairwayCalendarSkeleton } from '@/components/fairway/pages/calendar/FairwayCalendarSkeleton';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
@@ -12,6 +14,7 @@ import type { Metadata } from 'next';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 import { splitDisplayName } from '@/lib/types/calendar';
 import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import {
@@ -21,6 +24,7 @@ import {
   type CoachTaskOverdueRow,
   type PlayerAssignmentOverdueRow,
 } from '@/lib/golf/overdue-task-count';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 // Code-split the Fairway calendar surface — it's the ONLY tree the route
 // renders, so this next/dynamic keeps its chunk loaded only when actually
@@ -47,14 +51,20 @@ interface GolfCalendarPageProps {
    * calendar event" chip) deep-links here so the specific event's detail
    * drawer auto-opens instead of landing on the general calendar hub.
    */
-  searchParams: Promise<{ event?: string }>;
+  searchParams: Promise<{ event?: string; view?: string; date?: string; new?: string; with?: string; type?: string }>;
 }
 
 export default async function GolfCalendarPage({ searchParams }: GolfCalendarPageProps) {
-  const { event: initialEventId } = await searchParams;
+  const { event: initialEventId, view, date, new: isNew, with: withPlayer, type: newType } = await searchParams;
   // React.cache() dedupes getUser() + profile queries — free after layout runs them
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
+
+  // Clubhouse Calendar (golf_clubhouse_ui): coaches and players, each with the
+  // permissions they already have.
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) {
+    return <ClubhouseCalendarRoute view={view} date={date} event={initialEventId} isNew={isNew === '1'} withPlayer={withPlayer} newType={newType} />;
+  }
 
   const { role, coach, player } = session;
   const isCoach = role === 'coach';
@@ -64,11 +74,11 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   // Supabase client for team/event data lookups only
   const supabase = await createClient();
 
-  let teamId: string | null = null;
+  let teamId: string | null;
 
-  let coachList: { id: string; full_name: string | null; avatar_url: string | null }[] = [];
+  let coachList: { id: string; full_name: string | null; avatar_url: string | null }[];
   /** DB error from the membership read — checked after the try/catch, not inside it. */
-  let playerTeamError: { message?: string; code?: string } | null = null;
+  let playerTeamError: { message?: string; code?: string } | null;
   try {
     const [coachTeamId, playerTeamResult, coachListResult] = await Promise.all([
       orgId
@@ -106,7 +116,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
     // Catches the NETWORK-layer exceptions supabase-js does throw (fetch
     // failure, aborted request) and anything resolveCoachTeamIdWithCookie
     // raises. It does NOT catch database errors — see below.
-    throw new Error('Failed to load your team for the calendar. Please try again.');
+    throw new Error('Failed to load your team for the calendar. Please try again.', { cause: error });
   }
 
   // The `error` is READ.
@@ -198,7 +208,7 @@ export async function CalendarEventsSection({
   playerId,
   initialEventId,
 }: CalendarEventsSectionProps) {
-  let events: CalendarEvent[] = [];
+  let events: CalendarEvent[];
   let teamMembers: {
     id: string;
     first_name: string;
@@ -437,6 +447,17 @@ export async function CalendarEventsSection({
       recurrence_rule: event.recurrence_rule,
     };
   });
+
+  // A player sees a meeting only when they are invited to it (their own
+  // attendance row; meeting-visibility.ts). golf_events_select_team still
+  // returns every team meeting to a player until the held migration
+  // 20261018120000 lands, so this is what keeps a 1:1's title off a teammate's
+  // calendar. A failed invite read hides every meeting. Coaches are unchanged.
+  if (!isCoach) {
+    events = await filterMeetingsForPlayer(supabase, events, playerId, {
+      action: 'golf.calendarPage.meetingInvites',
+    });
+  }
 
   // Label each class occurrence with the player it belongs to (and, for a
   // player viewer, drop teammates' classes — see attributeClassEvents). Done

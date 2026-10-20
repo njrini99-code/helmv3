@@ -18,7 +18,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as React from 'react';
 
-vi.mock('framer-motion', () => {
+vi.mock('motion/react', () => {
   const passthrough = new Proxy(
     {},
     {

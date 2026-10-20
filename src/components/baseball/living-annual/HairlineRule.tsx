@@ -18,7 +18,7 @@
  * (twMerge lets `w-16` win). Default `weight` ~1.5px lives in the `style` map
  * (never an arbitrary `h-[Npx]` className).
  */
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { rulesDraw } from './motion';
 

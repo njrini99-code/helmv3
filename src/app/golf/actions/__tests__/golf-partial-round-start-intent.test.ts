@@ -47,7 +47,7 @@ vi.mock('@/lib/notifications', () => ({ notifyQualifierCreated: vi.fn(async () =
 vi.mock('@/lib/notifications/email', () => ({ sendEmailNotification: vi.fn(async () => ({ success: true })) }));
 vi.mock('@/lib/notifications/push', () => ({ sendBulkPushNotification: vi.fn(async () => {}) }));
 
-import { savePartialRound } from '../golf';
+import { savePartialRound } from '../round-partial';
 
 const COURSE = '11111111-1111-4111-8111-111111111111';
 const EXISTING_ROUND = '22222222-2222-4222-8222-222222222222';

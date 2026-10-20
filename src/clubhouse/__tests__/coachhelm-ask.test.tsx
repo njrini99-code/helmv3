@@ -1,0 +1,922 @@
+import { LazyMotion, domAnimation } from 'motion/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { UIMessage } from 'ai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import './dialog-polyfill';
+
+/**
+ * Ask CoachHelm (P013 Ask sub-tab): the frame, found by its numbers in docs/clubhouse/catalog/coachhelm.md: the sub-tab
+ * strip, the new-chat page, the composer, History (the panel and the phone drawer), the container's wiring and the states
+ * that stand in for the thread. The conversation's own pieces (answers, evidence, action cards) are tested with them.
+ */
+
+const hapticSpy = vi.hoisted(() => vi.fn());
+vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
+vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
+const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => '/golf/dashboard/coachhelm' }));
+const phoneState = vi.hoisted(() => ({ on: false }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => phoneState.on, CH_PHONE_QUERY: '(max-width: 820px)' }));
+// The conversation pieces are B's; here they are stand-ins that show what the frame hands them.
+const crash = vi.hoisted(() => ({ on: false }));
+vi.mock('../screens/coachhelm/chat/Thread', () => ({
+  AskThread: (p: { error: unknown; offline: boolean; phone: boolean; messages: UIMessage[]; onRetry: () => void; onNewChat: () => void; onSend: (t: string) => void; onApprove: (id: string) => void; onOpenEvidence: (f: unknown) => void }) => {
+    if (crash.on) throw new Error('the thread crashed');
+    return (
+    <div data-testid="thread">
+      <pre data-testid="thread-props">{JSON.stringify({ error: p.error, offline: p.offline, phone: p.phone, count: p.messages.length })}</pre>
+      <button type="button" onClick={p.onRetry}>
+        stub retry
+      </button>
+      <button type="button" onClick={p.onNewChat}>
+        stub new chat
+      </button>
+      <button type="button" onClick={() => p.onSend('A follow-up')}>
+        stub follow-up
+      </button>
+      <button type="button" onClick={() => p.onApprove('approval-1')}>
+        stub approve
+      </button>
+      <button type="button" onClick={() => p.onOpenEvidence({ messageId: 'a2', key: 'k', label: 'Jonah Okafor', playerId: 'p-jonah' })}>
+        stub evidence
+      </button>
+    </div>
+    );
+  },
+}));
+vi.mock('../screens/coachhelm/chat/EvidencePanel', () => ({
+  AskEvidencePanel: (p: { focus: { label: string }; phone: boolean; onClose: () => void; open?: boolean }) => (
+    <div data-testid="evidence" data-phone={String(p.phone)} data-open={String(p.open ?? true)}>
+      {p.focus.label}
+      <button type="button" onClick={p.onClose}>
+        stub close evidence
+      </button>
+    </div>
+  ),
+}));
+
+import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import type { ChAskData, ChAskLoad } from '../data/coachhelm-chat-shape';
+import { Ask, type ChAskChat } from '../screens/coachhelm/chat/Ask';
+import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
+import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from '../screens/coachhelm/chat/SubTabs';
+import { useViewSwitch } from '../screens/coachhelm/use-view-switch';
+import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
+import { ClubhouseMarker } from '../shell/context';
+import { ToastProvider } from '../ui/Toast';
+import { ASK_NOW, PREVIEW_ASK_DATA, PREVIEW_ASK_NOROUNDS } from '../preview/fixtures-ask';
+import { ASK_MSGS_ACTION, ASK_MSGS_ANSWER } from '../preview/fixtures-ask-thread';
+
+const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
+
+/** What the conversation hook would return, with spies on everything the frame can ask of it. */
+function fakeChat(state: { messages?: UIMessage[]; busy?: boolean; error?: unknown } = {}) {
+  const calls = { send: vi.fn(), stop: vi.fn(), retry: vi.fn(), newConversation: vi.fn(), approve: vi.fn(), deny: vi.fn() };
+  const seen: { options?: UseCoachHelmChatOptions } = {};
+  const hook = ((options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult => {
+    seen.options = options;
+    return {
+      messages: options.initialMessages ?? state.messages ?? [],
+      status: state.error ? 'error' : state.busy ? 'streaming' : 'ready',
+      error: state.error as Error | undefined,
+      busy: state.busy ?? false,
+      conversationId: null,
+      context: [],
+      addContext: () => {},
+      removeContext: () => {},
+      ...calls,
+    };
+  }) as ChAskChat;
+  return { hook, calls, seen };
+}
+type Fake = ReturnType<typeof fakeChat>;
+
+/** The phone shell's state, so a test can see whether the tab bar is hidden. */
+function Probe() {
+  const { noTabs } = usePhoneChromeState();
+  return <output data-testid="probe" data-notabs={String(noTabs)} />;
+}
+function SlotHost() {
+  const { setSlot } = usePhoneChromeState();
+  return <div ref={setSlot} data-testid="phone-top" />;
+}
+const ready = (over: Partial<ChAskData> = {}): ChAskLoad => ({ status: 'ready', data: { ...PREVIEW_ASK_DATA, ...over } });
+const tree = (load: ChAskLoad, chat: Fake, initial?: Parameters<typeof Ask>[0]['initial']) => (
+  <LazyMotion features={domAnimation}>
+    <ToastProvider>
+      <PhoneChromeProvider>
+        {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role */}
+        <ClubhouseMarker role="coach">
+          <div className="ch-root" data-ui="clubhouse">
+            <SlotHost />
+            <Probe />
+            <Ask load={load} chat={chat.hook} initial={initial} />
+          </div>
+        </ClubhouseMarker>
+      </PhoneChromeProvider>
+    </ToastProvider>
+  </LazyMotion>
+);
+function show(load: ChAskLoad = ready(), chat: Fake = fakeChat(), initial?: Parameters<typeof Ask>[0]['initial']) {
+  const view = render(tree(load, chat, initial));
+  return { ...view, chat, rerenderWith: (l: ChAskLoad, c: Fake = chat) => view.rerender(tree(l, c, initial)) };
+}
+const box = () => screen.getByRole('textbox') as HTMLTextAreaElement;
+/** The mention picker (cmdk) and its rows' names (the coin beside a name is aria-hidden, so it is left out). */
+const picker = () => screen.getByRole('listbox', { name: 'Mention a player or stat' });
+const optionNames = (list: HTMLElement) => within(list).getAllByRole('option').map((o) => o.querySelector('.ch-ask-pick__name')?.textContent ?? o.textContent);
+const groupNames = (list: HTMLElement, group: string) => optionNames(within(list).getByRole('group', { name: group }));
+
+// jsdom has no scrollIntoView; cmdk brings its highlighted row into view with it.
+beforeAll(() => {
+  Object.defineProperty(Element.prototype, 'scrollIntoView', { value: vi.fn(), configurable: true, writable: true });
+});
+afterAll(() => {
+  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+});
+
+let fine = true;
+const setOnline = (on: boolean) => Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => on });
+const replaceState = vi.spyOn(window.history, 'replaceState');
+
+beforeEach(() => {
+  phoneState.on = false;
+  fine = true;
+  setOnline(true);
+  hapticSpy.mockClear();
+  router.push.mockClear();
+  router.refresh.mockClear();
+  replaceState.mockClear();
+  vi.mocked(window.matchMedia).mockImplementation(
+    (query: string) =>
+      ({ matches: query.includes('pointer: fine') ? fine : false, media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }) as unknown as MediaQueryList,
+  );
+});
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+
+/** The strip as its owners (the Board, Ask) draw it: controlled by `useViewSwitch`, which is what makes a tap a route change. */
+function Strip({ at }: { at: CoachHelmView }) {
+  const sw = useViewSwitch<CoachHelmView>(at, (v) => COACHHELM_HREF[v]);
+  return (
+    <main aria-busy={sw.pending || undefined}>
+      <CoachHelmTabs active={sw.shown} onGo={sw.go} />
+    </main>
+  );
+}
+
+describe('CH-13923 the sub-tab strip', () => {
+  it('draws Board and Ask as one radiogroup with Ask on, and Board is a route change with the select haptic', async () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <div className="ch-root" data-ui="clubhouse">
+          <Strip at="ask" />
+        </div>
+      </LazyMotion>,
+    );
+    const group = screen.getByRole('radiogroup', { name: 'CoachHelm view' });
+    expect(within(group).getByRole('radio', { name: 'Ask' })).toHaveAttribute('aria-checked', 'true');
+    await userEvent.click(within(group).getByRole('radio', { name: 'Board' }));
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm');
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    cleanup();
+    render(
+      <LazyMotion features={domAnimation}>
+        <div className="ch-root" data-ui="clubhouse">
+          <Strip at="board" />
+        </div>
+      </LazyMotion>,
+    );
+    await userEvent.click(screen.getByRole('radio', { name: 'Ask' }));
+    expect(router.push).toHaveBeenLastCalledWith('/golf/dashboard/coachhelm?view=ask');
+  });
+
+  it('a tap moves the strip at once and marks the page busy until the other view is on screen (the page stays, nothing blanks)', async () => {
+    router.push.mockImplementationOnce(() => new Promise(() => {}));
+    try {
+      render(
+        <LazyMotion features={domAnimation}>
+          <div className="ch-root" data-ui="clubhouse">
+            <Strip at="board" />
+          </div>
+        </LazyMotion>,
+      );
+      const main = document.querySelector('main')!;
+      expect(main.hasAttribute('aria-busy')).toBe(false);
+      await userEvent.click(screen.getByRole('radio', { name: 'Ask' }));
+      await waitFor(() => expect(main.getAttribute('aria-busy')).toBe('true'));
+      expect(screen.getByRole('radio', { name: 'Ask' })).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getByRole('radio', { name: 'Board' })).toHaveAttribute('aria-checked', 'false');
+    } finally {
+      router.push.mockReset();
+    }
+  });
+
+  it('is on the Ask view, above the chat, with the team beside it (desktop) and without a team label on the phone', () => {
+    show();
+    expect(code('CH-13923')).not.toBeNull();
+    expect(screen.getByText('Finley University', { selector: '.ch-ask-team' })).toBeInTheDocument();
+    cleanup();
+    phoneState.on = true;
+    show();
+    expect(code('CH-13923')).not.toBeNull();
+    expect(document.querySelector('.ch-ask-team')).toBeNull();
+  });
+});
+
+describe('the new chat page (desktop)', () => {
+  it('CH-13721 greets with the team, offers the openers as pills that send with the select haptic, and draws the findings', async () => {
+    const { chat } = show();
+    expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
+    expect(screen.getByText('Answers come from your recorded rounds, signals and schedule.')).toBeInTheDocument();
+    const pills = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
+    expect(pills.map((b) => b.textContent)).toEqual(['Brief me on Finley University', 'Where is the team losing the most strokes?', 'Who is trending up this month?', "What’s on this week?"]);
+    await userEvent.click(pills[1]!);
+    expect(chat.calls.send).toHaveBeenCalledWith('Where is the team losing the most strokes?');
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(screen.getByRole('region', { name: 'Since you were last here' })).toBeInTheDocument();
+    expect(screen.getByText('6 of 8 players have a round in the last 30 days. Answers cover those 6. As of 2:00 PM.')).toBeInTheDocument();
+  });
+
+  it('a finding with a question is a button that asks it; one without is text; a link shows only when the data gave one', async () => {
+    const findings = [
+      { id: 'a', category: 'Putting', headline: 'Downhill putts dropped to 58%', evidence: 'Uphill is 81%.', tone: 'attention' as const, ask: 'Why are we missing short putts?', link: null },
+      { id: 'b', category: 'Coverage', headline: 'No rounds in 30 days', evidence: 'Since Sept 1.', tone: 'neutral' as const, ask: null, link: { label: 'Open roster', href: '/golf/dashboard/roster' } },
+    ];
+    const { chat } = show(ready({ pulse: { findings, coverage: null, asOfLabel: null } }));
+    await userEvent.click(screen.getByRole('button', { name: /Downhill putts dropped to 58%/ }));
+    expect(chat.calls.send).toHaveBeenCalledWith('Why are we missing short putts?');
+    expect(screen.queryByRole('button', { name: /No rounds in 30 days/ })).toBeNull();
+    expect(screen.getByText('No rounds in 30 days')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open roster' })).toHaveAttribute('href', '/golf/dashboard/roster');
+    expect(screen.queryByRole('link', { name: 'Open calendar' })).toBeNull();
+  });
+
+  it('CH-13322 players and no recorded round is "Nothing to report yet", with no findings grid and the chat still there', () => {
+    show(ready(PREVIEW_ASK_NOROUNDS));
+    expect(code('CH-13322')?.textContent).toMatch(/Nothing to report yet.*No player has a recorded round yet\. Findings show up here after the first rounds come in\. You can still ask about your roster and schedule\./);
+    expect(document.querySelector('.ch-ask-find__grid')).toBeNull();
+    expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
+    expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What’s on this week?"]);
+  });
+
+  it('CH-13325 a pulse with no findings but rounds says nothing is flagged, not that nothing has been recorded', () => {
+    show(ready({ pulse: { findings: [], coverage: 'All 8 players have a round in the last 30 days.', asOfLabel: null } }));
+    expect(code('CH-13325')?.textContent).toMatch(/Nothing is flagged right now/);
+    expect(code('CH-13322')).toBeNull();
+  });
+
+  it('CH-13223 a pulse that did not load is a notice with Try again, never "nothing to report"', async () => {
+    show(ready({ pulse: null }));
+    expect(code('CH-13223')?.textContent).toMatch(/What’s new didn’t load/);
+    expect(code('CH-13322')).toBeNull();
+    await userEvent.click(within(code('CH-13223') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+  });
+});
+
+describe('the composer', () => {
+  it('Enter sends on a fine pointer, with the press haptic, and the box empties; Shift+Enter is a new line', async () => {
+    const { chat } = show();
+    await userEvent.type(box(), 'How is the team putting?{Enter}');
+    expect(chat.calls.send).toHaveBeenCalledWith('How is the team putting?');
+    expect(hapticSpy).toHaveBeenCalledWith('press');
+    expect(box().value).toBe('');
+    await userEvent.type(box(), 'line one{Shift>}{Enter}{/Shift}line two');
+    expect(box().value).toBe('line one\nline two');
+    expect(chat.calls.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('Enter that picks a character in an IME composition is left alone', () => {
+    const { chat } = show();
+    fireEvent.change(box(), { target: { value: 'にほん' } });
+    fireEvent.keyDown(box(), { key: 'Enter', isComposing: true });
+    expect(chat.calls.send).not.toHaveBeenCalled();
+    expect(box().value).toBe('にほん');
+  });
+
+  it('without a fine pointer Enter is a new line and only Send sends', async () => {
+    fine = false;
+    const { chat } = show();
+    await userEvent.type(box(), 'Hello{Enter}');
+    expect(chat.calls.send).not.toHaveBeenCalled();
+    expect(box().value).toBe('Hello\n');
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+    expect(chat.calls.send).toHaveBeenCalledWith('Hello');
+  });
+
+  it('Send is off until there is text', async () => {
+    show();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    await userEvent.type(box(), 'x');
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled();
+  });
+
+  it('the plus menu has the seven starters; a starter seeds the text and never sends', async () => {
+    const { chat } = show();
+    await userEvent.click(screen.getByRole('button', { name: 'Add to your question' }));
+    const items = within(screen.getByRole('menu', { name: 'Add to your question' })).getAllByRole('menuitem');
+    expect(items.map((i) => i.textContent)).toEqual(['Add player', 'Compare players', 'Add date range', 'Create practice', 'Create focus area', 'Assign task', 'Draft team update']);
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Create focus area' }));
+    expect(box().value).toBe('Create a focus area for ');
+    expect(chat.calls.send).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Add to your question' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Assign task' }));
+    expect(box().value).toBe('Create a focus area for Assign a task to ');
+    expect(chat.calls.send).not.toHaveBeenCalled();
+  });
+
+  it('CH-13821 typing @ opens the roster; the arrow keys and Enter pick, and the mention is text in the box', async () => {
+    const { chat } = show();
+    await userEvent.type(box(), 'Compare @jo');
+    const list = picker();
+    expect(optionNames(list)).toEqual(['Jonah Okafor']);
+    expect(within(list).getByRole('option')).toHaveAttribute('aria-selected', 'true');
+    expect(within(list).queryByRole('button')).toBeNull();
+    expect(box()).toHaveAttribute('aria-activedescendant', within(list).getByRole('option').id);
+    expect(box()).toHaveAttribute('aria-controls', list.id);
+    await userEvent.keyboard('{Enter}');
+    expect(box().value).toBe('Compare @Jonah Okafor ');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(chat.calls.send).not.toHaveBeenCalled();
+    await userEvent.type(box(), 'and @');
+    expect(groupNames(picker(), 'Players')).not.toContain('Jonah Okafor');
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    // Jonah is already mentioned, so the list starts at Eli; one arrow down is Sofia.
+    expect(box().value).toBe('Compare @Jonah Okafor and @Sofia Alvarez ');
+  });
+
+  it('Escape closes the roster popover without sending, and the Add player starter opens it with an @', async () => {
+    const { chat } = show();
+    await userEvent.click(screen.getByRole('button', { name: 'Add to your question' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Add player' }));
+    expect(box().value).toBe('@');
+    expect(picker()).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box().value).toBe('@');
+    expect(chat.calls.send).not.toHaveBeenCalled();
+  });
+
+  it('Escape takes back the @ the Players chip put in the text, never one the coach typed', async () => {
+    show();
+    await userEvent.type(box(), 'Compare');
+    await userEvent.click(screen.getByRole('button', { name: /Players/ }));
+    expect(box().value).toBe('Compare @');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box().value).toBe('Compare');
+    await userEvent.type(box(), ' @');
+    expect(picker()).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box().value).toBe('Compare @');
+  });
+
+  it('CH-13821 a roster with nobody says so instead of drawing an empty list', async () => {
+    show(ready({ players: [] }));
+    await userEvent.type(box(), '@');
+    expect(screen.getByText('No active players')).toBeInTheDocument();
+    // The line is a dimmed row the arrow keys pass over; the stats are still there to pick.
+    expect(screen.getByRole('option', { name: 'No active players' })).toHaveAttribute('aria-disabled', 'true');
+    expect(groupNames(picker(), 'Stats')[0]).toBe('Scoring average');
+  });
+
+  it('CH-13821 the picker lists the roster and the stats CoachHelm can read, and narrows both as the coach types', async () => {
+    show();
+    await userEvent.type(box(), '@');
+    expect(groupNames(picker(), 'Players')).toEqual(['Jonah Okafor', 'Eli Brandt', 'Sofia Alvarez', 'Theo Marchetti', 'Priya Natarajan', 'Ava Lindqvist']);
+    expect(groupNames(picker(), 'Stats')).toContain('Greens in regulation');
+    // A fragment no player has leaves only the stats: no empty Players heading over nothing.
+    await userEvent.type(box(), 'putt');
+    expect(within(picker()).queryByRole('group', { name: 'Players' })).toBeNull();
+    expect(groupNames(picker(), 'Stats')).toEqual(['Strokes gained putting', 'Putts per round', 'Three-putt rate', 'One-putt rate']);
+    // The metric's own short name finds it too.
+    await userEvent.clear(box());
+    await userEvent.type(box(), '@gir');
+    expect(optionNames(picker())).toEqual(['Greens in regulation']);
+    // Nothing matches: one quiet line, and nothing to pick.
+    await userEvent.clear(box());
+    await userEvent.type(box(), '@zz');
+    expect(within(picker()).getByRole('option', { name: 'No player or stat by that name' })).toHaveAttribute('aria-disabled', 'true');
+    expect(box()).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('CH-13821 a stat is picked with the keys like a player: the arrows wrap, Tab picks, and the stat is words in the box', async () => {
+    const { chat } = show();
+    await userEvent.type(box(), 'Who is best at @putt');
+    expect(within(picker()).getByRole('option', { name: 'Strokes gained putting' })).toHaveAttribute('aria-selected', 'true');
+    // Up from the first row wraps to the last.
+    await userEvent.keyboard('{ArrowUp}');
+    const last = within(picker()).getByRole('option', { name: 'One-putt rate' });
+    expect(last).toHaveAttribute('aria-selected', 'true');
+    expect(box()).toHaveAttribute('aria-activedescendant', last.id);
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    expect(within(picker()).getByRole('option', { name: 'Putts per round' })).toHaveAttribute('aria-selected', 'true');
+    hapticSpy.mockClear();
+    await userEvent.keyboard('{Tab}');
+    expect(box().value).toBe('Who is best at @Putts per round ');
+    expect(box()).toHaveFocus();
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(hapticSpy).not.toHaveBeenCalledWith('press');
+    expect(chat.calls.send).not.toHaveBeenCalled();
+    // A stat already in the question is not offered again.
+    await userEvent.type(box(), 'and @putt');
+    expect(optionNames(picker())).not.toContain('Putts per round');
+  });
+
+  it('CH-13821 a click on a row picks it without taking the focus from the box', async () => {
+    show();
+    await userEvent.type(box(), 'Compare @');
+    await userEvent.click(within(picker()).getByRole('option', { name: 'Driving accuracy' }));
+    expect(box().value).toBe('Compare @Driving accuracy ');
+    expect(box()).toHaveFocus();
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+  });
+
+  it('CH-13821 the picker takes only its own keys: Shift+Enter is a new line, and with it closed the arrows and Enter are the box’s', async () => {
+    const { chat } = show();
+    await userEvent.type(box(), 'Line one @jo');
+    await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
+    expect(box().value).toBe('Line one @jo\n');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(fireEvent.keyDown(box(), { key: 'ArrowUp' })).toBe(true);
+    await userEvent.keyboard('{Enter}');
+    expect(chat.calls.send).toHaveBeenCalledWith('Line one @jo');
+  });
+
+  it('the date chip starts on Any dates; a chosen range adds its sentence to what is sent, visibly, once', async () => {
+    const { chat } = show();
+    const chip = screen.getByRole('button', { name: /Any dates/ });
+    await userEvent.click(chip);
+    await userEvent.click(screen.getByRole('menuitemradio', { name: 'Last 30 days' }));
+    expect(screen.getByRole('button', { name: /Last 30 days/ })).toBeInTheDocument();
+    await userEvent.type(box(), 'Who is trending up?{Enter}');
+    expect(chat.calls.send).toHaveBeenCalledWith('Who is trending up? Use the last 30 days.');
+    expect(screen.getByRole('button', { name: /Any dates/ })).toBeInTheDocument();
+    await userEvent.type(box(), 'And now?{Enter}');
+    expect(chat.calls.send).toHaveBeenLastCalledWith('And now?');
+  });
+
+  it('CH-13920 offline, Send is refused before anything is sent: the shell toast CH-1903, an error haptic, and the text stays', async () => {
+    const { chat } = show();
+    setOnline(false);
+    await userEvent.type(box(), 'Brief me');
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+    expect(chat.calls.send).not.toHaveBeenCalled();
+    await waitFor(() => expect(code('CH-1903')).not.toBeNull());
+    expect(code('CH-1903')!.textContent).toMatch(/Couldn’t send: you’re offline.*Reconnect, then try again\. Nothing was sent\./);
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(hapticSpy).not.toHaveBeenCalledWith('press');
+    expect(box().value).toBe('Brief me');
+  });
+
+  it('CH-13920 a pill tapped offline is refused the same way', async () => {
+    const { chat } = show();
+    setOnline(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Brief me on Finley University' }));
+    expect(chat.calls.send).not.toHaveBeenCalled();
+    await waitFor(() => expect(code('CH-1903')).not.toBeNull());
+  });
+
+  it('CH-13120 while an action card awaits Confirm or Cancel, Send is off and Enter sends nothing, and the box says why', async () => {
+    const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ACTION } }), fakeChat());
+    await userEvent.type(box(), 'What about Eli?{Enter}');
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    expect(chat.calls.send).not.toHaveBeenCalled();
+    expect(code('CH-13120')?.textContent).toBe('Confirm or cancel the action above first');
+    expect(box()).toHaveAccessibleDescription('Confirm or cancel the action above first');
+    expect(box().value).toBe('What about Eli?');
+  });
+
+  it('CH-13120 a pill or a follow-up sent over a waiting card is not sent either', async () => {
+    const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ACTION } }), fakeChat());
+    await userEvent.click(screen.getByRole('button', { name: 'stub follow-up' }));
+    expect(chat.calls.send).not.toHaveBeenCalled();
+  });
+
+  it('CH-13421 while a reply streams Send is Stop, and Stop is silent', async () => {
+    const { chat } = show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat({ busy: true }));
+    expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
+    hapticSpy.mockClear();
+    await userEvent.click(screen.getByRole('button', { name: 'Stop generating' }));
+    expect(chat.calls.stop).toHaveBeenCalled();
+    expect(hapticSpy).not.toHaveBeenCalled();
+  });
+
+  it('CH-13921 a send that failed puts its text back once, into an empty box, and never over what was typed since', async () => {
+    const chat = fakeChat();
+    const view = show(ready(), chat);
+    await userEvent.type(box(), 'Who should play?{Enter}');
+    expect(box().value).toBe('');
+    view.rerenderWith(ready(), fakeChat({ error: new Error('Something went wrong') }));
+    await waitFor(() => expect(box().value).toBe('Who should play?'));
+    await userEvent.type(box(), ' Today.');
+    view.rerenderWith(ready(), fakeChat({ error: new Error('Something went wrong') }));
+    expect(box().value).toBe('Who should play? Today.');
+    // Once it has come back, a box the coach emptied stays empty while the same failure is still showing.
+    await userEvent.clear(box());
+    view.rerenderWith(ready(), fakeChat({ error: new Error('Something went wrong') }));
+    expect(box().value).toBe('');
+  });
+
+  it('CH-13921 a failure with something already typed leaves the new text alone', async () => {
+    const view = show(ready(), fakeChat());
+    await userEvent.type(box(), 'First{Enter}');
+    await userEvent.type(box(), 'Second');
+    view.rerenderWith(ready(), fakeChat({ error: new Error('x') }));
+    expect(box().value).toBe('Second');
+  });
+});
+
+describe('the composer on the phone', () => {
+  beforeEach(() => {
+    phoneState.on = true;
+  });
+
+  it('is one row (plus, text, mention, Send) docked at the foot, with no chips and no disclaimer', () => {
+    show();
+    expect(screen.getByRole('button', { name: 'Add to your question' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mention a player or stat' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Players/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Any dates/ })).toBeNull();
+    expect(document.querySelector('.ch-ask-foot')).toBeNull();
+    expect(document.querySelector('.ch-ask-dock')).not.toBeNull();
+  });
+
+  it('CH-13821 the @ key opens the mention list docked above the box, not a sheet: typing narrows it and a tap puts @Name in the text', async () => {
+    show();
+    await userEvent.click(box());
+    await userEvent.click(screen.getByRole('button', { name: 'Mention a player or stat' }));
+    expect(box().value).toBe('@');
+    // The box keeps the focus (and the phone its keyboard): no dialog, no second field to type into.
+    expect(box()).toHaveFocus();
+    expect(document.querySelector('dialog[open]')).toBeNull();
+    expect(screen.queryByRole('searchbox')).toBeNull();
+    expect(picker().closest('.ch-ask-cmp.is-phone .ch-ask-pick')).not.toBeNull();
+    await userEvent.type(box(), 'eli');
+    expect(optionNames(picker())).toEqual(['Eli Brandt']);
+    await userEvent.click(within(picker()).getByRole('option', { name: 'Eli Brandt' }));
+    expect(box().value).toBe('@Eli Brandt ');
+    expect(box()).toHaveFocus();
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+  });
+
+  it('CH-13821 typing @ on the phone opens the same list; the return key picks the first row', async () => {
+    show();
+    await userEvent.type(box(), 'How is @so');
+    expect(optionNames(picker())).toEqual(['Sofia Alvarez']);
+    await userEvent.keyboard('{Enter}');
+    expect(box().value).toBe('How is @Sofia Alvarez ');
+  });
+});
+
+describe('the new chat page (phone)', () => {
+  beforeEach(() => {
+    phoneState.on = true;
+  });
+
+  it('draws the greeting and the shortcut cards (three at most), no pills and no findings, and keeps the tab bar', async () => {
+    const { chat } = show();
+    expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
+    const cards = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
+    expect(cards.map((c) => c.textContent)).toEqual(['Brief meon Finley University', 'Losing strokeswhere the team loses most', 'Trending upwho’s improving this month']);
+    expect(document.querySelector('.ch-ask-pills')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Since you were last here' })).toBeNull();
+    expect(screen.getByTestId('probe')).toHaveAttribute('data-notabs', 'false');
+    await userEvent.click(cards[0]!);
+    expect(chat.calls.send).toHaveBeenCalledWith('Brief me on Finley University');
+  });
+
+  it('the one-row box invites a first question on a new chat, and asks for a follow-up inside a thread', () => {
+    show();
+    expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toHaveAttribute('placeholder', 'Ask about a player, a stat, or the week');
+    cleanup();
+    show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    expect(screen.getByRole('textbox', { name: 'Reply to CoachHelm' })).toHaveAttribute('placeholder', 'Ask a follow-up');
+  });
+
+  it('CH-13322 with no recorded round the greeting carries the nothing-to-report line, and the cards are only what the data supports', () => {
+    show(ready(PREVIEW_ASK_NOROUNDS));
+    expect(code('CH-13322')?.textContent).toBe('Nothing to report yetNo player has a recorded round yet. You can still ask about your roster and schedule.');
+    expect(document.querySelector('.ch-ask-cards')).toBeNull();
+  });
+
+  it('puts History, the title and New chat in the phone top bar, and hides the tab bar while a thread is open', async () => {
+    const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    const top = within(screen.getByTestId('phone-top'));
+    expect(top.getByRole('button', { name: 'Chats' })).toBeInTheDocument();
+    expect(top.getByText('Putting inside 6 feet')).toBeInTheDocument();
+    expect(screen.getByTestId('probe')).toHaveAttribute('data-notabs', 'true');
+    await userEvent.click(top.getByRole('button', { name: 'New chat' }));
+    expect(chat.calls.newConversation).toHaveBeenCalled();
+  });
+});
+
+describe('History: the standing panel (desktop)', () => {
+  it('groups the chats as Today, This week and Earlier in the team zone, each a link, and marks the open one', () => {
+    show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    const panel = within(screen.getByRole('complementary', { name: 'Chats' }));
+    expect(panel.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Today', 'This week', 'Earlier']);
+    const open = panel.getByRole('link', { name: 'Putting inside 6 feet' });
+    expect(open).toHaveAttribute('href', '/golf/dashboard/coachhelm?view=ask&c=c-putting');
+    expect(open).toHaveAttribute('aria-current', 'page');
+    expect(code('CH-13823')).toBe(open);
+    expect(panel.getByRole('link', { name: 'Weekly brief, Sept 29' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('choosing a chat takes the selected look on the tap and dims the conversation until it lands; a click for a new tab is still just the link', async () => {
+    router.push.mockImplementationOnce(() => new Promise(() => {}));
+    try {
+      show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
+      const panel = within(screen.getByRole('complementary', { name: 'Chats' }));
+      const main = document.querySelector('main.ch-ask')!;
+      const other = panel.getByRole('link', { name: 'Weekly brief, Sept 29' });
+      // A modified click is the browser's (a new tab): nothing is switched.
+      other.addEventListener('click', (e) => e.preventDefault(), { once: true });
+      fireEvent.click(other, { ctrlKey: true });
+      expect(router.push).not.toHaveBeenCalled();
+      expect(main.hasAttribute('aria-busy')).toBe(false);
+
+      await userEvent.click(other);
+      expect(router.push).toHaveBeenCalledWith(other.getAttribute('href'));
+      await waitFor(() => expect(main.getAttribute('aria-busy')).toBe('true'));
+      expect(main.getAttribute('data-switch')).toBe('chat');
+      expect(other).toHaveAttribute('aria-current', 'page');
+      expect(panel.getByRole('link', { name: 'Putting inside 6 feet' })).not.toHaveAttribute('aria-current');
+    } finally {
+      router.push.mockReset();
+    }
+  });
+
+  it('CH-13324 Search chats filters by title, and a search with no match says so', async () => {
+    show();
+    const panel = within(screen.getByRole('complementary', { name: 'Chats' }));
+    await userEvent.type(panel.getByRole('searchbox', { name: 'Search chats' }), 'QUAL');
+    expect(panel.getAllByRole('link').map((l) => l.textContent)).toEqual(['Qualifier lineup for Oct 6']);
+    await userEvent.clear(panel.getByRole('searchbox', { name: 'Search chats' }));
+    await userEvent.type(panel.getByRole('searchbox', { name: 'Search chats' }), 'zzz');
+    expect(code('CH-13324')?.textContent).toBe('No chats match “zzz”.');
+    expect(panel.queryAllByRole('link')).toHaveLength(0);
+  });
+
+  it('CH-13620 Hide chats folds the panel away (inert) and moves Show chats and New chat into the header; Show chats brings it back', async () => {
+    show();
+    const aside = () => document.querySelector('aside.ch-ask-hist') as HTMLElement;
+    expect(aside().classList.contains('is-closed')).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Hide chats' }));
+    expect(aside().classList.contains('is-closed')).toBe(true);
+    expect(aside().hasAttribute('inert')).toBe(true);
+    expect(document.querySelector('.ch-ask-body')!.classList.contains('has-panel')).toBe(false);
+    const head = within(document.querySelector('.ch-ask-head') as HTMLElement);
+    expect(head.getByRole('button', { name: 'New chat' })).toBeInTheDocument();
+    await userEvent.click(head.getByRole('button', { name: 'Show chats' }));
+    expect(aside().classList.contains('is-closed')).toBe(false);
+    expect(document.querySelector('.ch-ask-head')!.querySelector('button')).toBeNull();
+  });
+
+  it('New chat starts a fresh thread at once (no server trip), clears the address and closes the evidence', async () => {
+    const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat(), undefined);
+    await userEvent.click(within(screen.getByRole('complementary', { name: 'Chats' })).getByRole('button', { name: 'New chat' }));
+    expect(chat.calls.newConversation).toHaveBeenCalled();
+    expect(replaceState).toHaveBeenCalledWith(window.history.state, '', '/golf/dashboard/coachhelm?view=ask');
+    expect(router.push).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('New chat');
+  });
+
+  it('CH-13323 no chats yet is its own state with a New chat button, not a search box over nothing', async () => {
+    const { chat } = show(ready({ conversations: { list: [], error: false } }));
+    expect(code('CH-13323')?.textContent).toMatch(/No chats yetAsk your first question and it will be kept here\./);
+    expect(screen.queryByRole('searchbox', { name: 'Search chats' })).toBeNull();
+    await userEvent.click(within(code('CH-13323') as HTMLElement).getByRole('button', { name: 'New chat' }));
+    expect(chat.calls.newConversation).toHaveBeenCalled();
+  });
+
+  it('CH-13222 a chat list that did not load is a notice with Try again, never "No chats yet"', async () => {
+    show(ready({ conversations: { list: [], error: true } }));
+    expect(code('CH-13222')?.textContent).toMatch(/Your chats didn’t load/);
+    expect(code('CH-13323')).toBeNull();
+    await userEvent.click(within(code('CH-13222') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+  });
+});
+
+describe('History: the phone drawer', () => {
+  beforeEach(() => {
+    phoneState.on = true;
+  });
+  const drawer = () => document.querySelector('dialog.ch-ask-drawer') as HTMLDialogElement;
+
+  it('CH-13822 the Chats button opens the drawer; Esc, the scrim and choosing a chat close it', async () => {
+    show();
+    expect(drawer().open).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
+    expect(drawer().open).toBe(true);
+    expect(within(drawer()).getByText('Chats', { selector: 'b' })).toBeInTheDocument();
+    fireEvent(drawer(), new Event('cancel', { cancelable: true }));
+    await waitFor(() => expect(drawer().open).toBe(false));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
+    fireEvent.click(drawer());
+    await waitFor(() => expect(drawer().open).toBe(false));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
+    await userEvent.click(within(drawer()).getByRole('link', { name: 'Weekly brief, Sept 29' }));
+    await waitFor(() => expect(drawer().open).toBe(false));
+  });
+
+  it('CH-13621 a drag to the left past 80px closes it; a nudge of a few pixels leaves it open', async () => {
+    show();
+    await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
+    const aside = drawer().querySelector('aside') as HTMLElement;
+    const drag = (dx: number) => {
+      fireEvent.pointerDown(aside, { button: 0, clientX: 300, pointerId: 1, isPrimary: true });
+      fireEvent.pointerMove(window, { clientX: 300 + dx, pointerId: 1, isPrimary: true });
+      fireEvent.pointerUp(window, { clientX: 300 + dx, pointerId: 1, isPrimary: true });
+    };
+    drag(-5);
+    expect(drawer().open).toBe(true);
+    drag(-120);
+    await waitFor(() => expect(drawer().open).toBe(false));
+  });
+
+  it('New chat in the drawer starts a fresh thread and closes it', async () => {
+    const { chat } = show();
+    await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
+    await userEvent.click(within(drawer()).getByRole('button', { name: 'New chat' }));
+    expect(chat.calls.newConversation).toHaveBeenCalled();
+    await waitFor(() => expect(drawer().open).toBe(false));
+  });
+
+  it('CH-13323 the drawer with no chats says No chats yet, with New chat', async () => {
+    show(ready({ conversations: { list: [], error: false } }));
+    await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
+    expect(within(drawer()).getByText('No chats yet')).toBeInTheDocument();
+    expect(within(drawer()).getByText('Ask your first question and it will be kept here.')).toBeInTheDocument();
+  });
+});
+
+describe('the container', () => {
+  it('CH-13922 a new thread lands in History at once, titled by the first question, and the address names it', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(ASK_NOW));
+    const { chat } = show();
+    await userEvent.type(box(), 'Why are we missing so many short putts lately?{Enter}', { advanceTimers: () => {} });
+    await act(async () => {
+      chat.seen.options!.onConversationId?.('c-new');
+      await Promise.resolve();
+    });
+    const link = within(screen.getByRole('complementary', { name: 'Chats' })).getByRole('link', { name: 'Why are we missing so many short putts lately?' });
+    expect(link).toHaveAttribute('href', '/golf/dashboard/coachhelm?view=ask&c=c-new');
+    expect(link).toHaveAttribute('aria-current', 'page');
+    expect(replaceState).toHaveBeenCalledWith(window.history.state, '', '/golf/dashboard/coachhelm?view=ask&c=c-new');
+  });
+
+  it('opens a saved thread on its messages, with the conversation id the hook continues', () => {
+    const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    expect(chat.seen.options).toMatchObject({ conversationId: 'c-putting', initialMessages: ASK_MSGS_ANSWER });
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Putting inside 6 feet');
+    expect(screen.getByTestId('thread')).toBeInTheDocument();
+    expect(document.querySelector('.ch-ask-dock')).not.toBeNull();
+    expect(screen.getByText('CoachHelm reads Finley University data only. Check the numbers before you act on them.')).toBeInTheDocument();
+  });
+
+  it('hands the thread the failed answer as a sentence with what to offer, by the rule of the stream route', () => {
+    const cases: Array<[unknown, { message: string; recovery: string }]> = [
+      [{ statusCode: 429, responseBody: JSON.stringify({ error: 'Too many requests. Please slow down.' }) }, { message: "Too many questions in a row. Give it a few seconds and try again.", recovery: 'retry' }],
+      [{ statusCode: 429, responseBody: JSON.stringify({ error: 'You have reached today’s analysis limit for your program. It resets tomorrow.', reason: 'gated' }) }, { message: 'You have reached today’s analysis limit for your program. It resets tomorrow.', recovery: 'none' }],
+      [{ statusCode: 404, responseBody: JSON.stringify({ error: 'Conversation not found' }) }, { message: "That conversation isn't available. Start a new chat.", recovery: 'new-chat' }],
+      [new TypeError('Failed to fetch'), { message: 'Something went wrong while answering. Try again.', recovery: 'retry' }],
+    ];
+    for (const [error, want] of cases) {
+      const { unmount } = show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat({ error }));
+      const props = JSON.parse(screen.getByTestId('thread-props').textContent!) as { error: unknown };
+      expect(props.error).toEqual(want);
+      unmount();
+    }
+    show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    expect(JSON.parse(screen.getByTestId('thread-props').textContent!)).toMatchObject({ error: null });
+  });
+
+  it('wires the thread\'s Try again to the hook\'s retry, New chat to a fresh thread, Confirm to approve, and a follow-up to send; offline and phone go through', async () => {
+    setOnline(false);
+    const { chat } = show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    expect(JSON.parse(screen.getByTestId('thread-props').textContent!)).toMatchObject({ offline: true, phone: false });
+    setOnline(true);
+    await userEvent.click(screen.getByRole('button', { name: 'stub retry' }));
+    expect(chat.calls.retry).toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'stub approve' }));
+    expect(chat.calls.approve).toHaveBeenCalledWith('approval-1');
+    await userEvent.click(screen.getByRole('button', { name: 'stub follow-up' }));
+    expect(chat.calls.send).toHaveBeenCalledWith('A follow-up');
+    await userEvent.click(screen.getByRole('button', { name: 'stub new chat' }));
+    expect(chat.calls.newConversation).toHaveBeenCalled();
+  });
+
+  it('the evidence opens beside the thread on desktop, and in a sheet on the phone; either closes', async () => {
+    show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    expect(screen.queryByTestId('evidence')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'stub evidence' }));
+    expect(screen.getByRole('complementary', { name: 'Evidence' })).toContainElement(screen.getByTestId('evidence'));
+    expect(screen.getByTestId('evidence')).toHaveAttribute('data-phone', 'false');
+    expect(document.querySelector('.ch-ask-body')!.classList.contains('has-evidence')).toBe(true);
+    await userEvent.click(screen.getByRole('button', { name: 'stub close evidence' }));
+    expect(screen.queryByTestId('evidence')).toBeNull();
+    cleanup();
+    phoneState.on = true;
+    show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    await userEvent.click(screen.getByRole('button', { name: 'stub evidence' }));
+    // The panel owns its sheet on the phone (its dialog is tested in coachhelm-thread-ui › the evidence panel); Ask
+    // renders it once, with no Modal of its own around it, so only one Evidence sheet ever opens.
+    expect(screen.getAllByTestId('evidence')).toHaveLength(1);
+    expect(screen.getByTestId('evidence')).toHaveAttribute('data-phone', 'true');
+    expect(document.querySelector('dialog[open]')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'stub close evidence' }));
+    // Closed, the sheet stays mounted with open={false} so it slides out (audit A-18), still showing what it showed.
+    expect(screen.getByTestId('evidence')).toHaveAttribute('data-open', 'false');
+    expect(screen.getByTestId('evidence')).toHaveTextContent('Jonah Okafor');
+  });
+});
+
+describe('CH-13225 a section that crashes leaves the rest of the page usable', () => {
+  it('a crash in the thread is a notice with Try again, and History and the message box still work', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    crash.on = true;
+    show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    const notice = code('CH-13225') as HTMLElement;
+    expect(notice.textContent).toMatch(/The conversation couldn’t be shown.*The rest of the page is fine\. This has been reported automatically\./);
+    expect(within(screen.getByRole('complementary', { name: 'Chats' })).getAllByRole('link').length).toBeGreaterThan(0);
+    expect(screen.getByRole('textbox', { name: 'Reply to CoachHelm' })).toBeInTheDocument();
+    crash.on = false;
+    await userEvent.click(within(notice).getByRole('button', { name: 'Try again' }));
+    expect(screen.getByTestId('thread')).toBeInTheDocument();
+    spy.mockRestore();
+  });
+});
+
+describe('the states that stand in for the thread', () => {
+  it('CH-13321 an empty roster is the first-run page with Invite players, the sub-tab strip, and no composer', () => {
+    show({ status: 'noRoster', teamName: 'Finley University' });
+    expect(code('CH-13321')?.textContent).toMatch(/Add players to ask CoachHelm.*CoachHelm answers from your players’ rounds, stats and schedule\. Once your roster is in, ask about anyone on it\./);
+    expect(screen.getByRole('link', { name: 'Invite players' })).toHaveAttribute('href', '/golf/dashboard/roster?invite=1');
+    expect(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).toBeNull();
+  });
+
+  it('CH-13221 CH-1211 a program that did not load is the page failure (an alert in the danger tone) with Try again and no composer, and Try again refreshes the page', async () => {
+    show({ status: 'failed' });
+    expect(code('CH-13221')?.textContent).toMatch(/Ask CoachHelm couldn’t load your program/);
+    expect(code('CH-13221')).toHaveAttribute('role', 'alert');
+    expect(code('CH-13221')).toHaveClass('ch-empty-page--danger');
+    expect(screen.queryByRole('textbox')).toBeNull();
+    await userEvent.click(within(code('CH-13221') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('CH-13320 a conversation that will not open is an alert with Start a new chat, and the composer still works', async () => {
+    const { chat } = show(ready({ notFound: true }));
+    const alert = code('CH-13320') as HTMLElement;
+    expect(alert).toHaveAttribute('role', 'alert');
+    expect(alert.textContent).toMatch(/That conversation isn’t availableIt may have been deleted, or it belongs to another coach\. Your other chats are on the left\.Start a new chat/);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Chat not found');
+    expect(chat.seen.options).toMatchObject({ conversationId: null });
+    expect(screen.getByRole('textbox', { name: 'Reply to CoachHelm' })).toBeInTheDocument();
+    await userEvent.click(within(alert).getByRole('button', { name: 'Start a new chat' }));
+    expect(chat.calls.newConversation).toHaveBeenCalled();
+    expect(code('CH-13320')).toBeNull();
+  });
+
+  it('CH-13320 on the phone the alert points at History instead of "on the left"', () => {
+    phoneState.on = true;
+    show(ready({ notFound: true }));
+    expect(code('CH-13320')!.textContent).toMatch(/Your other chats are under History\./);
+  });
+
+  it('CH-13224 a conversation whose messages did not read is a notice with Try again, and no composer to write into it', async () => {
+    show(ready({ threadFailed: true }));
+    expect(code('CH-13224')?.textContent).toMatch(/That conversation didn’t load/);
+    expect(screen.queryByRole('textbox')).toBeNull();
+    await userEvent.click(within(code('CH-13224') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('CH-13420 the skeleton is aria-busy and draws the sub-tab strip, the chats and the greeting in place, with no script', () => {
+    render(<AskSkeleton />);
+    const sk = code('CH-13420') as HTMLElement;
+    expect(sk).toHaveAttribute('aria-busy', 'true');
+    expect(sk).toHaveAttribute('aria-label', 'Loading Ask CoachHelm');
+    expect(sk.querySelectorAll('.ch-skel').length).toBeGreaterThan(8);
+  });
+
+  it('CH-13820 the page is one landmark labelled Ask CoachHelm, with the chats as a complementary region', () => {
+    show();
+    expect(screen.getByRole('main', { name: 'Ask CoachHelm' })).toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'Chats' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Conversation' })).toBeInTheDocument();
+  });
+});

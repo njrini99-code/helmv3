@@ -28,7 +28,8 @@ the incidents/feature-doc edits committed alongside this record).
 - **One owner per setting** — user scope holds machine preferences and the
   sandbox; project scope holds every repo grant, deny, hook and plugin;
   local scope holds nothing a project needs.
-- **One deploy path, budgeted** — `scripts/deploy-prod.sh` is the only
+- **One deploy path, budgeted** — `scripts/deploy-prod.sh` (was removed
+  2026-10-07, see ADR-2026-10-07-agent-autonomy) is the only
   promote; it refuses a dirty tree, a non-`main` ref, and any deploy past a
   weekly policy count it reads from Vercel.
 - **One repair schedule** — the GitHub Actions Repair stage is the only
@@ -72,7 +73,7 @@ the incidents/feature-doc edits committed alongside this record).
 | O5 | Uninstall the CodeRabbit GitHub App and the seven other idle GitHub Apps that have never posted a check. |
 | O6 | Run the prepared SQL in `supabase/migrations/HELD.md` (ledger rows, the read-only repair role, disabling `pg_graphql`, the avatars-bucket policy check, the definer-view dismissal list). |
 | O7 | Restore the admin role the daily drift job reports a listed `admin_allowlist` user has lost in production. |
-| O8 | Set `INNGEST_SIGNING_KEY` in Vercel's production environment. |
+| O8 | ~~Set `INNGEST_SIGNING_KEY` in Vercel's production environment.~~ Superseded: Inngest was removed 2026-10-06. |
 | O9 | Confirm in the CircleCI dashboard that the weekly pipeline trigger (`run-weekly=true`) exists. |
 
 ## Where the evidence lives

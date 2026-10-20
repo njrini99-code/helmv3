@@ -1,0 +1,370 @@
+# P004 — Stats (team): verification
+
+## 2026-10-19 — Scorecard pass (lane L6a)
+
+Putting rings, par swatch, scrambling dial reference, no captions under an em dash, print.
+
+Vitest `stats-tape` (the tick, the empty caption) and the stats suites pass (20 files, 432 tests, exit 0). Print was checked as a Letter PDF
+from headless Chromium, light and dark: head line (GolfHelm, team and season, day), no controls, trend card, tape, leg grid, putting and
+season bests each whole on a sheet. Not checked: the scrambling tick on screen (the preview fixture gives the dial no reference), a real Safari print.
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+The shared segmented indicator uses zero-duration motion when disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current release evidence — 2026-10-06
+
+Team Stats periods, comparisons, filters and focus-area sheets.
+
+Check period-change layout stability, filter date controls, long course names
+and empty/error/loading geometry.
+
+Fresh WebKit 26.6: `/clubhouse-preview/stats` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 24
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p004-stats-team). Current status remains
+partial. Physical Safari/iPhone, VoiceOver and durable authenticated writes
+remain separate acceptance checks. Earlier verification status and gap
+sections below are historical observations; use the current audit for release
+scope.
+<!-- clubhouse:release-audit:end -->
+
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/stats-team.md`.
+
+## 2026-10-02 — Period-switch geometry
+
+The optimized `a32c933e0` baseline recorded three 390px, 4x-CPU trials per
+switch. Season and returning Last 10 each had raw shift score 0.0521; the
+moving sources were the trend and leg panels. Standard CLS excluded these
+recent-input shifts. This is evidence of visible movement, not a field score.
+
+Bounded read-only WebKit inspection of the same local seeded build confirmed
+the cause: the figures were 94.98px tall in Last 10 and 73.19px in Season.
+An 18.19px hole-coverage paragraph and its surrounding spacing also vanished,
+moving the next panel from y352.16 to y288.17. The repair retains both slots
+while hiding absent information from assistive technology.
+
+The affected team suite passed 53/53 with one worker in 3.70s. A new test
+changes periods and checks that absent comparisons/coverage are empty,
+aria-hidden and restored correctly, with original metric values retained.
+Scoped TSX/test ESLint and `git diff --check` passed. The source map remains
+unassigned for these phone/CSS paths and was reported to the parent.
+
+Baseline captures are local in `/tmp/helm-clubhouse-stats-stability/` as
+`team-{Last-10,Season,Qualifiers}-before.png`. The inspection session closed
+before the separate Messages benchmark. Optimized post-change measurement
+and physical Safari verification remain pending; no improvement score is
+claimed from source or unit tests.
+
+### Final source WebKit check
+
+Read-only local seeded WebKit checked Last 10, Season and Qualifiers at
+320, 375 and 390px. Document width equaled viewport in all nine states.
+The trend stayed at y445.328 at 320px and y344.156 at 375/390px across
+all periods. The four narrow team figures retained their two-column layout.
+
+A 1.5-second held RSC navigation exposed the real team loading screen.
+Before repair, its trend started at y299.797 against loaded y344.156.
+After repair at 390px, header 56.984px, controls 44px, figures 94.984px,
+coverage 18.187px and trend 209.078px exactly matched the loaded page.
+Value definitions were 20px in both. Trend and SG origins also matched;
+the last skeleton panel was 0.641px taller than the populated panel.
+The skeleton remains decorative and preserves its loading label/code.
+At 320px the actual personalized team caption wraps; its unknown text is
+not synthesized in the loading screen, so narrow header parity is unproven.
+
+The focused geometry suite passed 11/11 in 1.57s, with one worker; scoped
+skeleton/test ESLint and final diff checks passed. This supplements the
+53/53 team suite above. Optimized timing is a separate parent-owned check.
+Evidence stays in `/tmp/helm-clubhouse-stats-stability/`: nine width/period
+after frames and `team-skeleton-{before,after}.png`. Both owned browsers
+closed. No production writes or physical-device performance claim.
+
+## 2026-10-02 — Narrow figure readability
+
+Working tree after `c1e81e0fe`; WebKit iPhone 13 descriptor, isolated
+`stats-narrow` CLI session, populated synthetic `/clubhouse-preview/stats`.
+
+- Before at 320px: Scrambling occupied a 51px column and two lines,
+  32.375px tall. At 375px it already fit one line in a 64.75px column.
+- After at 320px: the same summary card has two 144px columns; Scrambling has
+  123px available and occupies one 16.1875px line. All four labels are one
+  line. Document width is 320px and card client/scroll widths are both 288px.
+- After at 375px: four 85.75px columns remain; all labels are still one line.
+  Document width is 375px and card client/scroll widths are both 343px.
+- Browser assertions checked actual label heights against computed line
+  height, unchanged 12px caption size, and document/card overflow. Figure
+  order and values remained `73.6`, `61%`, `30.4`, `52%`, with their original
+  changes. Both final captures were manually inspected.
+- `git diff --check` passed. Only `styles/stats.css` changed; no mirror unit
+  test was added for this CSS-only fix. The feature map reports the CSS and
+  `StatsTeamPhone.tsx` unmapped; reported to the parent, no registry change.
+
+Four local captures are in `/tmp/helm-clubhouse-mobile-flow-audit/`:
+`stats-before-320.png`, `stats-before-375.png`, `stats-after-320.png`, and
+`stats-after-375.png`. Browser closed after verification. Physical Safari,
+software keyboard, text zoom and live authenticated data were not tested.
+
+## Historical verification status
+
+```text
+Status:     partial
+Commit/PR:  agent/clubhouse (local; the contract pass of 2026-09-30 is not committed yet)
+Date:       2026-09-30
+```
+
+## Static checks
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Typecheck | `npm run -s typecheck:fast` | exit 0 (2026-09-30, after the contract pass) |
+| Lint | `npx eslint` on the changed Stats files and both Stats test files | exit 0 |
+| Registry and contract check | `registry.mjs` `checkRegistry` run in memory with the new Bridge IDs merged, and this CONTRACT.md compared with what `registry.mjs sync` writes | no violations for P004 |
+| Pure checks | `checkServerOnlyImports`, `checkCatalog` and `checkSource` from `scripts/clubhouse/check.mjs`, run in memory on `src/clubhouse` and the catalogs | no violations in any Stats file (0 server-only imports, 0 catalog violations) |
+| Clubhouse check | `npm run -s clubhouse:check` | not run in this pass (it follows the registry sync) |
+| Knowledge check | `npm run -s docs:check` | not run in this pass |
+| Build | `NODE_OPTIONS=--max-old-space-size=8192 npm run build` | not run in this pass; last recorded exit 0 on 2026-09-29, before the phone build |
+
+## Automated tests
+
+| Test | Contract | Result |
+| --- | --- | --- |
+| `src/clubhouse/__tests__/stats-team.test.tsx` (42 cases, each named by the codes it forces) | every catalog row that names it (CH-4001, 4201 to 4210, 4301 to 4308, 4401, 4402, 4701, 4702, 4703, 4801, 4802, 4805, 4901, 4902) and all 13 hand contracts | pass (`npx vitest run src/clubhouse/__tests__/stats-team.test.tsx`, 42/42, 2026-09-30) |
+| `src/clubhouse/__tests__/stats-player.test.tsx` | CH-4309 (the no-team page state, catalogued here), and the profile's contracts | pass (53/53, 2026-09-30) |
+| `src/clubhouse/__tests__/logic.test.ts` | the window math, weighted rates, tour choice and week bucketing | not re-run in this pass |
+
+Each test added in this pass was mutation-checked: the code it guards was
+broken, the test failed, and the
+code was restored. Checked: 40501 (the name written as text), 40901 (the file
+name, the toast, the tick),
+40801 (a player given the team), 40802 (the roster filter by team and by
+status), 40102 (the window read from
+the address and written back with scroll off), 41201 (the leg and player reset
+on a window change), 41401 (Try
+again doing nothing), 41901 (the phone view never taking over), 42001 (a grid
+row that does not focus its
+player), 42101 (a second team read; the benchmarks read after the rounds), 42301
+(the team read not logged),
+40101 (Season bests removed), CH-4402 (the page never busy) and 42401 (a catalog
+row no test names). 20 checks.
+The three assertions in 40801 on the frame's route list (`isRebuilt`) were added
+after that run and are not
+mutation-checked: the code they read is the shell's `nav.ts`, which this pass
+does not touch.
+
+## Visual verification
+
+### Desktop
+
+```text
+Viewport:  924, 1280 and 1400px (preview)
+Reference: design/handoff/screenshots/stats-team-01..05 (v1); Coach - Stats.html (v2, same screen)
+Result:    matched, logged 2026-09-29 in PROGRESS.md (every section, lens, leg and player focus, and the
+           empty, failed, partial, crash and loading states). Not re-checked after the v2 motion and
+           navigation changes, or after this pass (whose only visible change is the CSV export's cells).
+```
+
+### Phone
+
+```text
+Viewport:     built to the approved spec (docs/clubhouse/phone/stats-team.md); no browser capture is
+              recorded yet
+Device/shell: not yet on a real iPhone (npm run ios:dev, owner)
+Reference:    design/handoff/Coach - Stats - Mobile.html, board "Team stats"
+Result:       built to the approved spec; the browser pass at 390 and 430 and the iPhone pass are open
+```
+
+## Forced states
+
+| State | Contract | How forced | Observed result |
+| --- | --- | --- | --- |
+| P004__filter__coach__390__populated__after__cca081c.png | after | cca081c (working-tree after) | WebKit iPhone 13; Phone filter target is44×44px; figure labels and window choices remain visible |
+| P004__overview__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone team stats before page spacing and material repairs |
+| P004__overview__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered sheet material,16px section rhythm and readable figure captions |
+| Skeleton | 40201 | `/clubhouse-preview/stats?state=loading`, test | skeleton in Team stats' shape, busy |
+| Empty | 40401 to 40409 | `?state=empty`, tests | distinct from a failed read; Show the season |
+| Validation | 40501 | test | a name that starts with = + - or @ is written as text |
+| Server failure | 40601 to 40611 | tests (each read forced with its logged name, five section crashes, the export); `?state=failed`, `partial`, `crash` | notice or toast with its code; the rest of the page stands |
+| Offline | 40701 | test (CH-4901) | nothing requested, the switch stays, the error tick |
+| Slow | 40702 | test (CH-4902) | one notice after 5 seconds, naming both windows |
+| Permission | 40801, 40802 | tests | a player gets their profile and no team read; the team is the session's |
+| Destructive | none | N/A: nothing is deleted | |
+| Optimistic rollback | none | N/A: nothing is optimistic | |
+
+Not forced against a live session: every state above was forced against a fake
+Supabase client and rendered
+in jsdom, or in the preview, never against a live session (Q-4, the owner's live
+pass). A state never observed
+is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
+
+Not tested: the old address /golf/dashboard/stats/team sending a non-coach to
+/stats (it is in the Fairway
+page, which the test does not import); only the Clubhouse frame's side of it is.
+
+## Accessibility
+
+```text
+Keyboard:       the window switch moves with the arrow keys, a leg card takes Enter, and a grid row takes
+                focus and marks its player (stats-team.test 42001). The full Tab walk was recorded on the
+                checklist on 2026-09-29; it is not a test. This page has no dialog, so no Esc.
+VoiceOver:      the phone's scoring line and player rows read as sentences (tested as accessible names,
+                CH-4805); not tried on a device.
+Focus:          no pushed screens on this page.
+Reduced motion: the motion gate is open: the earlier evidence was against the old timings, so every
+                box starts again (checklist, motion). The busy dim and the focus fades use the quick token.
+Contrast:       clubhouse:a11y (axe, WCAG 2.2 AA) recorded 0 violations across 105 pages on 2026-09-29,
+                before the phone build; rerun open.
+Text scaling:   not checked.
+```
+
+## Performance
+
+```text
+Layout shift:      CLS 0.0001 at 924px and 0 at 1280px on load (recorded 2026-09-29, before the phone build);
+                   the route skeleton lands the header, first card and trend card in place from 924 to 1600px
+Request waterfall: none beyond the necessary, and now a test (42101): team and roster together, the
+                   benchmarks started before the rounds return, then the round figures and putts once each
+Large list:        not measured
+Animation:         v2 tokens only
+Notes:             client code 17.7 to 11.8 KB minified after the server/island split (recorded 2026-09-29);
+                   first-load JS with domMax and LCP after the v2 reveal are open (D-27, CH-1954)
+```
+
+## Strokes gained pass (2026-09-30)
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npx vitest run src/clubhouse/__tests__/strokes-gained.test.tsx src/clubhouse/__tests__/stats-team.test.tsx` | 57 + 43 cases pass; 25 mutations of the new behaviour, 25 caught |
+| Clubhouse | `npm run -s clubhouse:check` | clean (registry synced: 6 new Bridge IDs across P004, P005, P011) |
+| Native-feel | `CH_BASE=http://localhost:3107 node scripts/clubhouse/native.mjs stats-team` | clean at 390 and 430px |
+| Axe | `node scripts/clubhouse/a11y.mjs stats-team` | clean, 12 pages (1280 and 390px) |
+| Look | the preview at 1280 and 390px, read by eye | six cards in a row, the phone panel's bars and total row draw as built |
+
+## Round filter pass (2026-09-30, with Holes)
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npx vitest run src/clubhouse/__tests__/stats-filter.test.ts stats-filter-data.test.tsx stats-filter-ui.test.tsx stats-weight.test.ts` | 135 pass (exit 0): the address and the order rounds are selected in (35), what both loaders read and count under a filter, for 9 holes and Both too, with strokes gained per 18 and a player's read never reaching other players' rounds (33), the screens, desktop and phone (56), the weights and the calculator's restated counts (11) |
+| Tests | the same four plus `stats-team`, `stats-player`, `stats-parity`, `strokes-gained`, `logic` | 9 files, 389 tests pass (exit 0). The contract moved in the last five (the loaders take a filter, the window summary carries whole-round counts); setup only, no expectation weakened |
+| Tests | `npx vitest run src/clubhouse` (once) | 34 files: 1702 pass, 10 fail, all in `classes`, `coachhelm` and `recruiting` tests, which other sessions' uncommitted work in this checkout changes; none in Stats |
+| Mutations | `scratchpad/sg-build/mutate.py muts_filter.py`, `muts_holes.py`, `muts_holes2.py` | 72 mutations of the filter (67 caught, the 5 survivors fixed with tests), then 86 of the Holes behaviour (76 caught; 9 survivors fixed with tests and re-run, all caught) and 9 more for the review fixes, all caught. The one mutant left is equivalent: a player's team pool is already the player alone |
+| Types | `npm run -s typecheck:fast` | exit 0 on this work; the last run (exit 1) reports one error, in `hub.test.tsx`, which another session is changing |
+| Lint | `eslint` on the 33 changed files | exit 0 (one existing warning in the preview page, `role` on a Messages preview) |
+| Clubhouse | `npm run -s clubhouse:check` | exit 1 for registry drift only: the new catalog rows have no Bridge ID and the generated files and CONTRACT.md are stale (the lead's sync), and other pages' own gaps. No Stats source, test or catalog-use violation |
+| Axe | `node scripts/clubhouse/a11y.mjs stats-team stats-player` | exit 0, 50 pages clean (1280 and 390px), including the filtered, no-match, early-read and nine-hole states and the filter sheet open |
+| Native-feel | `CH_BASE=http://localhost:3107 node scripts/clubhouse/native.mjs stats-team stats-player` (390 and 430px) | clean on the second run. The first run had one `page.tap` timeout opening a Game detail chip at 430px while other sessions' tests were running; the chips and the filter's chips and Clear were within 44 x 44 in both. Nothing here sets a height on `.ch-seg__b` or `.ch-pill` |
+| Look | not done | no browser or iPhone pass (owner) |
+
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
+| `P004__filter-sheet__coach__375__date-field-targets__after__83b9990.png` | after | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
+| `P004__filter-sheet__coach__375__date-field-targets__before__83b9990.png` | before | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
+| `P004__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P004__premium-audit__coach__1280__case-003-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-003-webkit-reduce; /clubhouse-preview/stats; synthetic preview |
+| `P004__premium-audit__coach__1280__case-019-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-019-chromium-normal; /clubhouse-preview/stats; synthetic preview |
+| `P004__premium-audit__coach__390__case-003-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-003-webkit-reduce; /clubhouse-preview/stats; synthetic preview |
+| `P004__premium-audit__coach__390__case-019-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-019-chromium-normal; /clubhouse-preview/stats; synthetic preview |
+| `P004__figures-lead__coach__1600__default__after__d16567c.png` | after | d16567c | figures-lead (coach), 1600px window, Safari Technology Preview 253; strokes gained lead card beside one supporting surface; loaded row 208px = loading row 208px; /clubhouse-preview/stats; synthetic preview |
+| `P004__figures-lead__coach__1100__narrow-rows__after__d16567c.png` | after | d16567c | figures-lead (coach), 1100px window (767px canvas), Safari TP 253; full-width lead, supporting figures as rows; loaded 559px = loading 559px; /clubhouse-preview/stats; synthetic preview |
+| `P004__figures-lead__coach__1280__loading__after__d16567c.png` | after | d16567c | figures-lead (coach), 1280px window, Safari TP 253; skeleton in the lead layout; loading row 213px = loaded 213px; /clubhouse-preview/stats?state=loading; synthetic preview |
+| `P004__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P004__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+
+## 2026-10-02 — Mobile design fidelity verification
+
+- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has
+  no horizontal document overflow; roster status notes and stats figure labels
+  remain inside their columns.
+- Before/after captures at 390 show the shared sheet gradient, inset highlight
+  and layered shadow. The captures use deterministic preview fixtures, not a
+  live customer session.
+- At 390, empty and failed coach states retain their explanatory copy and
+  controls. Roster player populated/empty, Team Hub player populated and Player
+  Stats early-read states were checked where applicable.
+- Physical iPhone Safari performance and real account data remain unverified.
+  Failed fixtures also logged AdminLoggerClient event-send failures in the local
+  development browser; no production data was changed.
+
+## 2026-10-02 — Intuitive improvement verification
+
+- WebKit measured the filter target at 44×44px at 375, 390 and 430, each with
+  zero horizontal overflow.
+- Fixture actions do not touch production. These checks do not establish
+  intended-user discoverability, physical iPhone performance or durable
+  live-data outcomes.
+
+## Historical verification gaps
+
+- The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390
+  and 430.
+- A browser pass with a real coach account (owner, Q-4).
+- `clubhouse:a11y` rerun for the phone view and every state; a keyboard walk on
+  the phone.
+- Forced states against a live session.
+- LCP, layout shift on the phone, and first-load JS (the merge pass, D-27).
+- The redirect of a non-coach from /golf/dashboard/stats/team (Fairway page, not
+  tested).
+- Found and fixed 2026-09-30: the CSV export wrote a name that starts with = + -
+  or @ as a formula. It is
+  written as text now (40501), and the test fails with the fix taken out
+  (checked).
+- v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet"
+  (D-71): built for Team stats (`StatsTeamFirstRun.tsx`; corrected
+  2026-10-17).
+
+## 2026-10-02 — Settled WebKit filter-sheet targets
+
+- Scoped phone date-field repair: From/To measure 44px at 375, 390 and 430px,
+  with 16px text. Desktop 1440px remains 38px/14px. Document width equals
+  viewport in all four captures.
+- Close, pills and window segments have shared 44px pseudo targets; WebKit
+  `elementFromPoint` verifies the expanded area above/below each visible
+  control. Adjacent expanded targets retain 2.08–4px horizontal gaps.
+- Scrolling the sheet body exposes Pick rounds; Exclude these remains reachable
+  through its expanded target and Clear/Done stay visible in the footer.
+- Before/after date-field evidence is logged in P004's screenshot table; both
+  Stats pages use this shared sheet CSS. Runtime geometry:
+  `/tmp/helm-clubhouse-visual-secondary/stats-targets.json`.
+- The semantic feature mapper reports stats.css as unmapped; the existing
+  P004/P005 page manifests govern it. No behavior or data contract changed.
+- Local fixture WebKit only; physical Safari chrome and native date picker were
+  not exercised. No production writes.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.
+
+## Premium audit matrix — 2026-10-06
+
+26 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

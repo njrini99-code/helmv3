@@ -38,6 +38,8 @@ import { formatValue } from './format-value';
 
 /** A real, finite number. `typeof NaN === 'number'`, so the typeof check alone
  *  would let a NaN from a malformed blob through to the axis math. */
+import { tourOnlyEvidence } from '@/lib/coachhelm/v2/insights/tour-only';
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -115,7 +117,7 @@ export function evidenceHasFacts(
 ): boolean {
   if (!evidence) return false;
   if (tryRenderV3Standing(evidence)) return true;
-  if (isFiniteNumber(evidence.your_value) && isFiniteNumber(evidence.comparison_value)) return true;
+  if (isFiniteNumber(evidence.your_value) && isFiniteNumber(tourOnlyEvidence(evidence).comparison_value)) return true;
   if (isFiniteNumber(evidence.sample_n) || isFiniteNumber(evidence.window_days)) return true;
   if (isFiniteNumber(evidence.confidence)) return true;
   return !omitImpact && Math.round(Math.abs(sanitizeStrokesImpact(evidence.strokes_impact)) * 10) > 0;
@@ -249,6 +251,8 @@ const SOURCE_LABELS: Record<InsightEvidence['comparison_source'], string> = {
   pga_baseline: 'PGA baseline',
   absolute_target: 'Target',
   estimated_target: 'Estimated target',
+  // College sources never render (tourOnlyEvidence drops them); the labels
+  // stay only because the record must cover every source.
   cohort_avg: 'College cohort avg',
 };
 
@@ -276,6 +280,16 @@ function formatSample(sample: number, metric: string): string {
  * is the team" relative to "tour-grade." Falls back to the legacy "X vs Y"
  * pill when the metric only carries a single anchor.
  */
+/**
+ * The label for a comparison. A Tour baseline uses the insight's own label
+ * when it names the tour ("LPGA Tour avg"), so a women's card never reads
+ * "PGA baseline".
+ */
+function comparisonLabel(source: InsightEvidence['comparison_source'], label: string | undefined): string {
+  if (source === 'pga_baseline' && label && /tour/i.test(label)) return label;
+  return SOURCE_LABELS[source] ?? label ?? '';
+}
+
 function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
   const ticks: Array<{
     value: number;
@@ -289,7 +303,7 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
     },
     {
       value: evidence.comparison_value,
-      label: SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label,
+      label: comparisonLabel(evidence.comparison_source, evidence.comparison_label),
       role: 'primary',
     },
   ];
@@ -384,14 +398,15 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
 }
 
 export function EvidencePanel({
-  evidence,
+  evidence: rawEvidence,
   compact = true,
   omitImpact = false,
   'data-testid': testId,
 }: EvidencePanelProps) {
   // Defensive: an insight minted before this phase will have no evidence
   // JSON. Render nothing rather than a half-populated panel.
-  if (!evidence) return null;
+  if (!rawEvidence) return null;
+  const evidence = tourOnlyEvidence(rawEvidence);
 
   const hasConfidence = isFiniteNumber(evidence.confidence);
   const confPct = hasConfidence ? Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100) : 0;
@@ -502,7 +517,7 @@ export function EvidencePanel({
             {formatValue(evidence.comparison_value, evidence.unit)}
           </span>{' '}
           <span className="text-text-tertiary">
-            ({SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label})
+            ({comparisonLabel(evidence.comparison_source, evidence.comparison_label)})
           </span>
         </span>
       ),

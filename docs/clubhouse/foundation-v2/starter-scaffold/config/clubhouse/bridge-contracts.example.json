@@ -1,0 +1,45 @@
+[
+  {
+    "id": 4051,
+    "page": "P004",
+    "category": 5,
+    "item": 1,
+    "name": "MESSAGE_BODY_REQUIRED",
+    "meaning": "User attempted to send a message without valid text or an attachment.",
+    "status": "reserved",
+    "severity": "validation",
+    "recoverable": true,
+    "relatedAction": "ACT-P004-SEND-MESSAGE",
+    "tests": [
+      "TEST-P004-MESSAGE-BODY-REQUIRED"
+    ]
+  },
+  {
+    "id": 4061,
+    "page": "P004",
+    "category": 6,
+    "item": 1,
+    "name": "MESSAGE_SEND_FAILED",
+    "meaning": "Message send action failed after submission.",
+    "status": "reserved",
+    "severity": "error",
+    "recoverable": true,
+    "relatedAction": "ACT-P004-SEND-MESSAGE",
+    "tests": [
+      "TEST-P004-SEND-FAILURE"
+    ]
+  },
+  {
+    "id": 4251,
+    "page": "P004",
+    "category": 25,
+    "item": 1,
+    "name": "FOCUS_MESSAGE_COMPOSER",
+    "meaning": "Helm Bridge requests focus on the active message composer.",
+    "status": "reserved",
+    "severity": null,
+    "recoverable": null,
+    "relatedAction": null,
+    "tests": []
+  }
+]

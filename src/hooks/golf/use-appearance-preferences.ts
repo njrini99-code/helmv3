@@ -62,21 +62,25 @@ function readFromStorage(): AppearancePreferences {
 // notifyListeners() so subscribers re-render with the real prefs.
 let storageListenerAttached = false;
 
-function hydrateCacheOnce() {
-  if (typeof window === 'undefined') return;
+function refreshCache() {
   const next = readFromStorage();
-  // Avoid a gratuitous notify if storage matched DEFAULTS anyway.
-  if (next !== cachedPrefs) {
-    cachedPrefs = next;
-    notifyListeners();
-  }
+  // Parsed storage objects have fresh identities even when every preference
+  // is unchanged. Keep the snapshot stable for existing subscribers.
+  if (next.displayDensity === cachedPrefs.displayDensity &&
+      next.dateFormat === cachedPrefs.dateFormat &&
+      next.showAnimations === cachedPrefs.showAnimations &&
+      next.scoreDisplay === cachedPrefs.scoreDisplay) return;
+  cachedPrefs = next;
+  notifyListeners();
+}
+
+function hydrateCacheOnce() {
+  if (typeof window === 'undefined' || storageListenerAttached) return;
+  refreshCache();
   if (!storageListenerAttached) {
     storageListenerAttached = true;
     window.addEventListener('storage', (e) => {
-      if (e.key === STORAGE_KEY) {
-        cachedPrefs = readFromStorage();
-        notifyListeners();
-      }
+      if (e.storageArea === localStorage && (e.key === STORAGE_KEY || e.key === null)) refreshCache();
     });
   }
 }
@@ -100,8 +104,8 @@ export function useAppearancePreferences() {
   const prefs = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   // Post-mount hydration: on the first hook use in a session, read localStorage
-  // and notify. Idempotent — subsequent mounts no-op the cache read unless
-  // storage changed (readFromStorage returns fresh data each call).
+  // and notify. Subsequent mounts reuse the snapshot; updates and storage
+  // events are responsible for keeping it current.
   useEffect(() => {
     hydrateCacheOnce();
   }, []);

@@ -133,6 +133,9 @@ vi.mock('@/lib/ai/model-provider', () => ({ resolveModelProvider: (m: string) =>
 vi.mock('@/lib/observability/metrics', () => ({ recordAi: mocks.recordAi }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: mocks.createClient }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: mocks.createAdminClient }));
+// CoachHelm is on for this coach unless a test switches it off (CH13-20).
+const helmGate = vi.hoisted(() => ({ isCoachHelmEnabledForCoach: vi.fn(async () => ({ effectivelyEnabled: true })) }));
+vi.mock('@/lib/coachhelm/v2/gate', () => helmGate);
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: mocks.logServerError,
   logServerEvent: mocks.logServerEvent,
@@ -1312,5 +1315,15 @@ describe('POST /coachhelm/v3/chat/stream — a Confirm card the coach never answ
 
     expect(card.state).toBe('approval-requested');
     expect(card.approval.approved).toBeUndefined();
+  });
+});
+
+describe('POST /coachhelm/v3/chat/stream — the CoachHelm gate (CH13-20)', () => {
+  it('answers nothing when CoachHelm is off for the coach: 403, no model call', async () => {
+    mocks.streamText.mockReset();
+    helmGate.isCoachHelmEnabledForCoach.mockResolvedValueOnce({ effectivelyEnabled: false });
+    const res = await POST(makeRequest(baseBody));
+    expect(res.status).toBe(403);
+    expect(mocks.streamText).not.toHaveBeenCalled();
   });
 });

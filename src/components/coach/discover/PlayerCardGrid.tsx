@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useCallback, memo } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { PlayerCard, PlayerCardData } from './PlayerCard';
 import { IconUsers } from '@/components/icons';

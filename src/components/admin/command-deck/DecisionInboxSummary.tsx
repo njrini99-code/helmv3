@@ -29,7 +29,17 @@ const KIND_LABEL: Readonly<Record<DecisionInboxSummaryModel['items'][number]['ki
  * explicit caveat that the held-migration slice specifically may be
  * incomplete.
  */
-export function DecisionInboxSummary({ summary, checkedAt }: { summary: DecisionInboxSummaryModel; checkedAt: string }) {
+export function DecisionInboxSummary({
+  summary,
+  checkedAt,
+  quiet = false,
+}: {
+  summary: DecisionInboxSummaryModel;
+  checkedAt: string;
+  /** Set only under a page-level `AllClearBanner`: the calm empty state
+   *  becomes one quiet row. The unreadable and has-items states never change. */
+  quiet?: boolean;
+}) {
   if (!summary.readable && summary.items.length === 0) {
     return (
       <PanelStale
@@ -40,7 +50,7 @@ export function DecisionInboxSummary({ summary, checkedAt }: { summary: Decision
   }
 
   if (summary.items.length === 0) {
-    return <PanelAllClear label="No decisions waiting on you" checkedAt={checkedAt} />;
+    return <PanelAllClear label="No decisions waiting on you" checkedAt={checkedAt} variant={quiet ? 'inline' : 'block'} />;
   }
 
   return (

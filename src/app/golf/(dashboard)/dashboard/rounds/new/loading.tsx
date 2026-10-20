@@ -1,5 +1,7 @@
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { RoundEntrySkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 
 /**
  * Route Suspense fallback for /golf/dashboard/rounds/new.
@@ -51,7 +53,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * the real field height is content-driven: `text-body`'s 24px line-height
  * (tailwind.config.ts) + `py-2.5` (20px) + a 1px border ≈ 46px, not 48px.
  */
-export default function NewRoundLoading() {
+function NewRoundLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -157,4 +159,9 @@ export default function NewRoundLoading() {
       </div>
     </div>
   );
+}
+
+// Clubhouse round entry (golf_clubhouse_ui) gets its own skeleton inside the Clubhouse shell.
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<RoundEntrySkeleton />} fallback={<NewRoundLoading />} />;
 }

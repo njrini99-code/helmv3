@@ -6,6 +6,7 @@ import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfM
 import { isTransientNetworkErrorMessage, withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
+import { isClientDeadlineAbort } from '@/lib/client-deadline-abort';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -618,7 +619,7 @@ export function useGolfMessages(
       // conversation was opened. That is the "Can't see pics" report from the
       // team chat: the sender saw it send, the recipients opened the thread
       // later and saw nothing.
-      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at')
+      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
@@ -924,7 +925,7 @@ export function useGolfMessages(
       ? 'unknown'
       : 'refused';
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, replyToId?: string | null) => {
     // Clear typing indicator when sending
     sendTypingStatus(false);
 
@@ -945,7 +946,7 @@ export function useGolfMessages(
       edited_at: null,
       is_deleted: false,
       // A plain text message from the composer — never one of the
-      // structured kinds (poll/rsvp/event/etc), never a reply, never pinned.
+      // structured kinds (poll/rsvp/event/etc), never pinned. Replies use the existing link.
       // These columns (and golf_message_reactions/_mentions/_responses)
       // shipped to production 2026-09-04 with no committed migration; see
       // supabase/migrations/20260904160000_golf_messaging_structured.sql.
@@ -953,7 +954,7 @@ export function useGolfMessages(
       payload: null,
       pinned_at: null,
       pinned_by: null,
-      reply_to_id: null,
+      reply_to_id: replyToId ?? null,
     };
     setMessages(prev => [...prev, optimisticMessage]);
 
@@ -969,7 +970,9 @@ export function useGolfMessages(
       // reports it back as the success it is (see sendMessage/action's 23505
       // handling) instead of creating a second, duplicate row.
       const result = await withOneTransportRetry(
-        () => sendGolfMessage(conversationId, content, optimisticId),
+        () => replyToId
+          ? sendGolfMessage(conversationId, content, optimisticId, replyToId)
+          : sendGolfMessage(conversationId, content, optimisticId),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
 
@@ -1030,7 +1033,9 @@ export function useGolfMessages(
 
     try {
       const result = await withOneTransportRetry(
-        () => sendGolfMessage(conversationId, target.content, messageId),
+        () => target.reply_to_id
+          ? sendGolfMessage(conversationId, target.content, messageId, target.reply_to_id)
+          : sendGolfMessage(conversationId, target.content, messageId),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
       if (!result || !result.success || ('error' in result && result.error)) {
@@ -1238,6 +1243,26 @@ export function applyPerViewerUnread(
 }
 
 /**
+ * True unless the client positively reports that there is no session.
+ *
+ * `auth.getSession()` reads the locally stored session, so this costs no
+ * network round trip. It is deliberately permissive about everything it cannot
+ * read: a missing `auth` object, a rejected call or an unexpected shape all
+ * count as "has a session", because the caller only wants to skip a request
+ * that is certain to be made as anon, never to turn a working rail into an
+ * empty one.
+ */
+export async function hasActiveSession(supabase: ReturnType<typeof createClient>): Promise<boolean> {
+  try {
+    const result = await supabase.auth?.getSession?.();
+    if (!result || !('data' in result)) return true;
+    return result.data?.session != null;
+  } catch {
+    return true;
+  }
+}
+
+/**
  * The conversation rail, resolved end to end for one viewer: the RPC, the
  * team-chat rows, unread counts, participant identities, sort. Pure with
  * respect to React so it can run from OUTSIDE the hook — the dashboard shell
@@ -1251,6 +1276,14 @@ export async function loadGolfConversationRail(
   supabase: ReturnType<typeof createClient>,
   userId: string,
 ): Promise<{ ok: true; rows: GolfConversationWithMeta[] } | { ok: false }> {
+  // No session means every read below runs as `anon`, which has no EXECUTE on
+  // get_golf_conversations_with_details or user_conversation_ids (the
+  // conversation policies call it) and, since the anon grants were revoked, no
+  // table access either. The answer would be a 42501 error that Sentry records
+  // as an incident and the rail shows as a backend failure. A signed-out
+  // viewer has no conversations, so say that and make no call.
+  if (!(await hasActiveSession(supabase))) return { ok: true, rows: [] };
+
   // Use optimized DB function - single query replaces N+1 pattern (was 50-60 queries)
   // Note: Function added in migration, types may need regeneration with `npm run db:types`
   // The active-team allow-list is independent of the RPC, so the two run in
@@ -1303,7 +1336,11 @@ export async function loadGolfConversationRail(
     `)
     .eq('user_id', userId);
 
-  if (groupConvsError) {
+  // The browser client's request deadline on a slow connection (Bridge
+  // af4c2c9d, reopened 4x): the rail continues with the RPC rows and reloads
+  // on the next realtime change, so the deadline abort is not reported. Any
+  // other failure of this read is still logged.
+  if (groupConvsError && !isClientDeadlineAbort(groupConvsError)) {
     logError(
       toPostgrestError(groupConvsError),
       {
@@ -1550,6 +1587,10 @@ export async function loadGolfConversationRail(
 
       if (myRowsError) {
         lastReadFailed = true;
+        // The browser client's own request deadline (Bridge 44137d5f, same
+        // class as af4c2c9d above): the badge already falls back to the RPC
+        // count, so a deadline abort is not reported. Anything else is.
+        if (isClientDeadlineAbort(myRowsError)) continue;
         logError(
           toPostgrestError(myRowsError),
           {

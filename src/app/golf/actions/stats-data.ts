@@ -11,6 +11,7 @@ import {
 } from '@/lib/utils/golf-stats-calculator-shots';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { resolvePlayerTour } from '@/lib/golf/resolve-player-tour';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { resolveStatsDateRange, utcYearsAgo } from '@/lib/golf/stats-date-range';
 import {
@@ -921,69 +922,55 @@ async function queryDetailedStatsWithClient(
   const requestedRoundIds = explicitRoundIds(roundId);
   if (requestedRoundIds?.length === 0) return calculateStatsFromShots([], [], []);
 
-  let query = supabase
-    .from('golf_rounds')
-    .select(`
-      id,
-      round_date,
-      course_name,
-      round_type,
-      total_score,
-      score_to_par,
-      holes_played,
-      total_fairways_hit,
-      total_fairways,
-      total_gir,
-      total_gir_possible,
-      total_putts,
-      front_nine,
-      back_nine
-    `)
-    .eq('player_id', playerId)
-    .eq('is_test', false)
-    .eq('status', 'completed');
-
-  if (conditions.startDate) query = query.gte('round_date', conditions.startDate);
-  if (conditions.endDate) query = query.lte('round_date', conditions.endDate);
-  query = applyRoundTypeFilter(query, conditions.roundType);
-  if (conditions.courseName) query = query.eq('course_name', conditions.courseName);
-  if (requestedRoundIds) query = query.in('id', requestedRoundIds);
-  query = query.order('round_date', { ascending: false });
-
-  // Push the preset limit into SQL — previously we fetched every completed
-  // round and sliced in JS, which meant the shots/holes IN(round_ids) query
-  // below could fan out to hundreds of UUIDs and trip statement_timeout.
-  // For non-preset queries we still cap at DETAILED_STATS_MAX_ROUNDS so the
-  // fan-out stays bounded.
   const presetLimit = presetLimitCount(filter);
-  const sqlLimit = presetLimit ?? DETAILED_STATS_MAX_ROUNDS;
-  query = query.limit(sqlLimit);
+  // The team's SG scale needs only the player: asked for now, beside the round read, not after the shots (F-56).
+  // An RPC answers with { data, error } rather than throwing; a rejected call reads as no scale (1), as before.
+  const sgScaleRead = Promise.resolve(supabase.rpc('sg_scale_for_player', { p_player_id: playerId })).then(
+    (res) => res.data,
+    () => null,
+  );
 
-  // For non-preset queries, also count the unfiltered total so we can tell the
-  // UI when the cap silently truncated the window. Counting in parallel keeps
-  // the extra hop off the critical path. We only do this when no preset is
-  // active — preset caps are explicit user requests, not silent truncation.
-  let totalCountForFilter: number | null = null;
-  if (presetLimit === null && !requestedRoundIds) {
-    let countQuery = supabase
+  // Read EVERY round the filters match, then apply the countable-round rule, and
+  // only THEN cut to the preset ("last 5/10/20") or the DETAILED_STATS_MAX_ROUNDS
+  // ceiling. A SQL `.limit()` ahead of the countable filter made "last 5" return
+  // four rounds whenever a hole-less round sat among the newest five, and let
+  // uncountable rounds eat into the 100. Paged, because PostgREST caps a single
+  // response at 1000 rows; the (round_date, id) order keeps the page boundaries
+  // stable. A round row is ~14 small columns, so reading a player's whole history
+  // is cheap next to the shot read it gates.
+  const { data: fetchedRounds, error: roundsError } = await fetchAllRowsResult((from, to) => {
+    let query = supabase
       .from('golf_rounds')
-      .select('id', { count: 'exact', head: true })
+      .select(`
+        id,
+        round_date,
+        course_name,
+        round_type,
+        total_score,
+        score_to_par,
+        holes_played,
+        total_fairways_hit,
+        total_fairways,
+        total_gir,
+        total_gir_possible,
+        total_putts,
+        front_nine,
+        back_nine
+      `)
       .eq('player_id', playerId)
       .eq('is_test', false)
       .eq('status', 'completed');
 
-    if (conditions.startDate) countQuery = countQuery.gte('round_date', conditions.startDate);
-    if (conditions.endDate) countQuery = countQuery.lte('round_date', conditions.endDate);
-    countQuery = applyRoundTypeFilter(countQuery, conditions.roundType);
-    if (conditions.courseName) countQuery = countQuery.eq('course_name', conditions.courseName);
-
-    const { count: matchedCount, error: countError } = await countQuery;
-    if (!countError) {
-      totalCountForFilter = matchedCount ?? null;
-    }
-  }
-
-  const { data: fetchedRounds, error: roundsError } = await query;
+    if (conditions.startDate) query = query.gte('round_date', conditions.startDate);
+    if (conditions.endDate) query = query.lte('round_date', conditions.endDate);
+    query = applyRoundTypeFilter(query, conditions.roundType);
+    if (conditions.courseName) query = query.eq('course_name', conditions.courseName);
+    if (requestedRoundIds) query = query.in('id', requestedRoundIds);
+    return query
+      .order('round_date', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to);
+  }, undefined, { table: 'golf_rounds', action: 'queryDetailedStats.rounds', feature: 'stats_analytics', sport: 'golf' });
   if (roundsError) {
     await logServerError(
       `[Stats] Rounds query error: ${describeError(roundsError)}`,
@@ -994,12 +981,13 @@ async function queryDetailedStatsWithClient(
 
   // Countable rounds only (src/lib/golf/round-countable.ts). An explicit
   // round pick is the viewer's own choice and is honoured as-is.
-  const fetchedRoundRows = applyPresetLimit(
-    requestedRoundIds
-      ? fetchedRounds || []
-      : (fetchedRounds || []).filter((r) => isCountableRound(withCanonicalRoundTotal(r))),
-    filter,
-  );
+  const roundsInScope = requestedRoundIds
+    ? fetchedRounds || []
+    : (fetchedRounds || []).filter((r) => isCountableRound(withCanonicalRoundTotal(r)));
+  // The cap comes AFTER the filter: the preset count, else the 100-round ceiling
+  // that keeps the shots/holes IN(round_ids) read from fanning out past the
+  // statement budget (incident 3).
+  const fetchedRoundRows = roundsInScope.slice(0, presetLimit ?? DETAILED_STATS_MAX_ROUNDS);
   // The database query above already scopes IDs, but retain this in-process
   // allow-list. It protects the downstream holes/shots reads if a mock,
   // proxy, or future query refactor returns more rows than requested.
@@ -1008,13 +996,12 @@ async function queryDetailedStatsWithClient(
     : fetchedRoundRows;
   if (roundsData.length === 0) return calculateStatsFromShots([], [], []);
 
-  // Truncation flag: only meaningful for non-preset queries. We compare the
-  // unfiltered match count against the hard cap. If we couldn't get an exact
-  // count (rare — query error), fall back to the cap-equality heuristic.
+  // Truncation flag: only meaningful for non-preset, non-explicit queries (a
+  // preset cap or an explicit pick is the viewer's own request, not a silent
+  // cut). It compares the COUNTABLE total against the hard cap — uncountable
+  // rounds were never going to be in the window, so they cannot truncate it.
   const truncated = !requestedRoundIds && presetLimit === null
-    ? (totalCountForFilter !== null
-        ? totalCountForFilter > DETAILED_STATS_MAX_ROUNDS
-        : roundsData.length >= DETAILED_STATS_MAX_ROUNDS)
+    ? roundsInScope.length > DETAILED_STATS_MAX_ROUNDS
     : false;
 
   const roundIds = roundsData.map(r => r.id);
@@ -1023,7 +1010,7 @@ async function queryDetailedStatsWithClient(
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
       fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
-        .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir, sand_save')
+        .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir, sand_save, penalty_strokes')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
         .range(from, to), undefined, { table: 'golf_holes', action: 'queryDetailedStats', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
@@ -1086,6 +1073,8 @@ async function queryDetailedStatsWithClient(
       fairway_hit: h.fairway_hit ?? null,
       gir: h.gir ?? null,
       sand_save: h.sand_save ?? null,
+      // The one penalty count (null = 0, like the DB cache's COALESCE).
+      penalty_strokes: h.penalty_strokes ?? null,
     }));
 
     const shots: RawShot[] = (shotsData || []).map(s => {
@@ -1138,7 +1127,7 @@ async function queryDetailedStatsWithClient(
     // Per-team SG baseline scale (women's 1.083, NCAA D1/D2/D3, etc.) so the
     // Stats page SG matches the DB cache, which already applies it. Resolved via
     // the same DB function the cache uses (sg_scale_for_player) = single source.
-    const { data: sgScaleRaw } = await supabase.rpc('sg_scale_for_player', { p_player_id: playerId });
+    const sgScaleRaw = await sgScaleRead;
     const sgScale = typeof sgScaleRaw === 'number' && sgScaleRaw > 0 ? sgScaleRaw : 1;
 
     const computed = calculateStatsFromShots(shots, holesInfo, roundsInfo, { sgScale });
@@ -2507,6 +2496,9 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
 
 // HoleAnalysis, WorstHoleResponse — see stats-data-types.ts
 
+/** Round ids per golf_holes `in.(...)` read; bounds the request URL. */
+const WORST_HOLE_ROUND_CHUNK = 100;
+
 /**
  * Get worst hole analysis
  */
@@ -2518,34 +2510,65 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
     return { holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null };
   }
 
-  // Get all holes with their scores
-  const { data: holesData, error: holesError } = await fetchAllRowsResult((from, to) => supabase
-    .from('golf_holes')
-    .select(`
-      id,
-      round_id,
-      hole_number,
-      par,
-      score,
-      golf_rounds!inner (
-        player_id,
-        status,
-        round_date
-      )
-    `)
-    .eq('golf_rounds.player_id', playerId)
-    .eq('golf_rounds.status', 'completed')
-    .not('score', 'is', null)
-    .order('round_id')
-    .order('hole_number')
+  // Two indexed reads instead of one embedded join. The old read embedded
+  // `golf_rounds!inner(...)` and filtered on it. PostgREST renders that embed as
+  // a LATERAL subquery carrying its own LIMIT/OFFSET, which Postgres cannot
+  // flatten — so the planner walked EVERY golf_holes row on the platform in
+  // (round_id, hole_number) order, ran the golf_holes RLS EXISTS per row, and
+  // only then probed golf_rounds for this player. Measured 2026-10-05 against
+  // production as a player reading their own stats: 2,049 ms with 12,310 RLS
+  // probes for 234 returned holes, vs 142 ms for the same rows read through
+  // the player's round ids. Under dashboard concurrency it hit the 8 s
+  // `authenticated` statement_timeout (57014; Bridge b99a5da6, Sentry Z0/XP),
+  // and it grew with every hole any team recorded.
+  //
+  // Step 1: this player's countable rounds. Test rounds (QA/demo data, OD-03)
+  // never feed a player's worst/best holes.
+  const { data: roundRows, error: roundsError } = await fetchAllRowsResult<{ id: string; round_date: string | null }>((from, to) => supabase
+    .from('golf_rounds')
+    .select('id, round_date')
+    .eq('player_id', playerId)
+    .eq('is_test', false)
+    .eq('status', 'completed')
     .order('id', { ascending: true })
-    .range(from, to), undefined, { table: 'golf_holes', action: 'getWorstHoleAnalysis', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+    .range(from, to), undefined, { table: 'golf_rounds', action: 'getWorstHoleAnalysis', feature: 'stats_analytics', sport: 'golf' });
 
-  // The `error` is READ. Discarded, a failed hole read fell through to an empty
-  // analysis — and the catch below returns that SAME empty shape — so the screen
-  // told a player they have no worst holes, i.e. nothing to work on.
-  if (holesError) {
-    throw new Error(`worst-hole read failed for player ${playerId}: ${holesError.message}`);
+  if (roundsError) {
+    throw new Error(`worst-hole round read failed for player ${playerId}: ${roundsError.message}`);
+  }
+
+  const roundDateById = new Map<string, string | null>();
+  for (const r of roundRows ?? []) roundDateById.set(r.id, r.round_date);
+  // Sorted so the chunked reads below concatenate in the same (round_id,
+  // hole_number, id) order the single read returned — the per-hole trend
+  // compares the first five plays against the last five in this order.
+  const roundIds = [...roundDateById.keys()].sort();
+
+  // Step 2: those rounds' holes, through the (round_id, hole_number) index.
+  // Chunked so a long career cannot build an unbounded `in.(...)` URL.
+  const holesData: Array<{ id: string; round_id: string; hole_number: number; par: number; score: number | null; golf_rounds: { round_date?: string } }> = [];
+  for (let i = 0; i < roundIds.length; i += WORST_HOLE_ROUND_CHUNK) {
+    const chunk = roundIds.slice(i, i + WORST_HOLE_ROUND_CHUNK);
+    const { data: chunkHoles, error: holesError } = await fetchAllRowsResult<{ id: string; round_id: string; hole_number: number; par: number; score: number | null }>((from, to) => supabase
+      .from('golf_holes')
+      .select('id, round_id, hole_number, par, score')
+      .in('round_id', chunk)
+      .not('score', 'is', null)
+      .order('round_id')
+      .order('hole_number')
+      .order('id', { ascending: true })
+      .range(from, to), undefined, { table: 'golf_holes', action: 'getWorstHoleAnalysis', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+
+    // The `error` is READ. Discarded, a failed hole read fell through to an empty
+    // analysis — and the catch below returns that SAME empty shape — so the screen
+    // told a player they have no worst holes, i.e. nothing to work on.
+    if (holesError) {
+      throw new Error(`worst-hole read failed for player ${playerId}: ${holesError.message}`);
+    }
+    for (const h of chunkHoles ?? []) {
+      const roundDate = roundDateById.get(h.round_id);
+      holesData.push({ ...h, golf_rounds: roundDate ? { round_date: roundDate } : {} });
+    }
   }
 
   if (!holesData || holesData.length === 0) {
@@ -2711,7 +2734,9 @@ async function getPlayerStrengthsWeaknessesImpl(
     return null;
   }
 
-  return generateStatisticalStrengthsWeaknesses(stats);
+  // The Tour the player is compared with (owner decision Q-93): LPGA for a
+  // women's team, PGA otherwise. GolfStats carries no gender.
+  return generateStatisticalStrengthsWeaknesses(stats, await resolvePlayerTour(supabase, playerId));
   } catch (error) {
     await logServerError(
       `[Stats] getPlayerStrengthsWeaknesses failed: ${describeError(error)}`,

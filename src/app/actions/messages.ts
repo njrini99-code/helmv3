@@ -19,6 +19,8 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { assertGolfConversationAudience } from '@/lib/golf/conversation-audience';
+import { validateGolfReplyTarget } from '@/lib/golf/message-replies';
 
 type Sport = 'baseball' | 'golf';
 
@@ -45,6 +47,8 @@ interface SendMessageOptions {
    * useGolfMessages is an exact match instead of a heuristic guess.
    */
   clientMessageId?: string;
+  /** Golf's existing same-conversation reply link; omitted for ordinary messages. */
+  replyToId?: string | null;
 }
 
 /**
@@ -93,6 +97,7 @@ export async function sendMessage({
   sport = 'baseball',
   createNotifications = true,
   clientMessageId,
+  replyToId,
 }: SendMessageOptions) {
   try {
     const supabase = await createClient();
@@ -131,6 +136,14 @@ export async function sendMessage({
       throw new Error('Not a participant in this conversation');
     }
 
+    let validatedReplyId: string | null = null;
+    if (replyToId != null) {
+      if (sport !== 'golf') throw new Error('Quoted replies are not available for this conversation');
+      const reply = await validateGolfReplyTarget(supabase, validatedData.conversation_id, replyToId);
+      if (!reply.success) throw new Error(reply.error);
+      validatedReplyId = reply.replyToId;
+    }
+
     // Log security event
     await logSecurityEvent({
       event: 'message_sent',
@@ -149,6 +162,7 @@ export async function sendMessage({
         sender_id: user.id,
         content: sanitizedContent,
         read: false,
+        ...(validatedReplyId ? { reply_to_id: validatedReplyId } : {}),
       })
       .select()
       .single();
@@ -185,7 +199,7 @@ export async function sendMessage({
         // closed is the right direction, and the caller retains the message.
         const { data: existing, error: existingError } = await (supabase
           .from(messagesTable as any) as any)
-          .select('id, conversation_id, sender_id, content')
+          .select(sport === 'golf' ? 'id, conversation_id, sender_id, content, reply_to_id' : 'id, conversation_id, sender_id, content')
           .eq('id', validatedData.client_message_id)
           .maybeSingle();
 
@@ -194,7 +208,8 @@ export async function sendMessage({
           !!existing &&
           existing.conversation_id === validatedData.conversation_id &&
           existing.sender_id === user.id &&
-          existing.content === sanitizedContent;
+          existing.content === sanitizedContent &&
+          (sport !== 'golf' || (existing.reply_to_id ?? null) === validatedReplyId);
 
         if (alreadySentByThisUser) {
           return { success: true };
@@ -394,6 +409,11 @@ export async function createConversation({
       await logServerError('[createConversation] Missing teamId for golf conversation', { action: 'messages.createConversation' });
       throw new Error('Team ID is required for golf conversations');
     }
+    // This file is 'use server', so createConversation and
+    // createGolfConversation are endpoints in their own right, reachable
+    // without the golf wrapper's audience check. RLS lets a conversation's
+    // creator add any user id, so the check lives here too, before any write.
+    await assertGolfConversationAudience(user.id, participantUserIds, teamId);
     insertData.team_id = teamId;
   }
 
@@ -594,7 +614,7 @@ export async function markMessagesAsRead({
   // this degrades gracefully: the call errors, is logged as non-fatal below
   // (same as any other messagesError), and last_read_at (committed above)
   // still clears the group-chat badge.
-  let messagesError: { message: string } | null = null;
+  let messagesError: { message: string } | null;
   if (sport === 'golf') {
     const { error } = await (supabase as any).rpc('mark_golf_messages_read', {
       p_conversation_id: conversationId,
@@ -646,8 +666,8 @@ export async function markBaseballMessagesAsRead(conversationId: string) {
 
 // Golf-specific exports (maintain existing function signatures)
 // SEMGREP-ALLOW: realtime-subscribed messages + notifications UI; revalidate would cause reload loop
-async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string) {
-  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId });
+async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null) {
+  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId, replyToId });
 
   if (result.success) {
     const supabase = await createClient();
@@ -668,8 +688,8 @@ const observedSendGolfMessage = withAdminObserved(
   sendGolfMessageImpl,
 );
 
-export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string) {
-  return observedSendGolfMessage(conversationId, content, clientMessageId);
+export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null) {
+  return observedSendGolfMessage(conversationId, content, clientMessageId, replyToId);
 }
 
 async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {
@@ -704,23 +724,38 @@ export async function markGolfMessagesAsRead(conversationId: string) {
 // Team Broadcast / Group Chat (Golf)
 // ============================================================================
 
-interface CreateTeamBroadcastOptions {
+/**
+ * Who a broadcast reaches: the players chosen, or the whole team only when the
+ * caller says so. An empty or missing list used to mean the whole team, so a
+ * group whose player lookups all missed went to everyone.
+ */
+type CreateTeamBroadcastOptions = {
   teamId: string;
   title: string;
-  selectedPlayerIds?: string[]; // If empty/undefined, all team players are included
-}
+} & (
+  | { allPlayers: true; selectedPlayerIds?: never }
+  | { allPlayers?: false; selectedPlayerIds: string[] }
+);
 
 /**
  * Create a team broadcast conversation (coaches only)
  * @param teamId - The team ID
  * @param title - The conversation title (e.g., "Team Updates", "Practice Reminder")
- * @param selectedPlayerIds - Optional array of specific player IDs to include (if not provided, all team players are included)
+ * @param selectedPlayerIds - The player IDs to include; at least one unless allPlayers is set
+ * @param allPlayers - Include every player on the team (selectedPlayerIds is then left out)
  */
 async function createGolfTeamBroadcastImpl({
   teamId,
   title,
   selectedPlayerIds,
+  allPlayers,
 }: CreateTeamBroadcastOptions): Promise<{ conversationId: string; reused?: boolean } | { error: string }> {
+  // Checked at runtime too: this is a server action and its input is the caller's.
+  const everyone = allPlayers === true;
+  const chosen = Array.isArray(selectedPlayerIds) ? selectedPlayerIds.filter((id) => typeof id === 'string' && id) : [];
+  if (everyone ? chosen.length > 0 : chosen.length === 0) {
+    return { error: everyone ? 'Choose players or the whole team, not both.' : 'Choose at least one player.' };
+  }
   try {
     const supabase = await createClient();
 
@@ -752,14 +787,17 @@ async function createGolfTeamBroadcastImpl({
       throw new Error('Team not found or not authorized');
     }
 
-    // Get team players (all or selected)
+    // Get team players (all or selected): active members only, as the roster
+    // and the broadcast picker list them. A removed or inactive player is no
+    // longer on the team and must not be added to its chat.
     let playerQuery = supabase
       .from('golf_team_members')
       .select('player_id, player:golf_players(user_id)')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
-    if (selectedPlayerIds && selectedPlayerIds.length > 0) {
-      playerQuery = playerQuery.in('player_id', selectedPlayerIds);
+    if (!everyone) {
+      playerQuery = playerQuery.in('player_id', chosen);
     }
 
     const { data: teamMembers, error: membersError } = await playerQuery;
@@ -790,12 +828,19 @@ async function createGolfTeamBroadcastImpl({
     // audience, discarding the freshly-selected selectedPlayerIds entirely.
     const desiredParticipantIds = [...new Set([user.id, ...playerUserIds])].sort();
 
+    // Only the CALLER's OWN same-titled chats are candidates (P007).
+    // golf_participants_insert_v2 lets a user add OTHER people only to a
+    // conversation they created (golf_conversation_created_by_me), so
+    // reconciling members into another coach's same-titled team chat was
+    // refused on every insert and the broadcast failed outright. A chat
+    // another coach created is left alone; this coach gets their own.
     const { data: existingConvs } = await supabase
       .from('golf_conversations')
       .select('id')
       .eq('team_id', teamId)
       .eq('is_team_chat', true)
       .eq('title', title)
+      .eq('created_by', user.id)
       .order('created_at', { ascending: true });
 
     if (existingConvs && existingConvs.length > 0) {
@@ -853,24 +898,29 @@ async function createGolfTeamBroadcastImpl({
         const existingIds = new Set((existingParticipants ?? []).map((p) => p.user_id));
         const missingIds = desiredParticipantIds.filter((id) => !existingIds.has(id));
 
-        if (missingIds.length > 0) {
-          const { error: syncError } = await supabase
-            .from('golf_conversation_participants')
-            .insert(
-              missingIds.map((userId) => ({
-                conversation_id: reuseTarget.id,
-                user_id: userId,
-                joined_at: new Date().toISOString(),
-              })),
-            );
+        // Reuse only a chat the caller is still IN. One they created but have
+        // since left falls through to a new conversation below, rather than
+        // the coach writing themselves back into it.
+        if (existingIds.has(user.id)) {
+          if (missingIds.length > 0) {
+            const { error: syncError } = await supabase
+              .from('golf_conversation_participants')
+              .insert(
+                missingIds.map((userId) => ({
+                  conversation_id: reuseTarget.id,
+                  user_id: userId,
+                  joined_at: new Date().toISOString(),
+                })),
+              );
 
-          if (syncError) {
-            await logServerError(`[Broadcast] Failed to sync participants on reuse: ${describeError(syncError)}`, { action: 'messages.createGolfTeamBroadcast' });
-            throw new Error(`Failed to update broadcast recipients: ${syncError.message}`);
+            if (syncError) {
+              await logServerError(`[Broadcast] Failed to sync participants on reuse: ${describeError(syncError)}`, { action: 'messages.createGolfTeamBroadcast' });
+              throw new Error(`Failed to update broadcast recipients: ${syncError.message}`);
+            }
           }
-        }
 
-        return { conversationId: reuseTarget.id, reused: true };
+          return { conversationId: reuseTarget.id, reused: true };
+        }
       }
     }
 

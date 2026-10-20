@@ -38,7 +38,7 @@
 - Watch: `audience` defaults to `'coach'`, which INVERTS the prior behaviour
   for any sender that omits it. Safe while there is one sender and it is
   explicit; a player-facing sender MUST pass `audience: 'player'`.
-- Registry: `src/app/golf/actions/insights.ts` was mapped into this feature in
+- Registry: `actions/insights.ts (pre-split; now insights-*.ts)` was mapped into this feature in
   the same commit — `insight-*.ts` never matched `insights.ts`, so the largest
   insight action file in the tree resolved to no feature and every edit to it
   tripped the context guard.

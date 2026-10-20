@@ -29,7 +29,7 @@ this table if the underlying files have since changed):
 | 1 | `supabase_tracing_runtime_imported` | `@supabase/supabase-js/tracing` imported by both `src/instrumentation.ts` and `src/instrumentation-client.ts` |
 | 2 | `trace_propagation_enabled_on_clients` | `tracePropagation:` configured on all four Supabase client factories (`admin.ts`, `client.ts`, `server.ts`, `middleware.ts`) |
 | 3 | `sentry_propagate_traceparent` | `propagateTraceparent: true` on both the Node and Edge runtime `Sentry.init()` calls in `instrumentation.ts` |
-| 4 | `browser_trace_propagation_targets_include_supabase_host` | `sentry-client-options.ts` derives the Supabase origin from `NEXT_PUBLIC_SUPABASE_URL` and spreads it into `tracePropagationTargets` |
+| 4 | `browser_trace_propagation_targets_include_supabase_host` | `sentry-client-options.ts` derives the Supabase origin from `NEXT_PUBLIC_SUPABASE_URL` and spreads it into `tracePropagationTargets` as an anchored regex (`src/lib/observability/trace-targets.ts`) |
 | 5 | `edge_function_cors_allows_trace_headers` | Every BROWSER-INVOKED Edge Function's `Access-Control-Allow-Headers` includes `sentry-trace`, `baggage`, `traceparent` |
 
 **Item 5's scoping, stated explicitly**: all three current Edge Functions

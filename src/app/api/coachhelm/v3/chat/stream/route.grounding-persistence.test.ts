@@ -102,6 +102,9 @@ vi.mock('@/lib/ai/model-provider', () => ({
 vi.mock('@/lib/observability/metrics', () => ({ recordAi: mocks.recordAi }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: mocks.createClient }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: mocks.createAdminClient }));
+// CoachHelm is on for this coach unless a test switches it off (CH13-20).
+const helmGate = vi.hoisted(() => ({ isCoachHelmEnabledForCoach: vi.fn(async () => ({ effectivelyEnabled: true })) }));
+vi.mock('@/lib/coachhelm/v2/gate', () => helmGate);
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: mocks.logServerError,
   logServerEvent: mocks.logServerEvent,

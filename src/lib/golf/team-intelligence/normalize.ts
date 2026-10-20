@@ -15,6 +15,7 @@
  *   lie_before/after  tee | fairway | rough | sand | green | other
  * Anything outside it is dropped from that one read, never guessed.
  */
+import { isPuttMade, puttMakeStartFeet } from '@/lib/golf/putt-make';
 import type {
   ApproachFinish,
   ApproachLie,
@@ -66,9 +67,6 @@ export interface NormalizedShots {
 /** Approach leaves past this are a mis-keyed row, not a proximity (the leak
  *  map's own ceiling, stats-leak-maps.ts). */
 const PROXIMITY_CEILING_FT = 150;
-
-/** Longest believable putt, feet. */
-const PUTT_CEILING_FT = 150;
 
 /** Longest tee shot still read as a par 3 when it finds the green. */
 const PAR3_MAX_YD = 250;
@@ -227,21 +225,17 @@ export function normalizeShots(rows: readonly RawShotRow[], roundIndex: Readonly
           break;
         }
         case 'putting': {
-          const feet = finite(shot.putt_distance_feet)
-            ? shot.putt_distance_feet
-            : toFeet(shot.distance_to_hole_before, shot.distance_unit_before);
-          // Past the ceiling is a mis-keyed length (e.g. a hole yardage typed
-          // as feet), not a putt.
-          if (feet == null || feet > PUTT_CEILING_FT) break;
+          // The ONE putt make % definition (src/lib/golf/putt-make.ts, owner
+          // decision Q-93): start distance = distance_to_hole_before in feet
+          // (clamped, never unit-converted), made = result 'hole' OR putt_made.
+          // A putt with no start distance is left out, never read as 0 ft.
+          const feet = puttMakeStartFeet(shot);
+          if (feet == null) break;
           const first = putts[0] === shot;
-          const made = shot.putt_made ?? putts[putts.length - 1] === shot;
+          const made = isPuttMade(shot);
           const t = made ? [] : tokens(shot.miss_direction);
           const nextPutt = putts[putts.indexOf(shot) + 1];
-          const nextFeet = nextPutt
-            ? finite(nextPutt.putt_distance_feet)
-              ? nextPutt.putt_distance_feet
-              : toFeet(nextPutt.distance_to_hole_before, nextPutt.distance_unit_before)
-            : null;
+          const nextFeet = nextPutt ? puttMakeStartFeet(nextPutt) : null;
           out.putts.push({
             ri,
             feet,

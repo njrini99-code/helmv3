@@ -19,13 +19,26 @@
  * sets crm_coaches.status='contacted' + last_contacted_at, completes the enrollment.
  * Re-running can never double-send: sent coaches are 'contacted' + 'completed' + capped.
  *
- * Usage: node scripts/process-sequence-batch.mjs [N=40]
+ * Usage: node scripts/process-sequence-batch.mjs [N=40] [--apply]
  *   N = how many emails to actually SEND this run (skips/stops don't count toward N).
+ *   --apply = send for real. Without it this is a DRY RUN: it reads the CRM,
+ *   ranks the due leads and prints who would be emailed, and sends and writes
+ *   nothing (no Resend call, no enrollment stops, no CRM updates).
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { createHmac } from 'node:crypto';
 import { scoreCoach, tierOf, byPriority } from './coach-priority.mjs';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/process-sequence-batch.mjs',
+  summary:
+    'Human-triggered batch sender for the "Coach First Touch (Cold Outreach)" sequence: emails the next N fresh leads through Resend, at most one email per coach per week, and updates the production CRM.',
+  usage: '[N]',
+  options: [['N', 'How many emails to send this run (default 40); skips and stops do not count']],
+  secrets: 'RESEND_API_KEY, CRM_UNSUB_SECRET, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL (.env.local)',
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {
@@ -37,14 +50,14 @@ for (const file of ['../.env.local', '../.env']) {
   } catch { /* missing */ }
 }
 const apiKey = env.RESEND_API_KEY;
-if (!apiKey) { console.error('Missing RESEND_API_KEY'); process.exit(1); }
+if (cli.apply && !apiKey) { console.error('Missing RESEND_API_KEY'); process.exit(1); }
 const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { autoRefreshToken: false, persistSession: false } });
 
 const SEQUENCE_NAME = 'Coach First Touch (Cold Outreach)';
 const FROM = env.HELM_FROM_EMAIL ?? 'Helm Sports Labs <admin@helmsportslabs.com>';
 const REPLY_TO = env.HELM_REPLY_TO ?? 'admin@helmsportslabs.com';
-const N = Math.max(1, parseInt(process.argv[2] || '40', 10));
+const N = Math.max(1, parseInt(cli.positional[0] || '40', 10) || 40);
 const nowIso = () => new Date().toISOString();
 
 // One-click unsubscribe (RFC 8058) — the #1 free Gmail-Primary signal. Invisible header
@@ -148,7 +161,7 @@ const sub = (str, c) => {
 };
 
 let sent = 0, stopped = 0, completed = 0, freqSkipped = 0; const failures = []; const sentTiers = {};
-console.log(`Sequence "${SEQUENCE_NAME}" — ${dueEnr.length} due, sending up to ${N} FRESH leads (≤1/coach/week)...\n`);
+console.log(`${cli.apply ? '' : '[dry-run] '}Sequence "${SEQUENCE_NAME}" — ${dueEnr.length} due, ${cli.apply ? 'sending' : 'would send'} up to ${N} FRESH leads (≤1/coach/week)...\n`);
 
 for (const item of ranked) {
   if (sent >= N) break;
@@ -167,7 +180,7 @@ for (const item of ranked) {
   else if (['bounced', 'complained'].includes((c.email_status || '').toLowerCase())) { stopReason = 'bounced'; stopLabel = 'bounced/complained'; }
   else if (suppressed.has((c.email || '').toLowerCase().trim())) { stopReason = 'unsubscribed'; stopLabel = 'suppressed'; }
   if (stopReason) {
-    await supa.from('crm_sequence_enrollments').update({ status: 'stopped', stopped_at: nowIso(), stop_reason: stopReason }).eq('id', en.id);
+    if (cli.apply) await supa.from('crm_sequence_enrollments').update({ status: 'stopped', stopped_at: nowIso(), stop_reason: stopReason }).eq('id', en.id);
     stopped++; console.log(`  ⏹ ${c?.name ?? en.coach_id} — stopped (${stopLabel})`);
     continue;
   }
@@ -183,13 +196,21 @@ for (const item of ranked) {
 
   const step = stepByOrder.get(en.current_step + 1);
   if (!step) {
-    await supa.from('crm_sequence_enrollments').update({ status: 'completed', completed_at: nowIso() }).eq('id', en.id);
+    if (cli.apply) await supa.from('crm_sequence_enrollments').update({ status: 'completed', completed_at: nowIso() }).eq('id', en.id);
     completed++; continue;
   }
   const tpl = step.template_id ? tplById.get(step.template_id) : null;
   const subject = sub(step.subject_override || tpl?.subject || '', c);
   const body = sub(step.body_override || tpl?.body || '', c);
   const isText = (tpl?.format || 'text') === 'text';
+
+  if (!cli.apply) {
+    sent++;
+    const tier = tierOf(score);
+    sentTiers[tier] = (sentTiers[tier] || 0) + 1;
+    console.log(`  [dry-run] [${tier} ${score}] ${c.name} <${c.email}> — ${c.school} — "${subject}"`);
+    continue;
+  }
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -250,7 +271,8 @@ for (const item of ranked) {
 // how many active remain due after this run
 const { count: remaining } = await supa.from('crm_sequence_enrollments')
   .select('id', { count: 'exact', head: true }).eq('sequence_id', seq.id).eq('status', 'active');
-console.log(`\nDone: ${sent} sent, ${stopped} stopped, ${freqSkipped} skipped (emailed <7d ago), ${completed} auto-completed, ${failures.length} failed.`);
+if (!cli.apply) console.log('\n[dry-run] nothing was sent and nothing was written (stops and completions above are what --apply would record). Re-run with --apply to send.');
+console.log(`\nDone: ${sent} ${cli.apply ? 'sent' : 'would send'}, ${stopped} stopped, ${freqSkipped} skipped (emailed <7d ago), ${completed} auto-completed, ${failures.length} failed.`);
 if (sent) console.log(`Tiers sent: ${Object.entries(sentTiers).sort().map(([t, n]) => `${t}=${n}`).join(', ')}`);
 console.log(`Active enrollments still in the sequence: ${remaining ?? '?'}.`);
 if (failures.length) console.log('Failures left active — they will retry on the next run.');

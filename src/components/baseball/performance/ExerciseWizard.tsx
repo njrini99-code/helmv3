@@ -27,7 +27,7 @@
 // =============================================================================
 
 import { useState, useTransition } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';

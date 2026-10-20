@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { AlertCircle, Loader2, ArrowRight, BarChart2, Users, Brain } from 'lucide-react';

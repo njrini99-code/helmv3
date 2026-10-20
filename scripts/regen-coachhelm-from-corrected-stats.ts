@@ -42,7 +42,28 @@
  */
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import { coachHelmIntelligence } from '../src/lib/coachhelm/v2/orchestrator';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/regen-coachhelm-from-corrected-stats.ts',
+  summary:
+    'Re-runs the CoachHelm v2 engine for every active golf player (or one) and rewrites their stored insights, patterns and predictions on the project in .env.local. Run with `npx tsx -r dotenv/config scripts/regen-coachhelm-from-corrected-stats.ts`.',
+  usage: '[--probe] [playerId]',
+  options: [
+    ['--probe', 'Import-only smoke test: no analysis, no reads, no writes'],
+    ['playerId', 'Regenerate one player instead of the whole roster'],
+  ],
+  secrets: 'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (DOTENV_CONFIG_PATH or .env)',
+});
+
+// Loaded on demand, AFTER the argument guard: the orchestrator pulls in app
+// modules that import `server-only`, and a static import made even `--help`
+// crash before the guard could run.
+type Intelligence = (typeof import('../src/lib/coachhelm/v2/orchestrator'))['coachHelmIntelligence'];
+let coachHelmIntelligence: Intelligence;
+async function loadEngine(): Promise<void> {
+  ({ coachHelmIntelligence } = await import('../src/lib/coachhelm/v2/orchestrator'));
+}
 
 const BATCH_SIZE = 3; // matches generateTeamInsights — avoids connection-pool exhaustion
 
@@ -120,6 +141,7 @@ async function regenPlayer(id: string): Promise<{ ok: boolean; detail: string }>
 
 async function main() {
   const args = process.argv.slice(2);
+  await loadEngine();
   if (args.includes('--probe')) {
     console.log('[probe] orchestrator imported OK. typeof coachHelmIntelligence =', typeof coachHelmIntelligence);
     console.log('[probe] analyzePlayer is function:', typeof coachHelmIntelligence.analyzePlayer === 'function');
@@ -134,6 +156,13 @@ async function main() {
     players = await getActivePlayers();
   }
 
+  if (!cli.apply) {
+    console.log(`[dry-run] would regenerate CoachHelm artifacts for ${players.length} player(s) (batch size ${BATCH_SIZE}), deleting each player's machine-generated patterns first:`);
+    for (const p of players.slice(0, 10)) console.log(`  [dry-run] ${p.name} (${p.id})`);
+    if (players.length > 10) console.log(`  [dry-run] ... and ${players.length - 10} more`);
+    console.log('Re-run with --apply to do it.');
+    return;
+  }
   console.log(`[regen] ${players.length} player(s) to process, batch size ${BATCH_SIZE}`);
   const t0 = Date.now();
   let okCount = 0;

@@ -1,0 +1,629 @@
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { RoundHole, ShotRecord } from '@/lib/types/golf';
+import { RoundTracking, type RoundTrackingProps } from '../screens/rounds/track/RoundTracking';
+import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay } from '../screens/rounds/track/round-sheets';
+import { heroDistance, quickPicks, roundSoFar, scoreName, shotLine, shotTitle } from '../screens/rounds/track/labels';
+import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
+import { ToastProvider } from '../ui/Toast';
+import './dialog-polyfill';
+
+// jsdom has no layout: the state machine scrolls the distance box into view.
+Element.prototype.scrollIntoView ??= function () {};
+
+const deleteShot = vi.fn();
+const updateShot = vi.fn();
+vi.mock('@/app/golf/actions/shot-actions', () => ({
+  deleteShot: (...a: unknown[]) => deleteShot(...a),
+  updateShot: (...a: unknown[]) => updateShot(...a),
+}));
+
+const HOLES: RoundHole[] = [
+  { number: 1, par: 4, yardage: 420, score: null },
+  { number: 2, par: 5, yardage: 540, score: null },
+  { number: 3, par: 3, yardage: 170, score: null },
+];
+const ROUND = { course: 'Finley GC', teeLabel: 'Blue', teeColor: 'blue' as const, type: 'practice' as const };
+
+const shot = (s: Partial<ShotRecord> & Pick<ShotRecord, 'shotNumber' | 'shotType' | 'result'>): ShotRecord => ({
+  clubType: 'non_driver',
+  lieBefore: 'fairway',
+  distanceToHoleBefore: 0,
+  distanceUnitBefore: 'yards',
+  distanceToHoleAfter: 0,
+  distanceUnitAfter: 'yards',
+  shotDistance: 0,
+  isPenalty: false,
+  ...s,
+});
+const TEE = shot({ shotNumber: 1, shotType: 'tee', clubType: 'driver', lieBefore: 'tee', distanceToHoleBefore: 420, result: 'fairway', distanceToHoleAfter: 150, shotDistance: 270 });
+
+function setup(over: Partial<RoundTrackingProps> = {}) {
+  const props: RoundTrackingProps = {
+    round: ROUND,
+    holes: HOLES,
+    currentHoleIndex: 0,
+    onHoleComplete: vi.fn(async () => true),
+    onNavigateToHole: vi.fn(),
+    ...over,
+  };
+  render(
+    <ToastProvider>
+      <RoundTracking {...props} />
+    </ToastProvider>,
+  );
+  return { props, user: userEvent.setup() };
+}
+const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
+const next = () => screen.getByRole('button', { name: /Record next shot|Complete hole/ });
+const pick = (name: string | RegExp) => screen.getByRole('radio', { name });
+
+afterEach(() => {
+  localStorage.removeItem('golf_distance_unit_pref');
+  deleteShot.mockReset();
+  updateShot.mockReset();
+});
+
+describe('112401 Round tracking: words', () => {
+  it('names shots, lines, scores and the round so far', () => {
+    expect(shotTitle(TEE)).toBe('Tee · Driver');
+    expect(shotLine(TEE, 'yards')).toBe('420\u00a0yds → fairway · 150\u00a0yds left');
+    expect(shotLine(TEE, 'meters')).toBe('384\u00a0m → fairway · 137\u00a0m left');
+    const putt = shot({
+      shotNumber: 3,
+      shotType: 'putting',
+      lieBefore: 'green',
+      distanceToHoleBefore: 12,
+      distanceUnitBefore: 'feet',
+      result: 'hole',
+      puttBreak: 'left_to_right',
+      puttSlope: 'uphill',
+    });
+    expect(shotTitle(putt)).toBe('Putt');
+    expect(shotLine(putt, 'yards')).toBe('12\u00a0ft → holed · L → R, uphill');
+    expect(shotLine(shot({ shotNumber: 2, shotType: 'penalty', result: 'penalty', isPenalty: true, penaltyType: 'water' }), 'yards')).toBe('+1 stroke');
+    expect([scoreName(3, 4), scoreName(4, 4), scoreName(6, 4), scoreName(9, 4), scoreName(1, 3)]).toEqual(['Birdie', 'Par', 'Double bogey', '+5', 'Hole in one']);
+    expect(roundSoFar([{ ...HOLES[0]!, score: 3 }, { ...HOLES[1]!, score: 6 }, HOLES[2]!])).toEqual({ thru: 2, strokes: 9, toPar: 0 });
+    expect(roundSoFar(HOLES).toPar).toBeNull();
+    expect(heroDistance(12, 'feet', 'yards')).toEqual({ figure: 12, words: 'feet to the hole' });
+    expect(heroDistance(150, 'yards', 'meters')).toEqual({ figure: 137, words: 'meters to the pin' });
+    expect([quickPicks('feet', 'yards'), quickPicks('feet', 'meters'), quickPicks('tee', 'yards')]).toEqual([
+      [5, 10, 15, 20, 30, 40],
+      [1, 2, 3, 5, 9, 12],
+      [120, 140, 160, 180],
+    ]);
+    // A missed putt's leave: the short ones (wave 9).
+    expect([quickPicks('putt', 'yards'), quickPicks('putt', 'meters')]).toEqual([
+      [2, 3, 4, 6, 8, 12],
+      [0.5, 1, 1.5, 2, 3, 4],
+    ]);
+  });
+});
+
+describe('Round tracking: recording a shot', () => {
+  it('110104 CH-11101 names the one thing still missing, then records the shot (CH-11705)', async () => {
+    const { user } = setup();
+    expect(screen.getByText('420')).toBeInTheDocument();
+    expect(code('CH-11101')).toHaveTextContent('Select a shot result');
+    expect(next()).toBeDisabled();
+    expect(next()).toHaveAttribute('aria-describedby', 'ch-rt-blocker');
+    await user.click(pick('Fairway'));
+    expect(code('CH-11101')).toHaveTextContent('Choose driver or non-driver');
+    await user.click(pick('Driver'));
+    expect(code('CH-11101')).toHaveTextContent('Enter the distance remaining');
+    await user.type(screen.getByLabelText('Distance remaining (yds)'), '150');
+    expect(code('CH-11101')).toBeNull();
+    expect(screen.getByText(/Shot distance/)).toHaveTextContent('~270 yds');
+    await user.click(next());
+    await waitFor(() => expect(screen.getByText(/^Shot 2/)).toBeInTheDocument());
+    expect(screen.getByText('1 stroke')).toBeInTheDocument();
+    expect(screen.getByText('150')).toBeInTheDocument();
+  });
+
+  it('CH-11102 a warning asks once; changing the shot asks again', async () => {
+    const { user } = setup();
+    await user.click(pick(/^Green/));
+    await user.click(pick('Driver'));
+    await user.type(screen.getByLabelText('Proximity to hole (ft)'), '20');
+    expect(code('CH-11102')).toHaveTextContent('A 420-yard drive onto the green? Tap to confirm.');
+    expect(next()).toBeDisabled();
+    expect(code('CH-11101')).toHaveTextContent('Confirm the result above to continue');
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(next()).toBeEnabled();
+    expect(code('CH-11102')).toHaveTextContent('Confirmed');
+    await user.clear(screen.getByLabelText('Proximity to hole (ft)'));
+    await user.type(screen.getByLabelText('Proximity to hole (ft)'), '25');
+    expect(next()).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeInTheDocument();
+  });
+
+  it('CH-11103 an impossible shot is blocked with no confirm', async () => {
+    const { user } = setup({ currentHoleIndex: 1 });
+    await user.click(pick(/^Green/));
+    await user.click(pick('Driver'));
+    await user.type(screen.getByLabelText('Proximity to hole (ft)'), '20');
+    expect(code('CH-11103')).toHaveTextContent(/540-yard drive onto the green isn't possible/);
+    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
+    expect(next()).toBeDisabled();
+  });
+
+  it('CH-11104 a distance that is not a number says so', async () => {
+    const { user } = setup();
+    await user.click(pick('Fairway'));
+    await user.type(screen.getByLabelText('Distance remaining (yds)'), 'abc');
+    expect(code('CH-11104')).toHaveTextContent('Enter the distance as a number');
+    expect(screen.getByLabelText('Distance remaining (yds)')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('a quick pick fills the distance in the locked unit', async () => {
+    const { user } = setup({ initialShots: [TEE], initialShotNumber: 2 });
+    await user.click(pick(/^Green/));
+    await user.click(screen.getByRole('button', { name: '15' }));
+    expect(screen.getByLabelText('Proximity to hole (ft)')).toHaveValue('15');
+    expect(screen.getByRole('button', { name: '15' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('the approach miss grid is required off the green; putt tags pair up', async () => {
+    const { user } = setup({ initialShots: [TEE], initialShotNumber: 2 });
+    await user.click(pick('Rough'));
+    await user.type(screen.getByLabelText('Distance remaining (yds)'), '20');
+    expect(code('CH-11101')).toHaveTextContent('Choose a miss direction');
+    await user.click(pick('Short left'));
+    expect(code('CH-11101')).toBeNull();
+  });
+
+  it('110112 meters: the hero, the label and the quick picks follow the preference', async () => {
+    localStorage.setItem('golf_distance_unit_pref', 'meters');
+    const { user } = setup();
+    await waitFor(() => expect(screen.getByText('meters to the pin')).toBeInTheDocument());
+    expect(screen.getByText('384')).toBeInTheDocument();
+    await user.click(pick('Fairway'));
+    expect(screen.getByLabelText('Distance remaining (m)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '145' })).toBeInTheDocument();
+  });
+
+  it('CH-11106 warns from shot 12 of the 15 a hole can record', () => {
+    const shots = Array.from({ length: 11 }, (_, i) =>
+      shot({
+        shotNumber: i + 1,
+        shotType: i ? 'approach' : 'tee',
+        lieBefore: i ? 'rough' : 'tee',
+        distanceToHoleBefore: 420 - i * 30,
+        result: 'rough',
+        distanceToHoleAfter: 390 - i * 30,
+        missDirection: 'left',
+      }),
+    );
+    setup({ initialShots: shots, initialShotNumber: 12 });
+    expect(code('CH-11106')).toHaveTextContent('Shot 12 of 15. 3 more before the limit.');
+  });
+});
+
+describe('Round tracking: undo, penalty, moving between holes', () => {
+  it('CH-11502 undo asks first, then removes the shot (CH-11308 the empty log)', async () => {
+    const { user } = setup({ initialShots: [TEE], initialShotNumber: 2 });
+    await user.click(screen.getByRole('button', { name: 'Undo last shot' }));
+    expect(code('CH-11502')).toHaveTextContent('Undo shot 1?');
+    await user.click(within(code('CH-11502') as HTMLElement).getByRole('button', { name: 'Undo' }));
+    await waitFor(() => expect(code('CH-11308')).toHaveTextContent('No shots yet on this hole'));
+  });
+
+  it('CH-11002 a failed undo says so and keeps the shot', async () => {
+    deleteShot.mockResolvedValue({ success: false, error: 'nope', code: 'db_error' });
+    const { user } = setup({ initialShots: [{ ...TEE, id: 'shot-1' }], initialShotNumber: 2 });
+    await user.click(screen.getByRole('button', { name: 'Undo last shot' }));
+    await user.click(within(code('CH-11502') as HTMLElement).getByRole('button', { name: 'Undo' }));
+    await waitFor(() => expect(code('CH-11002')).toHaveTextContent('Couldn’t undo the shot'));
+    expect(deleteShot).toHaveBeenCalledWith('shot-1');
+    expect(screen.getByText('1 stroke')).toBeInTheDocument();
+  });
+
+  it('CH-11503 a penalty can be added before any shot; Add waits for a choice', async () => {
+    const { user } = setup();
+    const add = screen.getByRole('button', { name: 'Add penalty stroke' });
+    expect(add).toBeEnabled();
+    await user.click(add);
+    const sheet = code('CH-11503') as HTMLElement;
+    expect(within(sheet).getByRole('button', { name: 'Add 1 stroke' })).toBeDisabled();
+    await user.click(within(sheet).getByRole('radio', { name: /Out of bounds/ }));
+    expect(within(sheet).getByRole('radiogroup', { name: 'Which stroke went out' })).toBeInTheDocument();
+    await user.click(within(sheet).getByRole('radio', { name: /Water hazard/ }));
+    expect(within(sheet).queryByRole('radiogroup', { name: 'Which stroke went out' })).toBeNull();
+    await user.click(within(sheet).getByRole('button', { name: 'Add 1 stroke' }));
+    await waitFor(() => expect(screen.getByText(/penalt/)).toBeInTheDocument());
+  });
+
+  it('CH-11805 the strip: finished and earlier holes are buttons, later unplayed ones are marks', async () => {
+    const holes = [{ ...HOLES[0]!, score: 4 }, HOLES[1]!, HOLES[2]!];
+    const { user, props } = setup({ holes, currentHoleIndex: 1 });
+    expect(screen.getByRole('button', { name: 'Hole 1, 4, even' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Hole 2, current' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Hole 3' })).toBeInTheDocument();
+    expect(screen.getByText('Thru 1')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Hole 1, 4, even' }));
+    expect(props.onNavigateToHole).toHaveBeenCalledWith(0);
+  });
+
+  it('CH-11805 each chip is named by hole, score and to par, and only an under-par score is marked for red', () => {
+    // Hole 1 par 4 in 6, hole 2 par 5 in 4, hole 3 par 3 in 3 and looked back at (the current hole).
+    const holes = [{ ...HOLES[0]!, score: 6 }, { ...HOLES[1]!, score: 4 }, { ...HOLES[2]!, score: 3 }];
+    setup({ holes, currentHoleIndex: 2 });
+    const over = screen.getByRole('button', { name: 'Hole 1, 6, 2 over' });
+    const under = screen.getByRole('button', { name: 'Hole 2, 4, 1 under' });
+    const current = screen.getByRole('img', { name: 'Hole 3, 3, even, current' });
+    expect(current).toHaveAttribute('aria-current', 'step');
+    expect(under).toHaveClass('is-under');
+    expect(over).not.toHaveClass('is-under');
+    expect(current).not.toHaveClass('is-under');
+    // The chip shows the score once played (the scorecard numeral), the hole number until then.
+    expect(over).toHaveTextContent('6');
+    expect(screen.getByText('Thru 3')).toBeInTheDocument();
+  });
+
+  it('CH-11805 an unplayed current hole is lit with its number, and later unplayed holes are plain marks', () => {
+    setup({ currentHoleIndex: 0 });
+    const current = screen.getByRole('img', { name: 'Hole 1, current' });
+    expect(current).toHaveClass('is-cur');
+    expect(current).not.toHaveClass('is-done');
+    expect(screen.getByRole('img', { name: 'Hole 2' })).not.toHaveClass('is-done');
+    expect(screen.getByRole('img', { name: 'Hole 3' })).not.toHaveClass('is-cur');
+  });
+
+  it('CH-11504 leaving a hole with a result picked but not recorded asks first', async () => {
+    const holes = [{ ...HOLES[0]!, score: 4 }, HOLES[1]!, HOLES[2]!];
+    const { user, props } = setup({ holes, currentHoleIndex: 1 });
+    await user.click(pick('Fairway'));
+    await user.click(screen.getByRole('button', { name: 'Hole 1, 4, even' }));
+    expect(props.onNavigateToHole).not.toHaveBeenCalled();
+    const sheet = code('CH-11504') as HTMLElement;
+    await user.click(within(sheet).getByRole('button', { name: 'Stay' }));
+    expect(props.onNavigateToHole).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Hole 1, 4, even' }));
+    await user.click(within(code('CH-11504') as HTMLElement).getByRole('button', { name: 'Leave without it' }));
+    expect(props.onNavigateToHole).toHaveBeenCalledWith(0);
+  });
+});
+
+describe('Round tracking: holing out', () => {
+  it('111403 CH-11402 saving the hole, then CH-11003 when it fails, with Try again', async () => {
+    let finish: (ok: boolean) => void = () => {};
+    const onHoleComplete = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
+    const { user } = setup({ currentHoleIndex: 2, onHoleComplete });
+    await user.click(pick(/^Holed/));
+    expect(next()).toHaveAccessibleName('Complete hole with score 1');
+    await user.click(next());
+    await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
+    expect(onHoleComplete).toHaveBeenCalledWith(2, expect.objectContaining({ holeNumber: 3, score: 1 }));
+    expect(screen.getByText('Hole in one')).toBeInTheDocument();
+    await act(async () => finish(false));
+    expect(code('CH-11003')).toHaveTextContent('Hole 3 didn’t save');
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onHoleComplete).toHaveBeenCalledTimes(2);
+    await act(async () => finish(true));
+    expect(code('CH-11003')).toBeNull();
+  });
+
+  it('the next hole says the hole before it saved, once the round screen has moved on after the save', async () => {
+    let finish: (ok: boolean) => void = () => {};
+    // The round screen moves to the next hole only once the hole's save has landed.
+    function Round() {
+      const [index, setIndex] = useState(2);
+      const onHoleComplete = () =>
+        new Promise<boolean>((resolve) => {
+          finish = (ok) => {
+            if (ok) setIndex(0);
+            resolve(ok);
+          };
+        });
+      return <RoundTracking round={ROUND} holes={HOLES} currentHoleIndex={index} onHoleComplete={onHoleComplete} onNavigateToHole={setIndex} />;
+    }
+    render(
+      <ToastProvider>
+        <Round />
+      </ToastProvider>,
+    );
+    const user = userEvent.setup();
+    await user.click(pick(/^Holed/));
+    await user.click(next());
+    await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
+    expect(screen.queryByText(/saved · /)).toBeNull();
+    await act(async () => finish(true));
+    expect(await screen.findByText('Hole 3 saved · Hole in one')).toBeInTheDocument();
+    expect(code('CH-11308')).toBeNull();
+  });
+
+  it('a hole the player leaves on the strip while it saves is not announced when the save lands', async () => {
+    let finish: (ok: boolean) => void = () => {};
+    function Round() {
+      const [index, setIndex] = useState(2);
+      const onHoleComplete = () =>
+        new Promise<boolean>((resolve) => {
+          finish = (ok) => {
+            if (ok) setIndex(0);
+            resolve(ok);
+          };
+        });
+      return <RoundTracking round={ROUND} holes={HOLES} currentHoleIndex={index} onHoleComplete={onHoleComplete} onNavigateToHole={setIndex} />;
+    }
+    render(
+      <ToastProvider>
+        <Round />
+      </ToastProvider>,
+    );
+    const user = userEvent.setup();
+    await user.click(pick(/^Holed/));
+    await user.click(next());
+    await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
+    await user.click(screen.getByRole('button', { name: 'Hole 1' }));
+    await act(async () => finish(true));
+    expect(screen.queryByText(/saved · /)).toBeNull();
+    expect(code('CH-11308')).toHaveTextContent('No shots yet on this hole');
+  });
+
+  it('CH-11901 the save line never says "Round saved" while the holed hole is saving or after its save failed', async () => {
+    let finish: (ok: boolean) => void = () => {};
+    const onHoleComplete = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
+    const onAutoSave = vi.fn(async () => {});
+    const { user } = setup({ currentHoleIndex: 2, onHoleComplete, onAutoSave, autoSaveInterval: 10 });
+    await user.click(pick(/^Holed/));
+    await user.click(next());
+    await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
+    // The background save of the holed shot lands while the hole's own save is still running.
+    await waitFor(() => expect(onAutoSave).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.queryByText('Round saved')).toBeNull();
+    await act(async () => finish(false));
+    expect(code('CH-11003')).toHaveTextContent('Hole 3 didn’t save');
+    expect(screen.queryByText('Round saved')).toBeNull();
+  });
+
+  it('a finished hole looked back at offers the way back, and a shot opens to change or delete (CH-11505)', async () => {
+    const holed = [
+      shot({ shotNumber: 1, shotType: 'tee', lieBefore: 'tee', distanceToHoleBefore: 170, result: 'green', distanceToHoleAfter: 20, distanceUnitAfter: 'feet' }),
+      shot({ shotNumber: 2, shotType: 'putting', lieBefore: 'green', distanceToHoleBefore: 20, distanceUnitBefore: 'feet', result: 'hole', distanceUnitAfter: 'feet' }),
+    ];
+    const holes = [HOLES[0]!, HOLES[1]!, { ...HOLES[2]!, score: 2 }];
+    const { user, props } = setup({ holes, currentHoleIndex: 2, initialShots: holed, initialShotNumber: 3 });
+    expect(screen.getByText('Birdie')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Back to hole 1' }));
+    expect(props.onNavigateToHole).toHaveBeenCalledWith(0);
+    await user.click(screen.getByRole('button', { name: /^Change shot 1/ }));
+    const sheet = code('CH-11505') as HTMLElement;
+    expect(within(sheet).getByRole('heading', { name: 'Change shot 1' })).toBeInTheDocument();
+    await user.click(within(sheet).getByRole('button', { name: 'Delete' }));
+    expect(within(sheet).getByText(/Delete shot 1\?/)).toBeInTheDocument();
+    await user.click(within(sheet).getByRole('button', { name: 'Keep it' }));
+    expect(within(sheet).getByRole('button', { name: 'Save shot' })).toBeInTheDocument();
+  });
+});
+
+describe('Round tracking: tap in (CH-11913)', () => {
+  const onGreen = (feet: number) => [
+    TEE,
+    shot({ shotNumber: 2, shotType: 'approach', distanceToHoleBefore: 150, result: 'green', distanceToHoleAfter: feet, distanceUnitAfter: 'feet', shotDistance: 150 }),
+  ];
+  const tapIn = () => screen.queryByRole('button', { name: /^Tap in/ });
+
+  it('is not offered off the green, and goes once a putt result is picked', async () => {
+    setup();
+    expect(tapIn()).toBeNull();
+    cleanup();
+    const { user } = setup({ initialShots: onGreen(25), initialShotNumber: 3 });
+    expect(tapIn()).not.toBeNull();
+    await user.click(pick('Green'));
+    expect(tapIn()).toBeNull();
+  });
+
+  it('from 2 ft: one tap records a holed putt, counts it as a stroke and a putt, and saves the hole', async () => {
+    const onSaveShot = vi.fn((_shot: ShotRecord) => true);
+    const onHoleComplete = vi.fn(async () => true);
+    const { user } = setup({ initialShots: onGreen(2), initialShotNumber: 3, onSaveShot, onHoleComplete });
+    expect(code('CH-11913')).toHaveTextContent('Holed from 2 ft · score 3');
+    await user.click(tapIn()!);
+    await waitFor(() => expect(onHoleComplete).toHaveBeenCalledWith(0, expect.objectContaining({ holeNumber: 1, score: 3, putts: 1 })));
+    expect(onSaveShot).toHaveBeenCalledTimes(1);
+    expect(onSaveShot).toHaveBeenCalledWith(expect.objectContaining({ shotNumber: 3, shotType: 'putting', result: 'hole', distanceToHoleBefore: 2, puttDistanceFeet: 2 }));
+    expect(screen.getByText('Birdie')).toBeInTheDocument();
+    expect(screen.getByText('3 strokes · 1 putt')).toBeInTheDocument();
+  });
+
+  it('from 25 ft: the putt leaves 1 ft and the 1 ft putt is holed; Undo lifts the holed putt and leaves the 1 ft putt to play', async () => {
+    const onSaveShot = vi.fn((_shot: ShotRecord) => true);
+    const onHoleComplete = vi.fn(async () => true);
+    const onHoleStatsUpdate = vi.fn();
+    const { user } = setup({ initialShots: onGreen(25), initialShotNumber: 3, onSaveShot, onHoleComplete, onHoleStatsUpdate });
+    expect(code('CH-11913')).toHaveTextContent('Two putts: leaves 1 ft, then holed · score 4');
+    await user.click(tapIn()!);
+    await waitFor(() => expect(onHoleComplete).toHaveBeenCalledWith(0, expect.objectContaining({ score: 4, putts: 2 })));
+    expect(onSaveShot.mock.calls.map(([s]) => [s.shotNumber, s.result, s.distanceToHoleBefore, s.distanceToHoleAfter])).toEqual([
+      [3, 'green', 25, 1],
+      [4, 'hole', 1, 0],
+    ]);
+    expect(screen.getByText('Par')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Undo last shot' }));
+    await user.click(within(code('CH-11502') as HTMLElement).getByRole('button', { name: 'Undo' }));
+    await waitFor(() => expect(screen.getByText(/^Shot 4/)).toBeInTheDocument());
+    expect(onHoleStatsUpdate).toHaveBeenCalledWith(0, null);
+    expect(code('CH-11913')).toHaveTextContent('Holed from 1 ft · score 4');
+
+    // A tap in again after the undo holes the 1 ft putt that is left: one row, the same score.
+    await user.click(tapIn()!);
+    await waitFor(() => expect(onHoleComplete).toHaveBeenCalledTimes(2));
+    expect(onHoleComplete).toHaveBeenLastCalledWith(0, expect.objectContaining({ score: 4, putts: 2 }));
+    expect(onSaveShot).toHaveBeenCalledTimes(3);
+    expect(onSaveShot).toHaveBeenLastCalledWith(expect.objectContaining({ shotNumber: 4, result: 'hole', distanceToHoleBefore: 1, puttDistanceFeet: 1 }));
+    expect(screen.getByText('Par')).toBeInTheDocument();
+  });
+
+  it('follows the meters preference; feet are what is stored', async () => {
+    localStorage.setItem('golf_distance_unit_pref', 'meters');
+    setup({ initialShots: onGreen(25), initialShotNumber: 3 });
+    expect(code('CH-11913')).toHaveTextContent('Two putts: leaves 0.3 m, then holed · score 4');
+  });
+
+  it('a resumed hole that ended in a tap in opens holed, with no tap in offered', () => {
+    const done = [...onGreen(1), shot({ shotNumber: 3, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 1, distanceUnitBefore: 'feet', result: 'hole', distanceUnitAfter: 'feet', puttDistanceFeet: 1 })];
+    setup({ holes: [{ ...HOLES[0]!, score: 3 }, HOLES[1]!, HOLES[2]!], initialShots: done, initialShotNumber: 4 });
+    expect(screen.getByText('Birdie')).toBeInTheDocument();
+    expect(tapIn()).toBeNull();
+  });
+});
+
+describe('Round tracking: the round sheets', () => {
+  const card = [
+    { number: 1, par: 4, score: 5, putts: 2 },
+    { number: 2, par: 5, score: 4, putts: 1 },
+    { number: 3, par: 3, score: null, putts: null },
+  ];
+
+  it('CH-11506 Exit: save for later, keep playing, and a discard that asks first (CH-11507)', async () => {
+    const user = userEvent.setup();
+    const onDiscard = vi.fn();
+    const onSave = vi.fn();
+    render(<ExitSheet open course="Finley GC" holes={card} currentNumber={3} discarding={false} discardError={null} onSave={onSave} onKeep={vi.fn()} onDiscard={onDiscard} />);
+    const sheet = code('CH-11506') as HTMLElement;
+    expect(within(sheet).getByText('Finley GC · thru 2 · E')).toBeInTheDocument();
+    await user.click(within(sheet).getByRole('button', { name: /Save for later/ }));
+    expect(onSave).toHaveBeenCalled();
+    await user.click(within(sheet).getByRole('button', { name: /Discard round/ }));
+    expect(onDiscard).not.toHaveBeenCalled();
+    expect(code('CH-11507')).toHaveTextContent('Discard this round?');
+    await user.click(within(code('CH-11507') as HTMLElement).getByRole('button', { name: 'Discard round' }));
+    expect(onDiscard).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-11509 the scorecard totals what is scored so far and marks the current hole', () => {
+    render(<ScorecardSheet open onClose={vi.fn()} course="Finley GC" tee="Blue" holes={card} current={3} />);
+    const out = screen.getByRole('table', { name: /Front nine/ });
+    const [, par, score, putts] = within(out).getAllByRole('row');
+    expect(within(par!).getAllByRole('cell').at(-1)).toHaveTextContent('12');
+    expect(within(score!).getAllByRole('cell').at(-1)).toHaveTextContent('9');
+    expect(within(putts!).getAllByRole('cell').at(-1)).toHaveTextContent('3');
+    expect(within(out).getByRole('columnheader', { name: '3' })).toHaveAttribute('aria-current', 'step');
+    // Where the player stands, as the Exit sheet says it (wave 9).
+    expect(screen.getByText('Finley GC · Blue · thru 2 · E')).toBeInTheDocument();
+  });
+
+  it('CH-11509 a nine with nothing scored totals only its par', () => {
+    render(<ScorecardSheet open onClose={vi.fn()} course="Finley GC" tee={null} holes={card.map((h) => ({ ...h, score: null, putts: null }))} current={1} />);
+    const [, par, score, putts] = within(screen.getByRole('table', { name: /Front nine/ })).getAllByRole('row');
+    expect(within(par!).getAllByRole('cell').at(-1)).toHaveTextContent('12');
+    expect(within(score!).getAllByRole('cell').at(-1)).toHaveTextContent('—');
+    expect(within(putts!).getAllByRole('cell').at(-1)).toHaveTextContent('—');
+    expect(screen.getByText('Finley GC · thru 0')).toBeInTheDocument();
+  });
+
+  it('CH-11508 the finished round: figures, and Submit', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    const holes = [
+      { number: 1, par: 4, score: 4, putts: 2, fairwayHit: true, gir: true },
+      { number: 2, par: 5, score: 6, putts: 2, fairwayHit: false, gir: false },
+      { number: 3, par: 3, score: 2, putts: 1, fairwayHit: null, gir: true },
+    ];
+    render(<RoundCompleteSheet open heading="Finley GC · Blue · Oct 14" holes={holes} onBack={vi.fn()} onSubmit={onSubmit} />);
+    const sheet = code('CH-11508') as HTMLElement;
+    const hero = sheet.querySelector('.ch-rt-sum__hero') as HTMLElement;
+    expect(within(hero).getByText('12')).toBeInTheDocument();
+    expect(within(hero).getByText('E')).toBeInTheDocument();
+    expect(within(sheet).getByText('Fairways').nextSibling).toHaveTextContent('1/2');
+    expect(within(sheet).getByText('Greens').nextSibling).toHaveTextContent('2/3');
+    expect(within(sheet).queryByText('Front · Back')).toBeNull();
+    await user.click(within(sheet).getByRole('button', { name: 'Post round' }));
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  it('111403 110902 CH-11603 submitting names the real shot count; CH-11005 a failed submit offers Try again', async () => {
+    const user = userEvent.setup();
+    const onRetry = vi.fn();
+    const { rerender } = render(<SubmitOverlay state="saving" course="Finley GC" shots={71} coach="Coach Reyes" reviewHref="/r" error={null} onRetry={onRetry} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Saving 71 shots');
+    rerender(<SubmitOverlay state="done" course="Finley GC" shots={71} coach="Coach Reyes" score={{ strokes: 74, toPar: 2 }} reviewHref="/r" error={null} onRetry={onRetry} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Your 74 (+2) at Finley GC is posted. Coach Reyes can see it now.');
+    expect(screen.getByRole('link', { name: 'View round review' })).toHaveAttribute('href', '/r');
+    rerender(<SubmitOverlay state="failed" course="Finley GC" shots={71} coach={null} reviewHref={null} error={null} onRetry={onRetry} />);
+    expect(code('CH-11005')).toHaveTextContent('The round didn’t post');
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onRetry).toHaveBeenCalled();
+  });
+});
+
+describe('P011-D1 Round tracking: full screen on the phone', () => {
+  it('marks the shell immersive and hides its tabs while the shot screen is up, and names the screen with one h1', () => {
+    let state: ReturnType<typeof usePhoneChromeState> | null = null;
+    function Probe() {
+      state = usePhoneChromeState();
+      return null;
+    }
+    const { unmount } = render(
+      <ToastProvider>
+        <PhoneChromeProvider>
+          <Probe />
+          <RoundTracking round={ROUND} holes={HOLES} currentHoleIndex={0} onHoleComplete={vi.fn(async () => true)} />
+        </PhoneChromeProvider>
+      </ToastProvider>,
+    );
+    expect(state!.immersive).toBe(true);
+    expect(state!.noTabs).toBe(true);
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Finley GC, hole 1']);
+    unmount();
+  });
+});
+
+describe('P011 board 3b: the drawn hole and the course view', () => {
+  it('plots each shot along the hole by the yards it left, and scales the rings from the yardage', async () => {
+    const { holeShape, plotShots, pointAlong, ringRadius, lineLength } = await import('../screens/rounds/track/hole-geometry');
+    const s = holeShape(4, 'tall');
+    const approach = shot({ shotNumber: 2, shotType: 'approach', result: 'green', distanceToHoleBefore: 150, distanceToHoleAfter: 18, distanceUnitAfter: 'feet' });
+    const { plotted, ball } = plotShots(s, HOLES[0]!, [TEE, approach]);
+    expect(plotted.map((p) => p.n)).toEqual([1, 2]);
+    expect(plotted[0]!.from).toEqual(s.tee);
+    // 150 of 420 yards left: the tee shot finishes about 64% of the way along the line.
+    const at = pointAlong(s, 1 - 150 / 420);
+    expect(Math.hypot(plotted[0]!.to.x - at.x, plotted[0]!.to.y - at.y)).toBeLessThan(1);
+    // Each shot ends nearer the pin than the last.
+    const d = (p: { x: number; y: number }) => Math.hypot(p.x - s.pin.x, p.y - s.pin.y);
+    expect(d(ball)).toBeLessThan(d(plotted[0]!.to));
+    expect(ringRadius(s, 150, 420)).toBeCloseTo((150 / 420) * lineLength(s), 5);
+    expect(ringRadius(s, 150, 140)).toBeNull();
+  });
+
+  it('opens from the hole, shows the hole’s shots, and its ‹ › only change what it shows', async () => {
+    const holes: RoundHole[] = [
+      { number: 1, par: 4, yardage: 420, score: 4 },
+      { number: 2, par: 5, yardage: 540, score: null },
+      { number: 3, par: 3, yardage: 170, score: null },
+    ];
+    const { props, user } = setup({ holes, currentHoleIndex: 1, holeShots: (i) => (i === 0 ? [TEE] : null) });
+    await user.click(screen.getByRole('button', { name: 'Course view of hole 2' }));
+    const view = await screen.findByRole('dialog', { name: 'Course view, hole 2' });
+    expect(within(view).getByRole('heading', { name: 'This hole' })).toBeInTheDocument();
+    expect(within(view).getByText('to play')).toBeInTheDocument();
+    expect(within(view).queryByText(/Your last 3|Team average/)).toBeNull();
+    await user.click(within(view).getByRole('button', { name: 'Hole 1' }));
+    expect(within(view).getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
+    expect(within(view).getByText('Tee · Driver')).toBeInTheDocument();
+    expect(props.onNavigateToHole).not.toHaveBeenCalled();
+  });
+});
+
+describe('CH-11910 every hole in: Review and post in the shot review footer', () => {
+  const ACE = shot({ shotNumber: 1, shotType: 'tee', lieBefore: 'tee', distanceToHoleBefore: 170, result: 'hole' });
+  const done = HOLES.map((h, i) => ({ ...h, score: [4, 5, 1][i]! }));
+
+  it('opens the finished round from the thumb zone once the last hole is in', async () => {
+    const onReviewRound = vi.fn();
+    const { user } = setup({ holes: done, currentHoleIndex: 2, initialShots: [ACE], initialShotNumber: 2, onReviewRound });
+    await user.click(screen.getByRole('button', { name: 'Review and post' }));
+    expect(onReviewRound).toHaveBeenCalledTimes(1);
+  });
+
+  it('is not drawn while a hole is still to play', () => {
+    setup({ holes: done.map((h, i) => (i === 0 ? { ...h, score: null } : h)), currentHoleIndex: 2, initialShots: [ACE], initialShotNumber: 2, onReviewRound: vi.fn() });
+    expect(screen.queryByRole('button', { name: 'Review and post' })).toBeNull();
+    expect(screen.getByRole('button', { name: /Back to hole 1/ })).toBeInTheDocument();
+  });
+});

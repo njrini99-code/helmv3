@@ -215,7 +215,7 @@
   achieving nothing, `startCronCheckIn`/`finishCronCheckIn`, all fail-open)
   wired into `recordJobRun` (Vercel crons, `src/lib/admin/job-log.ts`, all
   3 exit paths — success, resolved 4xx/5xx Response, thrown error),
-  `withBridgeLogging` (Inngest, `src/lib/inngest/functions.ts`), and a new
+  `withBridgeLogging` (Inngest, the Inngest functions module, removed 2026-10-06), and a new
   dependency-injectable `scripts/lib/sentry-cron-checkin.mjs` for the
   launchd Repair script (`scripts/run-selfheal-repair.mjs`), which cannot
   import TS/`@/`-aliased modules. `src/lib/admin/cron-registry.ts` gained a
@@ -306,7 +306,7 @@
   helm_debug DB-persistence decision and gating the Sentry metric behind
   it too would make it mostly silent exactly where it matters.
   `attachHelmTrace(traceId)` now runs at construction. `deleteInProgressRoundImpl`
-  ("recover" — `src/app/golf/actions/golf.ts`) gained a local
+  ("recover" — `actions/golf.ts (pre-split)`) gained a local
   `recordDiscardRoundOutcome` helper at its 6 return branches
   (`outcome:'stale_round_state'`, not `'db_error'`, for the ordinary
   already-finished/removed race). `loginActionImpl`
@@ -353,7 +353,7 @@
   `logServerException`, and 4 existing assertions (one `toHaveBeenCalledTimes(1)`,
   three `not.toHaveBeenCalled()`) were rewritten to account for the new
   invoke-failure log call — a deliberate behavior change the old assertions
-  correctly caught. (3) `src/app/golf/actions/golf.ts` — `updateGolfEventImpl`'s
+  correctly caught. (3) `actions/golf.ts (pre-split)` — `updateGolfEventImpl`'s
   outer catch (previously ZodError-only, fell through to a silent generic
   message) and `deleteGolfEventImpl`'s outer catch (previously fully bare,
   `catch { ... }` with no error binding at all) now call

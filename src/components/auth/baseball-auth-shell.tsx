@@ -31,7 +31,7 @@
 import type { ReactNode, CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { HelmMark } from '@/components/brand/HelmMark';
 import { Eyebrow, HairlineRule, Reveal } from '@/components/baseball/living-annual';

@@ -1,0 +1,138 @@
+import { LazyMotion, domAnimation } from 'motion/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+/** The iOS app shell: what Clubhouse owes the native layer (docs/clubhouse/MOBILE.md). */
+
+vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
+const pulled = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock('../lib/use-refresh', () => ({ useRefresh: () => ({ refresh: pulled.refresh, refreshing: false }) }));
+vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
+vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, refetch: vi.fn() }) }));
+
+const order = vi.hoisted(() => [] as string[]);
+vi.mock('@/lib/utils/push-registration', () => ({ teardownDeviceTokenOnSignOut: () => order.push('teardown') }));
+vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { signOut: async () => void order.push('signOut') } }) }));
+vi.mock('@/lib/golf/client-resource-cache', () => ({ clearAllCachedResources: vi.fn() }));
+vi.mock('@/app/actions/notification-preferences', () => ({ updateNotificationPreferences: vi.fn() }));
+vi.mock('@/app/golf/actions/v3/notification-prefs', () => ({ setAllChannels: vi.fn(), setCategoryChannel: vi.fn(), setQuietMode: vi.fn() }));
+vi.mock('@/app/golf/actions/coaching-philosophy', () => ({ revalidateCoachingPhilosophyPaths: vi.fn(), saveCoachingPhilosophy: vi.fn() }));
+vi.mock('@/app/golf/actions/teams', () => ({ cancelJoinRequest: vi.fn(), createTeamJoinRequest: vi.fn(), regenerateJoinCode: vi.fn() }));
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ updateTeamCoachHelmSettings: vi.fn() }));
+
+import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
+import { haptic } from '../lib/haptics';
+import { PullToRefresh } from '../shell/PullToRefresh';
+import { createLiveWrites } from '../screens/settings/writes';
+import { PhoneNav } from './phone-nav-harness';
+import { PREVIEW_SHELL } from '../preview/fixtures';
+
+type HelmWindow = { webkit?: { messageHandlers?: { helmNav?: { postMessage: (b: { overlayOpen: boolean }) => void } } } };
+afterEach(() => {
+  delete (window as unknown as HelmWindow).webkit;
+});
+
+describe('Clubhouse in the iOS app', () => {
+  it('signing out stops this phone getting pushes first, while still signed in', async () => {
+    order.length = 0;
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '', replace } });
+    const writes = createLiveWrites({ role: 'coach', userId: 'u', email: null, coachId: 'c', playerId: null, teamId: 't', refresh: () => {} });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      order.push(`route ${String(url)}`);
+      return new Response('{"success":true}', { status: 200 });
+    });
+    try {
+      await writes.signOut();
+    } finally {
+      fetchSpy.mockRestore();
+    }
+    // One request ends the session and clears the active team: no server action, so the page is not re-rendered under the jump to login.
+    expect(order).toEqual(['teardown', 'route /api/golf/auth/sign-out']);
+    // The login page takes this page's place in history, as a full page load: Back cannot return to the signed-out pages.
+    expect(replace).toHaveBeenCalledWith('/golf/login');
+  });
+
+  it('a sign-out request that fails still signs the browser out', async () => {
+    order.length = 0;
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '', replace } });
+    const writes = createLiveWrites({ role: 'coach', userId: 'u', email: null, coachId: 'c', playerId: null, teamId: 't', refresh: () => {} });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'));
+    try {
+      await writes.signOut();
+    } finally {
+      fetchSpy.mockRestore();
+    }
+    expect(order).toEqual(['teardown', 'signOut']);
+    // The login page takes this page's place in history, as a full page load: Back cannot return to the signed-out pages.
+    expect(replace).toHaveBeenCalledWith('/golf/login');
+  });
+
+  it('the account sheet tells the shell a sheet is open, so an edge swipe cannot leave the page under it', async () => {
+    const postMessage = vi.fn();
+    (window as unknown as HelmWindow).webkit = { messageHandlers: { helmNav: { postMessage } } };
+    const user = userEvent.setup();
+    render(
+      <LazyMotion features={domAnimation}>
+        <div className="ch-root" data-ui="clubhouse">
+          <NativeSwipeBackBridge />
+          {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role */}
+          <PhoneNav pathname="/golf/dashboard" shell={PREVIEW_SHELL} role="coach" />
+        </div>
+      </LazyMotion>,
+    );
+    await waitFor(() => expect(postMessage).toHaveBeenLastCalledWith({ overlayOpen: false }));
+    await user.click(screen.getByRole('button', { name: 'Account' }));
+    await waitFor(() => expect(postMessage).toHaveBeenLastCalledWith({ overlayOpen: true }));
+  });
+
+  it('a pull from the top of a phone page reads it again with the medium tap; a browser draws no pull (CH-1909)', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({ matches: query.includes('max-width: 820px'), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as unknown as MediaQueryList);
+    const page = () => {
+      document.body.innerHTML = '<div class="ch-root" data-ui="clubhouse"><div class="ch-canvas" id="ch-canvas"><main><p class="row">Row</p></main></div><div class="host"></div></div>';
+      render(<PullToRefresh pathname="/golf/dashboard" />, { container: document.querySelector<HTMLElement>('.host')! });
+      return document.querySelector('.row')!;
+    };
+    const drag = (row: Element) => {
+      const fire = (type: string, y: number) => {
+        const e = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(e, 'touches', { value: type === 'touchend' ? [] : [{ clientX: 100, clientY: y }] });
+        act(() => void row.dispatchEvent(e));
+        return e;
+      };
+      fire('touchstart', 300);
+      const moves = [1, 2, 3, 4, 5, 6].map((i) => fire('touchmove', 300 + i * 40));
+      fire('touchend', 540);
+      return moves;
+    };
+    expect(drag(page()).some((m) => m.defaultPrevented)).toBe(false);
+    expect(pulled.refresh).not.toHaveBeenCalled();
+    cleanup();
+    document.body.classList.add('capacitor', 'capacitor-ios');
+    try {
+      expect(drag(page()).every((m) => m.defaultPrevented)).toBe(true);
+      expect(pulled.refresh).toHaveBeenCalledTimes(1);
+      expect(haptic).toHaveBeenCalledWith('commit');
+    } finally {
+      document.body.className = '';
+      vi.restoreAllMocks();
+    }
+  });
+});
+
+describe('phone width', () => {
+  it('useChPhone follows the 820px breakpoint the stylesheets use', async () => {
+    const { useChPhone, CH_PHONE_QUERY } = await import('../lib/use-phone');
+    const { renderHook } = await import('@testing-library/react');
+    const seen: string[] = [];
+    window.matchMedia = ((q: string) => {
+      seen.push(q);
+      return { matches: true, media: q, addEventListener: () => {}, removeEventListener: () => {} };
+    }) as never;
+    expect(renderHook(() => useChPhone()).result.current).toBe(true);
+    expect(seen).toContain(CH_PHONE_QUERY);
+    expect(CH_PHONE_QUERY).toBe('(max-width: 820px)');
+  });
+});

@@ -5,7 +5,8 @@
 # see docs/ai-system/FEATURE_FLAGS.md for the full schema, the NEVER-GATE
 # list, and how to add/expire a flag).
 #
-# Owner decision: ADR 2026-09-03-control-plane-owner-decisions.md
+# Background: ADR 2026-09-03-control-plane-owner-decisions.md (flag policy;
+# agents may flip flags: see AGENTS.md and ADR-2026-10-07-agent-autonomy.md)
 # (`FEATURE_FLAG_INFRASTRUCTURE_NET_NEW` = "Flags yes";
 # `CANARY_ROLLOUT_MECHANISM` = "Canary later" — `environment` below is
 # booleans ONLY, never a percentage/cohort. Percentage rollout is explicitly
@@ -13,7 +14,7 @@
 #
 # Schema per flag (all fields required unless noted):
 #   feature_id             stable id; also the string passed to isFlagEnabled()
-#   owner                  who to ask before flipping/removing this flag
+#   owner                  the team that knows this flag (context, not an approval step)
 #   purpose                one sentence: what it controls and why it exists
 #   type                   release | experiment | operations_kill_switch | temporary_migration
 #   status                 active | archived
@@ -637,3 +638,62 @@ flags:
       Either promote to a permanent `release` flag once the section has
       been reviewed, or remove the section and its wiring if the review
       asks for a different surface/placement instead.
+
+  # Clubhouse: the from-scratch GolfHelm UI (src/clubhouse/) for coaches and
+  # players (isClubhouseFor). Parallel to Fairway, never layered on it.
+  # Status, turn-on and rollback: docs/clubhouse/STATUS.md. Tracker:
+  # docs/clubhouse/PROGRESS.md. Turning production on is an owner decision.
+  - feature_id: golf_clubhouse_ui
+    owner: golf/clubhouse
+    purpose: >-
+      Renders the Clubhouse shell and rebuilt screens (src/clubhouse) in
+      place of the Fairway dashboard shell for coaches and players. Routes
+      without a Clubhouse version redirect to the closest rebuilt screen;
+      retired ones (course management, the printable report, genome
+      compare) keep their redirects. HELM_CLUBHOUSE_TEAMS limits it to
+      listed teams. Status and rollout: docs/clubhouse/STATUS.md.
+    type: release
+    status: active
+    created_at: "2026-09-29"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Not on the day production is turned on. Retire the Fairway shell and
+      this flag in their own reviewed change, only after every coach and
+      player route in docs/clubhouse/SWAP_AUDIT.md has a Clubhouse
+      destination, no local round recovery depends on Fairway, and an
+      observation window with a known rollback deployment has passed.
+
+  # Clubhouse front door: the owner's new sign-in page, welcome, sign-up and
+  # onboarding (src/clubhouse/screens/auth, P015). They sit outside the
+  # dashboard and a signed-out visitor has no role, so they are not behind
+  # golf_clubhouse_ui's per-role check. Off in production until the owner says
+  # so; the current pages render exactly as before while it is off. The flag
+  # chooses the page that is drawn, never what signing in does: both pages call
+  # the same server actions and follow the same redirects.
+  - feature_id: golf_clubhouse_front_door
+    owner: golf/clubhouse
+    purpose: >-
+      Draws the Clubhouse entrance pages (the first page a visitor sees, the
+      greeting after it, and the pages that bring a new person in) in place of
+      the current ones. Presentation only: the same server actions and
+      redirects sit behind both.
+    type: release
+    status: active
+    created_at: "2026-09-30"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      When the owner turns production on and the old entrance pages are
+      retired, delete them, the layout branch that chooses between them, and
+      this flag in the same change.

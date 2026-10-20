@@ -22,7 +22,7 @@
  * ADDITIVE — imported by FocusAreaCard.tsx + FairwayGoalCard.tsx only.
  * ========================================================================== */
 
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 /** Track + fill height. `sm` matches the goal card; `md` matches the focus-area meter. */

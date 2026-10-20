@@ -1,0 +1,32 @@
+schema_version: 1
+replay_id: safety-net-wake-reads-batched-2026-10-03
+incident_id: /admin/errors/sentry:JAVASCRIPT-NEXTJS-15E
+feature_id: coachhelm_ai
+title: >-
+  The coachhelm-safety-net reconcile read golf_team_members and counted
+  golf_rounds once per parked player when deciding wakes (Sentry N+1 15E and
+  the remainder of 107 on release ef6e017a2); both are now one batched read
+  per tick, with the per-player read kept as the fail-closed fallback.
+bad_version: fb99d8e7f0a134e7c8cf0e861c95cb8b0db8995e
+fixed_version: 8ec9d8902ee20eb2443ab4f9fb91e9e18dc22ec0
+fixture:
+  - source: coachhelm-safety-net-reconcile.test.ts
+    target: src/test/api/cron/coachhelm-safety-net-reconcile.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/test/api/cron/coachhelm-safety-net-reconcile.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic rounds, players, teams and coaches (r0/p0/t1/c1); no production
+    rows, IDs, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-10-03"
+notes: >-
+  On bad_version 2 tests fail: "floor-parked players: golf_team_members and
+  golf_rounds reads do not grow with the player count" and
+  "membership-parked players: golf_team_members reads do not grow with the
+  player count". 20 others pass.

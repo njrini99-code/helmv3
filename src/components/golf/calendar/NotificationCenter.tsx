@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { m, AnimatePresence, type PanInfo, useReducedMotion } from 'framer-motion';
+import { m, AnimatePresence, type PanInfo, useReducedMotion } from 'motion/react';
 import {
   IconBell,
   IconCheck,

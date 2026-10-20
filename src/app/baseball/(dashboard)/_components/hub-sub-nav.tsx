@@ -31,7 +31,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'motion/react';
 import { loadMaxFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { DUR, EASE_GLIDE } from '@/components/baseball/living-annual';
@@ -190,7 +190,7 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
     (e: React.KeyboardEvent) => {
       const count = tabs.length;
       if (count === 0) return;
-      let next: number | null = null;
+      let next: number | null;
       switch (e.key) {
         case 'ArrowRight':
         case 'ArrowDown':

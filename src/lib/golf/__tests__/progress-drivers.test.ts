@@ -63,6 +63,7 @@ interface FocusAreaRow {
 let focusAreaRows: FocusAreaRow[] = [];
 let roundRows: Array<{ id: string; player_id: string; round_date: string }> = [];
 let statsRows: Array<{ round_id: string; total_putts: number | null }> = [];
+const roundQueryEqCalls: Array<[string, unknown]> = [];
 const updateCalls: Array<{ id: string; patch: Record<string, unknown> }> = [];
 
 /**
@@ -98,14 +99,19 @@ function makeAdminClient() {
         };
       }
       if (table === 'golf_rounds') {
+        // `.eq()` may repeat (status, is_test, ...): record each call and keep chaining.
         return {
-          select: () => ({
-            in: () => ({
-              eq: () => ({
-                gte: () => pagedResult(roundRows),
-              }),
-            }),
-          }),
+          select: () => {
+            const node = {
+              in: () => node,
+              eq: (column: string, value: unknown) => {
+                roundQueryEqCalls.push([column, value]);
+                return node;
+              },
+              gte: () => pagedResult(roundRows),
+            };
+            return node;
+          },
         };
       }
       if (table === 'golf_round_stats_cache') {
@@ -220,6 +226,26 @@ describe('runFocusAreaProgressForPlayers — standing fallback (B2 / P0 fix)', (
     expect(updateCalls).toHaveLength(1);
     expect(updateCalls[0]!.id).toBe('area-3');
     expect(updateCalls[0]!.patch.current_value).toBe(28);
+  });
+
+  it('windows completed rounds of real players only: the golf_rounds read filters is_test = false', async () => {
+    focusAreaRows = [
+      {
+        id: 'area-4',
+        player_id: 'player-4',
+        target_metric: 'putts_per_round',
+        current_value: 32,
+        started_at: '2026-06-01',
+      },
+    ];
+    roundRows = [{ id: 'round-1', player_id: 'player-4', round_date: '2026-06-10' }];
+    statsRows = [{ round_id: 'round-1', total_putts: 28 }];
+    roundQueryEqCalls.length = 0;
+
+    await runFocusAreaProgressForPlayers(['player-4']);
+
+    expect(roundQueryEqCalls).toContainEqual(['status', 'completed']);
+    expect(roundQueryEqCalls).toContainEqual(['is_test', false]);
   });
 
   it('mixed batch: legacy-catalog area and standing-fallback area are both evaluated independently', async () => {

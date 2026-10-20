@@ -49,6 +49,7 @@ describe('generateStatisticalStrengthsWeaknesses — SG is self-relative', () =>
     // now be reported as such.
     const { strengths, weaknesses } = generateStatisticalStrengthsWeaknesses(
       makeStats({ tee: -0.2, approach: -3.3, around: -0.5, putting: -2.9 }),
+      'pga',
     );
 
     expect(strengths.length).toBeGreaterThan(0);
@@ -64,6 +65,7 @@ describe('generateStatisticalStrengthsWeaknesses — SG is self-relative', () =>
     // mean = (-1 + -2 + -3 + -4) / 4 = -2.5
     const { strengths, weaknesses } = generateStatisticalStrengthsWeaknesses(
       makeStats({ tee: -1, approach: -2, around: -3, putting: -4 }),
+      'pga',
     );
 
     const tee = find(strengths, 'SG: Off the Tee');
@@ -78,6 +80,7 @@ describe('generateStatisticalStrengthsWeaknesses — SG is self-relative', () =>
   it('labels the SG comparison as the player\'s own average, not a benchmark', () => {
     const { strengths, weaknesses } = generateStatisticalStrengthsWeaknesses(
       makeStats({ tee: 1, approach: -1, around: 0, putting: -2 }),
+      'pga',
     );
 
     const sgRows = [...strengths, ...weaknesses].filter((r) =>
@@ -95,9 +98,11 @@ describe('generateStatisticalStrengthsWeaknesses — SG is self-relative', () =>
     // Self-relative grading must produce identical impacts.
     const strong = generateStatisticalStrengthsWeaknesses(
       makeStats({ tee: 0, approach: -1, around: -2, putting: -3 }),
+      'pga',
     );
     const weak = generateStatisticalStrengthsWeaknesses(
       makeStats({ tee: -5, approach: -6, around: -7, putting: -8 }),
+      'pga',
     );
 
     expect(find(weak.strengths, 'SG: Off the Tee')?.strokeImpact).toBeCloseTo(
@@ -114,6 +119,7 @@ describe('generateStatisticalStrengthsWeaknesses — SG is self-relative', () =>
     // One category is trivially equal to its own mean — impact zero, no signal.
     const { strengths, weaknesses } = generateStatisticalStrengthsWeaknesses(
       makeStats({ tee: -1.5, approach: null, around: null, putting: null }),
+      'pga',
     );
 
     const sgRows = [...strengths, ...weaknesses].filter((r) =>

@@ -150,12 +150,12 @@ owner's machine, for anyone who needs to see exactly what ran before.
   because a Vercel function has no git checkout — never resolves a
   SHA-bearing "ALREADY FIXED" claim itself; that case is left analysed-but-open
   for `auto-resolve.ts`'s nightly Rule A or a human/`npm run triage` run. A
-  fingerprint carrying a provider-fault (an Inngest/AI-account credential
+  fingerprint carrying a provider-fault (an AI-account credential
   fault, say) is never auto-resolved even when a model mis-categorises it,
   because the guard re-classifies the member's own message text
   (`classifyProviderFault`) in addition to reading a stored `errorCode` —
-  three of the four production "Inngest signature" fingerprints carry no
-  persisted `errorCode` at all, so the stored-code check alone would miss
+  three of the four production credential-fault fingerprints (a since-removed
+  provider) carry no persisted `errorCode` at all, so the stored-code check alone would miss
   them.
 - **Runtime health and capability proof are separate facts for every
   self-healing stage.** A stage can heartbeat healthily for a week while never
@@ -179,8 +179,9 @@ owner's machine, for anyone who needs to see exactly what ran before.
   `autonomous` with a null basis and renders NO chip: the classifier detects a
   run that ANNOUNCED human involvement and cannot detect one that stayed quiet.
 - **A retired runner cannot speak for a stage.** `SelfHealStage.retiredMethods`
-  lists the `metadata.method` values of runners a stage has retired (Diagnose:
-  `claude-code-cloud-session`), and `selectStageHeartbeat` picks the newest row
+  lists the `metadata.method`/`metadata.runner` values of runners a stage has
+  retired (Diagnose: `claude-code-*`, a prefix entry, since the retired task
+  renamed itself three times 2026-09-25..10-01), and `selectStageHeartbeat` picks the newest row
   NOT written by one of them to classify the stage. The retired rows stay in
   the run history. Operator rows (`manual-…`) still count, and when every row
   in view is retired the newest is used, never `never-ran`. Measured

@@ -149,7 +149,7 @@ describe('updateRSVP locks', () => {
 
 describe('notifyEventUpdate reschedule re-notification', () => {
   it('each reschedule yields exactly one fresh notification; repeats of the same time dedupe', async () => {
-    const { tables, supabase } = seed();
+    const { tables, supabase } = seed({ requires_rsvp: true });
 
     // First update notification.
     await notifyEventUpdate('event-1', supabase);
@@ -178,7 +178,7 @@ describe('notifyEventUpdate reschedule re-notification', () => {
   });
 
   it('notification rows target the attendee user ids', async () => {
-    const { tables, supabase } = seed();
+    const { tables, supabase } = seed({ requires_rsvp: true });
 
     await notifyEventUpdate('event-1', supabase, 'Moved to the back nine');
 
@@ -186,5 +186,13 @@ describe('notifyEventUpdate reschedule re-notification', () => {
     const notif = tables.golf_calendar_notifications[0]!;
     expect(notif.user_id).toBe('u-p1');
     expect(notif.message).toBe('Moved to the back nine');
+  });
+
+  it('an event that does not ask for replies notifies nobody (owner, 2026-10-08)', async () => {
+    const { tables, supabase } = seed({ requires_rsvp: false });
+
+    await notifyEventUpdate('event-1', supabase, 'Moved to the back nine');
+
+    expect(tables.golf_calendar_notifications).toHaveLength(0);
   });
 });

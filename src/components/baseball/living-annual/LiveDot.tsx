@@ -10,7 +10,7 @@
  * dot renders static (no pulse), per the motion contract. Pass `label` and a
  * small-caps lane-ink label sits beside it (`LIVE`, `STANDING BY`, `SYNCING`).
  */
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 export interface LiveDotProps {

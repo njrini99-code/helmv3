@@ -86,7 +86,7 @@ For baseball, coach *typing* is richer at the program level (College/HS/JUCO/Sho
 - **Account deletion exists** (`src/app/api/account/delete/route.ts`) but cascade cleanup across related tables is documented as incomplete — a retention gap that specifically matters for a minor's PII (see `03-product-invariants.md` for the deletion/retention invariant this implies).
 - **No cookie/consent banner** exists in-repo — relevant if/when COPPA-style parental-consent flows become required.
 - A cross-tenant RLS leak exposing one team's players to another team, or a broken player/coach RLS boundary exposing player data to the wrong coach, is the worst-case, business-ending failure mode for a student-athlete data product. There is a documented prior RLS incident (`docs/audits/COACH_DASHBOARD_AUDIT_REPORT.md`) — every new table touching player data must ship RLS per `docs/v3-rls-template.md`, and reviewers must treat missing/misconfigured RLS as the top-severity class of bug (see `03-product-invariants.md`).
-- Destructive-write risk is elevated on player-adjacent surfaces: roster, qualifier selections, and round-save are explicitly called out as the highest-risk surfaces for the DELETE-then-INSERT anti-pattern ban (`.claude/rules/golf-review.md`) — a transient failure mid-sequence has previously caused permanent data loss.
+- Destructive-write risk is elevated on player-adjacent surfaces: roster, qualifier selections, and round-save are explicitly called out as the highest-risk surfaces for the DELETE-then-INSERT anti-pattern ban (`.claude/rules/golf.md`) — a transient failure mid-sequence has previously caused permanent data loss.
 
 ---
 

@@ -84,7 +84,7 @@ current total, which may include pre-existing cases untouched by this work.
   (parameterized over every entry, so it automatically covers the 2 new
   entries — `reliability-triage`/`selfheal-triage` — without a
   hand-written case for each).
-- `src/lib/inngest/__tests__/functions-bridge-logging.test.ts` (4) — new
+- the Inngest functions bridge-logging test (removed 2026-10-06) (4) — new
   file. Pins `withBridgeLogging` starting a check-in keyed by the Inngest
   function id, finishing ok/error on the two outcomes, and that the
   check-in finish happens BEFORE the Bridge log write (a hung logger must

@@ -10,8 +10,8 @@
 // src/lib/baseball/coachhelm/engine-run.ts so it can be driven from BOTH:
 //   1. THIS server action (manual "Run engine" button / post-import / insights.ts
 //      delegate) — RLS client + session-resolved context.
-//   2. The SCHEDULED EVALUATOR (src/lib/inngest/functions.ts) — the daily durable
-//      heartbeat that makes "Signals are the heartbeat of BaseballHelm" actually
+//   2. The SCHEDULED EVALUATOR (src/lib/baseball/coachhelm/scheduled-evaluator.ts) —
+//      the daily heartbeat (NOT YET SCHEDULED: no cron route invokes it today) that makes "Signals are the heartbeat of BaseballHelm" actually
 //      true (time-relative re-evaluation + expires_at sweep over every team),
 //      using the service-role admin client.
 //

@@ -92,7 +92,7 @@ Clippd's "What To Work On" surfaces data-derived weaknesses. DECADE has Combines
 
 Named directly in the research as "the most-painful, most-frequent, most-poorly-tooled workflow in college golf" — coaches are still running this in Google Sheets: ingest scores → top-4 + coach's-pick reasoning → travel roster → tournament prep packet. Nobody has built a first-class object for it. (`docs/v3-research-competitive-landscape.md:393`)
 
-GolfHelm implements this as `golf_qualifiers` / `golf_qualifier_entries` / `golf_qualifier_selections`, with `QualifierStatus` = `upcoming` / `in_progress` / `completed` / `cancelled`. This is the highest-stakes surface in the doc from an engineering-safety perspective, because it is both a stated differentiator AND on the destructive-write ban's named high-risk list (roster, qualifier selections, round-save) — see `.claude/rules/golf-review.md`. A bug here does not just cost a feature, it costs the workflow coaches are supposed to switch tools for.
+GolfHelm implements this as `golf_qualifiers` / `golf_qualifier_entries` / `golf_qualifier_selections`, with `QualifierStatus` = `upcoming` / `in_progress` / `completed` / `cancelled`. This is the highest-stakes surface in the doc from an engineering-safety perspective, because it is both a stated differentiator AND on the destructive-write ban's named high-risk list (roster, qualifier selections, round-save) — see `.claude/rules/golf.md`. A bug here does not just cost a feature, it costs the workflow coaches are supposed to switch tools for.
 
 ### 2.4 Supporting/secondary differentiators named in the research
 
@@ -112,7 +112,7 @@ Each of these is a criticism leveled at a named competitor in the research. If a
 | Competitor weakness (source) | Do not recreate this in Helm |
 |---|---|
 | Clippd: manual entry required without Arccos/Garmin | Any workflow that requires a coach or player to hand-type round data when auto-ingest exists or is planned |
-| Clippd: "SG metrics are hard to interpret" | SG surfaced without explanation of what OTT/APP/ARG/PUTT mean or how the number was derived; SG math errors are the single highest numeric-correctness risk in this codebase (`.claude/rules/golf-review.md`) |
+| Clippd: "SG metrics are hard to interpret" | SG surfaced without explanation of what OTT/APP/ARG/PUTT mean or how the number was derived; SG math errors are the single highest numeric-correctness risk in this codebase (`.claude/rules/golf.md`) |
 | Clippd: Advanced Analytics locked behind Pro tier with no visible reasoning | Silently downgrading a paid/premium AI feature to template output on budget exhaustion without surfacing that to the coach — see `src/lib/coachhelm/v3/llm/budget.ts` fallback priority (`round_review > coach_chat > hero_narrative > template`) |
 | Clippd: Coach Portal "first release, more coming" — coach-player interaction is comment-thread only | Coach chat that is a generic message thread with no data context is strictly worse than what CoachNow/Clippd already ship; it must reference the player's actual stats |
 | Clippd/DECADE: "What To Work On" / Combines are data-derived but not goals-aware | Insight ranking or practice suggestions that ignore an active coach-approved Goal |
@@ -142,8 +142,8 @@ This section exists so a reviewer can trace a positioning claim back to somethin
 | Positioning claim | Enforced by |
 |---|---|
 | "Round review must be causal, not a summary" | `composeRoundReview` citation-verification + regenerate-once-before-template rule, `.claude/rules/coachhelm-review.md` |
-| "SG correctness is the core value prop vs Clippd" | `docs/v3-research-golf-domain.md` as canonical SG reference; SG is cached (not recomputed) in `golf_player_stats_cache`; `.claude/rules/golf-review.md`, `docs/v3-master-plan.md:98` |
-| "Qualifier workspace must be more trustworthy than a spreadsheet" | `golf_qualifiers` / `golf_qualifier_entries` / `golf_qualifier_selections`; destructive DELETE-then-INSERT banned on qualifier selections, `.claude/rules/golf-review.md` |
+| "SG correctness is the core value prop vs Clippd" | `docs/v3-research-golf-domain.md` as canonical SG reference; SG is cached (not recomputed) in `golf_player_stats_cache`; `.claude/rules/golf.md`, `docs/v3-master-plan.md:98` |
+| "Qualifier workspace must be more trustworthy than a spreadsheet" | `golf_qualifiers` / `golf_qualifier_entries` / `golf_qualifier_selections`; destructive DELETE-then-INSERT banned on qualifier selections, `.claude/rules/golf.md` |
 | "Never silently downgrade a paid AI feature" | Per-coach daily LLM budget in `src/lib/coachhelm/v3/llm/budget.ts`, backed by `golf_coachhelm_llm_budget` and `golf_coachhelm_settings.llm_budget_usd_per_day`; fallback priority `round_review > coach_chat > hero_narrative > template` |
 | "Goals must actually change what surfaces, not just be stored" | No single enforced check exists today — this is a product-review, not lint-review, obligation; flag in PR review, see `## For the reviewer` below |
 

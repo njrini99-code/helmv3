@@ -43,7 +43,7 @@ import {
   PlayerIdentity,
 } from '@/components/fairway';
 import { Users, Flag, MapPin } from 'lucide-react';
-import { createGolfQualifier } from '@/app/golf/actions/golf';
+import { createGolfQualifier } from '@/app/golf/actions/qualifier-actions';
 // Reuse the SAME cloud course catalog picker the new-round flow uses (Stage A
 // course shelves → Stage B tee). We only need the picked course/tee identity, so
 // we read courseId / courseName / teeId off the returned TeeRoundDefaults.
@@ -69,6 +69,10 @@ export interface FairwayNewQualifierProps {
 }
 
 const todayISO = () => localDayIso();
+
+// The database caps a squad at 12 (golf_qualifiers_selection_slots_total_check);
+// a bigger squad only failed at create.
+const SQUAD_MAX = 12;
 
 export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
   const router = useRouter();
@@ -103,7 +107,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
   const [error, setError] = useState<string | null>(null);
 
   // Derived squad model (mirrors the leaderboard cut-line vocabulary).
-  const total = slotsTotal && slotsTotal > 0 ? slotsTotal : 5;
+  const total = slotsTotal && slotsTotal > 0 ? Math.min(slotsTotal, SQUAD_MAX) : 5;
   const picks = Math.min(Math.max(coachPick ?? 0, 0), total);
   const autoQualify = total - picks;
 
@@ -328,7 +332,6 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                 >
                   <Checkbox
                     value="confirmed"
-                    aria-label="This qualifier intentionally allows one 18-hole round"
                     label="This qualifier intentionally allows one 18-hole round."
                     description="Players who finish it cannot enter another qualifier round unless you raise the cap."
                   />
@@ -437,7 +440,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                   value={slotsTotal}
                   onValueChange={setSlotsTotal}
                   min={1}
-                  max={50}
+                  max={SQUAD_MAX}
                   unit="players"
                 />
               </FormField>

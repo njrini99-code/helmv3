@@ -116,7 +116,7 @@ const DrawerContent = React.forwardRef<
           // largest viewport and ignores mobile Safari's dynamic toolbars.
           'fixed inset-x-0 bottom-[var(--keyboard-height,0px)] z-50 mt-24 flex h-auto flex-col rounded-t-3xl',
           'max-h-[calc(92dvh-var(--keyboard-height,0px))]',
-          'transition-[bottom] duration-[250ms] motion-reduce:transition-none',
+          'transition-[bottom] [transition-duration:250ms] motion-reduce:transition-none',
           // Page rubber-band is ON; a scroll inside the drawer never chains
           // to the page behind the scrim.
           'overscroll-contain',

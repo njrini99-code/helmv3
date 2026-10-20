@@ -3,7 +3,7 @@
 import { describeError } from '@/lib/utils/describe-error';
 import { Capacitor } from '@capacitor/core';
 import { isNativeApp } from './capacitor';
-import { isSafeInternalPath } from './safe-redirect';
+import { isSafeInternalPath, toSameOriginPath } from './safe-redirect';
 import { fwHaptic } from '@/lib/fairway/haptics';
 
 /**
@@ -176,14 +176,20 @@ export async function flushPendingDeviceToken(): Promise<void> {
  * never hang or fail on token cleanup. On any failure the row simply stays
  * active (the pre-fix status quo for that one sign-out) and the next
  * launch's registration self-heals it.
+ *
+ * Returns when the deactivation has been answered (never rejects), so a
+ * caller can wait for it before ending the session: started and not waited
+ * for, the session could end first, the action's getUser() then refused it,
+ * and the row stayed active (security review, 2026-10-16). Callers that do
+ * not wait keep the old behaviour.
  */
-export function teardownDeviceTokenOnSignOut(): void {
+export function teardownDeviceTokenOnSignOut(): Promise<void> {
   const token = lastRegisteredDeviceToken ?? pendingDeviceToken;
-  if (!token) return; // web session, or push never registered this launch
+  if (!token) return Promise.resolve(); // web session, or push never registered this launch
   // Re-park FIRST so the next SIGNED_IN re-registers even if the network
   // request below never lands.
   pendingDeviceToken = token;
-  void import('@/app/golf/actions/push-notifications')
+  return import('@/app/golf/actions/push-notifications')
     .then(({ unregisterDeviceToken }) => unregisterDeviceToken(token.value))
     .then((result) => {
       if (!result.success) {
@@ -290,7 +296,8 @@ export async function initPushListeners(): Promise<void> {
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
       if (typeof window === 'undefined') return;
       const data = action.notification.data as Record<string, unknown> | undefined;
-      const rawUrl = typeof data?.url === 'string' ? data.url : null;
+      // Senders store an absolute URL; keep only a same-origin one, as a path.
+      const rawUrl = toSameOriginPath(typeof data?.url === 'string' ? data.url : null, window.location.origin);
 
       // SECURITY: the payload is attacker-influenceable in any scenario where a
       // send path can be tricked into echoing user input, and this assignment

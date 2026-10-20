@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
+import { CompletedRoundRedirect } from './completed-round-redirect';
 import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
@@ -12,6 +13,10 @@ import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { logServerError } from '@/lib/server-error-logger';
 import { RoundTypeEditor } from '@/components/fairway/pages/rounds/RoundTypeEditor';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
+import { ClubhouseContinueRoundRoute } from '@/clubhouse/routes/round-continue';
+import { frontierIndex, lastPlayIndex, normalizeStartHole } from '@/lib/golf/round-session/play-order';
 
 export const metadata: Metadata = {
   title: 'Continue Round',
@@ -193,14 +198,19 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       errorHint: roundError.hint,
       errorDetails: roundError.details,
     }, 'critical');
+    // A failed read is not "not found": the round is there and the read didn't land. The route boundary's retry reads it again.
+    throw new Error("Couldn't load this round. Nothing was changed; please try again.");
   }
 
-  if (roundError || !round) {
+  if (!round) {
     notFound();
   }
 
   if (round.status !== 'in_progress') {
-    redirect(`/golf/dashboard/rounds/${id}`);
+    // Not redirect(): this render also runs inside the submit action's
+    // response, where a thrown redirect becomes React #441 and the error
+    // boundary. See CompletedRoundRedirect.
+    return <CompletedRoundRedirect href={`/golf/dashboard/rounds/${id}`} />;
   }
 
   // Load holes, shots, and course hole yardages in parallel
@@ -512,6 +522,20 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     };
   });
 
+  // A failed course-hole read leaves every hole the draft doesn't cover with no yardage (0), which the shot state machine clamps to a
+  // 1-yard tee shot. Never start tracking on that; the route boundary's retry reads the course again. When the draft carries every
+  // yardage the read was not needed (the draft wins over the course either way), so the round opens as it would have.
+  if (courseHolesError && allHoles.some((h) => h.yardage === 0)) {
+    throw new Error("Couldn't load this course's hole yardages. Nothing was changed; please try again.");
+  }
+
+  // Shotgun start: the hole the round started on, kept in draft_data by every autosave (`startHole`) or, from a
+  // legacy draft save, in its setup. Only the play order uses it; holes stay indexed by their number.
+  const draftSetup = draftData?.setupData && typeof draftData.setupData === 'object'
+    ? (draftData.setupData as Record<string, unknown>)
+    : null;
+  const startHole = normalizeStartHole(draftData?.startHole ?? draftSetup?.startHole, totalHoles);
+
   // Setup data from round
   const setupData = {
     courseName: round.course_name || 'Unknown Course',
@@ -526,6 +550,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     roundDate: round.round_date,
     qualifierId: round.qualifier_id || undefined,
     qualifierRoundNumber,
+    startHole,
   };
 
   // Determine the starting hole index
@@ -538,11 +563,16 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   for (let i = 0; i < completedHoleStats.length; i++) {
     if (completedHoleStats[i]) maxCompletedHoleIndex = i;
   }
+  // A shotgun start picks up at the first unscored hole in play order instead (its frontier wraps past the card's
+  // last hole), or its last hole when every one is scored.
+  const shotgunFrontier = frontierIndex(totalHoles, startHole, (i) => !!completedHoleStats[i]);
   const startHoleIndex = round.current_hole
     ? Math.min(Math.max(0, round.current_hole - 1), totalHoles - 1)
-    : maxCompletedHoleIndex >= 0
-      ? Math.min(maxCompletedHoleIndex + 1, totalHoles - 1)
-      : 0;
+    : startHole > 1
+      ? (shotgunFrontier >= 0 ? shotgunFrontier : lastPlayIndex(totalHoles, startHole))
+      : maxCompletedHoleIndex >= 0
+        ? Math.min(maxCompletedHoleIndex + 1, totalHoles - 1)
+        : 0;
 
   // Get shots for the starting hole to restore progress
   const startHoleNumber = startHoleIndex + 1;
@@ -570,6 +600,29 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     allInProgressShots[i] = sorted.map(s => mapShotToRecord(s, puttDetailsByShot.get(s.id), approachDetailsByShot.get(s.id)));
   }
 
+  // Clubhouse (golf_clubhouse_ui) draws the same round over the same engine, from everything loaded above. Its own
+  // round-type sheet (CH-11521) reads the qualifier options in the Clubhouse route (`loadRoundTypeOptions`), so the
+  // Fairway editor's reads below are skipped here.
+  // The role is the dashboard layout's (getGolfDashboardRole); the Fairway branch below keeps the session's.
+  if ((await isClubhouseFor('player')) && (await getGolfDashboardRole()) === 'player') {
+    return (
+      <ClubhouseContinueRoundRoute
+        roundId={id}
+        playerId={player.id}
+        setupData={setupData}
+        holes={allHoles}
+        completedHoleStats={completedHoleStats}
+        startHoleIndex={startHoleIndex}
+        initialShots={initialShots}
+        initialShotNumber={startShotNumber}
+        initialInProgressShotsByHole={allInProgressShots}
+        serverDataTimestamp={round.updated_at ?? undefined}
+        qualifierRoundNumberOptions={qualifierRoundNumberOptions}
+        qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
+      />
+    );
+  }
+
   // ── Re-typing a LIVE round, from the screen the player is already on ──────
   //
   // Owner instruction 2026-08-31: "players should be able to edit it", and
@@ -595,7 +648,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     takenRoundNumbers: number[];
     playerEntered: boolean;
     isCompleted: boolean;
-  }> = [];
+  }>;
   let liveQualifierReadFailed = false;
 
   {
@@ -623,7 +676,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
 
     // Which slots this player's OTHER rounds already hold. Excludes THIS round
     // so a round already sitting in a slot does not read its own as taken.
-    const { data: takenRows } = entered.length
+    const { data: takenRows, error: takenError } = entered.length
       ? await supabase
           .from('golf_rounds')
           .select('qualifier_id, qualifier_round_number')
@@ -631,9 +684,21 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
           .in('qualifier_id', entered.map((q) => q.id))
           .neq('status', 'abandoned')
           .neq('id', id)
-      : { data: [] as Array<{ qualifier_id: string | null; qualifier_round_number: number | null }> };
+      : { data: [] as Array<{ qualifier_id: string | null; qualifier_round_number: number | null }>, error: null };
 
-    liveQualifierOptions = entered.map((q) => ({
+    // An unread slot list is not "every slot free": offering slots then would
+    // default the picker to one this player may already hold. Offer no
+    // qualifier and say the read failed (the editor's reload dead end).
+    if (takenError) {
+      liveQualifierReadFailed = true;
+      void logServerError(
+        `[continue round] taken qualifier slots read failed for round ${id}; the type editor will offer no qualifier: ${takenError.message}`,
+        { action: 'continueRound.takenSlots', featureArea: 'rounds', roundId: id },
+        'warning',
+      );
+    }
+
+    liveQualifierOptions = takenError ? [] : entered.map((q) => ({
       id: q.id,
       name: q.name ?? 'Qualifier',
       numRounds: q.num_rounds ?? 1,

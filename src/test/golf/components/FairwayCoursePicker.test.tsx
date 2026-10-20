@@ -17,7 +17,7 @@
  *    defaults closed; the coach-only qualifier call sites opt in.
  */
 import { render, screen, fireEvent } from '@testing-library/react';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { describe, it, expect, vi } from 'vitest';
 import { Button } from '@/components/ui/button';
 

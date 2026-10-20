@@ -48,6 +48,7 @@ import {
 } from '@/lib/golf/leak-map-buckets';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { getStatsActionContext } from '@/lib/golf/stats-action-context';
+import { resolvePlayerTeamGender } from '@/lib/golf/resolve-player-tour';
 
 import { verifyPlayerAccess } from './stats-data';
 import type {
@@ -99,9 +100,12 @@ const MAX_SHOT_ROWS = 20000;
 // RAW ROW SHAPES (golf_shots is in generated types; columns confirmed present)
 // ============================================================================
 
+/** A putting shot on the shared make % definition (src/lib/golf/putt-make.ts):
+ *  start distance = distance_to_hole_before, made = result 'hole' OR putt_made. */
 interface PuttRow {
   round_id: string;
-  putt_distance_feet: number | null;
+  distance_to_hole_before: number | null;
+  result: string | null;
   putt_made: boolean | null;
 }
 
@@ -119,7 +123,6 @@ interface ApproachRow {
 interface PgaRefRow {
   metric_id: string;
   pga_tour_value: number | null;
-  div1_avg_value: number | null;
 }
 
 // ============================================================================
@@ -148,7 +151,7 @@ async function loadPgaRefs(
     // Step 1: load LPGA rows
     const { data: lpgaData } = await supabase
       .from('golf_pga_standards')
-      .select('metric_id, pga_tour_value, div1_avg_value')
+      .select('metric_id, pga_tour_value')
       .in('metric_id', metricIds)
       .eq('tour', 'lpga');
     for (const row of (lpgaData ?? []) as PgaRefRow[]) {
@@ -159,7 +162,7 @@ async function loadPgaRefs(
     if (missingIds.length > 0) {
       const { data: pgaData } = await supabase
         .from('golf_pga_standards')
-        .select('metric_id, pga_tour_value, div1_avg_value')
+        .select('metric_id, pga_tour_value')
         .in('metric_id', missingIds)
         .eq('tour', 'pga');
       for (const row of (pgaData ?? []) as PgaRefRow[]) {
@@ -170,7 +173,7 @@ async function loadPgaRefs(
     // Men's / unknown — PGA only (unchanged behaviour)
     const { data } = await supabase
       .from('golf_pga_standards')
-      .select('metric_id, pga_tour_value, div1_avg_value')
+      .select('metric_id, pga_tour_value')
       .in('metric_id', metricIds)
       .eq('tour', 'pga');
     for (const row of (data ?? []) as PgaRefRow[]) {
@@ -178,25 +181,6 @@ async function loadPgaRefs(
     }
   }
   return refs;
-}
-
-/**
- * Resolve a player's team gender. Used by player-scoped leak-map functions to
- * select the correct tour benchmark set (LPGA for women's teams, PGA otherwise).
- * Fails safe to null (PGA fallback) if the player has no active team membership.
- */
-async function resolvePlayerTeamGender(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  playerId: string,
-): Promise<string | null> {
-  const { data } = await supabase
-    .from('golf_team_members')
-    .select('golf_teams(gender)')
-    .eq('player_id', playerId)
-    .eq('status', 'active')
-    .maybeSingle();
-  const team = (data as { golf_teams: { gender?: string | null } | null } | null)?.golf_teams;
-  return team?.gender ?? null;
 }
 
 /** The countable completed rounds a leak map reads, with their date span. */
@@ -284,10 +268,12 @@ async function buildPuttBuckets(
       if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
       return supabase
         .from('golf_shots')
-        .select('round_id, putt_distance_feet, putt_made')
+        .select('round_id, distance_to_hole_before, result, putt_made')
         .in('round_id', roundIds)
         .eq('shot_type', 'putting')
-        .not('putt_distance_feet', 'is', null)
+        // A putt without a start distance is not banded (nothing to read here).
+        // Rows with a NULL putt_made are kept: a holed result makes them a make.
+        .not('distance_to_hole_before', 'is', null)
         .order('id', { ascending: true })
         .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
     }, undefined, { table: 'golf_shots', action: 'buildPuttBuckets', feature: 'stats_analytics', sport: 'golf' });
@@ -417,7 +403,13 @@ async function getTeamLeakMapsImpl(
 
     return {
       success: true,
-      data: { teamId: resolvedTeamId, putting, approach, roundsIncluded: roundIds.length },
+      data: {
+        teamId: resolvedTeamId,
+        putting,
+        approach,
+        roundsIncluded: roundIds.length,
+        tour: teamGender === 'womens' ? 'lpga' : 'pga',
+      },
     };
   } catch (error) {
     await logServerError(`[LeakMaps] getTeamLeakMaps: ${describeError(error)}`, {

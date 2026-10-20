@@ -196,10 +196,18 @@ describe('buildClientSentryOptions — dsn/release/environment/tracePropagationT
     ).not.toBe('production');
   });
 
+  // Sentry matches string targets anywhere in a URL, so every target must be an
+  // anchored RegExp; assert on real URLs rather than on the pattern text.
+  const propagatesTo = (targets: (string | RegExp)[], url: string) =>
+    targets.some((t) => (t instanceof RegExp ? t.test(url) : url.includes(t)));
+
   it('always includes localhost and the leading-slash pattern in tracePropagationTargets', () => {
     const targets = buildClientSentryOptions(PROD_ENV).tracePropagationTargets;
-    expect(targets).toContain('localhost');
+    expect(targets.every((t) => t instanceof RegExp)).toBe(true);
     expect(targets.some((t) => t instanceof RegExp && t.source === '^\\/')).toBe(true);
+    expect(propagatesTo(targets, 'http://localhost:3000/api/x')).toBe(true);
+    expect(propagatesTo(targets, '/golf/dashboard')).toBe(true);
+    expect(propagatesTo(targets, 'https://evil.example/?next=localhost')).toBe(false);
   });
 
   it('adds the Supabase origin to tracePropagationTargets when the URL is valid', () => {
@@ -207,7 +215,15 @@ describe('buildClientSentryOptions — dsn/release/environment/tracePropagationT
       ...PROD_ENV,
       NEXT_PUBLIC_SUPABASE_URL: 'https://project.supabase.co/rest/v1',
     }).tracePropagationTargets;
-    expect(targets).toContain('https://project.supabase.co');
+    expect(propagatesTo(targets, 'https://project.supabase.co/rest/v1/golf_rounds')).toBe(true);
+    expect(propagatesTo(targets, 'https://project.supabase.co.evil.com/x')).toBe(false);
+    expect(propagatesTo(targets, 'https://other.supabase.co/rest/v1')).toBe(false);
+  });
+
+  it('sends tunnel envelopes without cookies', () => {
+    expect(buildClientSentryOptions(PROD_ENV).transportOptions).toEqual({
+      fetchOptions: { credentials: 'omit' },
+    });
   });
 
   it('omits the Supabase origin when the URL is missing or invalid', () => {

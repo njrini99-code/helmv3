@@ -28,11 +28,10 @@ describe('measuredStrokesImpact', () => {
     expect(measuredStrokesImpact({ ...base, player_value: 95, player_attempts_per_round: 3 })).toBe(0);
   });
 
-  it('gaps to a plausible cohort before the Tour', () => {
-    // cohort 85 (plausible: >= 70 and below Tour) → 5 pp × 3 = 0.15
-    expect(
-      measuredStrokesImpact({ ...base, cohort_value: 85, player_attempts_per_round: 3 }),
-    ).toBeCloseTo(0.15, 6);
+  it("gaps to the team's Tour: LPGA for a women's team (Q-88, never a college cohort)", () => {
+    // PGA 3-5 ft 90.5 → 10.5 pp × 3 = 0.315; LPGA 86.0 → 6 pp × 3 = 0.18.
+    expect(measuredStrokesImpact({ ...base, cohort_gender: 'mens', player_attempts_per_round: 3 })).toBeCloseTo(0.315, 6);
+    expect(measuredStrokesImpact({ ...base, cohort_gender: 'womens', player_attempts_per_round: 3 })).toBeCloseTo(0.18, 6);
   });
 });
 

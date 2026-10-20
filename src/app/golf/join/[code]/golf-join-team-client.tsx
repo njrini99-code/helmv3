@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { Button } from '@/components/ui/button';

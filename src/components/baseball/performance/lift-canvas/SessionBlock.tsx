@@ -18,7 +18,7 @@
 // LiftCanvas) handles the full warning card.
 // =============================================================================
 
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';

@@ -15,7 +15,7 @@
  * GREEN in team lanes, clay in the War Room — the visible green wayfinding a
  * section masthead should carry.
  */
-import { m, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { m, useReducedMotion, useScroll, useTransform } from 'motion/react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Eyebrow } from './Eyebrow';

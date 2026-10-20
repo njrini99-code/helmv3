@@ -37,16 +37,16 @@ const scope = (() => {
 
 const checks = [];
 
-// VERCEL — the repo-local CLI is the sanctioned path (AGENTS.md). The plugin
-// MCP namespace is denied at project scope on purpose; the native connector is
-// read-only. Merging does not deploy; the owner runs scripts/deploy-prod.sh.
+// VERCEL — the repo-local CLI is the sanctioned path (AGENTS.md). Merging does
+// not deploy (vercel.json disables Git deployments); agents deploy with
+// `./node_modules/.bin/vercel deploy --prod` from the linked checkout.
 checks.push({
   name: 'Vercel      (./node_modules/.bin/vercel)',
   required: true,
   probe: () => scope
     ? run('./node_modules/.bin/vercel', ['ls', '--prod', '--scope', scope])
     : { ok: false, out: 'no .vercel/project.json orgId' },
-  reads: 'deployments, logs, aliases; production deploys only via owner-run scripts/deploy-prod.sh',
+  reads: 'deployments, logs, aliases; production deploys via ./node_modules/.bin/vercel deploy --prod from the linked checkout',
 });
 
 // GITHUB — gh CLI. Note it fails inside the Bash sandbox for GraphQL

@@ -27,7 +27,7 @@ for them explicitly — no gate catches them:
 
 1. **The bundle boundary.** `export type { … }` inside a `'use server'`
    module registers the type as a server action and throws `ReferenceError` at
-   runtime. Typecheck, lint, and 8,763 unit tests were all green while golf
+   runtime. Typecheck, lint, and the full unit suite were all green while golf
    messaging was 100% dead. Only `npm run build` or a real browser click
    proves this. If you touched a `'use server'` file, run the build.
 
@@ -54,8 +54,10 @@ for them explicitly — no gate catches them:
 6. For a risky, broad, security-sensitive, or schema-touching change, use an
    independent look when the risk warrants it: `verifier`, `security-reviewer`,
    or `db-migration-reviewer` as appropriate. Reviewer agents are optional and
-   risk-based; do not repeat task-authorization questions.
-7. Report with evidence: the commands run and their exit codes. If a claim
+   risk-based.
+7. Ship it (AGENTS.md "Done means"): commit, push, PR, `npm run pr:land` when
+   the required checks are green, and deploy if the change should be live.
+8. Report with evidence: the commands run and their exit codes. If a claim
    rests on something unavailable locally — for example, `supabase start`
    when Docker is unavailable — name that limit once, plainly.
 

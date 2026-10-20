@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { respondToEvent, getPendingInvitations, getEventRSVP, getPlayerEventRSVP } from '@/app/golf/actions/golf';
+import { respondToEvent, getPendingInvitations, getEventRSVP, getPlayerEventRSVP } from '@/app/golf/actions/calendar-events';
 import { createClient } from '@/lib/supabase/client';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 

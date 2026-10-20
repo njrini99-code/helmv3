@@ -19,6 +19,7 @@
  * index getAll/count/openCursor by a single key value).
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { setSyncSessionPlayer } from './session-player';
 
 // The in-memory IndexedDB fake lives in __fixtures__ so retry-failed.test.ts
 // can drive the same real storage functions against it.
@@ -34,6 +35,9 @@ vi.mock('@/lib/error-logging', () => ({ logError: mocks.logError }));
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+// The v1 drain only submits the signed-in player's queued rounds (security review of swap audit R-5).
+beforeEach(() => setSyncSessionPlayer('player-1'));
 
 describe('offline DB consolidation — v1 rounds count + drain', () => {
   beforeEach(() => {
@@ -229,7 +233,7 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
     const v1 = await import('./indexed-db');
     await v1.saveOfflineRound({
       id: 'round-drain',
-      playerId: '',
+      playerId: 'player-1',
       serverRoundId: '11111111-1111-1111-1111-111111111111',
       draftData: { step: 'tracking', setupData: { courseName: 'Pebble' } },
     });
@@ -258,7 +262,7 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
     const v1 = await import('./indexed-db');
     await v1.saveOfflineRound({
       id: 'round-fail',
-      playerId: '',
+      playerId: 'player-1',
       draftData: { step: 'tracking', setupData: { courseName: 'Pebble' } },
     });
 
@@ -287,7 +291,7 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
     vi.doMock('@/app/golf/actions/round-drafts', () => ({ saveRoundDraft }));
 
     const v1 = await import('./indexed-db');
-    await v1.saveOfflineRound({ id: 'round-exhausted', playerId: '', draftData: { step: 'tracking' } });
+    await v1.saveOfflineRound({ id: 'round-exhausted', playerId: 'player-1', draftData: { step: 'tracking' } });
 
     // Simulate a round that has already failed the maximum number of times
     // (MAX_RETRY_COUNT = 10), recently (so it is also inside the backoff window).

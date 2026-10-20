@@ -64,6 +64,15 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-baseball-surfaces-demo.ts',
+  summary:
+    "Phase 3 BaseballHelm demo seed for the remaining product surfaces.",
+  guard: "its own --confirm flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 // ---------------------------------------------------------------------------
 // Shared identity (MUST match scripts/seed-baseball-demo.ts exactly).

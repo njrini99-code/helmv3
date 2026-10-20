@@ -24,7 +24,7 @@ function loadParts(): Page[] {
   const out: Page[] = [];
   const seen = new Set<string>();
   for (const base of [V2, V1]) {
-    let files: string[] = [];
+    let files: string[];
     try { files = fs.readdirSync(base); } catch { continue; }
     for (const fn of files) {
       if (!fn.endsWith('.json') || fn === '_crosscut.json') continue;

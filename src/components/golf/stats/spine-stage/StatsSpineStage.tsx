@@ -58,12 +58,13 @@ import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 // the player's mined patterns (cause = description, effect = strokeImpact,
 // fix = recommendation), gated by verifyPlayerAccess + isCoachHelmEnabledForPlayer
 // inside the action.
-import { getPlayerPatterns } from '@/app/golf/actions/insights';
+import { getPlayerPatterns } from '@/app/golf/actions/insights-player-analysis';
 export type CoachHelmPattern = NonNullable<
   Awaited<ReturnType<typeof getPlayerPatterns>>['patterns']
 >[number];
 
-import { biggestLeakArea, buildLedger, buildPriorities, buildStandingTrack, buildVerdict } from './buildStatsViewModel';
+import { resolveStageTour } from '@/lib/golf/benchmarks/tour';
+import { biggestLeakArea, buildLedger, buildPriorities, buildStandingTrack, buildVerdict, withExactHeadlineRates } from './buildStatsViewModel';
 import { StatsSpine } from './StatsSpine';
 import { StatsBento } from './StatsBento';
 import { PuttingDrill } from './PuttingDrill';
@@ -130,7 +131,7 @@ function bundleToState(bundle: StatsDashboardBundle) {
   const leakFailed = !isDeferred(bundle.leak) && (!bundle.leak.ok || !bundle.leak.value.success);
   const sw = bundle.strengthsWeaknesses.ok ? bundle.strengthsWeaknesses.value : null;
   return {
-    detailedStats: bundle.detailed.ok ? bundle.detailed.value : null,
+    detailedStats: bundle.detailed.ok ? withExactHeadlineRates(bundle.detailed.value) : null,
     trendData: bundle.trend.ok ? bundle.trend.value : null,
     standingRows:
       bundle.standing.ok && bundle.standing.value.success ? (bundle.standing.value.data ?? []) : [],
@@ -573,6 +574,12 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     return map;
   }, [standingRows]);
 
+  // The tour every Tour reference on this stage is labelled with: the leak
+  // map's own `tour`, else the standing rows' `is_womens` flag. Null (neither
+  // loaded yet) keeps labels neutral ("the Tour") rather than guessing PGA.
+  const leakTour = leakMaps?.tour;
+  const tour = useMemo(() => resolveStageTour(leakTour, standingRows), [leakTour, standingRows]);
+
   const sgTotal = finite(standingByMetric.get('sg_total')?.player_value ?? null);
   const sgTeamAvg = finite(standingByMetric.get('sg_total')?.team_avg ?? null);
 
@@ -864,6 +871,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           strengths={strengths}
           weaknesses={weaknesses}
           leakArea={leakArea}
+          tour={tour}
         />
       ),
     },
@@ -874,7 +882,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           detailedStats={detailedStats}
           leakMaps={leakMaps}
           standingByMetric={standingByMetric}
-          weaknesses={weaknesses}
+          tour={tour}
           leakError={leakError}
           onRetryLeak={() => void retryLeakMaps(playerId)}
           retryingLeak={leakLoading}
@@ -901,6 +909,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           detailedStats={detailedStats}
           leakMaps={leakMaps}
           sprayData={sprayData}
+          tour={tour}
           leakError={leakError}
           onRetryLeak={() => void retryLeakMaps(playerId)}
           retryingLeak={leakLoading}
@@ -909,7 +918,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         />
       ),
     },
-    { key: 'short-game', node: <ShortGameDrill detailedStats={detailedStats} patterns={patterns} /> },
+    { key: 'short-game', node: <ShortGameDrill detailedStats={detailedStats} patterns={patterns} tour={tour} /> },
     {
       key: 'scoring',
       node: (

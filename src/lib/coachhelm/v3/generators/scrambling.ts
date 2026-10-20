@@ -218,9 +218,8 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     const escapePct = agg.attempts > 0 ? Math.round((100 * agg.reached_green_n) / agg.attempts) : 0;
     const leaveDisp = agg.avg_leave_feet != null ? `${Math.round(agg.avg_leave_feet)} ft` : null;
 
+    // The team's Tour (Q-88): LPGA for a women's team, PGA otherwise.
     const anchor = cohortAnchor('scrambling_pct_sand', agg.cohort_gender) ?? 50;
-    // Women's anchor is a derived target (LPGA/NCAA figures discounted to
-    // college), not a measured college average — the label and source say so.
     const anchorLabel = cohortAnchorLabel(agg.cohort_gender, 'sand save');
 
     let title: string;
@@ -257,9 +256,7 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
         `(95% range ${Math.round(ci.low)}-${Math.round(ci.high)}%).`
       : '';
     const content =
-      `${driver}${rangeClause} ${agg.cohort_gender === 'womens'
-        ? `Women's college sand-save target is ~${anchor}% (estimated).`
-        : `Tour sand-save average is ~${anchor}%.`}` +
+      `${driver}${rangeClause} ${agg.cohort_gender === 'womens' ? 'LPGA' : 'PGA'} Tour sand-save average is ~${anchor}%.` +
       staleDataSuffix(agg.last_round_date);
 
     return {

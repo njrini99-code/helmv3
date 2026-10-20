@@ -44,7 +44,7 @@ import {
   ViewHeader,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
-import type { QualifierRoundCourse } from '@/app/golf/actions/golf';
+import type { QualifierRoundCourse } from '@/app/golf/actions/qualifier-actions';
 
 import { FairwayQualifierLeaderboard } from './FairwayQualifierLeaderboard';
 import { qualifierStatusMeta } from './qualifier-status';

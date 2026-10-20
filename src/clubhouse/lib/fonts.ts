@@ -1,0 +1,43 @@
+import { Instrument_Sans, Instrument_Serif, JetBrains_Mono, Norican } from 'next/font/google';
+
+/**
+ * Clubhouse type: Instrument Sans (variable weight and width) for everything,
+ * JetBrains Mono for kbd only. Exposed as CSS variables on the Clubhouse root
+ * so the tokens can read them; nothing outside the root sees them.
+ */
+export const instrumentSans = Instrument_Sans({
+  subsets: ['latin'],
+  weight: 'variable',
+  axes: ['wdth'],
+  display: 'swap',
+  variable: '--ch-font-instrument',
+});
+
+/** Display serif for page titles and greetings (owner, 2026-10-06: "expensive, Masters, old money"); Instrument Sans's
+ *  own serif companion, so the two share proportions. Headlines only, never body or data. */
+export const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--ch-font-instrument-serif',
+});
+
+export const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['500'],
+  display: 'swap',
+  variable: '--ch-font-jetbrains',
+});
+
+/** The sidebar's script wordmark, "Golfhelm" (owner, 2026-10-16: "a cursive thing of script" after the sign in). The
+ *  brand is on every page, so it is preloaded and the word never swaps in from a fallback. Norican, a script with
+ *  real weight (owner, 2026-10-16, picked from twelve: the thin Great Vibes "looks trash" at sidebar size). */
+export const norican = Norican({
+  subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+  variable: '--ch-font-script',
+});
+
+export const clubhouseFontVariables = `${instrumentSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} ${norican.variable}`;

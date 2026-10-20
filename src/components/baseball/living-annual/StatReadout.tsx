@@ -25,7 +25,7 @@
  * pulse fires.
  */
 import { useEffect, useRef, useState } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
 import { EASE_GLIDE } from './motion';

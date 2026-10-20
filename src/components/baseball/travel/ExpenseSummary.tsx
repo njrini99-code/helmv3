@@ -15,7 +15,7 @@
 // =============================================================================
 
 import { useMemo } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import {
   type BaseballExpenseSummary,
   type ExpenseCategory,

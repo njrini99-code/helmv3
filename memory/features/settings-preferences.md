@@ -1,5 +1,19 @@
 # Feature: Settings And Preferences
 
+## Clubhouse popup layout — 2026-10-06
+
+Phone form/list sheets initially focus their labelled heading for reading; this noninteractive heading has no control outline. Keyboard focus indicators on interactive controls remain available.
+
+Clubhouse phone form/list/picker bars wrap long titles while retaining action space. Long action-sheet copy scrolls within the available viewport. These sizing repairs preserve dirty/busy dismissal guards and preference writes. See [popup audit](../../docs/clubhouse/POPUP_AUDIT.md).
+
+## Clubhouse motion repair — 2026-10-06
+
+Desktop and phone Settings mount the requested section without waiting for an
+exit. One 260ms entrance remains normally; OS reduced motion and Animations
+off use zero duration, including validation/save feedback. Desktop fixture
+measurements and device verification limits are in
+[SMOOTHNESS_AUDIT](../../docs/clubhouse/SMOOTHNESS_AUDIT.md).
+
 ## Status
 
 - active
@@ -11,6 +25,14 @@ Settings is the role-aware configuration hub for account information, preference
 The per-category notification page is the player-scoped V3 notification authority. It excludes coach-only categories from the player matrix, rolls back failed optimistic saves, and shows a non-404 unavailable state when a coach without a player profile reaches the route.
 
 Some preferences are saved locally and not yet consumed globally, so agents should distinguish persisted UI preferences from behavior that is actually applied.
+
+The shared appearance store hydrates from localStorage after its first client
+mount, preserving the default server snapshot. Later consumers reuse that
+snapshot without invalidating existing consumers. Same-tab updates and changed
+localStorage events publish new preferences; clearing localStorage restores
+defaults. Events with unchanged values retain the existing snapshot identity.
+Clubhouse's reduced-motion hook consumes this store, so redundant notifications
+would otherwise affect controls throughout the Clubhouse tree.
 
 ## Primary Entry Points
 
@@ -83,3 +105,19 @@ Some preferences are saved locally and not yet consumed globally, so agents shou
 - `memory/context/golfhelm-features.md`
 - `memory/features/coach-intelligence-triage.md`
 - `docs/PUSH_NOTIFICATION_AUDIT.md`
+
+## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
+
+Behind the flag, `/golf/dashboard/settings` renders the Clubhouse Settings (`src/clubhouse/routes/settings.tsx`) for coaches and players: one page with a section rail (`?section=`), and `/settings/notifications` and `/settings/coaching-intelligence` open their section of it.
+- Loader: `src/clubhouse/data/settings.ts` reads everything server-side with a per-section error flag; a failed section never renders a blank, saveable form. It reads no-row defaults instead of creating rows on read; the CoachHelm philosophy row is created on the first save (`src/clubhouse/screens/settings/writes.ts`).
+- Writes keep the current tables and actions. Changes: deleting an account needs "delete" typed; a new invite code asks first; blank organization fields can be cleared.
+- `push_announcements` is now accepted and defaulted on by `updateNotificationPreferences` / `getNotificationPreferences` (it was stripped by the schema, so the switch saved nothing).
+- The philosophy row mapping moved to `src/lib/coachhelm/philosophy-map.ts` (shared by the hook and the loader).
+- Shown preferences are only those Clubhouse honours: animations (every Clubhouse transition) and haptics. Checklist: `docs/clubhouse/screens/settings.md`; decisions D-18, D-19 in `docs/clubhouse/PROGRESS.md`.
+
+## Clubhouse keyboard alternatives, October 6
+
+Phone priority reordering preserves its visible arrow-key handle and the
+Move up/down alternatives. Those alternatives reveal on keyboard focus instead
+of remaining inside a clipped one-pixel wrapper. Ordinary assistive labels and
+live-region hints remain hidden. See `docs/clubhouse/PREMIUM_AUDIT.md`.

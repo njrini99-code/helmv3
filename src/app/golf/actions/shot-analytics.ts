@@ -14,6 +14,7 @@ import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { isPuttMade, puttMakeStartFeet } from '@/lib/golf/putt-make';
 import {
   holeRates,
   MIN_ATTEMPTS_FOR_RULES,
@@ -189,7 +190,6 @@ interface ShotRow {
   shot_distance: number | null;
   miss_direction: string | null;
   result: string | null;
-  putt_distance_feet: number | null;
   putt_made: boolean | null;
 }
 
@@ -387,7 +387,7 @@ async function getPlayerShotAnalyticsImpl(
         id, round_id, hole_number, shot_number, shot_type, club_type,
         lie_before, distance_to_hole_before, distance_unit_before,
         distance_to_hole_after, distance_unit_after, shot_distance,
-        miss_direction, result, putt_distance_feet, putt_made
+        miss_direction, result, putt_made
       `)
       .in('round_id', roundIds)
       .order('id', { ascending: true })
@@ -662,9 +662,13 @@ async function getPlayerShotAnalyticsImpl(
 
     const puttShots = shots.filter(s => s.shot_type === 'putt' || s.shot_type === 'putting');
 
+    // The ONE putt make % definition (src/lib/golf/putt-make.ts, owner decision
+    // Q-93): start distance from distance_to_hole_before (feet, clamped, never
+    // unit-converted; no start distance = not banded), made = result 'hole' OR
+    // putt_made true. The three bands here are unions of its (lo, hi] bands.
     puttShots.forEach(p => {
-      const dist = p.putt_distance_feet ?? toFeet(p.distance_to_hole_before, p.distance_unit_before);
-      const made = p.putt_made ?? p.result === 'hole';
+      const dist = puttMakeStartFeet(p);
+      const made = isPuttMade(p);
       if (dist != null) {
         if (dist <= 5) {
           puttsByDistance.inside5ft.attempts++;
@@ -681,7 +685,7 @@ async function getPlayerShotAnalyticsImpl(
 
     // Putt miss tendencies from shots
     const puttMissTendencies = { low: 0, high: 0, short: 0 };
-    const missedPuttShots = puttShots.filter(p => (p.putt_made ?? p.result === 'hole') === false);
+    const missedPuttShots = puttShots.filter(p => !isPuttMade(p));
 
     missedPuttShots.forEach(p => {
       if (p.miss_direction) {

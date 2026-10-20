@@ -18,7 +18,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(join(process.cwd(), 'src/app/golf/actions/insights.ts'), 'utf8');
+// insights.ts was split by domain (plan phase 7a); this helper now lives in insights-coachhelm.ts.
+const source = readFileSync(join(process.cwd(), 'src/app/golf/actions/insights-coachhelm.ts'), 'utf8');
 
 function functionBody(name: string): string {
   const start = source.indexOf(`async function ${name}`);

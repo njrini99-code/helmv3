@@ -13,7 +13,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PlayerCoachHelmHome } from '../PlayerCoachHelmHome';
-import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
+import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights-shared';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),

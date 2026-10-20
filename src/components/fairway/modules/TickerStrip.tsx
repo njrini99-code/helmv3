@@ -15,7 +15,7 @@
  * the canonical 70ms one to stay inside the <600ms motion budget.
  * ========================================================================== */
 
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { clampPct } from './logic';

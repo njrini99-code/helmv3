@@ -137,18 +137,18 @@ vi.mock('@/lib/crm/automations-engine', () => ({
   })),
 }));
 
-const svix = vi.hoisted(() => ({
-  verify: vi.fn<(body: string, headers: Record<string, string>) => unknown>(),
-}));
-vi.mock('svix', () => ({
-  Webhook: class {
-    verify(body: string, headers: Record<string, string>) {
-      return svix.verify(body, headers);
-    }
-  },
-}));
-
+// svix is NOT mocked: every request below is signed with the real SDK's
+// Webhook#sign and verified by the route's real Webhook#verify. svix 2 made
+// verify() return undefined (the route parses the verified raw body itself),
+// and a mocked verify() that hands back the event would hide exactly that.
+import { Webhook } from 'svix';
 import { POST } from '../route';
+
+// Fake signing secret (base64 after the whsec_ prefix, as svix requires).
+const WEBHOOK_SECRET = `whsec_${Buffer.from('resend-route-test-secret-000000').toString('base64')}`;
+
+/** The event the next webhookRequest() delivers, signed. */
+let nextEvent: unknown = {};
 
 // --- helpers ----------------------------------------------------------------
 
@@ -180,15 +180,19 @@ function openEvent(latencyMs: number | null, recipient = 'christopher.jones@lr.e
   };
 }
 
-function webhookRequest() {
+function webhookRequest(opts: { signature?: string } = {}) {
+  const body = JSON.stringify(nextEvent);
+  const msgId = 'msg_test';
+  const now = new Date();
+  const signature = opts.signature ?? new Webhook(WEBHOOK_SECRET).sign(msgId, now, body);
   return new Request('http://localhost/api/webhooks/resend', {
     method: 'POST',
     headers: {
-      'svix-id': 'msg_test',
-      'svix-timestamp': '1750000000',
-      'svix-signature': 'v1,sig',
+      'svix-id': msgId,
+      'svix-timestamp': String(Math.floor(now.getTime() / 1000)),
+      'svix-signature': signature,
     },
-    body: '{}',
+    body,
   });
 }
 
@@ -212,7 +216,8 @@ describe('POST /api/webhooks/resend', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     calls = [];
-    process.env.RESEND_WEBHOOK_SECRET = 'whsec_test';
+    process.env.RESEND_WEBHOOK_SECRET = WEBHOOK_SECRET;
+    nextEvent = {};
 
     contactLogRow = null;
     // Stored with different casing than the mailbox reports it — 10 of the 96
@@ -226,7 +231,7 @@ describe('POST /api/webhooks/resend', () => {
 
   describe('#5 orphaned engagement events', () => {
     it('resolves the coach by recipient address when the contact log misses, and stamps coach_id on the event row', async () => {
-      svix.verify.mockReturnValue(openEvent(HUMAN_LATENCY_MS));
+      nextEvent = openEvent(HUMAN_LATENCY_MS);
 
       const res = await POST(webhookRequest());
       expect(res.status).toBe(200);
@@ -246,7 +251,7 @@ describe('POST /api/webhooks/resend', () => {
 
     it('leaves coach_id null and runs no automations when the address matches no coach', async () => {
       coachRows = [];
-      svix.verify.mockReturnValue(openEvent(HUMAN_LATENCY_MS, 'stranger@example.edu'));
+      nextEvent = openEvent(HUMAN_LATENCY_MS, 'stranger@example.edu');
 
       await POST(webhookRequest());
 
@@ -258,7 +263,7 @@ describe('POST /api/webhooks/resend', () => {
 
   describe('scanner prefetch must not manufacture a buying signal', () => {
     it('records a sub-2-minute open but refuses to promote the coach', async () => {
-      svix.verify.mockReturnValue(openEvent(SCANNER_LATENCY_MS));
+      nextEvent = openEvent(SCANNER_LATENCY_MS);
 
       await POST(webhookRequest());
 
@@ -275,7 +280,7 @@ describe('POST /api/webhooks/resend', () => {
       // blocklist cannot see this; latency can.
       event.data.open.userAgent =
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.7 Safari/537.36';
-      svix.verify.mockReturnValue(event);
+      nextEvent = event;
 
       await POST(webhookRequest());
 
@@ -286,7 +291,7 @@ describe('POST /api/webhooks/resend', () => {
   describe('webhook retry idempotency', () => {
     it('does not replay CRM automations or the activity mirror for a duplicate event', async () => {
       emailEventInserted = false;
-      svix.verify.mockReturnValue(openEvent(HUMAN_LATENCY_MS));
+      nextEvent = openEvent(HUMAN_LATENCY_MS);
 
       await POST(webhookRequest());
 
@@ -298,7 +303,7 @@ describe('POST /api/webhooks/resend', () => {
 
   describe('#6 stale crm_coaches mirror', () => {
     it('advances last_email_event_* for a coach the DB trigger cannot reach', async () => {
-      svix.verify.mockReturnValue(openEvent(HUMAN_LATENCY_MS));
+      nextEvent = openEvent(HUMAN_LATENCY_MS);
 
       await POST(webhookRequest());
 
@@ -313,7 +318,7 @@ describe('POST /api/webhooks/resend', () => {
 
     it('does NOT write the mirror when the contact log resolved the coach — that row belongs to the trigger', async () => {
       contactLogRow = { id: 'log-1', coach_id: 'coach-cj' };
-      svix.verify.mockReturnValue(openEvent(HUMAN_LATENCY_MS));
+      nextEvent = openEvent(HUMAN_LATENCY_MS);
 
       await POST(webhookRequest());
 
@@ -326,7 +331,7 @@ describe('POST /api/webhooks/resend', () => {
 
     it('respects the monotonic guard and skips an out-of-order event', async () => {
       existingMirrorAt = '2026-07-25T00:00:00.000Z'; // newer than EVENT_AT
-      svix.verify.mockReturnValue(openEvent(HUMAN_LATENCY_MS));
+      nextEvent = openEvent(HUMAN_LATENCY_MS);
 
       await POST(webhookRequest());
 
@@ -339,7 +344,7 @@ describe('POST /api/webhooks/resend', () => {
       // and gating it on countsAsHumanEngagement() would re-freeze it for
       // exactly the events that froze it originally. A status promotion, by
       // contrast, requires positive evidence of a human.
-      svix.verify.mockReturnValue(openEvent(null));
+      nextEvent = openEvent(null);
 
       await POST(webhookRequest());
 
@@ -352,11 +357,9 @@ describe('POST /api/webhooks/resend', () => {
 
   describe('preserved behaviour', () => {
     it('rejects an invalid signature with 401 and touches no table', async () => {
-      svix.verify.mockImplementation(() => {
-        throw new Error('No matching signature found');
-      });
+      nextEvent = openEvent(HUMAN_LATENCY_MS);
 
-      const res = await POST(webhookRequest());
+      const res = await POST(webhookRequest({ signature: 'v1,c2lnbmVkLWJ5LXNvbWVvbmUtZWxzZQ==' }));
 
       expect(res.status).toBe(401);
       expect(calls).toHaveLength(0);
@@ -366,11 +369,11 @@ describe('POST /api/webhooks/resend', () => {
       // Keep the automations out of this one so the assertions below are purely
       // about the hardwired deliverability path.
       automationRules = [];
-      svix.verify.mockReturnValue({
+      nextEvent = {
         type: 'email.bounced',
         created_at: EVENT_AT,
         data: { to: ['christopher.jones@lr.edu'], email_id: 'msg-2' },
-      });
+      };
 
       await POST(webhookRequest());
 

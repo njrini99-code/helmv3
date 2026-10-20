@@ -1,4 +1,5 @@
 import { describeError } from '@/lib/utils/describe-error';
+import { originPattern, originPatternFromUrl } from '@/lib/observability/trace-targets';
 // Datadog RUM (Real User Monitoring) and Browser Logs initialization
 // This runs on the client side to track user sessions, errors, and performance
 // SDKs are lazy-loaded to avoid blocking initial page render (~150KB savings)
@@ -32,6 +33,7 @@ export function initDatadog() {
   // NEXT_PUBLIC_VERCEL_ENV Next.js already inlines (see next.config.mjs)
   // for env detection instead of requiring a separate var.
   const site = process.env.NEXT_PUBLIC_DD_SITE || 'datadoghq.com';
+  const supabaseTraceTarget = originPatternFromUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const service = process.env.NEXT_PUBLIC_DD_SERVICE || 'helm-sports-labs';
   const env = process.env.NEXT_PUBLIC_DD_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development';
 
@@ -58,9 +60,23 @@ export function initDatadog() {
         trackResources: true,
         trackLongTasks: true,
         defaultPrivacyLevel: 'mask-user-input',
+        // Browser SDK v7 flipped these two defaults. Pin the v6 values so the
+        // upgrade does not change what we collect or send:
+        // - v7 defaults propagateTraceBaggage to true, adding a `baggage`
+        //   header to traced requests (Supabase is cross-origin, so that is a
+        //   new CORS-preflighted header). v6 never sent it.
+        // - v7 defaults enablePrivacyForActionName to true, masking click
+        //   action names per defaultPrivacyLevel. v6 collected them as-is.
+        propagateTraceBaggage: false,
+        enablePrivacyForActionName: false,
+        // Anchored patterns: Datadog matches a string as a prefix, and the old
+        // unanchored /https:\/\/.*\.supabase\.co/ matched any URL containing
+        // ".supabase.co", look-alike hosts included.
         allowedTracingUrls: [
-          { match: /https:\/\/.*\.supabase\.co/, propagatorTypes: ['tracecontext'] },
-          { match: window.location.origin, propagatorTypes: ['tracecontext'] },
+          ...(supabaseTraceTarget
+            ? [{ match: supabaseTraceTarget, propagatorTypes: ['tracecontext' as const] }]
+            : []),
+          { match: originPattern(window.location.origin), propagatorTypes: ['tracecontext'] },
         ],
       });
 
@@ -70,6 +86,9 @@ export function initDatadog() {
         service,
         env,
         forwardErrorsToLogs: true,
+        // Logs v7 decoupled forwardErrorsToLogs from console.error capture;
+        // v6 forwarded console.error as part of forwardErrorsToLogs.
+        forwardConsoleLogs: ['error'],
         sessionSampleRate: 100,
       });
     } catch (error) {

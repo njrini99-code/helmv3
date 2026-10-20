@@ -114,7 +114,7 @@ const { getTeamCoachHelmAccessMock, weightDistributorMock } = vi.hoisted(() => (
   weightDistributorMock: vi.fn(() => null),
 }));
 
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({
   getOrCreateTeamCoachHelmSettings: vi.fn(async () => ({
     success: true,
     settings: { id: 'settings-1', team_id: 'team-1', enabled: true },

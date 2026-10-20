@@ -1,0 +1,21 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Feature cards" subtitle="Round card with Out/In scorecard; deep-green event card" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Buttons</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-page)}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--type-caption);color:var(--text-tertiary);width:78px;flex:none}</style>
+</head><body class="fairway"><div id="root" style="padding:24px"></div>
+<script type="text/babel">
+const NS = window.FairwayClubhouseEdition_9c4f4d;
+
+const { RoundCard, EventCard, Badge, Button } = NS;
+const par=[4,5,3,4,4,3,4,5,4,4,4,3,5,4,4,3,4,5],sc=[4,4,3,5,4,2,4,5,4,3,4,3,4,4,5,3,4,4];
+function App(){return <div style={{display:'grid',gridTemplateColumns:'minmax(0,1.05fr) minmax(0,1fr)',gap:14,alignItems:'start'}}>
+<RoundCard course="Oakmont Country Club" meta="Sun 12 Oct · Member tees" badge={<Badge tone="positive" dot>Synced</Badge>} stats={[{label:'FIR',value:'10/14'},{label:'GIR',value:'13/18'},{label:'Putts',value:'28'}]} holes={par.map((p,i)=>({n:i+1,par:p,score:sc[i]}))} onOpen={()=>{}}/>
+<EventCard kicker="Thursday · Qualifier" countdown="In 2 days" title="Pinehurst No. 2" meta={[{icon:'map-pin',label:'Pinehurst, NC'},{icon:'flag',label:'Par 72 · 7,588 yds'}]} rows={[{time:'8:42',label:'Marchetti · Alvarez',people:['Theo Marchetti','Sofia Alvarez']},{time:'8:51',label:'Lindqvist · Natarajan',people:['Ava Lindqvist','Priya Natarajan']}]} actions={<><Button variant="primary" size="sm">Pairings</Button><Button size="sm">Travel</Button></>}/>
+</div>}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

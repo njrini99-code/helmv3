@@ -16,11 +16,25 @@
  *   - A band with 1-3 putts printed a make %. Below {@link LEAK_BUCKET_MIN_N}
  *     the value is withheld (null, `below_floor: true`); `sample_n` still
  *     reports what was there. Reported values carry a 95% interval.
+ *
+ * Owner decision Q-93 (2026-09-30): the putt make % has ONE definition, in
+ * `src/lib/golf/putt-make.ts`, shared with the stats calculator and Clubhouse:
+ * start distance = distance_to_hole_before (feet, clamped), made = result 'hole'
+ * OR putt_made true (a null putt_made on a holed putt is a make), no start
+ * distance = not banded, bands cut (lo, hi]. This module only maps the shared
+ * fine bands onto the six reporting bands below. The Tour reference is the only
+ * benchmark a bucket carries (no Division 1 value).
  */
 
 import { classifyParFiveLongApproach } from '@/lib/coachhelm/v3/metrics/layup-intent';
 import { tCritical95, wilsonInterval } from '@/lib/coachhelm/v3/stats/intervals';
 import { round } from '@/lib/golf/stat-formulas';
+import {
+  PUTT_REPORT_BAND_OF,
+  bandedPutt,
+  puttMakeBandFor,
+  type PuttMakeInput,
+} from '@/lib/golf/putt-make';
 import type { LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
 
 /** Minimum attempts before a bucket's value is shown. Same floor as the
@@ -28,7 +42,12 @@ import type { LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
  *  RPC's all-shot proximity floor (MIN_ATTEMPTS). */
 export const LEAK_BUCKET_MIN_N = 10;
 
-/** Putt-make% bands, low → high feet. The 0-3 ft band has no PGA standard. */
+/**
+ * Putt-make% reporting bands, low → high feet. The 0-3 ft band has no PGA
+ * standard. `min`/`max` describe each band (upper edge inclusive); the edges
+ * that actually bucket a putt live in `@/lib/golf/putt-make` (PUTT_MAKE_BANDS,
+ * PUTT_REPORT_BAND_OF), shared with the calculator.
+ */
 export const PUTT_BANDS: ReadonlyArray<{
   bucket_id: string;
   label: string;
@@ -67,13 +86,15 @@ const ON_GREEN_CEILING_FT = 150;
 
 export interface PgaRef {
   pga_tour_value: number | null;
-  div1_avg_value: number | null;
+  /**
+   * @deprecated Nothing reads it: the leak map is Tour-only. Kept optional so
+   * callers that still build `{ pga_tour_value, div1_avg_value: null }` compile.
+   */
+  div1_avg_value?: number | null;
 }
 
-export interface PuttShotRow {
-  putt_distance_feet: number | null;
-  putt_made: boolean | null;
-}
+/** A putting shot row for the make %: the shared definition's inputs. */
+export type PuttShotRow = PuttMakeInput;
 
 export interface ApproachShotRow {
   distance_to_hole_before: number | null;
@@ -99,17 +120,14 @@ function bandFor<T extends { min: number; max: number | null }>(
 }
 
 /**
- * Putt band for a distance in feet, UPPER-inclusive: "3-5 ft" is (3, 5], and
- * 0-3 ft takes everything up to 3. Same edges as the cache writer
+ * Putt reporting band for a distance in feet, UPPER-inclusive: "3-5 ft" is
+ * (3, 5], and 0-3 ft takes everything up to 3. Same edges as the cache writer
  * (`putt_make_pct_3_5ft`: feet > 3 AND feet <= 5) and the calculator's
- * `getPuttDistanceBucket`, which feed the Putting-by-distance table beside
- * this chart.
+ * `getPuttDistanceBucket` (one set of edges: `@/lib/golf/putt-make`).
  */
 export function puttBandFor(feet: number): (typeof PUTT_BANDS)[number] | null {
-  for (const band of PUTT_BANDS) {
-    if (band.max === null || feet <= band.max) return band;
-  }
-  return null;
+  const id = PUTT_REPORT_BAND_OF[puttMakeBandFor(feet)];
+  return PUTT_BANDS.find((band) => band.bucket_id === id) ?? null;
 }
 
 export function aggregatePuttBuckets(
@@ -119,14 +137,14 @@ export function aggregatePuttBuckets(
   const made = new Map<string, number>();
   const gradeable = new Map<string, number>();
   for (const row of rows) {
-    const ft = row.putt_distance_feet;
-    if (ft === null || Number.isNaN(ft)) continue;
-    const band = puttBandFor(ft);
-    if (!band) continue;
-    // Only rows with a known outcome count toward make% (null = ungraded).
-    if (row.putt_made === null) continue;
-    gradeable.set(band.bucket_id, (gradeable.get(band.bucket_id) ?? 0) + 1);
-    if (row.putt_made === true) made.set(band.bucket_id, (made.get(band.bucket_id) ?? 0) + 1);
+    // The shared definition: start distance from distance_to_hole_before (a putt
+    // with none is not banded), made = result 'hole' OR putt_made true. A putt
+    // with no holed signal is an attempt that missed, never a dropped row.
+    const banded = bandedPutt(row);
+    if (!banded) continue;
+    const bucketId = PUTT_REPORT_BAND_OF[banded.band];
+    gradeable.set(bucketId, (gradeable.get(bucketId) ?? 0) + 1);
+    if (banded.made) made.set(bucketId, (made.get(bucketId) ?? 0) + 1);
   }
   return PUTT_BANDS.map((band) => {
     const n = gradeable.get(band.bucket_id) ?? 0;
@@ -140,7 +158,6 @@ export function aggregatePuttBuckets(
       label: band.label,
       team_value: report ? round((100 * k) / n, 1) : null,
       pga_value: ref?.pga_tour_value ?? null,
-      div1_value: ref?.div1_avg_value ?? null,
       sample_n: n,
       min_n: LEAK_BUCKET_MIN_N,
       below_floor: n > 0 && !report,
@@ -209,7 +226,6 @@ export function aggregateApproachBuckets(
       label: band.label,
       team_value: mean,
       pga_value: ref?.pga_tour_value ?? null,
-      div1_value: ref?.div1_avg_value ?? null,
       sample_n: n,
       min_n: LEAK_BUCKET_MIN_N,
       below_floor: n > 0 && !report,

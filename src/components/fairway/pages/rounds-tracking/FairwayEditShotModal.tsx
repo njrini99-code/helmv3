@@ -25,80 +25,11 @@ import { PuttMissTagSelector } from '@/components/golf/putt-miss-tag-selector';
 import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import type { ShotRecord } from '@/lib/types/golf';
 import type { ShotAction, EditFormData } from '@/hooks/golf/use-shot-state-machine';
-import {
-  validateShot,
-  validateShotContinuity,
-  type RoundEntryIssue,
-  type ValidatableShot,
-} from '@/lib/golf/round-entry-validation';
+import type { RoundEntryIssue } from '@/lib/golf/round-entry-validation';
+import { editedShotIssues, type EditShotHoleContext } from '@/lib/golf/shot-entry-rules';
 
-/** The hole an edited shot belongs to — what the shared shot rules judge against. */
-export interface EditShotHoleContext {
-  holeNumber: number;
-  par: number;
-  yardage?: number | null;
-}
-
-/**
- * RE-S5: the edit modal saved whatever was typed — a negative distance, or a
- * shot that left the ball further away — with no check at all, while the live
- * entry panel ran the shared rules on the same shot. Run those rules here too:
- * malformed or negative distances block; the shared `confirm` rules (further
- * away than before, a shot that doesn't start where the last one finished, a
- * 400+ yd drive onto the green) ask once; the shared `block` rules block.
- */
-export function editedShotIssues(
-  form: EditFormData,
-  shot: ShotRecord,
-  hole?: EditShotHoleContext,
-  shotHistory?: readonly ShotRecord[],
-): RoundEntryIssue[] {
-  if (form.isPenalty || shot.isPenalty) return [];
-  const blockMsg = (message: string): RoundEntryIssue => ({
-    rule: 'distance_not_decreasing',
-    severity: 'block',
-    message,
-    holeNumber: hole?.holeNumber,
-    shotNumber: shot.shotNumber,
-  });
-  const before = Number.parseFloat(form.distanceToHoleBefore);
-  if (form.distanceToHoleBefore.trim() === '' || !Number.isFinite(before)) {
-    return [blockMsg('Enter the distance to the hole before this shot.')];
-  }
-  if (before < 0) return [blockMsg("The distance before the shot can't be negative.")];
-  const holed = form.result === 'hole';
-  const after = holed ? 0 : Number.parseFloat(form.distanceToHoleAfter);
-  if (!holed && (form.distanceToHoleAfter.trim() === '' || !Number.isFinite(after))) {
-    return [blockMsg('Enter the distance to the hole after this shot.')];
-  }
-  if (after < 0) return [blockMsg("The distance after the shot can't be negative.")];
-  if (!hole) return [];
-
-  const candidate: ValidatableShot = {
-    shotNumber: shot.shotNumber,
-    shotType: shot.shotType,
-    distanceToHoleBefore: before,
-    distanceUnitBefore: form.distanceUnitBefore,
-    result: form.result,
-    distanceToHoleAfter: after,
-    distanceUnitAfter: form.distanceUnitAfter,
-    isPenalty: form.isPenalty,
-    lieBefore: form.lieBefore,
-    missDirection: form.missDirection,
-    approachMissDirection: form.approachMissDirection,
-    puttMissTags: form.puttMissTags,
-  };
-  const issues = validateShot(candidate, hole);
-  if (shotHistory && shotHistory.length > 1) {
-    const chain = shotHistory.map((s) => (s.shotNumber === shot.shotNumber ? candidate : (s as ValidatableShot)));
-    issues.push(
-      ...validateShotContinuity(chain, hole).filter(
-        (i) => i.shotNumber === shot.shotNumber || i.shotNumber === shot.shotNumber + 1,
-      ),
-    );
-  }
-  return issues;
-}
+// The edit sheet's rules live with the shared shot rules (Clubhouse uses them too).
+export { editedShotIssues, type EditShotHoleContext } from '@/lib/golf/shot-entry-rules';
 
 interface FairwayEditShotModalProps {
   open: boolean;

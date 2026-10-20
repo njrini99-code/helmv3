@@ -1,0 +1,13 @@
+{
+  "package": "FAIRWAY_CLUBHOUSE_FOUNDATION_V2",
+  "purpose": "Repo-tailored organizational foundation for the from-scratch GolfHelm Clubhouse redesign.",
+  "critical_rules": [
+    "Fresh Clubhouse UI: no nesting old Fairway presentation.",
+    "Reuse shared non-UI plumbing deliberately.",
+    "memory/registry.yml remains semantic feature authority.",
+    "ui-intelligence remains route/UI atlas authority.",
+    "Migrations may be written but must not be applied.",
+    "New feature capabilities remain HELD until owner authorization.",
+    "Every page gets docs, a manifest, numbered contracts, wiring map, verification evidence, and stable Bridge namespace."
+  ]
+}

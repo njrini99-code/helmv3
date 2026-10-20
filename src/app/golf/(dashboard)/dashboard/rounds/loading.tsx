@@ -1,4 +1,6 @@
 import { fairwayScope } from '@/lib/redesign/flag';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { RoundsSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
@@ -41,7 +43,7 @@ import { Surface } from '@/components/fairway/surfaces/surface';
  *   gap-5">` wrapping `{grouped.map(...)}` (:641-704) — so consecutive
  *   Surfaces are 20px apart, not the outer container's 32px.
  */
-export default function Loading() {
+function FairwayRoundsLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -115,4 +117,9 @@ export default function Loading() {
       </div>
     </div>
   );
+}
+
+// Clubhouse Rounds (golf_clubhouse_ui) gets its own skeleton inside the Clubhouse shell.
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<RoundsSkeleton />} fallback={<FairwayRoundsLoading />} />;
 }

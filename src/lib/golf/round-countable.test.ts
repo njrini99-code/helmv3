@@ -184,4 +184,38 @@ describe('aggregateCountableRounds', () => {
     const rounds = [70, 71, 72].map((t, i) => ({ id: `r${i}`, round_date: '2026-09-01', ...full18(t) }));
     expect(aggregateCountableRounds(rounds).prior5Average).toBeNull();
   });
+
+  // Test rounds (golf_rounds.is_test = true, OD-03) are QA/demo data. A loader
+  // that selects the flag gets the exclusion here even when its SQL forgot the
+  // filter: a perfect-looking test round must not move any headline number.
+  describe('test rounds (is_test)', () => {
+    it('leaves a test round out of every per-round cache figure, without counting it as "excluded"', () => {
+      const rounds = [
+        { id: 'test', round_date: '2026-09-20', is_test: true, ...full18(60, 24) },
+        { id: 'a', round_date: '2026-09-10', is_test: false, ...full18(74, 32) },
+        { id: 'b', round_date: '2026-09-01', ...full18(78, 34) },
+      ];
+      const map = new Map([
+        ['test', stats('test', { total_putts: 24, birdies: 9, strokes_gained_total: 10 })],
+        ['a', stats('a', { total_putts: 32, birdies: 2, strokes_gained_total: 1 })],
+        ['b', stats('b', { total_putts: 34, birdies: 2, strokes_gained_total: -1 })],
+      ]);
+      const h = aggregateCountableRounds(rounds, map);
+
+      expect(h.roundsCounted).toBe(2);
+      expect(h.roundsExcluded).toBe(0);
+      expect(h.bestRound).toBe(74);
+      expect(h.scoringAverage).toBe(76);
+      expect(h.sg.total).toBe(0);
+      expect(h.sg.rounds).toBe(2);
+      expect(h.birdiesPer18).toBeCloseTo((4 / 36) * 18, 5);
+    });
+
+    it('reports a test round as its own exclusion reason', () => {
+      expect(roundExclusionReason({ ...full18(74), is_test: true })).toBe('test_round');
+      expect(isCountableRound({ ...full18(74), is_test: true })).toBe(false);
+      expect(isCountableRound({ ...full18(74), is_test: false })).toBe(true);
+      expect(isCountableRound({ ...full18(74), is_test: null })).toBe(true);
+    });
+  });
 });

@@ -30,7 +30,7 @@
 
 import { describeError } from '@/lib/utils/describe-error';
 import { useEffect, useState, useCallback, useTransition, useMemo } from 'react';
-import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PageLoading } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';

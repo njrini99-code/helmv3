@@ -110,6 +110,7 @@ vercel:
     - .momentic/
     - .dev-assets/
     - .dev-screenshots/
+    - .helm/                          # local screenshots and runtime telemetry
     - .codex/
     - .design-sync/
     - .ultracode/

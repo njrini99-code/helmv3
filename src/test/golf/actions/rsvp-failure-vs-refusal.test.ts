@@ -59,7 +59,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 async function rsvp() {
-  const { respondToEvent } = await import('@/app/golf/actions/golf');
+  const { respondToEvent } = await import('@/app/golf/actions/calendar-events');
   return respondToEvent('e1', 'accepted');
 }
 

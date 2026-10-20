@@ -7,7 +7,10 @@
  * recruit id). Coaches upload notes / schedules / transcripts / film and they're
  * organized per prospect. Files are coach-only (golf_recruit_documents has no
  * player RLS) and live in the private `recruit-documents` bucket; downloads go
- * through short-lived signed URLs via getRecruitDocumentUrl.
+ * through short-lived signed URLs via getRecruitDocumentUrl. Uploads go from
+ * the browser straight to Storage on a signed URL (./recruit-document-upload),
+ * never through a server action, so files over the platform's ~4.5 MB request
+ * limit still reach the bucket.
  */
 
 import * as React from 'react';
@@ -27,11 +30,14 @@ import { openExternalUrl, isNativeApp } from '@/lib/utils/capacitor';
 import { cn } from '@/lib/utils';
 import {
   getRecruitDocuments,
-  uploadRecruitDocument,
+  prepareRecruitDocumentUpload,
+  completeRecruitDocumentUpload,
   deleteRecruitDocument,
   getRecruitDocumentUrl,
   type RecruitDocument,
 } from '@/app/golf/actions/recruit-documents';
+import { createClient } from '@/lib/supabase/client';
+import { newUploadId, uploadRecruitDocumentDirect, type RecruitUploadIo } from './recruit-document-upload';
 import {
   RECRUIT_DOC_CATEGORIES,
   type RecruitDocCategory,
@@ -66,6 +72,13 @@ function stripExt(name: string): string {
   return i > 0 ? name.slice(0, i) : name;
 }
 
+const liveUploadIo: RecruitUploadIo = {
+  prepare: prepareRecruitDocumentUpload,
+  complete: completeRecruitDocumentUpload,
+  uploadToSignedUrl: (path, token, body) =>
+    createClient().storage.from('recruit-documents').uploadToSignedUrl(path, token, body),
+};
+
 function categoryMeta(category: string) {
   return CATEGORY_META[(category as RecruitDocCategory)] ?? CATEGORY_META.other;
 }
@@ -86,6 +99,9 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
   // Add-document staging
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = React.useState<File | null>(null);
+  // Names the stored object; made once per chosen file and kept across a retry,
+  // so a repeat after a lost answer never sends or records the file twice.
+  const uploadIdRef = React.useRef<string | null>(null);
   const [title, setTitle] = React.useState('');
   const [category, setCategory] = React.useState<RecruitDocCategory>('note');
   const [uploading, setUploading] = React.useState(false);
@@ -121,6 +137,7 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
     const file = e.target.files?.[0] ?? null;
     if (!file) return;
     setPendingFile(file);
+    uploadIdRef.current = newUploadId();
     setTitle(stripExt(file.name));
     setCategory('note');
     // allow re-picking the same file later
@@ -129,6 +146,7 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
 
   const cancelStaged = () => {
     setPendingFile(null);
+    uploadIdRef.current = null;
     setTitle('');
     setCategory('note');
   };
@@ -137,7 +155,8 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
     if (!pendingFile) return;
     setUploading(true);
     try {
-      const res = await uploadRecruitDocument(recruitId, pendingFile, { title, category });
+      const uploadId = uploadIdRef.current ?? (uploadIdRef.current = newUploadId());
+      const res = await uploadRecruitDocumentDirect(liveUploadIo, recruitId, pendingFile, { title, category }, uploadId);
       if (!res.success) throw new Error(res.error);
       fairwayToast.success('Uploaded', { description: `${title || pendingFile.name} was added.` });
       cancelStaged();

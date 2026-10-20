@@ -1,5 +1,7 @@
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { SettingsSkeleton } from '@/clubhouse/screens/settings/SettingsSkeleton';
 
 /**
  * Route Suspense fallback for /golf/dashboard/settings/notifications.
@@ -16,6 +18,11 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * smaller control.
  */
 export default function NotificationSettingsLoading() {
+  // Clubhouse opens this link as the Notifications section of Settings (CH-8401); the Fairway skeleton below is for everyone else.
+  return <ClubhouseSwitch clubhouse={<SettingsSkeleton />} fallback={<FairwayNotificationSettingsLoading />} />;
+}
+
+function FairwayNotificationSettingsLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div

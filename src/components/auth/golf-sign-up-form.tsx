@@ -81,12 +81,10 @@ export function GolfSignUpForm({
   /**
    * Which namespace the code that opened the gate came from.
    *
-   * 'roster'  — a team join_code, the ONE code a team gets. Both options are
-   *             offered here: Player, or Assistant coach. "Assistant coach"
-   *             joins THIS program immediately with full access — never
-   *             new-program onboarding, which is what minted a phantom
-   *             duplicate for the assistants who picked Coach (UNCW
-   *             2026-08-18, Shenandoah 2026-08-19).
+   * 'roster'  — a team join_code, shared with the whole roster. It signs up
+   *             players only (owner decision 2026-09-30; the server refuses
+   *             any other role), so no picker is shown. Assistants use a
+   *             staff invite code.
    * 'staff'   — a head-coach-minted staff code. The role lives in the signed
    *             token and `signupAction` redeems it, so there is nothing to
    *             pick; showing a picker only invites the wrong choice.
@@ -112,28 +110,13 @@ export function GolfSignUpForm({
    *   player-specific graduation-year requirement is skipped — an assistant
    *   coach does not have one. The server ignores this value entirely.
    */
-  const showRolePicker = !staffInvite;
+  const showRolePicker = !staffInvite && !rosterCodeOnly;
 
-  /*
-   * The second option MEANS something different on the two paths, which is why
-   * it is derived rather than stored.
-   *
-   *   roster  → 'assistant_request'. Joins THIS program as an assistant
-   *             immediately, with full access, and never runs new-program
-   *             onboarding. There is no approval step: holding the code IS the
-   *             authorization (owner decision 2026-08-20). Deriving it also means a visitor who picked Coach
-   *             before typing a team code cannot be left holding 'coach' once
-   *             the scope resolves — the exact mismatch that sent Shenandoah's
-   *             assistant into school-details onboarding.
-   *   generic → 'coach', the original new-program path. The owner stands head
-   *             coaches up by hand, so this is effectively their door only.
-   */
-  const isCoachChoice = role === 'coach' || role === 'assistant_request';
-  const effectiveRole: Role = staffInvite
-    ? 'coach'
-    : isCoachChoice
-      ? (rosterCodeOnly ? 'assistant_request' : 'coach')
-      : 'player';
+  // staff  → treated as 'coach' locally only to skip the graduation year; the
+  //          server takes the role from the signed invite, not from this.
+  // roster → always 'player'; the server refuses anything else.
+  const effectiveRole: Role = staffInvite ? 'coach' : rosterCodeOnly ? 'player' : role;
+  const isCoachChoice = role === 'coach';
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -225,11 +208,9 @@ export function GolfSignUpForm({
         result.redirectTo ||
         (effectiveRole === 'player' && code
           ? `/golf/player?joinCode=${encodeURIComponent(code)}`
-          : effectiveRole === 'assistant_request'
-            ? '/golf/coach/pending'
-            : effectiveRole === 'coach'
-              ? '/golf/coach'
-              : '/golf/player');
+          : effectiveRole === 'coach'
+            ? '/golf/coach'
+            : '/golf/player');
       router.push(onboardingPath);
     } catch (err) {
       setError(getSignupErrorMessage(err instanceof Error ? err.message : 'Signup failed'));
@@ -296,7 +277,7 @@ export function GolfSignUpForm({
 
             <Button variant="ghost"
               type="button"
-              onClick={() => setRole(rosterCodeOnly ? 'assistant_request' : 'coach')}
+              onClick={() => setRole('coach')}
               aria-pressed={isCoachChoice}
               className={`
                 p-4 rounded-md border-2 transition-colors
@@ -309,7 +290,7 @@ export function GolfSignUpForm({
             >
               <Users className={`w-6 h-6 ${isCoachChoice ? 'text-primary-600' : 'text-text-tertiary'}`} />
               <span className={`text-sm font-medium ${isCoachChoice ? 'text-primary-600' : 'text-text-secondary'}`}>
-                {rosterCodeOnly ? 'Assistant coach' : 'Coach'}
+                Coach
               </span>
             </Button>
           </div>
@@ -318,7 +299,7 @@ export function GolfSignUpForm({
 
       {/* NO explanatory box under the role picker — owner directive 2026-08-20
           ("There should be no fuckin words"). The picker labels carry the whole
-          meaning: you pick Player or Assistant coach and you're on the team. */}
+          meaning. A team code shows no picker at all: it is for players. */}
 
       {staffInvite && (
         <p className="text-sm text-text-secondary bg-surface border border-border-subtle rounded-xl p-3">

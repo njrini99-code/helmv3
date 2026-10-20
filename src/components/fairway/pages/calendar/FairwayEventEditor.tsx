@@ -31,7 +31,7 @@ import {
 } from '@/components/golf/calendar/event-form-helpers';
 import { parseRecurrenceRule, describeRecurrenceRule } from '@/lib/golf/recurrence';
 import { localDayIso } from '@/lib/golf/local-day';
-import { getValidTimezone } from '@/lib/calendar/timezone';
+import { getValidTimezone, zonedWallClock } from '@/lib/calendar/timezone';
 import type { TeamPlayer } from './editor/types';
 import type { PeoplePickerPerson } from './people/CalendarPeoplePicker';
 import { EventEssentialsFields } from './editor/EventEssentialsFields';
@@ -440,20 +440,23 @@ export function FairwayEventEditor({
       const endDateTime = event.end_date || '';
       let startDate = getTodayDate();
       let startTime: string | null = null;
+      // In the TEAM's zone, the zone the editor labels and the save converts from (FairwayCalendar.handleSaveEvent):
+      // the device's own getters were off by the zone difference for a coach away from home, and the save then moved
+      // the event by that much on every edit.
       if (startDateTime) {
-        const startD = new Date(startDateTime);
-        if (!Number.isNaN(startD.getTime())) {
-          startDate = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, '0')}-${String(startD.getDate()).padStart(2, '0')}`;
-          startTime = `${String(startD.getHours()).padStart(2, '0')}:${String(startD.getMinutes()).padStart(2, '0')}`;
+        const start = zonedWallClock(startDateTime, timezone);
+        if (start) {
+          startDate = start.date;
+          startTime = start.time;
         }
       }
       let endDate: string | null = null;
       let endTime: string | null = null;
       if (endDateTime) {
-        const endD = new Date(endDateTime);
-        if (!Number.isNaN(endD.getTime())) {
-          endDate = `${endD.getFullYear()}-${String(endD.getMonth() + 1).padStart(2, '0')}-${String(endD.getDate()).padStart(2, '0')}`;
-          endTime = `${String(endD.getHours()).padStart(2, '0')}:${String(endD.getMinutes()).padStart(2, '0')}`;
+        const end = zonedWallClock(endDateTime, timezone);
+        if (end) {
+          endDate = end.date;
+          endTime = end.time;
         }
       }
       // Convert to the user's LOCAL wall-clock for the datetime-local input
@@ -501,7 +504,7 @@ export function FairwayEventEditor({
     setPendingCancelConfirm(false);
     setPendingHardDeleteConfirm(false);
     setConflicts(null);
-  }, [open, event, isCreating]);
+  }, [open, event, isCreating, timezone]);
 
   // Hydrate the attendee selection from the event's EXISTING attendance rows
   // (audit #4 — the edit form used to seed attendeeIds:[] and the save path
@@ -519,7 +522,7 @@ export function FairwayEventEditor({
     setExistingAttendeeIds(null);
     (async () => {
       try {
-        const { getEventRSVP } = await import('@/app/golf/actions/golf');
+        const { getEventRSVP } = await import('@/app/golf/actions/calendar-events');
         const result = await getEventRSVP(event.id);
         if (cancelled) return;
         if (result.success && result.data) {
@@ -617,7 +620,7 @@ export function FairwayEventEditor({
     setConflictStatus('checking');
     async function check() {
       try {
-        const { checkScheduleConflicts } = await import('@/app/golf/actions/golf');
+        const { checkScheduleConflicts } = await import('@/app/golf/actions/calendar-events');
         const result = await checkScheduleConflicts(
           formData.startDate,
           formData.allDay ? '00:00' : formData.startTime!,

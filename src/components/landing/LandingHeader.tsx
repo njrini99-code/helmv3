@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { getMarketingScroller } from '@/lib/motion/gsap/scroller-handle';
@@ -53,6 +53,14 @@ interface LandingHeaderProps {
 export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Log in is the page's way in for everyone who has an account: asked for as the page loads, so the tap shows the
+  // sign-in at once. Left to the links' own prefetch it came after three of the page's own links, and the tap waited on
+  // the server and the sign-in's code (owner, 2026-10-16: "the transition to the log in page isn't great").
+  const router = useRouter();
+  useEffect(() => {
+    router.prefetch('/golf/login');
+  }, [router]);
 
   // Escape, outside-click and scroll lock — the open sheet had none of the
   // three (audit 2026-07-24, L-10). It could only be closed by hitting the

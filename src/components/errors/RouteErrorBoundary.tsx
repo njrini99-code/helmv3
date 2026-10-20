@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { startTransition, useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   logError,
@@ -10,6 +11,8 @@ import {
   STALE_ACTION_RELOAD_KEY,
 } from '@/lib/error-logging';
 import { getRecovery, requestRecovery } from '@/lib/recovery/client';
+import { useInClubhouse } from '@/clubhouse/shell/context';
+import { RouteErrorView } from '@/clubhouse/ui/Notices';
 
 interface RouteErrorBoundaryProps {
   error: Error & { digest?: string };
@@ -126,6 +129,7 @@ export function RouteErrorBoundary({
 }: RouteErrorBoundaryProps) {
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const inClubhouse = useInClubhouse();
 
   const isChunk = isChunkLoadError(error);
   const isStaleAction = isStaleServerActionError(error);
@@ -149,17 +153,24 @@ export function RouteErrorBoundary({
     }
   }, [isChunk, isStaleAction, error]);
 
+  const router = useRouter();
   const handleRetry = useCallback(async () => {
     setIsRetrying(true);
     // Small delay before retry
     await new Promise(resolve => setTimeout(resolve, 1000));
     setRetryCount(prev => prev + 1);
     try {
-      reset();
+      // Re-read the route on the server, then clear the boundary, in one transition: what Next's own `retry` does.
+      // `reset()` alone redraws the payload that failed, so a server-thrown read never got another try (PAGE_PERFORMANCE.md
+      // rule 4: a first-load error offers a retry that retries).
+      startTransition(() => {
+        router.refresh();
+        reset();
+      });
     } finally {
       setIsRetrying(false);
     }
-  }, [reset]);
+  }, [reset, router]);
 
   useEffect(() => {
     // Log error to monitoring service
@@ -266,6 +277,23 @@ export function RouteErrorBoundary({
   };
 
   const defaultMessage = getDefaultMessage();
+
+  // Inside the Clubhouse shell: same classification, logging and recovery
+  // above, Clubhouse's own view and voice below.
+  if (inClubhouse) {
+    return (
+      <RouteErrorView
+        kind={isChunk ? 'chunk' : isStaleAction ? 'stale-action' : isTransient ? 'transient' : isGenericLoad ? 'load' : 'unknown'}
+        isRetrying={isRetrying}
+        retryCount={retryCount}
+        onRetry={handleRetry}
+        homePath={showHomeButton ? homePath : undefined}
+        route={route}
+        digest={error.digest}
+        devDetail={process.env.NODE_ENV === 'development' ? `${error.message}${error.stack ? `\n\n${error.stack}` : ''}` : undefined}
+      />
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-canvas flex items-center justify-center p-6 font-fw-sans">
@@ -380,6 +408,12 @@ export function CompactRouteErrorBoundary({
       digest: error.digest,
     }, 'medium');
   }, [error, route, component]);
+  const router = useRouter();
+  // Re-read on the server, then clear the boundary (Next's own `retry`); `reset()` alone redraws the failed payload.
+  const retry = () => startTransition(() => {
+    router.refresh();
+    reset();
+  });
 
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center font-fw-sans">
@@ -423,7 +457,7 @@ export function CompactRouteErrorBoundary({
         <Button variant="secondary" onClick={() => window.location.reload()}>
           Refresh Page
         </Button>
-        <Button variant="primary" onClick={reset}>
+        <Button variant="primary" onClick={retry}>
           Try Again
         </Button>
       </div>

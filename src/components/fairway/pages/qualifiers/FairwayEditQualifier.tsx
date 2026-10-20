@@ -41,7 +41,7 @@ import {
   updateGolfQualifierDetails,
   setQualifierRoundCourses,
   type QualifierRoundCourse,
-} from '@/app/golf/actions/golf';
+} from '@/app/golf/actions/qualifier-actions';
 // Reuse the SAME cloud course catalog picker the create flow uses.
 import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/FairwayCoursePicker';
 
@@ -90,8 +90,9 @@ export function FairwayEditQualifier({
 
   // Feature G — number of rounds + the course assigned to each.
   const [numRounds, setNumRounds] = useState<number | null>(initial.numRounds);
+  // A cleared round is stored as an empty row; it reads as no course.
   const [roundCourses, setRoundCourses] = useState<RoundCourseDraft[]>(
-    initialRoundCourses.map((rc) => ({
+    initialRoundCourses.filter((rc) => rc.courseName || rc.courseId).map((rc) => ({
       roundNumber: rc.roundNumber,
       courseId: rc.courseId,
       courseName: rc.courseName,
@@ -185,15 +186,25 @@ export function FairwayEditQualifier({
       const coursesResult = await setQualifierRoundCourses(
         qualifierId,
         rounds,
+        // The action keeps any stored round it is not sent, so a cleared
+        // round goes as an empty row, but only when it had a course to
+        // clear (the rule Clubhouse's form sends).
         isMultiRound
-          ? roundCourses
-              .filter((rc) => rc.roundNumber <= rounds)
-              .map((rc) => ({
-                roundNumber: rc.roundNumber,
-                courseId: rc.courseId,
-                courseName: rc.courseName,
-                teeId: rc.teeId,
-              }))
+          ? Array.from({ length: rounds }, (_, i) => i + 1)
+              .filter(
+                (roundNumber) =>
+                  courseFor(roundNumber) ||
+                  initialRoundCourses.some((rc) => rc.roundNumber === roundNumber),
+              )
+              .map((roundNumber) => {
+                const rc = courseFor(roundNumber);
+                return {
+                  roundNumber,
+                  courseId: rc?.courseId ?? null,
+                  courseName: rc?.courseName ?? null,
+                  teeId: rc?.teeId ?? null,
+                };
+              })
           : [],
       );
 

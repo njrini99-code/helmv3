@@ -1,0 +1,15 @@
+# typos (https://github.com/crate-ci/typos) allowlist: golf, product and code
+# terms that are spelled this way on purpose. Add a word only when it is a
+# real term here, never to hide a genuine misspelling.
+[default.extend-words]
+gir = "gir"            # greens in regulation
+mis = "mis"            # mis-hit
+womens = "womens"      # team gender value stored in the database
+wdth = "wdth"          # variable-font width axis
+nd = "nd"              # ordinal suffix (2nd)
+opps = "opps"          # opportunities (stats)
+ba = "ba"              # batting average
+strat = "strat"        # strategy shorthand in identifiers
+uncomplete = "uncomplete"  # action name (mark a task not complete)
+unparseable = "unparseable"
+flate = "flate"        # fflate compression API

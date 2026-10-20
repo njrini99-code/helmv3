@@ -65,8 +65,8 @@ export function formatCourseName(name: string): string {
  *
  * #163 root-cause note (round 2): a plain 404 on the uploaded tier was ALREADY
  * handled correctly by the onError cascade above (verified — the storage bucket
- * is genuinely public, `next.config.mjs` allowlists `**.supabase.co` under
- * `images.remotePatterns`, and every bundled default/real asset resolves to a
+ * is genuinely public, `next.config.mjs` allowlists the project's public storage
+ * host under `images.remotePatterns`, and every bundled default/real asset resolves to a
  * committed file, so a dead *well-formed* URL degrades cleanly and was already
  * covered by a regression test). The gap `isLoadableImageUrl` closes is a
  * DIFFERENT failure mode that the onError cascade can never catch: `imageUrl`

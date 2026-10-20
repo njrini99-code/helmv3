@@ -14,6 +14,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 import { resolve } from 'path';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/seed-admin-events.ts',
+  summary:
+    "Inserts sample rows into admin_events on the project in .env.local so the admin events view has data.",
+  secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)",
+});
 
 // Load .env.local first, then .env as fallback
 config({ path: resolve(process.cwd(), '.env.local') });
@@ -31,9 +39,9 @@ if (!supabaseUrl || !serviceRoleKey) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, serviceRoleKey, {
+const supabase = dryRunClient(createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
-});
+}), cli);
 
 // ============================================
 // HELPERS

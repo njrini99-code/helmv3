@@ -37,7 +37,7 @@ import { useLargeTitle } from '@/components/fairway/app-shell/LargeTitleContext'
 import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import type { Row } from '@tanstack/react-table';
+import type { Row } from '@/components/fairway/data-table';
 import {
   ViewHeader,
   Surface,
@@ -1351,7 +1351,8 @@ function TodayPanel({
                           <span className="truncate">{event.location}</span>
                         </span>
                       ) : null}
-                      {event.rsvp_total !== undefined ? (
+                      {/* Only an event that asks for replies carries counts (dashboard-data); none invited reads as nothing, never 0/0. */}
+                      {event.rsvp_total !== undefined && event.rsvp_total > 0 ? (
                         <span className="tabular-nums">
                           {event.rsvp_yes ?? 0}/{event.rsvp_total} confirmed
                         </span>

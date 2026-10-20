@@ -31,7 +31,7 @@ import 'server-only';
  * GOAL PROGRESS
  * ----------------------------------------------------------------------------
  * The pure `evaluateGoal` core has always existed but was NEVER RUN in a live
- * system: no Inngest function, no cron, no post-round hook called it. So every
+ * system: no cron, no post-round hook called it. So every
  * goal sat frozen at `current_value === baseline_value` with an empty
  * `snapshots[]` — the progress bar could never move and outcomes never resolved.
  *
@@ -513,6 +513,8 @@ async function loadWindowRoundsByPlayer(
         .select('id, player_id, round_date')
         .in('player_id', batch)
         .eq('status', 'completed')
+        // Test rounds (QA/demo data, OD-03) never advance a player's focus area.
+        .eq('is_test', false)
         .gte('round_date', sinceDate)
         .order('id', { ascending: true })
         .range(from, to),

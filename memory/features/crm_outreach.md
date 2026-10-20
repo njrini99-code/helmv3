@@ -42,8 +42,9 @@ the "tabs" are client state plus `history.replaceState` (`?tab=`, `?outreach=`,
 
 Sending is **human-triggered by design.** The sequence-processing route is fully
 wired but deliberately absent from `vercel.json`, so nothing sends on a
-schedule; an operator runs `scripts/process-sequence-batch.mjs` to send the next
-batch. Enabling automation is a one-line `vercel.json` addition — treat that as
+schedule; an operator runs `scripts/process-sequence-batch.mjs [N] --apply` to
+send the next batch (without `--apply` it is a dry run that lists who would be
+emailed and writes nothing). Enabling automation is a one-line `vercel.json` addition — treat that as
 a product decision, not a config tidy-up.
 
 ## Primary Entry Points
@@ -85,7 +86,10 @@ that break the naming convention and are easy to miss:
 - `src/app/api/crm/google-calendar/{auth,callback,sync}/route.ts`
 - `src/app/api/crm/unsubscribe/route.ts` — RFC 8058 one-click unsubscribe
 - `src/app/api/webhooks/resend/route.ts` — outbound events, svix-verified
-- `src/app/api/webhooks/resend-inbound/route.ts` — inbound replies
+- `src/app/api/webhooks/resend-inbound/route.ts` — inbound replies, svix-verified
+  (both: bad/stale signature → 401; signed body that is not a JSON object →
+  400. svix 2 `verify()` returns nothing, so the routes parse the verified raw
+  body; contract test `resend/__tests__/signature-verification.test.ts`)
 - `src/app/api/cron/{process-sequences,ingest-gmail-replies,refresh-engagement}/route.ts`
   — all `Bearer ${CRON_SECRET}` via `requireCronAuth`
 
@@ -125,8 +129,7 @@ reads it), `background_job_logs`.
   deliberately disabled
 - **DNS TXT** — SPF/DKIM/DMARC self-check (`src/lib/crm/domain-auth-check.ts`)
 
-Cron is **Vercel Cron, not Inngest** — this feature registers no Inngest
-functions.
+Background work is **Vercel Cron** only.
 
 ## Known Risk Areas
 

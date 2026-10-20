@@ -45,7 +45,7 @@
 
 import { useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'motion/react';
 
 import {
   Eyebrow,

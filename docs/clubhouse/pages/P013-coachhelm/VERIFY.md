@@ -1,0 +1,569 @@
+# P013 — CoachHelm: verification
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Streaming follow-scroll is scheduled once per browser frame and canceled
+when superseded. It rechecks reader position and scrolls instantly. Sending
+uses instant scrolling with reduced motion and smooth scrolling otherwise.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current release evidence — 2026-10-06
+
+Coach/player boards, streaming Ask, history drawer and proposed focus.
+
+Profile render and scroll work during streaming; check drawer focus, player
+context and proposal feedback.
+
+Fresh WebKit 26.6: `/clubhouse-preview/coachhelm` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 20
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p013-coachhelm). Current status remains
+partial. Physical Safari/iPhone, VoiceOver and durable authenticated writes
+remain separate acceptance checks. Earlier verification status and gap
+sections below are historical observations; use the current audit for release
+scope.
+<!-- clubhouse:release-audit:end -->
+
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/coachhelm.md`. Results marked "as reported
+by the lead" are the lead's entry in `PROGRESS.md` (2026-09-30), not something
+re-run when this file was written.
+
+## Historical verification status
+
+```text
+Status:     partial
+Commit/PR:  agent/clubhouse, 8476314a7 (the build); these docs were written
+            afterwards and not yet committed
+Date:       2026-09-30
+```
+
+## Static checks
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Typecheck | `npm run -s typecheck:fast` | not run in this pass (docs only); no result is recorded for it in PROGRESS.md |
+| Lint | `npx eslint` on the changed files | not run in this pass; no result is recorded for it in PROGRESS.md |
+| Clubhouse check | `npm run -s clubhouse:check` | `npm run -s clubhouse:check` exit 1 in the docs pass (its own 34 unit tests pass, 0 fail): 86 violations, all pending the lead's merge of the sidecar and `registry.mjs sync`. 81 say CONTRACT.md or an action names a Bridge ID that is not in `bridge-contracts.json` yet (40 for P012, 41 for P013: the hand contracts and the IDs the actions use), and 5 say a generated file is stale (`CLUBHOUSE_PAGE_MAP.md`, `CLUBHOUSE_ACTION_MAP.md`, `CLUBHOUSE_STATUS.md` and the two CONTRACT.md tables, which `sync` writes). No other rule fired. |
+| Registry and contract check | a read-only simulation of `checkRegistry` with the 28 hand contracts merged in memory and CONTRACT.md rendered from the registry (a throwaway script; nothing written to `bridge-contracts.json`) | 0 violations with both pages' 57 hand contracts merged in memory (29 for P012, 28 for P013) and CONTRACT.md rendered from the registry, which is what `sync` writes; sidecar hygiene problems: 0. `bridge-contracts.json` was not touched |
+| Knowledge check | `npm run -s docs:check` | not run |
+| Build | `npm run build` | not run: no `'use server'` file changed (the page calls existing server actions, and the loaders and screens are server-only and client modules) |
+
+## Automated tests
+
+| Test | Contract | Result |
+| --- | --- | --- |
+| `src/clubhouse/__tests__/coachhelm.test.tsx` (112 cases) | every catalog row of kinds 0 to 5 that is not preview (CH-13001 to CH-13901) named in a test title, and the hand contracts listed below | pass: `npx vitest run src/clubhouse/__tests__/coachhelm.test.tsx` exit 0, 112/112, run when this file was written. Mutation checks (about 160, all caught after a second pass; the `?view=` guard 3 of 3) as reported by the lead |
+
+The hand contracts are all `reserved` in the registry: none of the test titles
+carries a Bridge ID yet, and the registry marks a hand contract `implemented`
+only when its test file names the ID. What the file covers today:
+
+| Contract | Covered | Test (a leading phrase of its title) | What the tests do not show |
+| --- | --- | --- | --- |
+| 130101 coachhelm opens for the role | yes | “CH-13801 one focus: the page is labelled by its title”; “CH13-4 the header counts the players with an open signal, never the rows behind them; the pulse lists what the program needs”; “by player: each with their top signal and how many they have”; “a coach gets their board for the team the shell resolved; a player gets their own” |  |
+| 130102 the focus is the top insight that is not working | yes | “the focus is the top-ranked insight that is not working”; “a picked insight is the focus and leaves the lists”; “with only strengths there is no focus and they are all listed as working”; “the lists and the pulse are capped: five to look at, five working, six pulse rows”; “CH-13701 CH-13803 choosing another insight puts it in the focus card” |  |
+| 130103 players are ordered most pressing first | yes | “players: the most pressing top insight first, then the most signals, then the name; a strength last”; “a player whose top insight is a strength comes last, even when that insight’s own priority is high”; “by player: each with their top signal and how many they have”; “CH-13701 choosing a player shows their focus, with the selection haptic” |  |
+| 130104 the Fairway drills' addresses land on a screen that exists | partly | “CH-1301 no CoachHelm address says "hasn’t been rebuilt yet" any more: ?view=deep-dive is the Deep dive (coachhelm-dive.test), ?view=insights is the board”; “?view=development (every stored dev-plan notification) lands on Stats Development, not a placeholder”; for each of profile, standing and deep-dive in `coachhelm-views.test.tsx`: “reads for the session’s player and nobody else, whatever the address says”, “CH-13304 CoachHelm off”, “a gate lookup that failed is the view’s own did-not-load”, “a coach is a coach here” | A coach following `?view=development` is not run (the redirect is before the session, read in the code). |
+| 130105 open signals follow dismissals | yes | “CH-13703 CH-13901 Dismiss: the warning comes first, then the write”; “Undo brings it back: the write restores the state it had, and the focus card returns”; “dismissing a player’s last signal takes them out of the count of players as well as of signals” (Priya, whose top card is an open finding); “CH13-4 the subtitle counts the players the board has a current finding for, in the singular when it is one” |  |
+| 130106 insights are generator output only | yes | “the downhill penalty: two make rates as bars, no gauge”; “the lede is the first sentence and the reasoning the rest”; “a lifetime value says All rounds and counts rounds; a count keeps its decimal”; “the generator’s placeholder recommended action is not shown as a drill”; “ahead of the cohort at low priority is working, and its gauge is the green one”; “a value with no comparison draws no gauge and still names its sample”; “a break gap is a finding” |  |
+| 130204 the route skeleton takes the roles shape | yes | “the route’s skeleton takes the signed-in role’s shape, and the player’s until it is known”; “the loading file is the Clubhouse skeleton inside Clubhouse, and Fairway’s everywhere else” |  |
+| 130411 a failed read is never drawn as empty | yes | “CH-13201 an empty feed with insights on file is the feed having failed”; “CH-13201 an empty feed whose visible read fails is an error, and so is a failed feedback read”; “an empty feed where the player dismissed every insight themselves is not a failure”; “an insight the player un-dismissed, or a row the feed could not draw”; “CH-13202 heads that come back empty while insights are on file are the read having failed”; “CH-13202 a failed visible read is an error, logged”; “CH-13202 a failed roster read is an error (never an empty team), and the pulse still loads” |  |
+| 130608 a failed gate lookup is a failed read not off | partly | “CH-13201 a failed gate lookup is a failed read, not "off"”; “CH-13202 a failed gate lookup is a failed read, not "off"” | The loaders’ results are tested; what the coach’s board then draws (the empty pulse line beside the CH-13202 notice) and the logging of the gate failure are not. |
+| 130702 writes refuse offline | partly | “writes refuse offline: nothing is sent and the coach is told, with Retry” | Only Assign is forced offline; Dismiss and Undo go through the same useAction and are not. |
+| 130801 controls follow the role | yes | “CH-13801 one focus: the page is labelled by its title”; “a coach gets their board for the team the shell resolved; a player gets their own”; “Share with the player has no action behind it” |  |
+| 130802 a coach reads only the teams active players | yes | “the team’s players only, each with their top insight and how many signals they have”; “a coach gets their board for the team the shell resolved; a player gets their own”; “CH-13308 a coach with no team gets a first-run page, not an error or a redirect”; “CH-13308 a coach session whose resolved team is not a coach team is never handed a team’s players” | That the pulse and this page resolve the same team is not tested. |
+| 130803 a player reads only their own insights | yes | “a player needs no team: their insights are their own”; “a coach gets their board for the team the shell resolved; a player gets their own”; “CH-13301 CH-13302 a real first run counts the countable rounds posted” | What the delivery action itself scopes on the server is not tested here. |
+| 130804 server actions are the gate | no | — | Read, not run: no test forces a server refusal. |
+| 130805 the page gives clubhouse only behind the flag | yes | “the page gives a Clubhouse coach or player the new screen, and Fairway’s page is unchanged everywhere else” |  |
+| 130806 assign is offered only for a finding not yet made | yes | “a top insight that is working can be assigned as a keep-doing focus, as the board draws it on Theo (Q-80), or dismissed”; “CH-13601 an insight that already has a focus made from it opens assigned, still waiting on the player”; “only focus areas that still stand count”; “a failed focus-area read leaves Assign available and is logged”; “a focus area already made from the top insight, and the drill’s description, come with it” |  |
+| 130901 change landed | yes | “CH-13702 CH-13403 Assign as focus”; “CH-13703 CH-13901 Dismiss: the warning comes first, then the write”; “Undo brings it back: the write restores the state it had, and the focus card returns” | The absence of a toast is asserted for Assign only; Dismiss and Undo pass an empty done message (read in the code). |
+| 130902 assign makes a proposal the player accepts | yes | “CH-13702 CH-13403 Assign as focus”; “CH-13601 an insight that already has a focus made from it opens assigned, still waiting on the player”; “the live writes are the actions the Fairway Brief uses, unchanged” |  |
+| 130903 an existing active focus is the outcome wanted | yes | “a player who already has an active focus on the metric is the outcome wanted” |  |
+| 131201 this visits changes stay while the page is open | partly | “CH-13702 CH-13403 Assign as focus” | Only the chip surviving a change of player is asserted; the dismissed notice surviving one, and a reload, are read in the code. |
+| 131401 retry finishes the job | yes | “CH-13001 a failed assign says so and keeps the button; Retry that works finishes it, chip included”; “CH-13002 a failed dismiss says so and keeps the insight; Retry that works shows the notice”; “CH-13003 a failed undo says so and keeps the notice; Retry that works brings the insight back”; “CH-13403 Undo reads Undoing while it works” |  |
+| 131402 try again rereads the page | yes | “CH-13201 the insights fail to load: said so, Try again asks the server again”; “CH-13202 the players fail to load: said so, Try again asks the server again”; “CH-13203 the pulse fails to load: said in its place” |  |
+| 131403 undo restores the state the insight had | yes | “Undo brings it back: the write restores the state it had, and the focus card returns”; “Undo restores the state the insight had: a matured one comes back matured”; “the live writes are the actions the Fairway Brief uses, unchanged” |  |
+| 131501 the page is as fresh as its last read | partly | “CH-13703 CH-13901 Dismiss: the warning comes first, then the write” | router.refresh not being called is asserted after a Dismiss only, not after Assign or Undo. |
+| 131807 no axe violations in the axe preview states | no | — | Not a vitest test: it needs the dev server; the run is the lead’s, logged in PROGRESS.md. |
+| 131901 phone layout | partly | “on the phone the page is its own layout: the same boards, with the players as a row of pills”; “CH-13701 on the phone, choosing an insight brings the focus into view” | The tests assert the phone frame class, four player buttons and the scroll into view; the shell top bar and the sideways pill row are CSS and the shell’s slot, not tested here. |
+| 132101 loader reads in rounds | partly | “the team’s players only, each with their top insight and how many signals they have”; “their feed, ranked as the feed ranks it, each insight with its drill’s description”; “a failed drill read keeps the drill’s name and length, and is logged”; “a failed focus-area read leaves Assign available and is logged” | The calls and their arguments (ids, limit 1, limit 30) are asserted; that the reads run together, not one after another, is read in the code. |
+| 132301 failures reported | partly | “a failed drill read keeps the drill’s name and length, and is logged”; “CH-13201 a feed that throws is an error, logged”; “CH-13202 a failed visible read is an error, logged”; “CH-13202 a failed roster read is an error (never an empty team), and the pulse still loads”; “a failed focus-area read leaves Assign available and is logged” | chReport and chTrail are mocked in this file and never asserted; the gate, dismissed, rounds, players and heads logs are not asserted either. |
+
+Eighteen are covered, eight partly and two not at all. A phrase in quotes is the
+start of a test's title in `coachhelm.test.tsx` (each was checked against the
+file); the lead adds the Bridge ID to those titles when flipping a contract to
+`implemented`.
+
+What the suite forces, beyond the catalog: it loads a player's and a coach's
+data through the loaders with a fake database and checks which ids every read is
+given, that a coach with no resolved team reads no player, that the delivery
+actions' empty answers are told apart from a first run, that the gate's off
+reasons are kept or dropped, and that the page and its loading file take the
+Clubhouse or Fairway branch. It presses Assign, Dismiss and Undo once and lands,
+then with a refusal and Retry, and forces Assign offline.
+
+## Visual verification
+
+### Desktop
+
+```text
+Viewport:  1280px (preview, /clubhouse-preview/coachhelm and coachhelm-player),
+           looked at by eye by the lead on 2026-09-30, as reported in
+           PROGRESS.md
+Reference: design/handoff/Coach - CoachHelm.html and Player - CoachHelm.html
+Result:    looked at by the lead, as reported; no side-by-side pixel comparison
+           and no measured spacing, type or radius pass is recorded (the
+           checklist's desktop gate is unticked)
+```
+
+### Phone
+
+```text
+Viewport:     390px (preview), looked at by eye by the lead on 2026-09-30, as
+              reported in PROGRESS.md
+Device/shell: not on a real iPhone (npm run ios:dev, owner)
+Reference:    design/handoff/Coach and Player - CoachHelm - Mobile.html
+Result:       built to the approved spec and seen at 390; no iPhone pass, no
+              measured touch-target pass
+```
+
+## Forced states
+
+| State | Contract | How forced | Observed result |
+| --- | --- | --- | --- |
+| Skeleton | CH-13401, CH-13402, 130204 | tests (both shapes, the role's shape, inside and outside the shell), `?state=loading` | the Clubhouse skeleton in the shell, Fairway's outside it |
+| Empty | CH-13301 to CH-13310, 130411 | tests, `?state=empty`, `norounds`, `noroster`, `quiet`, `off` | distinct from a failed read; a failed gate, feed, roster or visible read is an error, never "no insights" |
+| Server failure | CH-13001 to CH-13003, CH-13201 to CH-13204 | tests, `?state=failed`, `pulsefailed`, `failwrites`, `failundo` | toast or notice with its code; the button, insight or notice stays |
+| Retry | 131401, 131402 | tests | the same write again; the chip, the notice and the returned card follow; Try again asks the server again |
+| Offline | 130702 | test, Assign only | nothing sent; the shell's toast names it |
+| Permission | 130801 to 130803 | tests | no coach control for a player; only the team's active players; only a player's own insights |
+| Server refusal | 130804 | read, not run | no test forces a server refusal |
+| Existing focus | 130903 | test, `?state=duplicate` | assigned, said in a toast, not an error |
+| Dismiss and Undo | CH-13901, 131403 | tests | the notice keeps Undo; Undo restores the state it had |
+| The player's views | 130104, CH-13260, 13270, 13271, 13280 to 13283, 13304, 13360, 13361, 13370 to 13384, 13460, 13470, 13480 | tests (each view: ready, off, failed, empty or first run, early or partial, each part failed), `?view=profile\|standing\|deep-dive` and `?state=` | profile, standing and deep-dive are the player's own views; development goes to Stats' Development; insights draws the board; a failed read is its own notice, never an empty page |
+
+The `?state=` entries name the preview state that draws each state. Only the
+ones the axe run walks (listed under Accessibility) are recorded as visited in a
+browser, and none was forced against a live session.
+
+## Accessibility
+
+```text
+Axe:            `npm run clubhouse:a11y` clean at 1280px and 390px over ten
+                preview states, 20 runs (as reported by the lead). Walked: the
+                coach's default, assigned, empty, failed, off and loading; the
+                player's default, empty, norounds and failed. Not walked: the
+                coach's noroster, pulsefailed, quiet, failwrites, failundo and
+                duplicate, and the player's working, off and loading.
+Keyboard:       no keyboard walk of the page was done; every control is a native
+                button or link (no test presses one with the keyboard).
+VoiceOver:      not tried on a device.
+Focus:          no dialog and no form on the page; focus was not otherwise
+                checked.
+Reduced motion: CH-13601's rule for Animations off is in the stylesheet; not
+                exercised in a browser.
+Contrast:       covered only by the axe runs above.
+Text scaling:   not checked.
+```
+
+## Performance
+
+```text
+Layout shift:      not measured
+Request waterfall: none on the client; the server loaders read in rounds
+                   (132101). Serial depth (coachhelm-reads.test): the coach's
+                   board 13 waves before 2026-10-01, 10 after (the gate's three,
+                   then the pulse's seven, which now runs beside the roster); the
+                   Deep dive 10, then 5 (its longest chain, the category reads).
+                   The CoachHelm gate itself is three to four reads in a row
+                   (shared with Fairway, not changed here)
+Large list:        not measured (the visible-insights and rounds reads paginate;
+                   a coach's board loads one top insight per player, a player's
+                   feed at most 30)
+Animation:         the shell's tokens, plus the chip's rise (base)
+Notes:             first-load JS and LCP (CH-1954) are open
+```
+
+## Swap audit section 13, the code fixes (2026-10-01)
+
+Observed by test (`coachhelm-audit.test.ts`, `coachhelm-audit.test.tsx`,
+`development.team-id.test.ts`, `dev-plan-assigned-link.test.ts`): which cards
+state no finding and are drawn as notes (CH13-11); a strength measured
+against the comparison the card draws, and the `deriveTone` missing
+comparison (CH13-12); the shared Solid, Early and Thin words (CH13-10);
+the generator's sample unit and the "As of" line (CH13-9); out-of-date reads
+marked from the player's completed rounds, the rounds read bounded and its
+failure logged (CH13-3, CH-13903, CH-13906); the players line and the open
+signal count (CH13-4); the voice of the text on each board (CH13-13); the
+Assigned and Acknowledged pill (CH13-16); the Ask address and strip with
+CoachHelm off or unread (CH13-20); proposals read by team or no team, and
+every focus-area creator writing the team (CH13-5); the bell and email link
+for a Clubhouse player (CH13-7).
+
+Not observed: any of it in a browser or on production data. The freshness
+rules were run as a read-only SELECT against production: 23 of 602 visible
+reads are out of date by the refresh-day rule and 12 by the window rule.
+`createFocusArea`, `createPlayerFocusArea` and `createFocusAreaFromInsight`
+are in a `'use server'` file: `npm run build` was not run for them here.
+
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
+| `P013__insights__coach__1440__assigned__after__6f5f081.png` | after | 6f5f081 | insights (coach), 1440px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__1440__assigned__baseline__ee5976d.png` | baseline | ee5976d | insights (coach), 1440px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__1440__assigned__before__2b04867.png` | before | 2b04867 | insights (coach), 1440px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__375__assigned__after__6f5f081.png` | after | 6f5f081 | insights (coach), 375px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__375__assigned__baseline__ee5976d.png` | baseline | ee5976d | insights (coach), 375px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__375__assigned__before__2b04867.png` | before | 2b04867 | insights (coach), 375px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__390__assigned__after__6f5f081.png` | after | 6f5f081 | insights (coach), 390px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__390__assigned__baseline__ee5976d.png` | baseline | ee5976d | insights (coach), 390px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__390__assigned__before__2b04867.png` | before | 2b04867 | insights (coach), 390px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__430__assigned__after__6f5f081.png` | after | 6f5f081 | insights (coach), 430px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__430__assigned__baseline__ee5976d.png` | baseline | ee5976d | insights (coach), 430px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__430__assigned__before__2b04867.png` | before | 2b04867 | insights (coach), 430px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__player__1440__default__after__6f5f081.png` | after | 6f5f081 | insights (player), 1440px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__1440__default__baseline__ee5976d.png` | baseline | ee5976d | insights (player), 1440px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__1440__default__before__2b04867.png` | before | 2b04867 | insights (player), 1440px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__375__default__after__6f5f081.png` | after | 6f5f081 | insights (player), 375px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__375__default__baseline__ee5976d.png` | baseline | ee5976d | insights (player), 375px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__375__default__before__2b04867.png` | before | 2b04867 | insights (player), 375px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__390__default__after__6f5f081.png` | after | 6f5f081 | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__390__default__baseline__ee5976d.png` | baseline | ee5976d | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__390__default__before__2b04867.png` | before | 2b04867 | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__430__default__after__6f5f081.png` | after | 6f5f081 | insights (player), 430px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__430__default__baseline__ee5976d.png` | baseline | ee5976d | insights (player), 430px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__430__default__before__2b04867.png` | before | 2b04867 | insights (player), 430px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__coach__1440__assigned__after__d4367ee.png` | after | d4367ee | insights (coach), 1440px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__1440__assigned__before__d3a6483.png` | before | d3a6483 | insights (coach), 1440px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__390__assigned__after__d4367ee.png` | after | d4367ee | insights (coach), 390px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__390__assigned__before__d3a6483.png` | before | d3a6483 | insights (coach), 390px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__player__1440__default__after__d4367ee.png` | after | d4367ee | insights (player), 1440px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__1440__default__before__d3a6483.png` | before | d3a6483 | insights (player), 1440px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__390__default__after__d4367ee.png` | after | d4367ee | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__390__default__before__d3a6483.png` | before | d3a6483 | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__mobile-overview__coach__390__safari-populated__before__cbc1c0d.png` | before | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/coachhelm, synthetic preview fixture; shared materials in progress |
+| `P013__mobile-overview__coach__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/coachhelm, synthetic preview fixture; shared materials in progress |
+| `P013__history-sheet__coach__390__custom-lifecycle__before__c1e81e0.png` | before | c1e81e0 | history-sheet (coach), 390px, custom-lifecycle; /clubhouse-preview/coachhelm-ask?state=history |
+| `P013__history-drawer__coach__390__keyboard-viewport__before__c1e81e0.png` | before | c1e81e0 | history-drawer (coach), 390px, keyboard-viewport; /clubhouse-preview/coachhelm-ask?state=history |
+| `P013__history-drawer__coach__375__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | history-drawer (coach), 375px, keyboard-viewport; /clubhouse-preview/coachhelm-ask?state=history |
+| `P013__history-drawer__coach__390__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | history-drawer (coach), 390px, keyboard-viewport; /clubhouse-preview/coachhelm-ask?state=history |
+| `P013__history-drawer__coach__430__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | history-drawer (coach), 430px, keyboard-viewport; /clubhouse-preview/coachhelm-ask?state=history |
+| `P013__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P013__ask__coach__390x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | ask (coach), 390x844px, reduced-motion |
+| `P013__ask__coach__390x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | ask (coach), 390x844px, reduced-motion |
+| `P013__premium-audit__coach__1280__case-022-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-022-webkit-reduce; /clubhouse-preview/coachhelm; synthetic preview |
+| `P013__premium-audit__coach__1280__case-141-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-141-chromium-normal; /clubhouse-preview/coachhelm; synthetic preview |
+| `P013__premium-audit__coach__390__case-022-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-022-webkit-reduce; /clubhouse-preview/coachhelm; synthetic preview |
+| `P013__premium-audit__coach__390__case-141-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-141-chromium-normal; /clubhouse-preview/coachhelm; synthetic preview |
+| `P013__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P013__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P013__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
+| `P013__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+
+## Historical verification gaps
+
+- The iPhone pass through `npm run ios:dev`, and a browser pass with a real
+  coach and a real player account (owner or merge pass).
+- Every write and every failure against a live session, and the loading
+  skeleton in a browser with real data.
+- `npm run build` was not run; no `'use server'` file changed for this
+  page. (The 2026-10-01 pass did change one, `development.ts`: see above.)
+- The unwalked preview states in the axe run, and a keyboard walk and
+  VoiceOver at 1280 and 390.
+- Found in this pass, not fixed: a coach's gate lookup failure draws
+  "Nothing is flagged in the pulse right now." beside the roster notice
+  (130608); `docs/clubhouse/phone/coachhelm.md` still says the Clubhouse
+  branch returns before it reads `view`, and that no Clubhouse screen has
+  Accept; the `?view=` guard (Q-76) and Accept and Decline in Stats
+  Development (Q-77) have since been built, as PROGRESS.md records.
+- Found earlier, as reported by the lead in PROGRESS.md: the generator's
+  player-facing copy ("you're averaging") shows on the coach's board (fixed
+  2026-10-01, CH13-13: the coach's board names the player); legacy
+  `formatValue` rounds count values and `buildInsightUnit` says "over N
+  days" for a lifetime window (neither used here); the insight readers
+  return empty on failure (the loaders probe the table to tell a failure
+  from a first run).
+- Q-76 and Q-77 are open owner questions; the page is built on their
+  recommendations (Q-76's, and Q-77's in Stats).
+
+## Update 2026-09-30: Accept and Decline on the player's board (Q-77) and the Tour comparison (Q-88)
+
+Observed after the two changes (CHANGELOG.md has what changed):
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npm run test:file -- src/clubhouse/__tests__/coachhelm.test.tsx` | exit 0, 142/142 (was 112): the proposals on screen and in the loader, and the Tour in both loaders and the mapper; CH-13004, CH-13005, CH-13205, CH-13404, CH-13704, CH-13807 and CH-13902 are each named in a test title |
+| Mutations | 26 one-line breaks, run one at a time | all fail a test (17 for Accept, Decline, the proposals read and its notice and the preview's writes; 9 for the Tour); two that changed nothing showed a redundant guard, which was removed |
+| Typecheck | `npm run typecheck:fast` | exit 1 on other sessions' files only (hub, recruiting-upload and travel-class-conflicts tests); none in CoachHelm's |
+| Lint | `npx eslint` on the changed CoachHelm files | exit 0 |
+| Clubhouse check | `npm run -s clubhouse:check` | exit 1 on the registry only for this page: the seven new catalog codes have no Bridge ID and CONTRACT.md is stale, both for `registry.mjs sync` (the lead's) |
+
+Not observed: the new preview states in a browser and in axe (the preview route
+and `a11y.mjs` are not this change's to edit:
+`?state=proposed|failproposal|proposalsfailed` on
+`/clubhouse-preview/coachhelm-player`), a real player with a proposed focus
+area, and the Tour values against a real women's team. Hand contracts 130106,
+130801 and 130902 were reworded for the changes; no new hand contract is
+written.
+
+## Update 2026-10-01: the player's Game profile, Standing and Deep dive
+
+Observed after building the three views (CHANGELOG.md has what changed). Run
+from `/Users/ricknini/worktrees/helmv3/swap-audit` at `adc9c8320` (the last code
+commit; the docs commit after it changes no code).
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npm run test:file -- src/clubhouse/__tests__/coachhelm*.test.tsx src/clubhouse/__tests__/coachhelm*.test.ts` | exit 0: 13 files, 552 tests passed. `coachhelm-dive.test.tsx` alone: 65 |
+| Typecheck | `npm run typecheck:fast` | exit 0 |
+| Lint | `npx eslint` on the changed `src/clubhouse` and `src/app/clubhouse-preview` files | exit 0 |
+| Clubhouse check | `npm run clubhouse:check` | exit 0: 35 unit tests, 417 files, 15 pages, 1351 Bridge IDs |
+| Docs | `npm run docs:check`; `node scripts/markdown-lint-ratchet.mjs` | both exit 0; the ratchet counts 31316 violations against a baseline of 31397 for the whole branch (it first failed at +139 on MD013, from catalog and generated table rows; the P013 docs were rewrapped to 80 columns to pay for them) |
+| Axe and tap targets | a one-off scan (`@axe-core/playwright`, WCAG 2.0 to 2.2 AA with contrast, plus a 44px hit-area probe like `native.mjs`) of `/clubhouse-preview/coachhelm-views` at 1280px and 390px: `view=deep-dive` (default, `q=in-pen`, `q=in-brk`, `partsfailed`, `young`, `empty`, `norounds`, `failed`, `off`, `loading`), `view=profile` (default, `partial`, `edge`, `empty`) and `view=standing` (default, `early`, `empty`, `womens`, `nobaseline`), and the Deep dive's open read on the phone | no axe violation and no page that scrolls sideways (run again at `adc9c8320`). One finding left, not ours: the shell's Home tab reads 76 x 46 under the Next.js dev indicator that sits over it in the preview. Fixed on the way: amber text at 4.47:1 on the phone's darker ivory, and the chip row clipping its tap area to 42px |
+| Visual | the preview in a browser at 1440, 1280, 1024 and 390px (Deep dive: the list and the read, a read with no rounds, no trend and no plan, parts failed, the phone list and the pushed read) | read against the design intent; no screenshot is kept |
+
+Mutation checks were not run for these views. The loader tests use the table
+fake (`supabase-fake.ts`), so the filters each read sent are asserted, but no
+read ran against a real database.
+
+Not observed: any of the three views with a real player's data, a device pass,
+VoiceOver, a keyboard walk (every control is a native button or link; the open
+read's focus moves to its title, as `PhoneScreen` does), and `npm run
+clubhouse:a11y` itself (its page list does not include these previews and is not
+this change's to edit). `npm run build` was not run: no `'use server'` file
+changed.
+
+## Update 2026-10-01: owner rules
+
+Observed after the four phases (CHANGELOG.md has what changed). Run from
+`/Users/ricknini/worktrees/helmv3/swap-audit` on `agent/swap-audit`. The phases
+are `50e67be9b` (failed reads), `cc966fdbc` (pending scope and races),
+`fd7267f04` (the pulse streams) and the return-state commit after them.
+
+- Tests, last run on the final tree: `npm run test:file --` over
+  `src/clubhouse/__tests__/coachhelm*`, `view-switch-boundary.test.tsx`,
+  `src/lib/coachhelm/v3/chat` and `src/test/coachhelm/v3`: exit 0, 154 files
+  and 2122 tests passed. Earlier, on the same CoachHelm code, a broader run
+  that also took the shell, roster, alias, logic, native, session-state and
+  refresh-states tests, `src/app/api/coachhelm` and `src/lib/coachhelm`: exit 0,
+  315 files passed and 1 skipped; 3760 tests passed (1 expected fail, 3 skipped,
+  10 todo). Other sessions have since changed `use-action.ts`, `Toast.tsx`,
+  `shell/TabBar.tsx` and `shell/phone-chrome.tsx` in the shared tree; the shell
+  tests were not rerun after that, the CoachHelm tests (which use `useAction`)
+  were.
+- New tests, by owner rule: failed reads (`coachhelm-failed-reads.test.tsx`
+  and the three lib tests), selection and pending scope
+  (`coachhelm-selection.test.tsx`, `coachhelm-retry.test.tsx`), Ask races
+  (`coachhelm-ask-races.test.tsx`), streaming (`coachhelm-streaming.test.tsx`)
+  and return state (`coachhelm-return-state.test.tsx`, plus the CH-13924
+  describe in the Ask races file).
+- Typecheck: `npm run typecheck:fast` exit 0 on the final tree. (An earlier run
+  in the same pass exited 1 on one error outside CoachHelm,
+  `src/clubhouse/__tests__/shell.test.tsx(109,5)` TS2554, another session's file
+  that was changed since; it was not touched here.)
+- Lint: `npx eslint` on `src/clubhouse/screens/coachhelm`, the route, the
+  CoachHelm loaders and shape files and the changed tests: exit 0, no output.
+- Clubhouse check: `npm run clubhouse:check` exit 0: 35 unit tests, 429 files,
+  15 pages, 1380 Bridge IDs. Observed with another session's uncommitted
+  `registry.mjs sync` in the working tree: it minted the Bridge IDs for
+  CH-13405, CH-13910, CH-13911 and CH-13924 and rewrote P013's CONTRACT.md
+  (neither the sync's output nor those files are in these commits). Without
+  that sync committed, the check would be expected to fail on those four
+  codes, as it did before the sync (inferred, not re-run without it).
+- Supabase error audit: `npm run audit:supabase-errors` exit 1, 1003 unchecked
+  reads against a baseline of 1005 (down; the exit is the "lock in the paydown
+  with `--update`" slack message, which this change did not run).
+- Markdown ratchet: `npm run markdown:ratchet` exit 1 for the branch as a
+  whole (MD013 +40, MD060 +2, MD012 +1 and MD056 +1 against the baseline).
+  `markdownlint-cli2` on P013's CHANGELOG, WIRING, DESIGN and this file shows
+  no issue in the lines this pass wrote (this section's lines are all within
+  80 columns); the MD060 hits in this file are in its older tables, and the
+  MD013 count in P013's files comes from the catalog's and CONTRACT's one-line
+  table rows, as on the other pages. The rest of the branch's delta is in other
+  sessions' files and was not attributed row by row.
+- Build: not run; no `'use server'` file changed (the loaders are `server-only`
+  modules, the screens are client modules, the lib changes are additive).
+
+Assertions changed by design: the board loader's read depth is 7, not 10 (the
+pulse's reads leave the board's critical path and are counted apart); three
+`coachhelm.test.tsx` pulse assertions wait for the pulse (`pulseLanded`);
+CH-13403's catalog wording. (The return-state commit first also reset the
+address in three existing suites because a pick was written to it; the review
+fixes below took that out again.)
+
+Not observed: any of it in a browser or against a real database. The loaders
+ran against the table fake, so no read ran against Postgres. The Fairway chat
+hook can still take a late conversation id after "New chat" (its internal id),
+the phone Deep dive's Back can leave a second entry (the shell's phone-stack
+hook), the Ask thread's and the phone Deep dive's own scrollers are not
+restored on Back (the shell's `RouteFrame` restores the canvas and the
+window), and no time-to-first-byte was measured for the streamed pulse.
+
+## Update 2026-10-01: owner rules, review fixes
+
+Observed after the review of the four commits (CHANGELOG.md, Phase 4 and
+Phase 1, has what changed). Same checkout and branch. Claims checked against
+the code before changing it: the address write left Next's router blind (read in
+`app-router.js`: the patched `replaceState` returns early for an entry's own
+`__NA` state); the pulse over an unread roster was drawn as "Nothing is
+flagged" (reproduced with the real `getProgramPulse` over the fake); and a kept
+pick drawn during hydration is a mismatch for all three views, not only Ask's
+two (reproduced: with the mask taken out, the three hydration tests fail on a
+server/client mismatch, restored, they pass).
+
+- Tests: `npm run test:file --` over `src/clubhouse/__tests__/coachhelm*`,
+  `view-switch-boundary.test.tsx`, `session-state*`, `refresh-states*`,
+  `src/lib/coachhelm`, `src/test/coachhelm` and `src/app/api/coachhelm`: exit
+  0, 310 files passed and 1 skipped; 3604 tests passed (1 expected fail, 3
+  skipped, 10 todo).
+- New or rewritten: `coachhelm-return-state.test.tsx` (20: the session-state
+  picks, no address or history write, no router call, a named player or read
+  winning, a first load that failed then Try again, a refresh keeping the pick,
+  a view switch carrying no read, the route handing `?insight=` to the Deep
+  dive only, and hydration of the three views against server markup made with
+  nothing kept); `coachhelm-ask-races.test.tsx` (New chat leaving a draft
+  alone, and a hard reload hydrating Ask with a hidden panel, a search and a
+  draft kept); `coachhelm-failed-reads.test.tsx` (a roster that did not read
+  is the pulse not loading, over the real `getProgramPulse` and the fake, and a
+  roster that read empty is not); `coachhelm-streaming.test.tsx` (the delivery
+  heads and the pulse are counted on the loader, after the gate).
+- Mocks: five suites that mock `request-cache` gain a `getCoachChatContext`
+  (`pulseOf` reads it); no assertion changed.
+- Typecheck: `npm run typecheck:fast` exit 0.
+- Lint: `npx eslint` on `screens/coachhelm`, the route, `data/coachhelm.ts` and
+  the changed tests: exit 0, no output.
+- Supabase error audit: `npm run audit:supabase-errors` exit 0: 1003 unchecked
+  reads, baseline 1003, no regression.
+- Markdown: `markdownlint-cli2` on this page's CHANGELOG, WIRING and DESIGN: 57
+  issues, all MD013 and the same 57 as before this pass (none added).
+- Clubhouse check: `npm run clubhouse:check` exit 0: 35 unit tests, 430 files,
+  15 pages, 1380 Bridge IDs. No code or catalog title was added or renamed (a
+  reworded CH-13911 title made it stale, so the title stays as it was; its row
+  says what is true), so no registry sync is owed for this change.
+- Build: not run; no `'use server'` file changed.
+
+Not observed: any of it in a browser. Back, a hard reload with a kept pick and
+the phone's pushed read were exercised in jsdom only (hydration with
+`renderToString` and `hydrateRoot`). Known and left: Ask's own `?c=` write
+(`replaceState`, CH-13922) has the same router blind spot; History is not team
+scoped (a product question).
+
+## 2026-10-02 — Custom native overlay lifetime
+
+- Before captures in `/tmp/helm-clubhouse-custom-overlays/`: Settings Profile
+  and
+  Recruiting Add opened without a body scroll lock. A real History pointer drag
+  moved left 35px, paused 350ms, and wrongly dismissed on release.
+- Shared lifetime now retains the last open content and lock through
+  transform/opacity
+  exit, cancels superseded completions, restores focus with `preventScroll`,
+  and closes before releasing the lock on unmount. Dirty/busy guards are
+  preserved.
+- Final scoped runs cover 351 tests: Settings, Recruiting, Ask, shell, overlay
+  scroll and seven new custom lifecycle regressions. The old Ask pointer fixture
+  now identifies its primary pointer; its original assertions/timeouts remain.
+  Final Ask rerun:54 pass, exit0. Final helper/scroll rerun after releasing
+  retained
+  subtree references:14 pass, exit0. Scoped ESLint and diff check: exit0.
+- New shared/helper and Settings/History files are semantically unmapped and
+  reported
+  to the coordinator; existing page manifests govern them. Recruiting maps to
+  `memory/features/recruiting.md`, updated with the client lifecycle contract.
+- Fresh WebKit 375/390/430: Settings/Recruiting form tops54px, keyboard-visible
+  bottom544px at844px height with a synthetic300px keyboard. Before, both tops
+  were−246px and their headers were offscreen. Settings cards retain full row
+  heights in the scrolling body; Full name input307–339px and header85–129px.
+  Recruiting body scroll reaches Stage/Notes while Cancel/Add remain accessible.
+- Nested Settings discard prompt fits341.625–544px; closing it retains the
+  parent's lock. Both native dialogs/content remain during60ms exit; completing
+  all closes releases the final lock. Existing dirty/busy policy is unchanged.
+- History settled frames explicitly await entry animations: left0, width322.5px
+  at375 or330px at390/430, height544px above the synthetic keyboard. A35px left
+  drag held350ms stays open;120px closes with lock held through exit. Earlier
+  mid-entry captures were superseded after manual review, not accepted as final.
+- Keyboard Enter→Esc returns focus to Profile, Add prospect and Chats at every
+  tested width. Shared Modal at1440 retains its lock/content through60ms exit;
+  reduced-motion Recruiting releases the lock within50ms, without an exit slide.
+- Fresh shared Modal on Stats at375/390/430 over scroll300px: marker−250px
+  before,
+  open, PageDown,60ms exit and after. Final scroll restores300px. Short
+  Recruiting
+  fixtures have no300px scroll range, so their scroll-zero checks are not
+  presented
+  as long-page preservation evidence.
+- Final evidence: `final-matrix.json`, `focus-final.json`, `settled-final.json`,
+  `stats-scroll-final.json` and manually reviewed PNGs in
+  `/tmp/helm-clubhouse-custom-overlays/`; conventional captures logged above.
+  Browser session `overlay-audit` closed. Local ENOSPC/old-session timeouts were
+  resolved before final proof; development/HMR timings are not product timings.
+  No production/customer writes or physical-iPhone keyboard, edge-gesture or
+  frame-pacing claim. Root owns combined typecheck/build/release verification.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.
+
+## Premium audit matrix — 2026-10-06
+
+24 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.
+
+## 2026-10-19 — Contract tests for nine reserved hand contracts
+
+Two new files: `src/clubhouse/__tests__/coachhelm-contracts.test.tsx` (36 cases) and
+`src/clubhouse/__tests__/coachhelm-actions-contracts.test.ts` (13 cases, the real `dismissInsight`, `reactivateInsight` and
+`createFocusAreaFromInsightV2` against a fake database). Each case names its Bridge ID in its title. No implementation file changed.
+This supersedes the "partly" and "no" rows of the table above for these contracts.
+
+| Contract | What the test forces | Result |
+| --- | --- | --- |
+| 130104 the drills' addresses | `?view=development` redirects to `/golf/dashboard/stats?tab=dev`; profile, standing and deep-dive are the session's player whatever `?player=` says; insights, none and other values draw the board; a coach's `?view=` is the coach's board; none of the three screens says "not rebuilt" | pass |
+| 130608 a failed gate lookup | player and coach, gate reason or throw: failed read (CH-13201, CH-13202), logged as `gate`, nothing else read; on the coach's, the pulse is read and drawn beside the notice | pass |
+| 130702 offline writes | Assign, Dismiss (the warning haptic first, then the error) and Undo each refused offline with nothing sent; Retry sends once online | pass |
+| 130804 server actions are the gate | not signed in, a player, another team's coach, an insight with no team, an unknown insight; the duplicate guard; the right coach's write touches only that team's row | pass |
+| 131201 a visit's changes | the chip and the dismissed notice survive choosing another player; a reload opens on the first player with no chip; Back, once the app is running, returns the kept pick (CH-13911) | pass |
+| 131501 no background refresh | no `router.refresh` after Assign, Dismiss or Undo, nor on focus, online or visibility events; Try again is the one re-read | pass |
+| 131901 phone layout | phone class, the shell's top bar reads CoachHelm, the pills; scroll into view on the player's phone only; the 640px container rule in `coachhelm.css` | pass; the pill row is read from the stylesheet, not rendered |
+| 132101 loaders read in rounds | read waves for the coach (gate, roster, names, visible + heads, drills + focus areas; one request per kind) and the player (gate, feed beside the team, drills + proposals + focus areas; the dismissal and visible reads only on an empty feed) | pass |
+| 132301 failures reported | every named read logged under `coachhelm`; a refused write reported at low severity after its breadcrumb, a thrown one at the default severity; the pulse, players, focus and side sections each report under their own surface | pass |
+
+Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx eslint` on them, exit 0;
+`node scripts/clubhouse/registry.mjs check`, exit 0. The registry now shows 158 IDs, 150 on an element or in code, 8 reserved.
+
+**Still reserved, and why.** 131807 is a script (`clubhouse:a11y`), not a vitest case. The other seven (130713, 130721, 130722, 131704,
+131808, 131816, 131817) each carry a catalog code and are already named in tests (`coachhelm-views`, `coachhelm-return-state`,
+`coachhelm-ask-races`, `coachhelm`, `coachhelm-profile`, `coachhelm-standing`), but the registry marks a coded contract
+`implemented` only when its CH- code appears in the source, and none of these does. The fix is a `data-ch-code` (or a comment) in the
+owning component, not a test.
+
+**Wording that predates the code.** 130608 recorded a defect (on a coach's gate failure the pulse was not read and the empty line drew
+beside CH-13202); the loader now reads the pulse on a failed gate and the test pins it. 131201 says a reload opens on the first
+player: true of a hard reload; Back in the running app returns the kept pick, which is CH-13911.

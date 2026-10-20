@@ -10,6 +10,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
@@ -102,19 +103,26 @@ async function completeTaskImpl(
 
     if (existingAssignment) {
       // Update existing assignment
+      // `.select('id')`: an UPDATE that a policy (or a concurrent unassign)
+      // filters to zero rows is not an error, and used to be reported as done
+      // while the assignment stayed pending.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateError } = await (supabase as any)
+      const { data: completed, error: updateError } = await (supabase as any)
         .from('golf_task_assignments')
         .update({
           status: 'completed',
           completed_at: now,
           notes: notes || null,
         })
-        .eq('id', existingAssignment.id);
+        .eq('id', existingAssignment.id)
+        .select('id') as { data: Array<{ id: string }> | null; error: { message: string } | null };
 
       if (updateError) {
         await logServerError(`[completeTask Update Error]: ${describeError(updateError)}`, { action: 'tasks.completeTask' });
         return { success: false, error: updateError.message };
+      }
+      if (!completed || completed.length === 0) {
+        return { success: false, error: "Couldn't mark this task done. It may no longer be assigned to you." };
       }
     } else {
       // If no assignment exists but player is on the team, create one and mark complete
@@ -162,7 +170,7 @@ async function completeTaskImpl(
       }
     }
 
-    await syncTaskStatusFromAssignments(supabase, taskId);
+    await syncTaskStatusFromAssignments(taskId);
 
     revalidatePath('/golf/dashboard/tasks');
     updateTag(CACHE_TAGS.DASHBOARD);
@@ -185,14 +193,21 @@ async function completeTaskImpl(
  *
  * Best-effort: a failure here must not fail the completion the player just
  * made, so it logs and returns.
+ *
+ * ADMIN client (P010). The caller is a PLAYER, and golf_tasks_update_coach is
+ * is_golf_team_coach(team_id): under the player's session this UPDATE matched
+ * zero rows with no error, so the parent status never moved. The assignments
+ * READ goes through admin too: under the player's session RLS can show only
+ * their own assignment, and rolling up from that alone would close the task
+ * for everyone the moment one player finished. Only call this AFTER the
+ * caller's own assignment write succeeded (that write is what proves they are
+ * assigned). It is scoped to the one task id and writes only status and
+ * completed_at.
  */
-async function syncTaskStatusFromAssignments(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  taskId: string,
-): Promise<void> {
+async function syncTaskStatusFromAssignments(taskId: string): Promise<void> {
   try {
-    const { data: assignments, error } = await supabase
+    const admin = createAdminClient();
+    const { data: assignments, error } = await admin
       .from('golf_task_assignments')
       .select('status')
       .eq('task_id', taskId);
@@ -203,7 +218,7 @@ async function syncTaskStatusFromAssignments(
       (a) => a.status === 'completed',
     );
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await admin
       .from('golf_tasks')
       .update(
         allDone
@@ -240,6 +255,70 @@ export async function completeTask(
   notes?: string
 ): Promise<ActionResult> {
   return observedCompleteTask(taskId, _uploadUrl, notes);
+}
+
+/**
+ * Undo a player's own completion (an accidental tick): their assignment goes back
+ * to pending and the parent task's status is rolled up again. Only the signed-in
+ * player's own assignment is touched, and only a completed one; the notes stay.
+ */
+async function uncompleteTaskImpl(taskId: string): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: player, error: playerError } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (playerError || !player) {
+      return { success: false, error: 'Player not found' };
+    }
+
+    // Note: golf_task_assignments may not be in generated types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: updated, error: updateError } = await (supabase as any)
+      .from('golf_task_assignments')
+      .update({ status: 'pending', completed_at: null })
+      .eq('task_id', taskId)
+      .eq('player_id', player.id)
+      .eq('status', 'completed')
+      .select('id') as { data: Array<{ id: string }> | null; error: { message: string } | null };
+
+    if (updateError) {
+      await logServerError(`[uncompleteTask Update Error]: ${describeError(updateError)}`, { action: 'tasks.uncompleteTask' });
+      return { success: false, error: "Couldn't reopen the task. Please try again." };
+    }
+    // No row changed: not this player's completed task (or a policy hid it). Saying it worked would be a lie.
+    if (!updated || updated.length === 0) {
+      return { success: false, error: 'This task is not marked done for you.' };
+    }
+
+    await syncTaskStatusFromAssignments(taskId);
+
+    revalidatePath('/golf/dashboard/tasks');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    return { success: true };
+  } catch (error) {
+    await logServerError(`[uncompleteTask Error]: ${describeError(error)}`, { action: 'tasks.uncompleteTask' });
+    return formatSafeErrorResponse(error);
+  }
+}
+
+const observedUncompleteTask = withAdminObserved(
+  'uncompleteTask',
+  { demoSafe: true, sport: 'golf', feature: 'task_management' },
+  uncompleteTaskImpl,
+);
+
+export async function uncompleteTask(taskId: string): Promise<ActionResult> {
+  return observedUncompleteTask(taskId);
 }
 
 // ============================================================================
@@ -358,8 +437,28 @@ async function createTaskImpl(
         .insert(assignments);
 
       if (assignError) {
-        await logServerError(`[createTask Assignment Error]: ${describeError(assignError)}`, { action: 'tasks.createTask' });
-        // Task was created but assignments failed - still return success with warning
+        // This used to log and fall through to `success: true`: the coach was told
+        // the task went out, it existed on their list assigned to nobody, nobody
+        // was asked to do it, and the players were still notified about it. The
+        // insert is one statement, so none of the assignments landed. Take the
+        // task back out so a failure leaves nothing and Retry cannot duplicate it,
+        // and do not notify anyone about a task they do not have.
+        const { data: removed, error: rollbackError } = await supabase
+          .from('golf_tasks')
+          .delete()
+          .eq('id', task.id)
+          .select('id');
+        const rolledBack = !rollbackError && (removed?.length ?? 0) === 1;
+        await logServerError(
+          `[createTask Assignment Error]: ${describeError(assignError)}; ${rolledBack ? 'the task was removed' : 'ROLLBACK ALSO FAILED, the task exists assigned to nobody'} (task ${task.id})`,
+          { action: 'tasks.createTask', featureArea: 'tasks' },
+        );
+        return {
+          success: false,
+          error: rolledBack
+            ? "Couldn't assign the task to those players, so it wasn't created. Please try again."
+            : 'The task was created but could not be assigned. Open it from Tasks and assign it there; do not create it again.',
+        };
       }
 
       // Notify assigned players (fire-and-forget)

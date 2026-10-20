@@ -125,7 +125,7 @@ rollout is booleans only.
   `src/lib/flags/registry.generated.ts` — no YAML parsing at runtime.
   Seeded with two flags that DESCRIBE existing env-driven toggles without
   changing their behavior: `flight_recorder`
-  (`HELM_FLIGHT_RECORDER_ENABLED`, read at `src/app/golf/actions/golf.ts:1207-1209`
+  (`HELM_FLIGHT_RECORDER_ENABLED`, read at `actions/golf.ts (pre-split):1207-1209`
   and `src/lib/observability/helm-flight-recorder.ts:194`, both owned by the
   parallel Sentry session per that handoff brief's ownership table) and
   `coachhelm_v2_availability` (`NEXT_PUBLIC_COACHHELM_ENABLED`,
@@ -187,7 +187,7 @@ entire Bridge surface maps under.
 
 - **`memory/journeys/golden-paths.yml`** — a thin index over EXISTING
   `e2e/*.spec.ts` coverage and the live Flight Recorder workflow/step-key
-  vocabulary in `src/app/golf/actions/golf.ts`, seeding the 8 golden paths
+  vocabulary in `actions/golf.ts (pre-split)`, seeding the 8 golden paths
   named in the Bridge Track C task (`player_login_hub`, `player_start_round`,
   `player_resume_round`, `player_submit_round`, `coach_view_player_stats`,
   `coach_view_coachhelm_insight`, `coach_create_event`, `player_rsvp_event`).
@@ -615,7 +615,7 @@ since both change behaviour the first pass shipped.
   present (`src/lib/observability/vercel-wait-until.ts`) and await under
   `BRIDGE_PROCESS_WRITE_TIMEOUT_MS`.
 - **A missing/malformed Inngest credential in production is a Bridge error
-  row** (`src/lib/inngest/credentials.ts`,
+  row** (the Inngest credentials module (removed 2026-10-06),
   `provider_inngest_missing_credential`, feature `integrations`) from process
   start, from every `isInngestConfigured() === false`, and from every signed
   inbound request to `/api/inngest` (the SDK answers 500 there, never the 401
@@ -1418,7 +1418,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
 - SHA: branch `agent/tracer-gaps`, PR pending. Scoped deliberately to stay
   outside the two in-flight Flight Recorder branches
   (`agent/flight-recorder-real-timings`, `agent/flight-recorder-db-checkpoints`)
-  — no edit to `src/app/golf/actions/golf.ts`,
+  — no edit to `actions/golf.ts (pre-split)`,
   `src/lib/observability/golf-round-flight-workflow.ts`,
   `src/lib/observability/helm-flight-recorder.ts`, or any
   `supabase/migrations/*flight*`/`*trace_steps*` file.
@@ -1737,7 +1737,7 @@ the full description of each module; summarized here for the change record.
   reads (not invented) — e.g. the 2026-08-25 CoachHelm recap-persist
   permission-denied incident, the 2026-09-02 command-palette missing-column
   incident, `src/lib/notifications/push.ts`'s Apple dead-token handling,
-  `src/app/api/inngest/route.ts`'s signature-failure messages.
+  the Inngest route handler (removed 2026-10-06)'s signature-failure messages.
 - **`aliases.ts`** — `classifyMergeConfidence` / `groupIntoRootIncidents`:
   a SECOND pass above `correlate.ts`'s existing exact-signature join,
   grouping already-built incident-shaped facts into root incidents via
@@ -2437,3 +2437,23 @@ section for the full per-module description; not restated here.
   same session-scoped `golf_shots` query path — the same ~580x
   RLS-vs-service-role gap and the same required heavy-roster preview
   check apply before enabling this flag in any environment.
+
+## 2026-10-07 — Bridge deliberate all-clear state (`agent/bridge-all-clear`)
+
+- SHA: this branch's PR (`feat(bridge): deliberate all-clear state for the admin console`).
+- Change: when nothing is open, the Overview and `/admin/errors` lead with one
+  `AllClearBanner` instead of a run of zero counts and empty panels. The
+  decision is a single pure function, `deriveAllClear`
+  (`src/lib/admin/incidents/all-clear.ts`), stricter than `canClaimAllClear`:
+  every source reading, nothing open in the window, healthy posture and empty
+  attention list where the screen has them, no release alarm, and a read
+  older backlog. `window-clear` names older open errors and never says "All
+  clear"; an unreadable backlog makes no claim. `/admin/errors` shows the
+  banner only in an un-narrowed view. Any refusal renders the previous
+  counts and posture unchanged.
+- Also: `PanelAllClear` gained an opt-in `inline` variant (default
+  unchanged), `UnifiedIncidentQueue` scopes its empty sentence to the view it
+  rendered, the org-wide Sentry backlog collapses behind a disclosure under a
+  granted claim, and the Command Deck panels take a `quiet` prop.
+- Contract: see "A calm Bridge says so once" in the UI Contract of
+  `memory/features/admin-platform.md`.

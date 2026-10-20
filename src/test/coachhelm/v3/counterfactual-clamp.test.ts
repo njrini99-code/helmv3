@@ -26,7 +26,6 @@ describe('computeCounterfactual — per-projection clamp (CF-1/CF-2)', () => {
       direction: 'lower_better',
       player_value: 5.0,
       pga_value: 4.0,
-      cohort_value: null,
       player_30d_scoring_avg: 78,
     });
     const ceiling = getCounterfactualCeiling(getCounterfactualConfig('scoring_par_4')!);
@@ -44,7 +43,6 @@ describe('computeCounterfactual — per-projection clamp (CF-1/CF-2)', () => {
       direction: 'higher_better',
       player_value: 0,
       pga_value: 100,
-      cohort_value: null,
       player_30d_scoring_avg: 80,
     });
     expect(r.strokes_saved_per_round).toBe(COUNTERFACTUAL_MAX_STROKES_PER_ROUND);
@@ -58,7 +56,6 @@ describe('computeCounterfactual — per-projection clamp (CF-1/CF-2)', () => {
       direction: 'lower_better',
       player_value: 6,
       pga_value: 0,
-      cohort_value: null,
       player_30d_scoring_avg: 76,
     });
     expect(r.strokes_saved_per_round).toBe(1.0);
@@ -72,7 +69,6 @@ describe('computeCounterfactual — per-projection clamp (CF-1/CF-2)', () => {
       direction: 'higher_better',
       player_value: 30,
       pga_value: 40,
-      cohort_value: null,
       player_30d_scoring_avg: 75,
     });
     expect(r.suppressed).toBe(false);
@@ -91,7 +87,6 @@ describe('computeCounterfactual — cohort plausibility fallback (DC-COHORT-1)',
       direction: 'higher_better',
       player_value: -0.5,
       pga_value: 0.5,
-      cohort_value: -3.94,
       player_30d_scoring_avg: 74,
     });
     const tourOnly = computeCounterfactual({
@@ -99,7 +94,6 @@ describe('computeCounterfactual — cohort plausibility fallback (DC-COHORT-1)',
       direction: 'higher_better',
       player_value: -0.5,
       pga_value: 0.5,
-      cohort_value: null,
       player_30d_scoring_avg: 74,
     });
     expect(implausible.suppressed).toBe(false);
@@ -116,7 +110,6 @@ describe('computeCounterfactual — cohort plausibility fallback (DC-COHORT-1)',
       direction: 'higher_better',
       player_value: 30,
       pga_value: 40,
-      cohort_value: 14.8,
       player_30d_scoring_avg: 75,
     });
     expect(r.suppressed).toBe(false);
@@ -131,7 +124,6 @@ describe('computeCounterfactual — cohort plausibility fallback (DC-COHORT-1)',
       direction: 'lower_better',
       player_value: 32,
       pga_value: 19,
-      cohort_value: 15,
       player_30d_scoring_avg: 75,
     });
     const tourOnly = computeCounterfactual({
@@ -139,32 +131,9 @@ describe('computeCounterfactual — cohort plausibility fallback (DC-COHORT-1)',
       direction: 'lower_better',
       player_value: 32,
       pga_value: 19,
-      cohort_value: null,
       player_30d_scoring_avg: 75,
     });
     expect(r.strokes_saved_per_round).toBeCloseTo(tourOnly.strokes_saved_per_round);
-  });
-
-  it('still trusts a plausible cohort (smaller realistic gap preserved)', () => {
-    // Cohort sand-save 40% is in-band → smaller gap than Tour 50%.
-    const cohort = computeCounterfactual({
-      metric_id: 'scrambling_pct_sand',
-      direction: 'higher_better',
-      player_value: 30,
-      pga_value: 50,
-      cohort_value: 40,
-      player_30d_scoring_avg: 75,
-    });
-    const tour = computeCounterfactual({
-      metric_id: 'scrambling_pct_sand',
-      direction: 'higher_better',
-      player_value: 30,
-      pga_value: 50,
-      cohort_value: null,
-      player_30d_scoring_avg: 75,
-    });
-    expect(cohort.strokes_saved_per_round).toBeLessThan(tour.strokes_saved_per_round);
-    expect(cohort.strokes_saved_per_round).toBeGreaterThan(0);
   });
 
   it('keeps the existing 0.3 lower suppression after cohort fallback', () => {
@@ -174,7 +143,6 @@ describe('computeCounterfactual — cohort plausibility fallback (DC-COHORT-1)',
       direction: 'higher_better',
       player_value: 47,
       pga_value: 50,
-      cohort_value: 10, // implausible → rejected → Tour fallback
       player_30d_scoring_avg: 75,
     });
     // gap to Tour = 3pp × 0.03 = 0.09 < 0.3

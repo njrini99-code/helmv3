@@ -34,7 +34,6 @@ alert exists for, and exactly the gap this deliverable closes.
 | --- | --- | --- | --- |
 | Vercel cron (`vercel.json`) | `recordJobRun` → `src/lib/observability/cron-monitors.ts` | `api-cron-<path>` (slashes to dashes), derived from the route path | The REAL crontab schedule, from `CRON_REGISTRY.schedule` — byte-identical to `vercel.json`, contract-tested |
 | A `recordJobRun` call with no `CRON_REGISTRY` entry (manual-trigger-only route, or a sub-step inside another job's single invocation) | Same `cron-monitors.ts`, same `recordJobRun` | `job-<jobType>` | A deliberately generous 30-day fallback interval (see below) |
-| Inngest function (`src/lib/inngest/functions.ts`) | The shared `withBridgeLogging(fnId, run)` wrapper every function routes through | `job-<function id>` (no `CRON_REGISTRY` entry — Inngest scheduling isn't `vercel.json`) | Same 30-day fallback |
 | ~~launchd Repair job~~ (RETIRED 2026-09-05 — see §7) | ~~`scripts/lib/sentry-cron-checkin.mjs`~~ (removed) | `job-selfheal-repair` (no longer written) | Repair now reports via a `background_job_logs` heartbeat written by the Claude desktop health routine (since 2026-09-23; `.github/workflows/selfheal-repair.yml` before that, now disabled), not a Sentry Cron Monitor |
 
 **Every check-in carries a `monitorConfig` — never omitted.** Sentry's own
@@ -48,9 +47,8 @@ than none, because it reports success. So a `jobType` with a real
 `CRON_REGISTRY` entry gets its actual crontab schedule (5-minute
 `checkinMargin`, 30-minute `maxRuntime`); everything else gets a
 deliberately GENEROUS fallback — a 30-day interval, 60-minute margin,
-120-minute max runtime — wide enough that no legitimate gap in usage (an
-Inngest function that goes quiet during an off-season, a manually-triggered
-route nobody has run this week) should trip a false "missed check-in". The
+120-minute max runtime — wide enough that no legitimate gap in usage (a
+manually-triggered route nobody has run this week) should trip a false "missed check-in". The
 fallback exists to guarantee the monitor gets created and the check-in
 lands, not to assert a cadence nothing guarantees.
 
@@ -79,7 +77,7 @@ single, tested authority. See `src/lib/sentry-build-options.mjs`'s own header
 for the full trace through the SDK source, and
 `src/lib/__tests__/sentry-build-options.test.ts` for the pinning test.
 
-**Gating.** `recordJobRun`/Inngest check-ins default OFF outside a real
+**Gating.** `recordJobRun` check-ins default OFF outside a real
 Vercel production/preview deployment (`shouldEmitCronCheckIns()` in
 `cron-monitors.ts`, keyed on the same `getRuntimeEnv()` the rest of the
 Bridge pipeline trusts) — a local test run or CI job never writes fake
@@ -154,38 +152,9 @@ fallback `monitorConfig` described in §2 — never no config at all.
 deliverable extends `recordJobRun` and therefore reaches every job that
 already calls it — it does not add `recordJobRun` to these two, because
 Phase A's own read left it genuinely unresolved whether they are dead code,
-manually/Inngest-triggered by design, or an actual gap, and guessing which
+manually-triggered by design, or an actual gap, and guessing which
 would risk instrumenting something deliberately uninstrumented. Carried
 forward as an open question, not silently dropped.
-
-## 6. Inngest functions
-
-| Function id (`inngest.createFunction`'s `id`) | Trigger | Monitor slug |
-| --- | --- | --- |
-| `weekly-health-ping` | `cron: '0 14 * * 1'` (Mondays 14:00 UTC) | `job-weekly-health-ping` |
-| `inngest-health-probe` | event: `helm/health.ping` | `job-inngest-health-probe` |
-| `coachhelm-round-submitted` | event: `coachhelm/round.submitted` | `job-coachhelm-round-submitted` |
-
-Only `weekly-health-ping` has an actual cadence — it still resolves through
-`resolveCronMonitorConfig`'s CRON_REGISTRY lookup only, so even it currently
-gets the 30-day fallback rather than its real weekly cron, since
-CRON_REGISTRY is Vercel-scoped by design (see §1's naming: it's
-contract-tested against `vercel.json` and Inngest scheduling isn't
-`vercel.json`). The other two Inngest functions are event-triggered and have
-no expected schedule at all. All three get the same generous 30-day fallback
-either way — see §2 — and all three route through the shared
-`withBridgeLogging` wrapper, so the check-in and the existing Bridge error
-logging stay in one place rather than being duplicated per function.
-
-`isInngestConfigured()` failing (both `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY`
-have been rejected in production per this session's own tracked state — not
-independently re-verified live by this deliverable) already has its own
-separate detection path (`instrumentation.ts`'s
-`reportInngestCredentialFault('startup')`) — these check-ins are additive to
-that, not a replacement for it: a credential fault stops the SEND from ever
-reaching Inngest, so the function never runs and never gets to start its own
-check-in either. Both signals point at the same underlying problem from two
-different places.
 
 ## 7. launchd Repair job (RETIRED 2026-09-05)
 

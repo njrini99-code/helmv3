@@ -27,7 +27,7 @@ import {
 } from 'react';
 import * as RadixTabs from '@radix-ui/react-tabs';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';

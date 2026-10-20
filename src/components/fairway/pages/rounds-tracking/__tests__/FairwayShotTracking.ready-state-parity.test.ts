@@ -2,7 +2,8 @@
  * B5/B8: `FairwayShotEntry`'s `nextShotBlocker` computes a human-readable
  * message for why the primary action is disabled, but the actual DISABLED
  * state comes from `isReadyForNextShot()` — a SEPARATE function defined in
- * the PARENT, `FairwayShotTracking.tsx`, and passed down as a prop. The two
+ * the shot screen's hook, `use-shot-tracking.ts` (moved out of
+ * `FairwayShotTracking.tsx`), and passed down as a prop. The two
  * must stay in lock-step: `nextShotBlocker`'s own doc comment says its
  * "order/conditions mirror isReadyForNextShot() VERBATIM so the hint can
  * never disagree with the disabled state."
@@ -21,7 +22,7 @@
  *    which for distance 0 bailed with `if (distanceAfter === 0) { return; }`
  *    and NO player-facing feedback at all — a dead tap.
  *
- * Source-inspection: `FairwayShotTracking.tsx` is a large component with
+ * Source-inspection: `use-shot-tracking.ts` is a large hook with
  * many sub-hooks (penalty, edit, undo, autosave) that would need extensive
  * mocking to render in isolation; the doc comment's own "mirror VERBATIM"
  * contract is exactly what this pins.
@@ -29,7 +30,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(new URL('../FairwayShotTracking.tsx', import.meta.url), 'utf8');
+// The screen's logic moved unchanged into useShotTracking (shared with Clubhouse); these assertions read it there.
+const source = readFileSync(new URL('../../../../../hooks/golf/use-shot-tracking.ts', import.meta.url), 'utf8');
 
 function slice(fromMarker: string, toMarker: string): string {
   const from = source.indexOf(fromMarker);

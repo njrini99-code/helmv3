@@ -9,9 +9,8 @@
  * ROLLBACK_RECOMMENDED | UNKNOWN with itemized evidence.
  *
  * IT NEVER CALLS A DEPLOY OR ROLLBACK API — same stance as
- * `scripts/release-status.mjs`'s own header ("It never deploys. Promotes
- * are the owner's call") and `config/release-policy.yml`'s
- * `emergency.automatic_override: false`.
+ * `scripts/release-status.mjs`'s own header ("It never deploys") and the
+ * advisory-only posture of `src/lib/admin/release-intel/`.
  *
  * Two input modes:
  *   --live --candidate-sha <sha> --deployed-at <ISO> [--window-hours N]
@@ -32,6 +31,14 @@ import { createClient } from '@supabase/supabase-js';
 import { evaluateRollback, summarizeReliabilityWindow } from '../../src/lib/admin/release-intel/rollback';
 import type { RollbackVerdict } from '../../src/lib/admin/release-intel/types';
 import type { ReliabilityRun } from '../../src/lib/reliability/types';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/release-intel/evaluate-rollback.ts',
+  summary:
+    "Read-only, non-executing rollback recommendation. --live reads the live deployment list.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const RELIABILITY_SNAPSHOT_JOB_TYPE = 'reliability-snapshot';
 

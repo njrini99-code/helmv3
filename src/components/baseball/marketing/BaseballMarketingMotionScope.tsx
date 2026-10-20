@@ -28,7 +28,7 @@
  * expects.
  */
 import type { ReactNode } from 'react';
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 
 export function BaseballMarketingMotionScope({ children }: { children: ReactNode }) {

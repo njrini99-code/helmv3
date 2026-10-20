@@ -1,0 +1,22 @@
+/* Sidebar ivory pass: shared by every page */
+.fw-sidebar .fw-navitem{color:#E9E4D6}
+.fw-sidebar .fw-navitem svg{color:#CFC7B2}
+.fw-sidebar .fw-navitem:hover{background:rgb(250 248 241/.07);color:#FBFAF6}
+.fw-sidebar .fw-navitem:hover svg{color:#F4F1E8}
+.fw-sidebar .fw-navitem[aria-current="page"]{background:linear-gradient(180deg,#FDFCF8,#F4F1E8);color:var(--green-800);font-weight:600;box-shadow:0 0 0 1px rgb(176 149 96/.45),0 1px 2px rgb(0 0 0/.25),0 6px 14px -8px rgb(0 0 0/.45),inset 0 1px 0 #fff}
+.fw-sidebar .fw-navitem[aria-current="page"] svg{color:var(--green-700)}
+.fw-sidebar .fw-navitem[aria-current="page"] .fw-navitem__count{color:var(--green-700)}
+.fw-sidebar .fw-navitem__count{color:#DCCDA6}
+.fw-sidebar .fw-sidebar__section{color:#DCCDA6;opacity:.8}
+.fw-sidebar .fw-sidebar__word{color:#FBFAF6}
+.fw-sidebar .fw-sidebar__team{color:#CFC7B2}
+.fw-sidebar .fw-sidebar__foot{border-top-color:rgb(220 205 166/.18)}
+.fw-sidebar .fw-identity__name{color:#FBFAF6}
+.fw-sidebar .fw-identity__meta{color:#CFC7B2}
+.fw-sidebar .fw-sidebar__foot .fw-avatar{box-shadow:0 0 0 2px rgb(220 205 166/.5)}
+.h2-brand{padding:10px 10px 12px;margin:0 -6px;border-radius:12px;background:rgb(250 248 241/.06);box-shadow:inset 0 0 0 1px rgb(220 205 166/.16)}
+.h2-next{background:linear-gradient(180deg,#FDFCF8,#F4F1E8);color:var(--text-primary);box-shadow:0 0 0 1px rgb(176 149 96/.4),0 8px 18px -10px rgb(0 0 0/.5),inset 0 1px 0 #fff}
+.h2-next__k{color:var(--text-tertiary)}.h2-next__k span:last-child{color:var(--green-700);font-weight:600}
+.h2-next__t{color:var(--green-800)}
+.h2-next__bar{background:var(--ivory-200);box-shadow:inset 0 1px 1px rgb(28 25 18/.08)}.h2-next__bar>span{background:var(--green-600)}
+.h2-next__m{color:var(--text-tertiary)}

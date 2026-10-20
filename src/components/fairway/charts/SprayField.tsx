@@ -44,7 +44,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { ChartTooltip } from './ChartTooltip';
 import { TABULAR_NUMS, VIZ_CHROME, VIZ_COLOR } from './theme';

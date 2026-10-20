@@ -1,0 +1,73 @@
+/* Fairway — Clubhouse Edition v2. Ivory neutrals do the work; green is reserved for action, selection and good news. */
+:root{
+/* Ivory neutrals (warm, low chroma) */
+--ivory-0:#FFFFFF;--ivory-25:#FDFCF8;--ivory-50:#F9F7F1;--ivory-100:#F4F2EA;--ivory-150:#EEEBE2;--ivory-200:#E7E3D8;--ivory-300:#DCD6C8;--ivory-400:#C9C2B1;
+/* Ink (warm black) */
+--ink-950:#141412;--ink-900:#1C1B18;--ink-700:#3A3833;--ink-600:#55524B;--ink-500:#6B6860;--ink-400:#8F8B81;--ink-300:#B3AFA5;
+/* Augusta green */
+--green-50:#EEF5F0;--green-100:#DDEBE1;--green-200:#BCD6C4;--green-400:#4F8A64;--green-500:#1F6B45;--green-600:#155A39;--green-700:#0F4A2F;--green-800:#0B3A25;--green-900:#082B1C;
+/* Champagne — hairline detail only */
+--champagne-300:#DCCDA6;--champagne-500:#B09560;
+/* Status */
+--positive-600:#1C6B43;--positive-100:#E6F2EA;
+--warning-600:#94600E;--warning-100:#FAF0DC;
+--danger-600:#B03A2E;--danger-100:#FBE9E6;
+--info-600:#2D5C77;--info-100:#E6EEF3;
+/* Golf scoring */
+--score-under:#B03A2E;--score-under-bg:#FBE9E6;--score-over-bg:#EFECE4;--score-double:#1C1B18;
+
+/* ---- Semantic ---- */
+--bg-page:var(--ivory-100);
+--bg-surface:var(--ivory-25);
+--bg-subtle:var(--ivory-50);
+--bg-inset:var(--ivory-150);
+--bg-hover:var(--ivory-50);
+--bg-selected:var(--green-50);
+--bg-feature:var(--green-800);
+--bg-overlay:rgb(20 20 18 / 0.32);
+--bg-inverse:var(--ink-900);
+
+--text-primary:var(--ink-900);
+--text-secondary:var(--ink-600);
+--text-tertiary:var(--ink-500);
+--text-disabled:var(--ink-300);
+--text-accent:var(--green-600);
+--text-inverse:#FAF9F5;
+--text-inverse-muted:#B9B6AD;
+--text-on-accent:#FFFFFF;
+--text-on-feature:#F4F1E8;
+--text-on-feature-muted:#A9C0B1;
+
+--accent-fill:var(--green-600);
+--accent-fill-hover:var(--green-700);
+--accent-fill-press:var(--green-800);
+
+--border-hairline:rgb(28 25 18 / 0.07);
+--border-subtle:rgb(28 25 18 / 0.10);
+--border-control:rgb(28 25 18 / 0.14);
+--border-strong:rgb(28 25 18 / 0.24);
+--border-focus:var(--ink-900);
+
+--focus-ring:rgb(28 25 18 / 0.10);
+--focus-ring-accent:rgb(21 90 57 / 0.22);
+/* Yardage-book charts */
+--chart-paper:#FBF8EF;--chart-ink:#1C1B18;--chart-green:#0B3A25;--chart-gain:#155A39;--chart-loss:#9A6512;--chart-flag:#B03A2E;--chart-rough:#E4E6D6;--chart-fairway:#CBDDCC;--chart-fairway-alt:#BFD5C1;--chart-grid-paper:#ECE6D6;
+}
+
+[data-theme="dark"]{
+--bg-page:#121210;--bg-surface:#1A1A17;--bg-subtle:#1E1E1B;--bg-inset:#161614;--bg-hover:#21211D;--bg-selected:#16271D;--bg-feature:#0C2A1C;--bg-inverse:#F4F2EC;
+--text-primary:#F2F0EA;--text-secondary:#B7B3AA;--text-tertiary:#8F8B82;--text-disabled:#5A5751;--text-accent:#7CC39A;--text-inverse:#1C1B18;--text-inverse-muted:#55524B;
+--accent-fill:#2F8A5C;--accent-fill-hover:#379866;--accent-fill-press:#277A50;
+--border-hairline:rgb(255 255 255 / 0.06);--border-subtle:rgb(255 255 255 / 0.09);--border-control:rgb(255 255 255 / 0.13);--border-strong:rgb(255 255 255 / 0.22);--border-focus:#F2F0EA;
+--positive-600:#7CC39A;--positive-100:#16271D;--warning-600:#E2B461;--warning-100:#2D2412;--danger-600:#EE8D80;--danger-100:#331D1A;--info-600:#8DBBD6;--info-100:#15232C;
+--score-under:#EE8D80;--score-under-bg:#331D1A;--score-over-bg:#26251F;--score-double:#F2F0EA;
+--focus-ring:rgb(255 255 255 / 0.12);
+}
+
+/* Rich green — opt-in variant: <html data-green="rich">. Sage-tinted neutrals, green carries structure. */
+[data-green="rich"]{
+--bg-page:#F3F5EE;--bg-subtle:#F7F9F3;--bg-inset:#E9EEE3;--bg-hover:#F2F6EE;--bg-selected:#E3EFE6;
+--text-secondary:#4B5A50;--text-tertiary:#627066;--text-accent:#155A39;
+--border-hairline:rgb(11 58 37 / 0.08);--border-subtle:rgb(11 58 37 / 0.12);--border-control:rgb(11 58 37 / 0.18);--border-strong:rgb(11 58 37 / 0.30);
+--focus-ring-accent:rgb(21 90 57 / 0.28);
+}

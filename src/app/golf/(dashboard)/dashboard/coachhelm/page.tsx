@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { createClient } from '@/lib/supabase/server';
-import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
+import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights-coachhelm';
 import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 import {
@@ -17,6 +18,8 @@ import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
 import { PlayerCoachHelmHome } from '@/components/golf/coachhelm/home/PlayerCoachHelmHome';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseCoachHelmRoute } from '@/clubhouse/routes/coachhelm';
 
 // ── `development` drill reads — copied from my-development/page.tsx (the
 // route it now absorbs via ?view=development). ──────────────────────────────
@@ -193,11 +196,14 @@ function progressHistoryOf(raw: unknown): { at: string; value: number; note?: st
  * 3. Fetches CoachHelm dashboard data
  * 4. Renders the client dashboard component
  */
-export default async function PlayerCoachHelmPage() {
+export default async function PlayerCoachHelmPage({ searchParams }: { searchParams: Promise<{ view?: string; player?: string; c?: string }> }) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
   const { coach, player } = session;
+
+  // Clubhouse CoachHelm (golf_clubhouse_ui): one page for coaches and players, drawn in place (no redirect: see golf-conditional-redirect.test.ts).
+  if (await isClubhouseFor(await getGolfDashboardRole())) return <ClubhouseCoachHelmRoute {...(await searchParams)} />;
 
   if (!player) {
     if (coach) {
@@ -318,7 +324,7 @@ export default async function PlayerCoachHelmPage() {
       fairway_pct: null,
       gir_pct: null,
     };
-    let developmentLoadError = false;
+    let developmentLoadError: boolean;
     let goals: FairwayGoalCardData[] = [];
     let achievedGoals: FairwayGoalCardData[] = [];
     let suggestions: GoalSuggestionView[] = [];
@@ -483,7 +489,6 @@ export default async function PlayerCoachHelmPage() {
           suggestion: s,
           display_label: cfg?.display_label ?? s.metric_id,
           unit: cfg?.unit ?? 'count',
-          cohort_value: st?.level_avg ?? null,
           tour_value: st && !st.pga_omitted ? st.pga_value : null,
         };
       });
@@ -579,13 +584,13 @@ export default async function PlayerCoachHelmPage() {
   // are the canonical source for the hero-card layout; `getPlayerCoachHelmDashboard`
   // still provides focus areas, prediction, and recent-round metadata.
   let dashboardResult: Awaited<ReturnType<typeof getPlayerCoachHelmDashboard>>;
-  let topInsight: Awaited<ReturnType<typeof getTopInsightForPlayer>> = null;
-  let secondaryInsights: Awaited<ReturnType<typeof getInsightsForPlayer>> = [];
+  let topInsight: Awaited<ReturnType<typeof getTopInsightForPlayer>>;
+  let secondaryInsights: Awaited<ReturnType<typeof getInsightsForPlayer>>;
   // Hierarchical THEME scaffold (flag-gated read; only consumed in the redesign
   // fork below). A failed/rejected themes fetch MUST degrade to `[]` themes and
   // NEVER error the page, so it joins the parallel fetch via a swallow-to-null
   // wrapper rather than the fail-the-page Promise.all alongside it.
-  let themesRes: Awaited<ReturnType<typeof getThemesForPlayer>> | null = null;
+  let themesRes: Awaited<ReturnType<typeof getThemesForPlayer>> | null;
   try {
     [dashboardResult, topInsight, secondaryInsights, themesRes] =
       await Promise.all([

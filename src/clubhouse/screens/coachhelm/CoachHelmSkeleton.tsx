@@ -1,0 +1,199 @@
+'use client';
+
+import { useGolfUserOptional } from '@/contexts/golf-user-context';
+import { Skeleton } from '../../ui/States';
+import { useChPhone } from '../../lib/use-phone';
+import '../../styles/coachhelm.css';
+
+/** One text line's box at its loaded height, with the bar centred in it (the phone intro's lines). */
+function Line({ h, w, sh, r }: { h: number; w: number | string; sh: number; r?: number }) {
+  return (
+    <span className="ch-hl-sk__line" style={{ height: h }}>
+      <Skeleton width={w} height={sh} radius={r} />
+    </span>
+  );
+}
+
+/**
+ * The phone's focus in its loaded shape (the Mobile clubhouse pass): the claim's feature card, then the evidence, the week's
+ * drill and the reasoning's row flush on the parchment under it. `claim` is the card's height for a typical claim of the role
+ * (measured at 390: the coach's one-line claim and two-line opening, 146px; the player's two-line claim and three-line opening,
+ * 194px); a longer or shorter claim still moves what follows by its difference.
+ */
+function PhoneFocusSkeleton({ claim }: { claim: number }) {
+  return (
+    <div className="ch-hl-sk__card">
+      <Skeleton width="100%" height={claim} radius={14} shape="solid" />
+      <Skeleton width="62%" height={12} />
+      <Skeleton width="100%" height={10} radius={5} />
+      <Skeleton width="100%" height={10} radius={5} />
+      <Skeleton width="54%" height={11} />
+      <span className="ch-hl-sk__rule" />
+      <Skeleton width={90} height={12} />
+      <Skeleton width="92%" height={13} />
+      <Skeleton width="78%" height={13} />
+    </div>
+  );
+}
+
+function FocusSkeleton() {
+  return (
+    <div className="ch-hl-sk__card">
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Skeleton width={140} height={11} />
+        <Skeleton width={90} height={22} radius={11} />
+      </div>
+      <Skeleton width="84%" height={30} radius={8} />
+      <Skeleton width="56%" height={30} radius={8} />
+      <Skeleton width="92%" height={13} />
+      <Skeleton width="70%" height={13} />
+      <Skeleton width="100%" height={140} radius={16} />
+      <Skeleton width="100%" height={90} radius={16} />
+    </div>
+  );
+}
+
+function RowsSkeleton({ rows, avatar }: { rows: number; avatar: number }) {
+  return (
+    <div className="ch-hl-sk__col">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Skeleton width={avatar} height={avatar} radius={avatar / 2.6} />
+          <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Skeleton width="46%" height={12} />
+            <Skeleton width="72%" height={10} />
+          </span>
+          <Skeleton width={22} height={22} radius={11} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The view strip (the player's Board, Game profile, Standing and Deep dive; the coach's Board and Ask) in the place and at the
+ * height the page draws it: the radiogroup's 38px on desktop, the phone's 44px (the 36px chips or segments and the room their tap
+ * area keeps). Without it the strip arrived with the page and pushed everything below it down.
+ */
+function StripSkeleton({ coach, phone }: { coach: boolean; phone: boolean }) {
+  return (
+    <div className="ch-hl-sk__tabs" style={{ height: phone ? 44 : 38 }}>
+      <Skeleton width={phone ? '100%' : coach ? 150 : 380} height={phone ? 36 : 38} radius={phone ? 18 : 12} />
+    </div>
+  );
+}
+
+/**
+ * Route loading for CoachHelm, in each role's own shape (gh-states.jsx): the
+ * player's focus beside a short list; the coach's program pulse, then the
+ * players beside the focus. CH-13401 (player) and CH-13402 (coach). `chained`: the page's own Suspense draws it after the route's
+ * `loading.tsx` skeleton, in the same place, so it does not fade in again over it (a second fade would dip the page).
+ */
+export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player'; chained?: boolean }) {
+  const coach = view === 'coach';
+  const phone = useChPhone();
+  return (
+    // Desktop: on the canopy, with the view strip level with the title as the page draws it (Head's aside), so neither the
+    // green nor the content below moves when the page lands.
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code={coach ? 'CH-13402' : 'CH-13401'} data-canopy={phone ? undefined : ''}>
+      {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
+      <h1 className="ch-sr-only">CoachHelm</h1>
+      {phone && <StripSkeleton coach={coach} phone />}
+      {phone ? (
+        // The phone's intro at its loaded line heights: the coach's eyebrow, the 31px title and the live line under the double rule.
+        <header className="ch-hl-h" data-canopy-head="">
+          {coach && <Line h={14.4} w={56} sh={11} />}
+          <Line h={33.5} w={176} sh={28} r={8} />
+          {coach ? (
+            <Line h={21.75} w="74%" sh={13} />
+          ) : (
+            // The player's line runs to two lines at the phone's width.
+            <span className="ch-hl-sk__line is-two">
+              <Skeleton width="92%" height={13} />
+              <Skeleton width="48%" height={13} />
+            </span>
+          )}
+        </header>
+      ) : (
+        <header className="ch-hl-h has-aside" data-canopy-head="">
+          {/* The role line is the coach's only (Head). */}
+          {coach && <Skeleton width={62} height={24} radius={12} />}
+          <Skeleton width={190} height={44} radius={10} />
+          <Skeleton width={360} height={14} />
+          <div className="ch-hl-h__aside">
+            <StripSkeleton coach={coach} phone={false} />
+          </div>
+        </header>
+      )}
+      {phone ? (
+        coach ? (
+          <>
+            <div className="ch-hl-sk__pulse">
+              <Line h={22.8} w={128} sh={17} r={6} />
+              <RowsSkeleton rows={3} avatar={30} />
+            </div>
+            <div className="ch-hl-sk ch-hl-sk--coach">
+              <div className="ch-hl-sk__chips" aria-hidden="true">
+                {[132, 140, 120].map((w) => (
+                  <Skeleton key={w} width={w} height={40} radius={20} />
+                ))}
+              </div>
+              <PhoneFocusSkeleton claim={146} />
+            </div>
+          </>
+        ) : (
+          <div className="ch-hl-sk ch-hl-sk--player">
+            <PhoneFocusSkeleton claim={194} />
+            <div className="ch-hl-sk__col">
+              <Line h={22.8} w={170} sh={17} r={6} />
+              {[0, 1].map((i) => (
+                <div key={i} className="ch-hl-sk__row">
+                  <Skeleton width={8} height={8} radius={4} />
+                  <span>
+                    <Skeleton width="34%" height={10} />
+                    <Skeleton width="76%" height={13} />
+                  </span>
+                  <Skeleton width={34} height={13} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      ) : coach ? (
+        <>
+          <div className="ch-hl-sk__pulse">
+            <Skeleton width={110} height={11} />
+            <RowsSkeleton rows={2} avatar={30} />
+          </div>
+          <div className="ch-hl-sk ch-hl-sk--coach">
+            <RowsSkeleton rows={4} avatar={34} />
+            <FocusSkeleton />
+          </div>
+        </>
+      ) : (
+        <div className="ch-hl-sk ch-hl-sk--player">
+          <FocusSkeleton />
+          <div className="ch-hl-sk__col">
+            <Skeleton width={120} height={11} />
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Skeleton width={10} height={10} radius={5} />
+                <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <Skeleton width="40%" height={10} />
+                  <Skeleton width="80%" height={13} />
+                </span>
+                <Skeleton width={36} height={13} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
+
+/** For loading.tsx: the shell knows who is signed in, so the skeleton takes their role's shape (a player until it is known). */
+export function CoachHelmRouteSkeleton() {
+  const role = useGolfUserOptional()?.role;
+  return <CoachHelmSkeleton view={role === 'coach' ? 'coach' : 'player'} />;
+}

@@ -1,0 +1,240 @@
+[
+  {
+    "file": "COMPLETION_PLAN_2026-10-18.md",
+    "title": "Complete and elevate: the full-auto plan",
+    "kind": "plan",
+    "date": "2026-10-18",
+    "scope": "Phone and desktop: the signature layer (scorecard, waiting pages, desktop command layer, native-feeling controls, readable stats), front-door completion and the open audit backlog, built in lanes on one integration branch.",
+    "status": "in_progress",
+    "note": "owner delegated decisions on 2026-10-18; no deploy or production migration",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "PREMIUM_PASS_AUDIT.md",
+    "title": "Premium pass: owner answers and backlog",
+    "kind": "audit",
+    "date": "2026-10-08",
+    "scope": "All 15 families, desktop and phone: 135 look/feel/feature ideas, 189 findings, 120 owner questions with the owner's answers and the resulting build backlog.",
+    "status": "in_progress",
+    "note": "answered 2026-10-08; build after the release",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "AUDIT_PLAN.md",
+    "title": "Swap audit: execution plan",
+    "kind": "plan",
+    "date": "2026-09-30",
+    "scope": "How the owner's complete swap audit is run against the released code: baselines, ground rules, runtime journeys, visual, code and performance phases.",
+    "status": "done",
+    "note": "findings are in SWAP_AUDIT.md",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "SWAP_AUDIT.md",
+    "title": "Complete-swap audit: findings",
+    "kind": "audit",
+    "date": "2026-09-30",
+    "scope": "Finding register for the owner's complete swap audit: role by route table, scorecard, findings with evidence labels, schema compatibility, release package.",
+    "status": "in_progress",
+    "note": "fix as I go; section 7 lists what is done",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "CLICKABLES.md",
+    "title": "Clickable inventory",
+    "kind": "inventory",
+    "date": "2026-09-30",
+    "scope": "Every clickable on the v2 boards against the built Clubhouse, with the GAP list ranked by how often a real user would hit it.",
+    "status": "in_progress",
+    "note": "the owner's build-it rule reopens decided rows",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "ROUNDS_PLAN.md",
+    "title": "Rounds (P011): the plan",
+    "kind": "plan",
+    "date": "2026-09-30",
+    "scope": "The four Rounds surfaces over one engine: order, the engine seam, board to source, the coach side.",
+    "status": "in_progress",
+    "note": "Q-72 in PROGRESS.md",
+    "allPages": false,
+    "pages": [
+      "P011"
+    ]
+  },
+  {
+    "file": "HIGH_FIDELITY_AUDIT.md",
+    "title": "High-fidelity audit",
+    "kind": "audit",
+    "date": "2026-10-01",
+    "scope": "The owner's high-fidelity app audit: findings F01 to F12, acceptance tests T01 to T32, and the phone audit at 390px.",
+    "status": "in_progress",
+    "note": "some items blocked on a real iPhone; owner decisions Q-139, Q-140",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "DEPTH_AUDIT.md",
+    "title": "Component depth audit",
+    "kind": "audit",
+    "date": "2026-10-01",
+    "scope": "The owner's component depth and native fidelity audit: one depth ladder by role (cards, controls, overlays, bubbles, switches), Messages as the worked example.",
+    "status": "in_progress",
+    "note": "owner decision Q-142",
+    "allPages": true,
+    "pages": [
+      "P007"
+    ]
+  },
+  {
+    "file": "PAGE_PERFORMANCE.md",
+    "title": "Page transitions, loading and performance",
+    "kind": "audit",
+    "date": "2026-10-01",
+    "scope": "The working standard for how Clubhouse moves, loads and saves, with where each rule stands and the iPhone layout brief.",
+    "status": "in_progress",
+    "note": "measurements in PROGRESS.md, Page performance",
+    "allPages": true,
+    "pages": [
+      "P009",
+      "P011",
+      "P013"
+    ]
+  },
+  {
+    "file": "AESTHETIC_AUDIT.md",
+    "title": "Targeted aesthetic audit",
+    "kind": "audit",
+    "date": "2026-10-01",
+    "scope": "The owner's targeted aesthetic audit: Messages list and thread, Home, shot tracking, Calendar, Qualifiers and CoachHelm, with before and after screenshots, measured and design-judgment verdicts, and the external tools' results.",
+    "status": "in_progress",
+    "note": "owner questions Q-147 to Q-152; a real iPhone is not tested",
+    "allPages": false,
+    "pages": [
+      "P002",
+      "P006",
+      "P007",
+      "P009",
+      "P011",
+      "P013"
+    ]
+  },
+  {
+    "file": "INTUITIVE_SECONDARY_AUDIT.md",
+    "title": "Secondary screens: Intuitive Software Design improvement",
+    "kind": "audit",
+    "date": "2026-10-02",
+    "scope": "Roster and statistics task orientation plus Team Hub per-object pending feedback, concurrent writes, confirmation and failure recovery.",
+    "status": "done",
+    "note": "scoped local corrections; physical Safari, human testing and live persistence remain unverified",
+    "allPages": false,
+    "pages": [
+      "P003",
+      "P004",
+      "P005",
+      "P010"
+    ]
+  },
+  {
+    "file": "RELEASE_CANDIDATE.md",
+    "title": "Mobile fidelity release candidate",
+    "kind": "plan",
+    "date": "2026-10-02",
+    "scope": "Candidate behavior, local authenticated WebKit evidence, recovery boundaries and owner production release conditions.",
+    "status": "in_progress",
+    "note": "candidate checks and physical phone acceptance; production remains unchanged",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "UX_OPTIMIZATION.md",
+    "title": "Mobile and desktop UX optimization",
+    "kind": "plan",
+    "date": "2026-10-02",
+    "scope": "Remaining custom overlays, narrow round setup, person-specific messaging and complete mobile/desktop task coverage.",
+    "status": "in_progress",
+    "note": "custom overlays, narrow controls, scoped feedback and measured phone Stats correction verified locally; physical Safari and intended-user validation remain open",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "SMOOTHNESS_AUDIT.md",
+    "title": "Clubhouse smoothness audit",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "All-page overlay/control inventory, current-source motion findings, stable appearance subscriptions and remaining Safari/iPhone profiling checks.",
+    "status": "in_progress",
+    "note": "appearance defect reproduced/repaired; Settings reduced-motion delay measured; physical-device profiling open",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "ALL_PAGE_AUDIT.md",
+    "title": "All-page release audit and UI ownership inventory",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "All 15 page families: overlay and motion call sites, package/style owners, action/test mapping and current source/browser evidence.",
+    "status": "in_progress",
+    "note": "305 state cases, 60 WebKit page renders and 24 onboarding renders; physical-device and authenticated release checks open",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "POPUP_AUDIT.md",
+    "title": "Popup layout and interaction audit",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "Complete popup call-site inventory, native-layer menu repairs, narrow/short viewport stress and keyboard/accessibility evidence.",
+    "status": "in_progress",
+    "note": "source and local browser repairs; physical device acceptance remains open",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "QUALITY_TOOLING.md",
+    "title": "Quality tooling and release evidence",
+    "kind": "plan",
+    "date": "2026-10-06",
+    "scope": "Scoped agent guidance, browser presentation matrix, reviewed visual comparisons, CSS and measured-performance guards, local profiler and MCP setup.",
+    "status": "done",
+    "note": "tooling implemented; reviewed baselines, authenticated performance and physical-device release evidence remain separate",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "PREMIUM_AUDIT.md",
+    "title": "Premium UI/UX audit and design brief",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "All 15 families: semantic materials, critical visual hierarchy, complete source catalog, rendered state evidence, focused accessibility/motion repairs and unresolved release risks.",
+    "status": "in_progress",
+    "note": "383 local Chromium/WebKit cases; partial visual rubric; physical iPhone, authenticated performance and full manual state acceptance remain open",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "NATIVE_FEEL_PERF_AUDIT_2026-10-08.md",
+    "title": "Native feel and performance audit (phone, measured)",
+    "kind": "audit",
+    "date": "2026-10-08",
+    "scope": "Coach phone screens on the iPhone 17 Pro simulator against the Vercel preview: frame-timed transitions, gestures, scroll, and the production query and RLS cost behind them.",
+    "status": "in_progress",
+    "note": "Tab switches 715-1350 ms with full skeletons; golf_shots/golf_holes RLS re-checked per row (553 ms vs 4.7 ms raw). Fix plan inside.",
+    "allPages": true
+  },
+  {
+    "file": "NATIVE_FEEL_RESEARCH_2026-10-08.md",
+    "title": "Native feel research: what makes a phone web app feel native",
+    "kind": "audit",
+    "date": "2026-10-08",
+    "scope": "Sourced research on iOS-native feel and desktop-to-phone transfer: a 27-item checklist (tab bar, revisits, pushes, edge swipe, large titles, pressed states, frames, offline launch), each with a simulator test, plus conflicts with Clubhouse rules for the owner.",
+    "status": "in_progress",
+    "note": "Checklist runs against the native app after the transition fixes; SF vs Instrument Sans and the page crossfade are owner calls.",
+    "allPages": true
+  }
+]

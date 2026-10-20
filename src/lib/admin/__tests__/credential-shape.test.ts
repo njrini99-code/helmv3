@@ -4,8 +4,6 @@ import {
   usableCredential,
   isSentryDsn,
   isSentryAuthToken,
-  isInngestSigningKey,
-  isInngestEventKey,
   isVercelApiToken,
   isVercelProjectId,
   isVercelTeamId,
@@ -30,8 +28,6 @@ describe('credential shapes reject the 11-character placeholder class', () => {
     'vercel_api_token',
     'vercel_project_id',
     'vercel_team_id',
-    'inngest_signing_key',
-    'inngest_event_key',
     'internal_log_key',
     'supabase_publishable_key',
     'supabase_secret_key',
@@ -76,20 +72,6 @@ describe('Sentry', () => {
     expect(isSentrySlug('helm-xs')).toBe(true);
     expect(isSentrySlug('javascript-nextjs')).toBe(true);
     expect(isSentrySlug('Helm XS')).toBe(false);
-  });
-});
-
-describe('Inngest', () => {
-  it('signing key is signkey-<env>-<hex> — the exact prefix the SDK strips', () => {
-    expect(isInngestSigningKey(`signkey-prod-${'0f'.repeat(32)}`)).toBe(true);
-    expect(isInngestSigningKey(`signkey-test-${'a'.repeat(64)}`)).toBe(true);
-    expect(isInngestSigningKey(`signkey-prod-${'a'.repeat(31)}`)).toBe(false);
-    expect(isInngestSigningKey(`signingkey-prod-${'a'.repeat(64)}`)).toBe(false);
-    expect(isInngestSigningKey('a'.repeat(64))).toBe(false);
-  });
-  it('event key is opaque and long', () => {
-    expect(isInngestEventKey('A'.repeat(86))).toBe(true);
-    expect(isInngestEventKey('A'.repeat(19))).toBe(false);
   });
 });
 

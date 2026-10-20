@@ -311,7 +311,8 @@ export function chipSummary(shots: readonly ChipShot[]): ChipSummary {
 // Putting --------------------------------------------------------------------
 
 /** Cut on the `putts_made_*_pct` standards so every band has a tour make %
- *  (`ref`); inside 3 ft has no standard and no band. */
+ *  (`ref`); inside 3 ft has no standard and no band. Bands are (min, max],
+ *  upper-inclusive, like every other putt make % (src/lib/golf/putt-make.ts). */
 export const PUTT_BANDS = [
   { id: '3', label: '3–5', min: 3, max: 5, ref: '3_5' },
   { id: '5', label: '5–10', min: 5, max: 10, ref: '5_10' },
@@ -340,7 +341,7 @@ export function puttsIn(
   const b = band === 'all' ? null : PUTT_BANDS.find((x) => x.id === band)!;
   return putts.filter(
     (p) =>
-      (!b || (p.feet >= b.min && p.feet < b.max)) &&
+      (!b || (p.feet > b.min && p.feet <= b.max)) &&
       (brk === 'all' || p.brk === brk) &&
       (slope === 'all' || p.slope === slope),
   );

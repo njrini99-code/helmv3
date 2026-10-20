@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useEffect, useMemo } from 'react';
+import { setSyncSessionPlayer } from '@/lib/offline/session-player';
 import type { CoachTeamOption } from '@/lib/golf/resolve-team';
 
 export interface GolfUserData {
@@ -45,6 +46,16 @@ export function GolfUserProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [userData.userId, userData.role, userData.teamId, userData.coachId, userData.playerId, userData.avatarUrl, userData.name]
   );
+
+  // The offline drain submits only this player's queued rounds. Set during render (idempotent) so it is known before
+  // any child's mount effect starts a sync; cleared when the dashboard unmounts (sign-out). The effect sets it again,
+  // so React's development double effect (mount, cleanup, mount) does not leave it cleared (swap audit §14 D9).
+  const syncPlayer = userData.playerId ?? null;
+  setSyncSessionPlayer(syncPlayer);
+  useEffect(() => {
+    setSyncSessionPlayer(syncPlayer);
+    return () => setSyncSessionPlayer(null);
+  }, [syncPlayer]);
 
   return (
     <GolfUserContext.Provider value={memoizedValue}>

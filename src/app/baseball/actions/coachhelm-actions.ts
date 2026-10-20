@@ -190,8 +190,8 @@ export interface OutcomeSweepResult {
 /**
  * Sweep open/in-progress actions with a target metric and record whether the
  * metric moved. Capability `can_manage_stats`. Thin wrapper over the shared core
- * (src/lib/baseball/coachhelm/outcome-sweep.ts) so the manual run, the Inngest
- * cron, and the postgame finalize path all measure identically. Honest by
+ * (src/lib/baseball/coachhelm/outcome-sweep.ts) so the manual run and the postgame
+ * finalize path all measure identically. Honest by
  * construction: a thin AFTER-window is 'too_early', a neutral_threshold metric
  * (workload) yields 'insufficient_sample' rather than a fake improvement claim,
  * and movement is always improvement-SIGNED from the registry — never the raw

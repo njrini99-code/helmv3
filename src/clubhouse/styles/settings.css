@@ -1,0 +1,2020 @@
+/* Settings (Clubhouse): a section rail and one section of cards at a time.
+   P008-C1: every type size is in --ch-type-k steps (1px at the default size), so Settings follows Dynamic Type and a
+   larger root size as the shared --ch-type-* tokens do, and looks the same at the default. */
+
+.ch-set {
+  /* A form page reads at a measure: the rail, a gap and the 640px column, centred in the canvas under the page head. */
+  max-width: calc(208px + 48px + 640px + 2 * var(--ch-page-gutter));
+  margin: 0 auto;
+  /* No eyebrow line over the title: its 24px is added to the head's top (tokens.css). */
+  padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 96px;
+}
+.ch-set-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+.ch-set-head h1 {
+  font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
+  color: var(--ch-text-primary);
+}
+.ch-set-head p {
+  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+  overflow-wrap: anywhere;
+}
+.ch-set-layout {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+}
+
+/* Rail */
+.ch-set-rail {
+  position: sticky;
+  top: calc(var(--ch-topbar-h) + 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ch-set-rail__i {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: transparent;
+  color: var(--ch-text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-set-rail__i > svg {
+  flex: none;
+  margin-top: 2px;
+}
+.ch-set-rail__i > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-set-rail__i b {
+  font: 500 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-set-rail__i span span {
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+@media (hover: hover) {
+  .ch-set-rail__i:hover {
+    background: rgb(28 25 18 / 0.05);
+  }
+}
+@media (hover: hover) {
+  .ch-set-rail__i.is-on:hover {
+    background: rgb(21 90 57 / 0.09);
+  }
+}
+/* CH-8607: a section presses with a deeper tint over the press beat, never a scale (the shell's CH-1606). */
+.ch-set-rail__i:active {
+  background: var(--ch-ledger-row-press);
+  transition-duration: var(--ch-dur-press);
+}
+.ch-set-rail__i.is-on {
+  /* Flat selection: a soft green tint, no lift (owner, 2026-09-29). */
+  background: rgb(21 90 57 / 0.07);
+  color: var(--ch-green-700);
+}
+.ch-set-rail__i.is-on span span {
+  color: var(--ch-text-secondary);
+}
+.ch-set-rail__i.is-on b {
+  font-weight: 600;
+  color: var(--ch-forest-800);
+}
+.ch-set-rail__i:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+
+/* Section body */
+.ch-set-body {
+  min-width: 0;
+}
+.ch-set-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 640px;
+}
+
+/* Cards are the design system's Surface (ui.css .ch-surface). */
+.ch-set-stackbody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ch-set-failed {
+  padding: 16px;
+}
+.ch-surface__foot .ch-set-status {
+  margin-right: auto;
+}
+
+/* The inline save bar (parts.tsx SaveBar): in the card's flow under the fields while there is something to save, and at
+   the foot of the view while the card is taller than it. One height through Unsaved, Saving and Saved, so the check
+   arriving moves nothing. */
+.ch-set-savebar {
+  position: sticky;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+  min-height: 52px;
+  margin-top: 18px;
+  padding: 10px 10px 10px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-overlay), 0 0 0 1px var(--ch-border-subtle);
+}
+.ch-set-savebar__acts {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A row's own Saved (parts.tsx SavedMark): in the label's line, so nothing around it moves. */
+.ch-set-row__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.ch-set-saved {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 1px;
+}
+.ch-set-saved__w {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  animation: ch-fade var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-set-matrix__what > .ch-set-row__top {
+  font: inherit;
+  color: inherit;
+}
+/* In a card's head the mark sits with the card's own actions. */
+.ch-surface__actions > .ch-set-saved {
+  order: -1;
+}
+
+/* Delete account, Leave team: the card that says what can't be undone. Red is for this (D-42). */
+.ch-set .ch-surface.is-danger .ch-surface__title,
+.ch-set[data-canopy] .ch-surface.is-danger .ch-surface__title {
+  color: var(--ch-danger-600);
+}
+
+/* Save status */
+.ch-set-status {
+  display: inline-flex;
+  flex: 1;
+  min-width: 0;
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-status > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.ch-set-status .is-saved {
+  color: var(--ch-green-700);
+}
+.ch-set-status .is-invalid {
+  color: var(--ch-danger-600);
+}
+.ch-set-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ch-warning-600);
+}
+
+/* Rows */
+.ch-set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 44px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-set-stackbody > .ch-set-row:first-child,
+.ch-set-group > .ch-set-sub + .ch-set-row {
+  padding-top: 0;
+  border-top: 0;
+}
+.ch-set-row__txt {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-set-row__l {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-set-row__l > svg {
+  color: var(--ch-green-600);
+}
+.ch-set-row__h {
+  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+  text-wrap: pretty;
+}
+.ch-set-row__c {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.ch-set-row__c > .ch-select {
+  width: 240px;
+}
+/* Two buttons on one row (Decline and Approve). */
+.ch-set-row__c > .ch-btn + .ch-btn {
+  margin-left: 8px;
+}
+.ch-set-row.is-dim .ch-set-row__l {
+  color: var(--ch-text-secondary);
+}
+.ch-set-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ch-set-group + .ch-set-group {
+  padding-top: 8px;
+}
+.ch-set-sub {
+  padding-top: 4px;
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-count {
+  flex: none;
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-green-700);
+}
+
+/* Form grid */
+.ch-set-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+.ch-set-span2 {
+  grid-column: 1 / -1;
+}
+.ch-set-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ch-set-inline > .ch-field {
+  flex: 1;
+}
+.ch-set-inline > .ch-btn {
+  margin-top: 25px;
+}
+/* A read-only value on a row, and a row of actions under it. */
+.ch-set-value {
+  max-width: 320px;
+  overflow: hidden;
+  font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The one invite-code style, on the desktop card and the phone's (Team, staff invites): large, tabular Instrument Sans. */
+.ch-set-code,
+.ch-setm-code__v,
+.ch-setm-invite__c b {
+  font: 600 calc(28 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+.ch-set-code {
+  color: var(--ch-forest-800);
+}
+/* Team code over its Copy, Copy link and Share, in one inset well. */
+.ch-set-codebox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 20px;
+  padding: 16px 18px;
+}
+.ch-set-codebox__c {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.ch-set-codebox__c > span {
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-codebox__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ch-set-codebox__acts .ch-btn {
+  min-width: 108px;
+}
+.ch-set-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -4px;
+}
+
+/* Profile photo */
+.ch-set-photo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ch-set-photo__img {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--ch-bg-surface), 0 0 0 4px var(--ch-border-subtle);
+  transition: opacity var(--ch-dur-base) var(--ch-ease);
+}
+.ch-set-photo__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ch-set-photo__img.is-busy {
+  opacity: 0.5;
+}
+.ch-set-photo__txt {
+  display: grid;
+  gap: 2px;
+}
+.ch-set-photo__txt b {
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+}
+.ch-set-photo__txt > span {
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-photo__acts {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* Link list */
+.ch-set-links {
+  display: flex;
+  flex-direction: column;
+  margin: -6px -10px;
+}
+.ch-set-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ch-text-secondary);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-set-link:hover {
+    background: rgb(28 25 18 / 0.04);
+  }
+}
+.ch-set-link > svg {
+  color: var(--ch-green-600);
+}
+.ch-set-link span {
+  display: grid;
+  gap: 2px;
+}
+.ch-set-link b {
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-set-link span span {
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+
+/* Notification matrix: the design system's table, full-bleed in the card.
+   Ivory-50 header with 12.5px tertiary labels, hairline rows, no zebra. */
+.ch-set-matrix {
+  display: flex;
+  flex-direction: column;
+  margin: 2px -20px 0;
+  border-top: 1px solid var(--ch-border-hairline);
+  border-bottom: 1px solid var(--ch-border-hairline);
+}
+.ch-set-matrix__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px 64px;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 20px;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-set-matrix.is-3 .ch-set-matrix__row {
+  grid-template-columns: minmax(0, 1fr) 64px 64px 64px;
+}
+.ch-set-matrix__row > [role='cell'],
+.ch-set-matrix__row.is-head > [role='columnheader']:not(:first-child) {
+  display: flex;
+  justify-content: center;
+}
+.ch-set-matrix__row.is-head {
+  min-height: 0;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  border-top: 0;
+  background: var(--ch-bg-subtle);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+@media (hover: hover) {
+  .ch-set-matrix__row:not(.is-head):hover {
+    background: var(--ch-bg-subtle);
+  }
+}
+.ch-set-matrix__group {
+  padding: 14px 20px 4px;
+  border-top: 1px solid var(--ch-border-hairline);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-matrix__group + .ch-set-matrix__row {
+  border-top: 0;
+}
+.ch-set-matrix__what {
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-set-matrix__what b {
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-set-matrix__what > span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-matrix__row.is-dim .ch-set-matrix__what b {
+  color: var(--ch-text-secondary);
+}
+.ch-surface__body > .ch-set-matrix:last-child {
+  margin-bottom: -20px;
+  border-bottom: 0;
+}
+.ch-set-na {
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+/* P008-C3: a row's switch with its test beside it (Send a test, Feel it). */
+.ch-set-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+/* P008 #4: the Push column says when push is off on this device (it still saves for the others). */
+.ch-set-matrix__row.is-head > [role='columnheader'] .ch-set-matrix__note {
+  display: block;
+  margin-top: 3px;
+  font: 400 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-set-matrix__row.is-head > [role='columnheader']:has(.ch-set-matrix__note) {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.ch-set-bulk {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+/* Sliders stack */
+.ch-set-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-set-stackbody > .ch-set-sliders:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* Priority ranker: a plain ranked list with hairlines (no cards). */
+.ch-set-rank {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-set-rank__i {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 8px 0;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-set-rank__i:first-child {
+  border-top: 0;
+}
+.ch-set-rank__i.is-moved {
+  animation: ch-set-moved var(--ch-dur-base) var(--ch-ease);
+}
+@keyframes ch-set-moved {
+  from {
+    background: rgb(21 90 57 / 0.07);
+  }
+}
+.ch-set-rank__n {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #e3ede5;
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-green-700);
+}
+.ch-set-rank__txt {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-set-rank__txt b {
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+}
+.ch-set-rank__txt span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-rank__acts {
+  display: flex;
+  flex: none;
+  gap: 14px;
+}
+/* The reorder arrows are drawn at 30px; the hit area reaches 44. The segments of a setting (sensitivity, delivery,
+   units) are drawn at 26px and reach 44 the same way. */
+.ch-set-rank__acts .ch-btn,
+.ch-set-row .ch-seg__b {
+  position: relative;
+}
+.ch-set-rank__acts .ch-btn::after,
+.ch-set-row .ch-seg__b::after {
+  content: '';
+  position: absolute;
+  inset: min(0px, calc(50% - 22px));
+}
+
+/* Join requests */
+.ch-set-request {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ch-set-request > span {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-set-request b {
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+}
+.ch-set-request span span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-request > svg {
+  color: var(--ch-warning-600);
+}
+.ch-set-requests {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Loading */
+.ch-set-skel-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Narrow canvas: the rail becomes a scrolling strip above the section. */
+@container (max-width: 860px) {
+  .ch-set {
+    padding: 28px 16px 64px;
+  }
+  .ch-set-head {
+    margin-bottom: 20px;
+  }
+  .ch-set-head h1 {
+    font-size: calc(32 * var(--ch-type-k));
+  }
+  .ch-set-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .ch-set-rail {
+    position: static;
+    flex-direction: row;
+    gap: 6px;
+    margin: 0 -16px;
+    padding: 2px 16px 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ch-set-rail__i {
+    flex: none;
+    width: auto;
+    align-items: center;
+    padding: 8px 12px;
+  }
+  .ch-set-rail__i > svg {
+    margin-top: 0;
+  }
+  .ch-set-rail__i span span {
+    display: none;
+  }
+  .ch-set-stack {
+    max-width: none;
+  }
+}
+@container (max-width: 560px) {
+  .ch-set-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-set-row {
+    flex-wrap: wrap;
+  }
+  .ch-set-row__c > .ch-select {
+    width: 100%;
+  }
+  .ch-set-row:has(.ch-seg, .ch-select) .ch-set-row__c {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+  .ch-surface__head {
+    flex-wrap: wrap;
+  }
+  .ch-set-matrix__row,
+  .ch-set-matrix.is-3 .ch-set-matrix__row {
+    grid-template-columns: minmax(0, 1fr) 48px 48px;
+    padding: 8px 16px;
+  }
+  .ch-set-matrix {
+    margin-left: -20px;
+    margin-right: -20px;
+  }
+  .ch-set-matrix.is-3 .ch-set-matrix__row {
+    grid-template-columns: minmax(0, 1fr) 48px 48px 48px;
+  }
+  .ch-set-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ch-set-inline > .ch-btn {
+    margin-top: 0;
+  }
+}
+
+/* Phone (owner design: docs/clubhouse/phone/settings.md, mockups linked there).
+   SettingsPhone renders only under 820px (useChPhone); the rules sit under the same query. The server renders desktop,
+   so on a phone the desktop page stays hidden until the phone screen takes over at hydration. Its classes are .ch-setm-*. */
+.ch-set-skel-desk {
+  display: contents;
+}
+.ch-setm-skel {
+  display: none;
+}
+@media (max-width: 820px) {
+  .ch-set:not([aria-busy='true']) {
+    visibility: hidden;
+  }
+  /* The skeleton's page has the live page's padding, and draws its list in the live page's classes, so nothing moves
+     when the list arrives. */
+  .ch-set[aria-busy='true'] {
+    padding: 26px 20px 32px;
+  }
+  .ch-set-skel-desk {
+    display: none;
+  }
+  .ch-setm-skel {
+    display: block;
+  }
+  /* The title's bar holds the live title's line (31px at 1.08) under the same rule and padding. */
+  .ch-setm-skel .ch-setm-title {
+    display: flex;
+    box-sizing: content-box;
+    align-items: center;
+    height: 1.08em;
+  }
+
+  .ch-setm {
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    /* A pushed section travels in from the right edge (CH-8609); the page never scrolls sideways while it does. */
+    overflow-x: clip;
+    padding: 26px 20px 32px;
+    font-variant-numeric: tabular-nums;
+  }
+  /* The page (the Mobile clubhouse pass, owner 2026-10-08): the board's 36px between sections. */
+  .ch-setm-page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+  /* A section is in front of the list while either moves (CH-8609), on the sheet's parchment, so the list fades out of
+     sight under it. */
+  .ch-setm-page.is-sub {
+    z-index: 1;
+    background: var(--ch-workspace);
+  }
+  /* The large title, as the board's page intro (ui.css .ch-intro): an engraved double rule, then the bold sans in forest
+     ink. The top bar carries only the back link, and the page's heading for VoiceOver. */
+  .ch-setm-title {
+    margin: 0;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  /* The intro's brief, 10px under the title (ui.css .ch-intro__brief); written against the page so it outranks the
+     root's paragraph reset. */
+  .ch-setm-page > .ch-setm-lead {
+    margin: -26px 0 0;
+    font: 400 calc(14.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-secondary);
+  }
+  .ch-setm-lead.is-failed {
+    color: var(--ch-warning-600);
+  }
+
+  /* Who you are, flush under the title: the portrait set into the page with the Ledger's ring, the name and the role.
+     The whole row presses with the Ledger's tint, which bleeds 12px past the section's edge. */
+  .ch-setm-id {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-sizing: border-box;
+    width: calc(100% + 24px);
+    margin: -18px -12px 0;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-setm-id:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-setm-id:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: 2px;
+  }
+  .ch-setm-id__b {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .ch-setm-id__b b {
+    overflow: hidden;
+    font: 600 calc(17 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+    letter-spacing: -0.015em;
+    color: var(--ch-text-primary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-setm-id__b span {
+    overflow: hidden;
+    font: 400 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-setm-coin {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--ch-green-800);
+    color: var(--ch-on-fill-100);
+    font: 600 calc(19 * var(--ch-type-k))/1 var(--ch-font-sans);
+    transition: opacity var(--ch-dur-base) var(--ch-ease);
+  }
+  /* Inset by the ring's 4px, so the ring (not the coin) meets the column's 20px edge. */
+  .ch-setm-id > .ch-setm-coin {
+    margin-inline-start: 4px;
+    box-shadow: var(--ch-ledger-avatar-ring);
+  }
+  .ch-setm-coin.is-player {
+    background: var(--ch-green-100);
+    color: var(--ch-forest-800);
+  }
+  .ch-setm-coin.is-big {
+    width: 84px;
+    height: 84px;
+    font-size: calc(28 * var(--ch-type-k));
+  }
+  .ch-setm-coin.is-busy {
+    opacity: 0.5;
+  }
+  .ch-setm-coin img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Groups: a small heading over a rounded card of rows, and a footnote under it */
+  .ch-setm-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .ch-setm-gh {
+    margin: 0;
+    padding: 0 16px 6px;
+    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-setm-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    box-shadow: var(--ch-elevation-reading);
+  }
+  .ch-setm-note {
+    margin: 8px 16px 0;
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+    text-wrap: pretty;
+  }
+
+  /* Rows: 52px, a hairline between them, inset past the icon tile when there is one */
+  .ch-setm-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 52px;
+    padding: 0 14px 0 16px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-setm-row ~ .ch-setm-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 16px;
+    height: 1px;
+    background: var(--ch-border-hairline);
+  }
+  .ch-setm-row.has-tile {
+    gap: 12px;
+    padding: 0 14px;
+  }
+  .ch-setm-row ~ .ch-setm-row.has-tile::before {
+    left: 56px;
+  }
+  button.ch-setm-row:active,
+  a.ch-setm-row:active {
+    background: var(--ch-bg-hover);
+  }
+  .ch-setm-row:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
+  .ch-setm-row:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  /* Under larger page text the summary gives way first (it ellipsizes) and the label keeps its words whole: the label
+     had no floor and broke mid-word ("Notificati/ons", Simulator at 125%, 2026-10-14). */
+  .ch-setm-row__l {
+    flex: 1 1 auto;
+    min-width: min-content;
+    overflow-wrap: break-word;
+  }
+  .ch-setm-row__v {
+    min-width: 0;
+    max-width: 55%;
+    overflow: hidden;
+    font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-tertiary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-setm-row__v.is-link {
+    font-weight: 500;
+    color: var(--ch-green-600);
+  }
+  .ch-setm-chev {
+    flex: none;
+    color: var(--ch-ink-400);
+  }
+  .ch-setm-tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--ch-green-50);
+    color: var(--ch-green-600);
+  }
+  .ch-setm-tile.is-dark {
+    background: var(--ch-green-800);
+    color: var(--ch-hero-mint);
+  }
+  .ch-setm-row.is-plain {
+    min-height: 50px;
+    padding: 0 16px;
+  }
+  .ch-setm-row.is-info {
+    cursor: default;
+  }
+  .ch-setm-row.is-info.has-help {
+    flex-wrap: wrap;
+    padding: 4px 8px 10px 16px;
+    row-gap: 0;
+  }
+  .ch-setm-row.is-info .ch-setm-help {
+    flex: none;
+    width: 100%;
+    margin: -8px 0 0;
+    padding: 0;
+  }
+  .ch-setm-row.is-danger {
+    justify-content: center;
+    font-weight: 500;
+    color: var(--ch-danger-600);
+  }
+  .ch-setm-row.is-danger .ch-setm-row__l {
+    flex: none;
+  }
+  .ch-setm-row.is-pick {
+    min-height: 52px;
+  }
+  .ch-setm-check {
+    flex: none;
+    color: var(--ch-green-600);
+  }
+
+  /* Switch rows: the whole row is the switch, drawn like the design (51 by 31, green when on) */
+  .ch-setm-row.is-sw {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    cursor: default;
+  }
+  .ch-setm-row.is-sw .ch-switch {
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    gap: 12px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 52px;
+    padding: 0 14px 0 16px;
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+  .ch-setm-row.is-sw.is-dim .ch-switch__l {
+    color: var(--ch-text-secondary);
+  }
+  .ch-setm-row.is-sw .ch-switch__track {
+    width: 51px;
+    height: 31px;
+    background: var(--ch-ivory-300);
+    box-shadow: none;
+  }
+  .ch-setm-row.is-sw .ch-switch__thumb {
+    top: 2px;
+    left: 2px;
+    width: 27px;
+    height: 27px;
+    background: var(--ch-ivory-0);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 0.2);
+  }
+  .ch-setm-row.is-sw .ch-switch input:checked + .ch-switch__track {
+    background: var(--ch-green-fill-600);
+    box-shadow: none;
+  }
+  .ch-setm-row.is-sw .ch-switch input:checked + .ch-switch__track .ch-switch__thumb {
+    transform: translateX(20px);
+  }
+  .ch-setm-help {
+    display: block;
+    margin-top: -12px;
+    padding: 0 16px 12px;
+    font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+    text-wrap: pretty;
+  }
+
+  /* Slider rows: the slider keeps the full width under its label and value */
+  .ch-setm-row.is-slider {
+    display: block;
+    padding: 14px 16px;
+    cursor: default;
+  }
+  .ch-setm-row.is-slider .ch-slider {
+    gap: 6px;
+  }
+  .ch-setm-row.is-slider .ch-slider__l {
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  }
+  .ch-setm-row.is-slider .ch-slider__v {
+    font: 600 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-primary);
+  }
+  .ch-setm-row.is-slider .ch-slider input {
+    order: 2;
+    height: 44px;
+    margin: -8px 0;
+  }
+  .ch-setm-row.is-slider .ch-slider__d {
+    order: 3;
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-setm-row.is-slider .ch-slider__ends {
+    display: none;
+  }
+
+  /* Fields in a sheet */
+  .ch-setm-fieldwrap {
+    position: relative;
+  }
+  .ch-setm-fieldwrap ~ .ch-setm-fieldwrap::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 16px;
+    height: 1px;
+    background: var(--ch-border-hairline);
+  }
+  .ch-setm-row.is-field {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 2px;
+    min-height: 64px;
+    padding: 8px 16px 10px;
+    cursor: text;
+  }
+  .ch-setm-row.is-field.is-inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    padding: 0 16px;
+  }
+  .ch-setm-row.is-field:focus-within {
+    background: var(--ch-green-25);
+  }
+  .ch-setm-field__l {
+    flex: none;
+    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .is-inline .ch-setm-field__l {
+    width: 96px;
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-setm-field__i {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    caret-color: var(--ch-green-600);
+    /* 16px, so iOS doesn't zoom the page when a field takes focus */
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+  .ch-setm-field__i::placeholder {
+    color: var(--ch-ink-400);
+  }
+  .ch-setm-field__h {
+    display: block;
+    padding: 0 16px 10px;
+    font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-setm-field__h.is-error,
+  .ch-setm-problem.is-error {
+    color: var(--ch-danger-600);
+  }
+  .ch-setm-problem {
+    margin: -6px 16px 0;
+    font: 500 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  }
+
+  /* Text actions and the invite card */
+  .ch-setm-link {
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+    color: var(--ch-green-600);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .ch-setm-link.is-quiet {
+    color: var(--ch-text-tertiary);
+  }
+  .ch-setm-link:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .ch-setm-invite {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 14px 12px 4px 16px;
+  }
+  .ch-setm-invite__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+  }
+  .ch-setm-invite__c {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .ch-setm-invite__c > span {
+    font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-setm-invite .ch-setm-link {
+    margin-left: -4px;
+  }
+  .ch-setm-invite__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 16px;
+  }
+  .ch-setm-pill {
+    position: relative;
+    flex: none;
+    height: 40px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--ch-green-800);
+    color: var(--ch-on-fill-100);
+    font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  /* Drawn at 40px; the hit area reaches 44. */
+  .ch-setm-pill::after {
+    content: '';
+    position: absolute;
+    inset: -2px 0;
+  }
+
+  /* Sign out: a flush row at the foot of the list, in the standard row ink (it is not destructive: red is for that), on its own rule; the press is the Ledger's tint. */
+  .ch-setm-signout {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    width: calc(100% + 24px);
+    min-height: 58px;
+    margin: 0 -12px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+    color: var(--ch-text-primary);
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-setm-signout:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-setm-signout:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  /* Priorities: the native reorder handle */
+  .ch-setm-rank {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ch-setm-rank__i {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-sizing: border-box;
+    height: 56px;
+    padding: 0 12px 0 16px;
+    background: var(--ch-bg-surface);
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* Exposed keyboard alternatives expand the row rather than covering its priority. */
+  .ch-setm-rank__i:has(> .ch-sr-only--focusable :focus-visible) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 44px;
+    height: auto;
+    min-height: 56px;
+    padding-block: 8px;
+  }
+  .ch-setm-rank__i > .ch-sr-only--focusable:has(:focus-visible) {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ch-setm-rank__i ~ .ch-setm-rank__i::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 46px;
+    height: 1px;
+    background: var(--ch-border-hairline);
+  }
+  /* While a row is held (phone/Reorder.tsx, dnd-kit): the place it left is a soft recess that travels to where it will
+     land, and the row itself rides above the list as the drag overlay, the one elevated object. */
+  .ch-setm-rank__i.is-held {
+    margin: 0 4px;
+    border-radius: 12px;
+    background: var(--ch-bg-inset);
+    box-shadow: var(--ch-well-soft-shadow);
+  }
+  /* Transparent, not hidden: the handle a keyboard lifted keeps its focus and its place for VoiceOver. */
+  .ch-setm-rank__i.is-held > * {
+    opacity: 0;
+  }
+  .ch-setm-rank__i.is-held::before {
+    display: none;
+  }
+  /* The lifted row (the overlay, portaled into the Clubhouse root): its shadow rises over quick as it leaves the list
+     and falls away over release as it settles into its row (dnd-kit's drop, .is-settling). Instant with reduced motion and with
+     Animations off, where the duration tokens are zero and the drop does not animate. */
+  .ch-setm-rank__i.is-lifted {
+    margin: 0 4px;
+    border-radius: 12px;
+    background: var(--ch-green-50);
+    box-shadow: var(--ch-elevation-overlay);
+    cursor: grabbing;
+    animation: ch-setm-rank-rise var(--ch-dur-quick) var(--ch-ease) backwards;
+    transition:
+      box-shadow var(--ch-dur-release) var(--ch-ease),
+      background-color var(--ch-dur-release) var(--ch-ease);
+  }
+  .ch-setm-rank-lift .is-settling > .ch-setm-rank__i.is-lifted {
+    background-color: transparent;
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ch-setm-rank__i.is-lifted {
+      animation: none;
+      transition: none;
+    }
+  }
+  @keyframes ch-setm-rank-rise {
+    from {
+      box-shadow: none;
+    }
+  }
+  .ch-setm-rank__n {
+    flex: none;
+    width: 18px;
+    font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-green-600);
+  }
+  .ch-setm-rank__txt {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .ch-setm-rank__txt > span:first-child {
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  }
+  .ch-setm-rank__txt > span:last-child {
+    font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-setm-rank__h {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--ch-ink-400);
+    cursor: grab;
+    touch-action: none;
+  }
+  .ch-setm-rank__h:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
+  .ch-setm-rank__i.is-lifted .ch-setm-rank__h {
+    color: var(--ch-green-600);
+    cursor: grabbing;
+  }
+
+  .ch-setm-signout:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
+
+  /* The page's groups on the Ledger (the Mobile clubhouse pass, owner 2026-10-08): each is a flush section, its heading
+     under the engraved double rule in the 19px bold sans, its rows on soft seams with the label in the bold sans, and
+     its footnote flush to the section's edge. A group with no heading (the sections list, Sign out) opens on a rule.
+     Only the page's own groups (children of the page) change: the sheets' inset forms keep their cards. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-gh {
+    margin: 0 0 6px;
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card {
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card:first-child {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+  .ch-setm-page > .ch-setm-group.is-end {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-note {
+    margin: 10px 0 0;
+    font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  }
+  /* A section that didn't load: its notice stands where its first row would. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > [role='alert'] {
+    margin-top: 8px;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row {
+    width: calc(100% + 24px);
+    min-height: 58px;
+    margin-inline: -12px;
+    padding: 0 12px;
+    border-radius: var(--ch-radius-md);
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row ~ .ch-setm-row::before {
+    right: 12px;
+    left: 12px;
+    background: var(--ch-ledger-rule-soft);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > button.ch-setm-row:active,
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > a.ch-setm-row:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.has-tile {
+    gap: 14px;
+  }
+  /* The icon sits in an engraved tile rather than a filled one; CoachHelm keeps its dark tile. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row > .ch-setm-tile:not(.is-dark) {
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-danger {
+    justify-content: flex-start;
+  }
+  /* An action or link row (Create invite, Report a problem, Privacy policy, Try again) has no value or chevron to say
+     it does something, so its words take the ink of a value that opens something (.is-link), the way a native list
+     tints its actions. A red row (Sign out, Leave team) is its own class and stays red. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-plain {
+    color: var(--ch-green-600);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-info.has-help {
+    padding: 10px 12px 12px;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-info .ch-setm-help {
+    margin: 0;
+    padding: 0;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-sw {
+    padding: 0;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-sw .ch-switch {
+    min-height: 58px;
+    padding: 0 12px;
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row .ch-setm-help {
+    margin-top: -10px;
+    padding: 0 12px 14px;
+    font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-slider {
+    padding: 14px 12px;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-slider .ch-slider__l {
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  /* The priorities: ranked rows on the same seams; a held row lifts on a green plate a little wider than the row. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i {
+    height: 58px;
+    padding: 0;
+    background: none;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i ~ .ch-setm-rank__i::before {
+    left: 0;
+    background: var(--ch-ledger-rule-soft);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i.is-held {
+    margin: 0 -10px;
+    padding: 0 10px;
+    background: var(--ch-bg-inset);
+  }
+  /* The lifted row is drawn outside the list (the drag overlay), so it carries the Ledger row's measure itself. */
+  .ch-setm-rank-lift .ch-setm-rank__i.is-lifted {
+    height: 58px;
+    margin: 0 -10px;
+    padding: 0 10px;
+  }
+  .ch-setm-rank-lift .ch-setm-rank__i.is-lifted .ch-setm-rank__txt > span:first-child {
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank .ch-setm-rank__txt > span:first-child {
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  /* A staff invite's code, flush under its rows. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-invite {
+    padding: 12px 0 4px;
+  }
+
+  /* Team's one feature card: the invite code, on the kit's FeatureCard (ui.css .ch-feat). The code is its title, Share
+     stands where the card's chip would, and New code is the quiet way to replace it, in the foot. */
+  .ch-setm-code .ch-feat__k {
+    margin: -6px -6px 0 0;
+  }
+  .ch-setm-code .ch-feat__foot {
+    display: flex;
+    gap: 20px;
+    padding-top: 6px;
+  }
+  .ch-setm-pill.is-on-green {
+    background: var(--ch-on-green-ink);
+    color: var(--ch-green-800);
+  }
+  .ch-setm-link.is-on-green {
+    margin-left: -4px;
+    font-weight: 600;
+    color: var(--ch-champagne-300);
+  }
+  .ch-setm-pill:focus-visible,
+  .ch-setm-link:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: 2px;
+  }
+  .ch-setm-code .ch-setm-pill:focus-visible,
+  .ch-setm-code .ch-setm-link:focus-visible {
+    outline-color: var(--ch-champagne-300);
+  }
+
+  /* Sheets on the native <dialog> (sheets.tsx): a bottom sheet, and the iOS action sheet */
+  .ch-setm-dlg,
+  .ch-setm-act {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    margin: auto 0 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    color: var(--ch-text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .ch-setm-dlg::backdrop,
+  .ch-setm-act::backdrop {
+    background: var(--ch-scrim, rgb(20 20 18 / 0.36));
+    animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+  }
+  body.keyboard-open .ch-setm-dlg,
+  body.keyboard-open .ch-setm-act {
+    margin-bottom: var(--keyboard-height, 0px);
+  }
+  body.keyboard-open .ch-setm-act {
+    max-height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .ch-setm-sheet {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-sizing: border-box;
+    max-height: calc(100dvh - 54px);
+    padding: 8px 16px max(40px, calc(16px + env(safe-area-inset-bottom)));
+    overflow: hidden;
+    border-radius: 24px 24px 0 0;
+    background: var(--ch-bg-page);
+    box-shadow: var(--ch-elevation-sheet);
+    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  /* Grouped form rows are inset content, not floating cards. */
+  .ch-setm-sheet .ch-setm-card {
+    box-shadow: none;
+  }
+  .ch-setm-dlg.is-full .ch-setm-sheet {
+    height: calc(100dvh - max(54px, env(safe-area-inset-top)));
+    gap: 18px;
+  }
+  body.keyboard-open .ch-setm-sheet {
+    max-height: calc(100dvh - max(54px, env(safe-area-inset-top)) - var(--keyboard-height, 0px));
+  }
+  body.keyboard-open .ch-setm-sheet__body > * {
+    flex-shrink: 0;
+  }
+  .ch-setm-sheet__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 18px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .ch-setm-sheet__note {
+    flex: none;
+    margin: 0 4px;
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-setm-dlg.is-full .ch-setm-sheet__note {
+    text-align: center;
+  }
+  .ch-setm-grab {
+    position: relative;
+    flex: none;
+    align-self: center;
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--ch-ivory-400);
+    touch-action: none;
+  }
+  /* A bigger grip to take hold of. */
+  .ch-setm-grab::after {
+    content: '';
+    position: absolute;
+    inset: -12px -40px;
+  }
+  .ch-setm-bar {
+    display: grid;
+    flex: none;
+    grid-template-columns: minmax(60px, 1fr) minmax(0, auto) minmax(60px, 1fr);
+    align-items: center;
+    touch-action: none;
+  }
+  .ch-setm-bar__t {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: center;
+    font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  }
+  .ch-setm-bar__b {
+    justify-self: start;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: 400 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
+    color: var(--ch-green-600);
+    text-align: left;
+    cursor: pointer;
+  }
+  .ch-setm-bar__b.is-action {
+    justify-self: end;
+    font-weight: 600;
+    text-align: right;
+  }
+  .ch-setm-bar__b.is-action.is-danger {
+    color: var(--ch-danger-600);
+  }
+  .ch-setm-bar__b:disabled {
+    color: var(--ch-text-disabled);
+    cursor: default;
+  }
+  .ch-setm-lbar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    touch-action: none;
+  }
+  .ch-setm-lbar__t {
+    overflow-wrap: anywhere;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .ch-setm-lbar__t h2 {
+    margin: 0;
+    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  }
+  .ch-setm-lbar__t span {
+    font: 400 calc(13.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-setm-photo {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .ch-setm-photo__acts {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* The action sheet: a card with the destructive choice in red, and Cancel in a card of its own */
+  .ch-setm-act {
+    max-height: calc(100dvh - env(safe-area-inset-top) - 8px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 10px calc(10px + env(safe-area-inset-bottom));
+  }
+  .ch-setm-act[open] {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  .ch-setm-act__card {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px;
+    background: rgb(253 252 248 / 0.97);
+  }
+  .ch-setm-act__msg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 16px 20px 14px;
+    text-align: center;
+  }
+  .ch-setm-act__msg b {
+    font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-setm-act__msg span {
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-setm-act__btn,
+  .ch-setm-act__cancel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    height: 57px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: 500 calc(19 * var(--ch-type-k))/1 var(--ch-font-sans);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .ch-setm-act__btn {
+    border-top: 1px solid var(--ch-border-subtle);
+  }
+  .ch-setm-act__btn.is-danger {
+    color: var(--ch-danger-600);
+  }
+  .ch-setm-act__btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .ch-setm-act__cancel {
+    flex: none;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    font-weight: 600;
+    color: var(--ch-green-600);
+  }
+  .ch-setm-act__btn:active,
+  .ch-setm-act__cancel:active {
+    background: var(--ch-bg-hover);
+  }
+  .ch-setm-act__btn:focus-visible,
+  .ch-setm-act__cancel:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
+  /* With reduced motion the sheets fade instead of rising, and don't drag. */
+  @media (prefers-reduced-motion: reduce) {
+    .ch-setm-sheet,
+    .ch-setm-act[open] {
+      animation-name: ch-fade;
+    }
+  }
+}
+
+/* Loading in the framed page head (desktop): the settings head holds the loaded head's measured height (WebKit 1440 and 1100,
+   2026-10-07: 144px), so nothing under it moves on load. */
+@media (min-width: 821px) {
+  .ch-set[aria-busy='true'][data-canopy] .ch-set-head {
+    box-sizing: border-box;
+    min-height: 144px;
+  }
+}
+
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop each settings card is a section on the canvas,
+   in the shared Section's geometry: the title in the heavy sans over an engraved rule, the rows flush to the section's
+   edge on soft seams, and the save bar a flush row under a soft rule instead of a darker footer. Fields, switches,
+   segments, sliders and the rail keep their own material; the sections meet the page head's rule at the right. */
+@media (min-width: 821px) {
+  .ch-set[data-canopy] .ch-set-stack {
+    gap: 44px;
+  }
+  .ch-set[data-canopy] .ch-surface {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-set[data-canopy] .ch-surface__head {
+    align-items: flex-end;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-set[data-canopy] .ch-surface__title {
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    color: var(--ch-ledger-ink);
+  }
+  .ch-set[data-canopy] .ch-surface__sub {
+    margin-top: 3px;
+  }
+  .ch-set[data-canopy] .ch-surface__body {
+    padding: 18px 0 0;
+  }
+  .ch-set[data-canopy] .ch-surface__foot {
+    margin-top: 20px;
+    padding: 14px 0 0;
+    border-top: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-set[data-canopy] .ch-set-failed {
+    padding: 0;
+  }
+  .ch-set[data-canopy] .ch-surface :is(.ch-set-row, .ch-set-sliders, .ch-set-rank__i) {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-set[data-canopy] .ch-surface .ch-set-photo__img {
+    box-shadow: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule);
+  }
+  @media (hover: hover) {
+    .ch-set[data-canopy] .ch-surface .ch-set-link:hover {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  /* A press deepens a link row's tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-set[data-canopy] .ch-surface .ch-set-link:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
+  /* The notification table: its labels and switches align to the section's edge and a row's hover tint reaches 12px
+     past it, as the Home leaderboard's does, so its seams are drawn inset to that edge instead of as full-width
+     borders. No filled header band and no closing rule (the next row draws its seam). */
+  .ch-set[data-canopy] .ch-surface .ch-set-matrix {
+    margin: 2px -12px 0;
+    border-top: 0;
+    border-bottom: 0;
+  }
+  .ch-set[data-canopy] .ch-surface :is(.ch-set-matrix__row, .ch-set-matrix__group) {
+    padding-inline: 12px;
+    border-top-color: transparent;
+    background: linear-gradient(var(--ch-ledger-rule-soft), var(--ch-ledger-rule-soft)) 12px 0 / calc(100% - 24px) 1px no-repeat border-box;
+  }
+  .ch-set[data-canopy] .ch-surface .ch-set-matrix__group + .ch-set-matrix__row {
+    background-image: none;
+  }
+  @media (hover: hover) {
+    .ch-set[data-canopy] .ch-surface .ch-set-matrix__row:not(.is-head):hover {
+      background-color: var(--ch-ledger-row-hover);
+    }
+  }
+}
+
+/* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────
+   The rail, sections and phone rows ride the tokens. Here: ink and green washes drawn as literals, deep-green ink and
+   fills that would sink into the ground, ivory type on a filled green, the phone switch's thumb (the switch tokens'
+   ivory, never the dark ivory ramp), and the action sheet's light card and scrim. */
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-set-rail__i:hover {
+    background: rgb(237 231 216 / 0.05);
+  }
+  html[data-fw-theme='dark'] .ch-set-rail__i.is-on:hover {
+    background: rgb(107 187 140 / 0.13);
+  }
+  html[data-fw-theme='dark'] .ch-set-link:hover {
+    background: rgb(237 231 216 / 0.05);
+  }
+}
+/* As in light: a press tints over hover, and the selected section keeps its own tint. */
+html[data-fw-theme='dark'] .ch-set-rail__i:active {
+  background: var(--ch-ledger-row-press);
+}
+html[data-fw-theme='dark'] .ch-set-rail__i.is-on {
+  background: rgb(107 187 140 / 0.1);
+}
+html[data-fw-theme='dark'] .ch-set-rail__i.is-on b,
+html[data-fw-theme='dark'] .ch-set-code {
+  color: var(--ch-green-700);
+}
+html[data-fw-theme='dark'] .ch-set-rank__n {
+  background: var(--ch-green-100);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.2);
+}
+@media (max-width: 820px) {
+  html[data-fw-theme='dark'] .ch-setm-coin,
+  html[data-fw-theme='dark'] .ch-setm-pill {
+    background: var(--ch-green-fill-700);
+    color: var(--ch-on-green-ink);
+  }
+  html[data-fw-theme='dark'] .ch-setm-coin.is-player {
+    background: var(--ch-green-100);
+    color: var(--ch-green-700);
+  }
+  html[data-fw-theme='dark'] .ch-setm-pill.is-on-green {
+    background: var(--ch-on-green-ink);
+    color: var(--ch-green-800);
+  }
+  html[data-fw-theme='dark'] .ch-setm-tile.is-dark {
+    background: var(--ch-green-fill-700);
+  }
+  html[data-fw-theme='dark'] .ch-setm-row.is-sw .ch-switch__track {
+    background: var(--ch-switch-track-bg);
+  }
+  html[data-fw-theme='dark'] .ch-setm-row.is-sw .ch-switch input:checked + .ch-switch__track {
+    background: var(--ch-switch-on-bg);
+  }
+  html[data-fw-theme='dark'] .ch-setm-row.is-sw .ch-switch__thumb {
+    background: var(--ch-switch-thumb-bg);
+    box-shadow: var(--ch-switch-thumb-shadow);
+  }
+  html[data-fw-theme='dark'] .ch-setm-act__card {
+    background: rgb(36 42 37 / 0.97);
+  }
+}
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   On a narrow canvas the section rail is a strip above the page that scrolls sideways, and with its scrollbar hidden an
+   iPad portrait (a 618px canvas) cut "Preferences" in half with nothing to say there is more. A tablet has the height,
+   so the strip wraps onto a second line and every section is in view. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 860px) {
+    .ch-set-rail {
+      flex-wrap: wrap;
+      margin: 0;
+      padding: 2px 0 6px;
+      overflow-x: visible;
+    }
+  }
+}

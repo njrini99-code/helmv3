@@ -45,7 +45,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Check, X, Target, MessageCircleQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Surface, Inset } from '../surfaces/surface';

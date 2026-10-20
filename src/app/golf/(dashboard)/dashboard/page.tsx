@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import {
     getCachedCoachDashboardData,
     getCachedPlayerDashboardData,
@@ -25,6 +26,12 @@ import { getPlayerHubSummaryData, type PlayerHubSummaryData } from '@/app/golf/a
 import { getTeamJoinRequests, type JoinRequestData } from '@/app/golf/actions/teams';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { loadCoachHome } from '@/clubhouse/data/home';
+import { CoachHome, CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
+import { loadPlayerHome } from '@/clubhouse/data/player-home';
+import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHome';
+import { resolveClubhouseTeam } from '@/clubhouse/routes/team';
 
 export const dynamic = 'force-dynamic';
 
@@ -171,8 +178,13 @@ export default async function GolfDashboardPage({
 
     const { userId, coach, player } = session;
 
+    // Clubhouse Home follows the dashboard layout's role (getGolfDashboardRole): an unfinished coach profile beside an
+    // onboarded player one is a player there. Fairway keeps its own rule below (a coach row draws the coach dashboard).
+    const chRole = await getGolfDashboardRole();
+    const clubhouse = await isClubhouseFor(chRole);
+
     // ── Coach dashboard ──
-    if (coach) {
+    if (coach && !(clubhouse && chRole === 'player')) {
         // Get team via organization (deterministic: handles orgs with >1 team).
         // P002/P426: a real DB/network outage must SURFACE to the route
         // error.tsx (RouteErrorBoundary), not be swallowed into a fake "coach
@@ -185,6 +197,13 @@ export default async function GolfDashboardPage({
             // team for this request (dashboard-request-cache.ts), so this is a
             // cache hit instead of a second cookie-validation + staff read.
             teamId = (await resolveCoachActiveTeamIdForRequest(coach.organization_id, coach.id)) ?? undefined;
+        }
+
+        // Clubhouse Home: its own loader and screen, no Fairway payload.
+        if (clubhouse) {
+            if (!teamId) return <CoachHomeNoTeam />;
+            const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach' });
+            return <CoachHome data={home} />;
         }
 
         if (teamId) {
@@ -257,6 +276,13 @@ export default async function GolfDashboardPage({
     }
 
     // ── Player dashboard ──
+    // Clubhouse player Home: its own loader and screen, no Fairway payload.
+    if (player && clubhouse) {
+        const team = await resolveClubhouseTeam(session);
+        if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
+        const home = await loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there' });
+        return <PlayerHome data={home} />;
+    }
     if (player) {
         // Get team via membership
         // This read used to be swallowed TWICE: a `try { } catch { }` that

@@ -29,6 +29,15 @@ import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { assertSafeTarget } from './lib/prod-target-guard.mjs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/refresh-demo-nick-rini.ts',
+  summary:
+    "ONE-OFF demo-data fix for the player demo account \"Nick Rini\" (rinin376).",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const RININ_PLAYER_ID = '49ffe06d-9b22-4f2f-8c69-f56badbbde6b'; // Nick Rini (rinin376)
 const SRC_PLAYER_ID = 'a37e4fc9-e54e-4955-ac1a-0bb4c86f7d47';   // Braeden Gillen — 15 complete rounds

@@ -1,0 +1,53 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>GolfHelm · Coach and Player · CoachHelm (mobile)</title>
+<meta name="design_doc_mode" content="canvas">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/colors.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/typography.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/base.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/components/components.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/_ds_bundle.js"></script>
+<link rel="stylesheet" href="depth.css">
+<link rel="stylesheet" href="cal.css">
+<link rel="stylesheet" href="msg.css">
+<link rel="stylesheet" href="roster.css">
+<link rel="stylesheet" href="qual.css">
+<link rel="stylesheet" href="qual-mobile.css">
+<link rel="stylesheet" href="coachhelm2.css">
+<link rel="stylesheet" href="m.css">
+<link rel="stylesheet" href="sidebar.css">
+
+<style>.m-rowlabel{position:absolute;margin:0;font:600 28px/1 "Instrument Sans",sans-serif;letter-spacing:-.03em;color:#1C1B18}</style>
+
+<style>.m-rowlabel{position:absolute;margin:0;font:600 28px/1 "Instrument Sans",sans-serif;letter-spacing:-.03em;color:#1C1B18}</style>
+
+<link rel="stylesheet" href="rounds-flow.css">
+<link rel="stylesheet" href="helm3.css">
+<style>.qm .cl-scroll{padding:0}</style>
+
+<style>.qm .hb-scroll{padding:0}</style>
+<meta name="gh-role" content="coach">
+<meta name="gh-page" content="coachhelm">
+<meta name="gh-kind" content="mobile">
+<script src="gh-nav.js"></script>
+<script src="gh-core.js"></script>
+<link rel="stylesheet" href="gh-polish.css">
+</head><body><div id="root"></div>
+<script type="text/babel" src="gh-states.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="m-shell.jsx"></script>
+<script type="text/babel" src="helm3.jsx"></script>
+<script type="text/babel">
+const B=[["p1","Player · This week","One focus, evidence, drill",{"role":"player"}],["p2","Player · Why we think this","Reasoning opened",{"role":"player","why":true}],["p3","Player · Penalty strokes","Course management focus",{"role":"player","sel":"pen"}],["c1","Coach · Program pulse","Signals across the team",{"role":"coach"}],["c2","Coach · Jonah","Top insight and actions",{"role":"coach","hidePulse":true}],["c3","Coach · Eli","Penalty focus",{"role":"coach","hidePulse":true,"player":"eli"}]];
+function HelmM({ initial }) { return <div className="qm fairway"><MTop title="CoachHelm" /><div className="qm-scroll hb-scroll">{initial.role === 'coach' ? <CoachHelm3 initial={initial} /> : <PlayerHelm initial={initial} />}</div><MTabs on="helm" role={initial.role} /><MSafari /></div>; }
+function Boards(){return <>{B.map(([id,l,s,init],i)=><div key={id} className="qm-board" data-screen-label={String(i+1).padStart(2,'0')+' CoachHelm · '+l} style={{left:60+(i%3)*482,top:60+Math.floor(i/3)*1000}}><p className="qm-board__l">{l}</p><p className="qm-board__s">{s}</p><IOSDevice><HelmM initial={init} /></IOSDevice></div>)}</>;}
+ReactDOM.createRoot(document.getElementById('root')).render(<Boards />);
+</script><div id="gh-boards"></div>
+<script type="text/babel">ReactDOM.createRoot(document.getElementById('gh-boards')).render(<GHBoards boards={[{"page":"coachhelm","role":"player","state":"loading","title":"CoachHelm","tab":"helm"},{"page":"coachhelm","role":"player","state":"empty","title":"CoachHelm","tab":"helm"},{"page":"coachhelm","role":"coach","state":"loading","title":"CoachHelm","tab":"helm"},{"page":"coachhelm","role":"coach","state":"empty","title":"CoachHelm","tab":"helm"}]} />);</script>
+</body></html>

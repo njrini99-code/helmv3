@@ -24,7 +24,7 @@
  * ========================================================================== */
 
 import { useState, useSyncExternalStore, type Dispatch, type SetStateAction } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { MapPin, Check, BarChart3, Trophy, Search, ChevronLeft } from 'lucide-react';
 
@@ -43,12 +43,9 @@ import { FairwayRecentCourses } from './FairwayRecentCourses';
 import { OfflineWarningBanner } from '@/components/golf';
 import { FairwayHoleConfig } from './FairwayHoleConfig';
 import type { HoleConfig } from '@/lib/types/golf-course';
-import type {
-  SavedCourse,
-  SavedCourseHoleConfig,
-  RecentPlayedCourse,
-  PlayerQualifierInfo,
-} from '@/app/golf/actions/golf';
+import { normalizeStartHole, startHoleOptions } from '@/lib/golf/round-session/play-order';
+import type { SavedCourse, SavedCourseHoleConfig, RecentPlayedCourse } from '@/app/golf/actions/saved-courses';
+import type { PlayerQualifierInfo } from '@/app/golf/actions/qualifier-actions';
 
 /** Mirrors the legacy RoundSetupForm (string-based). */
 export interface FairwaySetupForm {
@@ -60,6 +57,8 @@ export interface FairwaySetupForm {
   teesPlayed: string;
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
+  /** Shotgun start: the hole position the round starts on, 1..holes (lib/golf/round-session/play-order.ts). Omitted, hole 1. */
+  startHole?: number;
 }
 
 type Step = 'setup' | 'holes' | 'tracking' | 'submitting';
@@ -928,6 +927,21 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                     </div>
                   )}
                 </div>
+                {/* Shotgun start: only the play order changes; every hole is still played once, by its own number. */}
+                <div>
+                  <Select
+                    label="Starting hole"
+                    options={startHoleOptions(
+                      holesPerRound,
+                      holesPerRound === 9 && nineSelection === 'back' && preloadedHoleConfigs && preloadedHoleConfigs.length >= 18
+                        ? Array.from({ length: 9 }, (_, k) => k + 10)
+                        : undefined,
+                    ).map((o) => ({ value: String(o.value), label: `Hole ${o.label}` }))}
+                    value={String(normalizeStartHole(setupData.startHole, holesPerRound))}
+                    onChange={(value) => setSetupData({ ...setupData, startHole: Number(value) })}
+                    className={fwInputCls}
+                  />
+                </div>
               </div>
             </Surface>
           </m.div>
@@ -1086,7 +1100,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             // indicator at the end of the scroll. The route renders without
             // shell chrome, so bottom-0 is the viewport edge.
             <m.div
-              {...enter(i++)}
+              {...enter(i)}
               data-slot="setup-action-dock"
               className="sticky bottom-0 z-10 flex gap-3 bg-canvas pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
             >

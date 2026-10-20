@@ -42,7 +42,7 @@
 import * as React from 'react';
 import { useState, useMemo, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { VideoUpload } from '@/components/features/video-upload';
 import { VideoPlayer } from '@/components/features/video-player';

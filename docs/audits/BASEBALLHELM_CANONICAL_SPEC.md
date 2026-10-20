@@ -57,6 +57,8 @@ All features in sections 2–11 below. Prioritized delivery order: migrations + 
 
 ### 2.1 Coach (Desktop) — Primary Nav
 
+> **Superseded:** `docs/baseball/COHERENCE_RULING_2026-07-08.md` replaces this 10-item nav (the ruling adopts the 8-tab coach nav and one shell). Read the ruling first; treat the list below as history.
+
 | Nav Item | Route | Notes |
 |---|---|---|
 | Command Center | `/baseball/dashboard/command-center` | Default landing; 20-second status cockpit |

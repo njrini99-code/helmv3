@@ -20,6 +20,7 @@
 import { isAuthSessionMissingError, type SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { logBestEffortMiss } from '@/lib/coachhelm/best-effort-miss';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -124,6 +125,13 @@ export interface GetInsightsForPlayerOptions {
   categories?: string[];
   minConfidence?: number;
   window_days?: number;
+  /**
+   * Swap audit CH13-21: which returned rows the calling surface actually draws.
+   * Only those are recorded as shown; a row the surface drops (Clubhouse leaves
+   * out cards that state no finding) is returned but never counted as exposed.
+   * Omitted: every returned row counts, as before. A server-side caller only.
+   */
+  drawn?: (insight: EvidenceInsight) => boolean;
 }
 
 export interface GetInsightsForCoachOptions {
@@ -231,27 +239,12 @@ const INSIGHT_SELECT = `
  * renders, just without feedback state, which is the safe degradation.
  */
 async function loadPlayerFeedbackByInsight(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   playerId: string,
 ): Promise<Map<string, InsightPlayerFeedback>> {
   const out = new Map<string, InsightPlayerFeedback>();
-  // The generated Database types don't include this table yet (applied via
-  // execute_sql), so cast the builder, not `supabase`.
-  const feedbackTable = supabase.from('golf_insight_player_feedback') as unknown as {
-    select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        order: (
-          col: string,
-          opts: { ascending: boolean },
-        ) => Promise<{
-          data: Array<{ insight_id: string; rating: string; created_at: string }> | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-
-  const { data, error } = await feedbackTable
+  const { data, error } = await supabase
+    .from('golf_insight_player_feedback')
     .select('insight_id, rating, created_at')
     .eq('player_id', playerId)
     .order('created_at', { ascending: false });
@@ -261,7 +254,7 @@ async function loadPlayerFeedbackByInsight(
   for (const row of data) {
     // Newest-first order means the FIRST row we see per insight is the latest.
     if (out.has(row.insight_id)) continue;
-    const rating = row.rating as InsightPlayerFeedback['rating'];
+    const rating = row.rating;
     if (
       rating === 'helpful' ||
       rating === 'not_helpful' ||
@@ -435,10 +428,12 @@ async function getTopInsightForPlayerImpl(
     // handled miss here is a single warning — not a paging error and NOT a
     // Sentry-escalated exception (skipSentry: true — expected degradation,
     // not an incident to page on).
-    void logServerError(
-      `getTopInsightForPlayer.urgent failed (continuing without urgent pass): ${urgentError.message}`,
-      { action: 'insight-delivery.getTopInsightForPlayer', featureArea: 'insights', playerId, skipSentry: true },
-      'warning',
+    // A budget abort is 'info' (off the triage queue); anything else stays a
+    // 'warning'. See logBestEffortMiss (20ed2ddd).
+    void logBestEffortMiss(
+      'getTopInsightForPlayer.urgent failed (continuing without urgent pass)',
+      urgentError.message,
+      { action: 'insight-delivery.getTopInsightForPlayer', featureArea: 'insights', playerId },
     ).catch(() => undefined);
   } else if (urgent && urgent.length > 0) {
     const urgentInsights = urgent
@@ -620,8 +615,8 @@ async function getInsightsForPlayerImpl(
       return query.range(from, to);
     }, undefined, { table: 'golf_coach_insights', action: 'getInsightsForPlayer', feature: 'coachhelm_ai_engine', sport: 'golf' });
 
-  let data: unknown = null;
-  let error: { message: string } | null = null;
+  let data: unknown;
+  let error: { message: string } | null;
   try {
     const result = await runQuery();
     data = result.data;
@@ -710,7 +705,7 @@ async function getInsightsForPlayerImpl(
   const shown = applyPlayerFeedbackOverlay(deduped, feedbackByInsight).slice(0, limit);
   // Record exposure for the EXACT rows returned (post overlay + slice) — a row
   // dropped by the limit or by a player dismissal is never counted as shown.
-  recordExposureForReturned(shown, 'player_feed', null, scoreById);
+  recordExposureForReturned(opts.drawn ? shown.filter(opts.drawn) : shown, 'player_feed', null, scoreById);
   return shown;
 }
 
@@ -778,6 +773,20 @@ async function getInsightsForCoachWithMetaImpl(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { ok: false, error: 'Not authenticated.' };
 
+  // `coachId` arrives from the caller, and the exposure rows written below are
+  // attributed to a coach. Take that coach from the session, never from the
+  // argument: otherwise any account could record exposures under another
+  // coach's name. (Some callers pass the auth user id here; the reads are RLS
+  // scoped either way.)
+  const { data: self, error: selfError } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  // A failed read records exposures with no coach rather than a guessed one;
+  // the feed itself does not depend on this row.
+  const exposureCoachId: string | null = selfError ? null : (self?.id ?? null);
+
   // Player filter → authorization path. Without a player_id the RLS policies
   // on `golf_coach_insights` restrict reads to teams the coach staffs, which
   // is what we want for the coach dashboard sweep.
@@ -805,8 +814,8 @@ async function getInsightsForCoachWithMetaImpl(
   // rows per player, a few hundred per team — so a normal fetch is still ONE
   // round trip and ranking in memory stays cheap.
 
-  let data: unknown = null;
-  let error: { message: string } | null = null;
+  let data: unknown;
+  let error: { message: string } | null;
 
   if (opts.player_id) {
     // PER-PLAYER path — full visible set for one player.
@@ -915,7 +924,7 @@ async function getInsightsForCoachWithMetaImpl(
   const data_ = ranked.slice(0, limit);
   // Record exposure for the page the coach actually receives (post rank + dedupe
   // + slice). Rows beyond the limit are NOT counted — only what's surfaced is.
-  recordExposureForReturned(data_, 'coach_feed', coachId, scoreById);
+  recordExposureForReturned(data_, 'coach_feed', exposureCoachId, scoreById);
   return { ok: true, data: data_, total: ranked.length, capped: ranked.length > data_.length };
 }
 
@@ -1002,8 +1011,8 @@ async function getTopInsightsForPlayersImpl(
       { table: 'golf_coach_insights', action: 'getTopInsightsForPlayers', feature: 'coachhelm_ai_engine', sport: 'golf' },
     );
 
-  let data: unknown = null;
-  let error: { message: string } | null = null;
+  let data: unknown;
+  let error: { message: string } | null;
   try {
     const result = await runQuery();
     data = result.data;
@@ -1382,10 +1391,12 @@ async function fetchShotDriversByCategory(
     // above tripping first) is a single warning, not a paging error and NOT a
     // Sentry-escalated exception (skipSentry: true — this is expected
     // degradation, not an incident to page on).
-    void logServerError(
-      `fetchShotDriversByCategory failed (continuing without shot drivers): ${describeError(err)}`,
-      { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId, skipSentry: true },
-      'warning',
+    // A budget abort is 'info' (off the triage queue); anything else stays a
+    // 'warning'. See logBestEffortMiss (8ff00f0e).
+    void logBestEffortMiss(
+      'fetchShotDriversByCategory failed (continuing without shot drivers)',
+      describeError(err),
+      { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId },
     ).catch(() => undefined);
     return undefined;
   } finally {
@@ -1466,8 +1477,8 @@ async function assembleForPlayer(
       .order('created_at', { ascending: false })
       .limit(THEMES_FETCH_CAP);
 
-  let data: unknown = null;
-  let error: { message: string } | null = null;
+  let data: unknown;
+  let error: { message: string } | null;
   try {
     const result = await runQuery();
     data = result.data;
@@ -1500,7 +1511,7 @@ async function assembleForPlayer(
   // (+ the 1000-row PostgREST limit), so it could disagree with the standing SG
   // shown on the same page for high-volume players. The cache averages over ALL
   // completed rounds.
-  let sgByCategory: Partial<Record<InsightCategory, number | null>> = {};
+  let sgByCategory: Partial<Record<InsightCategory, number | null>>;
   try {
     const { data: sgRow } = await supabase
       .from('golf_player_stats_cache')

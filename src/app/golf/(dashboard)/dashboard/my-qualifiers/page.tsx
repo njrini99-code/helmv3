@@ -1,9 +1,13 @@
 import { redirect } from 'next/navigation';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
+import { redirectToClubhouse } from '@/clubhouse/routes/alias';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
+import type { PlayerQualifierInfo } from '@/app/golf/actions/qualifier-actions';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayMyQualifiers } from '@/components/fairway/pages/my-qualifiers';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 /**
  * Derive a qualifier's holes-per-round from the player's actual posted rounds
@@ -34,6 +38,12 @@ function deriveHolesPerRound(
 export default async function MyQualifiersPage() {
   const session = await getGolfSessionProfile();
   if (!session) return redirect('/golf/login');
+
+  // A coach has no "My qualifiers" in Clubhouse: their qualifiers are the team's, so the address opens Qualifiers. It
+  // stood on "not rebuilt" before (readiness audit, 2026-10-17); the address is on the frame's aliased list (nav.ts).
+  await redirectToClubhouse({ coach: '/golf/dashboard/qualifiers' });
+  // Clubhouse Qualifiers (golf_clubhouse_ui): a player's own entries, rendered in place (D-23, D-30).
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) return <ClubhouseQualifiersRoute view="mine" />;
 
   const { player } = session;
   if (!player) {

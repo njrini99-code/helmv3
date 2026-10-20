@@ -1,5 +1,7 @@
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { RoundEntrySkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 
 /**
  * Route Suspense fallback for Continue Round.
@@ -9,7 +11,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * scorecard and shot-entry skeleton. Matching that geometry prevents a jump
  * when the server-rendered editor arrives.
  */
-export default function Loading() {
+function ContinueRoundLoading() {
   return (
     <>
       {/* Resume context and the server-provided editor share one inset-aware header. */}
@@ -123,4 +125,9 @@ export default function Loading() {
       </div>
     </>
   );
+}
+
+// Clubhouse round entry (golf_clubhouse_ui) gets its own skeleton inside the Clubhouse shell.
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<RoundEntrySkeleton />} fallback={<ContinueRoundLoading />} />;
 }

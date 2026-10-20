@@ -10,6 +10,12 @@ Existing worktree count is advisory unless an explicit
 HELM_MAX_MUTATION_WORKTREES cap is configured; disk reserve remains enforced.
 Local push checks do not regenerate files or repeat CI.
 
+Vercel upload exclusions are checked against `config/repo/manifest.yml`.
+The local `.helm/` tree contains screenshots and runtime telemetry, never build
+inputs; both the manifest and `.vercelignore` exclude it. Deployment preparation
+can inspect the actual upload file set with the repo-local Vercel CLI's dry run
+before publishing a preview.
+
 Readers inherit available tools and stay read-only by task contract. Project
 MCP configuration carries Playwright and project-scoped Supabase read/write
 access into worktrees. Routine shell commands and task-authorized migrations
@@ -17,6 +23,26 @@ use service-level permissions; destructive operations retain targeted guards. Li
 canonical settings, hooks, MCP definitions, agents and operating policy while
 keeping the chosen source worktree; old branch deny lists are not merged into
 that launch profile.
+
+## Clubhouse tooling scope
+
+Clubhouse-specific policy is in `src/clubhouse/AGENTS.md`; it overrides the
+general Fairway design guidance only for Clubhouse surfaces. Its optional
+Claude polish reviewer follows that authority. The premium profile maps every
+Clubhouse manifest family. `docs/clubhouse/QUALITY_TOOLING.md` defines the
+checks and evidence limits. Next and Chrome DevTools MCP are pinned in project MCP config;
+`npm run clubhouse:tools:setup` creates the ignored repository Codex config
+from a portable template without replacing unrelated MCP settings. React
+DevTools includes its explicitly allowed Electron runtime. Chrome DevTools
+uses an isolated temporary profile with usage statistics and CrUX lookups
+disabled; it adds browser trace, network and rendering diagnostics alongside
+Next's framework diagnostics. Client reload is required after local setup.
+
+The development-only Clubhouse component playground is mapped to platform
+agent tooling in the registry. It compares real components in isolated frames,
+keeps tuning in memory and exports a CSS proposal for review. Its exact gallery
+route permits same-origin framing only in development; production protection
+remains unchanged. See QUALITY_TOOLING for the commands and evidence limits.
 
 ## Source Of Truth
 
@@ -91,8 +117,8 @@ Start with these because they cross product behavior, UI, database, and trust co
 this file". `scripts/knowledge/world-model.mjs` (2026-09-02) answers "what
 does touching this feature put at risk" — a generated graph
 (`docs/generated/WORLD_MODEL.json` + a readable `WORLD_MODEL.md` summary)
-over features, routes, actions, RPCs, tables, jobs (Vercel crons, Inngest
-functions, the self-heal launchd Repair job), named invariant registries
+over features, routes, actions, RPCs, tables, jobs (Vercel crons,
+the self-heal routines), named invariant registries
 (`qualifier-invariants.ts`, `operational-rule-engine.ts`), and the runtime
 `FeatureKey` (Sentry/`admin_events`) vocabulary.
 
@@ -127,9 +153,20 @@ npm run knowledge:context -- --files src/lib/coachhelm/v3/llm/compose.ts --task 
 npm run knowledge:check -- --files src/lib/coachhelm/v3/llm/compose.ts memory/context/coachhelm-ai.md
 ```
 
-The context pack is written to `/tmp/helmv3-context-pack.md` by default.
+The context pack is written to a per-run file, `helmv3-context-<pid>.md` in the
+system temp directory, and the command prints the path. Pass `--output <file>`
+to choose one. (It was a fixed `/tmp/helmv3-context-pack.md` until 2026-10-07,
+which two concurrent sessions overwrote.)
 
 Worktrees share canonical ignored environment files, Claude local preferences,
 and Vercel project identity through live links. The creator uses canonical MCP
 definitions, and never fabricates an empty local-only environment. Source
 branches remain independent; tool access and credentials are shared.
+
+### Clubhouse premium review evidence
+
+`clubhouse-design-reviewer` is read-only and uses the owner’s semantic depth
+map, coach/player ergonomics and 15-category rubric. It keeps source, rendered
+fixtures, physical devices and owner acceptance distinct. The complete
+component catalog and material inventory are reproducible tooling, not blanket
+visual approval. See `docs/clubhouse/PREMIUM_AUDIT.md`.

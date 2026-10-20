@@ -50,7 +50,7 @@
 import { logServerError } from '@/lib/server-error-logger';
 
 // A minimally-typed client so the sweep runs against the service-role admin
-// client (the trusted Inngest cron) the same way missed-sweep.ts does. Every
+// client (a trusted cron) the same way missed-sweep.ts does. Every
 // query is scoped by team_id; the admin client is the only RLS-bypass path,
 // reserved here for a system-provenance dispatch.
 export type ReminderSweepClient = {

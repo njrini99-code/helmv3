@@ -13,7 +13,8 @@ import {
  * setCourseImageUrl() to validate + persist.
  */
 export type UploadCourseImageResult =
-  | { ok: true; url: string }
+  /** `path` is the object key in the bucket, for discardCourseImageUpload() when the save fails. */
+  | { ok: true; url: string; path: string }
   | { ok: false; error: string };
 
 export async function uploadCourseImage(
@@ -37,5 +38,26 @@ export async function uploadCourseImage(
   }
 
   const { data } = supabase.storage.from(COURSE_IMAGE_BUCKET).getPublicUrl(path);
-  return { ok: true, url: data.publicUrl };
+  return { ok: true, url: data.publicUrl, path };
+}
+
+/**
+ * Remove an object uploadCourseImage() just put in the bucket, when the save that
+ * should have pointed golf_courses.image_url at it was refused (a player before
+ * golf_set_course_image is applied, a rejected URL, an RPC error). Without this
+ * the file stays in the public bucket with nothing referencing it.
+ *
+ * Storage RLS (course_images_owner_delete) lets the uploader delete their own
+ * object, which is always the case here. Best-effort: never throws, and callers
+ * must only call it on an explicit `success: false` — never on a thrown or lost
+ * response, where the save may in fact have landed.
+ */
+export async function discardCourseImageUpload(path: string): Promise<void> {
+  if (!path) return;
+  try {
+    const supabase = createClient();
+    await supabase.storage.from(COURSE_IMAGE_BUCKET).remove([path]);
+  } catch {
+    /* best-effort: an orphaned object is untidy, never user-facing */
+  }
 }

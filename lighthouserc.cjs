@@ -51,10 +51,8 @@ module.exports = {
           deviceScaleFactor: 1.75,
           disabled: false,
         },
-        // Treat Capacitor WKWebView like Mobile Safari.
-        emulatedUserAgent:
-          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) ' +
-          'AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        // This is Chromium mobile lab evidence. A Safari user-agent string
+        // cannot reproduce Safari or Capacitor WKWebView rendering behavior.
       },
     },
     assert: {
@@ -69,7 +67,8 @@ module.exports = {
         'largest-contentful-paint': ['warn', { maxNumericValue: 2500 }],
         'cumulative-layout-shift': ['error', { maxNumericValue: 0.1 }],
         'total-blocking-time': ['warn', { maxNumericValue: 200 }],
-        'interaction-to-next-paint': ['warn', { maxNumericValue: 200 }],
+        // Navigation Lighthouse does not exercise the Clubhouse interactions
+        // needed for INP. Measure those with clubhouse:perf and field telemetry.
 
         // Skip the SEO description audit on auth routes — login/signup
         // pages don't need OG descriptions. Re-evaluate per route if

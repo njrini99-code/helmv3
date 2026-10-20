@@ -102,6 +102,15 @@ import {
   todayIsoInTz,
   type EventDef,
 } from '../src/lib/golf/demo-realism-schedule';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/refresh-golf-demo-realism.ts',
+  summary:
+    "Data-realism freshness pass for the \"Demo University Golf\" team (see scripts/refresh-demo-nick-rini.ts and scripts/seed-demo-team-ops.ts, which this script is a companion to).",
+  guard: "its own --confirm flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 // ---------------------------------------------------------------------------
 // Hard-coded demo identity (verified against prod — see assertDemoTeamIdentity)

@@ -288,7 +288,7 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
     return { team: null, coaches: [], roster: [], activityDaily: [], errors: [], coachhelm: null, teamLastActivity: null, degraded: [] };
   }
 
-  let coaches: TeamDetailCoach[] = [];
+  let coaches: TeamDetailCoach[];
   // Which sections could not be loaded. A bare `catch { x = [] }` made a
   // FAILED query indistinguishable from a genuinely empty team — the Bridge
   // rendered 'no coaches, no roster, no errors' and an operator read it as
@@ -331,7 +331,7 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
 
   // Roster + last-round + rounds-30d + daily rounds trend all come from ONE
   // scoped, bounded query (see module doc) — never per-player N+1.
-  let roundsForTeam: RoundForTeamRow[] = [];
+  let roundsForTeam: RoundForTeamRow[];
   try {
     const { data, error } = await admin
       .from('golf_rounds')
@@ -352,7 +352,7 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
   // `teamLastActivity` doc on TeamDetailResult for why this can't reuse
   // `roundsForTeam` above (that's status=completed + implicitly
   // active-roster-only once joined into `roster`; this is neither).
-  let teamLastActivity: string | null = null;
+  let teamLastActivity: string | null;
   try {
     const { data, error } = await admin
       .from('golf_rounds')
@@ -379,7 +379,7 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
     }
   }
 
-  let roster: TeamDetailRosterRow[] = [];
+  let roster: TeamDetailRosterRow[];
   try {
     const { data, error } = await admin
       .from('golf_team_members')
@@ -417,7 +417,7 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
   // Daily activity: rounds come from the already-fetched team-rounds window;
   // logins need the team's user-id set (shared resolver with activity.ts —
   // admin_events.team_id is never set on login rows).
-  let activityDaily: TeamDetailDailyActivity[] = [];
+  let activityDaily: TeamDetailDailyActivity[];
   try {
     const teamUserIds = await resolveTeamUserIds(teamId);
     let loginTimestamps: string[] = [];
@@ -454,7 +454,7 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
     activityDaily = [];
   }
 
-  let errors: TeamDetailErrorCluster[] = [];
+  let errors: TeamDetailErrorCluster[];
   try {
     // Two things were making a team's error list disagree with every other
     // Bridge surface (operator report, 2026-08-06 — "none of these are in sync,

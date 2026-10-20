@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "sources": ["docs/clubhouse/PAGE_PERFORMANCE.md rules 5 and 13", "scripts/clubhouse/perf-measure-run.mjs summarise and recorded run ranges"],
+  "minimumRuns": 3,
+  "metrics": {
+    "content": { "required": true, "regression": { "warningSpreadMultiples": 1, "failureSpreadMultiples": 2 } },
+    "lcp": { "required": true, "kinds": ["cold", "warm"], "regression": { "warningSpreadMultiples": 1, "failureSpreadMultiples": 2 } },
+    "tbt": { "required": true, "regression": { "warningSpreadMultiples": 1, "failureSpreadMultiples": 2 } },
+    "cls": { "required": true, "max": 0 },
+    "clsRaw": { "required": true, "max": 0 },
+    "inp": { "required": false, "kinds": ["nav", "switch"], "max": 200 },
+    "flash": { "required": true, "kinds": ["switch"], "max": false }
+  },
+  "requiredCases": [],
+  "coverageNote": "Only cases present in the supplied baseline are required by default. Home/Stats and the CoachHelm/Qualifiers/Rounds harnesses do not measure every Clubhouse family; add exact requiredCases to require wider coverage. Null INP is unknown: the observer omits interactions below 16ms and does not prove their duration.",
+  "regressionNote": "Measured before-run range is the noise floor. A worsening median above one before-run spread warns; above two spreads fails. These are configurable noise multipliers, not fabricated millisecond baselines. Identical before runs have zero spread, so any positive worsening fails."
+}

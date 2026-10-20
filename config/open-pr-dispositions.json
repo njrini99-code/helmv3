@@ -1,73 +1,123 @@
 {
-  "1753": {
+  "2048": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Dependabot: bump js-yaml 4.3.2 -> 5.2.2. No local agent checkout to park."
+    "note": "feat(golf): course factory — end-to-end ship pipeline (conso (draft)"
   },
-  "1755": {
+  "2058": {
+    "disposition": "STALE",
+    "worktree_policy": "KEEP",
+    "note": "tooling: one preflight command that mirrors CI, required bef — no activity since 2026-09-23; owner decides whether to resume or close."
+  },
+  "2073": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Dependabot: github-actions group, 2 updates. No local agent checkout to park."
+    "note": "CoachHelm: root map redesign, real root-cause diagnosis, 9 f (draft)"
   },
-  "1756": {
+  "2086": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Dependabot: dev-dependencies group, 7 updates across 1 directory. No local agent checkout to park."
+    "note": "chore(types): regen database.ts from production schema"
   },
-  "1757": {
+  "2091": {
+    "disposition": "STALE",
+    "worktree_policy": "KEEP",
+    "note": "GolfHelm vintage theme + CoachHelm Team intelligence Home — no activity since 2026-09-28; owner decides whether to resume or close."
+  },
+  "2093": {
+    "disposition": "STALE",
+    "worktree_policy": "KEEP",
+    "note": "Deploy policy: the owner says when, the agent deploys main — no activity since 2026-10-01; owner decides whether to resume or close."
+  },
+  "2096": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Dependabot: production-dependencies group, 9 updates. No local agent checkout to park."
+    "note": "GolfHelm Travel redesign: boarding-pass next trip, season st"
   },
-  "1758": {
+  "2104": {
+    "disposition": "STALE",
+    "worktree_policy": "KEEP",
+    "note": "golf: move the new-round engine into useNewRoundSession (no  — no activity since 2026-09-30; owner decides whether to resume or close."
+  },
+  "2105": {
+    "disposition": "STALE",
+    "worktree_policy": "KEEP",
+    "note": "fix(coachhelm): Ask errors read as sentences; an unanswered  — no activity since 2026-09-30; owner decides whether to resume or close."
+  },
+  "2108": {
+    "disposition": "STALE",
+    "worktree_policy": "KEEP",
+    "note": "golf: team codes sign up players only; close signup, documen — no activity since 2026-09-30; owner decides whether to resume or close."
+  },
+  "2109": {
+    "disposition": "STALE",
+    "worktree_policy": "KEEP",
+    "note": "golf stats and CoachHelm: Tour-only benchmarks, one definiti — no activity since 2026-09-30; owner decides whether to resume or close."
+  },
+  "2116": {
+    "disposition": "SUPERSEDED",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot react-table 9 bump; superseded by #2153 (motion 14, Base UI 1.8, TanStack Table 9)."
+  },
+  "2152": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Dependabot: bump framer-motion 12.42.2 -> 13.1.1. No local agent checkout to park."
+    "note": "chore(deps): Sentry 11"
   },
-  "1759": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "chore(scripts): make the QA-fixture removal safe to run — owner-only trigger disable, scoped post-check, cascade capture. Script-only change, no production state."
-  },
-  "1831": {
+  "2153": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "fix(auth/observability): a discarded refresh is not a sign-out, and a span must measure its own workflow."
+    "note": "chore(deps): motion 14, Base UI 1.8, TanStack Table 9"
   },
-  "1832": {
+  "2156": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "fix(worktrees/docs): the subtractions that could never happen — worktree-lifecycle/docs correctness fix."
+    "note": "fix(observability): dashboard hydration #418 + telemetry noi"
   },
-  "1833": {
+  "2157": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "feat(golf/messages): premium mobile rebuild — the thread was sunken, not flat. In-flight feature work on the Messages redesign track."
+    "note": "Clubhouse data fixes: neutral loading frame, typed reads, qu (draft)"
   },
-  "1835": {
-    "disposition": "HUMAN_TEST_PENDING",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "fix(golf/messages): the follow-through #1830 owed — long-press survives a thumb move, the menu closes, a message can be copied. Needs a human on a real device to confirm the touch/press behavior before merge; the checkout is safe to park once clean and pushed."
-  },
-  "1836": {
+  "2158": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "feat(golf/messages): the approved design — unread lifts, tail marks the end, the dead token removed. In-flight feature work on the Messages redesign track."
+    "note": "chore: remove Inngest entirely"
   },
-  "1837": {
+  "2159": {
+    "disposition": "SUPERSEDED",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot tailwindcss/postcss-selector-parser bump; superseded by the Tailwind 4 migration (owner decision 2026-10-07)."
+  },
+  "2160": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "The canonical checkout's own docs/rules/worktree-retirement/golf-messages-header PR, opened from the fix/cron-checkin-flush-realtime-recovery branch. Landing this is what clears the canonical checkout's accumulated commits."
+    "note": "Clubhouse Team stats: strokes gained leads the figures (draft)"
   },
-  "1846": {
+  "2162": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Draft: the rounds preview harness work that lived only in the canonical checkout, stacked on #1837. Owner decides rebase or close."
+    "note": "Clubhouse premium pass: classic direction, drawn figures, ev"
   },
-  "1856": {
+  "2163": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Owner's own PR (headless Mac mini hardening script and runbook), opened from another session; not part of the reset. Owner decides."
+    "note": "fix(bridge): designed paths stop re-opening as REGRESSED (20"
+  },
+  "2164": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "docs: full agent autonomy; remove deploy-prod.sh"
+  },
+  "2167": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Claude config and docs drift fixes; owner-approved permission changes."
+  },
+  "2169": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "This hygiene PR (row travels with it)."
   },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",

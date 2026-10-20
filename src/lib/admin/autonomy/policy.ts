@@ -41,9 +41,8 @@ import type { CapabilityState } from '@/lib/admin/selfheal-capability';
  * `may_merge_verified_low_risk_repairs`) rather than inventing a parallel
  * taxonomy — this module answers "which of those may THIS feature's loop
  * exercise unattended", never whether to grant a permission that block does
- * not already grant globally. `may_deploy_production` never appears here:
- * `release-policy.yml` sets it `false` unconditionally and this module has
- * no tier that could override that.
+ * not already grant globally. No tier here covers deploying: this module
+ * only decides how far the unattended reliability loop may go with repairs.
  */
 export const AUTONOMY_TIERS = [
   'observe_only',

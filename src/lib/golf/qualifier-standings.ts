@@ -42,7 +42,9 @@ export async function updateQualifierEntryStats(
     .select('total_score, score_to_par')
     .eq('qualifier_id', qualifierId)
     .eq('player_id', playerId)
-    .eq('status', 'completed');
+    .eq('status', 'completed')
+    // Test rounds never count, as on the leaderboard and in selection (swap audit §11 reconciliation).
+    .eq('is_test', false);
 
   if (roundsError) {
     throw new Error(`Could not read completed qualifier rounds: ${roundsError.message}`);
@@ -60,10 +62,12 @@ export async function updateQualifierEntryStats(
 
   const { data: updatedEntry, error: updateError } = await admin
     .from('golf_qualifier_entries')
+    // No scored round is no score: null, not 0/0, which ranked the player
+    // at even par in the selection workspace.
     .update({
-      score: totalScore,
-      total_score: totalScore,
-      total_to_par: totalToPar,
+      score: roundsCompleted ? totalScore : null,
+      total_score: roundsCompleted ? totalScore : null,
+      total_to_par: roundsCompleted ? totalToPar : null,
       rounds_completed: roundsCompleted,
     })
     .eq('qualifier_id', qualifierId)

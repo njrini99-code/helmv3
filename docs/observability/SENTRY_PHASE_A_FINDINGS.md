@@ -1,6 +1,8 @@
 <!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Sentry Phase A findings
 
+> **STATUS: HISTORICAL — Phase A measurement at commit 44f4ce183 (2026-09). Mentions of Inngest below describe a system removed on 2026-10-06; current state: `memory/features/admin-platform.md` and `docs/observability/SENTRY_CRON_MONITORS.md` (2026-10-07)**
+
 Measured at commit `44f4ce183` (branch `main`). Read-only pass from
 `/Users/ricknini/Downloads/helmv3`; written into the worktree per the audit's
 read/write split. Every claim below carries a file:line anchor or is marked

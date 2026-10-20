@@ -11,8 +11,12 @@
  * doesn't guarantee every surface stays in sync, it's the convention
  * new/rebuilt call sites should import rather than reimplement.
  */
-export function formatToPar(stp: number | null): string {
-  if (stp == null) return '—';
-  if (stp === 0) return 'E';
-  return stp > 0 ? `+${stp}` : `−${Math.abs(stp)}`;
+export function formatToPar(stp: number | null | undefined, digits?: number): string {
+  if (stp == null || Number.isNaN(stp)) return '—';
+  // Whole numbers print as they are; an average prints one decimal unless the
+  // caller asks for more, and anything that rounds to zero is level par.
+  const d = digits ?? (Number.isInteger(stp) ? 0 : 1);
+  const rounded = Number(stp.toFixed(d));
+  if (rounded === 0) return 'E';
+  return (rounded > 0 ? '+' : '−') + Math.abs(rounded).toFixed(d);
 }

@@ -193,3 +193,48 @@ describe('getCoachTeamSwitchContext — a hidden switcher must be a finding, not
     expect(ctx.teams).toHaveLength(2);
   });
 });
+
+describe('resolveCoachActiveTeam — a failed read is "failed", never "none" and never a guessed team (PAGE_PERFORMANCE.md rule 4)', () => {
+  it('a cookie check that could not run does not seat the coach on their default team', async () => {
+    // The cookie names the women's team; the staff check for it errors. The old path read that as "invalid cookie"
+    // and fell through to the default (here the men's team), showing its roster, calendar and qualifiers as fact.
+    queues.set('golf_team_coach_staff', [
+      fails('statement timeout', '57014'), // the cookie check
+      ok([{ team_id: MENS, is_primary: true }]), // the default it must NOT fall to
+    ]);
+    const { resolveCoachActiveTeam, resolveCoachActiveTeamId } = await mod();
+    expect(await resolveCoachActiveTeam(supabase, ORG, COACH, WOMENS)).toEqual({ status: 'failed' });
+    queues.set('golf_team_coach_staff', [fails('statement timeout', '57014'), ok([{ team_id: MENS, is_primary: true }])]);
+    expect(await resolveCoachActiveTeamId(supabase, ORG, COACH, WOMENS)).toBeNull();
+  });
+
+  it('a denied cookie still falls back to the default team', async () => {
+    queues.set('golf_team_coach_staff', [
+      ok(null), // not staffed on the cookie's team
+      ok([{ id: 'staff-mens' }]), // staffed elsewhere: no legacy branch
+      ok([{ team_id: MENS, is_primary: true }]), // the default
+    ]);
+    const { resolveCoachActiveTeam } = await mod();
+    expect(await resolveCoachActiveTeam(supabase, ORG, COACH, WOMENS)).toEqual({ status: 'ok', teamId: MENS });
+  });
+
+  it('a failed default read is "failed", and a coach on no team at all is "none"', async () => {
+    outcomes.set('golf_team_coach_staff', fails('pool exhausted', '53300'));
+    const { resolveCoachActiveTeam } = await mod();
+    expect(await resolveCoachActiveTeam(supabase, ORG, COACH, null)).toEqual({ status: 'failed' });
+    outcomes.set('golf_team_coach_staff', ok([]));
+    outcomes.set('golf_teams', ok([]));
+    expect(await resolveCoachActiveTeam(supabase, ORG, COACH, null)).toEqual({ status: 'none' });
+  });
+
+  it('the org pick does not rank teams on a member count it could not read', async () => {
+    outcomes.set('golf_team_coach_staff', ok([]));
+    outcomes.set('golf_teams', ok([{ id: MENS, created_at: '2025-01-01' }, { id: WOMENS, created_at: '2025-02-01' }]));
+    outcomes.set('golf_team_members', fails('connection reset'));
+    const { resolveCoachActiveTeam, resolveCoachTeamId } = await mod();
+    expect(await resolveCoachActiveTeam(supabase, ORG, COACH, null)).toEqual({ status: 'failed' });
+    expect(await resolveCoachTeamId(supabase, ORG, COACH)).toBeNull();
+    const said = warn.mock.calls.map((c) => String((c as unknown[])[0]));
+    expect(said.some((m) => /refusing to rank teams blind/.test(m))).toBe(true);
+  });
+});

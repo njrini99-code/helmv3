@@ -80,7 +80,7 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
   resolveCoachTeamIdWithCookie: (...args: unknown[]) => resolveCoachTeamIdWithCookie(...args),
 }));
 
-import { updateGolfEvent, deleteGolfEvent } from '../golf';
+import { updateGolfEvent, deleteGolfEvent } from '../calendar-events';
 
 function seedCoach() {
   fake = createFakeSupabase({

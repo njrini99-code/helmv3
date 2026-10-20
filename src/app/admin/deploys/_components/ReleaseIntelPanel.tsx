@@ -13,8 +13,7 @@ import type { RiskTier } from '@/lib/admin/release-intel/types';
  * (`docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §4 F.6):
  * a rollback-recommendation banner for the live release, and a risk-tier
  * chip per pending (`queued_for_release`) release-queue item. Read-only —
- * never triggers a rollback or a deploy, matching
- * `config/release-policy.yml`'s `emergency.automatic_override: false`.
+ * never triggers a rollback or a deploy.
  *
  * Two independent sources, two independent degradations — a failure in one
  * never blanks the other.

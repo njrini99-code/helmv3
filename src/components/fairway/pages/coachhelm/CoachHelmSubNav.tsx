@@ -39,7 +39,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { cn } from '@/lib/utils';
@@ -236,7 +236,7 @@ export function CoachHelmSubNav({
     (e: React.KeyboardEvent) => {
       const count = tabs.length;
       if (count === 0) return;
-      let next: number | null = null;
+      let next: number | null;
       switch (e.key) {
         case 'ArrowRight':
         case 'ArrowDown':

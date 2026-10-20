@@ -32,7 +32,7 @@ const ok = {
     },
   },
   observability_keys_unowned: {
-    integrations: { classification: 'platform', reason: 'Inngest job execution.' },
+    integrations: { classification: 'platform', reason: 'Third-party provider faults.' },
   },
 };
 

@@ -27,7 +27,7 @@
  * reintroducing that cross-route private-folder coupling; both original
  * files now re-export from here.
  */
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { Eyebrow, DUR, EASE_SOFT } from '@/components/baseball/living-annual';
 
 export interface StepProgressProps {

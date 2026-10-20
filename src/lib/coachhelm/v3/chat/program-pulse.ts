@@ -28,7 +28,7 @@ import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { formatDateOnlyShort } from '@/lib/golf/date-only';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
-import { isCountableRound } from '@/lib/golf/round-countable';
+import { isScoreCountable } from '@/lib/golf/round-score-countable';
 import { RECENT_PLAYER_WINDOW_DAYS, recentWindowStart, recentlyActivePlayerIds } from '@/lib/coachhelm/recent-players';
 
 type Sb = SupabaseClient<Database>;
@@ -51,6 +51,9 @@ export interface PulseItem {
   ask?: string;
 }
 
+/** The reads the pulse is made from, by the name `ProgramPulse.failed` uses. */
+export type PulseSource = 'rounds' | 'events' | 'attendance' | 'tasks' | 'focus' | 'signals';
+
 export interface ProgramPulse {
   items: PulseItem[];
   /** Most recent round anywhere on the team, or null. */
@@ -64,6 +67,13 @@ export interface ProgramPulse {
   active_roster: number;
   /** When this read ran. */
   as_of: string;
+  /**
+   * The reads that failed (a failed read contributes no rows, which is not "nothing to report"). Absent when every read
+   * landed, so a caller that never looks at it sees exactly what it always did. When `rounds` is in it, `players_without_rounds`,
+   * `players_with_recent_rounds`, `latest_round_at` and the `coverage-*` and `movement-*` items were made from no rounds at
+   * all and say nothing; an item whose source is listed is missing or untrue, never a finding.
+   */
+  failed?: PulseSource[];
 }
 
 const DAY = 86400_000;
@@ -76,12 +86,13 @@ const DAY = 86400_000;
  * rejection that takes the whole surface down. `await`ing inside a real
  * try/catch is the version that actually degrades.
  */
-async function safeRows<T>(query: PromiseLike<{ data: T[] | null }>): Promise<T[]> {
+async function safeRows<T>(query: PromiseLike<{ data: T[] | null; error?: unknown }>): Promise<{ rows: T[]; failed: boolean }> {
   try {
-    const { data } = await query;
-    return data ?? [];
+    const { data, error } = await query;
+    // Supabase answers a failed read as `{ data: null, error }` and does not throw, so the error is what says it failed.
+    return error ? { rows: [], failed: true } : { rows: data ?? [], failed: false };
   } catch {
-    return [];
+    return { rows: [], failed: true };
   }
 }
 
@@ -91,12 +102,12 @@ async function safeRows<T>(query: PromiseLike<{ data: T[] | null }>): Promise<T[
  * caller then omits the signals item rather than printing a number it did not
  * actually measure.
  */
-async function safeCount(query: PromiseLike<{ count: number | null }>): Promise<number> {
+async function safeCount(query: PromiseLike<{ count: number | null; error?: unknown }>): Promise<{ count: number; failed: boolean }> {
   try {
-    const { count } = await query;
-    return count ?? 0;
+    const { count, error } = await query;
+    return error ? { count: 0, failed: true } : { count: count ?? 0, failed: false };
   } catch {
-    return 0;
+    return { count: 0, failed: true };
   }
 }
 
@@ -203,7 +214,7 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
   const now = Date.now();
   const items: PulseItem[] = [];
 
-  const [completedRounds, events, attendance, tasks, focus, signals, signalCount] = await Promise.all([
+  const [completedRoundsRead, eventsRead, attendanceRead, tasksRead, focusRead, signalsRead, signalCountRead] = await Promise.all([
     safeRows(
       sb
         .from('golf_rounds')
@@ -273,12 +284,30 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     ),
   ]);
 
+  const completedRounds = completedRoundsRead.rows;
+  const events = eventsRead.rows;
+  const attendance = attendanceRead.rows;
+  const tasks = tasksRead.rows;
+  const focus = focusRead.rows;
+  const signals = signalsRead.rows;
+  const signalCount = signalCountRead.count;
+  // Which reads did not land, said on the result: a read that failed is no rows, and no rows is not "no rounds" or "nothing flagged".
+  const failed: PulseSource[] = [];
+  if (completedRoundsRead.failed) failed.push('rounds');
+  if (eventsRead.failed) failed.push('events');
+  if (attendanceRead.failed) failed.push('attendance');
+  if (tasksRead.failed) failed.push('tasks');
+  if (focusRead.failed) failed.push('focus');
+  if (signalsRead.failed || signalCountRead.failed) failed.push('signals');
+
   // ── Data freshness + coverage ───────────────────────────────────────────
-  // "Latest round" and the performance movement read COUNTABLE rounds only
-  // (src/lib/golf/round-countable.ts, canonical hole-sum totals), so a
-  // 37-stroke 18-hole round is not "the most recent round on the team".
+  // "Latest round" and the performance movement read rounds that count in a
+  // SCORE (Q-123: a fully scored round, or an 18-hole round posted as a total
+  // only), so a 37-stroke 18-hole round is still not "the most recent round on
+  // the team", and a qualifier posted as a total is (the pulse said "no rounds
+  // in 60 days" over a week of qualifiers, swap audit F-58).
   // Coverage ("has no recorded rounds") still counts every completed round.
-  const rounds = completedRounds.map((r) => withCanonicalRoundTotal(r)).filter(isCountableRound);
+  const rounds = completedRounds.map((r) => withCanonicalRoundTotal(r)).filter(isScoreCountable);
   const latestRoundAt = rounds[0]?.round_date ?? null;
   const withRounds = new Set(completedRounds.map((r) => r.player_id));
   const withoutRounds = ctx.roster.filter((p) => !withRounds.has(p.id));
@@ -354,10 +383,10 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     const worst = movers.filter((m) => m.delta > 0).sort((a, b) => b.delta - a.delta);
     items.push({
       id: 'movement-decline',
-      headline: `${declined} players are scoring higher than their previous three rounds`,
+      headline: `${declined} players are scoring worse over their last three rounds`,
       evidence: worst
         .slice(0, 3)
-        .map((m) => `${m.name} +${m.delta.toFixed(1)}`)
+        .map((m) => `${m.name} +${m.delta.toFixed(1)} strokes`)
         .join(' · '),
       tone: 'attention',
       weight: 80,
@@ -367,10 +396,10 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     const best = movers.filter((m) => m.delta < 0).sort((a, b) => a.delta - b.delta);
     items.push({
       id: 'movement-improve',
-      headline: `${improved} players are scoring lower than their previous three rounds`,
+      headline: `${improved} players are scoring better over their last three rounds`,
       evidence: best
         .slice(0, 3)
-        .map((m) => `${m.name} ${m.delta.toFixed(1)}`)
+        .map((m) => `${m.name} −${Math.abs(m.delta).toFixed(1)} strokes`)
         .join(' · '),
       tone: 'positive',
       weight: 40,
@@ -389,8 +418,8 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     if (pending.length === 0) continue;
     items.push({
       id: `rsvp-${event.id}`,
-      headline: `${pending.length} player${pending.length === 1 ? ' has' : 's have'} not responded for ${event.title}`,
-      evidence: `${formatDateTime(event.start_time, ctx.timezone)} · ${forEvent.length - pending.length} of ${forEvent.length} responded`,
+      headline: `${pending.length} player${pending.length === 1 ? ' hasn’t' : 's haven’t'} replied to ${event.title}`,
+      evidence: `${formatDateTime(event.start_time, ctx.timezone)} · ${forEvent.length - pending.length} of ${forEvent.length} replied`,
       tone: 'attention',
       weight: 85,
       action: { label: 'Open calendar', href: '/golf/dashboard/calendar' },
@@ -470,6 +499,7 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     recent_window_days: RECENT_PLAYER_WINDOW_DAYS,
     active_roster: ctx.roster.length,
     as_of: asOf,
+    ...(failed.length > 0 ? { failed } : {}),
   };
 }
 

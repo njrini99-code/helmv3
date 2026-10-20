@@ -53,6 +53,22 @@ Live Activity — each gated behind a capability entry when its binary lands. Re
 `ios/appstore/RELEASE_CANDIDATE_2.0-9.md`; audit:
 `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md`.
 
+## Clubhouse in the shell (2026-09-29)
+
+The Clubhouse UI (`src/clubhouse/`, behind its feature flag in `config/feature-flags.yml`) is web code in
+the same shell and inherits everything `CapacitorProvider` sets up in the root
+layout. Its frame (`ClubhouseShell`) mounts `NativeSwipeBackBridge` itself,
+because it does not render the Fairway dashboard shell; its sheets report open
+with `data-state="open"` or `<dialog open>`. Its sign-out calls
+`teardownDeviceTokenOnSignOut()` first, like Fairway's. Phone work is iPhone
+only; the guide is `docs/clubhouse/MOBILE.md`.
+
+Local device testing: `npm run ios:dev` sets `CAP_SERVER_URL` (http, this Mac
+or the local network only; `capacitor.config.ts` throws otherwise) for one
+`cap run ios`, then restores the tracked native files. The tracked
+`ios/App/App/capacitor.config.json` must carry the production URL with
+`cleartext: false`; `src/test/lib/capacitor-config.test.ts` pins it.
+
 ## Proxy contract for the native user agent (2026-09-17)
 
 `src/proxy.ts` redirects a `HelmSportsLabsApp` request for any non-app path to
@@ -99,6 +115,9 @@ offline page. `src/test/proxy-middleware.test.ts` pins the exemption.
   message. Test: `src/components/golf/__tests__/NativeSwipeBackBridge.test.tsx`.
 
 ## Tests
+
+- `src/test/lib/capacitor-config.test.ts` — committed native config is production; the dev override accepts local addresses only.
+- `src/clubhouse/__tests__/native.test.tsx` — Clubhouse sign-out tears down the push token first; the More sheet trips the swipe-back guard.
 
 - `src/test/lib/native-capabilities.test.ts` — capability bridge contract.
 - `src/test/lib/haptics-pref.test.ts` — preference gate.

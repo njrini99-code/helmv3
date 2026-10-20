@@ -4,7 +4,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),
 }));
 
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({
   triggerPlayerInsightsAfterRound: vi.fn(),
 }));
 

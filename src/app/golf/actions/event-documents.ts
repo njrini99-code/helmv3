@@ -127,6 +127,12 @@ export async function getEventDocuments(
 /**
  * Attach an existing team document to an event. Idempotent — the composite
  * primary key (event_id, document_id) means a duplicate attach is a no-op.
+ *
+ * The write is INSERT ... ON CONFLICT DO NOTHING (ignoreDuplicates: true), not
+ * DO UPDATE: golf_event_documents has INSERT/SELECT/DELETE policies and no
+ * UPDATE policy, so DO UPDATE was refused on a retry, an Undo or a double
+ * attach and the coach saw "Couldn't attach" for a file that was attached
+ * (P006). A re-attach keeps the existing row's note and attached_by.
  */
 async function attachDocumentToEventImpl(
   eventId: string,
@@ -173,7 +179,7 @@ async function attachDocumentToEventImpl(
           attached_by: coach?.id ?? null,
           note: note ?? null,
         },
-        { onConflict: 'event_id,document_id', ignoreDuplicates: false },
+        { onConflict: 'event_id,document_id', ignoreDuplicates: true },
       );
 
     if (error) {
@@ -236,11 +242,16 @@ async function detachDocumentFromEventImpl(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { error } = await (supabase as any)
+    // `.select('document_id')` (the table's key is the (event_id, document_id)
+    // pair, there is no `id`): a DELETE that RLS filters to zero rows raises no
+    // error, so a non-coach's detach, or one for a document that was never
+    // attached, used to answer success while the attachment stayed.
+    const { data: removed, error } = await (supabase as any)
       .from('golf_event_documents')
       .delete()
       .eq('event_id', eventId)
-      .eq('document_id', documentId);
+      .eq('document_id', documentId)
+      .select('document_id');
 
     if (error) {
       await logServerError(`detachDocumentFromEvent failed: ${error.message}`, {
@@ -260,6 +271,13 @@ async function detachDocumentFromEventImpl(
         error: error.code === '42501'
           ? 'Only this team\'s coaches can detach documents'
           : 'Failed to detach document',
+      };
+    }
+
+    if (!Array.isArray(removed) || removed.length === 0) {
+      return {
+        success: false,
+        error: "That document isn't attached to this event, or you can't change this event's attachments.",
       };
     }
 

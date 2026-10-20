@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconTrash, IconUsers, IconClock } from '@/components/icons';
 import { Button } from '@/components/ui/button';

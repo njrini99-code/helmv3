@@ -5,10 +5,12 @@
 -- DEPENDS ON 20260924120000_golf_countable_round_stats_cache.sql (OD-01, also
 -- held). Apply OD-01 first, in the same session. The DO block below refuses
 -- to run unless the live refresh_player_standing_round_metrics body is
--- exactly OD-01's (md5 of prosrc d343740516f570d7a6a250273ce9bf11, length
--- 9984). Without that check, applying this file alone would succeed and the
--- next Standing refresh would fail on the missing golf_round_is_countable
--- (plpgsql records no dependency).
+-- exactly OD-01's as amended for Q-128 (md5 of prosrc
+-- a82c0849e1ba71b6001054c680828343, length 10288; it was
+-- d343740516f570d7a6a250273ce9bf11, length 9984, before Q-128). Without
+-- that check, applying this file alone would succeed and the next Standing
+-- refresh would fail on the missing golf_round_is_countable (plpgsql records
+-- no dependency).
 --
 -- WHY. The shared rule in src/lib/golf/metrics/pressure-gap.ts
 -- (computePressureGap) is:
@@ -26,7 +28,12 @@
 --     9 or 18);
 --   * the pressure side also accepts round_type 'qualifying';
 --   * the per-side floors (>= 3) count only rounds with a non-null to par, so
---     a round the average ignores can't satisfy the floor (the TS rule).
+--     a round the average ignores can't satisfy the floor (the TS rule);
+--   * (Q-128) the countable call in both CTEs is
+--     golf_round_is_score_countable, OD-01's score rule, so a round posted
+--     as a total only counts in the pressure gap, as in the app
+--     (pressureGap in src/clubhouse/data/stats-figures.ts reads the whole
+--     window). OD-01's opening-hole block keeps the hole rule.
 -- Left alone on purpose: the 90-day window and the 3-per-side / 5-total
 -- floors (each caller keeps its own floor; the Standing copy states 90 days),
 -- the opening_hole_delta block, and v_min_team_n = 3 (NUM-35 set the TS team
@@ -58,6 +65,7 @@
 -- VERIFY: and p.proname = 'refresh_player_standing_round_metrics'
 -- VERIFY: and p.prosrc like '%''qualifying''%'
 -- VERIFY: and p.prosrc like '%* 18 / NULLIF(COALESCE(r.holes_played, 18), 0)%'
+-- VERIFY: and p.prosrc like '%golf_round_is_score_countable%'
 -- VERIFY: and p.prosrc like '%golf_round_is_countable%';
 
 DO $guard$
@@ -70,7 +78,7 @@ BEGIN
   SELECT p.prosrc INTO v_src
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname = 'refresh_player_standing_round_metrics';
-  IF v_src IS NULL OR md5(v_src) <> 'd343740516f570d7a6a250273ce9bf11' THEN
+  IF v_src IS NULL OR md5(v_src) <> 'a82c0849e1ba71b6001054c680828343' THEN
     RAISE EXCEPTION 'NUM-24: live refresh_player_standing_round_metrics is not the OD-01 body (md5 %). Stop and rebase this file on the live body.', md5(v_src);
   END IF;
 END
@@ -93,6 +101,8 @@ BEGIN
   END IF;
   -- NUM-24: pressure gap per src/lib/golf/metrics/pressure-gap.ts: 18-hole
   -- to-par basis and the legacy 'qualifying' spelling. Floors stay 3/3/5.
+  -- Q-128: the pressure gap is a score figure (round to par), so a round
+  -- posted as a total only counts in it: golf_round_is_score_countable.
   WITH team_values AS (
     SELECT
       p.id AS player_id,
@@ -109,7 +119,7 @@ BEGIN
       ON t.id = tm.team_id
     JOIN public.golf_rounds r
       ON r.player_id = p.id
-     AND public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
+     AND public.golf_round_is_score_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
      AND r.round_date > (CURRENT_DATE - (v_window_days || ' days')::interval)
     WHERE tm.team_id = ANY(p_team_ids)
     GROUP BY p.id, tm.team_id, COALESCE(t.gender, 'mens')
@@ -154,7 +164,7 @@ BEGIN
         ON t.id = tm.team_id
       JOIN public.golf_rounds r
         ON r.player_id = p.id
-       AND public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
+       AND public.golf_round_is_score_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
        AND r.round_date > (CURRENT_DATE - (v_window_days || ' days')::interval)
       GROUP BY p.id, tm.team_id, COALESCE(t.gender, 'mens')
       HAVING
@@ -221,6 +231,8 @@ BEGIN
   out_metric_id := 'practice_tournament_delta';
   out_rows_upserted := v_rows;
   RETURN NEXT;
+  -- Q-128: the opening-hole gap reads holes, so it keeps the hole rule
+  -- (golf_round_is_countable); a total-only round has no holes to read.
   WITH team_values AS (
     SELECT
       p.id AS player_id,

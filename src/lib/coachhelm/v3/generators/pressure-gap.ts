@@ -17,7 +17,8 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles, classifyHole } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { isCountableRound } from '@/lib/golf/round-countable';
-import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
+import { TOUR_STANDARDS, tourFor } from '@/lib/golf/benchmarks/tour';
 import { tCritical95, welchStandardError } from '@/lib/coachhelm/v3/stats/intervals';
 import {
   computePressureGap,
@@ -58,7 +59,9 @@ interface PressureGapAggregate extends GeneratorAggregate {
   /** Half-width of the 95% band around zero: t(df) × SE. */
   noise_band: number;
   /** Cohort average pressure gap (standing.level_avg), null at cold-start. */
-  cohort_avg: number | null;
+  /** The team's Tour pressure gap (strokes) and its tour's name (Q-88). */
+  tour_gap: number;
+  tour_label: string;
   window_start: string | null;
   window_end: string | null;
   /** SV-1 duck-typed dispersion (DispersionSignals): per-round score-to-par stddev. */
@@ -87,10 +90,6 @@ interface PressureGapAggregate extends GeneratorAggregate {
  */
 export const MIN_ROUNDS_PER_BUCKET = 3;
 
-/** Tour reference gap (Research doc §9, Hickman & Metz). Secondary tick only. */
-const TOUR_PRESSURE_GAP = 0.5;
-/** Strokes over the cohort average at which a gap becomes HIGH priority. */
-const HIGH_OVER_COHORT = 2;
 
 export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
   readonly name = 'PressureGapGenerator';
@@ -227,14 +226,11 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       .map((r) => r.round_date as string)
       .sort();
 
-    // Priority anchor (owner decision 2026-09-28): the college cohort's own
-    // average pressure gap, not the Tour's 0.5 — college typical is 2-5, so
-    // the Tour anchor flagged 6 of 10 players HIGH.
-    const standing = await loadStandingForMetric(this.playerId, this.metricId);
-    const cohortAvg =
-      standing && typeof standing.level_avg === 'number' && Number.isFinite(standing.level_avg)
-        ? standing.level_avg
-        : null;
+    // The team's Tour pressure gap is the only reference (Q-88, 2026-09-30,
+    // superseding the 2026-09-28 college-cohort anchor): LPGA for a women's
+    // team, PGA otherwise. Both are the 0.5-stroke estimate in golf_pga_standards.
+    const playerCohort = await loadPlayerCohort(this.playerId);
+    const tour = TOUR_STANDARDS[tourFor(playerCohort.gender)];
 
     return {
       sampleN: practiceN + competitiveN,
@@ -249,7 +245,8 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       opening3_strokes_delta: opening3Delta,
       gap_se: welch.se,
       noise_band: noiseBand,
-      cohort_avg: cohortAvg,
+      tour_gap: tour.practiceTournamentDelta,
+      tour_label: tour.label,
       window_start: allDates[0] ?? null,
       window_end: allDates[allDates.length - 1] ?? null,
       // SV-1 duck-typed dispersion (DispersionSignals): stddev + scale + the
@@ -284,11 +281,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
           ? ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} strokes per round vs practice.`
           : ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} per 18 holes vs practice.`
         : '';
-    const cohort = agg.cohort_avg ?? null;
-    const anchorSentence =
-      cohort !== null
-        ? ` College players in our data average a ${cohort.toFixed(1)}-stroke gap; the PGA Tour gap is ~${TOUR_PRESSURE_GAP}.`
-        : ` PGA Tour gap is ~${TOUR_PRESSURE_GAP} strokes; college typical is 2-5 (Research doc §9).`;
+    const anchorSentence = ` The ${agg.tour_label} gap is ~${agg.tour_gap} strokes.`;
     const noise = typeof agg.noise_band === 'number' && agg.noise_band > 0
       ? ` (95% noise band ±${agg.noise_band.toFixed(1)})`
       : '';
@@ -303,27 +296,11 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     return {
       title,
       content,
-      // Severity from the gap itself (competitive − practice): >0.5 over the PGA
-      // reference is a real pressure weakness; at/under practice is fine.
-      // pg-3 (Tour-anchor caveat): the 0.5 reference + the counterfactual the base
-      // injects both anchor to PGA Tour until the cohort RPC populates
-      // `practice_tournament_delta.level_avg` (migration 20260606120000 adds the
-      // college-population level_avg → once deployed, the base prefers the cohort
-      // target, so this Tour anchor becomes the ceiling fallback only). College
-      // typical is 2-5 strokes (Research doc §9) — far above Tour 0.5.
-      //
-      // Anchored to the cohort when standing has one (owner decision
-      // 2026-09-28): at/below the cohort average is low, above it medium, more
-      // than HIGH_OVER_COHORT above it high. Cold-start (no cohort) keeps the
-      // old Tour rule.
-      priority:
-        cohort !== null
-          ? agg.playerValue > cohort + HIGH_OVER_COHORT
-            ? 'high'
-            : agg.playerValue > cohort
-              ? 'medium'
-              : 'low'
-          : agg.playerValue > TOUR_PRESSURE_GAP ? 'high' : agg.playerValue <= 0 ? 'low' : 'medium',
+      // Severity against the team's Tour gap (Q-88): over it is high, at or
+      // under practice is low, in between medium. This is the rule before the
+      // 2026-09-28 cohort anchor, which was adopted because it flagged most
+      // college players HIGH; the thresholds are the owner's to retune.
+      priority: agg.playerValue > agg.tour_gap ? 'high' : agg.playerValue <= 0 ? 'low' : 'medium',
       signature: `pressure_gap:practice_vs_tournament`,
       evidence: {
         metric: this.metricId,
@@ -331,20 +308,9 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
         unit: 'strokes',
         your_value: agg.playerValue,
         your_value_display: deltaDisp,
-        ...(cohort !== null
-          ? {
-              comparison_value: cohort,
-              comparison_label: 'College cohort pressure gap',
-              comparison_source: 'cohort_avg' as const,
-              secondary_value: TOUR_PRESSURE_GAP,
-              secondary_label: 'PGA Tour pressure gap',
-              secondary_source: 'pga_baseline' as const,
-            }
-          : {
-              comparison_value: TOUR_PRESSURE_GAP,
-              comparison_label: 'PGA Tour pressure gap',
-              comparison_source: 'pga_baseline' as const,
-            }),
+        comparison_value: agg.tour_gap,
+        comparison_label: `${agg.tour_label} pressure gap`,
+        comparison_source: 'pga_baseline' as const,
         sample_n: agg.sampleN,
         window_basis: 'rolling',
         window_days: 90,

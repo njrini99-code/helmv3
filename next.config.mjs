@@ -1,9 +1,13 @@
 import os from 'node:os';
+import process from 'node:process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
+import { imageRemotePatterns } from './src/lib/security/image-remote-patterns.mjs';
 import { localSupabaseConnectSrc } from './src/lib/security/local-supabase-csp.mjs';
+import { supabaseConnectSrc, supabaseFrameSrc } from './src/lib/security/supabase-csp.mjs';
+import { clubhousePreviewHeaders } from './src/lib/security/clubhouse-preview-headers.mjs';
 import { buildSentryBuildOptions } from './src/lib/sentry-build-options.mjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
@@ -11,8 +15,8 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 // `--localstorage-file` is a Node 22+ flag (experimental webstorage).
 // Node 20 exits with "is not allowed in NODE_OPTIONS" the moment Next
-// spawns a worker that inherits this env. Every CI job pins Node 22 now
-// (ci.yml `node-version: 22`; CircleCI `cimg/node:22.13`) — this comment
+// spawns a worker that inherits this env. Every CI job pins Node 24 now
+// (ci.yml `node-version: 24`; CircleCI `cimg/node:24.21`) — this comment
 // said the GitHub Actions build job "currently uses" Node 20 long after it
 // stopped — but a contributor's machine or a future runner may not, so the
 // guard stays: skip the setup on older Node and let the build go through.
@@ -48,8 +52,12 @@ const sentryRelease = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERC
 const nextConfig = {
   // Helm owns its agent instructions; dev startup must not rewrite them.
   agentRules: false,
-  allowedDevOrigins: ['127.0.0.1'],
+  // A phone on the same network can load the dev server for real-device checks (Safari on iPhone) when the host is
+  // named explicitly: HELM_DEV_LAN_ORIGIN=192.168.x.y npm run dev. Dev only; production ignores allowedDevOrigins.
+  allowedDevOrigins: ['127.0.0.1', ...(process.env.HELM_DEV_LAN_ORIGIN ? [process.env.HELM_DEV_LAN_ORIGIN] : [])],
   reactStrictMode: true, // Enable to catch potential issues
+  // Don't advertise the framework in an X-Powered-By header.
+  poweredByHeader: false,
 
   // The dev server logs every server action with its arguments by default,
   // which writes sign-in passwords (loginAction) into the terminal and any
@@ -81,27 +89,12 @@ const nextConfig = {
     NEXT_PUBLIC_SENTRY_RELEASE: sentryRelease || '',
   },
 
-  // Allow images from Supabase storage
+  // Allow images from this project's Supabase public storage only (plus a
+  // loopback stack, only when NEXT_PUBLIC_SUPABASE_URL is loopback). No
+  // `**.supabase.co` wildcard: see src/lib/security/image-remote-patterns.mjs
+  // (GHSA-cjq9-62q9-8jv4, image-optimizer SSRF).
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '54321',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '54321',
-        pathname: '/storage/v1/object/public/**',
-      },
-    ],
+    remotePatterns: imageRemotePatterns(),
     formats: ['image/avif', 'image/webp'], // Enable modern image formats
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // Responsive image sizes
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // Smaller image sizes
@@ -193,13 +186,21 @@ const nextConfig = {
     // hook above and docs/operations/GATES.md).
     cpus: 3,
     webpackMemoryOptimizations: true,
+    // Client router cache: left at Next's defaults (dynamic 0s, static
+    // 300s). A 30s dynamic stale time (Clubhouse native-feel audit P0-2)
+    // applied app-wide and let Fairway, Baseball and Lift Lab show data up to
+    // 30s old on a revisit (#2189). The Clubhouse tabs get their instant
+    // switch from a full prefetch instead (held for the static 300s), which
+    // they refresh in place past 30s: shell/use-prefetch-tabs.ts.
     // Enable server actions.
     // bodySizeLimit must cover the largest Server Action payload. Recruit
-    // document uploads pass the File as an action arg (see
-    // src/app/golf/actions/recruit-documents.ts, MAX_FILE_BYTES = 25 MB), so a
-    // 2 MB cap would reject 2–25 MB files *before* the action runs — making the
-    // advertised 25 MB limit a lie. Keep a small margin above that cap for the
-    // multipart/action envelope.
+    // documents no longer pass a File through an action (they upload straight
+    // to Storage on a signed URL), but other uploads still do: team documents
+    // (uploadGolfDocument, uploadNewVersion, 25 MB bucket), baseball documents,
+    // expense receipts (10 MB) and admin screenshots. Lowering this would make
+    // those fail at Next's limit instead of the platform's, so it stays until
+    // they move to signed uploads too. On Vercel the platform's own ~4.5 MB
+    // request limit applies first regardless of this value.
     serverActions: {
       bodySizeLimit: '26mb',
     },
@@ -207,7 +208,7 @@ const nextConfig = {
     optimizePackageImports: [
       'recharts',
       'date-fns',
-      'framer-motion',
+      'motion',
       '@supabase/supabase-js',
       'lucide-react',
       'zod',
@@ -435,7 +436,7 @@ const nextConfig = {
 
   // Headers for caching and security
   async headers() {
-    return [
+    return clubhousePreviewHeaders([
       // Security headers for all routes
       {
         source: '/:path*',
@@ -450,10 +451,12 @@ const nextConfig = {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
           },
-          // Enable XSS protection
+          // The legacy XSS auditor is removed from modern browsers, and where it
+          // still exists it can be abused to leak data; '0' turns it off (OWASP).
+          // The CSP below is the real XSS defence.
           {
             key: 'X-XSS-Protection',
-            value: '1; mode=block',
+            value: '0',
           },
           // Referrer policy
           {
@@ -477,8 +480,15 @@ const nextConfig = {
             value: 'max-age=63072000; includeSubDomains; preload',
           },
           // Content Security Policy
-          // SECURITY: In development, we need 'unsafe-inline' and 'unsafe-eval' for Next.js hot reload
-          // TODO: Use nonce-based CSP in production
+          // SECURITY: 'unsafe-eval' is only for development (Next.js hot reload,
+          // React dev tooling); production builds never send it.
+          // 'unsafe-inline' stays for scripts and styles: this app has no
+          // nonce plumbing (src/proxy.ts sets no nonce and the layout reads
+          // none), and a per-request nonce makes every page dynamic. Dropping
+          // it means adding both, so it is a separate piece of work.
+          // The form directive blocks a form from posting to another origin
+          // (Chrome also applies it to a redirect that follows the post). No
+          // form in src/ posts off-site; server actions submit through fetch.
           //
           // ANALYTICS HOSTS. src/app/layout.tsx mounts PostHogProvider and
           // DatadogProvider; both initialise client-side whenever their
@@ -497,13 +507,13 @@ const nextConfig = {
           //     surveys bundles (entrypoints/external-scripts-loader.js), then
           //     falls back to a plain GET of /array/<token>/config from the
           //     same host when the script yields no config (remote-config.js).
-          //   browser-intake-datadoghq.com (connect) — @datadog/browser-core
-          //     buildEndpointHost() for the default site datadoghq.com; RUM,
-          //     Logs and Session Replay all post to this one bare host. NO
-          //     wildcard: the SDK reaches a SUBDOMAIN of it only under
-          //     usePciIntake, internalAnalyticsSubdomain or
-          //     remoteConfigurationId, none of which src/lib/datadog/index.ts
-          //     sets. Set one and add its host by name.
+          //   browser-intake-datadoghq.com (connect) — @datadog/js-core
+          //     buildEndpointUrl() (SDK v7) for the default site datadoghq.com;
+          //     RUM, Logs and Session Replay all post to this one bare host. NO
+          //     wildcard: the SDK reaches a SUBDOMAIN of it only for
+          //     remoteConfigurationId or profiling (profilingSampleRate > 0),
+          //     neither of which src/lib/datadog/index.ts sets. Set one and
+          //     add its host by name.
           //
           // A non-default NEXT_PUBLIC_POSTHOG_HOST or NEXT_PUBLIC_DD_SITE needs
           // its host added here too, or it is blocked the same way.
@@ -515,15 +525,18 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://us-assets.i.posthog.com blob:;
+              script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"} https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://us-assets.i.posthog.com blob:;
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;
-              connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://vitals.vercel-analytics.com https://us.i.posthog.com https://us-assets.i.posthog.com https://browser-intake-datadoghq.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*${localSupabaseConnectSrc()};
+              connect-src 'self' ${supabaseConnectSrc()} https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://vitals.vercel-analytics.com https://us.i.posthog.com https://us-assets.i.posthog.com https://browser-intake-datadoghq.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*${localSupabaseConnectSrc()};
               media-src 'self' data:;
               worker-src 'self' blob:;
-              frame-src 'self' https://*.supabase.co blob: data:;
+              frame-src 'self' ${supabaseFrameSrc()} blob: data:;
               frame-ancestors 'none';
+              base-uri 'self';
+              object-src 'none';
+              form-action 'self';
             `.replace(/\s{2,}/g, ' ').trim(),
           },
         ],
@@ -538,17 +551,21 @@ const nextConfig = {
           },
         ],
       },
-      // Cache headers for static assets
+      // Cache headers for public/ images. These file names are NOT
+      // content-hashed (Helm-Logo-New-Main.png, hero-golf.jpg), so `immutable`
+      // with a one-year max-age meant a replaced logo never reached returning
+      // visitors. A day, then a week of stale-while-revalidate. Hashed build
+      // output under /_next/static keeps Next's own immutable header.
       {
         source: '/:all*(svg|jpg|jpeg|png|gif|ico|webp|avif)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
           },
         ],
       },
-    ];
+    ], process.env.NODE_ENV);
   },
 };
 
@@ -594,9 +611,10 @@ export default isDev
         // Identifies first-party bundles for `thirdPartyErrorFilterIntegration`
         // (src/instrumentation-client.ts): at build time this key gets
         // forwarded to @sentry/webpack-plugin's `moduleMetadata` /
-        // `applicationKey` option (webpack) or injected via a Turbopack
-        // loader (Next.js 16+, this repo's bundler — see `turbopack: {}`
-        // above), tagging every first-party module with `_sentryModuleMetadata`.
+        // `applicationKey` option (webpack, which this repo builds with:
+        // `next build --webpack`) or injected via a Turbopack loader if the
+        // build ever moves to Turbopack, tagging every first-party module with
+        // `_sentryModuleMetadata`.
         // MUST match the `filterKeys` array passed to
         // thirdPartyErrorFilterIntegration exactly — pinned together by
         // src/lib/security/__tests__/sentry-application-key.test.ts, which

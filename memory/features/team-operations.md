@@ -14,6 +14,12 @@
 
 <!-- schema-drift-absent: golf_travel_expense_splits -->
 
+## Clubhouse Home motion repair — 2026-10-06
+
+LatestRound passes the device/OS reduced-motion preference into chSwap so its
+shared JavaScript duration becomes zero. Normal timing and round data stay
+unchanged. Repair evidence is in
+[SMOOTHNESS_AUDIT](../../docs/clubhouse/SMOOTHNESS_AUDIT.md).
 
 ## Status
 
@@ -27,6 +33,29 @@ standalone Player Hub is a dashboard redirect; Team Hub is the full player
 operations destination.
 
 Tasks let coaches assign work to players. Documents provide a team file library with versioning and visibility controls. Travel manages itinerary details and partially implemented budget/expense tracking. The player hub pulls travel, task, and event data into a player action center.
+
+Clubhouse Home (`src/clubhouse/data/home.ts`, `player-home.ts`, `screens/home/`)
+assembles the team's schedule and the viewer-appropriate round summaries.
+All-day dates follow Calendar's literal date and inclusive date-span rules,
+including ongoing multi-day events. Player Home shows dates for all-day events
+and a countdown only for recorded timed starts; the countdown reserves its space
+before the client clock is available. Home's section read errors remain distinct
+from empty data. Page contracts and data limitations live in
+`docs/clubhouse/pages/P002-home/` and `docs/clubhouse/PROGRESS.md`.
+
+Home resolves relative event days on the team clock even when the viewer is in
+another timezone. Partial invitee identities retain known names without claiming
+a paired Going count against an incomplete denominator. Player scoring counts
+under-par rounds only where par is recorded and draws a common par line only
+when every displayed round has the same known par. Missing sand-save totals
+remain unavailable rather than becoming zero.
+
+Clubhouse Team Hub (`src/clubhouse/screens/hub/`) gives each event reply, task
+and acknowledgment its own pending state and action gate. Another object can
+save independently. Object gates last for the Hub visit across tab changes and
+old Retry callbacks. Complete/reopen share the task gate; a refused write restores
+its last confirmed state. Acknowledgment keeps the featured post until the write
+confirms, then advances; failure preserves that post and the existing Retry.
 
 ## Primary Entry Points
 
@@ -117,6 +146,15 @@ Player Team Hub
 - Task templates create defaults, but assigned task records remain the operational truth.
 - Travel itinerary data can include hotel, flight, room, packing, and uniform details; treat as potentially sensitive.
 - Documents need visibility controls and safe versioning.
+- Every document write is coach-only on the document's own team, checked in the
+  action before storage or the row is touched: create, upload, update, delete,
+  delete version and restore (`resolveTeamRole` in `documents.ts`). A player
+  reads a document, its versions, preview or text only when it is shared with
+  players (`is_public`). A delete that matched no row is a failure, not success.
+  Pinned by `src/app/golf/actions/__tests__/documents-coach-only.test.ts`.
+- Files attached to an announcement must be the team's own documents, checked
+  before the announcement is written; a post whose file links fail reports
+  `attachmentsError` beside the id (`announcements.ts`).
 - Travel expense split support is incomplete; do not assume per-player split logic exists.
 
 ## UI Contract

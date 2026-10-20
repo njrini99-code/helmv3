@@ -1,0 +1,657 @@
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
+
+// ---------------------------------------------------------------------------
+// Mock Supabase with a chainable query builder
+// ---------------------------------------------------------------------------
+
+function createChainableMock({
+  data = [] as unknown[],
+  error = null as unknown,
+  singleData = null as unknown,
+  maybeSingleData = null as unknown,
+} = {}) {
+  const chain: Record<string, unknown> = {
+    data,
+    error,
+    count: Array.isArray(data) ? data.length : 0,
+  };
+  const methods = ['select', 'eq', 'in', 'gte', 'lte', 'not', 'order', 'limit', 'filter'];
+  for (const method of methods) {
+    chain[method] = vi.fn(() => chain);
+  }
+  // `.range(from, to)` returns a one-shot awaitable slice of the data so
+  // fetchAllRowsResult-style pagination behaves like real PostgREST (full
+  // pages keep the loop going; a short page ends it).
+  chain.range = vi.fn((from: number, to: number) => ({
+    ...chain,
+    data: Array.isArray(data) ? data.slice(from, to + 1) : data,
+  }));
+  chain.single = vi.fn(async () => ({ data: singleData, error }));
+  chain.maybeSingle = vi.fn(async () => ({ data: maybeSingleData, error }));
+  return chain;
+}
+
+let mockRoundsData: unknown[] = [];
+let mockCoachData: unknown = null;
+let mockMembershipData: unknown = null;
+let mockTeamMembersData: unknown[] = [];
+let mockPlayersListData: unknown[] = [];
+let mockRoundsError: unknown = null;
+/** Lets a test fail ONLY the golf_holes read, the way PostgREST would. */
+let mockHolesError: unknown = null;
+const telemetryMocks = vi.hoisted(() => ({
+  getUser: vi.fn(async () => ({
+    data: { user: { id: 'user-1', email: 'player@example.com' } },
+    error: null,
+  })),
+  logServerError: vi.fn(async () => undefined),
+  verifyCanonicalPlayerAccess: vi.fn(async () => ({
+    allowed: true,
+    reason: 'self' as const,
+  })),
+}));
+
+const mockFrom = vi.fn((table: string) => {
+  if (table === 'golf_players') {
+    return createChainableMock({
+      data: mockPlayersListData,
+      singleData: { id: 'player-test', user_id: 'user-1' },
+    });
+  }
+
+  if (table === 'golf_coaches') {
+    return createChainableMock({
+      maybeSingleData: mockCoachData,
+    });
+  }
+
+  if (table === 'golf_team_members') {
+    return createChainableMock({
+      data: mockTeamMembersData,
+      maybeSingleData: mockMembershipData,
+    });
+  }
+
+  return createChainableMock({
+    data: mockRoundsData,
+    error:
+      table === 'golf_rounds' ? mockRoundsError : table === 'golf_holes' ? mockHolesError : null,
+  });
+});
+
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(async () => ({
+    from: mockFrom,
+    rpc: vi.fn(async () => ({ data: 1, error: null })),
+    auth: { getUser: telemetryMocks.getUser },
+  })),
+}));
+
+// getDetailedStats reads identity / retries shot queries on the service-role
+// client. createAdminClient() THROWS when the service-role env is a placeholder
+// (which it is under vitest), so mock it through the same chainable builder —
+// otherwise the function fails before reaching calculateStatsFromShots, and the
+// pass/fail becomes env-load-order dependent (flaky across worker sharding).
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({
+    from: mockFrom,
+    rpc: vi.fn(async () => ({ data: 1, error: null })),
+    auth: { getUser: vi.fn(() => ({ data: { user: { id: 'user-1' } }, error: null })) },
+  })),
+}));
+
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: telemetryMocks.logServerError,
+  logServerEvent: vi.fn(async () => undefined),
+  logServerException: vi.fn(async () => undefined),
+}));
+
+vi.mock('@/lib/auth/verify-player-access', () => ({
+  verifyPlayerAccess: telemetryMocks.verifyCanonicalPlayerAccess,
+}));
+
+vi.mock('@/lib/utils/golf-stats-calculator-shots', () => ({
+  calculateStatsFromShots: vi.fn(() => ({
+    roundsPlayed: 0,
+    holesPlayed: 0,
+    scoringAverage: null,
+    bestRound: null,
+    worstRound: null,
+    girPercentage: null,
+    fairwayPercentage: null,
+    puttsPerRound: null,
+    scramblingPercentage: null,
+  })),
+}));
+
+vi.mock('@/lib/golf/round-type-utils', () => ({
+  roundTypeFromDb: vi.fn((type: string) => type),
+}));
+
+vi.mock('@/lib/golf/strokes-gained', () => ({
+  generateStatisticalStrengthsWeaknesses: vi.fn(() => ({
+    strengths: [],
+    weaknesses: [],
+  })),
+}));
+
+// ---------------------------------------------------------------------------
+// Import after mocks
+// ---------------------------------------------------------------------------
+
+import {
+  getStatsSummary,
+  getFilterOptions,
+  getDetailedStats,
+  getPlayerRoundOptions,
+  getSprayChartData,
+  getTrendAnalysis,
+  getCoachRosterStats,
+} from '../stats-data';
+import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
+import { runWithStatsActionContext } from '@/lib/golf/stats-action-context';
+
+import type { SummaryStatsResponse, FilterOptions } from '../stats-data-types';
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe('stats-data server actions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoundsData = [];
+    mockCoachData = null;
+    mockMembershipData = null;
+    mockTeamMembersData = [];
+    mockPlayersListData = [];
+    mockRoundsError = null;
+  });
+
+  // ========================================================================
+  // getStatsSummary
+  // ========================================================================
+  describe('getStatsSummary', () => {
+    it('returns empty summary when no rounds exist', async () => {
+      const result = await getStatsSummary('player-1');
+
+      expect(result.summary.roundsPlayed).toBe(0);
+      expect(result.summary.scoringAverage).toBeNull();
+      expect(result.summary.bestRound).toBeNull();
+      expect(result.summary.worstRound).toBeNull();
+      expect(result.summary.girPercentage).toBeNull();
+      expect(result.summary.fairwayPercentage).toBeNull();
+      expect(result.summary.puttsPerRound).toBeNull();
+      expect(result.summary.scramblingPercentage).toBeNull();
+      expect(result.rounds).toEqual([]);
+    });
+
+    it('returns correct SummaryStatsResponse shape', async () => {
+      const result: SummaryStatsResponse = await getStatsSummary('player-1');
+
+      expect(result).toHaveProperty('summary');
+      expect(result).toHaveProperty('rounds');
+      expect(result.summary).toHaveProperty('roundsPlayed');
+      expect(result.summary).toHaveProperty('holesPlayed');
+      expect(result.summary).toHaveProperty('scoringAverage');
+      expect(result.summary).toHaveProperty('bestRound');
+      expect(result.summary).toHaveProperty('worstRound');
+      expect(result.summary).toHaveProperty('girPercentage');
+      expect(result.summary).toHaveProperty('fairwayPercentage');
+      expect(result.summary).toHaveProperty('puttsPerRound');
+      expect(result.summary).toHaveProperty('scramblingPercentage');
+    });
+
+    it('queries golf_rounds table', async () => {
+      await getStatsSummary('player-123');
+      expect(mockFrom).toHaveBeenCalledWith('golf_rounds');
+    });
+
+    it('returns empty summary with no filter', async () => {
+      const result = await getStatsSummary('player-1', undefined);
+      expect(result.summary.roundsPlayed).toBe(0);
+    });
+
+    it('applies preset filter for last5 without crashing', async () => {
+      const result = await getStatsSummary('player-1', { preset: 'last5' });
+      expect(result.summary.roundsPlayed).toBe(0);
+    });
+
+    it('applies preset filter for tournaments without crashing', async () => {
+      const result = await getStatsSummary('player-1', { preset: 'tournaments' });
+      expect(result.summary.roundsPlayed).toBe(0);
+    });
+
+    it('applies custom date range filter without crashing', async () => {
+      const result = await getStatsSummary('player-1', {
+        preset: 'custom',
+        startDate: '2026-01-01',
+        endDate: '2026-01-31',
+      });
+      expect(result.summary.roundsPlayed).toBe(0);
+    });
+
+    it('applies season filter without crashing', async () => {
+      const result = await getStatsSummary('player-1', { season: 2025 });
+      expect(result.summary.roundsPlayed).toBe(0);
+    });
+
+    it('applies course name filter without crashing', async () => {
+      const result = await getStatsSummary('player-1', { courseName: 'Pine Valley' });
+      expect(result.summary.roundsPlayed).toBe(0);
+    });
+
+    it('calculates summary stats correctly when rounds exist', async () => {
+      const roundsData = [
+        { id: 'r1', round_date: '2026-02-01', course_name: 'TPC', round_type: 'practice', total_score: 72, score_to_par: 0, total_fairways_hit: 10, total_fairways: 14, total_gir: 12, total_gir_possible: 18, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 },
+        { id: 'r2', round_date: '2026-02-05', course_name: 'TPC', round_type: 'practice', total_score: 74, score_to_par: 2, total_fairways_hit: 8, total_fairways: 14, total_gir: 10, total_gir_possible: 18, total_putts: 32, holes_played: 18, front_nine: 37, back_nine: 37 },
+      ];
+
+      mockRoundsData = roundsData;
+
+      const result = await getStatsSummary('player-1');
+
+      expect(result.summary.roundsPlayed).toBe(2);
+      expect(result.summary.scoringAverage).toBe(73);
+      expect(result.summary.bestRound).toBe(72);
+      expect(result.summary.worstRound).toBe(74);
+      expect(result.summary.holesPlayed).toBe(36);
+      // GIR: (12+10)/(18+18) = 22/36 = 61.1%
+      expect(result.summary.girPercentage).toBe(61.1);
+      // Fairway: (10+8)/(14+14) = 18/28 = 64.3%
+      expect(result.summary.fairwayPercentage).toBe(64.3);
+      // Putts: (30+32)/2 = 31.0
+      expect(result.summary.puttsPerRound).toBe(31);
+    });
+  });
+
+  // ========================================================================
+  // getFilterOptions
+  // ========================================================================
+  describe('getFilterOptions', () => {
+    it('returns empty options when no rounds exist', async () => {
+      const result = await getFilterOptions('player-1');
+      const expected: FilterOptions = { courses: [], seasons: [], roundTypes: [] };
+      expect(result).toEqual(expected);
+    });
+
+    it('queries golf_rounds table for filter data', async () => {
+      await getFilterOptions('player-xyz');
+      expect(mockFrom).toHaveBeenCalledWith('golf_rounds');
+    });
+  });
+});
+
+describe('stats bundle authenticated context', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoundsData = [];
+    mockRoundsError = null;
+  });
+
+  afterEach(() => {
+    mockRoundsError = null;
+  });
+
+  it('reuses the boundary identity instead of calling Auth again', async () => {
+    const sharedSupabase = {
+      from: mockFrom,
+      rpc: vi.fn(async () => ({ data: 1, error: null })),
+      auth: { getUser: telemetryMocks.getUser },
+    };
+
+    await runWithStatsActionContext(
+      {
+        supabase: sharedSupabase as never,
+        user: { id: 'user-1', email: 'player@example.com' } as never,
+        requestedPlayerId: 'player-test',
+        authorization: { allowed: true, reason: 'self' },
+      },
+      () => getDetailedStats('player-test'),
+    );
+
+    expect(telemetryMocks.getUser).not.toHaveBeenCalled();
+    expect(telemetryMocks.verifyCanonicalPlayerAccess).not.toHaveBeenCalled();
+  });
+
+  it('uses the canonical access helper for a standalone stats action', async () => {
+    await getDetailedStats('player-test');
+
+    expect(telemetryMocks.verifyCanonicalPlayerAccess).toHaveBeenCalledTimes(1);
+    expect(telemetryMocks.verifyCanonicalPlayerAccess).toHaveBeenCalledWith(
+      'player-test',
+      'user-1',
+      expect.anything(),
+    );
+  });
+
+  it('captures a PostgREST failure exactly once with structured fields', async () => {
+    mockRoundsError = {
+      code: '57014',
+      message: 'canceling statement due to statement timeout',
+      details: 'query exceeded statement_timeout',
+      hint: 'reduce query cost',
+    };
+    const sharedSupabase = {
+      from: mockFrom,
+      rpc: vi.fn(async () => ({ data: 1, error: null })),
+      auth: { getUser: telemetryMocks.getUser },
+    };
+
+    await runWithStatsActionContext(
+      {
+        supabase: sharedSupabase as never,
+        user: { id: 'user-1', email: 'player@example.com' } as never,
+        requestedPlayerId: 'player-test',
+        authorization: { allowed: true, reason: 'self' },
+      },
+      () => getSprayChartData('player-test', 'overall'),
+    );
+
+    expect(telemetryMocks.logServerError).toHaveBeenCalledTimes(1);
+    expect(telemetryMocks.logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('code=57014'),
+      expect.objectContaining({
+        action: 'stats_data.getSprayChartData',
+        errorCode: '57014',
+        metadata: {
+          pg_details: 'query exceeded statement_timeout',
+          pg_hint: 'reduce query cost',
+        },
+      }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Preset limit behavior (tested via getStatsSummary boundary)
+// ---------------------------------------------------------------------------
+
+describe('stats-data preset limits behavior', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoundsData = [];
+    mockCoachData = null;
+    mockMembershipData = null;
+  });
+
+  it('last5 preset limits results to 5', async () => {
+    const result = await getStatsSummary('p', { preset: 'last5' });
+    expect(result.rounds.length).toBeLessThanOrEqual(5);
+  });
+
+  it('last10 preset limits results to 10', async () => {
+    const result = await getStatsSummary('p', { preset: 'last10' });
+    expect(result.rounds.length).toBeLessThanOrEqual(10);
+  });
+
+  it('last20 preset limits results to 20', async () => {
+    const result = await getStatsSummary('p', { preset: 'last20' });
+    expect(result.rounds.length).toBeLessThanOrEqual(20);
+  });
+
+  it('last5 actually trims results when more data is returned', async () => {
+    const manyRounds = Array.from({ length: 10 }, (_, i) => ({
+      id: `r${i}`, round_date: `2026-02-${String(i + 1).padStart(2, '0')}`,
+      course_name: 'TPC', round_type: 'practice',
+      total_score: 72 + i, score_to_par: i,
+      total_fairways_hit: null, total_fairways: null,
+      total_gir: null, total_gir_possible: null,
+      total_putts: null, holes_played: 18,
+      // Fully scored (countable) rounds: nine totals summing to total_score.
+      front_nine: 36, back_nine: 36 + i,
+    }));
+
+    mockRoundsData = manyRounds;
+
+    const result = await getStatsSummary('p', { preset: 'last5' });
+    expect(result.rounds.length).toBe(5);
+    expect(result.summary.roundsPlayed).toBe(5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 2026-06-09 stats-accuracy audit fixes
+// ---------------------------------------------------------------------------
+
+describe('2026-06-09 fix E — getDetailedStats passes holes_played into RoundInfo', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoundsData = [];
+    mockCoachData = null;
+    mockMembershipData = null;
+    mockTeamMembersData = [];
+    mockPlayersListData = [];
+  });
+
+  it('forwards holes_played so the engine does not infer 18-vs-9 from hole-row count', async () => {
+    mockRoundsData = [{
+      id: 'r9', round_date: '2026-03-01', course_name: 'Short Loop',
+      round_type: 'practice', total_score: 38, score_to_par: 2,
+      holes_played: 9, front_nine: 38, back_nine: null,
+      total_fairways_hit: null, total_fairways: null,
+      total_gir: null, total_gir_possible: null, total_putts: null,
+    }];
+
+    await getDetailedStats('player-test');
+
+    // The real computation call is the one handed a non-empty rounds array
+    // (guard/fallback paths call with []).
+    const call = vi.mocked(calculateStatsFromShots).mock.calls.find(
+      c => Array.isArray(c[2]) && c[2].length > 0
+    );
+    expect(call).toBeDefined();
+    expect(call![2][0]).toMatchObject({ id: 'r9', holes_played: 9 });
+  });
+});
+
+describe('multi-round stats scopes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoundsData = [];
+  });
+
+  it('calculates from only the player-owned rounds in an explicit selection', async () => {
+    mockRoundsData = [
+      { id: 'round-1', round_date: '2026-03-01', course_name: 'North', round_type: 'practice', total_score: 72, score_to_par: 0, holes_played: 18 },
+      { id: 'round-2', round_date: '2026-03-08', course_name: 'South', round_type: 'qualifier', total_score: 74, score_to_par: 2, holes_played: 18 },
+      { id: 'round-3', round_date: '2026-03-15', course_name: 'East', round_type: 'qualifier', total_score: 70, score_to_par: -2, holes_played: 18 },
+    ];
+
+    await getDetailedStats('player-test', ['round-1', 'round-3']);
+
+    const selectionCall = vi.mocked(calculateStatsFromShots).mock.calls.find(
+      (call) => Array.isArray(call[2]) && call[2].length === 2,
+    );
+    expect(selectionCall).toBeDefined();
+    expect(selectionCall![2].map((round) => round.id)).toEqual(['round-1', 'round-3']);
+  });
+
+  it('keeps the shot-pattern response inside the explicit selection', async () => {
+    mockRoundsData = [
+      { id: 'round-1', round_date: '2026-03-01', course_name: 'North', round_type: 'practice', total_score: 72, score_to_par: 0, holes_played: 18 },
+      { id: 'round-2', round_date: '2026-03-08', course_name: 'South', round_type: 'qualifier', total_score: 74, score_to_par: 2, holes_played: 18 },
+      { id: 'round-3', round_date: '2026-03-15', course_name: 'East', round_type: 'qualifier', total_score: 70, score_to_par: -2, holes_played: 18 },
+    ];
+
+    await expect(getSprayChartData('player-test', ['round-1', 'round-3'])).resolves.toMatchObject({
+      scope: {
+        roundId: ['round-1', 'round-3'],
+        roundsIncluded: 2,
+      },
+    });
+  });
+
+  it('returns qualifier identity with each selectable completed round', async () => {
+    mockRoundsData = [{
+      id: 'qualifier-round-2',
+      round_date: '2026-03-08',
+      course_name: 'South',
+      total_score: 74,
+      round_type: 'qualifier',
+      qualifier_id: 'qualifier-spring',
+      qualifier_round_number: 2,
+      qualifier: { name: 'Spring qualifier' },
+    }];
+
+    await expect(getPlayerRoundOptions('player-test')).resolves.toEqual([{
+      id: 'qualifier-round-2',
+      date: '2026-03-08',
+      courseName: 'South',
+      totalScore: 74,
+      roundType: 'qualifier',
+      qualifierId: 'qualifier-spring',
+      qualifierName: 'Spring qualifier',
+      qualifierRoundNumber: 2,
+    }]);
+  });
+});
+
+describe('2026-06-09 fix F — getTrendAnalysis bestToPar normalizes to 18-hole equivalents', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoundsData = [];
+    mockCoachData = null;
+    mockMembershipData = null;
+    mockTeamMembersData = [];
+    mockPlayersListData = [];
+  });
+
+  it('compares score_to_par × (18/holes_played), matching bestScore', async () => {
+    // Hand-derived: 18-hole −3 normalizes to −3; 9-hole −2 normalizes to
+    // −2 × (18/9) = −4 → the 9-hole round wins with value −4. The old raw
+    // MIN(score_to_par) picked the 18-hole −3 instead.
+    mockRoundsData = [
+      {
+        id: 'r18', round_date: '2026-03-01', course_name: 'Long Track',
+        round_type: 'practice', total_score: 69, score_to_par: -3,
+        holes_played: 18, front_nine: 34, back_nine: 35,
+        total_fairways_hit: null, total_fairways: null,
+        total_gir: null, total_gir_possible: null, total_putts: null,
+      },
+      {
+        id: 'r9', round_date: '2026-03-02', course_name: 'Short Loop',
+        round_type: 'practice', total_score: 34, score_to_par: -2,
+        holes_played: 9, front_nine: 34, back_nine: null,
+        total_fairways_hit: null, total_fairways: null,
+        total_gir: null, total_gir_possible: null, total_putts: null,
+      },
+    ];
+
+    const result = await getTrendAnalysis('player-test');
+
+    expect(result.personalBests.bestToPar).toEqual({
+      value: -4,
+      date: '2026-03-02',
+      course: 'Short Loop',
+    });
+    // Parity check: bestScore was already normalized (34 × 2 = 68 beats 69).
+    expect(result.personalBests.bestScore).toEqual({
+      value: 68,
+      date: '2026-03-02',
+      course: 'Short Loop',
+    });
+  });
+});
+
+describe('2026-06-09 fix G — getCoachRosterStats paginates golf_rounds past 1000 rows', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoundsData = [];
+    mockCoachData = null;
+    mockMembershipData = null;
+    mockTeamMembersData = [];
+    mockPlayersListData = [];
+  });
+
+  it('assembles all pages (1500 rounds → 1000 + 500), not just the first 1000', async () => {
+    mockTeamMembersData = [{ player_id: 'p1' }];
+    mockPlayersListData = [{
+      id: 'p1', first_name: 'Pag', last_name: 'Inate',
+      avatar_url: null, graduation_year: null, handicap: null,
+    }];
+    mockRoundsData = Array.from({ length: 1500 }, (_, i) => ({
+      id: `rd-${i}`, player_id: 'p1', total_score: 72,
+      round_date: '2026-03-01', holes_played: 18,
+    }));
+
+    const result = await getCoachRosterStats('team-1');
+
+    expect(result).toHaveLength(1);
+    // The mocked .range slices like real PostgREST: a hard 1000-row cap
+    // without pagination would report 1000 here.
+    expect(result[0]!.stats?.rounds_played).toBe(1500);
+    expect(result[0]!.stats?.rounds_played_18).toBe(1500);
+    expect(result[0]!.stats?.scoring_average).toBe(72);
+  });
+});
+
+/**
+ * getWorstHoleAnalysis answers "which holes are costing this player strokes".
+ *
+ * Its golf_holes read discarded the error, and its catch returned the SAME
+ * all-empty response it returns for a player with no holes recorded. So a
+ * failed read did not say "we could not measure" — it said the player has no
+ * worst holes, which on that screen reads as "nothing to work on".
+ *
+ * The catch logged, so this was never invisible in Bridge; it was only ever
+ * invisible to the person looking at the screen.
+ *
+ * It now rethrows. stats-dashboard.ts wraps this call in settleWithin(), which
+ * already converts a rejection into { ok: false, reason: 'failed' } and has a
+ * failedStatsBundle shape for it — so the honest failure state existed all
+ * along and simply never had anything routed into it.
+ */
+describe('getWorstHoleAnalysis — a failed hole read is not "no worst holes"', () => {
+  beforeEach(() => {
+    mockHolesError = null;
+    mockRoundsError = null;
+    mockRoundsData = [{ id: 'r1', player_id: 'player-1', status: 'completed' }];
+  });
+
+  afterEach(() => {
+    mockHolesError = null;
+  });
+
+  it('does not return an empty analysis when the hole read failed', async () => {
+    const { getWorstHoleAnalysis } = await import('../stats-data');
+    mockHolesError = { message: 'statement timeout', code: '57014' };
+
+    await expect(getWorstHoleAnalysis('player-1')).rejects.toThrow();
+  });
+
+  it('reads holes by the player\'s round ids, never through an embedded golf_rounds join', async () => {
+    // Bridge b99a5da6 / Sentry Z0: the embedded `golf_rounds!inner(...)` became
+    // a LATERAL subquery Postgres could not flatten, so every golf_holes row on
+    // the platform was RLS-checked before this player's rounds were found, and
+    // the read hit the 8 s statement_timeout. The rounds are read first now, and
+    // golf_holes is read through `in('round_id', ...)` on its index.
+    const { getWorstHoleAnalysis } = await import('../stats-data');
+    mockRoundsData = [{ id: 'r1', round_date: '2026-09-01' }];
+    mockHolesError = { message: 'stop after the hole read', code: 'TEST' };
+    mockFrom.mockClear();
+
+    await expect(getWorstHoleAnalysis('player-1')).rejects.toThrow();
+
+    type Chain = { select: { mock: { calls: unknown[][] } }; in: { mock: { calls: unknown[][] } } };
+    const holeChains = mockFrom.mock.calls
+      .map((call, i) => ({ table: call[0], chain: mockFrom.mock.results[i]!.value as unknown as Chain }))
+      .filter((c) => c.table === 'golf_holes');
+    expect(holeChains.length).toBeGreaterThan(0);
+    for (const { chain } of holeChains) {
+      const selected = chain.select.mock.calls.map((args) => String(args[0])).join(' ');
+      expect(selected).not.toContain('golf_rounds');
+      expect(chain.in.mock.calls).toContainEqual(['round_id', ['r1']]);
+    }
+  });
+
+  it('still returns the empty analysis when the player genuinely has no holes', async () => {
+    const { getWorstHoleAnalysis } = await import('../stats-data');
+    mockRoundsData = [];
+
+    const result = await getWorstHoleAnalysis('player-1');
+
+    expect(result.worstHoles).toEqual([]);
+    expect(result.par3Average).toBeNull();
+  });
+});

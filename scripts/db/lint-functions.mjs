@@ -15,6 +15,14 @@
  * DATABASE_URL for a different target (e.g. CI's own ephemeral instance).
  */
 import postgres from 'postgres';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db/lint-functions.mjs',
+  summary:
+    "Runs plpgsql_check over every plpgsql function in the public schema of the LOCAL Supabase stack.",
+  secrets: 'DATABASE_URL',
+});
 
 const DEFAULT_LOCAL_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 

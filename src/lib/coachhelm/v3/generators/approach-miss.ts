@@ -263,7 +263,7 @@ export interface ApproachImpact {
   attempts_counted: number;
   attempts_per_round: number;
   green_hit_pct_counted: number;
-  target_green_hit_pct: number;
+  target_green_hit_pct: number | null;
   /** Strokes a missed green costs vs a hit from this band. */
   strokes_per_missed_green: number;
   strokes_per_missed_green_source: 'player_finishes' | 'reference';
@@ -290,7 +290,8 @@ export function impactFor(
   bucket: ApproachBucket,
   inBucket: readonly ApproachShot[],
   roundsInWindow: number,
-  targetPct: number,
+  /** The Tour green-hit % for the band; null when the team's tour has none. */
+  targetPct: number | null,
   metricId: MetricId,
 ): ApproachImpact & { strokes_impact: number } {
   const counted = bucket === '175_plus_ft' ? inBucket.filter((s) => s.par !== 5) : [...inBucket];
@@ -306,7 +307,9 @@ export function impactFor(
       on_green: reachedGreen(s),
     })),
   );
-  const strokes = counted.length >= ATTEMPT_FLOOR
+  // No Tour value (a women's team: the LPGA has no green-hit-by-band figure)
+  // means no gap to measure, so no strokes are claimed.
+  const strokes = counted.length >= ATTEMPT_FLOOR && targetPct != null
     ? rateGapStrokes({
         metricId,
         attemptsPerRound: perRound,
@@ -404,6 +407,10 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     if (inBucket.length === 0) return null;
 
     const cohort = await loadPlayerCohort(this.playerId);
+    // Q-88: the card is built around a Tour green-hit % for the band, and the
+    // LPGA publishes none. A women's team gets no card rather than a men's or
+    // college number (open owner question: an LPGA proximity card instead?).
+    if (greenHitAnchor(this.bucket, cohort.gender) == null) return null;
     const distinctRounds = new Set(inBucket.map((s) => s.round_id)).size;
 
     const greenShots = inBucket.filter(reachedGreen);
@@ -482,14 +489,11 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
 
   composeContent(agg: ApproachMissAggregate): ComposedContent {
     const label = BUCKET_LABEL[agg.bucket];
-    const womens = agg.cohort_gender === 'womens';
     const tourGreenHit = greenHitAnchor(agg.bucket, agg.cohort_gender);
-    // Women's anchors are derived targets, men's are approximate Tour band
-    // figures — neither is a measured population average, and the prose and
-    // the evidence label both say which it is.
-    const anchorClause = womens
-      ? `women's college target ~${tourGreenHit}%, estimated`
-      : `PGA Tour ~${tourGreenHit}%, approximate`;
+    // Men's anchors are approximate PGA Tour band figures, and the prose and
+    // the label say so. A women's team has no LPGA green-hit-by-band value, so
+    // no comparison is drawn (Q-88: never a college number, never a guess).
+    const anchorClause = tourGreenHit == null ? null : `PGA Tour ~${tourGreenHit}%, approximate`;
     const ghDisp = `${agg.green_hit_pct.toFixed(0)}%`;
     const prox = agg.proximity_when_hit_feet;
 
@@ -503,7 +507,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // coach whether the leak is finding greens or controlling distance once there.
     const reachSentence =
       `Across your last ${agg.attempts} approaches from ${label} you found the green ` +
-      `${ghDisp} of the time${rateIntervalText(agg.green_hit_ci)} (${anchorClause}).`;
+      `${ghDisp} of the time${rateIntervalText(agg.green_hit_ci)}${anchorClause ? ` (${anchorClause})` : ''}.`;
     // NO TOUR COMPARISON HERE, deliberately. `prox` is averaged over
     // GREEN-FINDING SHOTS ONLY (see aggregate()), while the Tour proximity
     // figure (research doc §2, "200+ yds: ~45+ ft") is Proximity to Hole over
@@ -600,8 +604,10 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
         polarity: 'higher_better',
         your_value: agg.green_hit_pct,
         your_value_display: ghDisp,
-        comparison_value: tourGreenHit,
-        comparison_label: womens ? "Women's college green-hit target (est.)" : 'PGA Tour (approx)',
+        // aggregate() returns null when the team's tour has no value, so this
+        // is always the approximate PGA Tour band figure.
+        comparison_value: tourGreenHit ?? 0,
+        comparison_label: 'PGA Tour (approx)',
         comparison_source: cohortAnchorSource(agg.cohort_gender),
         sample_n: agg.attempts,
         window_days: 90,

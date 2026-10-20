@@ -30,17 +30,18 @@ function rawStanding(overrides: Partial<PlayerStanding> = {}): PlayerStanding {
 }
 
 describe('applyGenderAnchor — P1 women get the women\'s anchor', () => {
-  it('overrides pga_value with the women\'s sand-save anchor (38, not the men\'s 50)', () => {
+  it('overrides pga_value with the LPGA sand save (45, not the men\'s 50; Q-88)', () => {
     const s = applyGenderAnchor(rawStanding({ player_value: 0 }), 'womens');
-    // The headline bug from insight 994ee861: bar said 50%, prose said 38%.
-    expect(s.pga_value).toBe(38);
+    // Insight 994ee861 drew the men's 50% on a women's bar. The anchor is now
+    // the LPGA Tour value, never the old 38% college estimate.
+    expect(s.pga_value).toBe(45);
     expect(s.pga_omitted).toBe(false);
   });
 
   it('recomputes pga_delta against the women\'s anchor', () => {
     const s = applyGenderAnchor(rawStanding({ player_value: 30 }), 'womens');
-    // player_value - womens_anchor = 30 - 38 = -8 (was 30 - 50 = -20 in the DB row)
-    expect(s.pga_delta).toBe(-8);
+    // player_value - LPGA = 30 - 45 = -15 (was 30 - 50 = -20 in the DB row)
+    expect(s.pga_delta).toBe(-15);
   });
 
   it('applies to every metric that carries a women\'s anchor (putts, approach, gir)', () => {
@@ -64,7 +65,7 @@ describe('applyGenderAnchor — P1 women get the women\'s anchor', () => {
       rawStanding({ metric_id: 'gir_pct', player_value: 55, pga_value: 66 }),
       'womens',
     );
-    expect(gir.pga_value).toBe(60); // women's GIR, not men's 66
+    expect(gir.pga_value).toBe(70); // LPGA GIR, not men's 66
   });
 });
 
@@ -139,7 +140,7 @@ describe('applyGenderAnchorToMap', () => {
     ]);
 
     const womens = applyGenderAnchorToMap(map, 'womens');
-    expect(womens.get('scrambling_pct_sand')!.pga_value).toBe(38);
+    expect(womens.get('scrambling_pct_sand')!.pga_value).toBe(45);
     expect(womens.get('scrambling_pct_sand')!.is_womens).toBe(true);
     expect(womens.get('big_number_rate')!.pga_omitted).toBe(true);
     expect(womens.get('big_number_rate')!.is_womens).toBe(true);

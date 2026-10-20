@@ -31,6 +31,9 @@ vi.mock('next/navigation', () => ({
     throw new Error('NOT_FOUND');
   }),
 }));
+// These cases cover the Fairway page's reads. golf_clubhouse_ui is on in
+// development and tests, which would draw Clubhouse's route instead.
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: () => false, isClubhouseFrontDoor: () => false }));
 vi.mock('@/lib/golf/resolve-team-server', () => ({
   resolveCoachTeamIdWithCookie: vi.fn(async () => 'team-1'),
 }));
