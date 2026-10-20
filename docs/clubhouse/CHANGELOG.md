@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-20 — Stats visuals: ties by the head of the run
+
+- `lib/stats-signal.ts` `rankWithTies`: a tie run now holds only the players
+  within one standard error of its first player, not of the neighbor before
+  them. Chaining neighbors let a smooth spread join everyone into T1. First
+  used by the team ranked dot plot (P004).
+
 ## 2026-10-20 — Stats visuals: a hole floor and an eagle fill token
 
 - `lib/stats-signal.ts`: a `holes` floor (shows from 1, early read under 30)
