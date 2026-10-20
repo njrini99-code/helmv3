@@ -28,6 +28,7 @@ import {
   buildWaterfall,
   confidenceWord,
   presentForm,
+  roughEstimateNote,
   shownStrokesImpact,
 } from '@/components/fairway/pages/player-game/fingerprint/fingerprint-model';
 import { MetricPill } from './MetricPill';
@@ -188,6 +189,7 @@ export default async function PlayerGamePrintPage({
                                   <>
                                     {' · '}
                                     {formatMetricText('strokes_impact', impact)}
+                                    {roughEstimateNote(insight.evidence.strokes_impact_method)}
                                   </>
                                 )}
                                 {typeof insight.evidence.sample_n === 'number' && (

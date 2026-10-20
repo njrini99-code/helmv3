@@ -6,6 +6,7 @@ import { holeCoverage } from '../../data/round-scope';
 import { Zone, ZoneBig as Big, ZoneBlock as Vis, ZoneNote as Missing, Zones } from '../../ui/Zone';
 import { EmptyState } from '../../ui/States';
 import { LegBars } from './LegBars';
+import { sgLegBars } from './leg-rows';
 
 /**
  * P005: the Overview as seven zones, one per stat area (strokes gained, scoring, off the tee, approach, short game, putting,
@@ -44,12 +45,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
   const first = data.firstName;
 
   // 1 · strokes gained
-  const legs = [
-    { label: 'Off the tee', means: 'Tee shots on par 4s and 5s', value: w.sgLegs.tee, team: coach ? (cmp('SG off the tee')?.team ?? null) : null },
-    { label: 'Approach', means: 'Full shots from over 30 yards', value: w.sgLegs.approach, team: coach ? (cmp('SG approach')?.team ?? null) : null },
-    { label: 'Around green', means: 'Chips, pitches and bunker shots within 30 yards', value: w.sgLegs.around, team: coach ? (cmp('SG around green')?.team ?? null) : null },
-    { label: 'Putting', means: 'Every shot on the green', value: w.sgLegs.putting, team: coach ? (cmp('SG putting')?.team ?? null) : null },
-  ];
+  const legs = sgLegBars(data, coach);
   const sg = w.sgPerRound;
   const sgTeam = coach ? (cmp('SG total')?.team ?? null) : null;
   const sgHi = 1;

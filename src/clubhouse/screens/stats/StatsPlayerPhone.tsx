@@ -20,7 +20,9 @@ import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/forma
 import { sgBaseline } from '../../lib/sg';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
-import { FigureGauge, SgBars, SgChangeChip } from './charts';
+import { FigureGauge, SgChangeChip } from './charts';
+import { sgLegRows, type SgLegRow } from './leg-rows';
+import { SgBars } from './SgBars';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
@@ -306,13 +308,9 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
 function StrokesGained({ data }: { data: ChPlayerProfile }) {
   const w = data.win;
   const baseline = sgBaseline(data.tour);
-  const legs = [
-    { label: 'Off the tee', value: w.sgLegs.tee },
-    { label: 'Approach', value: w.sgLegs.approach },
-    { label: 'Around green', value: w.sgLegs.around },
-    { label: 'Putting', value: w.sgLegs.putting },
-  ];
-  const known = legs.filter((l): l is { label: string; value: number } => l.value != null);
+  const rows = sgLegRows(data, data.viewer === 'coach');
+  const legs = rows.filter((l) => !l.total);
+  const known = legs.filter((l): l is SgLegRow & { value: number } => l.value != null);
   if (!known.length && w.sgPerRound == null)
     return (
       <section className="ch-stm-panel ch-stm-panel--bars ch-stm-panel--sg" aria-labelledby="ch-spm-sg">
@@ -336,7 +334,7 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
         <h2 id="ch-spm-sg">Strokes gained</h2>
         <span>Per round · {baseline.vs}</span>
       </div>
-      <SgBars rows={[...legs, { label: 'Total', value: w.sgPerRound, total: true }]} />
+      <SgBars rows={rows} />
       {note && <p className="ch-stm-note">{note}</p>}
     </section>
   );
