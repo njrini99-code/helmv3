@@ -204,23 +204,27 @@ before, after, baseline or evidence.
 - The toast's Retry inside a real modal dialog: the tests run the shell's
   dialog-hosted toast in jsdom, which has
   no top layer.
-- Found and not fixed (see the report to the parent): an import whose response
-  is lost and then retried says "Nothing
-  new to import" and syncs nothing, because the first attempt stored the rows;
-  an import in a term's last 21 days,
-  or the first save of an imported class, puts the whole term on the calendar,
-  past meetings included; the
-  no-time flag and the "No time set" notice have no catalog code of their own
-  (they are described under CH-12303);
-  two rows of the same import with the same name and term are both inserted
-  (`importRows` compares against the
-  classes already stored, not among the rows being imported; read in code, not
-  run); the calendar sync's landing also fires the
-  success haptic, with no toast (read in `useAction`, not felt on a device); the
-  insert policy on
+- Found and not fixed (see the report to the parent): an import in a term's last
+  21 days, or the first save of an imported class, puts the whole term on the
+  calendar, past meetings included; the no-time flag and the "No time set"
+  notice have no catalog code of their own (they are described under CH-12303);
+  the calendar sync's landing also fires the success haptic, with no toast (read
+  in `useAction`, not felt on a device); the insert policy on
   `golf_player_classes` checks the player and not `team_id` (read in the
-  baseline migration; the server
-  action checks team membership).
+  baseline migration; the server action checks team membership).
+- Fixed since (checked 2026-10-20 on `main` 6f8be230; the 2026-10-17 audit
+  still listed both): an import retried after a lost answer shows and syncs the
+  classes the first attempt stored (`importRows` returns the stored rows it
+  skipped as `known`, and the page adds and syncs the ones it never saw), and
+  two rows of one import with the same name and term save once (the batch is
+  checked against itself as well as the stored classes). Both landed with #2148
+  (2026-10-06); tests: "CH-12307 an import retried after its answer was lost
+  shows and syncs the classes the first attempt saved", "CH-12307 a schedule
+  that lists a class twice saves it once", "CH-12307 an import skips a class
+  already saved with no term". Left: the check is a read before the insert, not
+  a constraint, so two imports in flight at once (an answer lost while the first
+  insert is still running) could both insert; closing that needs a unique index
+  (a held migration), not app code.
 - Also found: when the calendar removal lands and the delete then fails, the
   toast can read "It is still on your
   schedule and your calendar" (the hint of CH-12003), which is untrue for the

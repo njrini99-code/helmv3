@@ -1,5 +1,79 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- Every change on the team page (the figure tape, the lead chip, the phone
+  hero and figure rows) is green or amber only when it is larger than one
+  standard error of the difference, and reads "Better than previous 10" or
+  "Worse than previous 10". Otherwise the signed number stays in neutral ink
+  with "No clear change vs previous 10". A change with no standard error gets
+  no colour.
+- The loader adds an `se` beside each figure's existing delta, from the
+  rounds it already reads (no new query): strokes gained and score use the
+  paired players' rounds with the pooled spread below five rounds, greens and
+  scrambling their per-round rates, putts and birdies only from five rounds.
+- A tape caption that is not "vs previous 10" ("Tour averages 66%", "Eagles
+  not counted") moves to the note line under the change's words.
+- On the preview team, scoring and greens read as clear changes; strokes
+  gained, putts, scrambling and birdies read "No clear change".
+- The leaderboard's form word (Improving, Steady, Slipping) follows the same
+  rule through `formStatus`, so it agrees with its form line.
+
+## 2026-10-20 — No visible change (stats visuals 1)
+
+```text
+Design package: none (stats visuals plan, piece 1; the page's own entry is in P005)
+PR/commit:      uncommitted (claude/stats-visuals-ofvosr)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. The strokes gained bars moved from `charts.tsx` to
+  `SgBars.tsx` and `stats.css` gained the stats-owned `.ch-sv-*` block, both
+  files this page shares with the player profile. The team page still draws its
+  own leg grid and tabs.
+
+## 2026-10-19 — Team stats: putting beside the bests, no top bars
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Team putting and Season bests stay two columns down to an 860px canvas
+  (was 1080px). A 1280 window with the sidebar open is about 950px wide,
+  where the putting rings sat alone with half the row empty.
+- The 3px coloured bar across each figure card's top is gone. The change
+  under the number already says better or worse; a status is a dot or a
+  word. Its own commit, so it reverts cleanly (the owner's call left open on
+  #2202).
+
+### Verified
+
+WebKit at 390, 834, 1024, 1180, 1280 and 1440: no sideways scroll in the
+default, empty, partial and filtered states.
+
 ## 2026-10-19 — Team stats on an iPad: the tape in two rows and a leaderboard that fits
 
 ```text

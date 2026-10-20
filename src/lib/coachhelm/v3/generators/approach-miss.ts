@@ -57,6 +57,7 @@ import {
   dominantAxis,
   approachAxisReading,
   axisReadingToText,
+  classifyMiss,
   type ApproachAxis,
   type AxisReading,
   type AxisTally,
@@ -134,16 +135,6 @@ function onGreenFinishFeet(s: ApproachShot): number {
   return s.distance_unit_after === 'yards'
     ? Number(s.distance_to_hole_after) * 3
     : Number(s.distance_to_hole_after);
-}
-
-/** Classify a raw miss_direction into its short/long and left/right poles. A
- *  direction may contribute to BOTH axes (e.g. 'short_right' → short + right);
- *  a pure 'short' contributes short + L/R-neutral. Unknown → neutral on both. */
-function classifyMiss(raw: string | null): { sl: keyof AxisTally; lr: keyof AxisTally } {
-  const v = (raw ?? '').toLowerCase();
-  const sl: keyof AxisTally = v.includes('short') ? 'negative' : v.includes('long') ? 'positive' : 'neutral';
-  const lr: keyof AxisTally = v.includes('left') ? 'negative' : v.includes('right') ? 'positive' : 'neutral';
-  return { sl, lr };
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -340,6 +331,8 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
    * not printed (audit row 25). Below the floor the run retracts the row.
    */
   readonly minSampleN = ATTEMPT_FLOOR;
+  /** Reads the last 90 days ending today (root-cause scope, flag-on only). */
+  protected override readonly rollingWindowDays = 90;
   protected override readonly requiresStanding = false;
   /**
    * ...but DO attach standing when the table has it.

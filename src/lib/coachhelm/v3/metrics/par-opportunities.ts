@@ -67,10 +67,10 @@ export type { MetricResult, MetricStatus } from './types';
 const PAR_LENGTH_MIN_SAMPLE_N = 5;
 const HOLE_OPPORTUNITY_MIN_SAMPLE_N = 3;
 
-type ParValue = 3 | 4 | 5;
+export type ParValue = 3 | 4 | 5;
 type ParLengthGroup = 'all' | 'short' | 'mid' | 'long';
 
-interface ParLengthBand {
+export interface ParLengthBand {
   label: 'short' | 'mid' | 'long';
   /** Inclusive lower bound in yards. */
   minYards: number;
@@ -91,7 +91,7 @@ interface ParLengthBand {
  */
 export const PAR_LENGTH_BAND_VERSION = 'par-length-bands-v1';
 
-const PAR_LENGTH_BANDS: Record<ParValue, readonly ParLengthBand[]> = {
+export const PAR_LENGTH_BANDS: Record<ParValue, readonly ParLengthBand[]> = {
   3: [
     { label: 'short', minYards: 0, maxYards: 149 },
     { label: 'mid', minYards: 150, maxYards: 189 },
@@ -108,6 +108,21 @@ const PAR_LENGTH_BANDS: Record<ParValue, readonly ParLengthBand[]> = {
     { label: 'long', minYards: 540, maxYards: null },
   ],
 };
+
+/**
+ * The constant length band (`PAR_LENGTH_BANDS`) a hole falls in, or null when
+ * the par is not 3/4/5 or the yardage is not recorded. Shared with
+ * `engine/context-narrowing.ts` so a "long par 3" means the same yardages on
+ * the par-length rows and in a root-cause narrowing.
+ */
+export function parLengthBandOf(par: number, yardage: number | null): ParLengthBand['label'] | null {
+  if (par !== 3 && par !== 4 && par !== 5) return null;
+  if (yardage === null || !Number.isFinite(yardage) || yardage <= 0) return null;
+  const band = PAR_LENGTH_BANDS[par].find(
+    (b) => yardage >= b.minYards && (b.maxYards === null || yardage <= b.maxYards),
+  );
+  return band?.label ?? null;
+}
 
 function statusFor(denominator: number, minN: number): MetricStatus {
   if (denominator === 0) return 'invalid';

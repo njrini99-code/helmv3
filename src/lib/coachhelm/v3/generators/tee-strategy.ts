@@ -199,6 +199,8 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
   // a prod insight-regeneration is run.
   readonly category: InsightCategory = 'tee';
   readonly minSampleN = MIN_DRIVER_ATTEMPTS;
+  /** Reads the last WINDOW_DAYS ending today (root-cause scope, flag-on only). */
+  protected override readonly rollingWindowDays = WINDOW_DAYS;
   // Player-vs-self — driver-strategy quality has no PGA benchmark.
   protected override readonly requiresStanding = false;
   readonly metricId: MetricId = 'sg_ott';
@@ -310,6 +312,9 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
 
     return {
       title,
+      // The verdict, not the two fairway rates, says whether this is a leak:
+      // "sharp" can sit a few points below the layback and still be a strength.
+      framing: agg.pattern === 'laggy' ? 'leak' : agg.pattern === 'sharp' ? 'strength' : 'neutral',
       content: content + staleDataSuffix(agg.last_round_date),
       // laggy is the only branch framed as costing strokes; sharp/inconclusive are strength/neutral.
       priority: agg.pattern === 'laggy' ? 'high' : 'low',

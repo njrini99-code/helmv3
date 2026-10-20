@@ -1,5 +1,105 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- The strokes gained chip on the hero (desktop) and on the phone Overview is
+  green or amber only when the change against the previous 10 is larger than
+  one standard error of the difference. Otherwise the signed number stays, in
+  neutral ink, with "No clear change vs previous 10". A clear change reads
+  "Better than previous 10" or "Worse than previous 10", never "Improving".
+  The phone chip names its subject: "SG a round · No clear change vs previous
+  10". The standard error is the player's own spread from five rounds, else
+  the pooled 3.8, over whole rounds (a nine-hole round is half).
+- Overview, Where the strokes go: the change line reads "+0.6 · No clear
+  change vs previous 10" in place of "Up 0.6 on the previous 10".
+- The SG gauge (was a fixed ±3) and the Overview strokes gained track (was
+  −3 to +1) take their ends from the data through `sgScale`, always with zero
+  inside. On the preview player the track runs −1 to +1.
+- Tracks that were always green now follow the data: fairways, greens and
+  scrambling against the team or Tour, penalties amber only above the bench,
+  and a track with nothing to compare against is neutral grey.
+- Phone scoring trend: the form line is green or amber only past one
+  standard error, and "No clear change" sits above the halves line otherwise.
+- Phone Game detail now gets the holes filter (it always read "18 holes
+  only"), with a regression test.
+- The rate gauges are neutral with no reference.
+
+## 2026-10-20 — Strokes gained by leg says how sure it is (visuals 1)
+
+```text
+Design package: none (stats visuals plan, decisions Q2 Q3 Q7 Q12 Q13)
+PR/commit:      uncommitted (claude/stats-visuals-ofvosr)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- Strokes gained by leg is interactive on desktop (Overview, Where the strokes
+  go) and on the phone (the Strokes gained panel). A pointer over a leg, a tap,
+  or the arrow keys read it in a line above the bars: "Approach · −1.2 a round ·
+  10 rounds · likely range −1.5 to −0.9 · Team −0.7" (the team only for a
+  coach). A tap or a key pins the leg (a ring on desktop, a wash on the phone),
+  a second tap, Esc or a press outside lets go. A screen reader hears a pinned
+  leg or a key step, never a hover. The chart is now a focusable group, not a
+  flat image.
+- Every bar carries a thin whisker of one standard error, the "likely range". It
+  uses the player's own round-to-round spread once they have five rounds in the
+  window, else the pooled spread of production players (3.8 strokes gained). The
+  bars keep their scale (the widest value or team mark, rounded up); a whisker
+  the rail cuts off draws no cap at that end and the readout carries the number.
+- A thin sample is muted, never hidden and never shrunk. Off the tee, approach
+  and the total show from 3 rounds and are early reads until 8; around the green
+  and putting show from 5 and are early reads until 15. An early read is a
+  hollow bar with no gain or loss color, its figure in neutral ink, and a note
+  under the bars names which legs are early. A leg under its show floor draws no
+  bar and says "Needs 5 rounds" where the bar would be. On the 10-round preview
+  player, around the green and putting read as early reads.
+- The phone's rows are 44px tap targets, and the panel's note counts only the
+  legs it is showing.
+- New shared pieces: `lib/stats-signal.ts` (floors, standard error, the tone of
+  a change, Wilson intervals, a trailing mean, ties in a ranking: the later
+  pieces use them) and `lib/use-chart-pin.ts` (the hover, pin and key behavior
+  every stats chart will share). `SgBars` moved from `charts.tsx` to its own
+  client file, `SgBars.tsx`; `screens/stats/leg-rows.ts` builds the rows for
+  both screens.
+
+## 2026-10-19 — Player stats: bests two by two, the class year on its own line
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Four personal-best tiles are two by two. Auto-fit drew three across and
+  left Fewest putts alone on a row (Rounds tab, desktop).
+- Phone header: the class year has its own line. Beside the season count
+  the line always broke after it, leaving "Sophomore ·" alone.
+
+### Verified
+
+WebKit at 390 and 1280; no sideways scroll at 834 to 1440 (default, early
+and self).
+
 ## 2026-10-19 — Stats you can read like a scorecard (L6a)
 
 ```text

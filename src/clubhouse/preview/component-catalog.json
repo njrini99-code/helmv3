@@ -4140,6 +4140,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -4222,6 +4223,25 @@
       "styles": [
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/stats/SgBars.tsx",
+      "group": "screens",
+      "exports": [
+        "SgBars"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4506,7 +4526,6 @@
         "PuttingRings",
         "ScoreBoardTrend",
         "ScoreMix",
-        "SgBars",
         "SgChangeChip",
         "YardagePage"
       ],
@@ -7633,109 +7652,109 @@
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1150
+          "line": 1159
         },
         {
           "name": "--ch-ink-600",
           "value": "#2b2a26",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1151
+          "line": 1160
         },
         {
           "name": "--ch-ink-500",
           "value": "#3a3833",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1152
+          "line": 1161
         },
         {
           "name": "--ch-ink-400",
           "value": "#55524b",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1153
+          "line": 1162
         },
         {
           "name": "--ch-ink-300",
           "value": "#7c786f",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1154
+          "line": 1163
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-950)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1155
+          "line": 1164
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1156
+          "line": 1165
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-700)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1157
+          "line": 1166
         },
         {
           "name": "--ch-border-hairline",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1158
+          "line": 1167
         },
         {
           "name": "--ch-border-subtle",
           "value": "rgb(28 25 18 / 0.22)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1159
+          "line": 1168
         },
         {
           "name": "--ch-border-control",
           "value": "rgb(28 25 18 / 0.34)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1160
+          "line": 1169
         },
         {
           "name": "--ch-border-strong",
           "value": "rgb(28 25 18 / 0.5)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1161
+          "line": 1170
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(28 25 18 / 0.26)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1162
+          "line": 1171
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1163
+          "line": 1172
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double rgb(28 25 18 / 0.36)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1164
+          "line": 1173
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-green-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1165
+          "line": 1174
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "var(--ch-text-secondary)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1166
+          "line": 1175
         },
         {
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask",
-          "line": 1167
+          "line": 1176
         }
       ]
     },
@@ -7780,6 +7799,10 @@
         "ch-hd-r__p",
         "ch-hd-r__s",
         "ch-hd-rail",
+        "ch-hd-read",
+        "ch-hd-read__drill",
+        "ch-hd-read__lvl",
+        "ch-hd-read__stale",
         "ch-hd-rounds",
         "ch-hd-scroll",
         "ch-hd-sec",
@@ -7882,43 +7905,43 @@
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-meas",
-          "line": 276
+          "line": 335
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-meas.is-good",
-          "line": 282
+          "line": 341
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-meas.is-warn",
-          "line": 285
+          "line": 344
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-tr",
-          "line": 322
+          "line": 381
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-tr li.is-good",
-          "line": 343
+          "line": 402
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-tr li.is-warn",
-          "line": 346
+          "line": 405
         },
         {
           "name": "--ch-hd-ink",
           "value": "var(--ch-champagne-300)",
           "scope": ":where(html[data-fw-theme='dark']) .ch-hd-it.is-medium",
-          "line": 1240
+          "line": 1315
         }
       ]
     },
@@ -8033,7 +8056,7 @@
           "name": "--ch-hg-tone",
           "value": "var(--ch-green-fill-600)",
           "scope": "[data-ui='clubhouse'] .ch-hg-m:not(.is-good):not(.is-warn)",
-          "line": 897
+          "line": 907
         }
       ]
     },
@@ -8114,7 +8137,7 @@
           "name": "--ch-hs-tone",
           "value": "var(--ch-green-fill-600)",
           "scope": ".ch-hs-r.is-ahead",
-          "line": 763
+          "line": 772
         }
       ]
     },
@@ -8330,121 +8353,121 @@
           "name": "--ch-hl-pulse-h",
           "value": "202px",
           "scope": "@media (min-width: 821px) → .ch-hl[data-canopy]",
-          "line": 1003
+          "line": 1006
         },
         {
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1794
+          "line": 1786
         },
         {
           "name": "--ch-ink-600",
           "value": "#2b2a26",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1795
+          "line": 1787
         },
         {
           "name": "--ch-ink-500",
           "value": "#3a3833",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1796
+          "line": 1788
         },
         {
           "name": "--ch-ink-400",
           "value": "#55524b",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1797
+          "line": 1789
         },
         {
           "name": "--ch-ink-300",
           "value": "#7c786f",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1798
+          "line": 1790
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-950)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1799
+          "line": 1791
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1800
+          "line": 1792
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-700)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1801
+          "line": 1793
         },
         {
           "name": "--ch-border-hairline",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1802
+          "line": 1794
         },
         {
           "name": "--ch-border-subtle",
           "value": "rgb(28 25 18 / 0.22)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1803
+          "line": 1795
         },
         {
           "name": "--ch-border-control",
           "value": "rgb(28 25 18 / 0.34)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1804
+          "line": 1796
         },
         {
           "name": "--ch-border-strong",
           "value": "rgb(28 25 18 / 0.5)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1805
+          "line": 1797
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(28 25 18 / 0.26)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1806
+          "line": 1798
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1807
+          "line": 1799
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double rgb(28 25 18 / 0.36)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1808
+          "line": 1800
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-green-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1809
+          "line": 1801
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "var(--ch-text-secondary)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1810
+          "line": 1802
         },
         {
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1811
+          "line": 1803
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-hl .ch-scoreboard",
-          "line": 1830
+          "line": 1822
         }
       ]
     },
@@ -10864,103 +10887,103 @@
           "name": "--ch-text-primary",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2210
+          "line": 2214
         },
         {
           "name": "--ch-text-secondary",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2211
+          "line": 2215
         },
         {
           "name": "--ch-text-tertiary",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2212
+          "line": 2216
         },
         {
           "name": "--ch-ledger-ink",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2213
+          "line": 2217
         },
         {
           "name": "--ch-ledger-rule",
           "value": "gray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2214
+          "line": 2218
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "silver",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2215
+          "line": 2219
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double gray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2216
+          "line": 2220
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2217
+          "line": 2221
         },
         {
           "name": "--ch-ink-950",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2218
+          "line": 2222
         },
         {
           "name": "--ch-ink-900",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2219
+          "line": 2223
         },
         {
           "name": "--ch-ink-700",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2220
+          "line": 2224
         },
         {
           "name": "--ch-ink-600",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2221
+          "line": 2225
         },
         {
           "name": "--ch-ink-500",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2222
+          "line": 2226
         },
         {
           "name": "--ch-score-under",
           "value": "firebrick",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2223
+          "line": 2227
         },
         {
           "name": "--ch-chart-gain",
           "value": "darkgreen",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2224
+          "line": 2228
         },
         {
           "name": "--ch-chart-loss",
           "value": "sienna",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2225
+          "line": 2229
         },
         {
           "name": "--ch-green-700",
           "value": "darkgreen",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2226
+          "line": 2230
         }
       ]
     },
@@ -12617,6 +12640,7 @@
         "ch-stm-figrow__ref",
         "ch-stm-figrow__v",
         "ch-stm-figs",
+        "ch-stm-figs__clear",
         "ch-stm-gauges",
         "ch-stm-gh",
         "ch-stm-group",
@@ -12653,6 +12677,11 @@
         "ch-stm-sgsub",
         "ch-stm-tip",
         "ch-stm-trend",
+        "ch-sv-needs",
+        "ch-sv-note",
+        "ch-sv-read",
+        "ch-sv-row",
+        "ch-sv-whisk",
         "ch-tab-t",
         "ch-tab-t__bar",
         "ch-tab-t__n",
@@ -12698,6 +12727,7 @@
         "ch-zmixkey",
         "ch-zn",
         "ch-znbig",
+        "ch-znlines",
         "ch-zpair",
         "ch-zpin",
         "ch-zrow",
@@ -12761,295 +12791,295 @@
           "name": "--ch-fg-h",
           "value": "208px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
-          "line": 1959
+          "line": 1971
         },
         {
           "name": "--ch-st-mean-rule",
           "value": "rgb(28 25 18 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3998
+          "line": 4048
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "#fbf8ef",
           "scope": "[data-ui='clubhouse']",
-          "line": 3999
+          "line": 4049
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "rgb(154 101 18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 4000
+          "line": 4050
         },
         {
           "name": "--ch-st-team-line",
           "value": "var(--ch-green-800)",
           "scope": "[data-ui='clubhouse']",
-          "line": 4001
+          "line": 4051
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-300)",
           "scope": "[data-ui='clubhouse']",
-          "line": 4002
+          "line": 4052
         },
         {
           "name": "--ch-st-mean-rule",
           "value": "rgb(237 231 216 / 0.4)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 4005
+          "line": 4055
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "var(--ch-chart-paper)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 4006
+          "line": 4056
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "var(--ch-warning-600)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 4007
+          "line": 4057
         },
         {
           "name": "--ch-st-team-line",
           "value": "#b4dfc4",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 4009
+          "line": 4059
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-400)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 4010
+          "line": 4060
         },
         {
           "name": "--ch-stm-inset",
           "value": "64px",
           "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-list",
-          "line": 4585
+          "line": 4635
         },
         {
           "name": "--ch-ivory-0",
           "value": "#ffffff",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4864
+          "line": 4914
         },
         {
           "name": "--ch-ivory-25",
           "value": "#fdfcf8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4865
+          "line": 4915
         },
         {
           "name": "--ch-ivory-50",
           "value": "#f9f7f1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4866
+          "line": 4916
         },
         {
           "name": "--ch-ivory-100",
           "value": "#f4f2ea",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4867
+          "line": 4917
         },
         {
           "name": "--ch-ivory-150",
           "value": "#eeebe2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4868
+          "line": 4918
         },
         {
           "name": "--ch-ivory-200",
           "value": "#e7e3d8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4869
+          "line": 4919
         },
         {
           "name": "--ch-ivory-300",
           "value": "#dcd6c8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4870
+          "line": 4920
         },
         {
           "name": "--ch-ivory-400",
           "value": "#c9c2b1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4871
+          "line": 4921
         },
         {
           "name": "--ch-ink-950",
           "value": "#141412",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4872
+          "line": 4922
         },
         {
           "name": "--ch-ink-900",
           "value": "#1c1b18",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4873
+          "line": 4923
         },
         {
           "name": "--ch-ink-700",
           "value": "#3a3833",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4874
+          "line": 4924
         },
         {
           "name": "--ch-ink-600",
           "value": "#46433d",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4875
+          "line": 4925
         },
         {
           "name": "--ch-ink-500",
           "value": "#5f5c55",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4876
+          "line": 4926
         },
         {
           "name": "--ch-ink-400",
           "value": "#8f8b81",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4877
+          "line": 4927
         },
         {
           "name": "--ch-ink-300",
           "value": "#b3afa5",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4878
+          "line": 4928
         },
         {
           "name": "--ch-green-25",
           "value": "#f5f9f6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4879
+          "line": 4929
         },
         {
           "name": "--ch-green-50",
           "value": "#eef5f0",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4880
+          "line": 4930
         },
         {
           "name": "--ch-green-100",
           "value": "#ddebe1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4881
+          "line": 4931
         },
         {
           "name": "--ch-green-200",
           "value": "#bcd6c4",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4882
+          "line": 4932
         },
         {
           "name": "--ch-green-400",
           "value": "#4f8a64",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4883
+          "line": 4933
         },
         {
           "name": "--ch-green-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4884
+          "line": 4934
         },
         {
           "name": "--ch-green-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4885
+          "line": 4935
         },
         {
           "name": "--ch-green-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4886
+          "line": 4936
         },
         {
           "name": "--ch-green-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4887
+          "line": 4937
         },
         {
           "name": "--ch-green-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4888
+          "line": 4938
         },
         {
           "name": "--ch-forest-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4889
+          "line": 4939
         },
         {
           "name": "--ch-forest-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4890
+          "line": 4940
         },
         {
           "name": "--ch-green-fill-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4891
+          "line": 4941
         },
         {
           "name": "--ch-green-fill-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4892
+          "line": 4942
         },
         {
           "name": "--ch-green-fill-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4893
+          "line": 4943
         },
         {
           "name": "--ch-champagne-100",
           "value": "#efe6d2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4894
+          "line": 4944
         },
         {
           "name": "--ch-champagne-300",
           "value": "#dccda6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4895
+          "line": 4945
         },
         {
           "name": "--ch-champagne-500",
           "value": "#b09560",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4896
+          "line": 4946
         },
         {
           "name": "--ch-well-bg",
           "value": "linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4898
+          "line": 4948
         },
         {
           "name": "--ch-control-bg",
           "value": "linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4899
+          "line": 4949
         },
         {
           "name": "--ch-stage-up",
           "value": "var(--ch-green-200)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5382
+          "line": 5419
         },
         {
           "name": "--ch-stage-down",
           "value": "var(--ch-champagne-300)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5383
+          "line": 5420
         }
       ]
     },

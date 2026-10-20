@@ -134,6 +134,8 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
   readonly insightType = 'scrambling';
   readonly category: InsightCategory = 'short_game';
   readonly minSampleN = 5; // save opportunities — a sand-save % off 1-2 bunker holes is noise
+  /** Reads the last 90 days ending today (root-cause scope, flag-on only). */
+  protected override readonly rollingWindowDays = 90;
 
   // Descriptive card (audit row 28): it measures the player's own bunker
   // outcomes, so a missing scrambling_pct_sand standing row must not hide it.

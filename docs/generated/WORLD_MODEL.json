@@ -2311,6 +2311,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts",
+        "pattern": "src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/golf/actions/__tests__/stats-data.test.ts",
         "pattern": "src/app/golf/actions/__tests__/stats-data.test.ts",
         "category": "tests"
@@ -14486,6 +14491,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/player-feedback.ts",
           "anchor": "src/lib/coachhelm/v2/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/reads/cause-state.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
         }
       ]
     },
@@ -19197,6 +19207,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/generator-base.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/hole-diagnosis.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -19204,6 +19219,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/read-floors.ts",
           "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/root-cause-context.ts",
+          "anchor": "src/lib/supabase/admin"
         },
         {
           "kind": "import_graph",
@@ -19658,6 +19678,16 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/read-window.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/root-cause-context.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/root-cause.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
@@ -21351,6 +21381,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/recruiting/**"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "tests:src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts"
         }
       ]
     },
