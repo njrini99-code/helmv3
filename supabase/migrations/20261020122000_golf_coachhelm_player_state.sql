@@ -58,10 +58,10 @@ create table if not exists public.golf_coachhelm_player_state (
     references public.golf_rounds (id) on delete set null,
     last_checkpoint_at timestamptz,
     -- Checkpoints fired so far (the baseline is 0).
-    checkpoint_count integer not null default 0
+    checkpoint_count bigint not null default 0
     check (checkpoint_count >= 0),
     -- Countable rounds after last_checkpoint_round_id.
-    rounds_since integer not null default 0 check (rounds_since >= 0),
+    rounds_since bigint not null default 0 check (rounds_since >= 0),
     -- { family: attempts } since the last checkpoint, for the shot families
     -- in src/lib/coachhelm/v3/lifecycle/checkpoint.ts.
     attempts_since jsonb not null default '{}'::jsonb
