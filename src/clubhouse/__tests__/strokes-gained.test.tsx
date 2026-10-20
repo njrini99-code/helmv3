@@ -730,32 +730,32 @@ describe('player profile · phone', () => {
 /* ─── Make rate by distance ─── */
 
 describe('make rate by distance (Game detail)', () => {
-  it('reaches 35+ feet in the calculator’s nine bands, from the window’s putts with exact counts', async () => {
+  it('draws the six bands the Tour grades, from the window’s putts with exact counts, out to 25 feet and beyond', async () => {
     const user = userEvent.setup();
     showPlayer(player());
     await user.click(screen.getByRole('tab', { name: /Game detail/ }));
-    const curve = document.querySelector('svg.ch-mk')!;
-    const label = curve.getAttribute('aria-label')!;
-    expect(label.split(', ')).toHaveLength(9);
-    expect(label).toContain('15–20 feet 12%');
-    expect(label).toContain('25–30 feet 6%');
-    expect(label).toContain('35+ feet 0%');
-    expect(curve.textContent).toContain('16 putts');
-    expect(curve.textContent).toContain('35+ ft');
-    // The Putting section's own total counts every putt; the curve counts the ones logged with a distance, and says so.
-    const note = curve.closest('.ch-gm-p')!.querySelector('.ch-gm-p__n')!.textContent!;
+    const chart = document.querySelector('.ch-gm-p .ch-sv-pb')!;
+    const label = chart.getAttribute('aria-label')!;
+    expect(label.split('; ')).toHaveLength(6);
+    expect(label).toContain('15–25 feet 11%, 5 of 46');
+    expect(label).toContain('25+ feet 3%, 1 of 34');
+    expect(label).toContain('0–3 feet 89%, 57 of 64');
+    expect(chart.textContent).toContain('1/34');
+    expect(chart.textContent).toContain('25+ ft');
+    // The Putting section's own total counts every putt; the chart counts the ones logged with a distance, and says so.
+    const note = chart.closest('.ch-gm-p')!.querySelector('.ch-gm-p__n')!.textContent!;
     expect(note).toContain('Counts are putts logged with a distance.');
-    // The Tour publishes five averages, so the nine bands share them, and the note says so.
-    expect(note).toContain('15 to 25 feet share one');
+    // The Tour publishes five averages, one per band past 3 feet, and the note says so.
+    expect(note).toContain('The Tour publishes five averages, one for each band past 3 feet.');
   });
 
-  it('CH-5211 without the window’s putts the curve stops where the shot stats do, at 20 feet, and says the putts did not load', async () => {
+  it('CH-5211 without the window’s putts the chart stops where the shot stats do, at 20 feet, and says the putts did not load', async () => {
     const user = userEvent.setup();
-    showPlayer(player({ extra: { ...PREVIEW_PLAYER.extra, puttBandsNine: null, puttsError: true } }));
+    showPlayer(player({ puttBands: null, extra: { ...PREVIEW_PLAYER.extra, puttBandsNine: null, puttsError: true } }));
     await user.click(screen.getByRole('tab', { name: /Game detail/ }));
-    const curve = document.querySelector('svg.ch-mk')!;
-    expect(curve.getAttribute('aria-label')).toContain('15–20 feet');
-    expect(curve.getAttribute('aria-label')).not.toContain('25');
+    const chart = document.querySelector('.ch-gm-p .ch-sv-pb')!;
+    expect(chart.getAttribute('aria-label')).toContain('15–20 feet');
+    expect(chart.getAttribute('aria-label')).not.toContain('25');
     expect(code('CH-5211')!.textContent).toContain('Putts past 20 feet didn’t load');
   });
 });

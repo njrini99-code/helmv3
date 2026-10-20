@@ -75,6 +75,20 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## Business Rules
 
+- Support and the claim ladder (Slice 1, 2026-10-20, flag
+  `coachhelm_support_v1`, off): after the generators and composites write a
+  player's rows for a run, `v3/support/run-pass.ts` adds `support` (gap to the
+  benchmark, 95% range, one-sided p, Benjamini-Hochberg q across every
+  candidate of the run at q <= 0.10), `ladder` / `what_ladder` (Seen
+  repeatedly / Observed / Likely / Working hypothesis / Not enough yet),
+  `ladder_reasons`, `strokes_shrunk` and `shrink` to `evidence`, writes one
+  `golf_coachhelm_run_log` row (held migration 20261020114500; a missing
+  table is "not available"), and records `rank_factors` on exposures. With the
+  flag on nothing else on the row changes (confidence, copy, priority,
+  lifecycle), and no surface reads the ladder yet. Contract and the back-test
+  numbers: "Support and the claim ladder" in
+  `docs/architecture/coachhelm-evidence-contract.md`.
+  <!-- schema-drift-absent: golf_coachhelm_run_log -->
 - Honest root cause (supercharge Slice 2, 2026-10-20), behind
   `coachhelm_root_cause_diagnosis` (OFF; off writes the old template
   unchanged):
@@ -95,7 +109,6 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     no one-year fallback. Rolling generators load their own N-day window.
 - `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
   staff lookup keeps failing, instead of writing the row with no owner.
-
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course
@@ -273,9 +286,9 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   same classification as the Clubhouse Board). `includeMore: true` on
   `getInsightsForPlayer` or `getInsightsForCoachWithMeta` skips the cap: the
   Clubhouse Board (caps itself), the Deep dive, the game Fingerprint and the
-  Scouting report pass it, and the chat tool never caps. With the flag on,
-  exposure rows also record `rank_factors` (the `RankScoreFactors` without
-  the score). Paths that read insights without `deliverReads` are
+  Scouting report pass it, and the chat tool never caps. This flag writes
+  no `rank_factors`; that column is Slice 1's (`coachhelm_support_v1`).
+  Paths that read insights without `deliverReads` are
   unchanged: `insights-coachhelm.ts` `loadEvidenceBackedInsights`,
   `signal-groups.ts`, `insights-feed.ts`, `intelligence-dashboard.ts`.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.

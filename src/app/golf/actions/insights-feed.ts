@@ -186,6 +186,7 @@ async function generateTeamInsightsImpl() {
               depth: 'standard',
               // F061 — honor the coach's saved Insight Detail Level in the NLG.
               verbosity: philosophy.insightVerbosity,
+              runTrigger: 'manual',
             });
             return { player, analysis, success: true };
           } catch (err) {

@@ -267,19 +267,16 @@ describe('delivery with the flag on', () => {
     expect(kept).toContain('bal');
   });
 
-  it('records exposure for exactly the reads kept, with the rank factors and not the score among them', async () => {
+  it('records exposure for exactly the reads kept, each with its score', async () => {
     const { kept } = expectedKept(await offOrder());
     flagOn.value = true;
     vi.mocked(recordInsightExposure).mockClear();
     await getInsightsForPlayer('p1', { limit: 20 }, makeClient(ROWS));
     const rows = lastExposure();
     expect(rows.map((r) => r.insight_id)).toEqual(kept);
-    for (const r of rows) {
-      expect(r.rank_factors).toEqual(
-        expect.objectContaining({ magnitude: expect.any(Number), confidence: expect.any(Number), urgent: false }),
-      );
-      expect(r.rank_factors).not.toHaveProperty('score');
-    }
+    // `rank_factors` is Slice 1's (flag coachhelm_support_v1, off here): this
+    // flag never writes it.
+    expect(rows.every((r) => typeof r.rank_score === 'number' && !('rank_factors' in r))).toBe(true);
   });
 
   it('a read the player dismissed never takes one of the 3 + 1', async () => {

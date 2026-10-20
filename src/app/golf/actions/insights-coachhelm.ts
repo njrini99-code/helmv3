@@ -31,6 +31,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   __registerTriggerPlayerInsightsAfterRound,
+  type TriggerPlayerInsightsOptions,
   type TriggerPlayerInsightsResult,
 } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { classifyThrown } from '@/lib/coachhelm/v3/engine/analysis-outcome';
@@ -417,7 +418,8 @@ async function loadEvidenceBackedInsights(
  * SEMGREP-ALLOW: fire-and-forget post-response; caller submitGolfRoundComprehensive already revalidates dashboards
  */
 async function triggerPlayerInsightsAfterRoundImpl(
-  playerId: string
+  playerId: string,
+  triggerOptions?: TriggerPlayerInsightsOptions,
 ): Promise<TriggerPlayerInsightsResult> {
   // The result envelope is the bridge's `TriggerPlayerInsightsResult`: every
   // `success: false` below carries a typed `code` from
@@ -633,6 +635,9 @@ async function triggerPlayerInsightsAfterRoundImpl(
             // making it re-resolve player → coach on its own.
             patternLookbackDays: philosophy.patternLookbackDays,
             minRoundsForSignal: philosophy.minRoundsForSignal,
+            // Slice 1 run log label (flag coachhelm_support_v1); unset when the
+            // caller named none.
+            ...(triggerOptions?.runTrigger ? { runTrigger: triggerOptions.runTrigger } : {}),
           });
     } catch (analysisError) {
       const outcome = classifyThrown(analysisError);
@@ -989,7 +994,7 @@ async function refreshPlayerAnalysisAsCoachImpl(
   // Session/team-membership already verified above; call the observed impl
   // directly in-process — this file no longer exports a bare
   // triggerPlayerInsightsAfterRound (see the SECURITY comment above it).
-  const result = await observedTriggerPlayerInsightsAfterRound(playerId);
+  const result = await observedTriggerPlayerInsightsAfterRound(playerId, { runTrigger: 'manual' });
 
   if (result.success) {
     // GOLF IA REORG (final_migrations #11): the Scouting Report content this
@@ -1077,7 +1082,7 @@ async function refreshTeamAnalysisAsCoachImpl(): Promise<{
   for (let i = 0; i < playerIds.length; i += concurrency) {
     const batch = playerIds.slice(i, i + concurrency);
     const results = await Promise.allSettled(
-      batch.map((playerId) => observedTriggerPlayerInsightsAfterRound(playerId)),
+      batch.map((playerId) => observedTriggerPlayerInsightsAfterRound(playerId, { runTrigger: 'manual' })),
     );
     for (const result of results) {
       if (result.status === 'rejected') {

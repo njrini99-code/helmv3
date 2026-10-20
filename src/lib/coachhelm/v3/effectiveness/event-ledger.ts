@@ -32,12 +32,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
 import { isFlagEnabled } from '@/lib/flags';
-import {
-  dedupeExposureRows,
-  exposureDedupeKey,
-  startOfUtcDayIso,
-  type ExposureRankFactors,
-} from './exposure-rows';
+import { dedupeExposureRows, exposureDedupeKey, startOfUtcDayIso, type RankFactors } from './exposure-rows';
 import type { Json } from '@/lib/types/database';
 import { actionDedupeKey, isActionAlreadyRecorded } from './action-rows';
 
@@ -160,11 +155,6 @@ export function deriveTrend(improvements: Array<number | null | undefined>): 'up
 
 const FEATURE_AREA = 'coachhelm_effectiveness';
 
-/** Postgres "undefined column" or PostgREST "column not in the schema cache". */
-function isMissingColumnError(error: { code?: string | null }): boolean {
-  return error.code === '42703' || error.code === 'PGRST204';
-}
-
 /**
  * Record one or more insight EXPOSURE events — "this insight was actually shown".
  * Call from the read path that renders a ranked insight list (server side).
@@ -208,15 +198,11 @@ export async function recordInsightExposure(
     surface?: string;
     rank_position?: number;
     rank_score?: number;
-    rank_factors?: ExposureRankFactors;
+    /** Slice 1 (`coachhelm_support_v1`); absent → the column stays NULL as before. */
+    rank_factors?: RankFactors;
   }>,
 ): Promise<void> {
   if (!Array.isArray(rows) || rows.length === 0) return;
-
-  // CoachHelm Slice 0: `rank_factors` rides along only when a caller passed
-  // factors (flag `coachhelm_reads_v1_copy` on). Without them the payload
-  // carries no such key, exactly as before.
-  const withFactors = rows.some((r) => r.rank_factors !== undefined);
 
   const attempt = async (): Promise<void> => {
     const admin = createAdminClient();
@@ -227,7 +213,9 @@ export async function recordInsightExposure(
       surface: r.surface ?? null,
       rank_position: r.rank_position ?? null,
       rank_score: r.rank_score ?? null,
-      ...(withFactors ? { rank_factors: (r.rank_factors ?? null) as Json } : {}),
+      // Only present when the flag is on: an absent key keeps the insert
+      // payload byte-identical to the pre-Slice-1 one.
+      ...(r.rank_factors ? { rank_factors: r.rank_factors as unknown as Json } : {}),
     }));
 
     const insightIds = Array.from(new Set(payload.map((r) => r.insight_id)));
@@ -253,14 +241,7 @@ export async function recordInsightExposure(
 
     if (toInsert.length === 0) return;
 
-    let { error } = await admin.from('golf_insight_exposure').insert(toInsert);
-    if (error && withFactors && isMissingColumnError(error)) {
-      // A database without the `rank_factors` column (HELD.md row 63 is
-      // applied in production; a stale local stack may lack it): record the
-      // exposure without the factors rather than lose it.
-      const bare = toInsert.map(({ rank_factors: _factors, ...rest }) => rest);
-      ({ error } = await admin.from('golf_insight_exposure').insert(bare));
-    }
+    const { error } = await admin.from('golf_insight_exposure').insert(toInsert);
     if (error && isTransientFetchError(error)) {
       // postgrest-js usually RESOLVES a network blip as a typed error
       // ({ message: 'TypeError: fetch failed', code: '' }) instead of throwing

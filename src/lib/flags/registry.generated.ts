@@ -151,7 +151,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "coachhelm_reads_v1_copy",
     owner: "golf/coachhelm",
-    purpose: "Gates the CoachHelm Slice 0 output changes. Delivery: overlapping reads fold into one at delivery, each player's feeds hold 3 open reads plus 1 strength, and exposure rows record the rank factors. Freshness: a new or refreshed read needs at least 3 countable rounds and its family's attempt floor or it is held back as Watching with a count-down; a new evidence revision is a new newest round in the window (or a moved window), not a changed sample count; empty window dates are filled from the rounds read; and the nightly roster sweep re-analyzes players whose newest countable round is newer than their newest read (deterministic generators only, no LLM). Off until the owner reviews the shorter feeds and the Watching counts.",
+    purpose: "Gates the CoachHelm Slice 0 output changes. Delivery: overlapping reads fold into one at delivery and each player's feeds hold 3 open reads plus 1 strength. Freshness: a new or refreshed read needs at least 3 countable rounds and its family's attempt floor or it is held back as Watching with a count-down; a new evidence revision is a new newest round in the window (or a moved window), not a changed sample count; empty window dates are filled from the rounds read; and the nightly roster sweep re-analyzes players whose newest countable round is newer than their newest read (deterministic generators only, no LLM). Off until the owner reviews the shorter feeds and the Watching counts.",
     type: "release",
     status: "active",
     created_at: "2026-10-20",
@@ -232,6 +232,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     },
     kill_switch_behavior: null,
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies 20260923100000_round_recap_single_flight_lock to each environment, confirmed via information_schema.columns (ai_narrative) and pg_proc (claim_round_recap_lock / release_round_recap_lock). Once on everywhere and the fallback rate (deterministic vs. LLM-authored) is acceptable, consider promoting to a permanent `release` flag — owner's call, not automatic.",
+  },
+  {
+    feature_id: "coachhelm_support_v1",
+    owner: "golf/coachhelm",
+    purpose: "After the insight generators write a player's rows for a run, computes each row's support (the gap to the benchmark with a 95% range, a one-sided p and a Benjamini-Hochberg q across every candidate of the run, q <= 0.10), the shrunk estimate and the five-rung claim ladder, and merges them into the row's evidence (support, ladder, what_ladder, ladder_reasons, strokes_shrunk, shrink); writes one golf_coachhelm_run_log row per run; and records rank_factors on golf_insight_exposure. Turning it on changes no title, content, confidence, priority or lifecycle: no surface reads the ladder yet, so coaches and players see nothing different until a renderer PR does. Off: nothing is read or written by this code.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020114500_golf_coachhelm_run_log.sql (HELD.md row; the writer treats the missing table as not available, so order is not a correctness issue) and the support back-test (scripts/coachhelm/support-backtest.ts) meets the 02 §8 acceptance bars. Remove the flag and the isSupportPassEnabled branches once the ladder renderers ship and the pass has run stably for a month.",
   },
   {
     feature_id: "coachhelm_trust_status_exclude_unmeasured_outcomes",
