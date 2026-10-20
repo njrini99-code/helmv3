@@ -118,11 +118,13 @@ untouched here). So:
   `src/lib/golf/putt-make.ts` is the one make-% definition (`distance_to_hole_before` clamped 0 to 120, made is
   `result === 'hole'` or `putt_made === true`, bands (lo, hi]). Until then Clubhouse's make rates can differ from
   production's by the putts those rules treat differently (PT7 to PT10, PT17, Team stats' putting rings).
-- **Bands graded against a wider Tour value.** The Tour publishes five make standards (3-5, 5-10, 10-15, 15-25, 25+). The nine
-  putting bands reuse them as production's own table does (15-20 and 20-25 ft against the 15-25 value; 25-30, 30-35 and 35+
-  against 25+; PT8). Without the putt read the curve has only the calculator's five bands, and its 15-20 ft point now carries
-  no Tour mark instead of being set against the 15-25 value. Whether the nine-band curve should drop its reused marks too is
-  the lead's call.
+- **Bands graded against a wider Tour value.** The Tour publishes five make
+  standards (3-5, 5-10, 10-15, 15-25, 25+). The nine putting bands reuse them in
+  the PT7 table as production's own does (15-20 and 20-25 ft against the 15-25
+  value; 25-30, 30-35 and 35+ against 25+). The PT8 chart draws the six bands
+  the Tour publishes, so no band reuses a value. Without the putt read the chart
+  has only the calculator's five bands, and its 15-20 ft point carries no Tour
+  mark instead of being set against the 15-25 value.
 - **Production's patterns read** (SC17) orders by `stroke_impact` with a limit of 10, which drops a player's biggest
   leaks; reported to the shared-fix work, not fixed here.
 
@@ -219,7 +221,7 @@ untouched here). So:
 | PT5 | 1-putts (a count in production) | `SS/PuttingDrill.tsx:382,419` · `CALC:2195` | **Shown** as "One-putt rate" (holes) | the window |
 | PT6 | Average leave after a putt (holed = 0) | `SS/PuttingDrill.tsx:383,420` · `CALC:2743` | **Added.** Putting numbers | every putt with a known result |
 | PT7 | Putting by distance: nine bands with make %, sample, share of first putts, average leave, strokes to hole out, proximity | `SS/PuttingDrill.tsx:248-264,505-556` · `CALC:2713-2812` | **Added.** GD › Putting › More detail › Putting by distance (nine bands: 0-3, 3-5, 5-10, 10-15, 15-20, 20-25, 25-30, 30-35, 35+ ft) | putts of the window's rounds |
-| PT8 | Make-rate curve over the nine bands (production's has no Tour line; its leak map has six bands with one) | `SS/PuttingDrill.tsx:604`, `FW/charts/MakeCurve`, `FW/charts/LeakMap` · `CALC:2713-2728`, `LMB:32-46` | **Shown and widened.** GD › Putting "Make rate by distance": nine bands with a dashed Tour line where a Tour value maps (3-5, 5-10, 10-15, 15-25 for 15-20 and 20-25, 25+ for the last three; none for 0-3 ft), each band with its putts, bands under 10 putts not graded | putts with a distance and a result |
+| PT8 | Make-rate chart by distance (production's has no Tour line; its leak map has six bands with one) | `SS/PuttingDrill.tsx:604`, `FW/charts/MakeCurve`, `FW/charts/LeakMap` · `CALC:2713-2728`, `LMB:32-46` | **Shown and changed (2026-10-20).** GD and OV › Putting "Make rate by distance" is `PuttBands`: six evenly spaced Tour bands (0-3, 3-5, 5-10, 10-15, 15-25, 25+ ft) cut from the nine, a dot per band with a 95% Wilson range, made of tried under each, and the Tour line where a Tour value maps (none for 0-3 ft). A band shows from 10 putts, is a hollow early read to 29 and a graded dot from 30; under 10 it says what it needs. The nine-band table (PT7) is unchanged | putts with a distance and a result |
 | PT9 | Make % by break and distance (matrix with n) | `SS/PuttingDrill.tsx:334-349,558-569` · `CALC:2881-2913` | **Added.** More detail › Make rate by break and distance | putts with a recorded break |
 | PT10 | Break overview (overall make % by break) | `SS/PuttingDrill.tsx:351-355,568` · `CALC:2907` | **Shown** (inside 10 ft); the overall rate per break is **added** beside it | as PT9 |
 | PT11 | "Work on next" (the weakest cell with 8 or more putts) | `SS/PuttingDrill.tsx:246,357-369,571-573` | **Added.** More detail › Practice target, with the same 8-putt floor and the same sentence when no cell has it | as PT9 |
