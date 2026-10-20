@@ -13,16 +13,29 @@ Held items:     none
 
 ### Changed
 
-- `data/coachhelm-dive-shape.ts` `diagnosisFor`: a diagnosis whose cause is the generators' placeholder ("<metric> is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence", written by `buildDiagnosis` on every single-metric v3 row) is no diagnosis. The "Likely, not measured" box, its cause line, its "sample adequate" reason and the driver the evidence block already shows are not drawn for it. A measured or hand-written cause draws exactly as before.
-- The placeholder test is `src/lib/coachhelm/reads/placeholder-cause.ts`, shared and pure.
+- `data/coachhelm-dive-shape.ts` `diagnosisFor`: a diagnosis whose cause is
+  the generators' placeholder ("<metric> is off its benchmark. Likely cause
+  inferred from the aggregate, not a measured shot sequence", written by
+  `buildDiagnosis` on every single-metric v3 row) is no diagnosis. The
+  "Likely, not measured" box, its cause line, its "sample adequate" reason
+  and the driver the evidence block already shows are not drawn for it. A
+  measured or hand-written cause draws exactly as before.
+- The placeholder test is `src/lib/coachhelm/reads/placeholder-cause.ts`,
+  shared and pure.
 
 ### Why
 
-- A production check on 2026-10-19 counted the placeholder on 420 of 572 visible reads. Printed as a diagnosis it taught coaches to skip the why line, and a Deep dive section headed "Why CoachHelm thinks so" held only that sentence.
+- A production check on 2026-10-19 counted the placeholder on 420 of 572
+  visible reads. Printed as a diagnosis it taught coaches to skip the why
+  line, and a Deep dive section headed "Why CoachHelm thinks so" held only
+  that sentence.
 
 ### Verification
 
-- `placeholder-cause.test.ts` and `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank, observed and hypothesis cases are unchanged). No screenshot: the card loses one block and no layout rule changed.
+- `placeholder-cause.test.ts` and `coachhelm-dive.test.tsx` (a placeholder
+  row gets no diagnosis; the blank, observed and hypothesis cases are
+  unchanged). No screenshot: the card loses one block and no layout rule
+  changed.
 
 ## 2026-10-19 — CoachHelm on an iPad: the views head, the Ask cards and the evidence side sheet
 
