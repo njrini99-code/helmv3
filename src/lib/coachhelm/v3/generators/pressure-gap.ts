@@ -295,6 +295,9 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
 
     return {
       title,
+      // Practice-to-tournament gap in strokes: at or under 0 is a strength, a
+      // small gap is normal, past half a stroke it is a leak.
+      framing: agg.playerValue <= 0 ? 'strength' : agg.playerValue <= 0.5 ? 'neutral' : 'leak',
       content,
       // Severity against the team's Tour gap (Q-88): over it is high, at or
       // under practice is low, in between medium. This is the rule before the

@@ -36,9 +36,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 16 | 3 | 6 | 0 |
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
+| `CURRENT_FEATURE` | 29 | 29 | 16 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
-| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
+| `GENERATED_TRUTH` | 43 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -225,6 +225,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/calendar-events.md` | current | yes | - | yes | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | - |
@@ -333,6 +335,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | - |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |

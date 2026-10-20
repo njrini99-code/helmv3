@@ -183,6 +183,9 @@ describe('whyStateOf', () => {
     expect(whyStateOf({ cause: { state: 'inferred_hypothesis', alternatives: [alt] } })).toBe('corroborated');
     expect(whyStateOf({ cause: { state: 'inferred_hypothesis', alternatives: [{ ...alt, lower_bound: -0.01 }] } }))
       .toBe('candidate');
+    // Slice 2 writes lift null when the rest never failed: unbounded, so it clears 1.25.
+    expect(whyStateOf({ cause: { state: 'inferred_hypothesis', alternatives: [{ ...alt, lift: null }] } }))
+      .toBe('corroborated');
   });
 });
 

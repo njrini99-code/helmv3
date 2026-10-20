@@ -99,6 +99,11 @@ const FOCUS_STATUS_TONE: Record<string, 'accent' | 'success' | 'warning' | 'neut
 
 const TWO_DECIMALS = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+/** True when a strokes figure is finite and does not print as 0.00 here. */
+function printsAsNonZero(value: number): boolean {
+  return Number.isFinite(value) && Math.round(Math.abs(value) * 100) > 0;
+}
+
 function sentenceCase(value: string): string {
   const spaced = value.replace(/_/g, ' ').trim();
   return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : spaced;
@@ -158,10 +163,15 @@ export function SignalDossier({
   // copy is omitted below, so this is the only strokes figure on screen): a
   // stale row must never read "42.50 est. strokes". A roll-up is a SUM across
   // players and can legitimately pass the single-leak ceiling.
-  const impact =
+  //
+  // A figure that prints as 0.00 is left out. Most generator families write
+  // `strokes_impact = 0` for "not estimated" (ranking/score.ts), so
+  // "0.00 est. strokes per round" read as a measured zero cost.
+  const rawImpact =
     signal.strokeImpact === null
       ? null
       : Math.abs(isRollup ? signal.strokeImpact : sanitizeStrokesImpact(signal.strokeImpact));
+  const impact = rawImpact !== null && printsAsNonZero(rawImpact) ? rawImpact : null;
   const rollupMetricLabel = isRollup ? readMetricLabel(signal) : null;
   // The synthesis always writes `players_affected`; a count read off a
   // contributor list we could not resolve would be a fabricated zero.
@@ -427,7 +437,7 @@ export function SignalDossier({
  * player's share of the combined total, so the rows add up to the headline.
  */
 function RollupBreakdown({
-  contributors,
+  contributors: allContributors,
   total,
   playersAffected,
   onSelectSignal,
@@ -437,6 +447,8 @@ function RollupBreakdown({
   playersAffected: number | null;
   onSelectSignal?: (id: string) => void;
 }) {
+  // A contributor that would print as 0.00 is not a leak worth a row.
+  const contributors = allContributors.filter((c) => printsAsNonZero(c.strokeImpact));
   const sum = contributors.reduce((acc, c) => acc + c.strokeImpact, 0);
   const denominator = total && total > 0 ? total : sum;
 

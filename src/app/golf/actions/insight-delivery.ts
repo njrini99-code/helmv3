@@ -133,6 +133,14 @@ export interface GetInsightsForPlayerOptions {
    * Omitted: every returned row counts, as before. A server-side caller only.
    */
   drawn?: (insight: EvidenceInsight) => boolean;
+  /**
+   * Instead of `drawn`, for a surface that knows what it draws only after it
+   * has shaped the rows (the Clubhouse player Board caps its reads by kind,
+   * freshness and the Tour, which it reads after this call). Called once
+   * with the returned rows; the ones whose ids the promise resolves to are
+   * recorded as shown, in that order. A promise that rejects records nothing.
+   */
+  drawnLater?: (shown: EvidenceInsight[]) => Promise<readonly string[]>;
 }
 
 export interface GetInsightsForCoachOptions {
@@ -706,7 +714,15 @@ async function getInsightsForPlayerImpl(
   const shown = applyPlayerFeedbackOverlay(deduped, feedbackByInsight).slice(0, limit);
   // Record exposure for the EXACT rows returned (post overlay + slice) — a row
   // dropped by the limit or by a player dismissal is never counted as shown.
-  recordExposureForReturned(opts.drawn ? shown.filter(opts.drawn) : shown, 'player_feed', null, scoreById);
+  if (opts.drawnLater) {
+    const byId = new Map(shown.map((i) => [i.id, i]));
+    void opts.drawnLater(shown).then(
+      (ids) => recordExposureForReturned(ids.map((id) => byId.get(id)).filter((i): i is EvidenceInsight => !!i), 'player_feed', null, scoreById),
+      () => undefined,
+    );
+  } else {
+    recordExposureForReturned(opts.drawn ? shown.filter(opts.drawn) : shown, 'player_feed', null, scoreById);
+  }
   return shown;
 }
 

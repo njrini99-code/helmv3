@@ -103,7 +103,8 @@ export function whyStateOf(evidence: Obj): WhyState {
       const corroborated = alts.some((a) => {
         const o = obj(a);
         if (!o) return false;
-        const lift = num(o.lift) ?? 0;
+        // Slice 2 writes lift null when the rest never failed: an unbounded lift.
+        const lift = o.lift === null ? Number.POSITIVE_INFINITY : num(o.lift) ?? 0;
         const lb = num(o.lower_bound);
         const na = num(obj(o.arm_a)?.n) ?? 0;
         const nb = num(obj(o.arm_b)?.n) ?? 0;

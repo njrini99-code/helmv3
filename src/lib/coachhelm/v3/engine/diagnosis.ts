@@ -185,3 +185,15 @@ export function axisReadingToText(reading: AxisReading): string {
 export function approachAxisDriver(axis: ApproachAxis, share: number, n: number): string {
   return axisReadingToText(approachAxisReading(axis, share, n));
 }
+
+/** Classify a raw miss_direction into its short/long and left/right poles. A
+ *  direction may contribute to BOTH axes (e.g. 'short_right' → short + right);
+ *  a pure 'short' contributes short + L/R-neutral. Unknown → neutral on both.
+ *  Shared by approach-miss (the band tally) and context-narrowing (the
+ *  per-slice shape step) so both read a miss the same way. */
+export function classifyMiss(raw: string | null): { sl: keyof AxisTally; lr: keyof AxisTally } {
+  const v = (raw ?? '').toLowerCase();
+  const sl: keyof AxisTally = v.includes('short') ? 'negative' : v.includes('long') ? 'positive' : 'neutral';
+  const lr: keyof AxisTally = v.includes('left') ? 'negative' : v.includes('right') ? 'positive' : 'neutral';
+  return { sl, lr };
+}

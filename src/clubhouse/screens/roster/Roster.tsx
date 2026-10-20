@@ -1,7 +1,7 @@
 'use client';
 
 import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
@@ -25,7 +25,7 @@ import { Swap } from '../../ui/Swap';
 import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
-import { useChPhone } from '../../lib/use-phone';
+import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
@@ -95,6 +95,26 @@ export function Roster({ data }: { data: ChRoster }) {
     linkedInvite = false;
     setInvite(false);
   }, []);
+  // The bell's join-request notice links here with `?tab=requests` (createTeamJoinRequest). The phone opens its requests sheet
+  // (RosterPhone). On desktop the requests are the card under the header: the link takes focus there, scrolling it into view if it
+  // is not, and the param is dropped so a reload or Back shows the roster as it is. With no request waiting (the notice was
+  // already decided) or the requests not loaded, there is no card and nothing moves. Read from the media query, not `phone`:
+  // a first render on the server's guess must not spend a phone's param.
+  // The focus waits for the desktop card to be mounted: a stale phone-layout hint mounts the phone copy at hydration, which
+  // spends the param in its own effect and corrects a render later. So the param is read while rendering (before any child
+  // effect), kept, and acted on once the layout is desktop and the card exists.
+  const requestsRef = useRef<HTMLElement>(null);
+  const [linkedRequests] = useState(() => typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('tab') === 'requests');
+  const [focusRequests, setFocusRequests] = useState(false);
+  useEffect(() => {
+    if (!linkedRequests || window.matchMedia(CH_PHONE_QUERY).matches) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('tab')) {
+      url.searchParams.delete('tab');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+    setFocusRequests(true);
+  }, [linkedRequests]);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
   // The player whose Active/Inactive status the coach is changing (CH-3502).
   const [restatus, setRestatus] = useState<ChRosterPlayer | null>(null);
@@ -102,6 +122,11 @@ export function Roster({ data }: { data: ChRoster }) {
   const teamRef = teamInSentence(data);
   const jr = useJoinRequests(teamRef, data.requests);
   const phone = useChPhone();
+  useEffect(() => {
+    if (!focusRequests || phone) return;
+    requestsRef.current?.focus();
+    setFocusRequests(false);
+  }, [focusRequests, phone]);
   // Phone: the open player is a pushed screen (RosterPhone keeps it in the history, CH-1906).
   // A link with ?player= opens that profile once; the param is dropped so a reload shows the list.
   const [openId, setOpenId] = useState<string | null>(null);
@@ -403,7 +428,7 @@ export function Roster({ data }: { data: ChRoster }) {
       <PageRefreshNotice parts={failed} />
 
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        <RosterRequests teamName={teamRef} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
+        <RosterRequests ref={requestsRef} teamName={teamRef} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
       </SectionBoundary>
 
       {data.statsError && (

@@ -174,6 +174,18 @@ describe('the deep dive as the page draws it', () => {
       },
     };
     expect(deep(placeholder, FULL_INPUTS).diagnosis).toBeNull();
+    // Slice 2: a not-traced cause (a count-down or a data gap) is not a cause either; counted and likely keep their levels.
+    const withCause = (state: string, causality: 'observed_sequence' | 'inferred_hypothesis'): EvidenceInsight => ({
+      ...DIVE_SLOPE,
+      evidence: {
+        ...DIVE_SLOPE.evidence,
+        cause: { state } as never,
+        diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, root_cause: 'Not traced yet. Needs 10 missed first putts from 5–10 ft over 3 rounds; 6 so far over 2 rounds.', causality_level: causality },
+      },
+    });
+    expect(deep(withCause('not_traced', 'inferred_hypothesis'), FULL_INPUTS).diagnosis).toBeNull();
+    expect(deep(withCause('inferred_hypothesis', 'inferred_hypothesis'), FULL_INPUTS).diagnosis?.level).toBe('hypothesis');
+    expect(deep(withCause('observed_sequence', 'observed_sequence'), FULL_INPUTS).diagnosis?.level).toBe('observed');
   });
 
   it('what closing the gap is worth comes only from a cascade cause that has a number, and says what it is closed to: the team’s average, or the Tour when there was no team average to anchor on', () => {
