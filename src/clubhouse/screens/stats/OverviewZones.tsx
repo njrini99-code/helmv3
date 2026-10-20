@@ -10,6 +10,7 @@ import { EmptyState } from '../../ui/States';
 import { LegBars } from './LegBars';
 import { RoundTrend } from './RoundTrend';
 import { trendRounds, withValue } from './round-trend';
+import { PuttBands } from './PuttBands';
 import { sgLegBars } from './leg-rows';
 
 /**
@@ -125,7 +126,8 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
   const scrYou = cmp('Scrambling')?.you ?? null;
 
   // 6 · putting
-  const bands = (data.extra.puttBandsNine ?? data.puttBands ?? []).map((b) => ({ label: b.label.replace(' ft', ''), pct: b.attempts ? (b.made / b.attempts) * 100 : null, bench: b.bench, n: b.attempts }));
+  // The six bands the Tour grades (0–3 to 25+ ft), from the window's own putts.
+  const bands = (data.puttBands ?? []).map((b) => ({ label: b.label, made: b.made, attempts: b.attempts, bench: b.bench }));
   const puttsYou = cmp('Putts per round')?.you ?? null;
   const threePutts = cmp('3-putts per round')?.you ?? null;
 
@@ -526,9 +528,9 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
           </>
         }
       >
-        {bands.filter((b) => b.pct != null).length >= 2 ? (
-          <Vis title="Make rate by distance" note="Share of putts holed from each distance. The gold line is the Tour; the shaded gap is strokes left on the green.">
-            <MakeCurve bands={bands} />
+        {bands.filter((b) => b.attempts > 0).length >= 2 ? (
+          <Vis title="Make rate by distance" note="Share of putts holed from each distance, against the Tour’s line. A dot shows from 10 putts in a band and grades from 30.">
+            <PuttBands bands={bands} />
             {data.extra.puttsError && <p className="ch-zmeta">The putt read failed, so the curve stops at 20 feet.</p>}
           </Vis>
         ) : (
@@ -615,53 +617,6 @@ function GreenDiagram({ short, long, left, right, gir }: { short: number; long: 
         <text x={150} y={24} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Long {long}%</text>
         <text x={62} y={119} textAnchor="end" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Left {left}%</text>
         <text x={238} y={119} fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Right {right}%</text>
-      </g>
-    </svg>
-  );
-}
-
-/** Make rate by distance as a line against the Tour's, the gap between them shaded; counts of putts under each distance. */
-function MakeCurve({ bands }: { bands: Array<{ label: string; pct: number | null; bench: number | null; n: number }> }) {
-  const W = 680;
-  const x = (i: number) => 80 + (i * (W - 110 - 50)) / Math.max(1, bands.length - 1);
-  const y = (p: number) => 220 - p * 2;
-  const you = bands.flatMap((b, i) => (b.pct == null ? [] : [{ i, p: b.pct }]));
-  const tour = bands.flatMap((b, i) => (b.bench == null ? [] : [{ i, p: b.bench }]));
-  const line = (pts: Array<{ i: number; p: number }>) => pts.map((q) => `${x(q.i)},${y(q.p)}`).join(' ');
-  const gap = tour.length > 1 ? [...tour.map((q) => `${x(q.i)},${y(q.p)}`), ...[...tour].reverse().map((q) => `${x(q.i)},${y(you.find((a) => a.i === q.i)?.p ?? q.p)}`)].join(' ') : null;
-  return (
-    <svg className="ch-zsvg" viewBox={`0 0 ${W} 300`} role="img" aria-label={bands.map((b) => `${b.label} ${b.pct == null ? 'no putts' : `${Math.round(b.pct)} percent`}`).join(', ')}>
-      <g stroke="var(--ch-ledger-rule)">{[20, 70, 120, 170, 220].map((v) => <line key={v} x1={50} y1={v} x2={W - 20} y2={v} />)}</g>
-      <g fontSize={12} fill="var(--ch-text-tertiary)" textAnchor="end">
-        {[100, 75, 50, 25, 0].map((p) => (
-          <text key={p} x={42} y={y(p) + 4}>{p === 0 ? '0' : `${p}%`}</text>
-        ))}
-      </g>
-      {gap && <polygon points={gap} fill="var(--ch-champagne-500)" fillOpacity={0.28} />}
-      {tour.length > 1 && <polyline points={line(tour)} fill="none" stroke="var(--ch-champagne-500)" strokeWidth={3} strokeDasharray="6 5" />}
-      {you.length > 1 && <polyline points={line(you)} fill="none" stroke="var(--ch-green-600)" strokeWidth={4} strokeLinejoin="round" />}
-      {you.map((q) => (
-        <g key={q.i}>
-          <circle cx={x(q.i)} cy={y(q.p)} r={7} fill="var(--ch-green-600)" stroke="var(--ch-ivory-25)" strokeWidth={3} />
-          <text x={x(q.i)} y={y(q.p) - 12} textAnchor="middle" fontSize={15} fontWeight={700} fill="var(--ch-green-900)">{Math.round(q.p)}%</text>
-        </g>
-      ))}
-      <g fontSize={12.5} fontWeight={600} fill="var(--ch-warning-600)" textAnchor="middle">
-        <text x={42} y={284} textAnchor="end" fontSize={12}>Tour</text>
-        {tour.map((q) => (
-          <text key={q.i} x={x(q.i)} y={284}>{Math.round(q.p)}%</text>
-        ))}
-      </g>
-      <g fontSize={13} fontWeight={600} fill="var(--ch-text-primary)" textAnchor="middle">
-        {bands.map((b, i) => (
-          <text key={b.label} x={x(i)} y={246}>{b.label} ft</text>
-        ))}
-      </g>
-      <g fontSize={12} fill="var(--ch-text-tertiary)" textAnchor="middle">
-        <text x={42} y={264} textAnchor="end">Putts</text>
-        {bands.map((b, i) => (
-          <text key={b.label} x={x(i)} y={264}>{b.n}</text>
-        ))}
       </g>
     </svg>
   );
