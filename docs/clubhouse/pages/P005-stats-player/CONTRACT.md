@@ -42,6 +42,12 @@ Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
   fewer than the window's says "Hole stats from X of Y rounds". A window of
   totals only has no shot-by-shot rounds (CH-5301), never a failed read.
 
+Stats charts say how sure they are (stats visuals, 2026-10-20): a figure under
+its floor shows what it needs instead of a value, one between its floors is a
+hollow muted mark with a tag, a change is colored only past one standard error,
+and the putting chart is six Tour bands graded from 30 putts and shown from 10.
+Floors live in `lib/stats-signal.ts`.
+
 Parity with production (2026-10-17, `stats-production-parity.test.ts`): on the
 same rounds, the comparison table's fairways, greens, putts, 3-putts,
 scrambling, sand saves, penalties and par 3/4/5 scoring, and Game detail's

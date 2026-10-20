@@ -463,6 +463,16 @@
   font: 400 calc(12.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* Player: the reads the Board leaves to the Deep dive (NEEDS_MAX, WORKING_MAX), a button on its own width, not the column's. */
+.ch-hl-more {
+  align-self: flex-start;
+}
+/* A small ghost button is 30px tall; on touch it keeps the 44px target. */
+@media (pointer: coarse) {
+  .ch-hl-more {
+    min-height: 44px;
+  }
+}
 
 /* Player: the focus areas a coach proposed, with Accept and Decline (Q-77) */
 .ch-hl-prop {

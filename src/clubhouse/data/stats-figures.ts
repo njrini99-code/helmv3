@@ -213,6 +213,15 @@ export function openingDelta(holes: ChHoleRow[]): { delta: number | null; rounds
   return { delta: first.reduce((a, b) => a + b, 0) / first.length - rest.reduce((a, b) => a + b, 0) / rest.length, rounds: both.length };
 }
 
+/**
+ * Holes played at triple bogey or worse (three or more over par): a part of the calculator's "double or worse", which the
+ * scoring mix says when its double or worse is read (stats-visuals spec 4.4). Reads the same scored holes, of the same rounds,
+ * as the detail read.
+ */
+export function triplePlusCount(holes: ChHoleRow[]): number {
+  return holes.reduce((n, h) => n + (h.score - h.par >= 3 ? 1 : 0), 0);
+}
+
 export interface ChHole {
   hole: number;
   par: number;

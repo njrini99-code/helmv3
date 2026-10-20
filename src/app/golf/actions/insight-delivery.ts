@@ -40,6 +40,7 @@ import { isCountableRound } from '@/lib/golf/round-countable';
 import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
 import { loadCoachWeightsForPlayer, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
 import { buildExposureRows } from '@/lib/coachhelm/v3/effectiveness/exposure-rows';
+import { isSupportPassEnabled } from '@/lib/coachhelm/v3/support/flag';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import {
@@ -132,6 +133,14 @@ export interface GetInsightsForPlayerOptions {
    * Omitted: every returned row counts, as before. A server-side caller only.
    */
   drawn?: (insight: EvidenceInsight) => boolean;
+  /**
+   * Instead of `drawn`, for a surface that knows what it draws only after it
+   * has shaped the rows (the Clubhouse player Board caps its reads by kind,
+   * freshness and the Tour, which it reads after this call). Called once
+   * with the returned rows; the ones whose ids the promise resolves to are
+   * recorded as shown, in that order. A promise that rejects records nothing.
+   */
+  drawnLater?: (shown: EvidenceInsight[]) => Promise<readonly string[]>;
 }
 
 export interface GetInsightsForCoachOptions {
@@ -303,7 +312,7 @@ function applyPlayerFeedbackOverlay(
  * `rank_position` is the 0-based index of the insight in the returned list.
  */
 function recordExposureForReturned(
-  insights: Array<{ id: string; player_id: string }>,
+  insights: Array<{ id: string; player_id: string; evidence?: unknown }>,
   surface: string,
   coachId?: string | null,
   scoreById?: ReadonlyMap<string, number>,
@@ -326,7 +335,7 @@ function recordExposureForReturned(
   // rankEvidenceInsights, used to sort, then dropped. Every ranked surface
   // (feeds, hub signal, roster card, round takeaway) passes it; a surface that
   // truly did not rank passes nothing rather than a fabricated 0.
-  const rows = buildExposureRows(unique, surface, coachId, scoreById);
+  const rows = buildExposureRows(unique, surface, coachId, scoreById, { rankFactors: isSupportPassEnabled() });
   // Fire-and-forget — the writer is failure-silent, so we don't await it into
   // the render path (and a rejected promise can't surface because it never
   // rejects). `void` documents the deliberate non-await.
@@ -705,7 +714,15 @@ async function getInsightsForPlayerImpl(
   const shown = applyPlayerFeedbackOverlay(deduped, feedbackByInsight).slice(0, limit);
   // Record exposure for the EXACT rows returned (post overlay + slice) — a row
   // dropped by the limit or by a player dismissal is never counted as shown.
-  recordExposureForReturned(opts.drawn ? shown.filter(opts.drawn) : shown, 'player_feed', null, scoreById);
+  if (opts.drawnLater) {
+    const byId = new Map(shown.map((i) => [i.id, i]));
+    void opts.drawnLater(shown).then(
+      (ids) => recordExposureForReturned(ids.map((id) => byId.get(id)).filter((i): i is EvidenceInsight => !!i), 'player_feed', null, scoreById),
+      () => undefined,
+    );
+  } else {
+    recordExposureForReturned(opts.drawn ? shown.filter(opts.drawn) : shown, 'player_feed', null, scoreById);
+  }
   return shown;
 }
 
@@ -1080,6 +1097,7 @@ async function getTopInsightsForPlayersImpl(
   // a dedup read on `golf_insight_exposure` plus an insert each — which is the
   // N+1 Sentry flagged as JAVASCRIPT-NEXTJS-R2 on /golf/dashboard/stats/team.
   const exposureRows: ReturnType<typeof buildExposureRows> = [];
+  const supportFactors = isSupportPassEnabled();
   for (const [pid, list] of byPlayer) {
     const rankedScored = await rankEvidenceInsightsScored(list, {}, [], supabase);
     const ranked = dedupeBySubject(collapseParScoring(rankedScored.map((r) => r.insight)));
@@ -1089,7 +1107,9 @@ async function getTopInsightsForPlayersImpl(
     // is per-player, so rows are built per player. coach_id is unknown here
     // (RLS-scoped sweep, not a resolved coach row) so it's left null. The
     // score is the neutral-weights score this sweep actually ranked on.
-    exposureRows.push(...buildExposureRows(sliced, 'roster_card', null, scoreMap(rankedScored)));
+    exposureRows.push(
+      ...buildExposureRows(sliced, 'roster_card', null, scoreMap(rankedScored), { rankFactors: supportFactors }),
+    );
   }
   // Fire-and-forget, failure-silent — same contract as recordExposureForReturned.
   if (exposureRows.length > 0) void recordInsightExposure(exposureRows);
