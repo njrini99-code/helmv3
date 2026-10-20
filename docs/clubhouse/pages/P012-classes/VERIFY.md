@@ -204,17 +204,14 @@ before, after, baseline or evidence.
 - The toast's Retry inside a real modal dialog: the tests run the shell's
   dialog-hosted toast in jsdom, which has
   no top layer.
-- Found and not fixed (see the report to the parent): an import in a term's last 21 days,
-  or the first save of an imported class, puts the whole term on the calendar,
-  past meetings included; the
-  no-time flag and the "No time set" notice have no catalog code of their own
-  (they are described under CH-12303);
-  the calendar sync's landing also fires the
-  success haptic, with no toast (read in `useAction`, not felt on a device); the
-  insert policy on
+- Found and not fixed (see the report to the parent): an import in a term's last
+  21 days, or the first save of an imported class, puts the whole term on the
+  calendar, past meetings included; the no-time flag and the "No time set"
+  notice have no catalog code of their own (they are described under CH-12303);
+  the calendar sync's landing also fires the success haptic, with no toast (read
+  in `useAction`, not felt on a device); the insert policy on
   `golf_player_classes` checks the player and not `team_id` (read in the
-  baseline migration; the server
-  action checks team membership).
+  baseline migration; the server action checks team membership).
 - Fixed since (checked 2026-10-20 on `main` 6f8be230; the 2026-10-17 audit
   still listed both): an import retried after a lost answer shows and syncs the
   classes the first attempt stored (`importRows` returns the stored rows it

@@ -58,8 +58,7 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/recruiting.test.tsx` (61 cases, each named by the codes it forces) | every catalog row of kinds 0 to 5 that is not marked preview | pass |
 | `src/clubhouse/__tests__/shell.test.tsx` (the Team list now reads Roster, Recruiting, Stats, Qualifiers) | 10802 | pass |
 | `src/clubhouse/__tests__/recruiting-upload.test.tsx` (31 cases: the limits and the migration's numbers, the transfer and its progress, the file drop, Storage's refusals, an Add that cannot repeat, the phone) | CH-14105 to CH-14110, CH-14404, CH-14407, CH-14703, CH-14915 to CH-14917 | pass |
-| `src/test/golf/actions/recruit-document-upload.test.ts` (16) and `recruiting-create.test.ts` (9) | the server side of CH-14915 and CH-14916 | pass |
-| `src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts` (5) and `src/clubhouse/screens/recruiting/__tests__/add-request.test.ts` (6), 2026-10-20 | CH-14915: a repeat with a corrected field reaches the stored row | pass |
+| `src/test/golf/actions/recruit-document-upload.test.ts` (16) and `recruiting-create.test.ts` (9); since 2026-10-20 also `src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts` (5) and `src/clubhouse/screens/recruiting/__tests__/add-request.test.ts` (6) | the server side of CH-14915 (a repeat with a corrected field reaches the stored row) and CH-14916 | pass |
 
 Both files together: 110 passed (2026-09-30). All of `src/clubhouse`: 30 files,
 1531 tests, exit 0.
