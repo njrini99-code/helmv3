@@ -3168,6 +3168,12 @@
         ]
       },
       {
+        "id": "golf_coachhelm_player_state",
+        "definedIn": [
+          "supabase/migrations/20261020122000_golf_coachhelm_player_state.sql"
+        ]
+      },
+      {
         "id": "golf_coachhelm_run_log",
         "definedIn": [
           "supabase/migrations/20261020114500_golf_coachhelm_run_log.sql"
@@ -13582,6 +13588,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/insights/upsert.ts",
+          "anchor": "src/lib/coachhelm/v3/lifecycle/archive-rules"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/insights/upsert.ts",
+          "anchor": "src/lib/coachhelm/v3/lifecycle/flag"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/mining/causal-engine.ts",
           "anchor": "src/lib/coachhelm/v3/causality/correlation-gate"
         },
@@ -14628,6 +14644,17 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260725170000_coachhelm_action_runs_and_ui_parts.sql"
+        }
+      ]
+    },
+    {
+      "source": "coachhelm_ai",
+      "target": "golf_coachhelm_player_state",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261020122000_golf_coachhelm_player_state.sql"
         }
       ]
     },
@@ -19405,6 +19432,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/lifecycle/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/llm/compose.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -19686,6 +19718,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/intent/loader.ts",
           "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/lifecycle/job.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/lifecycle/job.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
           "kind": "import_graph",
@@ -20249,6 +20291,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/goals/window-metric.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/lifecycle/job.ts",
           "anchor": "src/lib/golf/round-countable"
         },
         {
