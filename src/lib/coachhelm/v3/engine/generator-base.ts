@@ -25,7 +25,8 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { upsertInsightV3, V3_SIGNATURE_PREFIX, GATED_OUT } from '@/lib/coachhelm/v3/insights/upsert-v3';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
-import { composedSourceRoundIds, loadSourceRoundIds } from '@/lib/coachhelm/v3/engine/source-rounds';
+import { keepComposedRounds, loadSourceRoundIds } from '@/lib/coachhelm/v3/engine/source-rounds';
+import { stampAndCheckRead } from '@/lib/coachhelm/v3/engine/read-window';
 import {
   computeCounterfactual,
   type ComputeCounterfactualInput,
@@ -459,6 +460,15 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   }
 
   /**
+   * The Slice 0b read-floor family this read is judged and stamped under
+   * (`read-floors.ts#FAMILY_FLOORS`). Default: the insight type. A generator
+   * whose insight type is shared with an unrelated family overrides it.
+   */
+  protected readFamilyKey(_composed: ComposedContent): string {
+    return this.insightType;
+  }
+
+  /**
    * Signature scope this generator instance OWNS, without the `v3:` prefix
    * (to-95 audit P2 stale-row sweep). When non-null, a successful run
    * retracts (archives) still-active rows in this scope that the run did
@@ -671,6 +681,16 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
 
       const composed = this.composeContent(agg);
 
+      // Slice 0b: stamp the window this read used (always) and hold a read
+      // under its family floor back as Watching (flag-gated, read-floors.ts).
+      const read = await stampAndCheckRead(
+        createAdminClient(), this.playerId, this.readFamilyKey(composed), composed.evidence, agg.windowRoundIds,
+      );
+      if (read.shortfall) {
+        const retracted = await this.retractStaleInScope(null);
+        return { id: null, gated: false, status: 'no_data', retracted, watching: read.shortfall };
+      }
+
       // Centralize the canonical confidence calc (design contract Rule 1).
       // Generators stamp `confidence: 0` + `confidence_factors`; compute the
       // real confidence here so EVERY v3 row ships a usable value. The flat
@@ -690,7 +710,8 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         ? { ...composed.evidence.confidence_factors, ...measured }
         : { ...composed.evidence.confidence_factors, factors_measured: false };
       let evidence = {
-        ...composed.evidence,
+        // A generator that counted its own rounds keeps them over the stamp.
+        ...keepComposedRounds(read.evidence, composed.evidence),
         confidence_factors: confidenceFactors,
         confidence: calcConfidence({ confidence_factors: confidenceFactors }),
         // Coach voice rides in evidence; title/content stay the player's.
@@ -822,12 +843,16 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       }
 
       const supabase = createAdminClient();
-      // Audit row 22: persist the rounds behind the claim (failure-silent). A
+      // Audit row 22: persist the rounds behind the claim (failure-silent).
+      // The Slice 0b stamp already set them when the round index loaded, and a
       // generator that composed its own list (the rounds it actually counted)
-      // keeps it; otherwise every completed round in the window is loaded.
-      const sourceRoundIds =
-        composedSourceRoundIds(evidence) ??
-        (await loadSourceRoundIds(supabase, this.playerId, evidence.window_start, evidence.window_end));
+      // kept it over the stamp (keepComposedRounds, above).
+      const sourceRoundIds = evidence.source_round_ids ? null : await loadSourceRoundIds(
+        supabase,
+        this.playerId,
+        evidence.window_start,
+        evidence.window_end,
+      );
       if (sourceRoundIds) {
         evidence = { ...evidence, source_round_ids: sourceRoundIds } as typeof composed.evidence;
       }

@@ -1054,7 +1054,7 @@ describe('Stats · holes · phone', () => {
     expect(code('CH-5323')!.textContent).toMatch(/per 18 holes/);
     expect(document.body.textContent).toMatch(/9-hole scores doubled/);
     // The line is drawn per 18: the newest round, a 38, ends it as a 76.
-    expect(document.querySelector('svg[aria-label^="Scores over the last"]')!.getAttribute('aria-label')).toMatch(/to 76,/);
+    expect(document.querySelector('[role="group"][aria-label^="Scores over the last"]')!.getAttribute('aria-label')).toMatch(/to 76,/);
     // The round's own row says it was nine holes (the chip above says so too, so look at the rows).
     expect([...document.querySelectorAll('.ch-num')].some((el) => / · 9 holes/.test(el.textContent ?? ''))).toBe(true);
     await user.click(screen.getByRole('button', { name: /^Filter/ }));

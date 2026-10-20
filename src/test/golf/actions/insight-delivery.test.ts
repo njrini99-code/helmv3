@@ -757,11 +757,13 @@ describe('ranking pathology guards', () => {
   it('orders the PLAYER feed by |strokes_impact| × confidence, not created_at (RANK-1)', async () => {
     // `recent` is newest but low-impact; `older` is older but high-impact. Under
     // the old created_at-only ordering `recent` led; the impact rank must lead
-    // with `older`.
+    // with `older`. Two different reads (another metric): two copies of ONE
+    // read are a dedupe group, where the newest copy wins by design
+    // (dedupeBySubject, CoachHelm Slice 0), which is not what this pins.
     const recent = makeRow({
       id: 'recent',
       created_at: '2026-05-01T00:00:00.000Z',
-      evidence: makeEvidence({ strokes_impact: 0.4, confidence: 0.9 }),
+      evidence: makeEvidence({ metric: 'putt_make_rate_3_5ft', strokes_impact: 0.4, confidence: 0.9 }),
     });
     const older = makeRow({
       id: 'older',

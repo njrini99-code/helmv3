@@ -236,6 +236,8 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
 
     return {
       sampleN: driver.attempts,
+      // Slice 0b: the rounds behind these tee shots stamp the window.
+      windowRoundIds: [...roundIds],
       last_round_date: lastRoundDate,
       playerValue: driver.fairwayPct * 100, // percent for display
       driver,

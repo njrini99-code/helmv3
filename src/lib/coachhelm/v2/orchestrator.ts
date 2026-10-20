@@ -78,6 +78,8 @@ import type {
 } from './types';
 import { describeError, toDbErrorMetadata } from '@/lib/utils/describe-error';
 import { runTier1Generators } from './tier1-runner';
+import { isSupportPassEnabled, runSupportPass } from '@/lib/coachhelm/v3/support/run-pass';
+import { createRunInsightCollector } from '@/lib/coachhelm/v3/support/run-collector';
 
 interface RoundReviewShotRow {
   hole_number: number;
@@ -466,15 +468,22 @@ class CoachHelmIntelligence {
     // instead of all ~21 at once, each retried ONCE on a transient database
     // fault — see tier1-runner.ts. Same settled-array contract as the
     // Promise.allSettled it replaces.
+    // Slice 1 (flag coachhelm_support_v1, off): the support pass runs BH over
+    // exactly the rows this run's generators and composites upserted, so the
+    // run opens a collector that `upsertInsightV3` records each written id
+    // into. Flag off → no collector, nothing recorded, the calls run as before.
+    const supportEnabled = runInsightGenerators && isSupportPassEnabled();
+    const runCollector = supportEnabled ? createRunInsightCollector() : null;
     const runTier1 = () => runTier1Generators(tier1Generators);
+    const runTier1InRun = () => (runCollector ? runCollector.run(runTier1) : runTier1());
     let tier1Settled: PromiseSettledResult<unknown>[];
     let tier1GateMetrics: { gatedCount: number } | null = null;
     if (options.philosophyGate) {
-      const wrapped = await runWithGate(options.philosophyGate, runTier1);
+      const wrapped = await runWithGate(options.philosophyGate, runTier1InRun);
       tier1Settled = wrapped.result;
       tier1GateMetrics = wrapped.metrics;
     } else {
-      tier1Settled = await runTier1();
+      tier1Settled = await runTier1InRun();
     }
     const tier1Successes: string[] = [];
     const tier1Failures: Array<{ generator: string; reason: string }> = [];
@@ -548,7 +557,10 @@ class CoachHelmIntelligence {
     // insights from the rows the Tier-1 batch just wrote, and a read wrote none.
     const compositeSummary = !runInsightGenerators
       ? null
-      : await synthesizeForPlayer(playerId).catch((err) => {
+      : await (runCollector
+          ? runCollector.run(() => synthesizeForPlayer(playerId))
+          : synthesizeForPlayer(playerId)
+        ).catch((err) => {
           void logServerError(
             `composite synthesis failed for ${playerId}: ${describeError(err)}`,
             { action: 'analyzePlayer.composite', metadata: { dbError: toDbErrorMetadata(err) } },
@@ -556,6 +568,14 @@ class CoachHelmIntelligence {
           return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1, refusals: 0 };
         });
     void compositeSummary;
+
+    // Slice 1 (flag coachhelm_support_v1, off): support, BH across every
+    // candidate this run wrote, shrinkage and the claim ladder, merged into
+    // each row's evidence, plus one run-log row. Off → never entered, nothing
+    // read or written. Failure-isolated inside runSupportPass.
+    if (supportEnabled && runCollector) {
+      await runSupportPass({ playerId, insightIds: runCollector.ids(), trigger: options.runTrigger });
+    }
 
     // Extract features for the legacy pipeline
     const features = await extractAllFeatures(playerId);

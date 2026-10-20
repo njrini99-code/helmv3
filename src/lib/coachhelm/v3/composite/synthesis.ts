@@ -26,9 +26,12 @@ import type { InsightPriority } from '@/lib/coachhelm/insight-types';
 import { COMPOSITE_RULES } from './registry';
 import { loadRecentInsightsForPlayer } from './loader';
 import { loadCompositeContext } from './hole-sequence-loader';
-import type { CompositeMatch, CompositeRule, EvidenceInsight } from './types';
+import type { CompositeContext, CompositeMatch, CompositeRule, EvidenceInsight } from './types';
 import { enforcePriorityConfidenceGate } from '@/lib/coachhelm/v3/engine/generator-base';
 import { describeError } from '@/lib/utils/describe-error';
+import { stampAndCheckRead } from '@/lib/coachhelm/v3/engine/read-window';
+import { compositeFamilyKey, sampleUnitFor } from '@/lib/coachhelm/v3/engine/read-floors';
+import type { InsightSampleUnit } from '@/lib/coachhelm/v2/insights/types';
 
 const COMPOSITE_PREFIX = 'composite';
 
@@ -135,6 +138,70 @@ export function sourceWindowSpan(
   }
   if (start === null && end === null) return null;
   return { window_start: start ?? '', window_end: end ?? '' };
+}
+
+/**
+ * Which context rows each context-only rule reads (Slice 0b). Each of these
+ * rules uses every row of its array, so the rounds in that array are the
+ * rounds behind the read.
+ */
+const CTX_SOURCE_BY_RULE: Readonly<Record<string, keyof CompositeContext>> = {
+  closing_hole_fatigue: 'hole_scores',
+  front_9_starter: 'hole_scores',
+  doubles_after_bogey: 'hole_scores',
+  short_side_scrambling_chain: 'short_game_shots',
+  flyer_lie_over_the_green: 'flyer_lie_shots',
+};
+
+/**
+ * The rounds a composite read (Slice 0b), for its stamped window. A context
+ * rule: the rounds in the context array it reads. An insight rule: the union
+ * of its source reads' `source_round_ids`; null when any source lacks them
+ * (written before the stamp), so the stamp falls back to the composed window
+ * range. Pure + exported for tests.
+ */
+export function compositeWindowRoundIds(
+  ruleId: string,
+  match: CompositeMatch,
+  insights: EvidenceInsight[],
+  ctx: CompositeContext | undefined,
+): string[] | null {
+  const ctxKey = CTX_SOURCE_BY_RULE[ruleId];
+  if (match.source_insight_ids.length === 0) {
+    if (!ctx || !ctxKey) return null;
+    const rows = ctx[ctxKey] as ReadonlyArray<{ round_id: string }>;
+    const ids = [...new Set(rows.map((r) => r.round_id).filter(Boolean))];
+    return ids.length > 0 ? ids : null;
+  }
+  const ids = new Set<string>();
+  for (const sourceId of match.source_insight_ids) {
+    const source = insights.find((i) => i.id === sourceId);
+    const rounds = source?.evidence?.source_round_ids;
+    if (!Array.isArray(rounds) || rounds.length === 0) return null;
+    rounds.forEach((r) => ids.add(r));
+  }
+  return ids.size > 0 ? [...ids] : null;
+}
+
+/**
+ * What a composite's `sample_n` counts (Slice 0b). Context rules have a fixed
+ * unit; insight rules take the min of two source reads' `sample_n`, so the
+ * unit is the unit of the source whose count it took. Pure + exported.
+ */
+export function compositeSampleUnit(
+  ruleId: string,
+  evidence: Pick<InsightEvidence, 'sample_n'>,
+  sourceInsightIds: string[],
+  insights: EvidenceInsight[],
+): InsightSampleUnit | null {
+  const fixed = sampleUnitFor(compositeFamilyKey(ruleId));
+  if (fixed) return fixed;
+  for (const sourceId of sourceInsightIds) {
+    const source = insights.find((i) => i.id === sourceId);
+    if (!source || Number(source.evidence?.sample_n) !== Number(evidence.sample_n)) continue;
+    return source.evidence?.sample_unit ?? sampleUnitFor(source.insight_type);
+  }
+  return null;
 }
 
 /**
@@ -294,6 +361,8 @@ export interface SynthesisResult {
    * must block the stale sweep below.
    */
   refusals: number;
+  /** Slice 0b: matches held back below their family floor (Watching). */
+  below_floor?: number;
   /** Stale composite rows archived by the post-run scope sweep (regrade LIFE-P2). */
   stale_retracted?: number;
 }
@@ -449,8 +518,23 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         { ...composed.evidence, strokes_impact: strokesImpact },
         sourceWindowSpan(match.source_insight_ids, insights),
       );
+      // Slice 0b: stamp the window the composite read (always) and hold it
+      // back under its floor (flag-gated). A held-back composite is not
+      // re-emitted, so the scope sweep below archives its old row.
+      const read = await stampAndCheckRead(
+        supabase,
+        playerId,
+        compositeFamilyKey(rule.id),
+        calibrated,
+        compositeWindowRoundIds(rule.id, match, insights, ctx),
+        compositeSampleUnit(rule.id, calibrated, match.source_insight_ids, insights),
+      );
+      if (read.shortfall) {
+        result.below_floor = (result.below_floor ?? 0) + 1;
+        continue;
+      }
       const evidence = {
-        ...calibrated,
+        ...read.evidence,
         composite_rule_id: rule.id,
         source_insight_ids: match.source_insight_ids,
       };

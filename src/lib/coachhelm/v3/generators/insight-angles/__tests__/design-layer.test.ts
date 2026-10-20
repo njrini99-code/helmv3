@@ -27,6 +27,9 @@ import {
   type AngleFamilyId,
 } from '../angle-data';
 import { insightAngleGenerators } from '../index';
+import { angleReadFamilyKey } from '../angle-generator';
+import { FAMILY_FLOORS, evaluateReadFloor } from '@/lib/coachhelm/v3/engine/read-floors';
+import { familyFor } from '@/lib/coachhelm/v3/support/families';
 import { createAngleLoaders } from '../load-angle-data';
 import { ApproachMissCompassGenerator } from '../approach-miss-compass';
 import { BadDayFloorGenerator } from '../bad-day-floor';
@@ -230,5 +233,37 @@ describe('AngleGenerator.run with the flag off (no read, no write, no sweep)', (
     await new TeeMissCostGenerator(PLAYER, loaders).run().catch(() => undefined);
     expect(loaders.calls.data).toBe(1);
     flag.on = false;
+  });
+});
+
+describe('Slice 0b read floors (angles read under their own family key)', () => {
+  const ids = Object.keys(ANGLE_FAMILIES) as AngleFamilyId[];
+
+  it('each angle row is judged as angle:<family>, never by its shared insight type', () => {
+    for (const id of ids) {
+      const key = angleReadFamilyKey({ evidence: { detail: { family: id } } as never }, ANGLE_FAMILIES[id].insight_type);
+      expect(key).toBe(`angle:${id}`);
+      // The two tee angles get different keys.
+      expect(key).not.toBe(ANGLE_FAMILIES[id].insight_type);
+    }
+    expect(angleReadFamilyKey({ evidence: {} as never }, 'tee')).toBe('angle:tee');
+  });
+
+  it('no 0b floor holds an angle back: its own ANGLE_FAMILIES floors apply in compute instead', () => {
+    for (const id of ids) {
+      expect(FAMILY_FLOORS[`angle:${id}`]).toBeUndefined();
+      expect(evaluateReadFloor(`angle:${id}`, { sample_n: 1, rounds_n: 1, detail: {} })).toBeNull();
+    }
+  });
+});
+
+describe('Slice 1 support registry (support/families.ts on main)', () => {
+  it('has no entry for any angle family yet, so each is cleanly untestable, never matched to a wrong family', () => {
+    for (const id of Object.keys(ANGLE_FAMILIES) as AngleFamilyId[]) {
+      const f = familyFor(ANGLE_FAMILIES[id].insight_type, ANGLE_FAMILIES[id].metric);
+      expect(f.family, id).toBe('unknown');
+      expect(f.shape).toBe('untestable');
+      expect(f.untestableReason).toBe('unknown_family');
+    }
   });
 });

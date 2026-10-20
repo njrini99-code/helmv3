@@ -38,6 +38,28 @@ export function composedSourceRoundIds(evidence: unknown): string[] | null {
   return ids.slice(0, SOURCE_ROUND_IDS_CAP);
 }
 
+/**
+ * Keep a generator's own round fields over the Slice 0b window stamp
+ * (`read-window.ts#applyWindowStamp`, which always writes `newest_round_id`,
+ * `rounds_n` and `source_round_ids` from the stamp). When the composer
+ * counted its own rounds (`composedSourceRoundIds` non-null), those three
+ * come back from the composed evidence, so `rounds_n` keeps matching the ids
+ * the read counted and `newest_round_id` keeps the composer's own order. The
+ * stamp's other fields (`scanned_through_round_id`, `sample_unit`, filled
+ * bounds) stay. Pure; a read with no composed list is returned unchanged.
+ */
+export function keepComposedRounds<E extends object>(stamped: E, composed: unknown): E {
+  const ids = composedSourceRoundIds(composed);
+  if (!ids) return stamped;
+  const c = composed as { rounds_n?: unknown; newest_round_id?: unknown };
+  return {
+    ...stamped,
+    source_round_ids: ids,
+    ...(typeof c.rounds_n === 'number' ? { rounds_n: c.rounds_n } : {}),
+    ...(typeof c.newest_round_id === 'string' && c.newest_round_id ? { newest_round_id: c.newest_round_id } : {}),
+  };
+}
+
 export async function loadSourceRoundIds(
   supabase: SupabaseClient,
   playerId: string,

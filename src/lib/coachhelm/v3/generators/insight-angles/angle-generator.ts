@@ -9,11 +9,23 @@
  * - The reads are injected (`AngleLoaders`), one lazy load per
  *   `insightAngleGenerators(playerId)` call, shared by the five generators of
  *   that call and never cached across calls.
+ * - Slice 0b judges a read against `FAMILY_FLOORS` by family key. The
+ *   angles' insight types (`tee`, `putting`, ...) are shared with other
+ *   generators and two angles are both `tee`, so each angle reads under its
+ *   own key, `angle:<family>` (`ANGLE_FAMILIES`). No 0b floor carries that
+ *   key: the angle's own floors (`ANGLE_FAMILIES`, applied in compute) hold
+ *   it back instead, never another family's.
  */
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import type { GeneratorAggregate, RunResult } from '@/lib/coachhelm/v3/engine/types';
+import type { ComposedContent, GeneratorAggregate, RunResult } from '@/lib/coachhelm/v3/engine/types';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { INSIGHT_ANGLES_FLAG, type AngleData, type PeerRound, type TourThreePutt } from './angle-data';
+
+/** The Slice 0b family key an angle read is stamped and judged under. */
+export function angleReadFamilyKey(composed: Pick<ComposedContent, 'evidence'>, fallback: string): string {
+  const family = (composed.evidence?.detail as { family?: unknown } | undefined)?.family;
+  return typeof family === 'string' && family ? `angle:${family}` : `angle:${fallback}`;
+}
 
 export interface AngleLoaders {
   /** The player's countable-round read (rejects on a read error). */
@@ -30,6 +42,10 @@ export abstract class AngleGenerator<A extends GeneratorAggregate> extends BaseG
     protected readonly loaders: AngleLoaders,
   ) {
     super(playerId);
+  }
+
+  protected override readFamilyKey(composed: ComposedContent): string {
+    return angleReadFamilyKey(composed, this.insightType);
   }
 
   override async run(): Promise<RunResult> {
