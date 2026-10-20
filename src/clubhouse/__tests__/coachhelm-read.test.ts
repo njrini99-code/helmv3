@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { toChDeepInsight } from '../data/coachhelm-dive-shape';
 import { toChInsight } from '../data/coachhelm-map';
-import { causeShown, meaningfulReason, readLines, sampleOf, toChRead } from '../data/coachhelm-read-shape';
+import { causeShown, meaningfulReason, readLines, sampleOf, toChRead, writeUpFor } from '../data/coachhelm-read-shape';
 import { speak, type ChViewer } from '../data/coachhelm-voice';
 import { penalties, PREVIEW_TOUR } from '../preview/fixtures-coachhelm';
 import { DIVE_BIG, DIVE_BREAK, DIVE_PENALTIES, DIVE_SLOPE, FULL_INPUTS } from '../preview/fixtures-coachhelm-views';
@@ -43,7 +43,19 @@ describe('the Read: four lines from what the row carries', () => {
     expect(sampleOf({ ...ev, your_value: 0.25, your_value_display: '25%', sample_n: 12 }, '12 rounds')).toBe('12 rounds');
     // A gap in points is not a rate.
     expect(sampleOf({ ...ev, your_value: 23, your_value_display: '23 pts', sample_n: 75 }, '75 putts')).toBe('75 putts');
+    // A sample that counts both arms (putt-bias: 10 of 20 weak-side putts, stored over 20 + 20) is not the rate's denominator.
+    expect(sampleOf({ ...ev, your_value: 0.5, your_value_display: '50%', sample_n: 40, comparison_source: 'your_baseline' }, '40 putts')).toBe('40 putts');
+    expect(sampleOf({ ...ev, your_value: 0.5, your_value_display: '50%', sample_n: 40, comparison_source: 'absolute_target' }, '40 putts')).toBe('40 putts');
+    expect(sampleOf({ ...ev, comparison_source: 'pga_baseline' }, '31 putts')).toBe('18 of 31 putts');
     expect(sampleOf(ev, '')).toBeNull();
+  });
+
+  it('the write-up leaves out a cause the viewer is not shown, and keeps one they are', () => {
+    const text =
+      "From 4-6 ft, you're making 58% of downhill putts vs 81% of level putts. Short putts carry the most leverage, so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft. Your makes drop on left-to-right putts, the classic under-read.";
+    expect(writeUpFor(text, false)).toBe("From 4-6 ft, you're making 58% of downhill putts vs 81% of level putts. Short putts carry the most leverage, so this gap is worth closing.");
+    expect(writeUpFor(text, true)).toBe(text);
+    expect(writeUpFor("That's driven by the long approaches.", false)).toBeNull();
   });
 
   it('What: a comparison with no name is not said, never a bare number', () => {

@@ -104,12 +104,23 @@ function listed(ns: readonly number[]): string {
 }
 
 /**
- * "18 of 31 putts" when the stored rate times its sample is that whole number (the rate's own numerator), else the sample as the
- * Board says it ("59 putts"). A rate stored rounded, a gap in points, or a rate of holes over rounds is never turned into a count.
+ * Comparisons whose `sample_n` counts both arms, not the rate's own putts: the player's other side (putt-bias stores the weak
+ * side's rate over weak + strong putts) or a fixed target over two groups (putt-slope-bias: downhill + level).
  */
-export function sampleOf(ev: Pick<InsightEvidence, 'unit' | 'your_value' | 'your_value_display' | 'sample_n'>, sample: string): string | null {
+const BOTH_ARMS: ReadonlySet<InsightEvidence['comparison_source']> = new Set(['your_baseline', 'absolute_target']);
+
+/**
+ * "18 of 31 putts" when the stored rate times its sample is that whole number (the rate's own numerator), else the sample as the
+ * Board says it ("59 putts"). A rate stored rounded, a gap in points, a rate of holes over rounds, or a sample that counts both
+ * arms of a comparison is never turned into a count.
+ */
+export function sampleOf(
+  ev: Pick<InsightEvidence, 'unit' | 'your_value' | 'your_value_display' | 'sample_n'> & Partial<Pick<InsightEvidence, 'comparison_source'>>,
+  sample: string,
+): string | null {
   const said = sample.trim();
   if (!said) return null;
+  if (ev.comparison_source && BOTH_ARMS.has(ev.comparison_source)) return said;
   const n = num(ev.sample_n);
   const v = num(ev.your_value);
   const noun = said.replace(/^\d+\s+/, '');
@@ -125,6 +136,19 @@ export function sampleOf(ev: Pick<InsightEvidence, 'unit' | 'your_value' | 'your
 
 /** The generator labels that open a comparison in lower case after "Compared with" ("your right-to-left make %", "no downhill penalty"). */
 const LOWER_START = /^(Your|No|Non)\b/;
+
+/** A sentence that states or guesses a cause ("It's consistent with a pace-control pattern", "That's driven by", "the classic under-read"). */
+const CAUSAL = /\b(?:consistent with|looks like|points? to|suggests?|likely|because|due to|caused by|driven by|stems? from|the classic)\b/i;
+
+/**
+ * The generator's write-up as this viewer reads it. When the Why line is not traced for them (no cause, or an inferred one a
+ * player is not shown: supercharge Q3, "hide"), the sentences that state or guess a cause are left out, so the page never says
+ * what the Why line holds back. A cause the viewer is shown keeps the write-up whole. Null when nothing is left.
+ */
+export function writeUpFor(text: string, traced: boolean): string | null {
+  const kept = traced ? [text] : text.split(/(?<=[.!?])\s+/).filter((s) => !CAUSAL.test(s));
+  return kept.join(' ').trim() || null;
+}
 
 /** "Compared with the Tour 0.3": the comparison the card draws (the gauge's, or the slope read's own label), only when it has a name. */
 function benchmarkOf(raw: EvidenceInsight, base: ChInsight, say: (t: string) => string): string | null {

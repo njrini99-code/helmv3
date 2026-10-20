@@ -5,7 +5,7 @@ import { ChevronRight, Compass, Flag, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
-import { meaningfulReason, readLines } from '../../../data/coachhelm-read-shape';
+import { meaningfulReason, readLines, writeUpFor } from '../../../data/coachhelm-read-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
 import { useChSessionState } from '../../../lib/session-state';
@@ -203,8 +203,9 @@ function Why({ i }: { i: ChDeepInsight }) {
   // sentence too, which the read's What line now says in numbers).
   const drivers = i.diagnosis?.drivers ?? [];
   const reason = meaningfulReason(i.diagnosis?.reason);
-  const full = [i.base.lede, i.base.why].filter(Boolean).join(' ');
-  const why = full ? withoutDrill(full, i.base.week?.text) : null;
+  // A cause this viewer is not shown is not said here either: its sentences leave the write-up with it.
+  const told = writeUpFor([i.base.lede, i.base.why].filter(Boolean).join(' '), i.read.why.level !== null);
+  const why = told ? withoutDrill(told, i.base.week?.text) : null;
   const box = drivers.length > 0 || !!reason;
   if (!box && !why) return null;
   return (

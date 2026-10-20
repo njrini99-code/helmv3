@@ -666,6 +666,8 @@ describe('the Deep dive screen', () => {
     expect(article().textContent).not.toContain('Likely, not measured');
     expect(line('Why').textContent).toBe('Not traced yet: the record does not say why.');
     expect(part.textContent).not.toContain('pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed (');
+    // Nor in the full write-up: the generator's own sentence guessing that cause is left out for the player.
+    expect(article().textContent).not.toMatch(/pace-control/);
     expect(part.textContent).toContain('Downhill make rate, 4-6 ft');
     expect(part.textContent).toContain('31 counted');
     expect(part.textContent).toContain('Both groups have enough putts to compare');

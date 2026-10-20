@@ -61,6 +61,12 @@ Held items:     none
 - The open read's category over its title ("Around the green") was field
   green on the green phone head, a rule from before this change; it takes the
   on-green ink there now.
+- Review fixes: a count ("18 of 31 putts") is never derived from a sample
+  that counts both arms of a comparison (putt-bias and putt-slope-bias store
+  both sides' putts), and when the Why line is not traced for the viewer the
+  full write-up leaves out the generator's sentences that guess a cause
+  ("consistent with a pace-control pattern"), so a player never reads the
+  cause the Why line holds back.
 
 ## 2026-10-20 — The Deep dive stops drawing the placeholder cause
 
